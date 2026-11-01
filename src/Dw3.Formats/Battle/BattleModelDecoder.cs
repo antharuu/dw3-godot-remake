@@ -2,34 +2,6 @@ using System.Buffers.Binary;
 
 namespace Dw3.Formats.Battle;
 
-/// <summary>One bone of a model hierarchy. The root bone (index 0) has no parent, mesh or key track.</summary>
-/// <param name="Parent">Index of an earlier bone.</param>
-/// <param name="MeshEntry">Archive entry of the bone's mesh.</param>
-/// <param name="KeyEntry">Archive entry of the bone's key tracks.</param>
-public sealed record BattleModelBone(int Index, int? Parent, int? MeshEntry, int? KeyEntry);
-
-/// <summary>The structural half of a battle model: hierarchy and meshes.</summary>
-/// <param name="ModelEntry">Archive entry of the model descriptor.</param>
-/// <param name="TextureEntry">Archive entry of the model's texture archive.</param>
-/// <param name="Meshes">One mesh per non-root bone, in bone order.</param>
-public sealed record BattleModelStructure(
-    int ModelEntry,
-    int TextureEntry,
-    IReadOnlyList<BattleModelBone> Bones,
-    IReadOnlyList<BattleMesh> Meshes)
-{
-    /// <summary>Number of bones, root included.</summary>
-    public int BoneCount => Bones.Count;
-}
-
-/// <summary>Complete portable fighter model, including render assets and animation data.</summary>
-public sealed record BattleModelPayload(
-    BattleModelStructure Structure,
-    IReadOnlyDictionary<int, BattleBoneTracks> Tracks,
-    BattleTextureSet Textures,
-    IReadOnlyList<IReadOnlyList<BattleMotionStep>> Motions,
-    BattleFighterMetadata Metadata);
-
 /// <summary>
 /// Decodes the descriptor and meshes of a battle model file (fighters and fight stages share
 /// this layout).

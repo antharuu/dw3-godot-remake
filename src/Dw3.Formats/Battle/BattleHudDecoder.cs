@@ -4,32 +4,6 @@ using Dw3.Formats.Binary;
 namespace Dw3.Formats.Battle;
 
 /// <summary>
-/// One part entry from a SpriteDrawer sprite sheet (WFIGHTMN / CMFONTCS / STFGTREP).
-/// Sourced from the parts table at the offset read from the sheet header.
-/// 7 × s16 = 14 bytes per entry.
-/// </summary>
-/// <param name="U">Texture U coordinate (texels; for 4-bit: (u // 4) gives the halfword column).</param>
-/// <param name="V">Texture V coordinate (rows).</param>
-/// <param name="Width">Width in texels.</param>
-/// <param name="Height">Height in texels.</param>
-/// <param name="ClutX">CLUT X position in halfword units within the texture page.</param>
-/// <param name="ClutY">Base CLUT Y row.</param>
-/// <param name="Mode">Colour mode: 0 = 4-bit (the only valid value for these sheets).</param>
-public sealed record HudSpritePart(short U, short V, short Width, short Height, short ClutX, short ClutY, short Mode);
-
-/// <summary>
-/// One decoded 4-bit texture page: 256 rows of 64 halfwords (= 256×256 texels).
-/// Stored as row-major; row[y][w] is the w-th halfword at row y.
-/// </summary>
-public sealed record HudTexturePage(IReadOnlyList<IReadOnlyList<ushort>> Rows)
-{
-    /// <summary>Number of rows (always 256 for a PS1 texture page).</summary>
-    public int Height => Rows.Count;
-    /// <summary>Halfwords per row (always 64 for a 4-bit page).</summary>
-    public int WidthWords => Rows.Count > 0 ? Rows[0].Count : 0;
-}
-
-/// <summary>
 /// Decodes EU battle HUD sprite assets:
 /// <list type="bullet">
 ///   <item>Sprite sheet (file 0x455, WFIGHTMN): SpriteDrawer parts + frame records.</item>
@@ -615,6 +589,3 @@ public static class BattleHudDecoder
         return output;
     }
 }
-
-/// <summary>Part metadata from field_frame._render_frame semantics (u/v/w/h/dx/dy/semi/clutRow).</summary>
-public sealed record FieldFramePartMeta(int U, int V, int W, int H, int Dx, int Dy, bool Semi, int ClutRow);

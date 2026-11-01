@@ -2,19 +2,6 @@ using System.Buffers.Binary;
 
 namespace Dw3.Formats.Battle;
 
-/// <summary>One fighter-table entry: a fighter id, its record index and its kind.</summary>
-/// <param name="FighterId">Battle fighter id (signed 16-bit on disc).</param>
-/// <param name="Index">Record index inside the partner or enemy table.</param>
-/// <param name="Kind">Kind byte; kinds at or above <see cref="FighterModelTable.EnemyKindMinimum"/> are enemies.</param>
-public sealed record FighterModelEntry(short FighterId, byte Index, byte Kind);
-
-/// <summary>
-/// A fighter resolved to its model and motion archives. Both references are disc file ids
-/// (indices into the executable's file-sector table) paired with an entry of that file's archive.
-/// </summary>
-public sealed record FighterModelReference(
-    int FighterId, int Index, int Kind, bool IsEnemy, int ModelFile, int ModelEntry, int MotionFile, int MotionEntry);
-
 /// <summary>
 /// The fighter table file (<c>AAA/PRO/SMDLDATA.PRO</c>), which maps every battle fighter id to
 /// the disc files holding its 3D model and motions.

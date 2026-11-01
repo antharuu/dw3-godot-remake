@@ -2,39 +2,6 @@ using System.Buffers.Binary;
 
 namespace Dw3.Formats.Battle;
 
-/// <summary>One light source within a battle stage.</summary>
-/// <param name="DirX">X component of the light direction vector (PS1 s32).</param>
-/// <param name="DirY">Y component.</param>
-/// <param name="DirZ">Z component.</param>
-/// <param name="R">Red channel (0-255).</param>
-/// <param name="G">Green channel.</param>
-/// <param name="B">Blue channel.</param>
-public sealed record BattleStageLightEntry(int DirX, int DirY, int DirZ, byte R, byte G, byte B);
-
-/// <summary>
-/// Parsed FightStageInfo record from file 0x1CB (FILE_FIGHT_STAGES, EU).
-/// 27 records, each 0x58 bytes (sizeof(FightStageInfo) from stage.h).
-/// </summary>
-/// <param name="StageId">0-based stage index.</param>
-/// <param name="ModelFile">Engine file id of the model archive.</param>
-/// <param name="ModelEntry">Archive entry of the model within that file.</param>
-/// <param name="MotionFile">Engine file id of the motion archive (usually same as ModelFile).</param>
-/// <param name="MotionEntry">Archive entry of the motion data.</param>
-/// <param name="Music">Music track id (may be -1).</param>
-/// <param name="BgColor">Background clear colour (R, G, B bytes).</param>
-/// <param name="Lights">Three directional light entries from LightSet.</param>
-/// <param name="Ambient">Ambient RGB as three s32 values read from stage.h SetBackColor args.</param>
-public sealed record BattleStageInfo(
-    int StageId,
-    int ModelFile,
-    int ModelEntry,
-    int MotionFile,
-    int MotionEntry,
-    int Music,
-    byte[] BgColor,
-    IReadOnlyList<BattleStageLightEntry> Lights,
-    int[] Ambient);
-
 /// <summary>
 /// Decodes FightStageInfo records from the FILE_FIGHT_STAGES binary (engine file 0x1CB, EU).
 /// Each record describes one of the 27 battle background scenes.
