@@ -32,7 +32,13 @@ public static class FieldcomDomainWriter
         WriteManifest(context, "cue", cue.DiscPath, cue.Sha256, cue.ByteCount, cue.Frames, writer =>
         {
             writer.WriteStartObject("anchor"); writer.WriteNumber("depth", 1); writer.WriteString("layer", FieldLayer); writer.WriteNumber("y_offset", -27); writer.WriteEndObject();
-            writer.WriteStartObject("exit_rows"); foreach (FieldcomExitRow row in cue.ExitRows.OrderBy(x => x.Direction)) writer.WriteNumber(row.Direction.ToString(CultureInfo.InvariantCulture), row.Row); writer.WriteEndObject();
+            writer.WriteStartObject("exit_rows");
+            foreach (FieldcomExitRow row in cue.ExitRows.OrderBy(x => x.Direction))
+            {
+                writer.WriteNumber(row.Direction.ToString(CultureInfo.InvariantCulture), row.Row);
+            }
+
+            writer.WriteEndObject();
             writer.WriteStartObject("inner_rows");
             foreach (FieldcomNamedSequence sequence in cue.InnerSequences.OrderBy(x => CueRow(x.Steps)))
             {
@@ -44,10 +50,16 @@ public static class FieldcomDomainWriter
             FieldcomNamedSequence opening = cue.PopSequences.Single(x => x.Name == "opening");
             FieldcomNamedSequence closing = cue.PopSequences.Single(x => x.Name == "closing");
             writer.WriteStartObject("pop");
-            writer.WriteStartArray("closing"); writer.WriteNumberValue(closing.Steps.First().Frame); writer.WriteNumberValue(closing.Steps.Last().Frame); writer.WriteEndArray();
-            writer.WriteStartArray("frames"); foreach (FieldcomExtractedFrame frame in cue.Frames.Where(x => x.FrameId is >= 0x32 and <= 0x37).OrderBy(x => x.FrameId)) writer.WriteNumberValue(frame.FrameId); writer.WriteEndArray();
+            writer.WriteStartArray("closing"); writer.WriteNumberValue(closing.Steps[0].Frame); writer.WriteNumberValue(closing.Steps[^1].Frame); writer.WriteEndArray();
+            writer.WriteStartArray("frames");
+            foreach (FieldcomExtractedFrame frame in cue.Frames.Where(x => x.FrameId is >= 0x32 and <= 0x37).OrderBy(x => x.FrameId))
+            {
+                writer.WriteNumberValue(frame.FrameId);
+            }
+
+            writer.WriteEndArray();
             writer.WriteNumber("open", 0x35);
-            writer.WriteStartArray("opening"); writer.WriteNumberValue(opening.Steps.First().Frame); writer.WriteNumberValue(opening.Steps.Last().Frame); writer.WriteEndArray();
+            writer.WriteStartArray("opening"); writer.WriteNumberValue(opening.Steps[0].Frame); writer.WriteNumberValue(opening.Steps[^1].Frame); writer.WriteEndArray();
             writer.WriteEndObject();
         });
     }
@@ -107,5 +119,17 @@ public static class FieldcomDomainWriter
 
     // The five two-frame records identify their field rows by their first frame ID.
     private static int CueRow(IReadOnlyList<FieldcomFrameStep> steps) => steps[0].Frame switch { 0x10 => 6, 0x0E => 7, 0x0C => 8, 0x12 => 9, 0x45 => 10, _ => throw new FormatException("Unknown FIELDCOM cue row frame.") };
-    private static void Insert(DataPackWriteContext context, string sql, params object[] values) { using SqliteCommand command = context.Database.CreateCommand(); command.Transaction = context.Transaction; command.CommandText = sql; for (int index = 0; index < values.Length; index++) command.Parameters.AddWithValue($"${index + 1}", values[index]); command.ExecuteNonQuery(); }
+
+    private static void Insert(DataPackWriteContext context, string sql, params object[] values)
+    {
+        using SqliteCommand command = context.Database.CreateCommand();
+        command.Transaction = context.Transaction;
+        command.CommandText = sql;
+        for (int index = 0; index < values.Length; index++)
+        {
+            command.Parameters.AddWithValue($"${index + 1}", values[index]);
+        }
+
+        command.ExecuteNonQuery();
+    }
 }

@@ -36,7 +36,7 @@ public static class ZoneManifestWriter
     }
 
     private static TmpkMap ZeroMap(int width, int height) =>
-        new TmpkMap(width, height, new byte[checked(width * height)]);
+        new(width, height, new byte[checked(width * height)]);
 
     private static void WriteMapSection(Utf8JsonWriter writer, string key, TmpkMap map)
     {

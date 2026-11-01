@@ -160,9 +160,27 @@ internal static class BattleExtractionStep
     }
     private static int ReportOffset(uint address, int length, string name)
     {
-        if (address < ReportBase) throw new FormatException($"{name} lies below the fight-report overlay.");
-        long offset = address - ReportBase; if (offset + length > int.MaxValue) throw new FormatException($"{name} offset overflows."); return (int)offset;
+        if (address < ReportBase)
+            throw new FormatException($"{name} lies below the fight-report overlay.");
+        long offset = address - ReportBase;
+        if (offset + length > int.MaxValue)
+            throw new FormatException($"{name} offset overflows.");
+        return (int)offset;
     }
-    private static DiscFileEntry Require(IReadOnlyList<DiscFileEntry> entries, string path) => entries.SingleOrDefault(entry => entry.IsoPath == path) ?? throw new InvalidDataException($"Required disc member missing: {path}");
-    private static void Insert(DataPackWriteContext context, string sql, params object[] values) { using SqliteCommand command = context.Database.CreateCommand(); command.Transaction = context.Transaction; command.CommandText = sql; for (int i = 0; i < values.Length; i++) command.Parameters.AddWithValue($"${i + 1}", values[i]); command.ExecuteNonQuery(); }
+
+    private static DiscFileEntry Require(IReadOnlyList<DiscFileEntry> entries, string path) =>
+        entries.SingleOrDefault(entry => entry.IsoPath == path) ?? throw new InvalidDataException($"Required disc member missing: {path}");
+
+    private static void Insert(DataPackWriteContext context, string sql, params object[] values)
+    {
+        using SqliteCommand command = context.Database.CreateCommand();
+        command.Transaction = context.Transaction;
+        command.CommandText = sql;
+        for (int i = 0; i < values.Length; i++)
+        {
+            command.Parameters.AddWithValue($"${i + 1}", values[i]);
+        }
+
+        command.ExecuteNonQuery();
+    }
 }

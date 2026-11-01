@@ -16,18 +16,22 @@ internal static class DialogueAnalysisCommand
     {
         string? cuePath = null;
         bool details = false;
-        for (int index = 1; index < arguments.Count; index++)
+        int index = 1;
+        while (index < arguments.Count)
         {
-            switch (arguments[index])
+            string arg = arguments[index];
+            switch (arg)
             {
                 case "--disc" when index + 1 < arguments.Count:
-                    cuePath = arguments[++index];
+                    cuePath = arguments[index + 1];
+                    index += 2;
                     break;
                 case "--details":
                     details = true;
+                    index++;
                     break;
                 default:
-                    error.WriteLine($"Unknown analyze-dialogue option: {arguments[index]}");
+                    error.WriteLine($"Unknown analyze-dialogue option: {arg}");
                     error.WriteLine("Usage: Dw3.Extractor analyze-dialogue --disc <path/to/disc.cue> [--details]");
                     return 2;
             }

@@ -54,9 +54,7 @@ internal static class NpcExtractionStep
                     {
                         string proPath = $"AAA/PRO/WSTAG{stageId}.PRO";
                         DiscFileEntry? proEntry = entries.SingleOrDefault(e =>
-                            string.Equals(e.IsoPath, proPath, StringComparison.Ordinal));
-                        if (proEntry is null)
-                            throw new InvalidDataException($"Required NPC stage overlay is absent: {proPath}");
+                            string.Equals(e.IsoPath, proPath, StringComparison.Ordinal)) ?? throw new InvalidDataException($"Required NPC stage overlay is absent: {proPath}");
                         byte[] overlay = disc.ReadFile(proEntry);
 
                         int zoneCharacters = 0;
@@ -84,10 +82,7 @@ internal static class NpcExtractionStep
                             if (packedEntry is null || archivePath is null)
                                 continue;
                             DiscFileEntry? archiveEntry2 = entries.SingleOrDefault(e =>
-                                string.Equals(e.IsoPath, archivePath, StringComparison.Ordinal));
-                            if (archiveEntry2 is null)
-                                throw new InvalidDataException($"NPC archive is absent from disc: {archivePath}");
-
+                                string.Equals(e.IsoPath, archivePath, StringComparison.Ordinal)) ?? throw new InvalidDataException($"NPC archive is absent from disc: {archivePath}");
                             byte[] archiveBytes = disc.ReadFile(archiveEntry2);
                             NpcExtractedCharacter character = DecodeCharacter(
                                 archiveBytes, archivePath, packedEntry.Value.archiveEntry,

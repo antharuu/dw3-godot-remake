@@ -19,7 +19,7 @@ public static class CollisionManifestWriter
         ArgumentNullException.ThrowIfNull(output);
         ArgumentNullException.ThrowIfNull(actors);
 
-        using var writer = new Utf8JsonWriter(new StreamWriterAdapter(output), new JsonWriterOptions { Indented = true });
+        using var writer = new Utf8JsonWriter(new CollisionStreamAdapter(output), new JsonWriterOptions { Indented = true });
         writer.WriteStartObject();
         // Write actors before schema to match baseline alphabetical order.
         writer.WriteStartObject("actors");
@@ -34,27 +34,56 @@ public static class CollisionManifestWriter
                 writer.WriteNumber("y", actor.Y);
                 writer.WriteEndObject();
             }
+
             writer.WriteEndObject();
         }
+
         writer.WriteEndObject();
         writer.WriteString("schema", SchemaId);
         writer.WriteEndObject();
         writer.Flush();
     }
+}
 
-    private sealed class StreamWriterAdapter(TextWriter writer) : Stream
-    {
-        public override bool CanRead => false;
-        public override bool CanSeek => false;
-        public override bool CanWrite => true;
-        public override long Length => throw new NotSupportedException();
-        public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
-        public override void Flush() => writer.Flush();
-        public override Task FlushAsync(CancellationToken cancellationToken) => writer.FlushAsync(cancellationToken);
-        public override void Write(byte[] buffer, int offset, int count) => writer.Write(System.Text.Encoding.UTF8.GetString(buffer, offset, count));
-        public override void Write(ReadOnlySpan<byte> buffer) => writer.Write(System.Text.Encoding.UTF8.GetString(buffer));
-        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
-        public override void SetLength(long value) => throw new NotSupportedException();
-        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
-    }
+/// <summary>
+/// Write-only stream adapter that UTF-8 decodes bytes into the wrapped <see cref="TextWriter"/>.
+/// Kept file-scoped (not nested in CollisionManifestWriter) to avoid S3218 method-name shadowing.
+/// </summary>
+file sealed class CollisionStreamAdapter(TextWriter writer) : Stream
+{
+    /// <inheritdoc/>
+    public override bool CanRead => false;
+
+    /// <inheritdoc/>
+    public override bool CanSeek => false;
+
+    /// <inheritdoc/>
+    public override bool CanWrite => true;
+
+    /// <inheritdoc/>
+    public override long Length => throw new NotSupportedException();
+
+    /// <inheritdoc/>
+    public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+
+    /// <inheritdoc/>
+    public override void Flush() => writer.Flush();
+
+    /// <inheritdoc/>
+    public override Task FlushAsync(CancellationToken cancellationToken) => writer.FlushAsync(cancellationToken);
+
+    /// <inheritdoc/>
+    public override void Write(byte[] buffer, int offset, int count) => writer.Write(System.Text.Encoding.UTF8.GetString(buffer, offset, count));
+
+    /// <inheritdoc/>
+    public override void Write(ReadOnlySpan<byte> buffer) => writer.Write(System.Text.Encoding.UTF8.GetString(buffer));
+
+    /// <inheritdoc/>
+    public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+    /// <inheritdoc/>
+    public override void SetLength(long value) => throw new NotSupportedException();
+
+    /// <inheritdoc/>
+    public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
 }

@@ -1,7 +1,7 @@
-using Microsoft.Data.Sqlite;
 using Dw3.Data;
 using Dw3.Formats.Dialogue;
 using Dw3.Formats.Field;
+using Microsoft.Data.Sqlite;
 
 namespace Dw3.Extractor;
 
@@ -29,21 +29,25 @@ internal static class DialogueSqlWriter
                     stage.StageId, actor.Index, actor.Entry.X, actor.Entry.Y, actor.Entry.Direction, actor.Width);
                 int? selected = DialogueManifestWriter.SelectTalk(actor.Talks, progress, snapshotProgress);
                 for (int talkIndex = 0; talkIndex < actor.Talks.Count; talkIndex++)
-                {
-                    FieldTalk talk = actor.Talks[talkIndex];
-                    string talkKind = talk.Actions.Count == 0 ? "simple" : "effect";
-                    Insert(context, "INSERT INTO dialogue_talks (stage_id,actor_index,talk_index,text_entry,selected,kind) VALUES ($1,$2,$3,$4,$5,$6)",
-                        stage.StageId, actor.Index, talkIndex, talk.Entry, selected == talkIndex ? 1 : 0, talkKind);
-                    InsertCodes(context, stage.StageId, actor.Index, talkIndex, "condition", talk.Conditions, DialogueManifestWriter.ConditionKind);
-                    InsertCodes(context, stage.StageId, actor.Index, talkIndex, "action", talk.Actions, DialogueManifestWriter.ActionKind);
-                    foreach (string family in talk.Actions.Select(item => DialogueManifestWriter.ActionKind(item.Code)).Distinct().Order(StringComparer.Ordinal))
-                        Insert(context, "INSERT INTO dialogue_talk_families (stage_id,actor_index,talk_index,family) VALUES ($1,$2,$3,$4)",
-                            stage.StageId, actor.Index, talkIndex, family);
-                }
+                    InsertTalk(context, stage.StageId, actor.Index, talkIndex, actor.Talks[talkIndex], selected == talkIndex);
             }
         }
-
     }
+
+    /// <summary>Persists a single talk entry with its codes and action families.</summary>
+    private static void InsertTalk(
+        DataPackWriteContext context, int stageId, int actorIndex, int talkIndex,
+        FieldTalk talk, bool selected)
+    {
+        string talkKind = talk.Actions.Count == 0 ? "simple" : "effect";
+        Insert(context, "INSERT INTO dialogue_talks (stage_id,actor_index,talk_index,text_entry,selected,kind) VALUES ($1,$2,$3,$4,$5,$6)",
+            stageId, actorIndex, talkIndex, talk.Entry, selected ? 1 : 0, talkKind);
+        InsertCodes(context, stageId, actorIndex, talkIndex, "condition", talk.Conditions, DialogueManifestWriter.ConditionKind);
+        InsertCodes(context, stageId, actorIndex, talkIndex, "action", talk.Actions, DialogueManifestWriter.ActionKind);
+        foreach (string family in talk.Actions.Select(item => DialogueManifestWriter.ActionKind(item.Code)).Distinct().Order(StringComparer.Ordinal))
+            Insert(context, "INSERT INTO dialogue_talk_families (stage_id,actor_index,talk_index,family) VALUES ($1,$2,$3,$4)", stageId, actorIndex, talkIndex, family);
+    }
+
     internal static void InsertCodes(
         DataPackWriteContext context, int stageId, int actorIndex, int talkIndex,
         string listKind, IReadOnlyList<NpcCondition> codes, Func<int, string> kind)
@@ -55,6 +59,7 @@ internal static class DialogueSqlWriter
                 stageId, actorIndex, talkIndex, listKind, ordinal, item.Code, item.Value, kind(item.Code));
         }
     }
+
     internal static void Insert(DataPackWriteContext context, string sql, params object[] values)
     {
         using SqliteCommand command = context.Database.CreateCommand();

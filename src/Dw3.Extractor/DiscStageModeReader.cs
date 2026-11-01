@@ -103,15 +103,9 @@ public static class DiscStageModeReader
         _ = lbaToStageName;
         // The FILE_SECTORS array is a flat int32[] at a known offset in SLES_039.36.
         // We verify by checking that FILE_SECTORS[466] equals the LBA of WSTAG200.PRO.
-        int verificationLba = 0;
-        foreach (var entry in entries)
-        {
-            if (string.Equals(entry.IsoPath, "AAA/PRO/WSTAG200.PRO", StringComparison.Ordinal))
-            {
-                verificationLba = entry.Lba;
-                break;
-            }
-        }
+        int verificationLba = entries
+            .FirstOrDefault(e => string.Equals(e.IsoPath, "AAA/PRO/WSTAG200.PRO", StringComparison.Ordinal))
+            ?.Lba ?? 0;
         if (verificationLba == 0)
             throw new InvalidDataException("WSTAG200.PRO is absent from the disc; cannot verify FILE_SECTORS base.");
 
@@ -178,9 +172,7 @@ public static class DiscStageModeReader
     private static byte[] ReadRequiredFile(DiscSource disc, IReadOnlyList<DiscFileEntry> entries, string isoPath)
     {
         DiscFileEntry? entry = entries.SingleOrDefault(e =>
-            string.Equals(e.IsoPath, isoPath, StringComparison.Ordinal));
-        if (entry is null)
-            throw new InvalidDataException($"Required disc file is absent: {isoPath}");
+            string.Equals(e.IsoPath, isoPath, StringComparison.Ordinal)) ?? throw new InvalidDataException($"Required disc file is absent: {isoPath}");
         return disc.ReadFile(entry);
     }
 }

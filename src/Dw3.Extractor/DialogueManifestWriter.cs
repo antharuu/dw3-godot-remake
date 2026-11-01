@@ -60,20 +60,7 @@ internal static class DialogueManifestWriter
                 json.WriteNumber("width", actor.Width);
                 json.WriteStartArray("talks");
                 for (int talkIndex = 0; talkIndex < actor.Talks.Count; talkIndex++)
-                {
-                    FieldTalk talk = actor.Talks[talkIndex];
-                    json.WriteStartObject();
-                    json.WriteNumber("entry", talk.Entry);
-                    WriteCodes(json, "conditions", talk.Conditions, ConditionKind);
-                    WriteCodes(json, "actions", talk.Actions, ActionKind);
-                    json.WriteString("kind", talk.Actions.Count == 0 ? "simple" : "effect");
-                    json.WriteStartArray("families");
-                    foreach (string family in talk.Actions.Select(item => ActionKind(item.Code)).Distinct().Order(StringComparer.Ordinal))
-                        json.WriteStringValue(family);
-                    json.WriteEndArray();
-                    json.WriteBoolean("selected", selected == talkIndex);
-                    json.WriteEndObject();
-                }
+                    WriteTalk(json, actor.Talks[talkIndex], selected == talkIndex);
                 json.WriteEndArray();
                 json.WriteEndObject();
             }
@@ -83,6 +70,22 @@ internal static class DialogueManifestWriter
         json.WriteEndObject();
         json.WriteEndObject();
         json.Flush();
+    }
+
+    /// <summary>Writes a single talk entry object with entry, conditions, actions, kind, families and selected flag.</summary>
+    private static void WriteTalk(Utf8JsonWriter json, FieldTalk talk, bool selected)
+    {
+        json.WriteStartObject();
+        json.WriteNumber("entry", talk.Entry);
+        WriteCodes(json, "conditions", talk.Conditions, ConditionKind);
+        WriteCodes(json, "actions", talk.Actions, ActionKind);
+        json.WriteString("kind", talk.Actions.Count == 0 ? "simple" : "effect");
+        json.WriteStartArray("families");
+        foreach (string family in talk.Actions.Select(item => ActionKind(item.Code)).Distinct().Order(StringComparer.Ordinal))
+            json.WriteStringValue(family);
+        json.WriteEndArray();
+        json.WriteBoolean("selected", selected);
+        json.WriteEndObject();
     }
 
     internal static void WriteCodes(Utf8JsonWriter json, string name, IReadOnlyList<NpcCondition> codes, Func<int, string> kind)
@@ -98,7 +101,6 @@ internal static class DialogueManifestWriter
         }
         json.WriteEndArray();
     }
-
 
     internal static string ConditionKind(int code)
     {

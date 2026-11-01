@@ -49,27 +49,11 @@ internal static class BattleStageExtractionStep
                         try
                         {
                             BattleStageInfo info = BattleStageDecoder.ParseRecord(stagesData, stageId);
-                            (string modelPath, byte[] modelData) = files.Read(info.ModelFile);
-                            _ = modelPath;
+                            (_, byte[] modelData) = files.Read(info.ModelFile);
                             byte[] modelSha256 = SHA256.HashData(modelData);
                             BattleModelPayload payload = BattleModelDecoder.DecodeStage(
                                 modelData, info.ModelEntry, info.MotionEntry);
-
-                            // Write texture PNGs.
-                            string prefix = $"stage-{stageId}";
-                            foreach (BattleTexture texture in payload.Textures.Textures)
-                            {
-                                string rel = $"{OutputSubdir}/{prefix}-texture-{texture.Key}.png";
-                                File.WriteAllBytes(context.GetImagePath(rel),
-                                    PngEncoder.Encode(texture.Width, texture.Height, texture.Rgba));
-                                context.RegisterImage(rel);
-                            }
-
-                            // Write model JSON.
-                            string jsonRel = $"{OutputSubdir}/{prefix}-model.json";
-                            string modelSha256Hex = Convert.ToHexStringLower(modelSha256);
-                            File.WriteAllText(context.GetImagePath(jsonRel),
-                                BattleStageJsonWriter.WriteStageModel(info, payload, EditionLabel, prefix, modelSha256Hex));
+                            WriteStageAssets(context, stageId, info, payload, modelSha256);
                             decoded++;
                         }
                         catch (FormatException ex)
@@ -89,6 +73,29 @@ internal static class BattleStageExtractionStep
             error.WriteLine($"Extraction error [{Domain}]: {ex.Message}");
             return 1;
         }
+    }
+
+    private static void WriteStageAssets(
+        DataPackWriteContext context,
+        int stageId,
+        BattleStageInfo info,
+        BattleModelPayload payload,
+        byte[] modelSha256)
+    {
+        string prefix = $"stage-{stageId}";
+
+        // Write texture PNGs.
+        foreach (BattleTexture texture in payload.Textures.Textures)
+        {
+            string rel = $"{OutputSubdir}/{prefix}-texture-{texture.Key}.png";
+            File.WriteAllBytes(context.GetImagePath(rel), PngEncoder.Encode(texture.Width, texture.Height, texture.Rgba));
+            context.RegisterImage(rel);
+        }
+
+        // Write model JSON.
+        string jsonRel = $"{OutputSubdir}/{prefix}-model.json";
+        string modelSha256Hex = Convert.ToHexStringLower(modelSha256);
+        File.WriteAllText(context.GetImagePath(jsonRel), BattleStageJsonWriter.WriteStageModel(info, payload, EditionLabel, prefix, modelSha256Hex));
     }
 
     private sealed class EngineFiles

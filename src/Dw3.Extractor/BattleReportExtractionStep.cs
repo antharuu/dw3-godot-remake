@@ -76,9 +76,9 @@ internal static class BattleReportExtractionStep
 
         // Verify all required frame ids are present.
         var idSet = new HashSet<int>(reportIds);
-        foreach (int required in BattleReportDecoder.RequiredFrameRows.Keys)
-            if (!idSet.Contains(required))
-                throw new FormatException($"STFGTREP sheet lacks required frame id {required}.");
+        int missingFrameId = BattleReportDecoder.RequiredFrameRows.Keys.FirstOrDefault(id => !idSet.Contains(id), -1);
+        if (missingFrameId >= 0)
+            throw new FormatException($"STFGTREP sheet lacks required frame id {missingFrameId}.");
 
         // Build report texture pages (file 0x7A0, model-archive format with 4-byte outer skip).
         IReadOnlyList<HudTexturePage> reportPages = HudTexturePageDecoder.BuildReportTexturePages(textureArchive);
@@ -170,8 +170,15 @@ internal static class BattleReportExtractionStep
             {
                 json.WriteStartObject(id.ToString(CultureInfo.InvariantCulture)); json.WriteNumber("w", frame.W); json.WriteNumber("h", frame.H);
                 json.WriteStartArray("offset"); json.WriteNumberValue(frame.Ox); json.WriteNumberValue(frame.Oy); json.WriteEndArray();
-                json.WriteNumber("clutFrames", frame.Paths.Length); json.WriteStartArray("paths");
-                foreach (string path in frame.Paths) json.WriteStringValue(path); json.WriteEndArray(); json.WriteEndObject();
+                json.WriteNumber("clutFrames", frame.Paths.Length);
+                json.WriteStartArray("paths");
+                foreach (string path in frame.Paths)
+                {
+                    json.WriteStringValue(path);
+                }
+
+                json.WriteEndArray();
+                json.WriteEndObject();
             }
             json.WriteEndObject(); json.WriteStartObject("messageArrow"); json.WriteNumber("frame", 10);
             json.WriteStartArray("position"); json.WriteNumberValue(291); json.WriteNumberValue(208); json.WriteEndArray();

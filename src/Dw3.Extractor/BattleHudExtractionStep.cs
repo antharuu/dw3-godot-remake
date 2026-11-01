@@ -68,9 +68,9 @@ internal static class BattleHudExtractionStep
         ReadOnlySpan<byte> sheetBody = sheetData.AsSpan(4);
 
         var idSet = new HashSet<int>(ids);
-        foreach (int required in RequiredFrameIds)
-            if (!idSet.Contains(required))
-                throw new FormatException($"Battle HUD sheet lacks required frame id {required}.");
+        int missingId = RequiredFrameIds.FirstOrDefault(id => !idSet.Contains(id), -1);
+        if (missingId >= 0)
+            throw new FormatException($"Battle HUD sheet lacks required frame id {missingId}.");
         if (idSet.Count != ids.Count)
             throw new FormatException("Battle HUD sprite sheet contains duplicate frame ids.");
 
