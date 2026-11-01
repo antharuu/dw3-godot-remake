@@ -83,22 +83,20 @@ public sealed class DataPackTests : IDisposable
     }
 
     [Fact]
-    public void PromotionSucceedsWithOpenReaderConnection()
+    public void PromotionSucceedsAfterDisposedReaderConnection()
     {
-        // Arrange: write pack v1 and obtain an open reader connection that keeps a native
-        // file handle on data/dw3.sqlite, simulating a game session running while the
-        // extractor refreshes the pack in the background.
+        // Write pack v1 and open a reader, then dispose it.  On Windows, Dispose() returns
+        // the connection to the pool, which keeps the native file handle alive.  Without
+        // ClearAllPools() the subsequent Directory.Move would fail with "Access denied".
         var writer = new DataPackWriter(_root);
         writer.Write(CreateMetadata(), _ => { });
-        using SqliteConnection openConnection = new DataPackReader(_root).OpenDatabase();
+        new DataPackReader(_root).OpenDatabase().Dispose(); // disposed → goes to pool
 
-        // Act: promote pack v2.  DataPackWriter calls ClearAllPools() before Promote(),
-        // releasing the reader's pooled native handle so Directory.Move succeeds on Windows.
-        // The subsequent best-effort delete of the superseded directory must not throw even
-        // if the OS still transiently holds the handle.
+        // Write() calls ClearAllPools() before Promote(), releasing pooled handles so
+        // Directory.Move(data → data.previous-*) succeeds on Windows with Defender active.
         writer.Write(CreateMetadata(), _ => { });
 
-        // Assert: the new pack is immediately readable.
+        // The new pack is the active one and is immediately readable.
         using SqliteConnection v2Connection = new DataPackReader(_root).OpenDatabase();
         Assert.NotNull(v2Connection);
     }

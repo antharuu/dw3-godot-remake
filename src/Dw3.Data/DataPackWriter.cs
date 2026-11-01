@@ -80,7 +80,11 @@ public sealed class DataPackWriter
             if (Directory.Exists(activeDirectory))
             {
                 previousDirectory = Path.Combine(_rootDirectory, $"data.previous-{Guid.NewGuid():N}");
-                Directory.Move(activeDirectory, previousDirectory);
+                // Use the same retry logic as staging→active: on Windows, Defender or an
+                // antivirus may briefly hold a handle on a file inside the active directory
+                // even after ClearAllPools().  An exponential back-off lets the handle
+                // release before the rename is attempted again.
+                MoveWithRetry(activeDirectory, previousDirectory);
             }
 
             MoveWithRetry(stagingDirectory, activeDirectory);
