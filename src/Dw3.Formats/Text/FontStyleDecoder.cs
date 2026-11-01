@@ -52,6 +52,7 @@ public static class FontStyleDecoder
     /// Returns a three-element list in style order (index 0 = style 1, etc.).
     /// </summary>
     /// <param name="executable">Full contents of SLES_039.36.</param>
+    /// <returns>Metrics for the three active descriptor slots in ascending style order.</returns>
     /// <exception cref="FormatException">
     /// Any of: table or table entry is outside the buffer; line height, glyph count, or icon count
     /// does not match the disc-verified expectation; a metrics pointer is out of range.
@@ -61,8 +62,10 @@ public static class FontStyleDecoder
         int tableEnd = TextStyleTableOffset
             + (FirstActiveStyleIndex + ActiveStyleCount) * TextStyleDescriptorSize;
         if (executable.Length < tableEnd)
+        {
             throw new FormatException(
                 $"Executable ({executable.Length} bytes) is too short to contain the TextStyle table (needs {tableEnd} bytes).");
+        }
 
         var styles = new FontStyleMetrics[ActiveStyleCount];
         for (int i = 0; i < ActiveStyleCount; i++)
@@ -73,6 +76,11 @@ public static class FontStyleDecoder
         return styles;
     }
 
+    /// <summary>Decodes one 24-byte TextStyle descriptor and its profile-bounded metric tables.</summary>
+    /// <param name="exe">Full executable bytes used to resolve descriptor pointers.</param>
+    /// <param name="descOffset">File offset of the 24-byte descriptor.</param>
+    /// <param name="styleNumber">One-based active style number used for profile validation.</param>
+    /// <returns>Metrics read from the descriptor's glyph and icon virtual addresses.</returns>
     private static FontStyleMetrics DecodeStyle(ReadOnlySpan<byte> exe, int descOffset, int styleNumber)
     {
         sbyte lineHeight = (sbyte)exe[descOffset + 1];
@@ -83,14 +91,22 @@ public static class FontStyleDecoder
 
         int expectedLh = ExpectedLineHeights[styleNumber - 1];
         if (lineHeight != expectedLh)
+        {
             throw new FormatException(
                 $"Style {styleNumber} line height {lineHeight} does not match expected {expectedLh}.");
+        }
+
         if (glyphCount < ExpectedGlyphCount)
+        {
             throw new FormatException(
                 $"Style {styleNumber} glyph count {glyphCount} is less than the EU profile minimum {ExpectedGlyphCount}.");
+        }
+
         if (iconCount != ExpectedIconCount)
+        {
             throw new FormatException(
                 $"Style {styleNumber} icon count {iconCount} does not match expected {ExpectedIconCount}.");
+        }
 
         int glyphsOffset = VaToOffset(glyphsVa, styleNumber, "glyphs");
         int iconsOffset = VaToOffset(iconsVa, styleNumber, "icons");
@@ -107,6 +123,11 @@ public static class FontStyleDecoder
             Icons: ReadMetrics(exe, iconsOffset, ExpectedIconCount));
     }
 
+    /// <summary>Reads consecutive 11-byte Glyph records while discarding each record's unused final byte.</summary>
+    /// <param name="exe">Executable bytes containing the metric records.</param>
+    /// <param name="offset">File offset of the first 11-byte record.</param>
+    /// <param name="count">Number of profile-validated records to read.</param>
+    /// <returns>The decoded metrics in source-record order.</returns>
     private static GlyphMetric[] ReadMetrics(ReadOnlySpan<byte> exe, int offset, int count)
     {
         var metrics = new GlyphMetric[count];
@@ -123,28 +144,46 @@ public static class FontStyleDecoder
                 Height: exe[pos + 6],
                 Dx: (sbyte)exe[pos + 7],
                 Dy: (sbyte)exe[pos + 8],
-            // pos+10 (unused) discarded
+                // pos+10 (unused) discarded
                 Advance: exe[pos + 9]);
         }
         return metrics;
     }
 
+    /// <summary>Converts a PS-X EXE virtual address into a file offset after the 0x800-byte header.</summary>
+    /// <param name="va">Virtual address stored in the TextStyle descriptor.</param>
+    /// <param name="styleNumber">One-based style number for diagnostic context.</param>
+    /// <param name="table">Glyph or icon table label for diagnostic context.</param>
+    /// <returns>The representable file offset corresponding to <paramref name="va"/>.</returns>
     private static int VaToOffset(uint va, int styleNumber, string table)
     {
         if (va < ExecutableLoadAddress)
+        {
             throw new FormatException(
                 $"Style {styleNumber} {table} pointer 0x{va:X8} is below the executable load address 0x{ExecutableLoadAddress:X8}.");
+        }
+
         long fileOffset = ExecutableHeaderSize + (long)(va - ExecutableLoadAddress);
         if (fileOffset > int.MaxValue)
+        {
             throw new FormatException(
                 $"Style {styleNumber} {table} pointer 0x{va:X8} maps to a file offset that exceeds int range.");
+        }
+
         return (int)fileOffset;
     }
 
+    /// <summary>Validates that a fixed-size executable region is entirely inside the input buffer.</summary>
+    /// <param name="bufferLen">Total executable byte count.</param>
+    /// <param name="offset">First byte offset of the required region.</param>
+    /// <param name="size">Required byte count.</param>
+    /// <param name="label">Human-readable table label used in the format error.</param>
     private static void RequireInBounds(int bufferLen, int offset, int size, string label)
     {
         if (offset < 0 || (long)offset + size > bufferLen)
+        {
             throw new FormatException(
                 $"The {label} (offset=0x{offset:X}, size={size}) is outside the executable ({bufferLen} bytes).");
+        }
     }
 }
