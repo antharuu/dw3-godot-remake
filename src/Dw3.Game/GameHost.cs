@@ -35,10 +35,9 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
 
     private readonly GameState _state = new();
     private readonly SimClock _clock = new();
-    private readonly Locomotion _locomotion = new();
+
     private readonly ClimbController _climb = new();
     private readonly DropController _drop = new();
-    private readonly StoryFixture _fixture = new();
     private readonly InputAdapter _input = new();
     private readonly QuietLog _log = new();
     private readonly HostStartupOptions _options = HostStartupOptions.FromEnvironment();
@@ -255,7 +254,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
             var npc = fieldLoader.LoadNpcs();
             var battleLoader = new BattleDataPackLoader(new DataPackReader(dataRoot));
             _battleLoader = battleLoader;
-            _fixture.Apply(_state);
+            StoryFixture.Apply(_state);
             _state.IsRunning = true;
             _playerData = player;
             _climbData = climb;
@@ -505,14 +504,14 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
                     // Original pad movement defaults to ACTOR_RUN. Shift is only the explicit
                     // local walk modifier and focus loss clears it through InputAdapter.
                     _state.IsRunning = !_input.State.WalkHeld;
-                    var movement = _locomotion.Tick(_state, _input.State.Direction, _floor, _occupants);
+                    var movement = Locomotion.Tick(_state, _input.State.Direction, _floor, _occupants);
                     if (movement.Rejection is not null) onMovementRejection(movement);
                     else if (movement.Moved) CountEncounterStep();
                 }
             }
             // The warp state machine runs every step while not climbing, including its
             // input-locked LockInput→Commit→Rearm transitions (only locomotion is gated).
-            _warp.Tick(_state, _input.State, _currentZone, ResolveTarget, ApplyScene, _log.Info, _log.Warn, StartClimb, StartDrop);
+            _warp.Tick(_state, _input.State, _currentZone, new WarpCallbacks(ResolveTarget, ApplyScene, _log.Info, _log.Warn, StartClimb, StartDrop));
         }
         _ = _input.State.ConsumeF3Toggled();
         _state.AnimationTicks++;
@@ -1294,7 +1293,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
 
     #region Field interaction and dialogue
 
-    private sealed class SystemRandomEncounterRng : EncounterRng
+    private sealed class SystemRandomEncounterRng : IEncounterRng
     {
         private readonly System.Random _random;
 
@@ -1307,7 +1306,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         }
 
         /// <summary>Returns the next encounter random value in the controller's 0..4095 domain.</summary>
-        public int Next() => _random.Next(0, 4096);
+        public int Draw() => _random.Next(0, 4096);
     }
 
     /// <summary>The battle's RNG, mirroring SystemRandomEncounterRng (same DW3_RNG_SEED seed).</summary>
@@ -2286,14 +2285,14 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         _state.Position = FindTriggerCell(current, slot);
         _state.SetFacing(facing);
         _input.State.ReleaseAction();
-        _warp.Tick(_state, _input.State, _currentZone, ResolveTarget, ApplyScene, _log.Info, _log.Warn, StartClimb, StartDrop);
+        _warp.Tick(_state, _input.State, _currentZone, new WarpCallbacks(ResolveTarget, ApplyScene, _log.Info, _log.Warn, StartClimb, StartDrop));
         Require(_warp.State == WarpState.Offer, $"{label} did not offer");
         _input.State.PressAction();
         for (var tick = 0; tick < 12 && _warp.State != WarpState.Rearm; tick++)
-            _warp.Tick(_state, _input.State, CurrentZone, ResolveTarget, ApplyScene, _log.Info, _log.Warn, StartClimb, StartDrop);
+            _warp.Tick(_state, _input.State, CurrentZone, new WarpCallbacks(ResolveTarget, ApplyScene, _log.Info, _log.Warn, StartClimb, StartDrop));
         Require(_warp.State == WarpState.Rearm, $"{label} did not reach rearm");
         _input.State.ReleaseAction();
-        _warp.Tick(_state, _input.State, CurrentZone, ResolveTarget, ApplyScene, _log.Info, _log.Warn, StartClimb, StartDrop);
+        _warp.Tick(_state, _input.State, CurrentZone, new WarpCallbacks(ResolveTarget, ApplyScene, _log.Info, _log.Warn, StartClimb, StartDrop));
         Require(_warp.State == WarpState.Idle, $"{label} did not rearm after release");
     }
 

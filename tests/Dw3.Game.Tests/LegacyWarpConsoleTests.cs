@@ -239,7 +239,7 @@ public sealed class LegacyWarpConsoleTests
         var input = new InputState();
         var warp = new WarpController();
         var dispatched = new List<(Climb, int)>();
-        void TickClimb(FieldZone field) => warp.Tick(state, input, field, _ => throw new InvalidOperationException(), _ => { }, _ => { }, (key, msg) => { }, (climb, dir) => dispatched.Add((climb, dir)));
+        void TickClimb(FieldZone field) => warp.Tick(state, input, field, new WarpCallbacks(_ => throw new InvalidOperationException(), _ => { }, _ => { }, (key, msg) => { }, (climb, dir) => dispatched.Add((climb, dir))));
 
         TickClimb(new FieldZone(zone, floor, triggers, []));
         Check(warp.State == WarpState.Offer && state.Offer, "climb slot offers like an exit");
@@ -266,7 +266,7 @@ public sealed class LegacyWarpConsoleTests
     }
 
     private static void Tick(WarpController warp, GameState state, InputState input, FieldZone current, Func<string, FieldZone> load, Action<FieldZone> apply, List<string> logs) =>
-        warp.Tick(state, input, current, load, apply, logs.Add, (key, message) => logs.Add($"{key}:{message}"), (climb, dir) => throw new InvalidOperationException("unexpected climb dispatch in warp test"));
+        warp.Tick(state, input, current, new WarpCallbacks(load, apply, logs.Add, (key, message) => logs.Add($"{key}:{message}"), (climb, dir) => throw new InvalidOperationException("unexpected climb dispatch in warp test")));
 
     private static void Check(bool condition, string name)
     {

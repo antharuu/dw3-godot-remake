@@ -113,7 +113,10 @@ public sealed class ClimbController
     {
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(input);
-        if (!IsActive) throw new InvalidOperationException("Cannot tick an inactive climb controller.");
+        if (!IsActive)
+        {
+            throw new InvalidOperationException("Cannot tick an inactive climb controller.");
+        }
 
         ApplyMovementInput(input);
         AdvanceSubstate(state);
@@ -130,7 +133,10 @@ public sealed class ClimbController
 
     private void ApplyMovementInput(InputState input)
     {
-        if (_substate is not (ClimbSubstate.Climb or ClimbSubstate.ClimbUp or ClimbSubstate.ClimbDown)) return;
+        if (_substate is not (ClimbSubstate.Climb or ClimbSubstate.ClimbUp or ClimbSubstate.ClimbDown))
+        {
+            return;
+        }
 
         ClimbSubstate wanted = input.HeldUp
             ? ClimbSubstate.ClimbUp
@@ -145,17 +151,15 @@ public sealed class ClimbController
         switch (_substate)
         {
             case ClimbSubstate.GetOnWall:
-                if (IsAnimationDone()) TransitionTo(ClimbSubstate.Climb);
+                if (IsAnimationDone())
+                {
+                    TransitionTo(ClimbSubstate.Climb);
+                }
+
                 break;
 
             case ClimbSubstate.GetOverEdge:
-                if (!_overEdgeOffsetApplied)
-                {
-                    state.Position += new Vector2(SideOffset(), EdgeClearancePixels + (_wallHeight / SourceUnitsPerPixel));
-                    state.CameraSmoothingTicks = CameraSmoothingHoldTicks;
-                    _overEdgeOffsetApplied = true;
-                }
-                if (IsAnimationDone()) TransitionTo(ClimbSubstate.Climb);
+                AdvanceGetOverEdge(state);
                 break;
 
             case ClimbSubstate.ClimbUp:
@@ -165,6 +169,7 @@ public sealed class ClimbController
                     _climbHeight = _wallHeight;
                     TransitionTo(ClimbSubstate.ClimbOffTop);
                 }
+
                 break;
 
             case ClimbSubstate.ClimbDown:
@@ -174,15 +179,39 @@ public sealed class ClimbController
                     _climbHeight = 0;
                     TransitionTo(ClimbSubstate.ClimbOffBottom);
                 }
+
                 break;
 
             case ClimbSubstate.ClimbOffTop:
-                if (IsAnimationDone()) FinishAtTop(state);
+                if (IsAnimationDone())
+                {
+                    FinishAtTop(state);
+                }
+
                 break;
 
             case ClimbSubstate.ClimbOffBottom:
-                if (IsAnimationDone()) FinishAtBottom(state);
+                if (IsAnimationDone())
+                {
+                    FinishAtBottom(state);
+                }
+
                 break;
+        }
+    }
+
+    private void AdvanceGetOverEdge(GameState state)
+    {
+        if (!_overEdgeOffsetApplied)
+        {
+            state.Position += new Vector2(SideOffset(), EdgeClearancePixels + (_wallHeight / SourceUnitsPerPixel));
+            state.CameraSmoothingTicks = CameraSmoothingHoldTicks;
+            _overEdgeOffsetApplied = true;
+        }
+
+        if (IsAnimationDone())
+        {
+            TransitionTo(ClimbSubstate.Climb);
         }
     }
 
@@ -208,7 +237,11 @@ public sealed class ClimbController
 
     private void TransitionTo(ClimbSubstate next)
     {
-        if (_substate == next) return;
+        if (_substate == next)
+        {
+            return;
+        }
+
         _substate = next;
         _animationSet = AnimationSetFor(next);
         _animationTicks = 0;
@@ -216,8 +249,15 @@ public sealed class ClimbController
 
     private bool IsAnimationDone()
     {
-        if (_data is null || !_data.Sequences.TryGetValue(_animationSet, out ClimbSequence? sequence)) return false;
-        if (sequence.Loops || sequence.Records.Count == 0) return false;
+        if (_data is null || !_data.Sequences.TryGetValue(_animationSet, out ClimbSequence? sequence))
+        {
+            return false;
+        }
+
+        if (sequence.Loops || sequence.Records.Count == 0)
+        {
+            return false;
+        }
 
         int totalDuration = sequence.Records.Sum(record => record.Duration);
         return totalDuration <= _animationTicks;
@@ -249,6 +289,9 @@ public sealed class ClimbController
 
     private void EnsureData()
     {
-        if (_data is null) throw new InvalidOperationException("Climb animation data must be supplied before starting a climb.");
+        if (_data is null)
+        {
+            throw new InvalidOperationException("Climb animation data must be supplied before starting a climb.");
+        }
     }
 }

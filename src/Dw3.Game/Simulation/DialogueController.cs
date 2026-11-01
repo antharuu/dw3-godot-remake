@@ -94,11 +94,23 @@ public sealed class DialogueController
         {
             if (entry[index].IsControl && entry[index].Command == 7)
             {
-                if (first < 0) first = index;
-                else { second = index; break; }
+                if (first < 0)
+                {
+                    first = index;
+                }
+                else
+                {
+                    second = index;
+                    break;
+                }
             }
         }
-        if (first < 0 || second < 0) return ([], false, entry);
+
+        if (first < 0 || second < 0)
+        {
+            return ([], false, entry);
+        }
+
         var name = entry.Skip(first + 1).Take(second - first - 1).ToList();
         var isPlayer = name.Count == 1 && name[0].IsControl && name[0].Command == 9;
         return (name, isPlayer, entry.Skip(second + 1).ToList());
@@ -118,13 +130,24 @@ public sealed class DialogueController
 
             case DialogueState.Open:
                 RevealTick();
-                if (!pressed) break;
+                if (!pressed)
+                {
+                    break;
+                }
+
                 if (!RevealComplete)
+                {
                     _revealCount = _pages[_pageIndex].Count; // source showPage: reveal the whole page
+                }
                 else if (_pageIndex + 1 < _pages.Count)
+                {
                     _state = DialogueState.Advance;
+                }
                 else
+                {
                     _state = DialogueState.Closing;
+                }
+
                 break;
 
             case DialogueState.Advance:
@@ -142,16 +165,21 @@ public sealed class DialogueController
                     warn($"dialogue-effect-not-applied:{_zoneId}:{_actor!.Id}",
                         $"dialogue-effect-not-applied zone={_zoneId} actor={_actor.Id} families=[{string.Join(",", _talk.Families)}]");
                 }
+
                 info($"dialogue close zone={_zoneId} actor={_actor!.Id} entry={_talk!.Entry}");
                 _state = DialogueState.Rearm;
                 break;
 
             case DialogueState.Rearm:
-                if (!input.ActionHeld) _state = DialogueState.Idle;
+                if (!input.ActionHeld)
+                {
+                    _state = DialogueState.Idle;
+                }
+
                 break;
 
             default:
-                throw new ArgumentOutOfRangeException();
+                throw new InvalidOperationException($"Unhandled {nameof(DialogueState)}: {_state}");
         }
     }
 
@@ -161,7 +189,11 @@ public sealed class DialogueController
     private void RevealTick()
     {
         var page = _pages[_pageIndex];
-        if (_revealCount >= page.Count) return;
+        if (_revealCount >= page.Count)
+        {
+            return;
+        }
+
         if (++_revealTimer > TypeDelay)
         {
             _revealTimer = 0;
@@ -198,8 +230,13 @@ public sealed class DialogueController
                 current.Add(token);
             }
         }
+
         pages.Add(current);
-        while (pages.Count > 1 && pages[^1].Count == 0) pages.RemoveAt(pages.Count - 1);
+        while (pages.Count > 1 && pages[^1].Count == 0)
+        {
+            pages.RemoveAt(pages.Count - 1);
+        }
+
         return pages;
     }
 }

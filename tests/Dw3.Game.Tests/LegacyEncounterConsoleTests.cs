@@ -154,14 +154,14 @@ public sealed class LegacyEncounterConsoleTests
         return areas;
     }
 
-    private sealed class ScriptedRng : EncounterRng
+    private sealed class ScriptedRng : IEncounterRng
     {
         private readonly int[] _values;
         private int _index;
 
         public ScriptedRng(params int[] values) => _values = values;
 
-        public int Next() => _values[Math.Min(_index++, _values.Length - 1)];
+        public int Draw() => _values[Math.Min(_index++, _values.Length - 1)];
     }
 
     private static void Check(bool condition, string name)

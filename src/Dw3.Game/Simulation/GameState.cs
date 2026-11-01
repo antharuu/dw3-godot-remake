@@ -34,7 +34,11 @@ public sealed class GameState
 
     public void SetFacing(int facing)
     {
-        if (facing is < 0 or > 7) throw new ArgumentOutOfRangeException(nameof(facing));
+        if (facing is < 0 or > 7)
+        {
+            throw new ArgumentOutOfRangeException(nameof(facing));
+        }
+
         Facing = facing;
     }
 

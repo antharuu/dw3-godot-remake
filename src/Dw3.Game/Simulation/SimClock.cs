@@ -10,7 +10,7 @@ public sealed class SimClock
 
     public int Tick(double deltaSeconds)
     {
-        if (deltaSeconds < 0) throw new ArgumentOutOfRangeException(nameof(deltaSeconds));
+        ArgumentOutOfRangeException.ThrowIfNegative(deltaSeconds);
         _debt += deltaSeconds;
         var requested = (int)Math.Floor((_debt + 1e-12) / StepSeconds);
         LastDroppedTicks = Math.Max(0, requested - MaxTicksPerFrame);

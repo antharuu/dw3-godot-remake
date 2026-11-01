@@ -71,7 +71,11 @@ public sealed class InputState
 
     public void PressAction()
     {
-        if (!ActionHeld) ActionPressed = true;
+        if (!ActionHeld)
+        {
+            ActionPressed = true;
+        }
+
         ActionHeld = true;
     }
 
@@ -79,7 +83,11 @@ public sealed class InputState
 
     public void PressCancel()
     {
-        if (!CancelHeld) CancelPressed = true;
+        if (!CancelHeld)
+        {
+            CancelPressed = true;
+        }
+
         CancelHeld = true;
     }
 

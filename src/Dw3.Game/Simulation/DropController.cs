@@ -2,14 +2,6 @@ using Dw3Production.Conversion;
 
 namespace Dw3Production.Simulation;
 
-public enum DropSubstate
-{
-    None,
-    DropOff,
-    Fall,
-    Land,
-}
-
 /// <summary>
 /// Source-shaped SLOT_DROP action. It shares the climb presentation fields because the
 /// source uses climbHeight as the sprite's vertical offset while the ground position moves
@@ -40,9 +32,17 @@ public sealed class DropController
 
     public void StartDrop(GameState state, int dir, int height)
     {
-        if (_data is null) throw new InvalidOperationException("drop data unavailable before drop start");
-        if (height <= 0) throw new ArgumentOutOfRangeException(nameof(height));
-        if (dir is < 0 or > 7) throw new ArgumentOutOfRangeException(nameof(dir));
+        if (_data is null)
+        {
+            throw new InvalidOperationException("drop data unavailable before drop start");
+        }
+
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
+        if (dir is < 0 or > 7)
+        {
+            throw new ArgumentOutOfRangeException(nameof(dir));
+        }
+
         _direction = dir;
         _climbSide = dir != 7 ? 0 : 1;
         _wallHeight = height << 8;
@@ -61,27 +61,45 @@ public sealed class DropController
     public void Tick(GameState state, InputState input)
     {
         _ = input;
-        if (!IsActive) throw new InvalidOperationException("drop tick without an active drop");
+        if (!IsActive)
+        {
+            throw new InvalidOperationException("drop tick without an active drop");
+        }
+
         switch (_substate)
         {
             case DropSubstate.DropOff:
-                if (IsAnimDone) Transition(DropSubstate.Fall);
+                if (IsAnimDone)
+                {
+                    Transition(DropSubstate.Fall);
+                }
+
                 break;
             case DropSubstate.Fall:
                 _climbHeight -= FallStep;
-                if (_wallHeight - _climbHeight > FarFallThreshold) _animSet = AnimFallFar;
+                if (_wallHeight - _climbHeight > FarFallThreshold)
+                {
+                    _animSet = AnimFallFar;
+                }
+
                 if (_climbHeight <= 0)
                 {
                     _climbHeight = 0;
                     Transition(DropSubstate.Land);
                 }
+
                 break;
             case DropSubstate.Land:
-                if (IsAnimDone) EndDrop(state);
+                if (IsAnimDone)
+                {
+                    EndDrop(state);
+                }
+
                 break;
             default:
-                throw new ArgumentOutOfRangeException();
+                throw new InvalidOperationException($"Unhandled {nameof(DropSubstate)}: {_substate}");
         }
+
         _animTicks++;
         WriteTo(state);
     }
@@ -110,7 +128,11 @@ public sealed class DropController
     {
         get
         {
-            if (_data is null || !_data.Sequences.TryGetValue(_animSet, out var sequence) || sequence.Loops) return false;
+            if (_data is null || !_data.Sequences.TryGetValue(_animSet, out var sequence) || sequence.Loops)
+            {
+                return false;
+            }
+
             var total = sequence.Records.Sum(record => record.Duration);
             return _animTicks >= total;
         }

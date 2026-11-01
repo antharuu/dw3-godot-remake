@@ -26,18 +26,18 @@
     <QualitySarifFile>$(QualityArtifactsDir)sarif/$(MSBuildProjectName).sarif</QualitySarifFile>
     <ErrorLog>$(QualitySarifFile),version=2.1</ErrorLog>
     <!-- .NET analyzers (Recommended mode). -->
-    <QualityRatchetedRules>CA1001;CA1050;CA1051;CA1305;CA1512;CA1707;CA1715;CA1716;CA1725;CA1822;CA1826;CA1859;CA1861;CA1869;CA1875;CA2208</QualityRatchetedRules>
+    <QualityRatchetedRules>CA1001;CA1050;CA1051;CA1305;CA1512;CA1707;CA1716;CA1725;CA1822;CA1826;CA1859;CA1861;CA1869;CA1875</QualityRatchetedRules>
     <!-- Compiler documentation diagnostics. -->
     <QualityRatchetedRules>$(QualityRatchetedRules);CS1573;CS1591;CS1734</QualityRatchetedRules>
     <!-- Sonar rules. -->
-    <QualityRatchetedRules>$(QualityRatchetedRules);S101;S107;S108;S127;S134;S138;S927;S1066;S1075;S1104;S1121;S1144;S1215;S1244;S1450;S1481;S1854;S1905;S1994</QualityRatchetedRules>
-    <QualityRatchetedRules>$(QualityRatchetedRules);S2077;S2245;S2325;S2681;S2737;S3011;S3168;S3218;S3267;S3358;S3376;S3398;S3626;S3776;S3871;S3903;S3928;S3973</QualityRatchetedRules>
+    <QualityRatchetedRules>$(QualityRatchetedRules);S107;S108;S127;S134;S138;S927;S1066;S1075;S1104;S1121;S1144;S1215;S1244;S1450;S1481;S1854;S1905;S1994</QualityRatchetedRules>
+    <QualityRatchetedRules>$(QualityRatchetedRules);S2077;S2245;S2325;S2681;S2737;S3011;S3168;S3218;S3267;S3358;S3376;S3398;S3626;S3776;S3871;S3903;S3973</QualityRatchetedRules>
     <QualityRatchetedRules>$(QualityRatchetedRules);S4036;S4136;S4487;S6444;S6580;S8969</QualityRatchetedRules>
     <!-- DW3001: custom class cognitive complexity analyser (new; baseline violations ratcheted at introduction). -->
     <QualityRatchetedRules>$(QualityRatchetedRules);DW3001</QualityRatchetedRules>
     <!-- StyleCop spacing, readability and ordering rules. -->
     <QualityRatchetedRules>$(QualityRatchetedRules);SA1107;SA1116;SA1117;SA1118;SA1119;SA1124;SA1127;SA1128;SA1131;SA1132;SA1136;SA1139</QualityRatchetedRules>
-    <QualityRatchetedRules>$(QualityRatchetedRules);SA1200;SA1201;SA1202;SA1203;SA1204;SA1208;SA1210;SA1211;SA1214;SA1302;SA1313;SA1316</QualityRatchetedRules>
+    <QualityRatchetedRules>$(QualityRatchetedRules);SA1200;SA1201;SA1202;SA1203;SA1204;SA1208;SA1210;SA1211;SA1214;SA1313;SA1316</QualityRatchetedRules>
     <!-- StyleCop maintainability and layout rules. -->
     <QualityRatchetedRules>$(QualityRatchetedRules);SA1401;SA1402;SA1407;SA1408;SA1413;SA1414;SA1500;SA1501;SA1502;SA1503;SA1505;SA1507;SA1508;SA1512;SA1513;SA1514;SA1515;SA1516;SA1517;SA1519;SA1520</QualityRatchetedRules>
     <!-- StyleCop documentation rules. -->

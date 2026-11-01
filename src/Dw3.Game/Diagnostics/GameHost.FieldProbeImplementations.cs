@@ -80,14 +80,14 @@ public partial class GameHost
             _input.State.SetDirections(left: false, right: true, up: false, down: false);
             for (var tick = 0; tick < 24; tick++)
             {
-                var result = _locomotion.Tick(_state, _input.State.Direction, probeMap, []);
+                var result = Locomotion.Tick(_state, _input.State.Direction, probeMap, []);
                 Require(result.Moved, $"locomotion probe rejected tick={tick} reason={result.Rejection}");
                 var sample = PlayerAnimation.Sample(_playerData, _state);
                 _log.Info($"locomotion probe tick={tick} position=({_state.Position.X:0.###},{_state.Position.Y:0.###}) frame={sample.Frame:X2} offset=({sample.OffsetX},{sample.OffsetY}) foot=({sample.FootGroundX},{sample.FootGroundY})");
                 _state.AnimationTicks++;
             }
             _input.State.SetDirections(left: false, right: false, up: false, down: false);
-            var stopped = _locomotion.Tick(_state, _input.State.Direction, probeMap, []);
+            var stopped = Locomotion.Tick(_state, _input.State.Direction, probeMap, []);
             Require(!stopped.Moved && _state.AnimationSet == 1, "locomotion probe release did not stand");
             _renderer?.Present(_state, CurrentZone, _input.F3On);
             await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
@@ -924,7 +924,7 @@ public partial class GameHost
         _state.SetFacing(FindTriggerDirection(zone, slot));
         _input.State.ReleaseAction();
         var warnings = new List<string>();
-        _warp.Tick(_state, _input.State, zone, ResolveTarget, ApplyScene, _log.Info, (key, message) => warnings.Add($"{key}:{message}"), StartClimb, StartDrop);
+        _warp.Tick(_state, _input.State, zone, new WarpCallbacks(ResolveTarget, ApplyScene, _log.Info, (key, message) => warnings.Add($"{key}:{message}"), StartClimb, StartDrop));
         Require(_warp.State == WarpState.Offer && _state.Offer, $"gated {zoneId} slot{slot} must offer");
         Require(warnings.Any(warning => warning.StartsWith("exit-condition-not-enforced:", StringComparison.Ordinal)),
             $"{zoneId} slot{slot} did not log exit-condition-not-enforced (got: {string.Join("; ", warnings)})");
@@ -978,7 +978,7 @@ public partial class GameHost
         _state.Position = FindTriggerCell(current, slot);
         _state.SetFacing(FindTriggerDirection(current, slot));
         _input.State.ReleaseAction();
-        _warp.Tick(_state, _input.State, current, ResolveTarget, ApplyScene, _log.Info, _log.Warn, StartClimb, StartDrop);
+        _warp.Tick(_state, _input.State, current, new WarpCallbacks(ResolveTarget, ApplyScene, _log.Info, _log.Warn, StartClimb, StartDrop));
         Require(_warp.State == WarpState.Offer && _state.Offer, $"{label} did not offer");
         Require(_log.Warned($"exit-condition-not-enforced:{sourceZone}:{slot}"), $"{label} did not log exit-condition-not-enforced");
 
@@ -992,10 +992,10 @@ public partial class GameHost
 
         _input.State.PressAction();
         for (var tick = 0; tick < 12 && _warp.State != WarpState.Rearm; tick++)
-            _warp.Tick(_state, _input.State, CurrentZone, ResolveTarget, ApplyScene, _log.Info, _log.Warn, StartClimb, StartDrop);
+            _warp.Tick(_state, _input.State, CurrentZone, new WarpCallbacks(ResolveTarget, ApplyScene, _log.Info, _log.Warn, StartClimb, StartDrop));
         Require(_warp.State == WarpState.Rearm, $"{label} did not reach rearm");
         _input.State.ReleaseAction();
-        _warp.Tick(_state, _input.State, CurrentZone, ResolveTarget, ApplyScene, _log.Info, _log.Warn, StartClimb, StartDrop);
+        _warp.Tick(_state, _input.State, CurrentZone, new WarpCallbacks(ResolveTarget, ApplyScene, _log.Info, _log.Warn, StartClimb, StartDrop));
         Require(_warp.State == WarpState.Idle, $"{label} did not rearm after release");
     }
 
@@ -1336,7 +1336,7 @@ public partial class GameHost
                 right: probeDir is SemanticDirection.Right or SemanticDirection.UpRight or SemanticDirection.DownRight,
                 up: probeDir is SemanticDirection.Up or SemanticDirection.UpLeft or SemanticDirection.UpRight,
                 down: probeDir is SemanticDirection.Down or SemanticDirection.DownLeft or SemanticDirection.DownRight);
-            var move = _locomotion.Tick(_state, _input.State.Direction, _floor!, _occupants);
+            var move = Locomotion.Tick(_state, _input.State.Direction, _floor!, _occupants);
             if (move.Moved) movedDirections++;
             _log.Info($"climb-after-move slot={slot} dir={probeDir} moved={move.Moved} rejection={move.Rejection ?? "none"} step=({move.Step.X},{move.Step.Y}) pos=({_state.Position.X},{_state.Position.Y})");
             _state.Position = savePos;

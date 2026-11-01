@@ -2,83 +2,6 @@ using System.Numerics;
 
 namespace Dw3Production.Simulation;
 
-public sealed class FloorMap
-{
-    private readonly byte[] _cells;
-
-    public FloorMap(int width, int height, byte[] cells)
-    {
-        if (width <= 0 || height <= 0) throw new ArgumentOutOfRangeException(nameof(width));
-        if (cells.Length != checked(width * height)) throw new ArgumentException("floor cell count does not match dimensions", nameof(cells));
-        Width = width;
-        Height = height;
-        _cells = [.. cells];
-    }
-
-    public int Width { get; }
-    public int Height { get; }
-
-    public bool Contains(Vector2 position) => position.X >= 0 && position.Y >= 0 && position.X < Width && position.Y < Height;
-
-    public byte CellAt(Vector2 position)
-    {
-        if (!Contains(position)) throw new ArgumentOutOfRangeException(nameof(position));
-        // The source map lookup truncates its fixed-point tile position with >> 8.
-        var x = Math.Clamp((int)position.X, 0, Width - 1);
-        var y = Math.Clamp((int)position.Y, 0, Height - 1);
-        return _cells[y * Width + x];
-    }
-}
-
-public sealed record Occupant(string Name, Vector2 Position, int Width)
-{
-    public bool Blocks(Vector2 position)
-    {
-        var halfWidth = Width / 2f;
-        var left = Position.X - halfWidth;
-        var right = Position.X + halfWidth;
-        var top = Position.Y - halfWidth / 2f;
-        var bottom = Position.Y + halfWidth / 2f;
-        if (position.X < left || position.X > right || position.Y < top || position.Y > bottom) return false;
-
-        var dx = position.X - left;
-        var dy = position.Y - top;
-        var width = right - left;
-        var height = bottom - top;
-        var halfW = width / 2f;
-        var halfH = height / 2f;
-        if (halfW < dx) dx = halfW - (dx - halfW);
-        if (halfH < dy) dy = halfH - (dy - halfH);
-        return dx >= halfW - dy * (width / height);
-    }
-
-    /// <summary>Distance from a point to the diamond's boundary (0 when inside), used by
-    /// the rounded player circle to test circle-vs-diamond overlap without re-probing the
-    /// source diamond with discrete points.</summary>
-    public float DistanceTo(Vector2 point)
-    {
-        if (Blocks(point)) return 0f;
-        var a = Width / 2f;   // half-width
-        var b = a / 2f;       // half-height
-        var cx = Position.X;
-        var cy = Position.Y;
-        var best = DistanceToSegment(point, new Vector2(cx + a, cy), new Vector2(cx, cy + b));
-        best = MathF.Min(best, DistanceToSegment(point, new Vector2(cx, cy + b), new Vector2(cx - a, cy)));
-        best = MathF.Min(best, DistanceToSegment(point, new Vector2(cx - a, cy), new Vector2(cx, cy - b)));
-        best = MathF.Min(best, DistanceToSegment(point, new Vector2(cx, cy - b), new Vector2(cx + a, cy)));
-        return best;
-    }
-
-    private static float DistanceToSegment(Vector2 point, Vector2 segmentA, Vector2 segmentB)
-    {
-        var ab = segmentB - segmentA;
-        var lengthSq = ab.LengthSquared();
-        if (lengthSq <= 1e-12f) return Vector2.Distance(point, segmentA);
-        var t = Math.Clamp(Vector2.Dot(point - segmentA, ab) / lengthSq, 0f, 1f);
-        return Vector2.Distance(point, segmentA + ab * t);
-    }
-}
-
 /// <summary>
 /// The player's movement on the field: maps a SemanticDirection input to a displacement
 /// in world coordinates using the disc's per-slope direction-vector table (FIELD_MAP_AREAS
@@ -87,12 +10,18 @@ public sealed record Occupant(string Name, Vector2 Position, int Width)
 /// octagon (intentional adaptation: natural wall-slide with no corner stalls).
 /// Engine-free; tested against fabricated floor maps.
 /// </summary>
-public sealed class Locomotion
+public static class Locomotion
 {
     // The EU version moves the player at 0x4CC/256 = 4.796875 world units per PAL task
     // update at 50 Hz. The core simulates at 60 Hz, hence the 50/60 conversion.
+
+    /// <summary>Run speed in world units per 60 Hz simulation tick (EU source rate × 50/60).</summary>
     public const float SourceRunWorldUnitsPerSimulationTick = (0x4CC / 256f) * (50f / 60f);
+
+    /// <summary>Walk speed: one quarter of the run speed, matching the source walk divisor.</summary>
     public const float SourceWalkWorldUnitsPerSimulationTick = SourceRunWorldUnitsPerSimulationTick / 4f;
+
+    /// <summary>Run speed in world units per second (60 Hz tick rate × 60).</summary>
     public const float SourceRunWorldUnitsPerSecond = SourceRunWorldUnitsPerSimulationTick * 60f;
 
     // M2 comfort adaptation (documented, not source fidelity): the source footprint is a
@@ -103,16 +32,26 @@ public sealed class Locomotion
     // A circle has no corner, so a wall contact always yields a natural tangent. It is
     // inscribed in the former square half-extent, so it never reaches beyond the source
     // +-8 cardinal reach and no obstacle is weakened.
+
+    /// <summary>Player collision radius in world units (M2 adaptation: circle equal in cardinal reach to the source +-8 diamond).</summary>
     public const float PlayerCollisionRadius = 8f;
 
     // The removed source diamond's octagon outline (world offsets from the actor centre),
     // retained only for the F3 comparison rendering. The active shape is the circle above.
+
+    /// <summary>
+    /// Source diamond outline as eight world-offset vertices from the actor centre, retained
+    /// for the F3 diagnostic overlay. The active collision shape is the circle above.
+    /// </summary>
     public static readonly Vector2[] SourceDiamondOutline =
     [
         new(-6, -8), new(6, -8), new(8, -6), new(8, 6), new(6, 8), new(-6, 8), new(-8, 6), new(-8, -6),
     ];
 
     private static readonly int[] MirrorDirections = [0, 7, 6, 5, 4, 3, 2, 1];
+
+    // Per-slope, per-direction displacement vectors (8.8 fixed-point, 4096 = 1.0 world unit).
+    // Row 0 = flat floor; rows 1..6 = FIELD_MAP_SLOPES entries; columns = source direction 0..7.
     private static readonly Vector2[,] DirectionVectors =
     {
         { new(0, 2048), new(-2896, 1448), new(-4096, 0), new(-2896, -1448), new(0, -2048), new(2896, -1448), new(4096, 0), new(2896, 1448) },
@@ -129,7 +68,12 @@ public sealed class Locomotion
     /// and animation on every input, updates position only for an accepted full or permitted slide
     /// step, and returns the exact accepted displacement or rejection without mutating map data.
     /// </summary>
-    public MovementResult Tick(GameState state, SemanticDirection input, FloorMap map, IReadOnlyList<Occupant> occupants)
+    /// <param name="state">Mutable game state; facing and animation are always written, position only on acceptance.</param>
+    /// <param name="input">Semantic movement direction from the input system.</param>
+    /// <param name="map">The floor map of the current zone.</param>
+    /// <param name="occupants">Actors whose diamond footprints block the player.</param>
+    /// <returns>A <see cref="MovementResult"/> describing the outcome of the step.</returns>
+    public static MovementResult Tick(GameState state, SemanticDirection input, FloorMap map, IReadOnlyList<Occupant> occupants)
     {
         if (input == SemanticDirection.None)
         {
@@ -150,7 +94,10 @@ public sealed class Locomotion
         // only rejection is an unclassified low nibble (slope row > 6).
         var row = cell & 0x0F;
         row -= row != 0 ? 1 : 0;
-        if (row < 0 || row > 6) return MovementResult.Rejected($"unclassified-floor:{cell}");
+        if (row < 0 || row > 6)
+        {
+            return MovementResult.Rejected($"unclassified-floor:{cell}");
+        }
 
         var mirror = (cell & 0x10) != 0;
         var effective = mirror ? MirrorDirections[sourceDirection] : sourceDirection;
@@ -159,54 +106,15 @@ public sealed class Locomotion
         // one quarter for WALK. Convert its 50 Hz PAL task cadence to M1's fixed 60 Hz.
         var scale = state.IsRunning ? SourceRunWorldUnitsPerSimulationTick : SourceWalkWorldUnitsPerSimulationTick;
         var step = new Vector2(vector.X * scale * (mirror ? -1 : 1) / 4096f, vector.Y * scale / 4096f);
+        var meta = new FloorMeta(cell, row, mirror, sourceDirection);
         if (!FootprintFreeAcrossStep(state.Position, step, map, occupants, out var rejection, out var contact))
         {
-            // M2 comfort adaptation (documented, not source fidelity): before the M1
-            // cardinal projection, project the rejected step onto the local smoothed
-            // wall tangent so a diagonal or irregular (staircase) void contour glides
-            // instead of catching on its convex corners. The tangent is derived from
-            // the source void cells at the first swept contact point only; the swept
-            // source probes and occupancy remain authoritative, so no obstacle is
-            // weakened or crossed and the slide never exceeds the input step magnitude
-            // (no hidden acceleration). Concave corners keep their wall-normal slide,
-            // which the opposite wall then blocks, so a corner stays blocked exactly
-            // like a frontal contact.
-            if (rejection == "void-footprint")
-            {
-                var slideNormal = ComputeSurfaceNormal(map, contact);
-                var intoWall = slideNormal == Vector2.Zero ? 0f : Vector2.Dot(step, slideNormal);
-                if (intoWall < 0f)
-                {
-                    var tangentStep = step - slideNormal * intoWall;
-                    if (tangentStep != Vector2.Zero &&
-                        FootprintFreeAcrossStep(state.Position, tangentStep, map, occupants, out _, out _))
-                    {
-                        state.Position += tangentStep;
-                        state.AnimationSet = state.IsRunning ? 5 : 4;
-                        return MovementResult.Accepted(tangentStep, cell, row, mirror, sourceDirection);
-                    }
-                }
-            }
-
-            // M1's intentional comfort adaptation only projects a rejected diagonal
-            // step onto one signed cardinal component, never adds distance or
-            // depenetrates. This preserves obstacles, source scale and swept probes.
-            var candidates = new[] { new Vector2(step.X, 0), new Vector2(0, step.Y) }
-                .Where(candidate => candidate != Vector2.Zero)
-                .OrderByDescending(candidate => candidate.LengthSquared());
-            foreach (var candidate in candidates)
-            {
-                if (!FootprintFreeAcrossStep(state.Position, candidate, map, occupants, out _, out _)) continue;
-                state.Position += candidate;
-                state.AnimationSet = state.IsRunning ? 5 : 4;
-                return MovementResult.Accepted(candidate, cell, row, mirror, sourceDirection);
-            }
-            return MovementResult.Rejected(rejection);
+            return TrySlide(state, step, map, occupants, rejection, contact, meta);
         }
 
         state.Position += step;
         state.AnimationSet = state.IsRunning ? 5 : 4;
-        return MovementResult.Accepted(step, cell, row, mirror, sourceDirection);
+        return MovementResult.Accepted(step, meta.Cell, meta.Row, meta.Mirror, meta.SourceDirection);
     }
 
     // Radius (in source cells) over which the void contour is smoothed to derive the
@@ -214,6 +122,90 @@ public sealed class Locomotion
     // (+-8 cells), so a staircase boundary is sampled at the actor's own scale rather
     // than per protruding cell.
     private const int SurfaceSmoothRadius = 6;
+
+    // Groups the floor metadata that travels through the slide helpers and lands in
+    // MovementResult: raw cell byte, classified slope row (0..6), mirror flag and
+    // the rebased source direction used to look up the direction vector.
+    private readonly record struct FloorMeta(int Cell, int Row, bool Mirror, int SourceDirection);
+
+    private static MovementResult TrySlide(
+        GameState state,
+        Vector2 step,
+        FloorMap map,
+        IReadOnlyList<Occupant> occupants,
+        string rejection,
+        Vector2 contact,
+        FloorMeta meta)
+    {
+        if (rejection == "void-footprint")
+        {
+            var tangent = TryTangentSlide(state, step, map, occupants, contact, meta);
+            if (tangent is not null)
+            {
+                return tangent.Value;
+            }
+        }
+
+        // M1's intentional comfort adaptation: project the rejected step onto one signed
+        // cardinal component. This preserves obstacles, source scale and swept probes.
+        var candidates = new[] { new Vector2(step.X, 0), new Vector2(0, step.Y) }
+            .Where(c => c != Vector2.Zero)
+            .OrderByDescending(c => c.LengthSquared());
+        foreach (var candidate in candidates)
+        {
+            if (!FootprintFreeAcrossStep(state.Position, candidate, map, occupants, out _, out _))
+            {
+                continue;
+            }
+
+            state.Position += candidate;
+            state.AnimationSet = state.IsRunning ? 5 : 4;
+            return MovementResult.Accepted(candidate, meta.Cell, meta.Row, meta.Mirror, meta.SourceDirection);
+        }
+
+        return MovementResult.Rejected(rejection);
+    }
+
+    // M2 comfort adaptation (documented, not source fidelity): before the M1
+    // cardinal projection, project the rejected step onto the local smoothed
+    // wall tangent so a diagonal or irregular (staircase) void contour glides
+    // instead of catching on its convex corners. The tangent is derived from
+    // the source void cells at the first swept contact point only; the swept
+    // source probes and occupancy remain authoritative, so no obstacle is
+    // weakened or crossed and the slide never exceeds the input step magnitude
+    // (no hidden acceleration). Concave corners keep their wall-normal slide,
+    // which the opposite wall then blocks, so a corner stays blocked exactly
+    // like a frontal contact.
+    private static MovementResult? TryTangentSlide(
+        GameState state,
+        Vector2 step,
+        FloorMap map,
+        IReadOnlyList<Occupant> occupants,
+        Vector2 contact,
+        FloorMeta meta)
+    {
+        var slideNormal = ComputeSurfaceNormal(map, contact);
+        var intoWall = slideNormal == Vector2.Zero ? 0f : Vector2.Dot(step, slideNormal);
+        if (intoWall >= 0f)
+        {
+            return null;
+        }
+
+        var tangentStep = step - slideNormal * intoWall;
+        if (tangentStep == Vector2.Zero)
+        {
+            return null;
+        }
+
+        if (!FootprintFreeAcrossStep(state.Position, tangentStep, map, occupants, out _, out _))
+        {
+            return null;
+        }
+
+        state.Position += tangentStep;
+        state.AnimationSet = state.IsRunning ? 5 : 4;
+        return MovementResult.Accepted(tangentStep, meta.Cell, meta.Row, meta.Mirror, meta.SourceDirection);
+    }
 
     // Computes the outward (away-from-void) unit normal of the smoothed void contour
     // around a position, or Zero when no void lies in reach. The normal is the negated
@@ -224,25 +216,32 @@ public sealed class Locomotion
     {
         var cx = (int)position.X;
         var cy = (int)position.Y;
-
-        float BlockedDensity(int bx, int by)
-        {
-            var blocked = 0;
-            var total = 0;
-            for (var dy = -SurfaceSmoothRadius; dy <= SurfaceSmoothRadius; dy++)
-                for (var dx = -SurfaceSmoothRadius; dx <= SurfaceSmoothRadius; dx++)
-                {
-                    total++;
-                    var probe = new Vector2(bx + dx, by + dy);
-                    if (!map.Contains(probe) || map.CellAt(probe) == 0) blocked++;
-                }
-            return blocked / (float)total;
-        }
-
-        var gx = BlockedDensity(cx + SurfaceSmoothRadius, cy) - BlockedDensity(cx - SurfaceSmoothRadius, cy);
-        var gy = BlockedDensity(cx, cy + SurfaceSmoothRadius) - BlockedDensity(cx, cy - SurfaceSmoothRadius);
+        var gx = ComputeBlockedDensity(map, cx + SurfaceSmoothRadius, cy) - ComputeBlockedDensity(map, cx - SurfaceSmoothRadius, cy);
+        var gy = ComputeBlockedDensity(map, cx, cy + SurfaceSmoothRadius) - ComputeBlockedDensity(map, cx, cy - SurfaceSmoothRadius);
         var gradient = new Vector2(gx, gy);
         return gradient == Vector2.Zero ? Vector2.Zero : Vector2.Normalize(-gradient);
+    }
+
+    // Fraction of map cells blocked within a (2*SurfaceSmoothRadius+1)^2 box centred on (bx,by).
+    // Out-of-bounds probes count as blocked. Used to smooth the void contour into a wall normal.
+    private static float ComputeBlockedDensity(FloorMap map, int bx, int by)
+    {
+        var blocked = 0;
+        var total = 0;
+        for (var dy = -SurfaceSmoothRadius; dy <= SurfaceSmoothRadius; dy++)
+        {
+            for (var dx = -SurfaceSmoothRadius; dx <= SurfaceSmoothRadius; dx++)
+            {
+                total++;
+                var probe = new Vector2(bx + dx, by + dy);
+                if (!map.Contains(probe) || map.CellAt(probe) == 0)
+                {
+                    blocked++;
+                }
+            }
+        }
+
+        return blocked / (float)total;
     }
 
     private static bool FootprintFreeAcrossStep(Vector2 start, Vector2 step, FloorMap map, IReadOnlyList<Occupant> occupants, out string rejection, out Vector2 contact)
@@ -260,8 +259,13 @@ public sealed class Locomotion
                 contact = next;
                 return false;
             }
-            if (!FootprintFree(next, map, occupants, out rejection, out contact)) return false;
+
+            if (!FootprintFree(next, map, occupants, out rejection, out contact))
+            {
+                return false;
+            }
         }
+
         rejection = string.Empty;
         contact = Vector2.Zero;
         return true;
@@ -281,14 +285,24 @@ public sealed class Locomotion
         var radius = PlayerCollisionRadius;
 
         // The circle must stay entirely inside the floor bounds.
-        if (next.X - radius < 0f || next.Y - radius < 0f ||
-            next.X + radius > map.Width || next.Y + radius > map.Height)
+        if (next.X - radius < 0f || next.Y - radius < 0f
+            || next.X + radius > map.Width || next.Y + radius > map.Height)
         {
             rejection = "map-footprint";
             contact = next;
             return false;
         }
 
+        if (!VoidCellsFree(next, radius, map, out rejection, out contact))
+        {
+            return false;
+        }
+
+        return CheckOccupancy(next, radius, occupants, out rejection, out contact);
+    }
+
+    private static bool VoidCellsFree(Vector2 next, float radius, FloorMap map, out string rejection, out Vector2 contact)
+    {
         // Void cells: only cells whose unit square can overlap the circle are inspected.
         // A cell blocks when the closest point of its square lies within the radius.
         var minX = Math.Max(0, (int)MathF.Floor(next.X - radius));
@@ -297,9 +311,14 @@ public sealed class Locomotion
         var maxY = Math.Min(map.Height - 1, (int)MathF.Ceiling(next.Y + radius));
         var radiusSq = radius * radius;
         for (var cy = minY; cy <= maxY; cy++)
+        {
             for (var cx = minX; cx <= maxX; cx++)
             {
-                if (map.CellAt(new Vector2(cx, cy)) != 0) continue;
+                if (map.CellAt(new Vector2(cx, cy)) != 0)
+                {
+                    continue;
+                }
+
                 var closest = new Vector2(Math.Clamp(next.X, cx, cx + 1f), Math.Clamp(next.Y, cy, cy + 1f));
                 if (Vector2.DistanceSquared(next, closest) <= radiusSq)
                 {
@@ -308,14 +327,22 @@ public sealed class Locomotion
                     return false;
                 }
             }
+        }
 
+        rejection = string.Empty;
+        contact = Vector2.Zero;
+        return true;
+    }
+
+    private static bool CheckOccupancy(Vector2 position, float radius, IReadOnlyList<Occupant> occupants, out string rejection, out Vector2 contact)
+    {
         // Occupancy: the circle must not overlap an occupant's unchanged source diamond.
         foreach (var occupant in occupants)
         {
-            if (occupant.DistanceTo(next) <= radius)
+            if (occupant.DistanceTo(position) <= radius)
             {
                 rejection = $"actor:{occupant.Name}";
-                contact = next;
+                contact = position;
                 return false;
             }
         }
@@ -324,11 +351,4 @@ public sealed class Locomotion
         contact = Vector2.Zero;
         return true;
     }
-}
-
-public readonly record struct MovementResult(bool Moved, Vector2 Step, string? Rejection, int Cell, int Row, bool Mirror, int SourceDirection)
-{
-    public static MovementResult Stopped => new(false, Vector2.Zero, null, 0, 0, false, 0);
-    public static MovementResult Rejected(string reason) => new(false, Vector2.Zero, reason, 0, 0, false, 0);
-    public static MovementResult Accepted(Vector2 step, int cell, int row, bool mirror, int sourceDirection) => new(true, step, null, cell, row, mirror, sourceDirection);
 }

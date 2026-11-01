@@ -3,10 +3,6 @@ using Dw3Production.Conversion;
 
 namespace Dw3Production.Simulation;
 
-/// <summary>The icon view the renderer consumes: the current frame index and the smooth
-/// anchor position (world pixels) that the frame's own offset is applied to.</summary>
-public sealed record IconView(int Frame, Vector2 Position);
-
 /// <summary>
 /// Drives the connection indicator floating over the player's head. It advances the
 /// substate-0 animation at the source 50 Hz cadence, mapped from the fixed 60 Hz step
@@ -30,6 +26,12 @@ public sealed class PlayerIconController
     private int _simulationSteps;
     private int _lastSourceTick;
 
+    /// <summary>
+    /// Supplies the animation data for the connection indicator. Resets the controller
+    /// to the first frame of the first step.
+    /// </summary>
+    /// <param name="animation">The decoded icon animation; must not be null.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="animation"/> is null.</exception>
     public void SetAnimation(PlayerIconAnimation animation)
     {
         _animation = animation ?? throw new ArgumentNullException(nameof(animation));
@@ -44,6 +46,7 @@ public sealed class PlayerIconController
     public IconView View => new(_frame, _position);
 
     /// <summary>Places the icon exactly on the player (spawn / warp), no glide-in.</summary>
+    /// <param name="playerPosition">The player's current world position.</param>
     public void Reset(Vector2 playerPosition)
     {
         _step = 0;
@@ -57,6 +60,7 @@ public sealed class PlayerIconController
 
     /// <summary>One fixed 60 Hz simulation step: advances the animation at the source 50 Hz
     /// cadence, then glides the anchor toward the player.</summary>
+    /// <param name="playerPosition">The player's current world position for this tick.</param>
     public void Advance(Vector2 playerPosition)
     {
         _simulationSteps++;
@@ -66,6 +70,7 @@ public sealed class PlayerIconController
             AdvanceSourceTick();
             _lastSourceTick++;
         }
+
         if (!_positioned)
         {
             _position = playerPosition;
