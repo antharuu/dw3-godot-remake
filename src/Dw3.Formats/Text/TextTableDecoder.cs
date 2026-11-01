@@ -3,19 +3,6 @@ using System.Buffers.Binary;
 namespace Dw3.Formats.Text;
 
 /// <summary>
-/// Token emitted by <see cref="TextTableDecoder"/>.
-/// </summary>
-public enum TextTokenKind { Glyph, Icon, Control }
-
-/// <summary>One decoded token from a field text string.</summary>
-public sealed record TextToken(
-    TextTokenKind Kind,
-    /// <summary>Glyph code (Kind=Glyph), icon index (Kind=Icon), or command id (Kind=Control).</summary>
-    int Code,
-    /// <summary>Argument bytes for control tokens (empty for Glyph and Icon).</summary>
-    IReadOnlyList<int> Args);
-
-/// <summary>
 /// Decodes EU French field text tables (FSTALK{NN}.BIN).
 ///
 /// File layout (FSTALKNN.BIN binary structure):
