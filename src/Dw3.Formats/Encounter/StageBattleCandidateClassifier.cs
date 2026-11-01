@@ -48,6 +48,9 @@ internal static class StageBattleCandidateClassifier
     /// <summary>
     /// Determines whether an address identifies a nonzero record inside the base array.
     /// </summary>
+    /// <param name="address">Candidate RAM address to classify.</param>
+    /// <param name="baseAddress">RAM address of the confirmed array's first record.</param>
+    /// <returns><see langword="true"/> only for a later aligned record within the 30-entry cap.</returns>
     private static bool IsElementPointer(uint address, uint baseAddress)
     {
         long delta = (long)address - baseAddress;

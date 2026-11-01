@@ -17,17 +17,25 @@ public sealed class StageTextFileResolver(DiscFileTable files, int languageCopie
     private const string TalkExtension = ".BIN";
     private readonly string _folderPrefix = $"AAA/DAT/COUNTRY/{countryFolder}/";
 
+    /// <summary>Finds the sole country-specific talk file among the selector's consecutive language copies.</summary>
+    /// <param name="selector">Base engine file id before the runtime language offset is added.</param>
+    /// <returns>The matching file id, ISO path and two-digit talk index.</returns>
     /// <exception cref="FormatException">No copy, several copies, or a non-talk member matches.</exception>
     public StageTextFile Resolve(int selector)
     {
         if (selector < 0 || selector > files.Count - languageCopies)
+        {
             throw new FormatException($"Text selector 0x{selector:X} leaves no room for {languageCopies} language copies in the file-sector table.");
+        }
+
         var matches = new List<(int FileId, string Path)>();
         for (int copy = 0; copy < languageCopies; copy++)
         {
             string? path = files.PathOf(selector + copy);
             if (path is not null && path.StartsWith(_folderPrefix, StringComparison.Ordinal))
+            {
                 matches.Add((selector + copy, path));
+            }
         }
         if (matches.Count != 1)
         {
@@ -41,12 +49,16 @@ public sealed class StageTextFileResolver(DiscFileTable files, int languageCopie
     private static int ParseTalkIndex(string isoPath)
     {
         string name = isoPath[(isoPath.LastIndexOf('/') + 1)..];
+
         // Member names are one country letter, "STALK", two digits and ".BIN".
         bool shaped = name.Length == 1 + TalkStem.Length + 2 + TalkExtension.Length
             && name.AsSpan(1, TalkStem.Length).SequenceEqual(TalkStem)
             && name.EndsWith(TalkExtension, StringComparison.Ordinal);
         if (!shaped || !int.TryParse(name.AsSpan(1 + TalkStem.Length, 2), NumberStyles.None, CultureInfo.InvariantCulture, out int index))
+        {
             throw new FormatException($"Stage text member {isoPath} is not a ?STALKNN.BIN talk file.");
+        }
+
         return index;
     }
 }

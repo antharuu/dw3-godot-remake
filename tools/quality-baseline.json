@@ -172,12 +172,6 @@
       "count": 2
     },
     {
-      "rule": "CA1720",
-      "project": "Dw3.Formats",
-      "folder": "Encounter",
-      "count": 4
-    },
-    {
       "rule": "CA1725",
       "project": "Dw3.Game",
       "folder": ".",
@@ -259,7 +253,7 @@
       "rule": "CA1859",
       "project": "Dw3.Formats",
       "folder": "Encounter",
-      "count": 2
+      "count": 1
     },
     {
       "rule": "CA1859",
@@ -271,12 +265,6 @@
       "rule": "CA1859",
       "project": "Dw3.Formats",
       "folder": "Text",
-      "count": 1
-    },
-    {
-      "rule": "CA1859",
-      "project": "Dw3.Formats",
-      "folder": "Water",
       "count": 1
     },
     {
@@ -354,20 +342,8 @@
     {
       "rule": "CS1573",
       "project": "Dw3.Formats",
-      "folder": "Dialogue",
-      "count": 7
-    },
-    {
-      "rule": "CS1573",
-      "project": "Dw3.Formats",
       "folder": "Mips",
       "count": 3
-    },
-    {
-      "rule": "CS1587",
-      "project": "Dw3.Formats",
-      "folder": "Text",
-      "count": 9
     },
     {
       "rule": "CS1591",
@@ -384,12 +360,6 @@
     {
       "rule": "CS1591",
       "project": "Dw3.Formats",
-      "folder": "Dialogue",
-      "count": 2
-    },
-    {
-      "rule": "CS1591",
-      "project": "Dw3.Formats",
       "folder": "Field",
       "count": 13
     },
@@ -397,12 +367,6 @@
       "rule": "CS1591",
       "project": "Dw3.Formats",
       "folder": "Mips",
-      "count": 3
-    },
-    {
-      "rule": "CS1591",
-      "project": "Dw3.Formats",
-      "folder": "Text",
       "count": 3
     },
     {
@@ -470,12 +434,6 @@
       "project": "Dw3.Formats",
       "folder": "Battle",
       "count": 4
-    },
-    {
-      "rule": "DW3001",
-      "project": "Dw3.Formats",
-      "folder": "Encounter",
-      "count": 1
     },
     {
       "rule": "DW3001",
@@ -612,12 +570,6 @@
     {
       "rule": "S1144",
       "project": "Dw3.Formats",
-      "folder": "Encounter",
-      "count": 1
-    },
-    {
-      "rule": "S1144",
-      "project": "Dw3.Formats",
       "folder": "Field",
       "count": 2
     },
@@ -721,7 +673,7 @@
       "rule": "S134",
       "project": "Dw3.Formats",
       "folder": "Water",
-      "count": 2
+      "count": 1
     },
     {
       "rule": "S134",
@@ -776,12 +728,6 @@
       "project": "Dw3.Formats",
       "folder": "Battle",
       "count": 4
-    },
-    {
-      "rule": "S138",
-      "project": "Dw3.Formats",
-      "folder": "Encounter",
-      "count": 1
     },
     {
       "rule": "S138",
@@ -1110,26 +1056,14 @@
     {
       "rule": "S3776",
       "project": "Dw3.Formats",
-      "folder": "Encounter",
-      "count": 1
-    },
-    {
-      "rule": "S3776",
-      "project": "Dw3.Formats",
       "folder": "Field",
       "count": 12
     },
     {
       "rule": "S3776",
       "project": "Dw3.Formats",
-      "folder": "Text",
-      "count": 2
-    },
-    {
-      "rule": "S3776",
-      "project": "Dw3.Formats",
       "folder": "Water",
-      "count": 5
+      "count": 2
     },
     {
       "rule": "S3776",
@@ -1517,18 +1451,6 @@
     },
     {
       "rule": "SA1117",
-      "project": "Dw3.Formats",
-      "folder": "Encounter",
-      "count": 1
-    },
-    {
-      "rule": "SA1117",
-      "project": "Dw3.Formats",
-      "folder": "Water",
-      "count": 1
-    },
-    {
-      "rule": "SA1117",
       "project": "Dw3.Formats.Tests",
       "folder": "Battle",
       "count": 2
@@ -1706,12 +1628,6 @@
       "project": "Dw3.Formats.Tests",
       "folder": "Mips",
       "count": 1
-    },
-    {
-      "rule": "SA1136",
-      "project": "Dw3.Formats",
-      "folder": "Text",
-      "count": 2
     },
     {
       "rule": "SA1136",
@@ -2226,32 +2142,8 @@
     {
       "rule": "SA1402",
       "project": "Dw3.Formats",
-      "folder": "Dialogue",
-      "count": 11
-    },
-    {
-      "rule": "SA1402",
-      "project": "Dw3.Formats",
-      "folder": "Encounter",
-      "count": 7
-    },
-    {
-      "rule": "SA1402",
-      "project": "Dw3.Formats",
       "folder": "Field",
       "count": 35
-    },
-    {
-      "rule": "SA1402",
-      "project": "Dw3.Formats",
-      "folder": "Text",
-      "count": 1
-    },
-    {
-      "rule": "SA1402",
-      "project": "Dw3.Formats",
-      "folder": "Water",
-      "count": 8
     },
     {
       "rule": "SA1402",
@@ -2346,12 +2238,6 @@
     {
       "rule": "SA1407",
       "project": "Dw3.Formats",
-      "folder": "Encounter",
-      "count": 8
-    },
-    {
-      "rule": "SA1407",
-      "project": "Dw3.Formats",
       "folder": "Field",
       "count": 47
     },
@@ -2365,7 +2251,7 @@
       "rule": "SA1407",
       "project": "Dw3.Formats",
       "folder": "Text",
-      "count": 7
+      "count": 5
     },
     {
       "rule": "SA1407",
@@ -2627,12 +2513,6 @@
     },
     {
       "rule": "SA1502",
-      "project": "Dw3.Formats",
-      "folder": "Text",
-      "count": 1
-    },
-    {
-      "rule": "SA1502",
       "project": "Dw3.Formats.Tests",
       "folder": "Battle",
       "count": 2
@@ -2707,13 +2587,7 @@
       "rule": "SA1503",
       "project": "Dw3.Formats",
       "folder": "Dialogue",
-      "count": 25
-    },
-    {
-      "rule": "SA1503",
-      "project": "Dw3.Formats",
-      "folder": "Encounter",
-      "count": 29
+      "count": 13
     },
     {
       "rule": "SA1503",
@@ -2725,13 +2599,13 @@
       "rule": "SA1503",
       "project": "Dw3.Formats",
       "folder": "Text",
-      "count": 18
+      "count": 8
     },
     {
       "rule": "SA1503",
       "project": "Dw3.Formats",
       "folder": "Water",
-      "count": 37
+      "count": 16
     },
     {
       "rule": "SA1503",
@@ -2855,12 +2729,6 @@
     },
     {
       "rule": "SA1507",
-      "project": "Dw3.Formats",
-      "folder": "Encounter",
-      "count": 1
-    },
-    {
-      "rule": "SA1507",
       "project": "Dw3.Game",
       "folder": ".",
       "count": 2
@@ -2918,12 +2786,6 @@
       "project": "Dw3.Formats",
       "folder": "Binary",
       "count": 9
-    },
-    {
-      "rule": "SA1512",
-      "project": "Dw3.Formats",
-      "folder": "Encounter",
-      "count": 2
     },
     {
       "rule": "SA1512",
@@ -2989,13 +2851,7 @@
       "rule": "SA1513",
       "project": "Dw3.Formats",
       "folder": "Dialogue",
-      "count": 6
-    },
-    {
-      "rule": "SA1513",
-      "project": "Dw3.Formats",
-      "folder": "Encounter",
-      "count": 14
+      "count": 3
     },
     {
       "rule": "SA1513",
@@ -3007,9 +2863,8 @@
       "rule": "SA1513",
       "project": "Dw3.Formats",
       "folder": "Text",
-      "count": 7
+      "count": 5
     },
-
     {
       "rule": "SA1513",
       "project": "Dw3.Formats.Tests",
@@ -3109,12 +2964,6 @@
     {
       "rule": "SA1514",
       "project": "Dw3.Formats",
-      "folder": "Encounter",
-      "count": 3
-    },
-    {
-      "rule": "SA1514",
-      "project": "Dw3.Formats",
       "folder": "Field",
       "count": 1
     },
@@ -3194,13 +3043,7 @@
       "rule": "SA1515",
       "project": "Dw3.Formats",
       "folder": "Dialogue",
-      "count": 4
-    },
-    {
-      "rule": "SA1515",
-      "project": "Dw3.Formats",
-      "folder": "Encounter",
-      "count": 4
+      "count": 2
     },
     {
       "rule": "SA1515",
@@ -3319,12 +3162,6 @@
     {
       "rule": "SA1516",
       "project": "Dw3.Formats",
-      "folder": "Dialogue",
-      "count": 1
-    },
-    {
-      "rule": "SA1516",
-      "project": "Dw3.Formats",
       "folder": "Field",
       "count": 9
     },
@@ -3433,12 +3270,6 @@
     {
       "rule": "SA1519",
       "project": "Dw3.Formats",
-      "folder": "Encounter",
-      "count": 1
-    },
-    {
-      "rule": "SA1519",
-      "project": "Dw3.Formats",
       "folder": "Field",
       "count": 27
     },
@@ -3446,13 +3277,13 @@
       "rule": "SA1519",
       "project": "Dw3.Formats",
       "folder": "Text",
-      "count": 12
+      "count": 10
     },
     {
       "rule": "SA1519",
       "project": "Dw3.Formats",
       "folder": "Water",
-      "count": 5
+      "count": 3
     },
     {
       "rule": "SA1519",
@@ -3608,9 +3439,8 @@
       "rule": "SA1600",
       "project": "Dw3.Formats",
       "folder": "Dialogue",
-      "count": 5
+      "count": 1
     },
-
     {
       "rule": "SA1600",
       "project": "Dw3.Formats",
@@ -3627,13 +3457,13 @@
       "rule": "SA1600",
       "project": "Dw3.Formats",
       "folder": "Text",
-      "count": 6
+      "count": 5
     },
     {
       "rule": "SA1600",
       "project": "Dw3.Formats",
       "folder": "Water",
-      "count": 12
+      "count": 9
     },
     {
       "rule": "SA1600",
@@ -3703,12 +3533,6 @@
     },
     {
       "rule": "SA1602",
-      "project": "Dw3.Formats",
-      "folder": "Text",
-      "count": 3
-    },
-    {
-      "rule": "SA1602",
       "project": "Dw3.Game",
       "folder": "Presentation",
       "count": 7
@@ -3730,12 +3554,6 @@
       "project": "Dw3.Formats",
       "folder": "Binary",
       "count": 1
-    },
-    {
-      "rule": "SA1604",
-      "project": "Dw3.Formats",
-      "folder": "Dialogue",
-      "count": 3
     },
     {
       "rule": "SA1604",
@@ -3801,13 +3619,7 @@
       "rule": "SA1611",
       "project": "Dw3.Formats",
       "folder": "Dialogue",
-      "count": 24
-    },
-    {
-      "rule": "SA1611",
-      "project": "Dw3.Formats",
-      "folder": "Encounter",
-      "count": 26
+      "count": 12
     },
     {
       "rule": "SA1611",
@@ -3831,7 +3643,7 @@
       "rule": "SA1611",
       "project": "Dw3.Formats",
       "folder": "Water",
-      "count": 14
+      "count": 7
     },
     {
       "rule": "SA1611",
@@ -3878,12 +3690,6 @@
     {
       "rule": "SA1612",
       "project": "Dw3.Formats",
-      "folder": "Dialogue",
-      "count": 1
-    },
-    {
-      "rule": "SA1612",
-      "project": "Dw3.Formats",
       "folder": "Mips",
       "count": 1
     },
@@ -3921,13 +3727,7 @@
       "rule": "SA1615",
       "project": "Dw3.Formats",
       "folder": "Dialogue",
-      "count": 11
-    },
-    {
-      "rule": "SA1615",
-      "project": "Dw3.Formats",
-      "folder": "Encounter",
-      "count": 14
+      "count": 4
     },
     {
       "rule": "SA1615",
@@ -3951,7 +3751,7 @@
       "rule": "SA1615",
       "project": "Dw3.Formats",
       "folder": "Water",
-      "count": 8
+      "count": 3
     },
     {
       "rule": "SA1615",
@@ -4016,12 +3816,6 @@
     {
       "rule": "SA1623",
       "project": "Dw3.Formats",
-      "folder": "Dialogue",
-      "count": 15
-    },
-    {
-      "rule": "SA1623",
-      "project": "Dw3.Formats",
       "folder": "Field",
       "count": 10
     },
@@ -4030,12 +3824,6 @@
       "project": "Dw3.Formats",
       "folder": "Mips",
       "count": 14
-    },
-    {
-      "rule": "SA1623",
-      "project": "Dw3.Formats",
-      "folder": "Text",
-      "count": 1
     },
     {
       "rule": "SA1623",
@@ -4148,32 +3936,8 @@
     {
       "rule": "SA1649",
       "project": "Dw3.Formats",
-      "folder": "Dialogue",
-      "count": 5
-    },
-    {
-      "rule": "SA1649",
-      "project": "Dw3.Formats",
-      "folder": "Encounter",
-      "count": 1
-    },
-    {
-      "rule": "SA1649",
-      "project": "Dw3.Formats",
       "folder": "Field",
       "count": 8
-    },
-    {
-      "rule": "SA1649",
-      "project": "Dw3.Formats",
-      "folder": "Text",
-      "count": 1
-    },
-    {
-      "rule": "SA1649",
-      "project": "Dw3.Formats",
-      "folder": "Water",
-      "count": 5
     },
     {
       "rule": "SA1649",

@@ -15,8 +15,12 @@ namespace Dw3.Formats.Dialogue;
 /// </remarks>
 public static class StageDialogueScanner
 {
+    /// <summary>Recovers the one text selector and actor-list pointer written by a stage setup routine.</summary>
     /// <exception cref="MipsDecodeException">No text-file store, or stores with different selectors.</exception>
     /// <exception cref="FormatException">The actor-list store is ambiguous or points to no valid list.</exception>
+    /// <param name="overlay">Raw WSTAG overlay bytes loaded at <see cref="DialogueRomLayout.StageOverlayLoadAddress"/>.</param>
+    /// <param name="layout">SLES-03936 addresses and field-state offsets used to identify setup stores.</param>
+    /// <returns>The unique language-relative text selector and its validated actor list, if present.</returns>
     public static StageDialogueSetup Scan(ReadOnlySpan<byte> overlay, DialogueRomLayout layout)
     {
         ArgumentNullException.ThrowIfNull(layout);
