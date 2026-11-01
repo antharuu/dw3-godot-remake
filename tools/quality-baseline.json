@@ -3009,12 +3009,7 @@
       "folder": "Text",
       "count": 7
     },
-    {
-      "rule": "SA1513",
-      "project": "Dw3.Formats",
-      "folder": "Water",
-      "count": 10
-    },
+
     {
       "rule": "SA1513",
       "project": "Dw3.Formats.Tests",
@@ -3615,12 +3610,7 @@
       "folder": "Dialogue",
       "count": 5
     },
-    {
-      "rule": "SA1600",
-      "project": "Dw3.Formats",
-      "folder": "Encounter",
-      "count": 3
-    },
+
     {
       "rule": "SA1600",
       "project": "Dw3.Formats",

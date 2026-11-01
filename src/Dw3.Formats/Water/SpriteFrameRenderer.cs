@@ -29,12 +29,14 @@ public sealed record SpriteFrameImage(int Width, int Height, int OffsetX, int Of
             ushort word = Words[index];
             if (word == 0 || Rgba5551.IsStp(word) != stp)
                 continue;
+
             (byte r, byte g, byte b, _) = Rgba5551.ToRgba(word);
             rgba[index * 4] = r;
             rgba[index * 4 + 1] = g;
             rgba[index * 4 + 2] = b;
             rgba[index * 4 + 3] = byte.MaxValue;
         }
+
         return rgba;
     }
 }
@@ -66,6 +68,7 @@ public static class SpriteFrameRenderer
     {
         if (frame.Length < 6)
             throw new FormatException("sprite frame truncated");
+
         int count = BinaryPrimitives.ReadInt16LittleEndian(frame);
         int frameRow = BinaryPrimitives.ReadInt16LittleEndian(frame[2..]);
         int abr = BinaryPrimitives.ReadInt16LittleEndian(frame[4..]);
@@ -84,6 +87,7 @@ public static class SpriteFrameRenderer
             int y = BinaryPrimitives.ReadInt16LittleEndian(frame[(10 + 6 * index)..]);
             if (partIndex < 0 || partIndex >= parts.Count)
                 throw new FormatException("sprite frame references missing part");
+
             SpritePart part = parts[partIndex];
             placed[index] = (x, y, part.Width, part.Height, Sample(part, vram, frameRow + clutRow));
         }
@@ -104,6 +108,7 @@ public static class SpriteFrameRenderer
                         words[(y - minY + row) * width + x - minX + column] = word;
                 }
         }
+
         return new SpriteFrameImage(width, height, minX, minY, abr, words);
     }
 
@@ -145,6 +150,7 @@ public static class SpriteFrameRenderer
                 ushort packed = texels[(part.V + row) * ObjectTextureArchiveDecoder.PageWords + u / 4];
                 words[row * part.Width + column] = palette[(packed >> ((u & 3) * 4)) & 15];
             }
+
         return words;
     }
 
@@ -167,6 +173,7 @@ public static class SpriteFrameRenderer
                 ushort packed = texels[(part.V + row) * ObjectTextureArchiveDecoder.PageWords + u / 2];
                 words[row * part.Width + column] = palette[part.ClutX + ((packed >> (8 * (u & 1))) & 0xFF)];
             }
+
         return words;
     }
 }

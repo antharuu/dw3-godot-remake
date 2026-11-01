@@ -39,10 +39,12 @@ public static class ObjectTextureArchiveDecoder
             ReadOnlySpan<byte> raw = archive[entries[index].Start..entries[index].End];
             pages.Add(DecodeEntry(raw, index, palettes));
         }
+
         if (pages.Count == 0)
         {
             throw new FormatException("object archive lacks any image entry");
         }
+
         return new ObjectVram(pages, palettes);
     }
 
@@ -114,22 +116,27 @@ public static class ObjectTextureArchiveDecoder
             {
                 throw new FormatException("archive offset table unterminated");
             }
+
             uint offset = BinaryPrimitives.ReadUInt32LittleEndian(archive[cursor..]);
             cursor += 4;
             if (offset == 0)
             {
                 break;
             }
+
             if (offset < cursor || offset >= archive.Length)
             {
                 throw new FormatException("archive offset outside payload");
             }
+
             offsets.Add((int)offset);
         }
+
         if (offsets.Count == 0)
         {
             throw new FormatException("archive offsets invalid");
         }
+
         ValidateIncreasingOffsets(offsets);
         int archiveLength = archive.Length;
         return [.. offsets.Select((start, index) => (start, index + 1 < offsets.Count ? offsets[index + 1] : archiveLength))];
@@ -171,6 +178,7 @@ public static class ObjectTextureArchiveDecoder
         {
             throw new FormatException("object archive image rectangle invalid");
         }
+
         return (BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(cursor)),
             BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(cursor + 8)),
             BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(cursor + 10)));
@@ -187,11 +195,13 @@ public static class ObjectTextureArchiveDecoder
         {
             throw new FormatException("object archive CLUT dimensions invalid");
         }
+
         var rows = new ushort[height][];
         for (int row = 0; row < height; row++)
         {
             rows[row] = ReadWords(raw.Slice(row * width * 2, width * 2));
         }
+
         return rows;
     }
 
@@ -205,6 +215,7 @@ public static class ObjectTextureArchiveDecoder
         {
             words[index] = BinaryPrimitives.ReadUInt16LittleEndian(raw[(index * 2)..]);
         }
+
         return words;
     }
 }

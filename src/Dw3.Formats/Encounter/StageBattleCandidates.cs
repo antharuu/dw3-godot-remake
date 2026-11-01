@@ -84,6 +84,16 @@ internal static class StageBattleCandidates
         return addresses;
     }
 
+    /// <summary>
+    /// Samples the first argument register at a call and includes its overlay-relative constant value.
+    /// </summary>
+    /// <param name="instructions">Decoded instruction stream that contains the call.</param>
+    /// <param name="index">Index of the potential call instruction.</param>
+    /// <param name="tracker">Register values immediately before the instruction.</param>
+    /// <param name="overlayBase">RAM address where the overlay begins.</param>
+    /// <param name="overlayEnd">Exclusive RAM address immediately after the overlay.</param>
+    /// <param name="seen">Values already returned to the caller.</param>
+    /// <param name="addresses">Destination list for newly discovered values.</param>
     private static void CollectCallArgument(
         IReadOnlyList<MipsInstruction> instructions,
         int index,
@@ -108,6 +118,14 @@ internal static class StageBattleCandidates
         AddOverlayAddress(value, overlayBase, overlayEnd, seen, addresses);
     }
 
+    /// <summary>
+    /// Adds a constant register value only when it lies in the current overlay and was not seen before.
+    /// </summary>
+    /// <param name="value">Tracked register value to evaluate.</param>
+    /// <param name="overlayBase">Inclusive RAM address where the overlay begins.</param>
+    /// <param name="overlayEnd">Exclusive RAM address immediately after the overlay.</param>
+    /// <param name="seen">Values that have already been added.</param>
+    /// <param name="addresses">Destination list for a newly accepted value.</param>
     private static void AddOverlayAddress(
         MipsValue? value,
         uint overlayBase,
@@ -124,6 +142,12 @@ internal static class StageBattleCandidates
         }
     }
 
+    /// <summary>
+    /// Applies the subset of delay-slot arithmetic that can alter the first call argument.
+    /// </summary>
+    /// <param name="current">Argument register value immediately before the delay slot.</param>
+    /// <param name="instruction">Delay-slot instruction following a call.</param>
+    /// <returns>The argument value visible to the callee.</returns>
     private static MipsValue? ApplyDelaySlot(MipsValue? current, MipsInstruction instruction)
     {
         if (instruction.Operation == MipsOperation.Addiu && instruction.Rt == RegisterA0 && instruction.Rs == RegisterA0)
