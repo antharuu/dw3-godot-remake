@@ -3438,12 +3438,6 @@
     {
       "rule": "SA1600",
       "project": "Dw3.Formats",
-      "folder": "Text",
-      "count": 1
-    },
-    {
-      "rule": "SA1600",
-      "project": "Dw3.Formats",
       "folder": "Water",
       "count": 4
     },
@@ -3612,12 +3606,6 @@
     {
       "rule": "SA1611",
       "project": "Dw3.Formats",
-      "folder": "Text",
-      "count": 3
-    },
-    {
-      "rule": "SA1611",
-      "project": "Dw3.Formats",
       "folder": "Water",
       "count": 4
     },
@@ -3716,12 +3704,6 @@
       "project": "Dw3.Formats",
       "folder": "Mips",
       "count": 6
-    },
-    {
-      "rule": "SA1615",
-      "project": "Dw3.Formats",
-      "folder": "Text",
-      "count": 3
     },
     {
       "rule": "SA1615",

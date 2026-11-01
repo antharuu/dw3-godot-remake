@@ -31,6 +31,7 @@ public static class FontAtlasDecoder
     /// </summary>
     /// <param name="data">Full contents of AAA/DAT/COUNTRY/CMFONTTM.BIN.</param>
     /// <param name="sha256Hex">Pre-computed SHA-256 of <paramref name="data"/> (written to the output manifest).</param>
+    /// <returns>The decoded TIM pages and their eight in-page palette rows.</returns>
     /// <exception cref="FormatException">Any archive, RLEN, or TIM structural violation.</exception>
     public static FontAtlas Decode(ReadOnlySpan<byte> data, string sha256Hex)
     {
@@ -87,6 +88,10 @@ public static class FontAtlasDecoder
         return new FontAtlas(palettes, pages, sha256Hex);
     }
 
+    /// <summary>Validates and decodes one decompressed 4-bit TIM page from the archive body.</summary>
+    /// <param name="timData">RLEN-expanded TIM bytes beginning with the 0x10 magic word.</param>
+    /// <param name="pageIndex">Zero-based archive entry index used only in format diagnostics.</param>
+    /// <returns>The page dimensions in texels and its packed four-bit pixel bytes.</returns>
     private static FontAtlasPage DecodePage(ReadOnlySpan<byte> timData, int pageIndex)
     {
         // 4-bit TIM: magic 0x10, flags 0x02 (no CLUT block in header; CLUT is in-page).
@@ -137,6 +142,8 @@ public static class FontAtlasDecoder
     /// <summary>
     /// Reads the eight 16-entry RGBA palettes embedded in the first atlas page.
     /// </summary>
+    /// <param name="page0">First decoded TIM page, whose rows 232 through 239 contain the CLUT words.</param>
+    /// <returns>Eight palette rows in source-row order with zero words converted to transparent RGBA.</returns>
     private static IReadOnlyList<IReadOnlyList<(byte R, byte G, byte B, byte A)>> ReadPalettes(FontAtlasPage page0)
     {
         // The page pixels are stored as 16-bit halfwords (words_per_line * height rows).
@@ -189,6 +196,9 @@ public static class FontAtlasDecoder
     /// Renders one atlas page with the given palette row as a flat RGBA byte array.
     /// Pixel order: low nibble = left pixel (index = byte &amp; 0xF), high nibble = right (byte >> 4).
     /// </summary>
+    /// <param name="page">Packed four-bit page whose byte nibbles select palette entries.</param>
+    /// <param name="palette">The 16-entry RGBA row extracted from the page-zero CLUT.</param>
+    /// <returns>Four RGBA bytes per page texel in row-major order.</returns>
     public static byte[] RenderPage(FontAtlasPage page, IReadOnlyList<(byte R, byte G, byte B, byte A)> palette)
     {
         int pixelCount = page.Width * page.Height;
