@@ -66,6 +66,7 @@ public static class Rgba5551
             rgba[j + 2] = b;
             rgba[j + 3] = a;
         }
+
         return rgba;
     }
 }

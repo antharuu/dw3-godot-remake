@@ -35,10 +35,15 @@ public static class RlenDecoder
     public static byte[] Decompress(ReadOnlySpan<byte> data)
     {
         if (!IsRlen(data))
+        {
             throw new FormatException("RLEN magic not found at stream start");
+        }
+
         if (data.Length < 8)
+        {
             throw new FormatException(
                 $"RLEN header is truncated ({data.Length} bytes; need at least 8)");
+        }
 
         uint target = System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(data[4..8]);
         var output = new byte[target];
@@ -47,49 +52,23 @@ public static class RlenDecoder
 
         while (true)
         {
-            if (pos >= data.Length)
-                throw new FormatException("RLEN stream has no terminator (0x00 end-of-stream byte)");
-
-            byte command = data[pos++];
-
-            // 0x00: end of stream (0x80 is treated the same: repeat of count 0)
+            byte command = ReadCommand(data, ref pos);
             if (command == 0 || command == 0x80)
+            {
                 break;
+            }
 
             if ((command & 0x80) != 0)
             {
-                // Repeat run: replicate next byte (command & 0x7F) times
-                int count = command & 0x7F;
-                if (pos >= data.Length)
-                    throw new FormatException(
-                        $"RLEN repeat command at input offset 0x{pos - 1:X} has no value byte");
-                byte value = data[pos++];
-                if (outPos + count > target)
-                    throw new FormatException(
-                        $"RLEN repeat run at output offset 0x{outPos:X} would exceed declared size {target}");
-                output.AsSpan(outPos, count).Fill(value);
-                outPos += count;
+                DecodeRepeatRun(data, output, ref pos, ref outPos, command, target);
             }
             else
             {
-                // Literal run: copy next `command` bytes verbatim
-                int count = command;
-                if (pos + count > data.Length)
-                    throw new FormatException(
-                        $"RLEN literal run at input offset 0x{pos - 1:X} (count {count}) exceeds input buffer");
-                if (outPos + count > target)
-                    throw new FormatException(
-                        $"RLEN literal run at output offset 0x{outPos:X} would exceed declared size {target}");
-                data.Slice(pos, count).CopyTo(output.AsSpan(outPos));
-                pos += count;
-                outPos += count;
+                DecodeLiteralRun(data, output, ref pos, ref outPos, command, target);
             }
         }
 
-        if (outPos != (int)target)
-            throw new FormatException(
-                $"RLEN decompressed {outPos} bytes but declared size is {target}");
-
+        ValidateOutputSize(outPos, target);
         return output;
     }
 
@@ -104,7 +83,109 @@ public static class RlenDecoder
     public static (byte[] Data, bool WasCompressed) DecompressIfNeeded(ReadOnlySpan<byte> data)
     {
         if (!IsRlen(data))
+        {
             return (data.ToArray(), false);
+        }
+
         return (Decompress(data), true);
+    }
+
+    /// <summary>Reads the next command byte and rejects a stream that ends before a terminator.</summary>
+    /// <param name="data">Entire encoded stream.</param>
+    /// <param name="position">Input cursor advanced past the returned command.</param>
+    /// <returns>The command byte at the prior cursor.</returns>
+    private static byte ReadCommand(ReadOnlySpan<byte> data, ref int position)
+    {
+        if (position >= data.Length)
+        {
+            throw new FormatException("RLEN stream has no terminator (0x00 end-of-stream byte)");
+        }
+
+        byte command = data[position];
+        position++;
+        return command;
+    }
+
+    /// <summary>Expands one repeat command, including its following byte, into the output buffer.</summary>
+    /// <param name="data">Entire encoded stream.</param>
+    /// <param name="output">Destination allocation sized from the header.</param>
+    /// <param name="inputPosition">Input cursor at the repeated value byte.</param>
+    /// <param name="outputPosition">Output cursor to advance by the repeat count.</param>
+    /// <param name="command">Repeat command whose low seven bits are the count.</param>
+    /// <param name="target">Declared decompressed byte count.</param>
+    private static void DecodeRepeatRun(
+        ReadOnlySpan<byte> data,
+        byte[] output,
+        ref int inputPosition,
+        ref int outputPosition,
+        byte command,
+        uint target)
+    {
+        int count = command & 0x7F;
+        if (inputPosition >= data.Length)
+        {
+            throw new FormatException(
+                $"RLEN repeat command at input offset 0x{inputPosition - 1:X} has no value byte");
+        }
+
+        byte value = data[inputPosition];
+        inputPosition++;
+        EnsureOutputCapacity(outputPosition, count, target, "repeat");
+        output.AsSpan(outputPosition, count).Fill(value);
+        outputPosition += count;
+    }
+
+    /// <summary>Copies one literal command's payload from the input cursor into the output cursor.</summary>
+    /// <param name="data">Entire encoded stream.</param>
+    /// <param name="output">Destination allocation sized from the header.</param>
+    /// <param name="inputPosition">Input cursor at the literal payload.</param>
+    /// <param name="outputPosition">Output cursor to advance by the literal count.</param>
+    /// <param name="command">Literal command whose value is the byte count.</param>
+    /// <param name="target">Declared decompressed byte count.</param>
+    private static void DecodeLiteralRun(
+        ReadOnlySpan<byte> data,
+        byte[] output,
+        ref int inputPosition,
+        ref int outputPosition,
+        byte command,
+        uint target)
+    {
+        int count = command;
+        if (inputPosition + count > data.Length)
+        {
+            throw new FormatException(
+                $"RLEN literal run at input offset 0x{inputPosition - 1:X} (count {count}) exceeds input buffer");
+        }
+
+        EnsureOutputCapacity(outputPosition, count, target, "literal");
+        data.Slice(inputPosition, count).CopyTo(output.AsSpan(outputPosition));
+        inputPosition += count;
+        outputPosition += count;
+    }
+
+    /// <summary>Rejects a command whose decoded bytes would exceed the header's declared output size.</summary>
+    /// <param name="outputPosition">First destination byte for the command.</param>
+    /// <param name="count">Number of bytes the command writes.</param>
+    /// <param name="target">Declared decompressed byte count.</param>
+    /// <param name="kind">Human-readable command category for the error.</param>
+    private static void EnsureOutputCapacity(int outputPosition, int count, uint target, string kind)
+    {
+        if (outputPosition + count > target)
+        {
+            throw new FormatException(
+                $"RLEN {kind} run at output offset 0x{outputPosition:X} would exceed declared size {target}");
+        }
+    }
+
+    /// <summary>Checks that the terminating command arrived exactly at the declared output size.</summary>
+    /// <param name="outputPosition">Number of bytes decoded before the terminator.</param>
+    /// <param name="target">Declared decompressed byte count.</param>
+    private static void ValidateOutputSize(int outputPosition, uint target)
+    {
+        if (outputPosition != (int)target)
+        {
+            throw new FormatException(
+                $"RLEN decompressed {outputPosition} bytes but declared size is {target}");
+        }
     }
 }

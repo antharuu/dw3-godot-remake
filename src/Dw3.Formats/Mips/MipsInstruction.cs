@@ -115,7 +115,10 @@ public readonly record struct MipsInstruction(int Offset, uint Word)
     public uint JumpTarget(uint segmentAddress)
     {
         if (Operation is not (MipsOperation.J or MipsOperation.Jal))
+        {
             throw new MipsDecodeException($"Instruction 0x{Word:X8} at offset 0x{Offset:X} is not a direct jump.");
+        }
+
         return (segmentAddress & 0xF0000000u) | ((Word & 0x03FFFFFFu) << 2);
     }
 
@@ -126,15 +129,22 @@ public readonly record struct MipsInstruction(int Offset, uint Word)
     public static MipsInstruction[] DecodeRange(ReadOnlySpan<byte> code, int start, int end)
     {
         if (start < 0 || end > code.Length || start > end)
+        {
             throw new MipsDecodeException($"Instruction window 0x{start:X}..0x{end:X} is outside the {code.Length}-byte buffer.");
+        }
+
         if (start % sizeof(uint) != 0 || end % sizeof(uint) != 0)
+        {
             throw new MipsDecodeException($"Instruction window 0x{start:X}..0x{end:X} is not word aligned.");
+        }
+
         var instructions = new MipsInstruction[(end - start) / sizeof(uint)];
         for (int index = 0; index < instructions.Length; index++)
         {
             int offset = start + index * sizeof(uint);
             instructions[index] = new MipsInstruction(offset, BinaryPrimitives.ReadUInt32LittleEndian(code.Slice(offset, sizeof(uint))));
         }
+
         return instructions;
     }
 

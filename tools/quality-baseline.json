@@ -270,12 +270,6 @@
     {
       "rule": "CA1859",
       "project": "Dw3.Formats",
-      "folder": "Mips",
-      "count": 1
-    },
-    {
-      "rule": "CA1859",
-      "project": "Dw3.Formats",
       "folder": "Text",
       "count": 1
     },
@@ -1110,12 +1104,6 @@
     {
       "rule": "S3776",
       "project": "Dw3.Formats",
-      "folder": "Binary",
-      "count": 1
-    },
-    {
-      "rule": "S3776",
-      "project": "Dw3.Formats",
       "folder": "Dialogue",
       "count": 1
     },
@@ -1130,12 +1118,6 @@
       "project": "Dw3.Formats",
       "folder": "Field",
       "count": 12
-    },
-    {
-      "rule": "S3776",
-      "project": "Dw3.Formats",
-      "folder": "Mips",
-      "count": 1
     },
     {
       "rule": "S3776",
@@ -1652,12 +1634,6 @@
       "project": "Dw3.Extractor.Tests",
       "folder": ".",
       "count": 1
-    },
-    {
-      "rule": "SA1118",
-      "project": "Dw3.Formats",
-      "folder": "Mips",
-      "count": 2
     },
     {
       "rule": "SA1118",
@@ -2730,12 +2706,6 @@
     {
       "rule": "SA1503",
       "project": "Dw3.Formats",
-      "folder": "Binary",
-      "count": 15
-    },
-    {
-      "rule": "SA1503",
-      "project": "Dw3.Formats",
       "folder": "Dialogue",
       "count": 25
     },
@@ -2750,12 +2720,6 @@
       "project": "Dw3.Formats",
       "folder": "Field",
       "count": 169
-    },
-    {
-      "rule": "SA1503",
-      "project": "Dw3.Formats",
-      "folder": "Mips",
-      "count": 11
     },
     {
       "rule": "SA1503",
@@ -3024,12 +2988,6 @@
     {
       "rule": "SA1513",
       "project": "Dw3.Formats",
-      "folder": "Binary",
-      "count": 5
-    },
-    {
-      "rule": "SA1513",
-      "project": "Dw3.Formats",
       "folder": "Dialogue",
       "count": 6
     },
@@ -3044,12 +3002,6 @@
       "project": "Dw3.Formats",
       "folder": "Field",
       "count": 42
-    },
-    {
-      "rule": "SA1513",
-      "project": "Dw3.Formats",
-      "folder": "Mips",
-      "count": 2
     },
     {
       "rule": "SA1513",
@@ -3481,7 +3433,7 @@
       "rule": "SA1519",
       "project": "Dw3.Formats",
       "folder": "Binary",
-      "count": 30
+      "count": 13
     },
     {
       "rule": "SA1519",
@@ -3494,12 +3446,6 @@
       "project": "Dw3.Formats",
       "folder": "Field",
       "count": 27
-    },
-    {
-      "rule": "SA1519",
-      "project": "Dw3.Formats",
-      "folder": "Mips",
-      "count": 2
     },
     {
       "rule": "SA1519",

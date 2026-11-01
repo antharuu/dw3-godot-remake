@@ -70,13 +70,17 @@ public static class TimDecoder
     public static TimImage Decode(ReadOnlySpan<byte> data, int clutRow = 0)
     {
         if (data.Length < 8)
+        {
             throw new FormatException(
                 $"TIM data too short ({data.Length} bytes; need at least 8)");
+        }
 
         uint magic = BinaryPrimitives.ReadUInt32LittleEndian(data[..4]);
         if (magic != TimMagic)
+        {
             throw new FormatException(
                 $"TIM magic mismatch: expected 0x{TimMagic:X8}, got 0x{magic:X8}");
+        }
 
         uint flags = BinaryPrimitives.ReadUInt32LittleEndian(data[4..8]);
 
@@ -103,23 +107,36 @@ public static class TimDecoder
 
         uint clutBlockLen = BinaryPrimitives.ReadUInt32LittleEndian(data[8..12]);
         if (clutBlockLen < 12 || (long)8 + clutBlockLen > data.Length)
+        {
             throw new FormatException(
                 $"4-bit TIM CLUT block length {clutBlockLen} is invalid");
+        }
 
         int numColors = BinaryPrimitives.ReadUInt16LittleEndian(data[16..18]);
         int numRows = BinaryPrimitives.ReadUInt16LittleEndian(data[18..20]);
 
         if (numColors != 16)
+        {
             throw new FormatException(
                 $"4-bit TIM CLUT must have 16 colours per row, got {numColors}");
+        }
+
         if (numRows < 1)
+        {
             throw new FormatException("4-bit TIM CLUT has no rows");
+        }
+
         if (20 + numColors * numRows * 2 > 8 + (int)clutBlockLen)
+        {
             throw new FormatException(
                 "4-bit TIM CLUT palette data exceeds declared CLUT block length");
+        }
+
         if (clutRow < 0 || clutRow >= numRows)
+        {
             throw new FormatException(
                 $"CLUT row {clutRow} is out of range (0..{numRows - 1})");
+        }
 
         int paletteOffset = 20 + clutRow * numColors * 2;
         var palette = ReadPalette(data, paletteOffset, numColors);
@@ -158,23 +175,36 @@ public static class TimDecoder
 
         uint clutBlockLen = BinaryPrimitives.ReadUInt32LittleEndian(data[8..12]);
         if (clutBlockLen < 12 || (long)8 + clutBlockLen > data.Length)
+        {
             throw new FormatException(
                 $"8-bit TIM CLUT block length {clutBlockLen} is invalid");
+        }
 
         int numColors = BinaryPrimitives.ReadUInt16LittleEndian(data[16..18]);
         int numRows = BinaryPrimitives.ReadUInt16LittleEndian(data[18..20]);
 
         if (numColors != 256)
+        {
             throw new FormatException(
                 $"8-bit TIM CLUT must have 256 colours per row, got {numColors}");
+        }
+
         if (numRows < 1)
+        {
             throw new FormatException("8-bit TIM CLUT has no rows");
+        }
+
         if (20 + numColors * numRows * 2 > 8 + (int)clutBlockLen)
+        {
             throw new FormatException(
                 "8-bit TIM CLUT palette data exceeds declared CLUT block length");
+        }
+
         if (clutRow < 0 || clutRow >= numRows)
+        {
             throw new FormatException(
                 $"CLUT row {clutRow} is out of range (0..{numRows - 1})");
+        }
 
         int paletteOffset = 20 + clutRow * numColors * 2;
         var palette = ReadPalette(data, paletteOffset, numColors);
@@ -183,9 +213,11 @@ public static class TimDecoder
         var (width, height, pixelData) = ReadImageBlock(data, imgBase, widthMultiplier: 2);
 
         if (pixelData.Length != width * height)
+        {
             throw new FormatException(
                 $"8-bit TIM pixel data is {pixelData.Length} bytes, " +
                 $"expected {width * height} for {width}x{height}");
+        }
 
         var pixels = new byte[width * height * 4];
         for (int i = 0; i < pixelData.Length; i++)
@@ -264,6 +296,7 @@ public static class TimDecoder
             ushort word = BinaryPrimitives.ReadUInt16LittleEndian(data[(offset + i * 2)..(offset + i * 2 + 2)]);
             palette[i] = Rgba5551.ToRgba(word);
         }
+
         return palette;
     }
 

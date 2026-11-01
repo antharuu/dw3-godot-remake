@@ -39,8 +39,15 @@ public static class PngEncoder
     /// <exception cref="ArgumentException">Pixel buffer length mismatch.</exception>
     public static byte[] Encode(int width, int height, ReadOnlySpan<byte> rgbaPixels)
     {
-        if (width <= 0) throw new ArgumentOutOfRangeException(nameof(width), "Width must be positive");
-        if (height <= 0) throw new ArgumentOutOfRangeException(nameof(height), "Height must be positive");
+        if (width <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(width), "Width must be positive");
+        }
+
+        if (height <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(height), "Height must be positive");
+        }
 
         int expected = checked(width * height * 4);
         if (rgbaPixels.Length != expected)
@@ -83,6 +90,7 @@ public static class PngEncoder
             filtered.WriteByte(0); // filter type None
             filtered.Write(rgba.Slice(y * stride, stride));
         }
+
         filtered.Position = 0;
 
         // Compress filtered data with ZLibStream (zlib = RFC 1950, same as PNG IDAT)
@@ -91,6 +99,7 @@ public static class PngEncoder
         {
             filtered.CopyTo(zlib);
         }
+
         WriteChunk(out_, "IDAT"u8, compressed.GetBuffer().AsSpan(0, (int)compressed.Length));
     }
 
@@ -132,9 +141,15 @@ public static class PngEncoder
     {
         uint crc = 0xFFFFFFFF;
         foreach (byte b in type)
+        {
             crc = Crc32Table[(crc ^ b) & 0xFF] ^ (crc >> 8);
+        }
+
         foreach (byte b in data)
+        {
             crc = Crc32Table[(crc ^ b) & 0xFF] ^ (crc >> 8);
+        }
+
         return crc ^ 0xFFFFFFFF;
     }
 
@@ -145,9 +160,13 @@ public static class PngEncoder
         {
             uint c = i;
             for (int k = 0; k < 8; k++)
+            {
                 c = (c & 1) != 0 ? 0xEDB88320u ^ (c >> 1) : c >> 1;
+            }
+
             table[i] = c;
         }
+
         return table;
     }
 

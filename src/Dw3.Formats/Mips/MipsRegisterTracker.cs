@@ -18,13 +18,13 @@ public sealed class MipsRegisterTracker
     private static readonly int[] CallerSaved = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 24, 25, 31];
 
     private readonly MipsValue?[] _registers = new MipsValue?[32];
-    private readonly IReadOnlySet<uint> _watchedLoads;
+    private readonly HashSet<uint> _watchedLoads;
     private MipsOperation _pendingAfterDelaySlot = MipsOperation.Other;
 
     /// <param name="watchedLoads">Word addresses whose loads stay symbolic instead of unknown.</param>
     public MipsRegisterTracker(IEnumerable<uint>? watchedLoads = null)
     {
-        _watchedLoads = (watchedLoads ?? []).ToHashSet();
+        _watchedLoads = watchedLoads is null ? [] : [.. watchedLoads];
         _registers[0] = MipsValue.Constant(0);
     }
 
@@ -39,56 +39,114 @@ public sealed class MipsRegisterTracker
     {
         MipsOperation pending = _pendingAfterDelaySlot;
         _pendingAfterDelaySlot = instruction.HasDelaySlot ? instruction.Operation : MipsOperation.Other;
+        MipsStore? store = ExecuteOperation(instruction);
+        ApplyPendingControlTransfer(pending);
+        return store;
+    }
 
-        MipsStore? store = null;
-        switch (instruction.Operation)
+    /// <summary>Executes the operation-specific register effect or creates its observable store.</summary>
+    /// <param name="instruction">Decoded word whose register effects are applied.</param>
+    /// <returns>The known store performed by the word, if any.</returns>
+    private MipsStore? ExecuteOperation(in MipsInstruction instruction)
+    {
+        return instruction.Operation switch
         {
-            case MipsOperation.Lui:
-                Write(instruction.Rt, MipsValue.Constant((uint)instruction.UnsignedImmediate << 16));
-                break;
-            case MipsOperation.Addiu:
-                Write(instruction.Rt, _registers[instruction.Rs]?.Add(instruction.SignedImmediate));
-                break;
-            case MipsOperation.Ori:
-                Write(instruction.Rt, ConstantOf(instruction.Rs) is uint orBase
-                    ? MipsValue.Constant(orBase | instruction.UnsignedImmediate)
-                    : null);
-                break;
-            case MipsOperation.Addu:
-                Write(instruction.Rd, Combine(instruction.Rs, instruction.Rt, (a, b) => unchecked(a + b)));
-                break;
-            case MipsOperation.Or:
-                Write(instruction.Rd, Combine(instruction.Rs, instruction.Rt, (a, b) => a | b));
-                break;
-            case MipsOperation.Lw:
-                Write(instruction.Rt, AddressOf(instruction) is uint loadAddress && _watchedLoads.Contains(loadAddress)
-                    ? MipsValue.LoadedWord(loadAddress, 0)
-                    : null);
-                break;
-            case MipsOperation.Sw:
-                if (AddressOf(instruction) is uint storeAddress && _registers[instruction.Rt] is MipsValue stored)
-                    store = new MipsStore(instruction.Offset, storeAddress, stored);
-                break;
-            default:
-                if (instruction.Destination is int destination)
-                    Write(destination, null);
-                break;
+            MipsOperation.Lui => WriteAndReturn(instruction.Rt, MipsValue.Constant((uint)instruction.UnsignedImmediate << 16)),
+            MipsOperation.Addiu => WriteAndReturn(instruction.Rt, _registers[instruction.Rs]?.Add(instruction.SignedImmediate)),
+            MipsOperation.Ori => WriteAndReturn(instruction.Rt, BuildOrValue(instruction)),
+            MipsOperation.Addu => WriteAndReturn(instruction.Rd, Combine(instruction.Rs, instruction.Rt, (a, b) => unchecked(a + b))),
+            MipsOperation.Or => WriteAndReturn(instruction.Rd, Combine(instruction.Rs, instruction.Rt, (a, b) => a | b)),
+            MipsOperation.Lw => WriteAndReturn(instruction.Rt, ReadWatchedValue(instruction)),
+            MipsOperation.Sw => CreateStore(instruction),
+            _ => ClearDestination(instruction),
+        };
+    }
+
+    /// <summary>Writes a register for a non-store instruction and returns no store.</summary>
+    /// <param name="register">Destination general-purpose register.</param>
+    /// <param name="value">Tracked value to retain for the register.</param>
+    /// <returns>Always null because this path cannot perform a store.</returns>
+    private MipsStore? WriteAndReturn(int register, MipsValue? value)
+    {
+        Write(register, value);
+        return null;
+    }
+
+    /// <summary>Builds the result of an <c>ori</c> only when its source register is constant.</summary>
+    /// <param name="instruction">Decoded immediate OR operation.</param>
+    /// <returns>The materialized constant, or null when the source is unknown.</returns>
+    private MipsValue? BuildOrValue(in MipsInstruction instruction) =>
+        ConstantOf(instruction.Rs) is uint orBase
+            ? MipsValue.Constant(orBase | instruction.UnsignedImmediate)
+            : null;
+
+    /// <summary>Keeps a load symbolic only when its effective address is being watched.</summary>
+    /// <param name="instruction">Decoded word-load operation.</param>
+    /// <returns>A symbolic loaded word, or null for an untracked address.</returns>
+    private MipsValue? ReadWatchedValue(in MipsInstruction instruction) =>
+        AddressOf(instruction) is uint loadAddress && _watchedLoads.Contains(loadAddress)
+            ? MipsValue.LoadedWord(loadAddress, 0)
+            : null;
+
+    /// <summary>Creates the observed store when both its target address and source value are known.</summary>
+    /// <param name="instruction">Decoded store operation.</param>
+    /// <returns>The resolved store, or null when either operand is unknown.</returns>
+    private MipsStore? CreateStore(in MipsInstruction instruction) =>
+        AddressOf(instruction) is uint storeAddress && _registers[instruction.Rt] is MipsValue stored
+            ? new MipsStore(instruction.Offset, storeAddress, stored)
+            : null;
+
+    /// <summary>Forgets the destination of an operation outside the tracked subset.</summary>
+    /// <param name="instruction">Decoded operation whose destination may be overwritten.</param>
+    /// <returns>Always null because unknown operations are not reported as stores.</returns>
+    private MipsStore? ClearDestination(in MipsInstruction instruction)
+    {
+        if (instruction.Destination is int destination)
+        {
+            Write(destination, null);
         }
 
-        // A jump's own effects (the $ra link) happen at once, the clobber after the delay slot.
+        return null;
+    }
+
+    /// <summary>Applies the clobber that follows the preceding control instruction's delay slot.</summary>
+    /// <param name="pending">Control operation whose delay slot just completed.</param>
+    private void ApplyPendingControlTransfer(MipsOperation pending)
+    {
         if (pending is MipsOperation.Jal or MipsOperation.Jalr)
-            foreach (int register in CallerSaved)
-                Write(register, null);
+        {
+            ClearCallerSavedRegisters();
+        }
         else if (pending is MipsOperation.Jr)
-            for (int register = 1; register < _registers.Length; register++)
-                Write(register, null);
-        return store;
+        {
+            ClearAllRegisters();
+        }
+    }
+
+    /// <summary>Forgets ABI caller-saved registers after a completed call delay slot.</summary>
+    private void ClearCallerSavedRegisters()
+    {
+        foreach (int register in CallerSaved)
+        {
+            Write(register, null);
+        }
+    }
+
+    /// <summary>Forgets every mutable register after a return delay slot.</summary>
+    private void ClearAllRegisters()
+    {
+        for (int register = 1; register < _registers.Length; register++)
+        {
+            Write(register, null);
+        }
     }
 
     private void Write(int register, MipsValue? value)
     {
         if (register != 0)
+        {
             _registers[register] = value;
+        }
     }
 
     private uint? ConstantOf(int register) =>
@@ -103,9 +161,15 @@ public sealed class MipsRegisterTracker
         MipsValue? a = _registers[left];
         MipsValue? b = _registers[right];
         if (right == 0)
+        {
             return a;
+        }
+
         if (left == 0)
+        {
             return b;
+        }
+
         return a is { IsLoadedWord: false } ca && b is { IsLoadedWord: false } cb
             ? MipsValue.Constant(operation(ca.ConstantValue, cb.ConstantValue))
             : null;

@@ -42,13 +42,22 @@ public sealed class PsxExecutable
     {
         ArgumentNullException.ThrowIfNull(data);
         if (data.Length < HeaderBytes || !data.AsSpan(0, Magic.Length).SequenceEqual(Magic))
+        {
             throw new FormatException("Executable does not start with a PS-X EXE header.");
+        }
+
         uint loadAddress = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(0x18, 4));
         uint imageBytes = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(0x1C, 4));
         if (imageBytes == 0 || imageBytes > (uint)(data.Length - HeaderBytes))
+        {
             throw new FormatException($"PS-X EXE declares a {imageBytes}-byte image but the file holds {data.Length - HeaderBytes} bytes after its header.");
+        }
+
         if ((ulong)loadAddress + imageBytes > uint.MaxValue + 1UL)
+        {
             throw new FormatException($"PS-X EXE image at 0x{loadAddress:X8} wraps the address space.");
+        }
+
         return new PsxExecutable(data, loadAddress, (int)imageBytes);
     }
 
@@ -59,7 +68,10 @@ public sealed class PsxExecutable
         ArgumentOutOfRangeException.ThrowIfNegative(size);
         ulong relative = unchecked((ulong)address - LoadAddress);
         if (address < LoadAddress || relative + (ulong)size > (ulong)ImageBytes)
+        {
             throw new FormatException($"Address range 0x{address:X8}+{size} is outside the executable image 0x{LoadAddress:X8}+{ImageBytes}.");
+        }
+
         return HeaderBytes + (int)relative;
     }
 

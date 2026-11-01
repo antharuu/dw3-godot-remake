@@ -24,8 +24,11 @@ public static class MipsStoreScanner
         foreach (MipsInstruction instruction in MipsInstruction.DecodeRange(code, 0, MipsInstruction.WholeWordEnd(code.Length)))
         {
             if (tracker.Execute(instruction) is MipsStore store && store.Address == target)
+            {
                 matches.Add(new MipsStoreMatch(store.Offset, store.Value));
+            }
         }
+
         return matches;
     }
 }
