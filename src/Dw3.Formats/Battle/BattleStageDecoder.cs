@@ -35,7 +35,10 @@ public static class BattleStageDecoder
     {
         ArgumentNullException.ThrowIfNull(data);
         if (stageId < 0 || stageId >= StageCount)
+        {
             throw new FormatException($"Fight stage id {stageId} is out of range (must be 0..{StageCount - 1}).");
+        }
+
         int offset = stageId * Stride;
         if (offset + Stride > data.Length)
         {

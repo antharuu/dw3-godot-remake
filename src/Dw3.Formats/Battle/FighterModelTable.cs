@@ -55,7 +55,10 @@ public sealed class FighterModelTable
     {
         ArgumentNullException.ThrowIfNull(data);
         if (data.Length < HeaderBytes)
+        {
             throw new FormatException($"Fighter table is {data.Length} bytes, shorter than its {HeaderBytes}-byte header.");
+        }
+
         int entriesOffset = ReadOffset(data, 0x04, "entry list");
         int partners = ReadOffset(data, 0x08, "partner table");
         int enemies = ReadOffset(data, 0x0C, "enemy table");
@@ -64,9 +67,13 @@ public sealed class FighterModelTable
         {
             short id = BinaryPrimitives.ReadInt16LittleEndian(data.AsSpan(cursor, 2));
             if (id == 0)
+            {
                 break;
+            }
+
             entries.Add(new FighterModelEntry(id, data[cursor + 2], data[cursor + 3]));
         }
+
         return new FighterModelTable(data, entries, partners, enemies);
     }
 
@@ -91,32 +98,53 @@ public sealed class FighterModelTable
         int cameraRef = cameraPos + cameraCount * 6;
         int cameraProjection = cameraRef + cameraCount * 6;
         if (cameraProjection + cameraCount * 2 > _data.Length)
+        {
             throw new FormatException($"Fighter {fighterId} camera arrays overrun the fighter table.");
+        }
+
         var cameras = new List<BattleCamera>(cameraCount);
         for (int index = 0; index < cameraCount; index++)
+        {
             cameras.Add(new BattleCamera(
                 ReadI16(cameraPos + index * 6), ReadI16(cameraPos + index * 6 + 2), ReadI16(cameraPos + index * 6 + 4),
                 ReadI16(cameraRef + index * 6), ReadI16(cameraRef + index * 6 + 2), ReadI16(cameraRef + index * 6 + 4),
                 ReadI16(cameraProjection + index * 2)));
+        }
 
         uint baseAddress = BinaryPrimitives.ReadUInt32LittleEndian(_data);
         uint faceAddress = BinaryPrimitives.ReadUInt32LittleEndian(_data.AsSpan(record + 0x0C, 4));
         long faceOffsetLong = (long)faceAddress - baseAddress;
         if (faceOffsetLong < 0 || faceOffsetLong >= _data.Length)
+        {
             throw new FormatException($"Fighter {fighterId} face offset 0x{faceOffsetLong:X} lies outside the fighter table.");
+        }
+
         int faceOffset = (int)faceOffsetLong;
         var parts = new List<BattleFacePart>();
         bool terminated = false;
         for (int index = 0; index < 16; index++)
         {
             int at = faceOffset + index * 10;
-            if (at + 10 > _data.Length) throw new FormatException($"Fighter {fighterId} face part {index} overruns the fighter table.");
+            if (at + 10 > _data.Length)
+            {
+                throw new FormatException($"Fighter {fighterId} face part {index} overruns the fighter table.");
+            }
+
             if (_data[at] == 0xFF) { terminated = true; break; }
-            if (_data[at + 2] == 0) continue;
+            if (_data[at + 2] == 0)
+            {
+                continue;
+            }
+
             parts.Add(new BattleFacePart(index, _data[at], _data[at + 1], _data[at + 2], _data[at + 3],
                 [new(_data[at + 4], _data[at + 5]), new(_data[at + 6], _data[at + 7]), new(_data[at + 8], _data[at + 9])]));
         }
-        if (!terminated) throw new FormatException($"Fighter {fighterId} face has no x=0xff terminator in 16 parts.");
+
+        if (!terminated)
+        {
+            throw new FormatException($"Fighter {fighterId} face has no x=0xff terminator in 16 parts.");
+        }
+
         return new BattleFighterMetadata(cameras,
             new BattleGeometry(ReadI16(record + 0x10), ReadI16(record + 0x18)),
             new BattleFace(new BattleFaceSource(record, record + 0x0C, faceOffset, 10, "x==0xff"), parts));
@@ -129,7 +157,10 @@ public sealed class FighterModelTable
         bool isEnemy = entry.Kind >= EnemyKindMinimum;
         long record = isEnemy ? _enemies + (long)entry.Index * EnemyStride : _partners + (long)entry.Index * PartnerStride;
         if (record + (isEnemy ? EnemyStride : PartnerStride) > _data.Length)
+        {
             throw new FormatException($"{(isEnemy ? "Enemy" : "Partner")} record {entry.Index} of fighter {fighterId} lies outside the fighter table.");
+        }
+
         return (entry, (int)record, isEnemy);
     }
 
@@ -139,7 +170,10 @@ public sealed class FighterModelTable
     {
         uint value = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(at, 4));
         if (value > int.MaxValue)
+        {
             throw new FormatException($"Fighter table {name} offset 0x{value:X} is invalid.");
+        }
+
         return (int)value;
     }
 }

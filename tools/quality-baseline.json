@@ -629,12 +629,6 @@
     },
     {
       "rule": "S138",
-      "project": "Dw3.Formats",
-      "folder": "Battle",
-      "count": 1
-    },
-    {
-      "rule": "S138",
       "project": "Dw3.Game",
       "folder": ".",
       "count": 4
@@ -2339,12 +2333,6 @@
     },
     {
       "rule": "SA1503",
-      "project": "Dw3.Formats",
-      "folder": "Battle",
-      "count": 20
-    },
-    {
-      "rule": "SA1503",
       "project": "Dw3.Formats.Tests",
       "folder": "Battle",
       "count": 7
@@ -2576,12 +2564,6 @@
       "project": "Dw3.Extractor.Tests",
       "folder": ".",
       "count": 2
-    },
-    {
-      "rule": "SA1513",
-      "project": "Dw3.Formats",
-      "folder": "Battle",
-      "count": 6
     },
     {
       "rule": "SA1513",
@@ -2845,7 +2827,7 @@
       "rule": "SA1516",
       "project": "Dw3.Formats",
       "folder": "Battle",
-      "count": 5
+      "count": 2
     },
     {
       "rule": "SA1516",
@@ -2936,12 +2918,6 @@
       "project": "Dw3.Extractor",
       "folder": ".",
       "count": 15
-    },
-    {
-      "rule": "SA1519",
-      "project": "Dw3.Formats",
-      "folder": "Battle",
-      "count": 1
     },
     {
       "rule": "SA1519",

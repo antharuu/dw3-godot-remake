@@ -33,7 +33,10 @@ public static class BattleDataDecoder
         int statOffset = vitalRandomOffset + vitalRandomCount * sizeof(int);
         var statGains = new IReadOnlyList<int>[statTiers];
         for (int tier = 0; tier < statTiers; tier++)
+        {
             statGains[tier] = ReadInt32Run(data, statOffset + tier * statValuesPerTier * sizeof(int), statValuesPerTier);
+        }
+
         int resistanceOffset = statOffset + statTiers * statValuesPerTier * sizeof(int);
         int[] resistanceGains = ReadInt32Run(data, resistanceOffset, resistanceCount);
         return new BattleGrowthData(levelExperience, vitalCuts, vitalRandom, statGains, resistanceGains);
@@ -89,7 +92,11 @@ public static class BattleDataDecoder
     {
         EnsureRange(data, offset, BattleTableStride, "Battle table record");
         var actions = new BattleAction[4];
-        for (int i = 0; i < actions.Length; i++) actions[i] = DecodeBattleAction(data, offset + 0x32 + i * 4);
+        for (int i = 0; i < actions.Length; i++)
+        {
+            actions[i] = DecodeBattleAction(data, offset + 0x32 + i * 4);
+        }
+
         return new BattleTableRecord(
             ReadI16(data, offset), ReadI16(data, offset + 2), ReadI16(data, offset + 4), ReadI16(data, offset + 6),
             ReadI16Run(data, offset + 8, 3), ReadI16Run(data, offset + 0x0E, 5), ReadI16Run(data, offset + 0x18, 12),
@@ -98,14 +105,23 @@ public static class BattleDataDecoder
 
     public static IReadOnlyList<BattleTableRecord> DecodeBattleTable(ReadOnlySpan<byte> data)
     {
-        if (data.Length < BattleTableStride) throw new FormatException("Battle table is shorter than one record.");
+        if (data.Length < BattleTableStride)
+        {
+            throw new FormatException("Battle table is shorter than one record.");
+        }
+
         var records = new List<BattleTableRecord>();
         for (int offset = 0; offset + BattleTableStride <= data.Length; offset += BattleTableStride)
         {
             BattleTableRecord record = DecodeBattleTableRecord(data, offset);
-            if (record.Id == 0) return records;
+            if (record.Id == 0)
+            {
+                return records;
+            }
+
             records.Add(record);
         }
+
         throw new FormatException("Battle table has no zero-id terminator.");
     }
 
@@ -136,9 +152,16 @@ public static class BattleDataDecoder
     public static int ResolveDigimonId(IReadOnlyList<int> idsByIndex, int oneBasedIndex)
     {
         ArgumentNullException.ThrowIfNull(idsByIndex);
-        if (oneBasedIndex == 0) return 0;
+        if (oneBasedIndex == 0)
+        {
+            return 0;
+        }
+
         if (oneBasedIndex < 1 || oneBasedIndex > idsByIndex.Count)
+        {
             throw new FormatException($"Evolution Digimon index {oneBasedIndex} is outside the creature table.");
+        }
+
         return idsByIndex[oneBasedIndex - 1];
     }
 
@@ -153,24 +176,41 @@ public static class BattleDataDecoder
     private static int[] ReadInt32Run(ReadOnlySpan<byte> data, int offset, int count)
     {
         var values = new int[count];
-        for (int i = 0; i < count; i++) values[i] = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(offset + i * sizeof(int), sizeof(int)));
+        for (int i = 0; i < count; i++)
+        {
+            values[i] = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(offset + i * sizeof(int), sizeof(int)));
+        }
+
         return values;
     }
+
     private static ushort[] ReadU16Run(ReadOnlySpan<byte> data, int offset, int count)
     {
         var values = new ushort[count];
-        for (int i = 0; i < count; i++) values[i] = ReadU16(data, offset + i * 2);
+        for (int i = 0; i < count; i++)
+        {
+            values[i] = ReadU16(data, offset + i * 2);
+        }
+
         return values;
     }
+
     private static short[] ReadI16Run(ReadOnlySpan<byte> data, int offset, int count)
     {
         var values = new short[count];
-        for (int i = 0; i < count; i++) values[i] = ReadI16(data, offset + i * 2);
+        for (int i = 0; i < count; i++)
+        {
+            values[i] = ReadI16(data, offset + i * 2);
+        }
+
         return values;
     }
+
     private static void EnsureRange(ReadOnlySpan<byte> data, int offset, int length, string kind)
     {
         if (offset < 0 || length < 0 || offset > data.Length - length)
+        {
             throw new FormatException($"{kind} lies outside the supplied buffer.");
+        }
     }
 }
