@@ -58,6 +58,32 @@ public sealed class CoverageMergeTests : IDisposable
         Assert.Throws<QualityInputException>(Merge);
     }
 
+    [Fact]
+    public void SameFileUnderDifferentSourceRootsIsDeduplicatedIntoOneEntry()
+    {
+        // Simulate two test projects covering the same source file:
+        // - Dw3.Data.Tests: source=".../src/Dw3.Data/", filename="DataPackWriter.cs"
+        // - Dw3.Game.Tests:  source=".../src/",          filename="Dw3.Data/DataPackWriter.cs"
+        // Both resolve to the same absolute path; only one entry must appear in the merged report.
+        string repoRoot = _repository.Root;
+        string sourceNarrow = Path.Combine(repoRoot, "src", "Dw3.Data") + Path.DirectorySeparatorChar;
+        string sourceWide = Path.Combine(repoRoot, "src") + Path.DirectorySeparatorChar;
+
+        // Narrow report: source = src/Dw3.Data/, filename = DataPackWriter.cs
+        _repository.WriteCoberturaWithSource("narrow", "Dw3.Data", sourceNarrow, "DataPackWriter.cs", (1, 1), (2, 0), (3, 0));
+
+        // Wide report: source = src/, filename = Dw3.Data/DataPackWriter.cs
+        _repository.WriteCoberturaWithSource("wide", "Dw3.Data", sourceWide, "Dw3.Data/DataPackWriter.cs", (1, 0), (2, 1), (3, 0));
+
+        CoverageReport report = Merge();
+
+        // max(1,0)=1, max(0,1)=1, max(0,0)=0 → 2 covered / 3 total = 66.67%
+        Assert.Equal(66.67, report.LinePercent("Dw3.Data"));
+
+        // Only one file entry in the package (deduplication)
+        Assert.Single(report.FilesOf("Dw3.Data"));
+    }
+
     public void Dispose()
     {
         _repository.Dispose();

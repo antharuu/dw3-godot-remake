@@ -16,18 +16,24 @@ internal static class CoberturaFile
 
     /// <summary>
     /// Adds the line hits of a Cobertura report to a merged report.
+    /// Each filename attribute is resolved against the first &lt;source&gt; element so that
+    /// reports from different test projects (e.g. source <c>src/Dw3.Data/</c> + filename
+    /// <c>DataPackWriter.cs</c> vs. source <c>src/</c> + filename
+    /// <c>Dw3.Data/DataPackWriter.cs</c>) converge to the same canonical key and are
+    /// merged rather than double-counted.
     /// </summary>
     /// <param name="report">The merged report.</param>
     /// <param name="path">The path of the Cobertura report.</param>
     public static void ReadInto(CoverageReport report, string path)
     {
         XDocument document = Load(path);
+        string? source = document.Descendants("source").FirstOrDefault()?.Value;
         foreach (XElement package in document.Descendants("package"))
         {
             string packageName = RequiredAttribute(package, "name", path);
             foreach (XElement classElement in package.Descendants("class"))
             {
-                AddClassLines(report, packageName, classElement, path);
+                AddClassLines(report, packageName, classElement, source, path);
             }
         }
     }
@@ -69,18 +75,47 @@ internal static class CoberturaFile
 
     /// <summary>
     /// Adds the lines of one class element. Lines of nested classes share their source file,
-    /// so the merge is keyed by file name rather than class name.
+    /// so the merge is keyed by resolved file path rather than class name.
     /// </summary>
     /// <param name="report">The merged report.</param>
     /// <param name="package">The package name.</param>
     /// <param name="classElement">The class element.</param>
+    /// <param name="source">The first &lt;source&gt; value from the report, or null.</param>
     /// <param name="path">The report path, for error messages.</param>
-    private static void AddClassLines(CoverageReport report, string package, XElement classElement, string path)
+    private static void AddClassLines(CoverageReport report, string package, XElement classElement, string? source, string path)
     {
-        string file = RequiredAttribute(classElement, "filename", path);
+        string rawFile = RequiredAttribute(classElement, "filename", path);
+        string file = ResolveFilename(rawFile, source);
         foreach (XElement line in classElement.Elements("lines").Elements("line"))
         {
             report.AddLine(package, file, IntegerAttribute(line, "number", path), IntegerAttribute(line, "hits", path));
+        }
+    }
+
+    /// <summary>
+    /// Resolves a raw <c>filename</c> attribute against the report's <c>&lt;source&gt;</c> prefix.
+    /// Returns the canonical absolute path so that the same source file reported under different
+    /// roots by different test projects maps to one entry in the merged report.
+    /// Falls back to the raw name when <paramref name="source"/> is absent, empty, or the
+    /// combination produces an invalid path.
+    /// </summary>
+    /// <param name="filename">The raw filename attribute value.</param>
+    /// <param name="source">The first &lt;source&gt; value, or null.</param>
+    /// <returns>The resolved canonical path, or the raw filename as fallback.</returns>
+    private static string ResolveFilename(string filename, string? source)
+    {
+        if (string.IsNullOrEmpty(source))
+        {
+            return filename;
+        }
+
+        try
+        {
+            return Path.GetFullPath(Path.Combine(source, filename));
+        }
+        catch (ArgumentException)
+        {
+            return filename;
         }
     }
 
