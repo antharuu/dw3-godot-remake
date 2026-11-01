@@ -1,18 +1,5 @@
 namespace Dw3Production.Presentation;
 
-public enum ExitCuePhase
-{
-    Hidden,
-    Opening,
-    Open,
-    Closing,
-}
-
-public sealed record ExitCueSnapshot(ExitCuePhase Phase, int PopFrame, int? InnerFrame, int RawDirection)
-{
-    public bool Visible => Phase is not ExitCuePhase.Hidden;
-}
-
 /// <summary>
 /// Source-time state for the field offer balloon. The EU source advances its
 /// 8.8 frame clock by 0x133 at 50 PAL VSYNCs per second. M1 runs simulation at
@@ -43,39 +30,26 @@ public sealed class ExitCueState
 
     public ExitCueSnapshot Advance(bool offered, int rawDirection)
     {
-        if (rawDirection is < 0 or > 7) throw new ArgumentOutOfRangeException(nameof(rawDirection));
+        if (rawDirection is < 0 or > 7)
+        {
+            throw new ArgumentOutOfRangeException(nameof(rawDirection));
+        }
+
         var sourceUnits = NextSourceUnits();
         if (offered)
         {
-            _rawDirection = rawDirection;
-            if (Phase is ExitCuePhase.Hidden or ExitCuePhase.Closing)
-            {
-                Phase = ExitCuePhase.Opening;
-                _pop = OpeningStart;
-                _innerElapsed = 0;
-            }
-            if (Phase == ExitCuePhase.Opening)
-            {
-                _pop = Math.Min(OpenAt, _pop + sourceUnits);
-                if (_pop == OpenAt) Phase = ExitCuePhase.Open;
-            }
-            else if (Phase == ExitCuePhase.Open)
-            {
-                _innerElapsed = checked(_innerElapsed + sourceUnits);
-            }
+            AdvanceOffered(rawDirection, sourceUnits);
         }
-        else if (Phase is ExitCuePhase.Opening or ExitCuePhase.Open)
+        else
         {
-            Phase = ExitCuePhase.Closing;
-            _pop = OpenAt;
-        }
-        else if (Phase == ExitCuePhase.Closing)
-        {
-            _pop = Math.Min(ClosingEnd, _pop + sourceUnits);
-            if (_pop == ClosingEnd) Phase = ExitCuePhase.Hidden;
+            AdvanceNotOffered(sourceUnits);
         }
 
-        if (Phase == ExitCuePhase.Hidden) return new ExitCueSnapshot(Phase, 0, null, _rawDirection);
+        if (Phase == ExitCuePhase.Hidden)
+        {
+            return new ExitCueSnapshot(Phase, 0, null, _rawDirection);
+        }
+
         int? innerFrame = Phase == ExitCuePhase.Open ? CurrentInnerFrame() : null;
         return new ExitCueSnapshot(Phase, _pop >> 2, innerFrame, _rawDirection);
     }
@@ -87,6 +61,47 @@ public sealed class ExitCueState
         _pop = 0;
         _innerElapsed = 0;
         _rawDirection = 0;
+    }
+
+    private void AdvanceOffered(int rawDirection, int sourceUnits)
+    {
+        _rawDirection = rawDirection;
+        if (Phase is ExitCuePhase.Hidden or ExitCuePhase.Closing)
+        {
+            Phase = ExitCuePhase.Opening;
+            _pop = OpeningStart;
+            _innerElapsed = 0;
+        }
+
+        if (Phase == ExitCuePhase.Opening)
+        {
+            _pop = Math.Min(OpenAt, _pop + sourceUnits);
+            if (_pop == OpenAt)
+            {
+                Phase = ExitCuePhase.Open;
+            }
+        }
+        else if (Phase == ExitCuePhase.Open)
+        {
+            _innerElapsed = checked(_innerElapsed + sourceUnits);
+        }
+    }
+
+    private void AdvanceNotOffered(int sourceUnits)
+    {
+        if (Phase is ExitCuePhase.Opening or ExitCuePhase.Open)
+        {
+            Phase = ExitCuePhase.Closing;
+            _pop = OpenAt;
+        }
+        else if (Phase == ExitCuePhase.Closing)
+        {
+            _pop = Math.Min(ClosingEnd, _pop + sourceUnits);
+            if (_pop == ClosingEnd)
+            {
+                Phase = ExitCuePhase.Hidden;
+            }
+        }
     }
 
     private int NextSourceUnits()
@@ -101,15 +116,27 @@ public sealed class ExitCueState
     {
         var row = _rawDirection == 4 ? 10 : (_rawDirection >> 1) + 6;
         if (!_innerRows.TryGetValue(row, out var sequence) || sequence.Count == 0)
+        {
             throw new InvalidOperationException($"cue direction row absent={row}");
+        }
+
         var total = sequence.Sum(item => item.Duration);
-        if (total <= 0) throw new InvalidOperationException($"cue direction row has invalid duration={row}");
+        if (total <= 0)
+        {
+            throw new InvalidOperationException($"cue direction row has invalid duration={row}");
+        }
+
         var elapsed = _innerElapsed % total;
         foreach (var item in sequence)
         {
-            if (elapsed < item.Duration) return item.Frame;
+            if (elapsed < item.Duration)
+            {
+                return item.Frame;
+            }
+
             elapsed -= item.Duration;
         }
+
         throw new InvalidOperationException("cue animation sequence exhausted unexpectedly");
     }
 }

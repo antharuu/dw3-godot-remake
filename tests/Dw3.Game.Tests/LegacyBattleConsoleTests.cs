@@ -833,7 +833,7 @@ public sealed class LegacyBattleConsoleTests
 
         public SeqShotRng(params int[] values) => _values = values;
 
-        public int Next() => _values[_index++ % _values.Length];
+        public int NextRoll() => _values[_index++ % _values.Length];
     }
 
     private static BattleFighter Enemy(int id = 101, int hp = 500, int maxHp = 500, int mp = 100, int turns = 0) => new()

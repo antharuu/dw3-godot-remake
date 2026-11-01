@@ -43,6 +43,7 @@ public sealed class CameraController
         {
             _pan = target;
         }
+
         _camera.Position = _pan;
         _camera.MakeCurrent();
     }

@@ -26,7 +26,8 @@ public sealed class BattleMotionMachine
         IReadOnlyList<IReadOnlyList<IReadOnlyList<int>>> motions,
         int idleMotion = 0)
     {
-        _motions = motions ?? throw new ArgumentNullException(nameof(motions));
+        ArgumentNullException.ThrowIfNull(motions);
+        _motions = motions;
         _idleFrames = [ReadInitialFrame(0), ReadInitialFrame(1)];
 
         Motion = 1;
@@ -84,15 +85,22 @@ public sealed class BattleMotionMachine
     public void SetMotion(int motion, bool restart)
     {
         if (!restart && motion == Motion)
+        {
             return;
-        if (motion < 1 || motion > _motions.Count)
-            throw new ArgumentOutOfRangeException(nameof(motion));
+        }
+
+        ArgumentOutOfRangeException.ThrowIfLessThan(motion, 1);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(motion, _motions.Count);
 
         Motion = motion;
         if (motion == 1)
+        {
             IdleMotion = 0;
+        }
         else if (motion == 2)
+        {
             IdleMotion = 1;
+        }
 
         Keyframe = 1;
         MotionDone = false;
@@ -106,22 +114,26 @@ public sealed class BattleMotionMachine
 
         Expand(_motions[motion - 1]);
         if (_keyframes.Count == 0)
+        {
             throw new InvalidOperationException("Motion expands to an empty animation timeline.");
+        }
     }
 
     /// <summary>Publishes the current timeline entry and advances by the requested frame count.</summary>
     /// <param name="framesElapsed">Non-negative number of animation frames to advance.</param>
     public void Step(int framesElapsed)
     {
-        if (framesElapsed < 0)
-            throw new ArgumentOutOfRangeException(nameof(framesElapsed));
+        ArgumentOutOfRangeException.ThrowIfNegative(framesElapsed);
 
         if (MotionDone)
         {
             Blending = false;
             BlendTarget = 0;
             if (ToIdle)
+            {
                 SetMotion(unchecked(IdleMotion + 1), restart: false);
+            }
+
             return;
         }
 
@@ -130,9 +142,13 @@ public sealed class BattleMotionMachine
         Keyframe = Math.Min(unchecked(Keyframe + framesElapsed), _keyframes.Count - 1);
         var landedValue = _keyframes[Keyframe];
         if (landedValue == BlendFlag)
+        {
             Keyframe = _targets[Keyframe];
+        }
         else if (landedValue == FinishMarker)
+        {
             MotionDone = true;
+        }
     }
 
     /// <summary>Changes which of the first two motions is used as the idle motion.</summary>
@@ -140,17 +156,28 @@ public sealed class BattleMotionMachine
     public void SetIdleMotion(int idleMotion)
     {
         if (idleMotion is not (0 or 1))
+        {
             throw new ArgumentOutOfRangeException(nameof(idleMotion));
+        }
+
         IdleMotion = idleMotion;
     }
 
+    /// <summary>Reads the initial frame from the first step of the motion at <paramref name="motionIndex"/>, or zero when absent.</summary>
+    /// <param name="motionIndex">Zero-based index into the motions list.</param>
+    /// <returns>The first step's frame value, or zero when the motion or its first step is absent.</returns>
     private int ReadInitialFrame(int motionIndex)
     {
         if (motionIndex >= _motions.Count || _motions[motionIndex].Count == 0)
+        {
             return 0;
+        }
+
         return _motions[motionIndex][0][2];
     }
 
+    /// <summary>Walks the decoded step table and appends keyframes, targets, and sources to the expanded timeline.</summary>
+    /// <param name="steps">Decoded motion step rows from the fighter's motion data.</param>
     private void Expand(IReadOnlyList<IReadOnlyList<int>> steps)
     {
         for (var stepIndex = 0; stepIndex < steps.Count; stepIndex++)
@@ -158,7 +185,9 @@ public sealed class BattleMotionMachine
             var step = steps[stepIndex];
             var index = step[0];
             if (index == StepEndMarker)
+            {
                 break;
+            }
 
             var count = step[1];
             if (count == 0)
@@ -167,28 +196,51 @@ public sealed class BattleMotionMachine
                 break;
             }
 
-            var firstFrame = step[2];
-            var endFrame = step[3];
-            if (endFrame != 0)
+            if (ExpandFrameRun(step, count))
             {
-                for (var offset = 0; offset < count; offset++)
-                    AddEntry(unchecked(firstFrame + offset), 0, -1);
                 continue;
             }
 
-            var target = steps[stepIndex + 1][2];
-            if (target == -1)
-            {
-                target = _idleFrames[IdleMotion];
-                ToIdle = true;
-            }
+            ExpandBlendRun(step, count, stepIndex, steps);
+        }
+    }
 
-            var source = index == 0 ? FinishMarker : steps[stepIndex - 1][3];
-            for (var offset = 1; offset <= count; offset++)
-            {
-                var weighted = unchecked(offset * BlendScale) / unchecked(count + 1);
-                AddEntry(weighted | BlendFlag, target, source);
-            }
+    /// <summary>Appends count identical frame entries when step[3] is nonzero (sequential source frames).</summary>
+    /// <param name="step">Decoded step row: [index, count, firstFrame, endFrame].</param>
+    /// <param name="count">Number of frames to append.</param>
+    /// <returns><see langword="true"/> when the run was appended; <see langword="false"/> when step[3] is zero.</returns>
+    private bool ExpandFrameRun(IReadOnlyList<int> step, int count)
+    {
+        var firstFrame = step[2];
+        var endFrame = step[3];
+        if (endFrame == 0)
+        {
+            return false;
+        }
+
+        for (var offset = 0; offset < count; offset++)
+        {
+            AddEntry(unchecked(firstFrame + offset), 0, -1);
+        }
+
+        return true;
+    }
+
+    private void ExpandBlendRun(IReadOnlyList<int> step, int count, int stepIndex, IReadOnlyList<IReadOnlyList<int>> steps)
+    {
+        var index = step[0];
+        var target = steps[stepIndex + 1][2];
+        if (target == -1)
+        {
+            target = _idleFrames[IdleMotion];
+            ToIdle = true;
+        }
+
+        var source = index == 0 ? FinishMarker : steps[stepIndex - 1][3];
+        for (var offset = 1; offset <= count; offset++)
+        {
+            var weighted = unchecked(offset * BlendScale) / unchecked(count + 1);
+            AddEntry(weighted | BlendFlag, target, source);
         }
     }
 
@@ -204,15 +256,7 @@ public sealed class BattleMotionMachine
         var value = _keyframes[index];
         if ((value & BlendFlag) != 0)
         {
-            var target = _targets[index];
-            if (BlendTarget != target)
-            {
-                BlendTarget = target;
-                BlendSource = _sources[index];
-            }
-            Frame = target;
-            Blend = value & 0x7FFF;
-            Blending = true;
+            PublishBlendEntry(index, value);
             return;
         }
 
@@ -220,5 +264,19 @@ public sealed class BattleMotionMachine
         BlendSource = -1;
         Frame = value;
         Blending = false;
+    }
+
+    private void PublishBlendEntry(int index, int value)
+    {
+        var target = _targets[index];
+        if (BlendTarget != target)
+        {
+            BlendTarget = target;
+            BlendSource = _sources[index];
+        }
+
+        Frame = target;
+        Blend = value & 0x7FFF;
+        Blending = true;
     }
 }

@@ -3,18 +3,6 @@ using Dw3Production.Conversion;
 
 namespace Dw3Production.Presentation;
 
-/// <summary>The render view for one frame of the talk box, computed by the host from the actor's
-/// source position, the camera and the dialogue controller's reveal state.</summary>
-public readonly record struct DialogueView(
-    Vector2 BoxOrigin,
-    int Type,
-    int BoxWidth,
-    IReadOnlyList<TextToken> SpeakerName,
-    bool SpeakerIsPlayer,
-    IReadOnlyList<TextToken> Page,
-    int RevealCount,
-    bool ShowArrow);
-
 /// <summary>
 /// Draws the PSX talk box (speech bubble) beside the speaking actor's head: the corner sprite,
 /// the two edge sprites, the semi-transparent light-blue panel, the speaker-name window and the text
@@ -24,7 +12,7 @@ public readonly record struct DialogueView(
 /// did. No sprite, colour or position is invented: the frames, layouts and panel come from
 /// the disc-decoded cache, and the name/text glyphs from the font atlas.
 /// </summary>
-public sealed partial class DialogueRenderer
+public sealed partial class DialogueRenderer : IDisposable
 {
     // The source screen (PSX 320x240) maps to our 1280x720 viewport by S = 3*s + (160, 0): the
     // world is drawn at 3x and the 16:9 view shows 160 extra source pixels on each horizontal
@@ -44,6 +32,9 @@ public sealed partial class DialogueRenderer
         root.AddChild(layer);
     }
 
+    /// <summary>Releases Godot resources owned by this renderer.</summary>
+    public void Dispose() => _box.Dispose();
+
     public void SetFont(FontData font, Texture2D page0, Texture2D page1) => _box.SetFont(font, page0, page1);
 
     public void SetFrames(DialogueFrameData frames, IReadOnlyDictionary<int, Texture2D> textures, Texture2D panelTexture) => _box.SetFrames(frames, textures, panelTexture);
@@ -54,22 +45,30 @@ public sealed partial class DialogueRenderer
     /// <summary>Maps a deterministic probe frame to the four arrow brightness states.</summary>
     public static int ProbeArrowBrightnessIndex(int frame)
     {
-        if (frame < 0) throw new ArgumentOutOfRangeException(nameof(frame));
+        ArgumentOutOfRangeException.ThrowIfNegative(frame);
         return frame % 4;
     }
 
     /// <summary>Gets a value indicating whether true when the current page contains at least one real glyph or icon draw.</summary>
     public bool HasGlyphPixels => _box.GlyphCount > 0 || _box.IconCount > 0;
+
     public int GlyphCount => _box.GlyphCount;
+
     public int IconCount => _box.IconCount;
+
     /// <summary>Gets a value indicating whether true when the speaker name window carries real glyph pixels.</summary>
     public bool HasNamePixels => _box.NameGlyphCount > 0;
+
     public int NameGlyphCount => _box.NameGlyphCount;
+
     /// <summary>Gets a value indicating whether true when the corner/edge sprites and the panel were laid out this frame.</summary>
     public bool HasFramePixels => _box.FrameRendered;
+
     /// <summary>Gets a value indicating whether true when the blinking "next" arrow is visible this frame.</summary>
     public bool HasArrowPixels => _box.ArrowRendered;
+
     public int BoxType => _box.Type;
+
     /// <summary>Gets the panel rectangle in viewport pixels (the probe checks the bubble sits at the actor, not the bottom).</summary>
     public Rect2 BoxScreenRect => _box.BoxScreenRect;
 
@@ -99,11 +98,17 @@ public sealed partial class DialogueRenderer
         private int? _probeArrowBrightness;
 
         public int GlyphCount { get; private set; }
+
         public int IconCount { get; private set; }
+
         public int NameGlyphCount { get; private set; }
+
         public bool FrameRendered { get; private set; }
+
         public bool ArrowRendered { get; private set; }
+
         public int Type => _type;
+
         public Rect2 BoxScreenRect { get; private set; }
 
         public void SetFont(FontData font, Texture2D page0, Texture2D page1)
@@ -128,6 +133,21 @@ public sealed partial class DialogueRenderer
 
         public void SetView(DialogueView? view)
         {
+            ResetDrawState();
+            if (view is not { } value || _font is null || _page0 is null || _page1 is null || _frames is null || _frameTextures is null)
+            {
+                QueueRedraw();
+                return;
+            }
+
+            ApplyView(value);
+            FrameRendered = true;
+            ArrowRendered = _showArrow;
+            QueueRedraw();
+        }
+
+        private void ResetDrawState()
+        {
             _textDraws.Clear();
             _nameDraws.Clear();
             GlyphCount = 0;
@@ -137,14 +157,13 @@ public sealed partial class DialogueRenderer
             ArrowRendered = false;
             _visible = false;
             BoxScreenRect = default;
-            if (view is not { } value || _font is null || _page0 is null || _page1 is null || _frames is null || _frameTextures is null)
-            {
-                QueueRedraw();
-                return;
-            }
+        }
+
+        private void ApplyView(DialogueView value)
+        {
             _visible = true;
             _type = value.Type;
-            _layout = _frames.Layouts[value.Type];
+            _layout = _frames!.Layouts[value.Type];
             _boxWidth = value.BoxWidth;
             _boxOrigin = value.BoxOrigin;
 
@@ -178,10 +197,6 @@ public sealed partial class DialogueRenderer
             _showArrow = value.ShowArrow;
             var arrowX = _type is 2 or 3 ? _boxWidth - 14 : _layout.Arrow.X;
             _arrowPosition = new Vector2(_boxOrigin.X + arrowX, _boxOrigin.Y + _layout.Arrow.Y);
-
-            FrameRendered = true;
-            ArrowRendered = _showArrow;
-            QueueRedraw();
         }
 
         /// <summary>Lays out a token run (the name or the text page) left-to-right in source pixels,
@@ -195,32 +210,29 @@ public sealed partial class DialogueRenderer
             var index = 0;
             foreach (var token in tokens)
             {
-                if (revealCount >= 0 && index >= revealCount) break;
+                if (revealCount >= 0 && index >= revealCount)
+                {
+                    break;
+                }
+
                 index++;
                 if (token.IsControl)
                 {
-                    if (token.Command == 1) { cursorX = 0f; cursorY += LineHeight; }
+                    if (token.Command == 1)
+                    {
+                        cursorX = 0f;
+                        cursorY += LineHeight;
+                    }
+
                     continue;
                 }
-                GlyphMetric? metric = null;
-                if (token.IsGlyph)
-                {
-                    if (!_font!.Glyphs.TryGetValue(token.Code, out var glyphMetric)) continue;
-                    metric = glyphMetric;
-                    if (nameWindow) NameGlyphCount++;
-                    else GlyphCount++;
-                }
-                else if (token.IsIcon)
-                {
-                    if (!_font!.Icons.TryGetValue(token.Code, out var iconMetric)) continue;
-                    metric = iconMetric;
-                    if (!nameWindow) IconCount++;
-                }
-                else
+
+                var metric = ResolveGlyphMetric(token, nameWindow);
+                if (metric is not { } glyph)
                 {
                     continue;
                 }
-                if (metric is not { } glyph) continue;
+
                 target.Add(new GlyphDraw(
                     glyph.Page,
                     new Rect2(originX + cursorX + glyph.Dx, originY + cursorY + glyph.Dy, glyph.W, glyph.H),
@@ -229,9 +241,52 @@ public sealed partial class DialogueRenderer
             }
         }
 
+        private GlyphMetric? ResolveGlyphMetric(TextToken token, bool nameWindow)
+        {
+            if (token.IsGlyph)
+            {
+                if (!_font!.Glyphs.TryGetValue(token.Code, out var glyphMetric))
+                {
+                    return null;
+                }
+
+                if (nameWindow)
+                {
+                    NameGlyphCount++;
+                }
+                else
+                {
+                    GlyphCount++;
+                }
+
+                return glyphMetric;
+            }
+
+            if (token.IsIcon)
+            {
+                if (!_font!.Icons.TryGetValue(token.Code, out var iconMetric))
+                {
+                    return null;
+                }
+
+                if (!nameWindow)
+                {
+                    IconCount++;
+                }
+
+                return iconMetric;
+            }
+
+            return null;
+        }
+
         public override void _Draw()
         {
-            if (!_visible || _frames is null || _frameTextures is null || _page0 is null || _page1 is null || _panelTexture is null) return;
+            if (!_visible || _frames is null || _frameTextures is null || _page0 is null || _page1 is null || _panelTexture is null)
+            {
+                return;
+            }
+
             var widthOffset = _type < 2 ? _boxWidth : 0;
 
             // Semi-transparent panel (POLY_FT4): the 12x62 light-blue texture stretched across
@@ -249,9 +304,13 @@ public sealed partial class DialogueRenderer
             DrawFrame(_layout.Sprite, _boxOrigin + _layout.SpritePos, opaque);                                   // corner
             DrawFrame(0, _boxOrigin + _layout.Sprite0Pos - new Vector2(widthOffset, 0), opaque);                // left edge
             if (_type < 2)
+            {
                 DrawFrame(2, _boxOrigin + _layout.Sprite2Pos, opaque);                                          // right edge
+            }
             else
+            {
                 DrawFrame(2, _boxOrigin + new Vector2(_boxWidth - 14, _layout.Sprite2Pos.Y), opaque);
+            }
 
             // Blinking "next" arrow (frame 7), opaque, cycling its four CLUT brightness levels.
             if (_showArrow)
@@ -262,14 +321,23 @@ public sealed partial class DialogueRenderer
             }
 
             foreach (var draw in _nameDraws)
+            {
                 DrawTextureRectRegion(draw.Page == 0 ? _page0 : _page1, draw.Target, draw.Source, opaque);
+            }
+
             foreach (var draw in _textDraws)
+            {
                 DrawTextureRectRegion(draw.Page == 0 ? _page0 : _page1, draw.Target, draw.Source, opaque);
+            }
         }
 
         private void DrawFrame(int frameId, Vector2 position, Color modulate)
         {
-            if (!_frameTextures!.TryGetValue(frameId, out var texture)) return;
+            if (!_frameTextures!.TryGetValue(frameId, out var texture))
+            {
+                return;
+            }
+
             var size = texture.GetSize();
             DrawTextureRectRegion(texture, new Rect2(position, size), new Rect2(Vector2.Zero, size), modulate);
         }

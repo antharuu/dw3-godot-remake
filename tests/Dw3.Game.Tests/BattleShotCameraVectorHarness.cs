@@ -35,7 +35,7 @@ internal static class BattleShotCameraVectorHarness
             _values = values;
         }
 
-        public int Next() => _values[_index++ % _values.Length];
+        public int NextRoll() => _values[_index++ % _values.Length];
     }
 
     public static SourceBattleCameraView ToView(int[] f) => new()

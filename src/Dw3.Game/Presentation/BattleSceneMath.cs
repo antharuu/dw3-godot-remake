@@ -13,7 +13,7 @@ public static class BattleSceneMath
     /// <summary>the battle-stage presentation contract uses 12-bit fade units and integer PAL-frame steps.</summary>
     public static int StageFadeStep(int fadeInTime)
     {
-        if (fadeInTime <= 0) throw new ArgumentOutOfRangeException(nameof(fadeInTime));
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(fadeInTime);
         return 0x1000 / fadeInTime;
     }
 
@@ -35,8 +35,6 @@ public static class BattleSceneMath
             * Matrix4x4.CreateRotationY(rotationFixed.Y * turn)
             * Matrix4x4.CreateRotationZ(rotationFixed.Z * turn);
     }
-
-    public readonly record struct FighterTransform(Vector3 Position, float YawRadians);
 
     /// <summary>FIGHTSTG_faceModel, converted from PS1 Y-down/Z-forward into Godot
     /// Y-up/Z-back. The player is on positive Godot Z and receives the source half-turn.</summary>
@@ -79,12 +77,15 @@ public static class BattleSceneMath
     /// the auxiliary fighter-view contract creates layer 0x1009 at 100x60, so its half-height is 30 rather than 120.</summary>
     public static float VerticalFovDegrees(int projection, float halfHeight)
     {
-        if (projection <= 0) throw new ArgumentOutOfRangeException(nameof(projection));
-        if (halfHeight <= 0) throw new ArgumentOutOfRangeException(nameof(halfHeight));
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(projection);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(halfHeight);
         return 2f * MathF.Atan(halfHeight / projection) * 180f / MathF.PI;
     }
 
     /// <summary>the decoded fighter-camera record contract FIGHTSTG_loadCamera: view 6 normally, view 7 only while
     /// ModelControl.idleMotion is non-zero.</summary>
     public static int PartnerCameraViewIndex(int idleMotion) => idleMotion == 0 ? 6 : 7;
+
+    /// <summary>Position and yaw angle of a fighter after source-to-Godot coordinate conversion.</summary>
+    public readonly record struct FighterTransform(Vector3 Position, float YawRadians);
 }
