@@ -1,4 +1,4 @@
-using System.Text;
+using System.Globalization;
 using System.Text.Json;
 
 namespace Dw3.Formats.Battle;
@@ -16,38 +16,20 @@ public static class BattleModelJsonWriter
     /// <summary>Schema label of the decode report.</summary>
     public const string ReportSchema = "battle-model-decode-report-v1";
 
-    private static readonly JsonWriterOptions Options = new() { Indented = true };
+    /// <summary>Source features a fighter manifest does not reproduce, listed under <c>unsupported</c>.</summary>
+    private static readonly string[] UnsupportedFeatures = ["exact PS1 ABR blend equations", "lighting normals", "motion blends", "root motion"];
 
     /// <summary>Serialises the structural manifest of one fighter's model.</summary>
     public static string WriteModel(FighterModelReference reference, BattleModelStructure model, string edition)
     {
         ArgumentNullException.ThrowIfNull(reference);
         ArgumentNullException.ThrowIfNull(model);
-        return Write(json =>
+        return BattleModelElementJsonWriter.Serialize(json =>
         {
             json.WriteStartObject();
-            json.WriteString("format", ModelFormat);
-            json.WriteString("edition", edition);
-            json.WriteNumber("fighter_id", reference.FighterId);
-            json.WriteNumber("model_archive_entry", model.ModelEntry);
-            json.WriteNumber("motion_archive_entry", reference.MotionEntry);
-            json.WriteNumber("texture_archive_entry", model.TextureEntry);
-            json.WriteNumber("bone_count", model.BoneCount);
-            json.WriteStartArray("bones");
-            foreach (BattleModelBone bone in model.Bones)
-            {
-                json.WriteStartObject();
-                json.WriteNumber("index", bone.Index);
-                WriteNullable(json, "parent", bone.Parent);
-                WriteNullable(json, "mesh_entry", bone.MeshEntry);
-                WriteNullable(json, "key_entry", bone.KeyEntry);
-                json.WriteEndObject();
-            }
-            json.WriteEndArray();
-            json.WriteStartArray("meshes");
-            foreach (BattleMesh mesh in model.Meshes)
-                WriteMesh(json, mesh, null);
-            json.WriteEndArray();
+            WriteHeader(json, reference, model, edition);
+            BattleModelElementJsonWriter.WriteBones(json, model);
+            BattleModelElementJsonWriter.WriteMeshes(json, model.Meshes, null);
             json.WriteEndObject();
         });
     }
@@ -56,66 +38,22 @@ public static class BattleModelJsonWriter
     public static string WriteModel(FighterModelReference reference, BattleModelPayload payload, string edition)
     {
         BattleModelStructure model = payload.Structure;
-        return Write(json =>
+        return BattleModelElementJsonWriter.Serialize(json =>
         {
             json.WriteStartObject();
-            json.WriteString("format", ModelFormat);
-            json.WriteString("edition", edition);
-            json.WriteNumber("fighter_id", reference.FighterId);
-            json.WriteNumber("model_archive_entry", model.ModelEntry);
-            json.WriteNumber("motion_archive_entry", reference.MotionEntry);
-            json.WriteNumber("texture_archive_entry", model.TextureEntry);
-            json.WriteStartArray("textures");
-            foreach (BattleTexture texture in payload.Textures.Textures) WriteTexture(json, reference.FighterId, texture);
-            json.WriteEndArray();
-            json.WritePropertyName("texture");
-            WriteTexture(json, reference.FighterId, payload.Textures.Textures[0]);
-            json.WriteStartObject("texture_vram");
-            json.WriteNumber("width_words", payload.Textures.Vram.WidthWords);
-            json.WriteNumber("height", payload.Textures.Vram.Height);
-            json.WriteStartArray("uploads");
-            foreach (BattleTextureUpload upload in payload.Textures.Vram.Uploads)
-            {
-                json.WriteStartObject(); json.WriteNumber("x_words", upload.XWords); json.WriteNumber("width_words", upload.WidthWords); json.WriteNumber("height", upload.Height); json.WriteEndObject();
-            }
-            json.WriteEndArray(); json.WriteEndObject();
-            json.WriteNumber("bone_count", model.BoneCount);
-            json.WriteStartArray("bones");
-            foreach (BattleModelBone bone in model.Bones)
-            {
-                json.WriteStartObject(); json.WriteNumber("index", bone.Index); WriteNullable(json, "parent", bone.Parent); WriteNullable(json, "mesh_entry", bone.MeshEntry); WriteNullable(json, "key_entry", bone.KeyEntry); json.WriteEndObject();
-            }
-            json.WriteEndArray();
-            json.WriteStartArray("meshes");
-            foreach (BattleMesh mesh in model.Meshes) WriteMesh(json, mesh, payload.Textures);
-            json.WriteEndArray();
-            json.WriteStartObject("tracks");
-            foreach ((int bone, BattleBoneTracks tracks) in payload.Tracks.OrderBy(pair => pair.Key))
-            {
-                json.WriteStartArray(bone.ToString(System.Globalization.CultureInfo.InvariantCulture));
-                foreach (IReadOnlyList<BattleTrackKey> track in tracks.All)
-                {
-                    json.WriteStartArray();
-                    foreach (BattleTrackKey key in track) WriteInts(json, [key.Frame, key.X, key.Y, key.Z]);
-                    json.WriteEndArray();
-                }
-                json.WriteEndArray();
-            }
-            json.WriteEndObject();
-            WriteMotions(json, "motions", payload.Motions);
-            json.WriteStartArray("motion_1_steps"); foreach (BattleMotionStep step in payload.Motions[0]) WriteStep(json, step); json.WriteEndArray();
-            json.WriteStartArray("cameras");
-            foreach (BattleCamera camera in payload.Metadata.Cameras)
-            {
-                json.WriteStartObject(); json.WritePropertyName("camPos"); WriteInts(json, [camera.PosX, camera.PosY, camera.PosZ]); json.WritePropertyName("camRef"); WriteInts(json, [camera.RefX, camera.RefY, camera.RefZ]); json.WriteNumber("proj", camera.Projection); json.WriteEndObject();
-            }
-            json.WriteEndArray();
-            json.WriteStartObject("geometry"); json.WriteNumber("distance", payload.Metadata.Geometry.Distance); json.WriteNumber("height", payload.Metadata.Geometry.Height); json.WriteEndObject();
+            WriteHeader(json, reference, model, edition);
+            WriteTextures(json, reference.FighterId, payload.Textures);
+            BattleModelElementJsonWriter.WriteBones(json, model);
+            BattleModelElementJsonWriter.WriteMeshes(json, model.Meshes, payload.Textures);
+            BattleModelElementJsonWriter.WriteTracks(json, payload.Tracks);
+            BattleModelElementJsonWriter.WriteMotions(json, "motions", payload.Motions);
+            json.WritePropertyName("motion_1_steps");
+            BattleModelElementJsonWriter.WriteSteps(json, payload.Motions[0]);
+            WriteCameras(json, payload.Metadata.Cameras);
+            WriteGeometry(json, payload.Metadata.Geometry);
             WriteFace(json, payload.Metadata.Face);
-            json.WriteStartObject("source_invariants"); json.WritePropertyName("motion_1_first_step"); WriteStep(json, payload.Motions[0][0]); json.WritePropertyName("motion_1_terminator"); WriteStep(json, payload.Motions[0][^1]); json.WriteEndObject();
-            json.WriteStartArray("unsupported");
-            foreach (string value in new[] { "exact PS1 ABR blend equations", "lighting normals", "motion blends", "root motion" }) json.WriteStringValue(value);
-            json.WriteEndArray();
+            BattleModelElementJsonWriter.WriteSourceInvariants(json, payload.Motions);
+            BattleModelElementJsonWriter.WriteUnsupported(json, UnsupportedFeatures);
             json.WriteEndObject();
         });
     }
@@ -124,38 +62,18 @@ public static class BattleModelJsonWriter
     public static string WriteReport(IReadOnlyList<BattleModelOutcome> outcomes, int withFace = 0)
     {
         ArgumentNullException.ThrowIfNull(outcomes);
-        return Write(json =>
+        return BattleModelElementJsonWriter.Serialize(json =>
         {
             json.WriteStartObject();
             json.WriteString("schema", ReportSchema);
             json.WriteStartObject("fighters");
             foreach (BattleModelOutcome outcome in outcomes)
             {
-                json.WriteStartObject(outcome.Entry.FighterId.ToString(System.Globalization.CultureInfo.InvariantCulture));
-                json.WriteString("status", outcome.IsDecoded ? "decoded" : "failed");
-                json.WriteNumber("index", outcome.Entry.Index);
-                json.WriteNumber("kind", outcome.Entry.Kind);
-                if (outcome.Reference is { } reference)
-                {
-                    json.WriteNumber("model_file", reference.ModelFile);
-                    json.WriteNumber("model_entry", reference.ModelEntry);
-                }
-                else
-                {
-                    json.WriteString("reason", outcome.Reason);
-                }
-                json.WriteEndObject();
+                WriteOutcome(json, outcome);
             }
+
             json.WriteEndObject();
-            json.WriteStartArray("failures");
-            foreach (BattleModelOutcome outcome in outcomes.Where(o => !o.IsDecoded))
-            {
-                json.WriteStartObject();
-                json.WriteNumber("fighter", outcome.Entry.FighterId);
-                json.WriteString("reason", outcome.Reason);
-                json.WriteEndObject();
-            }
-            json.WriteEndArray();
+            WriteFailures(json, outcomes);
             json.WriteNumber("decoded", outcomes.Count(o => o.IsDecoded));
             json.WriteNumber("failed", outcomes.Count(o => !o.IsDecoded));
             json.WriteNumber("with_face", withFace);
@@ -163,117 +81,144 @@ public static class BattleModelJsonWriter
         });
     }
 
-    private static void WriteTexture(Utf8JsonWriter json, int fighterId, BattleTexture texture)
+    /// <summary>Writes the identity properties every fighter manifest starts with.</summary>
+    /// <param name="json">Destination writer.</param>
+    /// <param name="reference">Fighter-table resolution of the fighter.</param>
+    /// <param name="model">Decoded hierarchy, which supplies the model and texture archive entries.</param>
+    /// <param name="edition">Disc edition label.</param>
+    private static void WriteHeader(Utf8JsonWriter json, FighterModelReference reference, BattleModelStructure model, string edition)
     {
-        json.WriteStartObject(); json.WriteString("kind", "ps1-tpage"); json.WriteString("image", $"fighter-{fighterId}-texture-{texture.Key}.png");
-        json.WritePropertyName("size"); WriteInts(json, [texture.Width, texture.Height]); json.WriteNumber("key", texture.Key); json.WriteNumber("mode", texture.Mode); json.WriteNumber("page", texture.Page);
-        json.WritePropertyName("clut_xy"); if (texture.ClutX is null) json.WriteNullValue(); else WriteInts(json, [texture.ClutX.Value, texture.ClutY!.Value]);
-        json.WriteNumber("transparent_pixels", texture.TransparentPixels); json.WriteNumber("stp_pixels", texture.StpPixels); json.WriteEndObject();
+        json.WriteString("format", ModelFormat);
+        json.WriteString("edition", edition);
+        json.WriteNumber("fighter_id", reference.FighterId);
+        json.WriteNumber("model_archive_entry", model.ModelEntry);
+        json.WriteNumber("motion_archive_entry", reference.MotionEntry);
+        json.WriteNumber("texture_archive_entry", model.TextureEntry);
     }
 
-    private static void WriteMotions(Utf8JsonWriter json, string name, IReadOnlyList<IReadOnlyList<BattleMotionStep>> motions)
+    /// <summary>Writes <c>textures</c>, the first texture again as <c>texture</c>, and <c>texture_vram</c>.</summary>
+    /// <param name="json">Destination writer.</param>
+    /// <param name="fighterId">Fighter id used in the texture image names.</param>
+    /// <param name="textures">Decoded textures; at least one.</param>
+    private static void WriteTextures(Utf8JsonWriter json, int fighterId, BattleTextureSet textures)
     {
-        json.WriteStartArray(name); foreach (IReadOnlyList<BattleMotionStep> motion in motions) { json.WriteStartArray(); foreach (BattleMotionStep step in motion) WriteStep(json, step); json.WriteEndArray(); }
+        string prefix = $"fighter-{fighterId}";
+        json.WriteStartArray("textures");
+        foreach (BattleTexture texture in textures.Textures)
+        {
+            BattleModelElementJsonWriter.WriteTexture(json, prefix, texture);
+        }
+
+        json.WriteEndArray();
+        json.WritePropertyName("texture");
+        BattleModelElementJsonWriter.WriteTexture(json, prefix, textures.Textures[0]);
+        BattleModelElementJsonWriter.WriteTextureVram(json, textures.Vram);
+    }
+
+    /// <summary>Writes the fighter's source cameras as <c>camPos</c>, <c>camRef</c> and <c>proj</c>.</summary>
+    /// <param name="json">Destination writer.</param>
+    /// <param name="cameras">Cameras in fighter-record order.</param>
+    private static void WriteCameras(Utf8JsonWriter json, IReadOnlyList<BattleCamera> cameras)
+    {
+        json.WriteStartArray("cameras");
+        foreach (BattleCamera camera in cameras)
+        {
+            json.WriteStartObject();
+            json.WritePropertyName("camPos");
+            BattleModelElementJsonWriter.WriteInts(json, [camera.PosX, camera.PosY, camera.PosZ]);
+            json.WritePropertyName("camRef");
+            BattleModelElementJsonWriter.WriteInts(json, [camera.RefX, camera.RefY, camera.RefZ]);
+            json.WriteNumber("proj", camera.Projection);
+            json.WriteEndObject();
+        }
+
         json.WriteEndArray();
     }
 
-    private static void WriteStep(Utf8JsonWriter json, BattleMotionStep step) => WriteInts(json, [step.Index, step.Count, step.Frame, step.EndFrame]);
+    /// <summary>Writes the <c>geometry</c> object (placement distance and height).</summary>
+    /// <param name="json">Destination writer.</param>
+    /// <param name="geometry">Fighter placement values.</param>
+    private static void WriteGeometry(Utf8JsonWriter json, BattleGeometry geometry)
+    {
+        json.WriteStartObject("geometry");
+        json.WriteNumber("distance", geometry.Distance);
+        json.WriteNumber("height", geometry.Height);
+        json.WriteEndObject();
+    }
 
+    /// <summary>Writes the <c>face</c> object: where the face table was read and its animated parts.</summary>
+    /// <param name="json">Destination writer.</param>
+    /// <param name="face">Decoded face table.</param>
     private static void WriteFace(Utf8JsonWriter json, BattleFace face)
     {
-        json.WriteStartObject("face"); json.WriteStartObject("source"); json.WriteString("file", "SMDLDATA.PRO"); json.WriteNumber("record_offset", face.Source.RecordOffset); json.WriteNumber("face_pointer_offset", face.Source.FacePointerOffset); json.WriteNumber("face_offset", face.Source.FaceOffset); json.WriteNumber("record_size", face.Source.RecordSize); json.WriteString("terminator", face.Source.Terminator); json.WriteEndObject();
-        json.WriteStartArray("parts"); foreach (BattleFacePart part in face.Parts) { json.WriteStartObject(); json.WriteNumber("index", part.Index); json.WriteNumber("x", part.X); json.WriteNumber("y", part.Y); json.WriteNumber("w", part.Width); json.WriteNumber("h", part.Height); json.WriteStartArray("frames"); foreach (BattleFaceFrame frame in part.Frames) WriteInts(json, [frame.X, frame.Y]); json.WriteEndArray(); json.WriteEndObject(); }
-        json.WriteEndArray(); json.WriteEndObject();
-    }
-
-    private static void WriteMesh(Utf8JsonWriter json, BattleMesh mesh, BattleTextureSet? textures)
-    {
-        json.WriteStartObject();
-        json.WriteNumber("bone", mesh.Bone);
-        json.WriteNumber("vertex_count", mesh.Vertices.Count);
-        WriteVectors(json, "vertices", mesh.Vertices);
-        WriteVectors(json, "normals", mesh.Normals);
-        json.WriteStartArray("triangles");
-        foreach (int[] triangle in mesh.Triangles)
-            WriteInts(json, triangle);
-        json.WriteEndArray();
-        json.WriteStartArray("polygons");
-        foreach (MeshPolygon polygon in mesh.Polygons)
-            WritePolygon(json, polygon, textures);
-        json.WriteEndArray();
-        json.WriteNumber("entry_offset", mesh.EntryOffset);
-        json.WriteNumber("command_offset", mesh.CommandOffset);
-        json.WriteNumber("bounds_offset", mesh.BoundsOffset);
+        json.WriteStartObject("face");
+        json.WriteStartObject("source");
+        json.WriteString("file", "SMDLDATA.PRO");
+        json.WriteNumber("record_offset", face.Source.RecordOffset);
+        json.WriteNumber("face_pointer_offset", face.Source.FacePointerOffset);
+        json.WriteNumber("face_offset", face.Source.FaceOffset);
+        json.WriteNumber("record_size", face.Source.RecordSize);
+        json.WriteString("terminator", face.Source.Terminator);
         json.WriteEndObject();
-    }
-
-    private static void WritePolygon(Utf8JsonWriter json, MeshPolygon polygon, BattleTextureSet? textures)
-    {
-        json.WriteStartObject();
-        json.WritePropertyName("indices");
-        WriteInts(json, polygon.Indices);
-        json.WritePropertyName("normal_indices");
-        if (polygon.NormalIndices is null) json.WriteNullValue();
-        else WriteInts(json, polygon.NormalIndices);
-        json.WriteStartArray("uv");
-        foreach (MeshUv uv in polygon.Uvs)
+        json.WriteStartArray("parts");
+        foreach (BattleFacePart part in face.Parts)
         {
-            json.WriteStartArray();
-            json.WriteNumberValue(uv.U);
-            json.WriteNumberValue(uv.V);
+            json.WriteStartObject();
+            json.WriteNumber("index", part.Index);
+            json.WriteNumber("x", part.X);
+            json.WriteNumber("y", part.Y);
+            json.WriteNumber("w", part.Width);
+            json.WriteNumber("h", part.Height);
+            json.WriteStartArray("frames");
+            foreach (BattleFaceFrame frame in part.Frames)
+            {
+                BattleModelElementJsonWriter.WriteInts(json, [frame.X, frame.Y]);
+            }
+
             json.WriteEndArray();
+            json.WriteEndObject();
         }
+
         json.WriteEndArray();
-        MeshTextureState texture = polygon.Texture;
-        json.WriteStartObject("texture");
-        json.WriteNumber("u_base", texture.UBase);
-        json.WriteNumber("page", texture.Page);
-        json.WriteNumber("v_base", texture.VBase);
-        json.WritePropertyName("clut_xy");
-        WriteInts(json, [texture.ClutX, texture.ClutY]);
-        json.WriteNumber("tpage_mode", texture.TpageMode);
-        json.WriteEndObject();
-        if (textures is not null)
-            json.WriteNumber("texture_key", textures.KeyOf(texture));
-        json.WriteBoolean("lit", polygon.Lit);
-        json.WritePropertyName("flat_color");
-        WriteInts(json, [polygon.FlatColor.R, polygon.FlatColor.G, polygon.FlatColor.B]);
-        json.WriteBoolean("quad", polygon.Quad);
-        json.WriteNumber("abr", polygon.Abr);
-        json.WriteBoolean("gouraud", polygon.Gouraud);
-        json.WriteBoolean("textured", polygon.Textured);
-        json.WriteBoolean("unk8", polygon.Flag0xA);
-        json.WriteBoolean("unk4", polygon.Flag0xB);
         json.WriteEndObject();
     }
 
-    private static void WriteVectors(Utf8JsonWriter json, string name, IReadOnlyList<MeshVector> vectors)
+    /// <summary>Writes one fighter entry of the report, keyed by fighter id.</summary>
+    /// <param name="json">Destination writer.</param>
+    /// <param name="outcome">Decode outcome of the fighter.</param>
+    private static void WriteOutcome(Utf8JsonWriter json, BattleModelOutcome outcome)
     {
-        json.WriteStartArray(name);
-        foreach (MeshVector v in vectors)
-            WriteInts(json, [v.X, v.Y, v.Z]);
+        json.WriteStartObject(outcome.Entry.FighterId.ToString(CultureInfo.InvariantCulture));
+        json.WriteString("status", outcome.IsDecoded ? "decoded" : "failed");
+        json.WriteNumber("index", outcome.Entry.Index);
+        json.WriteNumber("kind", outcome.Entry.Kind);
+        if (outcome.Reference is { } reference)
+        {
+            json.WriteNumber("model_file", reference.ModelFile);
+            json.WriteNumber("model_entry", reference.ModelEntry);
+        }
+        else
+        {
+            json.WriteString("reason", outcome.Reason);
+        }
+
+        json.WriteEndObject();
+    }
+
+    /// <summary>Writes the <c>failures</c> array: fighter id and reason of every failed entry.</summary>
+    /// <param name="json">Destination writer.</param>
+    /// <param name="outcomes">All outcomes, in fighter-table order.</param>
+    private static void WriteFailures(Utf8JsonWriter json, IReadOnlyList<BattleModelOutcome> outcomes)
+    {
+        json.WriteStartArray("failures");
+        foreach (BattleModelOutcome outcome in outcomes.Where(o => !o.IsDecoded))
+        {
+            json.WriteStartObject();
+            json.WriteNumber("fighter", outcome.Entry.FighterId);
+            json.WriteString("reason", outcome.Reason);
+            json.WriteEndObject();
+        }
+
         json.WriteEndArray();
-    }
-
-    private static void WriteInts(Utf8JsonWriter json, IReadOnlyList<int> values)
-    {
-        json.WriteStartArray();
-        foreach (int value in values)
-            json.WriteNumberValue(value);
-        json.WriteEndArray();
-    }
-
-    private static void WriteNullable(Utf8JsonWriter json, string name, int? value)
-    {
-        if (value is { } number) json.WriteNumber(name, number);
-        else json.WriteNull(name);
-    }
-
-    private static string Write(Action<Utf8JsonWriter> body)
-    {
-        using var stream = new MemoryStream();
-        using (var json = new Utf8JsonWriter(stream, Options))
-            body(json);
-        return Encoding.UTF8.GetString(stream.ToArray()) + "\n";
     }
 }
