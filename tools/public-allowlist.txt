@@ -393,3 +393,13 @@ tools/Dw3.QualityRatchet/ViolationKey.cs
 tools/Dw3.QualityRatchet/ViolationKeyComparer.cs
 tools/Dw3.QualityRatchet/ViolationMeasurer.cs
 tools/quality-baseline.json
+src/Directory.Build.props
+tests/Dw3.Analyzers.Tests/ClassCognitiveComplexityAnalyzerTests.cs
+tests/Dw3.Analyzers.Tests/ConstantAnalyzerConfigOptionsProvider.cs
+tests/Dw3.Analyzers.Tests/Dw3.Analyzers.Tests.csproj
+tests/Dw3.Analyzers.Tests/SonarConcordanceTests.cs
+tools/Dw3.Analyzers/AnalyzerReleases.Shipped.md
+tools/Dw3.Analyzers/AnalyzerReleases.Unshipped.md
+tools/Dw3.Analyzers/ClassCognitiveComplexityAnalyzer.cs
+tools/Dw3.Analyzers/CognitiveComplexityWalker.cs
+tools/Dw3.Analyzers/Dw3.Analyzers.csproj

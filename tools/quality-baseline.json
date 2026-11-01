@@ -89,6 +89,12 @@
     },
     {
       "rule": "CA1707",
+      "project": "Dw3.Analyzers.Tests",
+      "folder": ".",
+      "count": 21
+    },
+    {
+      "rule": "CA1707",
       "project": "Dw3.Disc.Tests",
       "folder": ".",
       "count": 11
@@ -464,6 +470,54 @@
       "project": "Dw3.Game.Tests",
       "folder": ".",
       "count": 3
+    },
+    {
+      "rule": "DW3001",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 3
+    },
+    {
+      "rule": "DW3001",
+      "project": "Dw3.Formats",
+      "folder": "Battle",
+      "count": 4
+    },
+    {
+      "rule": "DW3001",
+      "project": "Dw3.Formats",
+      "folder": "Encounter",
+      "count": 1
+    },
+    {
+      "rule": "DW3001",
+      "project": "Dw3.Formats",
+      "folder": "Field",
+      "count": 2
+    },
+    {
+      "rule": "DW3001",
+      "project": "Dw3.Game",
+      "folder": "Conversion",
+      "count": 3
+    },
+    {
+      "rule": "DW3001",
+      "project": "Dw3.Game",
+      "folder": "Diagnostics",
+      "count": 1
+    },
+    {
+      "rule": "DW3001",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 5
+    },
+    {
+      "rule": "DW3001",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 6
     },
     {
       "rule": "S101",
@@ -1049,6 +1103,12 @@
     },
     {
       "rule": "S3776",
+      "project": "Dw3.Analyzers.Tests",
+      "folder": ".",
+      "count": 2
+    },
+    {
+      "rule": "S3776",
       "project": "Dw3.Disc",
       "folder": ".",
       "count": 2
@@ -1463,6 +1523,12 @@
     },
     {
       "rule": "SA1116",
+      "project": "Dw3.Analyzers.Tests",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "SA1116",
       "project": "Dw3.Disc",
       "folder": ".",
       "count": 22
@@ -1691,6 +1757,12 @@
     },
     {
       "rule": "SA1118",
+      "project": "Dw3.Analyzers",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "SA1118",
       "project": "Dw3.Disc",
       "folder": ".",
       "count": 1
@@ -1853,6 +1925,12 @@
     },
     {
       "rule": "SA1201",
+      "project": "Dw3.Analyzers.Tests",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "SA1201",
       "project": "Dw3.Data",
       "folder": ".",
       "count": 1
@@ -1946,6 +2024,12 @@
       "project": "Dw3.Game.Tests",
       "folder": ".",
       "count": 15
+    },
+    {
+      "rule": "SA1202",
+      "project": "Dw3.Analyzers",
+      "folder": ".",
+      "count": 2
     },
     {
       "rule": "SA1202",
@@ -2089,6 +2173,12 @@
       "rule": "SA1203",
       "project": "Dw3.Game",
       "folder": "Simulation",
+      "count": 1
+    },
+    {
+      "rule": "SA1204",
+      "project": "Dw3.Analyzers.Tests",
+      "folder": ".",
       "count": 1
     },
     {
@@ -3029,6 +3119,12 @@
     },
     {
       "rule": "SA1512",
+      "project": "Dw3.Analyzers.Tests",
+      "folder": ".",
+      "count": 6
+    },
+    {
+      "rule": "SA1512",
       "project": "Dw3.Disc.Tests",
       "folder": ".",
       "count": 8
@@ -3299,6 +3395,12 @@
     },
     {
       "rule": "SA1515",
+      "project": "Dw3.Analyzers.Tests",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "SA1515",
       "project": "Dw3.Data",
       "folder": ".",
       "count": 5
@@ -3445,7 +3547,7 @@
       "rule": "SA1515",
       "project": "Dw3.Repository.Tests",
       "folder": ".",
-      "count": 14
+      "count": 15
     },
     {
       "rule": "SA1516",
@@ -3923,6 +4025,12 @@
     },
     {
       "rule": "SA1611",
+      "project": "Dw3.Analyzers",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "SA1611",
       "project": "Dw3.Data",
       "folder": ".",
       "count": 4
@@ -4247,6 +4355,18 @@
     },
     {
       "rule": "SA1642",
+      "project": "Dw3.Analyzers",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "SA1642",
+      "project": "Dw3.Analyzers.Tests",
+      "folder": ".",
+      "count": 3
+    },
+    {
+      "rule": "SA1642",
       "project": "Dw3.Data",
       "folder": ".",
       "count": 7
@@ -4376,96 +4496,6 @@
       "project": "Dw3.Repository.Tests",
       "folder": ".",
       "count": 1
-    },
-    {
-      "rule": "CA1707",
-      "project": "Dw3.Analyzers.Tests",
-      "folder": ".",
-      "count": 20
-    },
-    {
-      "rule": "DW3001",
-      "project": "Dw3.Extractor",
-      "folder": ".",
-      "count": 6
-    },
-    {
-      "rule": "DW3001",
-      "project": "Dw3.Formats",
-      "folder": "Battle",
-      "count": 4
-    },
-    {
-      "rule": "DW3001",
-      "project": "Dw3.Formats",
-      "folder": "Encounter",
-      "count": 1
-    },
-    {
-      "rule": "DW3001",
-      "project": "Dw3.Formats",
-      "folder": "Field",
-      "count": 2
-    },
-    {
-      "rule": "DW3001",
-      "project": "Dw3.Game",
-      "folder": "Conversion",
-      "count": 3
-    },
-    {
-      "rule": "DW3001",
-      "project": "Dw3.Game",
-      "folder": "Diagnostics",
-      "count": 1
-    },
-    {
-      "rule": "DW3001",
-      "project": "Dw3.Game",
-      "folder": "Presentation",
-      "count": 6
-    },
-    {
-      "rule": "DW3001",
-      "project": "Dw3.Game",
-      "folder": "Simulation",
-      "count": 7
-    },
-    {
-      "rule": "SA1118",
-      "project": "Dw3.Analyzers",
-      "folder": ".",
-      "count": 1
-    },
-    {
-      "rule": "SA1202",
-      "project": "Dw3.Analyzers",
-      "folder": ".",
-      "count": 2
-    },
-    {
-      "rule": "SA1204",
-      "project": "Dw3.Analyzers.Tests",
-      "folder": ".",
-      "count": 1
-    },
-    {
-      "rule": "SA1512",
-      "project": "Dw3.Analyzers.Tests",
-      "folder": ".",
-      "count": 5
-    },
-    {
-      "rule": "SA1642",
-      "project": "Dw3.Analyzers",
-      "folder": ".",
-      "count": 1
-    },
-    {
-      "rule": "SA1642",
-      "project": "Dw3.Analyzers.Tests",
-      "folder": ".",
-      "count": 2
     }
   ]
 }

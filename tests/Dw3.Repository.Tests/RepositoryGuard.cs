@@ -171,6 +171,9 @@ public static class RepositoryGuard
         ("LICENSE.md", "internal-identifier"),
         ("README.md", "internal-identifier"),
         (".github/ISSUE_TEMPLATE/config.yml", "internal-identifier"),
+        // The DW3001 analyser help link contains the public GitHub repository URL (antharuu/dw3-remake).
+        // This is a public reference, not an internal identifier.
+        ("tools/Dw3.Analyzers/ClassCognitiveComplexityAnalyzer.cs", "internal-identifier"),
     ]);
 
     // ─────────────────────────────────────────────────────────────────────────
