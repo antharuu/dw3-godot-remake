@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text.Json;
 using Dw3.Data;
@@ -110,15 +111,8 @@ internal static class PlayerExtractionStep
         using var manifestStream = new FileStream(manifestPath, FileMode.Create, FileAccess.Write);
         using var jsonWriter = new Utf8JsonWriter(manifestStream, new JsonWriterOptions { Indented = true });
 
-        WriteManifest(
-            jsonWriter,
-            archiveIsoPath,
-            archiveSha256,
-            archiveBytes.Length,
-            frameInfos,
-            decodedSets,
-            sortedContacts,
-            anchorVariants);
+        var archiveRef = new PlayerArchiveRef(archiveIsoPath, archiveSha256, archiveBytes.Length);
+        WriteManifest(jsonWriter, archiveRef, frameInfos, decodedSets, sortedContacts, anchorVariants);
     }
 
     private static FrameInfo[] DecodeAndWriteFrames(DataPackWriteContext context, byte[] archiveBytes, int[] offsets)
@@ -209,17 +203,27 @@ internal static class PlayerExtractionStep
 
     private static void WriteManifest(
         Utf8JsonWriter w,
-        string archiveIsoPath,
-        string archiveSha256,
-        int archiveBytes,
+        PlayerArchiveRef archive,
         FrameInfo[] frames,
         List<DecodedSet> sets,
         List<(double X, double Y)> groundContacts,
         List<KeyValuePair<(int Ox, int Oy, int W, int H), int>> anchorVariants)
     {
-        w.WriteStartObject();   // root
+        w.WriteStartObject();
         w.WriteStartObject("player");
+        WriteAnchorVariants(w, anchorVariants);
+        WriteFrameEntries(w, frames);
+        WriteRenderAnchor(w, groundContacts);
+        WriteSetEntries(w, sets);
+        WriteSourceSection(w, archive);
+        w.WriteEndObject(); // player
+        w.WriteEndObject(); // root
+    }
 
+    private static void WriteAnchorVariants(
+        Utf8JsonWriter w,
+        List<KeyValuePair<(int Ox, int Oy, int W, int H), int>> anchorVariants)
+    {
         // anchor_variants  (alphabetical key order matches Python baseline)
         w.WriteStartArray("anchor_variants");
         foreach (var kv in anchorVariants)
@@ -236,13 +240,16 @@ internal static class PlayerExtractionStep
         }
 
         w.WriteEndArray();
+    }
 
+    private static void WriteFrameEntries(Utf8JsonWriter w, FrameInfo[] frames)
+    {
         // frames  (keys are decimal integers as strings, ascending)
         w.WriteStartObject("frames");
         for (int i = 0; i < frames.Length; i++)
         {
             FrameInfo fi = frames[i];
-            w.WriteStartObject(i.ToString());
+            w.WriteStartObject(i.ToString(CultureInfo.InvariantCulture));
             w.WriteStartArray("size");
             w.WriteNumberValue(fi.Width);
             w.WriteNumberValue(fi.Height);
@@ -261,8 +268,10 @@ internal static class PlayerExtractionStep
         }
 
         w.WriteEndObject();
+    }
 
-        // render_anchor
+    private static void WriteRenderAnchor(Utf8JsonWriter w, List<(double X, double Y)> groundContacts)
+    {
         w.WriteStartObject("render_anchor");
         w.WriteStartArray("ground_contact_variants");
         foreach (var (cx, cy) in groundContacts)
@@ -286,8 +295,10 @@ internal static class PlayerExtractionStep
         w.WriteNumberValue(ActorWidthPx);
         w.WriteEndArray();
         w.WriteEndObject();
+    }
 
-        // sets
+    private static void WriteSetEntries(Utf8JsonWriter w, List<DecodedSet> sets)
+    {
         w.WriteStartArray("sets");
         foreach (DecodedSet ds in sets)
         {
@@ -335,22 +346,22 @@ internal static class PlayerExtractionStep
         }
 
         w.WriteEndArray();
+    }
 
-        // source
+    private static void WriteSourceSection(Utf8JsonWriter w, PlayerArchiveRef archive)
+    {
+        // source — archive metadata written for parity verification
         w.WriteStartObject("source");
         w.WriteNumber("actor_width_pixels", ActorWidthPx);
         w.WriteNumber("archive_entry", PlayerArchiveDecoder.PlayerAnimSetTableEntry);
-        w.WriteNumber("bytes", archiveBytes);
+        w.WriteNumber("bytes", archive.Bytes);
         w.WriteString("character", CharacterLabel);
         w.WriteString("file_entry", FileEntryLabel);
         w.WriteNumber("file_number", FileNumber);
         w.WriteNumber("half_width_pixels", HalfWidthPx);
-        w.WriteString("path", archiveIsoPath);
-        w.WriteString("sha256", archiveSha256);
+        w.WriteString("path", archive.IsoPath);
+        w.WriteString("sha256", archive.Sha256);
         w.WriteEndObject();
-
-        w.WriteEndObject(); // player
-        w.WriteEndObject(); // root
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
@@ -368,6 +379,8 @@ internal static class PlayerExtractionStep
     }
 
     // ── Private record types ──────────────────────────────────────────────────
+
+    private sealed record PlayerArchiveRef(string IsoPath, string Sha256, int Bytes);
 
     private readonly record struct FrameInfo(int Width, int Height, PlayerFrameBbox Bbox);
 

@@ -11,31 +11,55 @@ namespace Dw3.Extractor;
 
 internal static class ZoneExtractionStep
 {
+    // Shared context passed from WriteZones to each per-stage helper to avoid
+    // a parameter list that exceeds the 7-parameter limit.
+    private sealed record ZoneWriteJob(
+        DataPackWriteContext Pack,
+        DiscSource Disc,
+        IReadOnlyList<DiscFileEntry> Entries,
+        Dictionary<int, byte[]> Overlays,
+        Dictionary<ushort, int> StageModes,
+        Dictionary<int, ExtractedFieldStage> Registry,
+        TextWriter Output);
+
+    // Data decoded from the disc for one stage, passed between helpers.
+    private sealed record ZoneStageResult(
+        ZoneTerrain Terrain,
+        TmpkMap Floor,
+        TmpkMap? TriggerMap,
+        TmpkMap? AreasMap,
+        int? AreasEntryIndex,
+        int[] RequiredOffsets,
+        TmpkMapSelection Selection,
+        int? ResolvedTriggerEntry,
+        IReadOnlyList<StageSlot> Slots,
+        byte[]? StageColor);
+
     // The disc registry's mode 0x204 is a non-interactive demonstration copy. Its
     // overlay has terrain setup but no field-slot assignment, so it is not a playable stage.
-    private static readonly IReadOnlySet<ushort> NonExplorableModes = new HashSet<ushort> { 0x204 };
+    private static readonly HashSet<ushort> NonExplorableModes = [0x204];
 
     // These EU-disc stages are loadable but have no stage-slot table. Their overlays
     // contain MIPS sequences that resemble the slot-setup pattern but are not actual
     // slot initializations. Emit empty slot/exit lists for them.
-    private static readonly IReadOnlySet<int> NoSlotsStages =
-        new HashSet<int> { 232, 233, 530, 615, 680, 780, 785, 790, 805, 810 };
+    private static readonly HashSet<int> NoSlotsStages =
+        [232, 233, 530, 615, 680, 780, 785, 790, 805, 810];
 
     // Five EU-disc stages where dimension-matching selects the wrong TMPK areas
     // entry. Ground truth recovered by verifying the areas map against the overlay.
-    private static readonly IReadOnlyDictionary<int, int> AreasEntryOverrides = new Dictionary<int, int>
+    private static readonly Dictionary<int, int> AreasEntryOverrides = new()
     {
         { 376, 4 }, { 480, 4 }, { 481, 4 }, { 540, 4 }, { 810, 2 },
     };
 
     // EU-disc stages where the stage does not have an areas (battle-zone) map even
     // though dimension-matching would find a false candidate.
-    private static readonly IReadOnlySet<int> NoAreasStages = new HashSet<int> { 261 };
+    private static readonly HashSet<int> NoAreasStages = [261];
 
     // EU-disc stages where TmpkMapSelectionReader cannot recover the trigger entry
     // from the overlay MIPS. Entries are disc-proven.
-    private static readonly IReadOnlyDictionary<int, int> TriggerEntryOverrides =
-        new Dictionary<int, int> { { 810, 4 } };
+    private static readonly Dictionary<int, int> TriggerEntryOverrides =
+        new() { { 810, 4 } };
 
     internal static int Extract(string cuePath, string outputDirectory, string? onlyDomain, TextWriter output, TextWriter error)
     {
@@ -96,44 +120,62 @@ internal static class ZoneExtractionStep
         var structurallyRejected = new List<string>();
         foreach (DiscFieldStage raw in rawRegistry)
         {
-            if (NonExplorableModes.Contains(raw.Mode))
-                continue;
-
-            DiscFileEntry overlayEntry = RequireStageFile(entries, "AAA/PRO/WSTAG", ".PRO", raw.StageId);
-            byte[] overlay = disc.ReadFile(overlayEntry);
-            try
+            ExtractedFieldStage? stage = TryBuildFieldStage(disc, entries, raw, structurallyRejected);
+            if (stage is not null)
             {
-                _ = TmpkMapSelectionReader.Recover(overlay);
+                result.Add(stage);
             }
-            catch (FormatException exception)
-            {
-                structurallyRejected.Add($"S{raw.StageId:D3}: {exception.Message}");
-                continue;
-            }
-
-            IReadOnlyList<StageSlot> slots = NoSlotsStages.Contains(raw.StageId)
-                ? []
-                : StageSlotLocator.TryLocateAndDecode(overlay);
-            string terrainPath = $"AAA/DAT/Z_STAGE/S{raw.StageId:D3}PACK.BIN";
-            bool hasTerrain = entries.Any(entry => string.Equals(entry.IsoPath, terrainPath, StringComparison.Ordinal));
-            string? extractionError = hasTerrain
-                ? null
-                : $"Stage S{raw.StageId:D3} is missing required disc member {terrainPath}.";
-            result.Add(new ExtractedFieldStage(
-                raw.StageId,
-                raw.Mode,
-                raw.OverlayFileId,
-                hasTerrain ? "loadable" : "error",
-                extractionError,
-                slots));
         }
 
         const int ExpectedFieldStageCount = 236;
         if (result.Count != ExpectedFieldStageCount)
+        {
             throw new InvalidDataException(
                 $"Disc field registry yielded {result.Count} stages instead of {ExpectedFieldStageCount}. " +
                 $"Structurally rejected entries: {string.Join(" | ", structurallyRejected)}");
+        }
+
         return [.. result.OrderBy(stage => stage.StageId)];
+    }
+
+    private static ExtractedFieldStage? TryBuildFieldStage(
+        DiscSource disc,
+        IReadOnlyList<DiscFileEntry> entries,
+        DiscFieldStage raw,
+        List<string> structurallyRejected)
+    {
+        if (NonExplorableModes.Contains(raw.Mode))
+        {
+            return null;
+        }
+
+        DiscFileEntry overlayEntry = RequireStageFile(entries, "AAA/PRO/WSTAG", ".PRO", raw.StageId);
+        byte[] overlay = disc.ReadFile(overlayEntry);
+        try
+        {
+            _ = TmpkMapSelectionReader.Recover(overlay);
+        }
+        catch (FormatException exception)
+        {
+            structurallyRejected.Add($"S{raw.StageId:D3}: {exception.Message}");
+            return null;
+        }
+
+        IReadOnlyList<StageSlot> slots = NoSlotsStages.Contains(raw.StageId)
+            ? []
+            : StageSlotLocator.TryLocateAndDecode(overlay);
+        string terrainPath = $"AAA/DAT/Z_STAGE/S{raw.StageId:D3}PACK.BIN";
+        bool hasTerrain = entries.Any(entry => string.Equals(entry.IsoPath, terrainPath, StringComparison.Ordinal));
+        string? extractionError = hasTerrain
+            ? null
+            : $"Stage S{raw.StageId:D3} is missing required disc member {terrainPath}.";
+        return new ExtractedFieldStage(
+            raw.StageId,
+            raw.Mode,
+            raw.OverlayFileId,
+            hasTerrain ? "loadable" : "error",
+            extractionError,
+            slots);
     }
 
     private static void WriteZones(
@@ -144,104 +186,145 @@ internal static class ZoneExtractionStep
         IReadOnlyList<ExtractedFieldStage> registry,
         TextWriter output)
     {
-        var overlays = packs.ToDictionary(
+        Dictionary<int, byte[]> overlays = packs.ToDictionary(
             item => item.Stage!.Value,
             item => disc.ReadFile(RequireStageFile(entries, "AAA/PRO/WSTAG", ".PRO", item.Stage!.Value)));
-        IReadOnlyDictionary<ushort, int> stageModes = registry.ToDictionary(stage => stage.Mode, stage => stage.StageId);
-        IReadOnlyDictionary<int, ExtractedFieldStage> registryByStage = registry.ToDictionary(stage => stage.StageId);
+        Dictionary<ushort, int> stageModes = registry.ToDictionary(stage => stage.Mode, stage => stage.StageId);
+        Dictionary<int, ExtractedFieldStage> registryByStage = registry.ToDictionary(stage => stage.StageId);
         FieldRegistryWriter.Write(context, registry);
+        var job = new ZoneWriteJob(context, disc, entries, overlays, stageModes, registryByStage, output);
         foreach (var (entry, nullableStage) in packs)
         {
-            int stage = nullableStage!.Value;
-            output.WriteLine($"{{\"event\":\"zone-start\",\"stage\":{stage}}}");
-
-            DiscFileEntry tmpkEntry = RequireStageFile(entries, "AAA/DAT/FIELD/STAGE/S", "TMPK.BIN", stage);
-            byte[] packBytes = disc.ReadFile(entry);
-            byte[] tmpk = disc.ReadFile(tmpkEntry);
-            byte[] overlayBytes = overlays[stage];
-
-            TmpkMapSelection selection = TmpkMapSelectionReader.Recover(overlayBytes);
-            // Apply trigger override when TmpkMapSelectionReader cannot recover it.
-            int? resolvedTriggerEntry = TriggerEntryOverrides.TryGetValue(stage, out int trigOvr)
-                ? trigOvr
-                : selection.TriggerEntry;
-            IReadOnlyList<StageSlot> slots = registryByStage[stage].Slots;
-            byte[]? stageColor = StageColorReader.TryRead(overlayBytes);
-
-            // Decode terrain
-            ZoneTerrain terrain = ZonePacketDecoder.Decode(packBytes);
-
-            // Decode floor and trigger maps; areas_entry is always null for this disc.
-            TmpkMap floor = TmpkMapDecoder.DecodeEntry(tmpk, selection.FloorEntry);
-            TmpkMap? triggerMap = resolvedTriggerEntry is int triggerEntry
-                ? TmpkMapDecoder.DecodeEntry(tmpk, triggerEntry)
-                : null;
-            if (floor.Width != terrain.Width || floor.Height != terrain.Height ||
-                (triggerMap is not null && (triggerMap.Width != floor.Width || triggerMap.Height != floor.Height)))
-            {
-                throw new FormatException($"Stage S{stage:D3} has TMPK dimensions inconsistent with its terrain packet.");
-            }
-
-            // Try to find an areas map in the TMPK by dimension-matching.
-            // The areas entry is whichever non-floor/non-trigger entry at indices 2–5 decodes
-            // to the same tile dimensions as the floor map. This handles all but 5 stages on
-            // the EU disc; those 5 have a known override in AreasEntryOverrides.
-            // Stages in NoAreasStages have no areas map despite a dimension-match candidate.
-            // Resolve the TMPK areas (encounter-zone) map entry index and decode the map.
-            (int? areasEntryIndex, TmpkMap? areasMap) = ResolveAreasEntry(tmpk, stage, selection, resolvedTriggerEntry, floor);
-
-            // Compute required_offsets from the TMPK header.
-            int maxRequired = Math.Max(Math.Max(selection.FloorEntry, resolvedTriggerEntry ?? 0), areasEntryIndex ?? 0) + 1;
-            int[] requiredOffsets = new int[maxRequired];
-            for (int i = 0; i < maxRequired; i++)
-            {
-                requiredOffsets[i] = (int)BinaryPrimitives.ReadUInt32LittleEndian(tmpk.AsSpan(i * 4, 4));
-            }
-
-            // Write all images to zones/SXxx/ (same directory as the manifest).
-            string zoneDir = $"zones/S{stage:D3}";
-            InsertZone(context, stage, terrain);
-            for (int depth = 0; depth < terrain.Layers.Count; depth++)
-            {
-                WriteImage(context, $"{zoneDir}/depth-{depth}.png", terrain.Width, terrain.Height, terrain.Layers[depth]);
-            }
-            WriteImage(context, $"{zoneDir}/composite-back-to-front.png", terrain.Width, terrain.Height, terrain.Composite);
-            WriteCells(context, $"{zoneDir}/floor-cells.png", floor);
-            WriteCells(context, $"{zoneDir}/trigger-cells.png", triggerMap ?? new TmpkMap(floor.Width, floor.Height, new byte[floor.Cells.Length]));
-            WriteCells(context, $"{zoneDir}/areas-cells.png", areasMap ?? new TmpkMap(floor.Width, floor.Height, new byte[floor.Cells.Length]));
-
-            // Write manifest
-            string manifestPath = context.GetImagePath($"{zoneDir}/manifest.json");
-            Directory.CreateDirectory(Path.GetDirectoryName(manifestPath)!);
-            var manifestData = new ZoneManifestData(
-                Zone: $"S{stage:D3}",
-                PackPath: entry.IsoPath,
-                PackBytes: packBytes.Length,
-                PackSha256: ComputeSha256(packBytes),
-                TileCount: terrain.TileRecords.Count(r => r.Present),
-                TileColumns: terrain.TileColumns,
-                TileRows: terrain.TileRows,
-                TilePacketBytes: packBytes.Length < 2048 ? 2048 : ReadPacketBytes(packBytes),
-                TmpkPath: tmpkEntry.IsoPath,
-                TmpkBytes: tmpk.Length,
-                TmpkSha256: ComputeSha256(tmpk),
-                FloorEntry: selection.FloorEntry,
-                TriggerEntry: resolvedTriggerEntry,
-                AreasEntry: areasEntryIndex,
-                RequiredOffsets: requiredOffsets,
-                FloorMap: floor,
-                TriggerMap: triggerMap,
-                AreasMap: areasMap,
-                TileRecords: terrain.TileRecords,
-                StreamDepth11Modulate: stageColor,
-                Slots: slots,
-                StageModes: stageModes,
-                Status: "loadable");
-            using var manifest = new StreamWriter(manifestPath);
-            ZoneManifestWriter.Write(manifest, manifestData);
-
-            output.WriteLine($"{{\"event\":\"zone-complete\",\"stage\":{stage},\"width\":{terrain.Width},\"height\":{terrain.Height}}}");
+            WriteStageZone(job, entry, nullableStage!.Value);
         }
+    }
+
+    private static void WriteStageZone(ZoneWriteJob job, DiscFileEntry packEntry, int stage)
+    {
+        job.Output.WriteLine($"{{\"event\":\"zone-start\",\"stage\":{stage}}}");
+
+        DiscFileEntry tmpkEntry = RequireStageFile(job.Entries, "AAA/DAT/FIELD/STAGE/S", "TMPK.BIN", stage);
+        byte[] packBytes = job.Disc.ReadFile(packEntry);
+        byte[] tmpk = job.Disc.ReadFile(tmpkEntry);
+        ZoneStageResult result = DecodeStageData(tmpk, packBytes, job.Overlays[stage], stage, job.Registry[stage].Slots);
+
+        WriteStageImages(job.Pack, stage, result.Terrain, result.Floor, result.TriggerMap, result.AreasMap);
+        ZoneManifestData manifestData = BuildZoneManifestData(stage, packEntry, packBytes, tmpkEntry, tmpk, result, job.StageModes);
+        WriteStageManifest(job.Pack, stage, manifestData);
+
+        job.Output.WriteLine($"{{\"event\":\"zone-complete\",\"stage\":{stage},\"width\":{result.Terrain.Width},\"height\":{result.Terrain.Height}}}");
+    }
+
+    private static ZoneStageResult DecodeStageData(
+        byte[] tmpk,
+        byte[] packBytes,
+        byte[] overlayBytes,
+        int stage,
+        IReadOnlyList<StageSlot> slots)
+    {
+        TmpkMapSelection selection = TmpkMapSelectionReader.Recover(overlayBytes);
+        // Apply trigger override when TmpkMapSelectionReader cannot recover it.
+        int? resolvedTriggerEntry = TriggerEntryOverrides.TryGetValue(stage, out int trigOvr)
+            ? trigOvr
+            : selection.TriggerEntry;
+        byte[]? stageColor = StageColorReader.TryRead(overlayBytes);
+
+        ZoneTerrain terrain = ZonePacketDecoder.Decode(packBytes);
+        TmpkMap floor = TmpkMapDecoder.DecodeEntry(tmpk, selection.FloorEntry);
+        TmpkMap? triggerMap = resolvedTriggerEntry is int triggerEntry
+            ? TmpkMapDecoder.DecodeEntry(tmpk, triggerEntry)
+            : null;
+        if (floor.Width != terrain.Width || floor.Height != terrain.Height ||
+            (triggerMap is not null && (triggerMap.Width != floor.Width || triggerMap.Height != floor.Height)))
+        {
+            throw new FormatException($"Stage S{stage:D3} has TMPK dimensions inconsistent with its terrain packet.");
+        }
+
+        (int? areasEntryIndex, TmpkMap? areasMap) = ResolveAreasEntry(tmpk, stage, selection, resolvedTriggerEntry, floor);
+        int[] requiredOffsets = BuildRequiredOffsets(tmpk, selection, resolvedTriggerEntry, areasEntryIndex);
+        return new ZoneStageResult(terrain, floor, triggerMap, areasMap, areasEntryIndex, requiredOffsets, selection, resolvedTriggerEntry, slots, stageColor);
+    }
+
+    private static int[] BuildRequiredOffsets(
+        byte[] tmpk,
+        TmpkMapSelection selection,
+        int? resolvedTriggerEntry,
+        int? areasEntryIndex)
+    {
+        // required_offsets covers every TMPK entry the runtime must load: floor, trigger,
+        // and areas. The array length is max(entries) + 1 so all referenced indices are valid.
+        int maxRequired = Math.Max(Math.Max(selection.FloorEntry, resolvedTriggerEntry ?? 0), areasEntryIndex ?? 0) + 1;
+        int[] requiredOffsets = new int[maxRequired];
+        for (int i = 0; i < maxRequired; i++)
+        {
+            requiredOffsets[i] = (int)BinaryPrimitives.ReadUInt32LittleEndian(tmpk.AsSpan(i * 4, 4));
+        }
+
+        return requiredOffsets;
+    }
+
+    private static void WriteStageImages(
+        DataPackWriteContext context,
+        int stage,
+        ZoneTerrain terrain,
+        TmpkMap floor,
+        TmpkMap? triggerMap,
+        TmpkMap? areasMap)
+    {
+        string zoneDir = $"zones/S{stage:D3}";
+        InsertZone(context, stage, terrain);
+        for (int depth = 0; depth < terrain.Layers.Count; depth++)
+        {
+            WriteImage(context, $"{zoneDir}/depth-{depth}.png", terrain.Width, terrain.Height, terrain.Layers[depth]);
+        }
+
+        WriteImage(context, $"{zoneDir}/composite-back-to-front.png", terrain.Width, terrain.Height, terrain.Composite);
+        WriteCells(context, $"{zoneDir}/floor-cells.png", floor);
+        WriteCells(context, $"{zoneDir}/trigger-cells.png", triggerMap ?? new TmpkMap(floor.Width, floor.Height, new byte[floor.Cells.Length]));
+        WriteCells(context, $"{zoneDir}/areas-cells.png", areasMap ?? new TmpkMap(floor.Width, floor.Height, new byte[floor.Cells.Length]));
+    }
+
+    private static ZoneManifestData BuildZoneManifestData(
+        int stage,
+        DiscFileEntry packEntry,
+        byte[] packBytes,
+        DiscFileEntry tmpkEntry,
+        byte[] tmpk,
+        ZoneStageResult result,
+        Dictionary<ushort, int> stageModes)
+    {
+        return new ZoneManifestData(
+            Zone: $"S{stage:D3}",
+            PackPath: packEntry.IsoPath,
+            PackBytes: packBytes.Length,
+            PackSha256: ComputeSha256(packBytes),
+            TileCount: result.Terrain.TileRecords.Count(r => r.Present),
+            TileColumns: result.Terrain.TileColumns,
+            TileRows: result.Terrain.TileRows,
+            TilePacketBytes: packBytes.Length < 2048 ? 2048 : ReadPacketBytes(packBytes),
+            TmpkPath: tmpkEntry.IsoPath,
+            TmpkBytes: tmpk.Length,
+            TmpkSha256: ComputeSha256(tmpk),
+            FloorEntry: result.Selection.FloorEntry,
+            TriggerEntry: result.ResolvedTriggerEntry,
+            AreasEntry: result.AreasEntryIndex,
+            RequiredOffsets: result.RequiredOffsets,
+            FloorMap: result.Floor,
+            TriggerMap: result.TriggerMap,
+            AreasMap: result.AreasMap,
+            TileRecords: result.Terrain.TileRecords,
+            StreamDepth11Modulate: result.StageColor,
+            Slots: result.Slots,
+            StageModes: stageModes,
+            Status: "loadable");
+    }
+
+    private static void WriteStageManifest(DataPackWriteContext context, int stage, ZoneManifestData manifestData)
+    {
+        string manifestPath = context.GetImagePath($"zones/S{stage:D3}/manifest.json");
+        Directory.CreateDirectory(Path.GetDirectoryName(manifestPath)!);
+        using var manifest = new StreamWriter(manifestPath);
+        ZoneManifestWriter.Write(manifest, manifestData);
     }
 
     private static int ReadPacketBytes(byte[] packBytes)
@@ -251,6 +334,7 @@ internal static class ZoneExtractionStep
         {
             return 2048;
         }
+
         int value = BinaryPrimitives.ReadInt32LittleEndian(packBytes.AsSpan(12, 4));
         return value > 0 ? value : 2048;
     }
@@ -317,33 +401,49 @@ internal static class ZoneExtractionStep
         // Candidate entries in most-frequent order for the EU disc (3, 4, 2, 5).
         foreach (int candidate in new[] { 3, 4, 2, 5 })
         {
-            if (candidate == floorEntry || candidate == triggerEntry)
-            {
-                continue;
-            }
-            int headerOffset = candidate * 4;
-            if (headerOffset + 4 > tmpk.Length)
-            {
-                continue;
-            }
-            uint entryOffset = BinaryPrimitives.ReadUInt32LittleEndian(tmpk.AsSpan(headerOffset, 4));
-            if (entryOffset == 0 || entryOffset + 4 >= tmpk.Length)
-            {
-                continue;
-            }
-            // The first sub-offset in the entry points to the grid header [width, height].
-            uint subOffset0 = BinaryPrimitives.ReadUInt32LittleEndian(tmpk.AsSpan((int)entryOffset, 4));
-            long gridAt = (long)entryOffset + subOffset0;
-            if (gridAt + 2 > tmpk.Length)
-            {
-                continue;
-            }
-            if (IsTmpkDimensionMatch(tmpk, gridAt, floorWidthTiles, floorHeightTiles))
+            if (IsAreasCandidate(tmpk, candidate, floorEntry, triggerEntry, floorWidthTiles, floorHeightTiles))
             {
                 return candidate;
             }
         }
+
         return null;
+    }
+
+    private static bool IsAreasCandidate(
+        byte[] tmpk,
+        int candidate,
+        int floorEntry,
+        int? triggerEntry,
+        int floorWidthTiles,
+        int floorHeightTiles)
+    {
+        if (candidate == floorEntry || candidate == triggerEntry)
+        {
+            return false;
+        }
+
+        int headerOffset = candidate * 4;
+        if (headerOffset + 4 > tmpk.Length)
+        {
+            return false;
+        }
+
+        uint entryOffset = BinaryPrimitives.ReadUInt32LittleEndian(tmpk.AsSpan(headerOffset, 4));
+        if (entryOffset == 0 || entryOffset + 4 >= tmpk.Length)
+        {
+            return false;
+        }
+
+        // The first sub-offset in the entry points to the grid header [width, height].
+        uint subOffset0 = BinaryPrimitives.ReadUInt32LittleEndian(tmpk.AsSpan((int)entryOffset, 4));
+        long gridAt = (long)entryOffset + subOffset0;
+        if (gridAt + 2 > tmpk.Length)
+        {
+            return false;
+        }
+
+        return IsTmpkDimensionMatch(tmpk, gridAt, floorWidthTiles, floorHeightTiles);
     }
 
     private static void InsertZone(DataPackWriteContext context, int stage, ZoneTerrain terrain)
@@ -381,6 +481,7 @@ internal static class ZoneExtractionStep
             rgba[index * 4 + 2] = value;
             rgba[index * 4 + 3] = byte.MaxValue;
         }
+
         WriteImage(context, relativePath, map.Width, map.Height, rgba);
     }
 

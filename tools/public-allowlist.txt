@@ -79,6 +79,7 @@ src/Dw3.Extractor/EncounterJsonWriter.cs
 src/Dw3.Extractor/EncounterSqlWriter.cs
 src/Dw3.Extractor/EncounterStageData.cs
 src/Dw3.Extractor/ExtractedFieldStage.cs
+src/Dw3.Extractor/ExtractedWaterZone.cs
 src/Dw3.Extractor/FieldcomCueDomain.cs
 src/Dw3.Extractor/FieldcomDomainWriter.cs
 src/Dw3.Extractor/FieldcomExitRow.cs
@@ -105,8 +106,10 @@ src/Dw3.Extractor/TalkBoxDomain.cs
 src/Dw3.Extractor/TalkBoxDomainWriter.cs
 src/Dw3.Extractor/TalkBoxExtractionStep.cs
 src/Dw3.Extractor/TextExtractionStep.cs
+src/Dw3.Extractor/SkippedWaterZone.cs
 src/Dw3.Extractor/WaterDomainWriter.cs
 src/Dw3.Extractor/WaterExtractionStep.cs
+src/Dw3.Extractor/WaterZoneSources.cs
 src/Dw3.Extractor/ZoneExtractionStep.cs
 src/Dw3.Extractor/ZoneManifestData.cs
 src/Dw3.Extractor/ZoneManifestWriter.cs

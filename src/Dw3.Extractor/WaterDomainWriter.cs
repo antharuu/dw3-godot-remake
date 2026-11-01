@@ -7,15 +7,6 @@ using Microsoft.Data.Sqlite;
 
 namespace Dw3.Extractor;
 
-/// <summary>Disc-file digests recorded with a decoded stage.</summary>
-public sealed record WaterZoneSources(string OverlaySha256, string SheetSha256, string TextureSha256);
-
-/// <summary>A stage whose map objects decoded successfully.</summary>
-public sealed record ExtractedWaterZone(int StageId, StageObjectSet Objects, WaterZoneSources Sources);
-
-/// <summary>A stage whose map-object files use a layout the decoder rejects.</summary>
-public sealed record SkippedWaterZone(int StageId, string Error);
-
 /// <summary>
 /// Writes the map-object ("water") domain: SQL tables, one opaque and one STP image per
 /// rendered frame under <c>water/Snnn/</c>, and <c>water/manifest.json</c>.
@@ -46,12 +37,14 @@ public static class WaterDomainWriter
             Insert(context, "INSERT INTO water_skipped_zones (stage_id, error) VALUES ($1, $2)", zone.StageId, zone.Error);
             json.WriteStringValue($"{ZoneName(zone.StageId)}: {zone.Error}");
         }
+
         json.WriteEndArray();
         json.WriteStartObject("zones");
         foreach (ExtractedWaterZone zone in zones)
         {
             WriteZone(context, json, zone);
         }
+
         json.WriteEndObject();
         json.WriteEndObject();
     }
@@ -105,9 +98,11 @@ public static class WaterDomainWriter
                 json.WriteString("semi_path", stp);
                 json.WriteEndObject();
             }
+
             json.WriteEndArray();
             json.WriteEndObject();
         }
+
         json.WriteEndArray();
         json.WriteStartObject("sources");
         json.WriteNumber("archive_entries", zone.Objects.ArchiveEntries);
@@ -154,6 +149,7 @@ public static class WaterDomainWriter
         {
             command.Parameters.AddWithValue($"${index + 1}", values[index]);
         }
+
         command.ExecuteNonQuery();
     }
 
