@@ -1057,7 +1057,7 @@
       "rule": "S3776",
       "project": "Dw3.Formats",
       "folder": "Water",
-      "count": 2
+      "count": 1
     },
     {
       "rule": "S3776",
@@ -2239,7 +2239,7 @@
       "rule": "SA1407",
       "project": "Dw3.Formats",
       "folder": "Water",
-      "count": 20
+      "count": 17
     },
     {
       "rule": "SA1407",
@@ -2575,7 +2575,7 @@
       "rule": "SA1503",
       "project": "Dw3.Formats",
       "folder": "Water",
-      "count": 16
+      "count": 11
     },
     {
       "rule": "SA1503",
