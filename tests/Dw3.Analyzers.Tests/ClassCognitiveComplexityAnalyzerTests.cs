@@ -231,7 +231,9 @@ public class C
     [Fact]
     public async Task Lambda_AddsOneAndNestingForBody()
     {
-        // lambda: +1+0=1, if inside lambda at nesting=1: +1+1=2 → total 3
+        // Lambdas do NOT add +1 themselves (Sonar S3776 C# behaviour).
+        // They only increase nesting for control flow inside their body.
+        // Lambda body is at nesting=1, so if inside: +1+1=2.
         var c = await MeasureAsync(@"
 using System;
 public class C
@@ -241,7 +243,7 @@ public class C
         Action<int> fn = x => { if (x > 0) { } };
     }
 }");
-        Assert.Equal(3, c);
+        Assert.Equal(2, c);
     }
 
     // -------------------------------------------------------------------------

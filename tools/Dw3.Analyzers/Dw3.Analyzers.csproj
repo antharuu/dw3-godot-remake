@@ -10,6 +10,10 @@
     <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
   </PropertyGroup>
   <ItemGroup>
+    <!-- Grant the test project access to internal members (CognitiveComplexityWalker, ComputeTypeComplexity). -->
+    <InternalsVisibleTo Include="Dw3.Analyzers.Tests" />
+  </ItemGroup>
+  <ItemGroup>
     <!-- Release-tracking files required by RS2008 (auto-discovered by the SDK but listed
          explicitly here so the project file documents the convention). -->
     <AdditionalFiles Include="AnalyzerReleases.Shipped.md" />

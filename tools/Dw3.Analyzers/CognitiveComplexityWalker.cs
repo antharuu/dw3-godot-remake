@@ -63,6 +63,19 @@ internal sealed class CognitiveComplexityWalker : CSharpSyntaxWalker
                && parent.Kind() == node.Kind();
     }
 
+    /// <summary>
+    /// Returns <see langword="true"/> when <paramref name="node"/> is the right-hand operand
+    /// of a binary pattern with the same combinator kind, meaning it is part of a sequence
+    /// already counted at the outer node.
+    /// </summary>
+    /// <param name="node">The binary pattern node to test.</param>
+    /// <returns>True when the node is nested inside a same-combinator pattern sequence.</returns>
+    private static bool IsNestedInSamePattern(BinaryPatternSyntax node)
+    {
+        return node.Parent is BinaryPatternSyntax parent
+               && parent.Kind() == node.Kind();
+    }
+
     // -------------------------------------------------------------------------
     // Conditionals
     // -------------------------------------------------------------------------
@@ -239,6 +252,25 @@ internal sealed class CognitiveComplexityWalker : CSharpSyntaxWalker
         base.VisitBinaryExpression(node);
     }
 
+    /// <summary>
+    /// Handles C# 9+ binary pattern combinators (<c>and</c> / <c>or</c> inside
+    /// <c>is</c> or <c>switch</c> patterns).
+    /// Sonar S3776 treats these the same as <c>&amp;&amp;</c> / <c>||</c>:
+    /// each distinct sequence of the same combinator adds one increment.
+    /// </summary>
+    public override void VisitBinaryPattern(BinaryPatternSyntax node)
+    {
+        var kind = node.Kind();
+        var isLogical = kind == SyntaxKind.AndPattern || kind == SyntaxKind.OrPattern;
+
+        if (isLogical && !IsNestedInSamePattern(node))
+        {
+            _complexity++;
+        }
+
+        base.VisitBinaryPattern(node);
+    }
+
     // -------------------------------------------------------------------------
     // Recursion
     // -------------------------------------------------------------------------
@@ -266,8 +298,9 @@ internal sealed class CognitiveComplexityWalker : CSharpSyntaxWalker
     /// <inheritdoc/>
     public override void VisitSimpleLambdaExpression(SimpleLambdaExpressionSyntax node)
     {
-        // Lambda: +1 (structural) to the enclosing member, increases nesting for its body.
-        _complexity += 1 + _nesting;
+        // Lambda expressions increase the nesting level for their body, but do NOT add a
+        // structural increment to the enclosing member (unlike Java nested classes).
+        // Sonar S3776 for C# does not count the lambda itself, only control flow inside it.
         _nesting++;
         base.VisitSimpleLambdaExpression(node);
         _nesting--;
@@ -276,7 +309,6 @@ internal sealed class CognitiveComplexityWalker : CSharpSyntaxWalker
     /// <inheritdoc/>
     public override void VisitParenthesizedLambdaExpression(ParenthesizedLambdaExpressionSyntax node)
     {
-        _complexity += 1 + _nesting;
         _nesting++;
         base.VisitParenthesizedLambdaExpression(node);
         _nesting--;
@@ -285,7 +317,6 @@ internal sealed class CognitiveComplexityWalker : CSharpSyntaxWalker
     /// <inheritdoc/>
     public override void VisitAnonymousMethodExpression(AnonymousMethodExpressionSyntax node)
     {
-        _complexity += 1 + _nesting;
         _nesting++;
         base.VisitAnonymousMethodExpression(node);
         _nesting--;
@@ -294,8 +325,8 @@ internal sealed class CognitiveComplexityWalker : CSharpSyntaxWalker
     /// <inheritdoc/>
     public override void VisitLocalFunctionStatement(LocalFunctionStatementSyntax node)
     {
-        // Local function: +1 (structural) to the enclosing member, increases nesting for its body.
-        _complexity += 1 + _nesting;
+        // Local functions increase nesting for their body, but do NOT add a structural
+        // increment (consistent with Sonar S3776 C# behaviour for nested callables).
         _nesting++;
         base.VisitLocalFunctionStatement(node);
         _nesting--;
