@@ -3,21 +3,6 @@ using System.Buffers.Binary;
 namespace Dw3.Formats.Water;
 
 /// <summary>
-/// One sprite-sheet part: a textured rectangle in the object VRAM.
-/// </summary>
-/// <param name="U">Texel column; the page index is <c>U / 256</c> for 4-bit and <c>U / 128</c> for 8-bit parts.</param>
-/// <param name="V">Texel row inside the page.</param>
-/// <param name="Width">Width in texels.</param>
-/// <param name="Height">Height in texels.</param>
-/// <param name="ClutX">Palette column (4-bit: relative to VRAM x 0x140, 8-bit: inside the alternate palette row).</param>
-/// <param name="ClutY">Palette row (4-bit: relative to VRAM y 0x100, 8-bit: absolute VRAM row).</param>
-/// <param name="Mode">0 for 4-bit texels, 1 for 8-bit texels.</param>
-public sealed record SpritePart(short U, short V, short Width, short Height, short ClutX, short ClutY, short Mode);
-
-/// <summary>A decoded sprite sheet: its parts and the raw bytes of each frame, keyed by frame id.</summary>
-public sealed record SpriteSheet(IReadOnlyList<SpritePart> Parts, IReadOnlyDictionary<int, ReadOnlyMemory<byte>> Frames);
-
-/// <summary>
 /// Decodes the stage sprite sheet stored as one entry of the stage TMPK archive
 /// (<c>DAT/FIELD/STAGE/SnnnTMPK.BIN</c>).
 ///

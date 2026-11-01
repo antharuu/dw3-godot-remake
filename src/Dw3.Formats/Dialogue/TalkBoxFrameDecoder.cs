@@ -3,23 +3,6 @@ using Dw3.Formats.Battle;
 
 namespace Dw3.Formats.Dialogue;
 
-/// <summary>One talk-box layout record: where each part of the box is drawn for one box type.</summary>
-public sealed record TalkBoxLayoutRecord(
-    int Sprite,
-    int SpriteX, int SpriteY,
-    int Sprite0X, int Sprite0Y,
-    int PanelX, int PanelY,
-    int Sprite2X, int Sprite2Y,
-    int NameX, int NameY,
-    int TextX, int TextY,
-    int ArrowX, int ArrowY);
-
-/// <summary>One composited talk-box frame sprite in RGBA order.</summary>
-public sealed record TalkBoxFrameImage(int FrameId, int Width, int Height, int ClutFrames, bool Semi, byte[] Rgba);
-
-/// <summary>The talk-box panel texture in RGBA order, plus its dominant opaque body colour.</summary>
-public sealed record TalkBoxPanelImage(int Width, int Height, int Red, int Green, int Blue, int TexturePage, int Clut, byte[] Rgba);
-
 /// <summary>
 /// Decodes the field talk box: its corner, edge and arrow sprites from the menu sprite sheet
 /// (CMFONTCS.BIN) drawn with the 4-bit menu texture (CMFONTTM.BIN), the semi-transparent
