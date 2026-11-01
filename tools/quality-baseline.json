@@ -208,18 +208,6 @@
       "count": 2
     },
     {
-      "rule": "CA1832",
-      "project": "Dw3.Formats.Tests",
-      "folder": "Battle",
-      "count": 3
-    },
-    {
-      "rule": "CA1832",
-      "project": "Dw3.Formats.Tests",
-      "folder": "Binary",
-      "count": 4
-    },
-    {
       "rule": "CA1859",
       "project": "Dw3.Extractor",
       "folder": ".",
@@ -1004,18 +992,6 @@
       "project": "Dw3.Extractor.Tests",
       "folder": ".",
       "count": 8
-    },
-    {
-      "rule": "S8969",
-      "project": "Dw3.Game",
-      "folder": "Diagnostics",
-      "count": 3
-    },
-    {
-      "rule": "S8969",
-      "project": "Dw3.Game",
-      "folder": "Presentation",
-      "count": 5
     },
     {
       "rule": "S8969",
@@ -3320,60 +3296,6 @@
       "project": "Dw3.Game",
       "folder": "Simulation",
       "count": 66
-    },
-    {
-      "rule": "SA1623",
-      "project": "Dw3.Data",
-      "folder": ".",
-      "count": 1
-    },
-    {
-      "rule": "SA1623",
-      "project": "Dw3.Disc",
-      "folder": ".",
-      "count": 1
-    },
-    {
-      "rule": "SA1623",
-      "project": "Dw3.Formats",
-      "folder": "Battle",
-      "count": 6
-    },
-    {
-      "rule": "SA1623",
-      "project": "Dw3.Formats",
-      "folder": "Binary",
-      "count": 9
-    },
-    {
-      "rule": "SA1623",
-      "project": "Dw3.Formats",
-      "folder": "Mips",
-      "count": 14
-    },
-    {
-      "rule": "SA1623",
-      "project": "Dw3.Game",
-      "folder": ".",
-      "count": 53
-    },
-    {
-      "rule": "SA1623",
-      "project": "Dw3.Game",
-      "folder": "Conversion",
-      "count": 2
-    },
-    {
-      "rule": "SA1623",
-      "project": "Dw3.Game",
-      "folder": "Presentation",
-      "count": 25
-    },
-    {
-      "rule": "SA1623",
-      "project": "Dw3.Game",
-      "folder": "Simulation",
-      "count": 31
     },
     {
       "rule": "SA1626",
