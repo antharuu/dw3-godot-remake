@@ -994,12 +994,6 @@
       "count": 8
     },
     {
-      "rule": "S8969",
-      "project": "Dw3.Game.Tests",
-      "folder": ".",
-      "count": 15
-    },
-    {
       "rule": "S927",
       "project": "Dw3.Game",
       "folder": ".",
