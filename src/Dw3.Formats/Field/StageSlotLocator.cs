@@ -27,7 +27,9 @@ public static class StageSlotLocator
     public static StageSlotTable? TryLocate(ReadOnlySpan<byte> overlay)
     {
         if (overlay.Length == 0 || overlay.Length % sizeof(uint) != 0)
+        {
             throw new FormatException("MIPS overlay instruction stream is truncated.");
+        }
 
         var candidates = new Dictionary<int, IReadOnlyList<StageSlot>>();
         for (int offset = 0; offset + 12 <= overlay.Length; offset += sizeof(uint))
@@ -36,7 +38,9 @@ public static class StageSlotLocator
             uint second = BinaryPrimitives.ReadUInt32LittleEndian(overlay.Slice(offset + sizeof(uint), sizeof(uint)));
             uint third = BinaryPrimitives.ReadUInt32LittleEndian(overlay.Slice(offset + 2 * sizeof(uint), sizeof(uint)));
             if (!TryReadOverlayPointer(first, second, third, overlay.Length, out int tableOffset))
+            {
                 continue;
+            }
 
             try
             {
@@ -53,7 +57,7 @@ public static class StageSlotLocator
         {
             0 => null,
             1 => new StageSlotTable(candidates.Single().Key, candidates.Single().Value),
-            _ => throw new FormatException($"MIPS overlay has multiple conflicting StageSlot table pointers: {string.Join(", ", candidates.Keys.Select(offset => $"0x{offset:X}"))}."),
+            _ => throw new FormatException($"MIPS overlay has multiple conflicting StageSlot table pointers: {string.Join(", ", candidates.Keys.Select(offset => $"0x{offset:X}"))}.")
         };
     }
 
@@ -61,27 +65,35 @@ public static class StageSlotLocator
     {
         tableOffset = 0;
         if ((first >> 26) != 15)
+        {
             return false;
+        }
+
         int register = (int)((first >> 16) & 31);
         int opcode = (int)(second >> 26);
         if (opcode is not 9 and not 13 || ((second >> 21) & 31) != register || ((second >> 16) & 31) != register)
+        {
             return false;
+        }
+
         // The field stage descriptor stores stageSlots at member offset 0x14.
         // Other overlay pointers can happen to decode as record-shaped data but
         // are not this member and must never become a guessed slot table.
         if ((third >> 26) != 43 || ((third >> 16) & 31) != register || (ushort)third != 0x14)
+        {
             return false;
+        }
 
         uint upper = (first & 0xffff) << 16;
         uint pointer = opcode == 9
             ? unchecked((uint)((int)upper + (short)second))
             : upper | (second & 0xffff);
         if (pointer < OverlayLoadAddress || pointer >= OverlayLoadAddress + (uint)overlayLength)
+        {
             return false;
+        }
+
         tableOffset = checked((int)(pointer - OverlayLoadAddress));
         return true;
     }
 }
-
-/// <summary>A raw overlay coordinate and its verified, decoded StageSlot records.</summary>
-public sealed record StageSlotTable(int Offset, IReadOnlyList<StageSlot> Slots);

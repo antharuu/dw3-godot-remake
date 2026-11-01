@@ -16,9 +16,14 @@ public static class MipsCallArgumentReader
     public static MipsCallArguments RecoverDirectCall(ReadOnlySpan<byte> overlay, int targetWordAddress)
     {
         if (overlay.Length == 0 || overlay.Length % sizeof(uint) != 0)
+        {
             throw new FormatException("MIPS overlay instruction stream is truncated.");
+        }
+
         if ((uint)targetWordAddress > 0x03FFFFFFu)
+        {
             throw new ArgumentOutOfRangeException(nameof(targetWordAddress));
+        }
 
         uint?[] registers = new uint?[32];
         registers[0] = 0;
@@ -37,36 +42,49 @@ public static class MipsCallArgumentReader
                 if (destination == targetWordAddress)
                 {
                     if (recovered is not null)
+                    {
                         throw new FormatException("MIPS overlay has multiple matching direct calls.");
+                    }
+
                     recovered = new MipsCallArguments(registers[4], registers[5], registers[6], registers[7]);
                 }
+
                 continue;
             }
-            if (IsControlFlow(opcode, instruction))
-                throw new FormatException($"Unsupported MIPS control flow at overlay offset 0x{offset:X}.");
 
-            switch (opcode)
+            if (IsControlFlow(opcode, instruction))
             {
-                case 9: // addiu rt, rs, immediate
-                    registers[target] = registers[source] is uint value
-                        ? unchecked(value + (uint)(short)immediate)
-                        : null;
-                    break;
-                case 13: // ori rt, rs, immediate
-                    registers[target] = registers[source] is uint sourceValue
-                        ? sourceValue | immediate
-                        : null;
-                    break;
-                case 15: // lui rt, immediate
-                    registers[target] = (uint)immediate << 16;
-                    break;
-                default:
-                    InvalidateDestination(registers, opcode, target, instruction);
-                    break;
+                throw new FormatException($"Unsupported MIPS control flow at overlay offset 0x{offset:X}.");
             }
+
+            ApplyInstruction(opcode, source, target, immediate, instruction, registers);
             registers[0] = 0;
         }
+
         return recovered ?? throw new FormatException("MIPS overlay does not contain the requested direct call.");
+    }
+
+    private static void ApplyInstruction(int opcode, int source, int target, ushort immediate, uint instruction, uint?[] registers)
+    {
+        switch (opcode)
+        {
+            case 9: // addiu rt, rs, immediate
+                registers[target] = registers[source] is uint value
+                    ? unchecked(value + (uint)(short)immediate)
+                    : null;
+                break;
+            case 13: // ori rt, rs, immediate
+                registers[target] = registers[source] is uint sourceValue
+                    ? sourceValue | immediate
+                    : null;
+                break;
+            case 15: // lui rt, immediate
+                registers[target] = (uint)immediate << 16;
+                break;
+            default:
+                InvalidateDestination(registers, opcode, target, instruction);
+                break;
+        }
     }
 
     private static bool IsControlFlow(int opcode, uint instruction) =>
@@ -79,15 +97,21 @@ public static class MipsCallArgumentReader
         {
             int function = (int)(instruction & 0x3F);
             if (function is 32 or 33 or 34 or 35 or 36 or 37 or 38 or 39 or 42 or 43)
+            {
                 registers[(instruction >> 11) & 31] = null;
+            }
+
             return;
         }
+
         if (opcode is >= 8 and <= 27 && opcode is not 15)
+        {
             registers[target] = null;
+        }
+
         if (opcode is >= 32 and <= 55)
+        {
             registers[target] = null;
+        }
     }
 }
-
-/// <summary>Known constant values in the four standard MIPS argument registers.</summary>
-public sealed record MipsCallArguments(uint? A0, uint? A1, uint? A2, uint? A3);

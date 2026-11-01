@@ -1,18 +1,6 @@
 namespace Dw3.Formats.Field;
 
 /// <summary>
-/// Progress metadata read from the executable: the progress-range pairs and the special-condition
-/// records whose check family selects a progress range.
-/// </summary>
-/// <param name="Ranges">Every {u8 min, u8 max} progress-range pair.</param>
-/// <param name="SpecialRecordCount">Number of 3-byte special-condition records read, terminator included.</param>
-/// <param name="SpecialProgressRanges">Special condition id to progress-range index, for range-check records only.</param>
-public sealed record ProgressConditionTables(
-    IReadOnlyList<NpcProgressRange> Ranges,
-    int SpecialRecordCount,
-    IReadOnlyDictionary<int, int> SpecialProgressRanges);
-
-/// <summary>
 /// Decodes the progress-range table and the special-condition table of the disc executable.
 /// </summary>
 /// <remarks>
@@ -40,13 +28,20 @@ public static class ProgressConditionDecoder
         int specialConditionsLimit)
     {
         if (progressRangesOffset < 0 || progressRangeCount < 0 || (long)progressRangesOffset + progressRangeCount * 2L > executable.Length)
+        {
             throw new FormatException("progress-range table is outside its disc member.");
+        }
+
         if (specialConditionsOffset < 0 || specialConditionsLimit > executable.Length || specialConditionsOffset >= specialConditionsLimit)
+        {
             throw new FormatException("Special-condition table range is outside the executable.");
+        }
 
         var ranges = new NpcProgressRange[progressRangeCount];
         for (int index = 0; index < ranges.Length; index++)
+        {
             ranges[index] = new NpcProgressRange(executable[progressRangesOffset + index * 2], executable[progressRangesOffset + index * 2 + 1]);
+        }
 
         var special = new Dictionary<int, int>();
         int records = 0;
@@ -55,15 +50,25 @@ public static class ProgressConditionDecoder
             records++;
             int id = executable[offset];
             if (id == SpecialTerminator)
+            {
                 return new ProgressConditionTables(ranges, records, special);
+            }
+
             int check = executable[offset + 1];
             int argument = executable[offset + 2];
             if ((check & 0xF0) != RangeCheckFamily)
+            {
                 continue;
+            }
+
             if (argument >= ranges.Length)
+            {
                 throw new FormatException($"Special condition {id} references progress range {argument}, outside {ranges.Length} records.");
+            }
+
             special[id] = argument;
         }
+
         throw new FormatException("Special-condition table has no 0xFF terminator.");
     }
 }

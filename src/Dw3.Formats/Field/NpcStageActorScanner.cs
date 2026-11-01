@@ -36,7 +36,9 @@ public static class NpcStageActorScanner
         foreach (uint pointer in stored.Distinct())
         {
             if (TryReadActorList(overlay, pointer, overlayLoadBase, out IReadOnlyList<uint>? actors))
+            {
                 candidates.Add(new NpcStageActorList(pointer, actors));
+            }
         }
 
         return candidates.Count switch
@@ -56,10 +58,20 @@ public static class NpcStageActorScanner
     {
         actors = [];
         if (pointer < overlayLoadBase)
+        {
             return false;
+        }
+
         int offset;
-        try { offset = checked((int)(pointer - overlayLoadBase)); }
-        catch (OverflowException) { return false; }
+        try
+        {
+            offset = checked((int)(pointer - overlayLoadBase));
+        }
+        catch (OverflowException)
+        {
+            return false;
+        }
+
         var result = new List<uint>();
         try
         {
@@ -67,13 +79,17 @@ public static class NpcStageActorScanner
             {
                 int entryOffset = checked(offset + index * 4);
                 if (entryOffset + 4 > overlay.Length)
+                {
                     return false;
+                }
+
                 uint actorAddress = BinaryPrimitives.ReadUInt32LittleEndian(overlay.Slice(entryOffset, 4));
                 if (actorAddress == 0)
                 {
                     actors = result;
                     return true;
                 }
+
                 NpcActorEntry actor = NpcOverlayReader.ReadActorEntry(overlay, actorAddress, overlayLoadBase);
                 _ = NpcOverlayReader.ReadConditionList(overlay, actor.ConditionsPtr, overlayLoadBase);
                 result.Add(actorAddress);
@@ -83,9 +99,7 @@ public static class NpcStageActorScanner
         {
             return false;
         }
+
         return false;
     }
 }
-
-/// <summary>A stage actor pointer list: its own address and the null-terminated actor-entry addresses it holds.</summary>
-public sealed record NpcStageActorList(uint Address, IReadOnlyList<uint> Actors);

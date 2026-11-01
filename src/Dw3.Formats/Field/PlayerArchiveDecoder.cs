@@ -4,95 +4,6 @@ using Dw3.Formats.Binary.Tim;
 namespace Dw3.Formats.Field;
 
 /// <summary>
-/// Result of a visible-bounding-box scan on a player TIM frame.
-/// Uses PIL-compatible exclusive right/lower coordinates to match the
-/// Python parity baseline exactly.
-/// </summary>
-public readonly record struct PlayerFrameBbox(int Left, int Upper, int RightExclusive, int LowerExclusive)
-{
-    /// <summary>
-    /// Width using the Python visible_size formula:
-    /// RightExclusive - Left + 1  (off-by-one vs the actual pixel count).
-    /// </summary>
-    public int VisibleSizeWidth => RightExclusive - Left + 1;
-
-    /// <summary>
-    /// Height using the Python visible_size formula:
-    /// LowerExclusive - Upper + 1  (off-by-one vs the actual pixel count).
-    /// </summary>
-    public int VisibleSizeHeight => LowerExclusive - Upper + 1;
-}
-
-/// <summary>One entry in the player animation-set table.</summary>
-public sealed class PlayerAnimSetGroup
-{
-    /// <summary>Animation set identifier (1=STAND, 4=WALK, 5=RUN, 6=STOP, 7=unnamed).</summary>
-    public int SetId { get; }
-
-    /// <summary>
-    /// Five archive-entry indices (one per facing direction) pointing to
-    /// animation sequences within the same offset table.
-    /// </summary>
-    public IReadOnlyList<int> SequenceIndices { get; }
-
-    internal PlayerAnimSetGroup(int setId, IReadOnlyList<int> sequenceIndices)
-    {
-        SetId = setId;
-        SequenceIndices = sequenceIndices;
-    }
-}
-
-/// <summary>How an animation sequence ends.</summary>
-public enum PlayerAnimSequenceTerminator
-{
-    /// <summary>Word 0 at end of sequence — loop back to start.</summary>
-    Loop,
-
-    /// <summary>Word -1 at end of sequence — play once and stop.</summary>
-    End,
-}
-
-/// <summary>One record in an animation sequence (duration + frame + draw offset).</summary>
-public sealed class PlayerAnimRecord
-{
-    /// <summary>Duration in game ticks (> 0).</summary>
-    public int Duration { get; }
-
-    /// <summary>Zero-based index into the frame table (&lt; FrameCount).</summary>
-    public int Frame { get; }
-
-    /// <summary>Draw offset X in pixels (tile-relative, from FIELDSTG_drawActor).</summary>
-    public int OffsetX { get; }
-
-    /// <summary>Draw offset Y in pixels (tile-relative, from FIELDSTG_drawActor).</summary>
-    public int OffsetY { get; }
-
-    internal PlayerAnimRecord(int duration, int frame, int offsetX, int offsetY)
-    {
-        Duration = duration;
-        Frame = frame;
-        OffsetX = offsetX;
-        OffsetY = offsetY;
-    }
-}
-
-/// <summary>A decoded animation sequence.</summary>
-public sealed class PlayerAnimSequence
-{
-    /// <summary>Frame records in play order.</summary>
-    public IReadOnlyList<PlayerAnimRecord> Records { get; }
-
-    /// <summary>Type of terminator word that ends the sequence.</summary>
-    public PlayerAnimSequenceTerminator Terminator { get; }
-
-    internal PlayerAnimSequence(IReadOnlyList<PlayerAnimRecord> records, PlayerAnimSequenceTerminator terminator)
-    {
-        Records = records;
-        Terminator = terminator;
-    }
-}
-
-/// <summary>
 /// Decodes the player sprite archive (P002PLAY.BIN) from the EU disc.
 ///
 /// File layout (P002PLAY.BIN, disc path AAA/DAT/FIELD/SPRT/P002PLAY.BIN):
@@ -120,7 +31,7 @@ public static class PlayerArchiveDecoder
     /// Known animation-set names by set ID.
     /// Set IDs observed in the player archive overlay (sets 1, 4, 5, 6, 7).
     /// </summary>
-    private static readonly IReadOnlyDictionary<int, string> SetNames =
+    private static readonly Dictionary<int, string> SetNames =
         new Dictionary<int, string>
         {
             [1] = "STAND",
@@ -157,29 +68,18 @@ public static class PlayerArchiveDecoder
         int count = lastEntry + 1;
         int tableBytes = count * 4;
         if (tableBytes > data.Length)
+        {
             throw new FormatException(
                 $"Player archive offset table requires {tableBytes} bytes but the file is only {data.Length} bytes.");
+        }
 
         var offsets = new int[count];
         for (int i = 0; i < count; i++)
+        {
             offsets[i] = checked((int)BinaryPrimitives.ReadUInt32LittleEndian(data.Slice(i * 4, 4)));
-
-        // Validate: each offset must be >= end of table and < data.Length
-        for (int i = 0; i < count; i++)
-        {
-            if (offsets[i] < tableBytes || offsets[i] >= data.Length)
-                throw new FormatException(
-                    $"Player archive offset[{i}] = 0x{offsets[i]:X} is outside valid payload range [{tableBytes:X}, {data.Length:X}).");
         }
 
-        // Validate: strictly ascending
-        for (int i = 1; i < count; i++)
-        {
-            if (offsets[i] <= offsets[i - 1])
-                throw new FormatException(
-                    $"Player archive offsets are not strictly ascending at index {i}: offsets[{i - 1}]=0x{offsets[i - 1]:X}, offsets[{i}]=0x{offsets[i]:X}.");
-        }
-
+        ValidateOffsets(offsets, tableBytes, data.Length);
         return offsets;
     }
 
@@ -203,34 +103,12 @@ public static class PlayerArchiveDecoder
     /// <exception cref="FormatException">The frame has no visible (non-transparent) pixels.</exception>
     public static PlayerFrameBbox ComputeVisibleBbox(TimImage image)
     {
-        int width = image.Width;
-        int height = image.Height;
-        byte[] pixels = image.Pixels;
-
-        int minX = int.MaxValue, minY = int.MaxValue;
-        int maxX = int.MinValue, maxY = int.MinValue;
-
-        for (int y = 0; y < height; y++)
+        var (minX, minY, maxX, maxY) = ScanVisiblePixels(image);
+        if (minX == int.MaxValue)
         {
-            for (int x = 0; x < width; x++)
-            {
-                // RGBA layout: R at [i*4], G at [i*4+1], B at [i*4+2], A at [i*4+3]
-                byte alpha = pixels[(y * width + x) * 4 + 3];
-                if (alpha > 0)
-                {
-                    if (x < minX) minX = x;
-                    if (x > maxX) maxX = x;
-                    if (y < minY) minY = y;
-                    if (y > maxY) maxY = y;
-                }
-            }
+            throw new FormatException($"Player frame {image.Width}×{image.Height} has no visible pixels.");
         }
 
-        if (minX == int.MaxValue)
-            throw new FormatException($"Player frame {width}×{height} has no visible pixels.");
-
-        // right = maxX + 1 (exclusive), lower = maxY + 1 (exclusive)
-        // This matches PIL getbbox() output stored verbatim in the Python manifest.
         return new PlayerFrameBbox(minX, minY, maxX + 1, maxY + 1);
     }
 
@@ -261,14 +139,17 @@ public static class PlayerArchiveDecoder
         ReadOnlySpan<byte> data, int[] offsets, int tableEntry)
     {
         if (tableEntry < 0 || tableEntry >= offsets.Length)
+        {
             throw new FormatException(
                 $"Animation-set table entry {tableEntry} is outside the offset table (length {offsets.Length}).");
+        }
 
         int start = offsets[tableEntry];
-        // Read u16 words from start to end of data (table is not length-prefixed)
         if ((data.Length - start) % 2 != 0)
+        {
             throw new FormatException(
                 "Player animation-set table payload has an odd number of bytes.");
+        }
 
         int wordCount = (data.Length - start) / 2;
         var groups = new List<PlayerAnimSetGroup>();
@@ -278,16 +159,21 @@ public static class PlayerArchiveDecoder
         {
             ushort setId = BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(start + cursor * 2, 2));
             if (setId == 0)
+            {
                 return groups;
+            }
 
-            // Need 5 more u16 for the sequence indices
             if (cursor + 6 > wordCount)
+            {
                 throw new FormatException(
                     $"Player animation-set table entry at word offset {cursor} is truncated (set_id=0x{setId:X}, need 6 words).");
+            }
 
             var seqIndices = new int[5];
             for (int d = 0; d < 5; d++)
+            {
                 seqIndices[d] = BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(start + (cursor + 1 + d) * 2, 2));
+            }
 
             groups.Add(new PlayerAnimSetGroup(setId, seqIndices));
             cursor += 6;
@@ -324,16 +210,20 @@ public static class PlayerArchiveDecoder
         ReadOnlySpan<byte> data, int[] offsets, int index, int frameCount)
     {
         if (index < 0 || index >= offsets.Length)
+        {
             throw new FormatException(
                 $"Sequence index {index} is outside the offset table (length {offsets.Length}).");
+        }
 
         int start = offsets[index];
         int end = index + 1 < offsets.Length ? offsets[index + 1] : data.Length;
 
         int byteLen = end - start;
         if (byteLen % 4 != 0)
+        {
             throw new FormatException(
                 $"Sequence {index} payload is not 4-byte aligned ({byteLen} bytes).");
+        }
 
         int wordCount = byteLen / 4;
         var records = new List<PlayerAnimRecord>();
@@ -343,43 +233,142 @@ public static class PlayerArchiveDecoder
         {
             int duration = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(start + cursor * 4, 4));
 
-            if (duration == 0)
+            if (TryReadTerminator(duration, cursor, wordCount, records, index, out PlayerAnimSequence termSequence))
             {
-                if (cursor != wordCount - 1)
-                    throw new FormatException(
-                        $"Sequence {index}: loop terminator (0) is not the final word (at cursor {cursor}, wordCount {wordCount}).");
-                return new PlayerAnimSequence(records, PlayerAnimSequenceTerminator.Loop);
+                return termSequence;
             }
 
-            if (duration == -1)
-            {
-                if (cursor != wordCount - 1)
-                    throw new FormatException(
-                        $"Sequence {index}: end terminator (-1) is not the final word (at cursor {cursor}, wordCount {wordCount}).");
-                return new PlayerAnimSequence(records, PlayerAnimSequenceTerminator.End);
-            }
-
-            if (duration <= 0)
-                throw new FormatException(
-                    $"Sequence {index} at cursor {cursor}: invalid duration {duration} (must be > 0, 0, or -1).");
-
-            if (cursor + 4 > wordCount)
-                throw new FormatException(
-                    $"Sequence {index} at cursor {cursor}: truncated frame record (need 4 words, {wordCount - cursor} remain).");
-
-            int frame = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(start + (cursor + 1) * 4, 4));
-            int offsetX = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(start + (cursor + 2) * 4, 4));
-            int offsetY = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(start + (cursor + 3) * 4, 4));
-
-            if (frame < 0 || frame >= frameCount)
-                throw new FormatException(
-                    $"Sequence {index} at cursor {cursor}: frame index {frame} is out of range [0, {frameCount}).");
-
-            records.Add(new PlayerAnimRecord(duration, frame, offsetX, offsetY));
+            records.Add(ReadFrameRecord(data, start, cursor, wordCount, frameCount, index));
             cursor += 4;
         }
 
         throw new FormatException(
             $"Sequence {index}: payload ended without a terminator word (0 or -1).");
+    }
+
+    private static (int MinX, int MinY, int MaxX, int MaxY) ScanVisiblePixels(TimImage image)
+    {
+        int width = image.Width;
+        int height = image.Height;
+        byte[] pixels = image.Pixels;
+        int minX = int.MaxValue, minY = int.MaxValue;
+        int maxX = int.MinValue, maxY = int.MinValue;
+
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                // RGBA layout: R at [i*4], G at [i*4+1], B at [i*4+2], A at [i*4+3]
+                byte alpha = pixels[(y * width + x) * 4 + 3];
+                if (alpha > 0)
+                {
+                    UpdateBounds(x, y, ref minX, ref maxX, ref minY, ref maxY);
+                }
+            }
+        }
+
+        return (minX, minY, maxX, maxY);
+    }
+
+    private static void UpdateBounds(int x, int y, ref int minX, ref int maxX, ref int minY, ref int maxY)
+    {
+        if (x < minX)
+        {
+            minX = x;
+        }
+
+        if (x > maxX)
+        {
+            maxX = x;
+        }
+
+        if (y < minY)
+        {
+            minY = y;
+        }
+
+        if (y > maxY)
+        {
+            maxY = y;
+        }
+    }
+
+    private static void ValidateOffsets(int[] offsets, int tableBytes, int dataLength)
+    {
+        for (int i = 0; i < offsets.Length; i++)
+        {
+            if (offsets[i] < tableBytes || offsets[i] >= dataLength)
+            {
+                throw new FormatException(
+                    $"Player archive offset[{i}] = 0x{offsets[i]:X} is outside valid payload range [{tableBytes:X}, {dataLength:X}).");
+            }
+        }
+
+        for (int i = 1; i < offsets.Length; i++)
+        {
+            if (offsets[i] <= offsets[i - 1])
+            {
+                throw new FormatException(
+                    $"Player archive offsets are not strictly ascending at index {i}: offsets[{i - 1}]=0x{offsets[i - 1]:X}, offsets[{i}]=0x{offsets[i]:X}.");
+            }
+        }
+    }
+
+    private static bool TryReadTerminator(int duration, int cursor, int wordCount, List<PlayerAnimRecord> records, int seqIndex, out PlayerAnimSequence sequence)
+    {
+        sequence = null!;
+        if (duration == 0)
+        {
+            if (cursor != wordCount - 1)
+            {
+                throw new FormatException(
+                    $"Sequence {seqIndex}: loop terminator (0) is not the final word (at cursor {cursor}, wordCount {wordCount}).");
+            }
+
+            sequence = new PlayerAnimSequence(records, PlayerAnimSequenceTerminator.Loop);
+            return true;
+        }
+
+        if (duration == -1)
+        {
+            if (cursor != wordCount - 1)
+            {
+                throw new FormatException(
+                    $"Sequence {seqIndex}: end terminator (-1) is not the final word (at cursor {cursor}, wordCount {wordCount}).");
+            }
+
+            sequence = new PlayerAnimSequence(records, PlayerAnimSequenceTerminator.End);
+            return true;
+        }
+
+        return false;
+    }
+
+    private static PlayerAnimRecord ReadFrameRecord(ReadOnlySpan<byte> data, int start, int cursor, int wordCount, int frameCount, int seqIndex)
+    {
+        int duration = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(start + cursor * 4, 4));
+        if (duration <= 0)
+        {
+            throw new FormatException(
+                $"Sequence {seqIndex} at cursor {cursor}: invalid duration {duration} (must be > 0, 0, or -1).");
+        }
+
+        if (cursor + 4 > wordCount)
+        {
+            throw new FormatException(
+                $"Sequence {seqIndex} at cursor {cursor}: truncated frame record (need 4 words, {wordCount - cursor} remain).");
+        }
+
+        int frame = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(start + (cursor + 1) * 4, 4));
+        int offsetX = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(start + (cursor + 2) * 4, 4));
+        int offsetY = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(start + (cursor + 3) * 4, 4));
+
+        if (frame < 0 || frame >= frameCount)
+        {
+            throw new FormatException(
+                $"Sequence {seqIndex} at cursor {cursor}: frame index {frame} is out of range [0, {frameCount}).");
+        }
+
+        return new PlayerAnimRecord(duration, frame, offsetX, offsetY);
     }
 }

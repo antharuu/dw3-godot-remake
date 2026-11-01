@@ -51,16 +51,22 @@ public static class StageColorReader
     public static byte[]? TryRead(ReadOnlySpan<byte> overlay)
     {
         if (overlay.Length < 4)
+        {
             return null;
+        }
 
         foreach (int fileOffset in KnownOffsets)
         {
             if (fileOffset + 4 > overlay.Length)
+            {
                 continue;
+            }
 
             uint word = BinaryPrimitives.ReadUInt32LittleEndian(overlay.Slice(fileOffset, 4));
             if ((word >> 26) != 0)
+            {
                 continue; // MIPS opcode is non-zero: this is code, not a CVECTOR data word.
+            }
 
             byte r = overlay[fileOffset];
             byte g = overlay[fileOffset + 1];
@@ -69,14 +75,19 @@ public static class StageColorReader
 
             // cd must be 0 or 1 (tinting flag, verified EU disc values only).
             if (cd > 1)
+            {
                 continue;
+            }
 
             foreach (var (kr, kg, kb) in KnownColors)
             {
                 if (r == kr && g == kg && b == kb)
+                {
                     return [r, g, b];
+                }
             }
         }
+
         return null;
     }
 }

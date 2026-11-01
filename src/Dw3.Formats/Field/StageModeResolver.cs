@@ -16,16 +16,26 @@ public static class StageModeResolver
         {
             StageSlotTable? table = StageSlotLocator.TryLocate(overlay);
             if (table is null || table.Offset < ModeBeforeSlotTableBytes)
+            {
                 continue;
+            }
+
             uint rawMode = BinaryPrimitives.ReadUInt32LittleEndian(overlay.AsSpan(table.Offset - ModeBeforeSlotTableBytes, sizeof(uint)));
             if (rawMode > ushort.MaxValue)
+            {
                 continue;
+            }
+
             ushort mode = (ushort)rawMode;
+
             // Several overlays embed borrowed slot tables. The first raw owner is the
             // authoritative mode binding. Later copies do not redefine the mode.
             if (!result.TryAdd(mode, stage) && result[mode] == stage)
+            {
                 continue;
+            }
         }
+
         return result;
     }
 }

@@ -25,15 +25,14 @@ namespace Dw3.Formats.Field;
 /// </summary>
 public static class FieldActorDecoder
 {
-    private const int RecordBytes = 18; // bytes used (conditions+talks+actor_id+image+x+y+dir)
-    private const int ConditionsOffset = 0;
+    private const int RecordBytes = 18;
     private const int ActorIdOffset = 8;
     private const int XOffset = 12;
     private const int YOffset = 14;
 
     // Three actor width IDs verified from S200 and S235 overlay data sections.
     // These are entries from the disc executable's FIELDSTG_actorWidths array.
-    private static readonly IReadOnlyDictionary<short, int> ActorWidths =
+    private static readonly Dictionary<short, int> ActorWidths =
         new Dictionary<short, int>
         {
             [0x14] = 32,
@@ -51,15 +50,21 @@ public static class FieldActorDecoder
     public static FieldActor Decode(ReadOnlySpan<byte> overlay, uint actorAddress, uint overlayLoadBase)
     {
         if (actorAddress < overlayLoadBase)
+        {
             throw new FormatException($"Actor address 0x{actorAddress:X8} is below the overlay load base 0x{overlayLoadBase:X8}.");
+        }
 
         int fileOffset = checked((int)(actorAddress - overlayLoadBase));
         if (fileOffset + RecordBytes > overlay.Length)
+        {
             throw new FormatException($"Actor record at overlay offset 0x{fileOffset:X} extends beyond the overlay ({overlay.Length} bytes).");
+        }
 
         short actorId = BinaryPrimitives.ReadInt16LittleEndian(overlay.Slice(fileOffset + ActorIdOffset, 2));
         if (!ActorWidths.TryGetValue(actorId, out int width))
+        {
             throw new FormatException($"Unsupported actor width ID 0x{actorId:X2}; only IDs 0x14, 0x15 and 0x2E are supported.");
+        }
 
         short x = BinaryPrimitives.ReadInt16LittleEndian(overlay.Slice(fileOffset + XOffset, 2));
         short y = BinaryPrimitives.ReadInt16LittleEndian(overlay.Slice(fileOffset + YOffset, 2));
@@ -67,6 +72,3 @@ public static class FieldActorDecoder
         return new FieldActor(x, y, width);
     }
 }
-
-/// <summary>Decoded actor position and width for occupancy checking.</summary>
-public sealed record FieldActor(short X, short Y, int Width);

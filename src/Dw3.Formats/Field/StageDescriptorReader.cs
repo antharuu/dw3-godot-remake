@@ -35,7 +35,9 @@ public static class StageDescriptorReader
     public static StageDescriptor Read(ReadOnlySpan<byte> overlay)
     {
         if (overlay.Length == 0 || overlay.Length % sizeof(uint) != 0)
+        {
             throw new FormatException("MIPS overlay instruction stream is truncated.");
+        }
 
         var stores = new Dictionary<uint, HashSet<uint?>> { [SheetEntryMember] = [], [ObjectsMember] = [] };
         uint?[] registers = new uint?[32];
@@ -49,17 +51,27 @@ public static class StageDescriptorReader
 
             // The previous instruction was a jump: its delay slot has just executed.
             if (pending == PendingJump.Call)
+            {
                 foreach (int register in CallerSavedRegisters)
+                {
                     registers[register] = null;
+                }
+            }
             else if (pending == PendingJump.Other)
+            {
                 Array.Fill(registers, null, 1, 31);
+            }
+
             pending = Classify(instruction);
         }
 
         uint objects = Single(stores[ObjectsMember], "object table");
         uint sheet = Single(stores[SheetEntryMember], "sprite sheet");
         if (objects < FieldOverlayLayout.LoadAddress || objects >= FieldOverlayLayout.LoadAddress + (uint)overlay.Length)
+        {
             throw new FormatException($"Stage descriptor object table 0x{objects:X8} lies outside the overlay image.");
+        }
+
         return new StageDescriptor(objects, (int)(sheet & 0xFFFF));
     }
 
@@ -69,6 +81,7 @@ public static class StageDescriptorReader
         int source = (int)((instruction >> 21) & 31);
         int target = (int)((instruction >> 16) & 31);
         ushort immediate = (ushort)instruction;
+
         switch (opcode)
         {
             case 15: // lui
@@ -81,12 +94,7 @@ public static class StageDescriptorReader
                 registers[target] = registers[source] is uint bits ? bits | immediate : null;
                 break;
             case 43: // sw
-                if (registers[source] is uint baseAddress)
-                {
-                    uint member = unchecked(baseAddress + (uint)(short)immediate - DescriptorAddress);
-                    if (stores.TryGetValue(member, out HashSet<uint?>? values))
-                        values.Add(registers[target]);
-                }
+                ApplyStore(instruction, source, immediate, registers, stores);
                 break;
             case 0:
                 InvalidateSpecialDestination(instruction, registers);
@@ -97,17 +105,36 @@ public static class StageDescriptorReader
             default:
                 // Remaining immediate ALU ops and loads write rt; stores and branches do not.
                 if (opcode is >= 8 and <= 14 || opcode is >= 32 and <= 38)
+                {
                     registers[target] = null;
+                }
+
                 break;
+        }
+    }
+
+    private static void ApplyStore(uint instruction, int source, ushort immediate, uint?[] registers, Dictionary<uint, HashSet<uint?>> stores)
+    {
+        int target = (int)((instruction >> 16) & 31);
+        if (registers[source] is uint baseAddress)
+        {
+            uint member = unchecked(baseAddress + (uint)(short)immediate - DescriptorAddress);
+            if (stores.TryGetValue(member, out HashSet<uint?>? values))
+            {
+                values.Add(registers[target]);
+            }
         }
     }
 
     private static void InvalidateSpecialDestination(uint instruction, uint?[] registers)
     {
         int function = (int)(instruction & 0x3F);
+
         // Shifts, ALU ops, mfhi/mflo and jalr write rd.
         if (function is 0 or 2 or 3 or 4 or 6 or 7 or 9 or 16 or 18 || function is >= 32 and <= 43)
+        {
             registers[(instruction >> 11) & 31] = null;
+        }
     }
 
     private static PendingJump Classify(uint instruction)
@@ -115,20 +142,35 @@ public static class StageDescriptorReader
         int opcode = (int)(instruction >> 26);
         int function = (int)(instruction & 0x3F);
         if (opcode == 3 || (opcode == 0 && function == 9))
+        {
             return PendingJump.Call;
+        }
+
         if (opcode is 1 or 2 or 4 or 5 or 6 or 7 or 20 or 21 or 22 or 23 || (opcode == 0 && function == 8))
+        {
             return PendingJump.Other;
+        }
+
         return PendingJump.None;
     }
 
     private static uint Single(HashSet<uint?> values, string member)
     {
         if (values.Count == 0)
+        {
             throw new FormatException($"MIPS overlay never assigns the stage descriptor {member} member.");
+        }
+
         if (values.Contains(null))
+        {
             throw new FormatException($"MIPS overlay stores a value that is not a constant into the stage descriptor {member} member.");
+        }
+
         if (values.Count > 1)
+        {
             throw new FormatException($"MIPS overlay assigns conflicting values to the stage descriptor {member} member.");
+        }
+
         return values.Single()!.Value;
     }
 
@@ -139,8 +181,3 @@ public static class StageDescriptorReader
         Other,
     }
 }
-
-/// <summary>Stage descriptor members recovered from a WSTAG overlay.</summary>
-/// <param name="ObjectsAddress">RAM address of the overlay's StageTile table.</param>
-/// <param name="SheetEntry">Archive entry of the stage sprite sheet inside the stage TMPK file.</param>
-public sealed record StageDescriptor(uint ObjectsAddress, int SheetEntry);

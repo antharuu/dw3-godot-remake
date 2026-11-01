@@ -2,36 +2,6 @@ using System.Buffers.Binary;
 
 namespace Dw3.Formats.Field;
 
-/// <summary>Decoded NPC actor entry from a field stage overlay (.PRO file).</summary>
-/// <param name="ConditionsPtr">RAM pointer to the actor's condition list (0 = unconditional).</param>
-/// <param name="TalksPtr">RAM pointer to the actor's dialogue table (0 = no dialogue).</param>
-/// <param name="ActorId">Character identifier, indexes FIELDSTG_fileEntries and FIELDSTG_actorWidths.</param>
-/// <param name="Image">VRAM image slot index (FIELDSTG_drawActor placement, not sprite selection).</param>
-/// <param name="X">Pixel X position on the stage map.</param>
-/// <param name="Y">Pixel Y position on the stage map.</param>
-/// <param name="Direction">Facing direction in 0..7.</param>
-public sealed record NpcActorEntry(
-    uint ConditionsPtr,
-    uint TalksPtr,
-    short ActorId,
-    short Image,
-    short X,
-    short Y,
-    short Direction);
-
-/// <summary>One decoded visibility condition from an actor's condition list.</summary>
-/// <param name="Code">Condition kind encoded as a 16-bit word.</param>
-/// <param name="Value">Comparison operand for the condition code.</param>
-public sealed record NpcCondition(ushort Code, ushort Value);
-
-/// <summary>One decoded stage slot record (StageSlot, 24-byte disc record).</summary>
-/// <param name="Type">Slot type identifier (0 = list terminator).</param>
-/// <param name="Arg">Slot-type argument (warp target, climb height, etc.).</param>
-/// <param name="X">Map X coordinate of the slot trigger area.</param>
-/// <param name="Y">Map Y coordinate of the slot trigger area.</param>
-/// <param name="Direction">Facing direction constraint (0..7).</param>
-public sealed record NpcStageSlot(ushort Type, ushort Arg, ushort X, ushort Y, ushort Direction);
-
 /// <summary>
 /// Reads NPC-related data structures from a field stage overlay (.PRO file).
 ///
@@ -79,12 +49,17 @@ public static class NpcOverlayReader
     public static NpcActorEntry ReadActorEntry(ReadOnlySpan<byte> overlay, uint actorAddress, uint overlayLoadBase)
     {
         if (actorAddress < overlayLoadBase)
+        {
             throw new FormatException(
                 $"Actor address 0x{actorAddress:X8} is below overlay load base 0x{overlayLoadBase:X8}.");
+        }
+
         int fileOffset = checked((int)(actorAddress - overlayLoadBase));
         if (fileOffset + ActorEntryBytes > overlay.Length)
+        {
             throw new FormatException(
                 $"Actor record at overlay offset 0x{fileOffset:X} extends beyond overlay ({overlay.Length} bytes).");
+        }
 
         uint conditionsPtr = BinaryPrimitives.ReadUInt32LittleEndian(overlay.Slice(fileOffset, 4));
         uint talksPtr = BinaryPrimitives.ReadUInt32LittleEndian(overlay.Slice(fileOffset + 4, 4));
@@ -95,7 +70,9 @@ public static class NpcOverlayReader
         short direction = BinaryPrimitives.ReadInt16LittleEndian(overlay.Slice(fileOffset + 16, 2));
 
         if (direction is < 0 or > 7)
+        {
             throw new FormatException($"Actor at 0x{actorAddress:X8} has invalid direction {direction} (expected 0..7).");
+        }
 
         return new NpcActorEntry(conditionsPtr, talksPtr, actorId, image, x, y, direction);
     }
@@ -111,11 +88,16 @@ public static class NpcOverlayReader
         ReadOnlySpan<byte> overlay, uint conditionsPtr, uint overlayLoadBase)
     {
         if (conditionsPtr == 0u)
+        {
             return [];
+        }
 
         if (conditionsPtr < overlayLoadBase)
+        {
             throw new FormatException(
                 $"Condition pointer 0x{conditionsPtr:X8} is below overlay load base 0x{overlayLoadBase:X8}.");
+        }
+
         int fileOffset = checked((int)(conditionsPtr - overlayLoadBase));
 
         var result = new List<NpcCondition>();
@@ -123,21 +105,33 @@ public static class NpcOverlayReader
         while (true)
         {
             if (cursor + 2 > overlay.Length)
+            {
                 throw new FormatException(
                     $"Condition list at 0x{conditionsPtr:X8} reads past end of overlay.");
+            }
+
             ushort code = BinaryPrimitives.ReadUInt16LittleEndian(overlay.Slice(cursor, 2));
             if (code == ConditionsEnd)
+            {
                 break;
+            }
+
             if (cursor + 4 > overlay.Length)
+            {
                 throw new FormatException(
                     $"Condition value at 0x{conditionsPtr + (uint)(cursor - fileOffset):X8} reads past end of overlay.");
+            }
+
             ushort value = BinaryPrimitives.ReadUInt16LittleEndian(overlay.Slice(cursor + 2, 2));
             result.Add(new NpcCondition(code, value));
             cursor += 4;
             if (result.Count > MaxConditions)
+            {
                 throw new FormatException(
                     $"Condition list at 0x{conditionsPtr:X8} exceeded {MaxConditions} entries without terminator.");
+            }
         }
+
         return result;
     }
 
@@ -152,8 +146,11 @@ public static class NpcOverlayReader
         ReadOnlySpan<byte> overlay, uint slotsAddress, uint overlayLoadBase)
     {
         if (slotsAddress < overlayLoadBase)
+        {
             throw new FormatException(
                 $"Stage slots address 0x{slotsAddress:X8} is below overlay load base 0x{overlayLoadBase:X8}.");
+        }
+
         int fileOffset = checked((int)(slotsAddress - overlayLoadBase));
 
         var result = new List<NpcStageSlot>();
@@ -161,12 +158,18 @@ public static class NpcOverlayReader
         while (true)
         {
             if (cursor + StageSlotBytes > overlay.Length)
+            {
                 throw new FormatException(
                     $"Stage slot {result.Count} at offset 0x{cursor:X} extends past end of overlay.");
+            }
+
             // type is at +0x08 in the 24-byte record
             ushort type = BinaryPrimitives.ReadUInt16LittleEndian(overlay.Slice(cursor + 8, 2));
             if (type == 0)
+            {
                 break;
+            }
+
             ushort arg = BinaryPrimitives.ReadUInt16LittleEndian(overlay.Slice(cursor + 10, 2));
             ushort x = BinaryPrimitives.ReadUInt16LittleEndian(overlay.Slice(cursor + 12, 2));
             ushort y = BinaryPrimitives.ReadUInt16LittleEndian(overlay.Slice(cursor + 14, 2));
@@ -174,9 +177,12 @@ public static class NpcOverlayReader
             result.Add(new NpcStageSlot(type, arg, x, y, dir));
             cursor += StageSlotBytes;
             if (result.Count >= MaxSlots)
+            {
                 throw new FormatException(
                     $"Stage slot table at 0x{slotsAddress:X8} exceeded {MaxSlots} entries without terminator.");
+            }
         }
+
         return result;
     }
 }
