@@ -565,3 +565,5 @@ tools/Dw3.Analyzers/ClassCognitiveComplexityAnalyzer.cs
 tools/Dw3.Analyzers/CognitiveComplexityWalker.cs
 tools/Dw3.Analyzers/Dw3.Analyzers.csproj
 src/Dw3.Extractor/BattleReportJsonWriter.cs
+src/Dw3.Extractor/DialogueManifestWriter.cs
+src/Dw3.Extractor/DialogueSqlWriter.cs
