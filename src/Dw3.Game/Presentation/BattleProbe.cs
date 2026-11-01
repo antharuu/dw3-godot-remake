@@ -46,7 +46,7 @@ public sealed partial class BattleProbe : Node2D
     private BattleDataPackLoader? _battleLoader;
     private FieldDataPackLoader? _fieldLoader;
     private FieldAnimationDataPackLoader? _animationLoader;
-    private string _captureRoot = "";
+    private string _captureRoot = string.Empty;
 
     public override void _ExitTree()
     {

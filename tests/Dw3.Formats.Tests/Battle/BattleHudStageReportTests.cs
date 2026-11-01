@@ -163,7 +163,7 @@ public sealed class BattleHudStageReportTests
     [Theory]
     [InlineData(0, 0)]
     [InlineData(31, 255)]
-    [InlineData(1, 8)]    // 1*255/31 = 8
+    [InlineData(1, 8)] // 1*255/31 = 8
     [InlineData(16, 131)] // 16*255/31 = 131
     public void Ps1Channel_MatchesPythonBattleHudFormula(int value, byte expected)
     {

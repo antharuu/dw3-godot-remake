@@ -1223,8 +1223,8 @@ public sealed partial class BattleRenderer
         {
             var player = view.Players.FirstOrDefault(fighter => fighter.Active);
             var enemy = view.Enemies.FirstOrDefault(fighter => fighter.Active);
-            if (player.Id != 0) DrawTextWindow(1, 0xAE, 0x15, player.Name, "", rightAlign: false, palette: PaletteWhite);
-            if (enemy.Id != 0) DrawTextWindow(1, 0x11, 0x15, enemy.Name, "", rightAlign: false, palette: PaletteWhite);
+            if (player.Id != 0) DrawTextWindow(1, 0xAE, 0x15, player.Name, string.Empty, rightAlign: false, palette: PaletteWhite);
+            if (enemy.Id != 0) DrawTextWindow(1, 0x11, 0x15, enemy.Name, string.Empty, rightAlign: false, palette: PaletteWhite);
         }
 
         private void DrawTeamIcons(BattleView view)
@@ -1277,7 +1277,7 @@ public sealed partial class BattleRenderer
                 var blinkRow = i == menu.Cursor ? (int)((AnimationMilliseconds / 16 / 4) % 5) : 0;
                 DrawFrame(0x22, 16, 109 + i * 19, blinkRow);
                 var palette = menu.Lines[i].Enabled ? PaletteWhite : PaletteGrey;
-                DrawBattleText(origin, menu.Lines[i].Text, "", palette);
+                DrawBattleText(origin, menu.Lines[i].Text, string.Empty, palette);
             }
             if (_previousCursor >= 0 && _previousCursor != menu.Cursor && _cursorOffTexture is { } off)
                 DrawTexture(off, new Vector2(17, 110 + _previousCursor * 19));
@@ -1293,15 +1293,15 @@ public sealed partial class BattleRenderer
             DrawFrame(0x29, 0xA3, 0x21);
             DrawFrame(0x31, 0xB, 0xBC);
             DrawPageArrows(menu, 0x9F);
-            DrawTextWindow(3, 0x1A, 0x9F, menu.PreviousPageText, "", rightAlign: false, palette: PaletteDarkBlue);
-            DrawTextWindow(3, 0x80, 0x9F, menu.NextPageText, "", rightAlign: false, palette: PaletteDarkBlue);
+            DrawTextWindow(3, 0x1A, 0x9F, menu.PreviousPageText, string.Empty, rightAlign: false, palette: PaletteDarkBlue);
+            DrawTextWindow(3, 0x80, 0x9F, menu.NextPageText, string.Empty, rightAlign: false, palette: PaletteDarkBlue);
             var player = view.Players.FirstOrDefault(fighter => fighter.Active);
-            DrawTextWindow(3, 0xAC, 0x3A, menu.StatusText?.Header, "", rightAlign: false, palette: PaletteWhite);
+            DrawTextWindow(3, 0xAC, 0x3A, menu.StatusText?.Header, string.Empty, rightAlign: false, palette: PaletteWhite);
             if (menu.StatusText?.CurrentOverride is { } currentOverride)
-                DrawTextWindow(3, 0xD8, 0x3A, currentOverride, "", rightAlign: true, palette: PaletteWhite);
+                DrawTextWindow(3, 0xD8, 0x3A, currentOverride, string.Empty, rightAlign: true, palette: PaletteWhite);
             else
                 DrawTextWindow(3, 0xD8, 0x3A, player.Mp.ToString(), rightAlign: true, palette: PaletteWhite);
-            DrawTextWindow(3, 0xD9, 0x3A, menu.StatusText?.Separator, "", rightAlign: false, palette: PaletteWhite);
+            DrawTextWindow(3, 0xD9, 0x3A, menu.StatusText?.Separator, string.Empty, rightAlign: false, palette: PaletteWhite);
             DrawTextWindow(3, 0xFB, 0x3A, player.MaxMp.ToString(), rightAlign: true, palette: PaletteWhite);
             for (var i = 0; i < menu.Lines.Count && i < 6; i++)
             {
@@ -1311,8 +1311,8 @@ public sealed partial class BattleRenderer
                     line.Enabled ? PaletteWhite : PaletteGrey);
             }
             var selected = menu.Lines.Count == 0 ? null : menu.Lines[menu.Cursor];
-            DrawTextWindow(1, 0x14, 0xC2, selected?.DescriptionText, selected?.Description ?? "", rightAlign: false, palette: selected?.Enabled == false ? PaletteGrey : PaletteWhite);
-            DrawTextWindow(1, 0x100, 0xD0, selected?.CostLabelText, "", rightAlign: false, palette: selected?.Enabled == false ? PaletteGrey : PaletteWhite);
+            DrawTextWindow(1, 0x14, 0xC2, selected?.DescriptionText, selected?.Description ?? string.Empty, rightAlign: false, palette: selected?.Enabled == false ? PaletteGrey : PaletteWhite);
+            DrawTextWindow(1, 0x100, 0xD0, selected?.CostLabelText, string.Empty, rightAlign: false, palette: selected?.Enabled == false ? PaletteGrey : PaletteWhite);
             if (selected is not null && selected.Cost >= 0)
                 DrawTextWindow(1, 0x12B, 0xD0, selected.Cost.ToString(), rightAlign: true, palette: selected.Enabled ? PaletteWhite : PaletteGrey);
             DrawCursor(14, 69 + menu.Cursor * 14);
@@ -1325,8 +1325,8 @@ public sealed partial class BattleRenderer
             DrawFrame(0x28, 0xA6, 0xA0);
             DrawFrame(0x31, 0xB, 0xBC);
             DrawPageArrows(menu, 0xA9);
-            DrawTextWindow(3, 0x1A, 0xA9, menu.PreviousPageText, "", rightAlign: false, palette: PaletteDarkBlue);
-            DrawTextWindow(3, 0x80, 0xA9, menu.NextPageText, "", rightAlign: false, palette: PaletteDarkBlue);
+            DrawTextWindow(3, 0x1A, 0xA9, menu.PreviousPageText, string.Empty, rightAlign: false, palette: PaletteDarkBlue);
+            DrawTextWindow(3, 0x80, 0xA9, menu.NextPageText, string.Empty, rightAlign: false, palette: PaletteDarkBlue);
             for (var i = 0; i < menu.Lines.Count && i < 7; i++)
             {
                 var line = menu.Lines[i];
@@ -1335,8 +1335,8 @@ public sealed partial class BattleRenderer
                     line.Enabled ? PaletteWhite : PaletteGrey);
             }
             var selected = menu.Lines.Count == 0 ? null : menu.Lines[menu.Cursor];
-            DrawTextWindow(1, 0x14, 0xC2, selected?.DescriptionText, selected?.Description ?? "", rightAlign: false, palette: PaletteWhite);
-            DrawTextWindow(1, 0xAC, 0xA5, menu.StatusText?.Header, "", rightAlign: false, palette: PaletteWhite);
+            DrawTextWindow(1, 0x14, 0xC2, selected?.DescriptionText, selected?.Description ?? string.Empty, rightAlign: false, palette: PaletteWhite);
+            DrawTextWindow(1, 0xAC, 0xA5, menu.StatusText?.Header, string.Empty, rightAlign: false, palette: PaletteWhite);
             if (selected is not null && selected.Quantity >= 0)
                 DrawTextWindow(1, 0xC6, 0xA5, selected.Quantity.ToString(), rightAlign: true, palette: PaletteWhite);
             DrawCursor(14, 69 + menu.Cursor * 14);

@@ -58,7 +58,7 @@ public sealed class PngEncoderTests
             0xFF, 0x00, 0x00, 0xFF,   // pixel 0,0: red  opaque
             0x00, 0xFF, 0x00, 0xFF,   // pixel 1,0: green opaque
             0x00, 0x00, 0xFF, 0xFF,   // pixel 0,1: blue opaque
-            0x00, 0x00, 0x00, 0x00    // pixel 1,1: transparent
+            0x00, 0x00, 0x00, 0x00 // pixel 1,1: transparent
         ];
         var png = PngEncoder.Encode(2, 2, rgba);
         var decoded = DecodePngToRgba(png, 2, 2);

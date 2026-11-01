@@ -25,8 +25,8 @@ public static class DiscIdentity
     public static readonly IReadOnlyList<SupportedEdition> KnownEditions =
     [
         new SupportedEdition(
-            Label:   "Europe SLES-03936 (DMW3)",
-            BinMd5:  "da76a5685b875c353343102b7587fded",
+            Label: "Europe SLES-03936 (DMW3)",
+            BinMd5: "da76a5685b875c353343102b7587fded",
             BinSha1: "457cb233349ba841e03b33d8060f8fbcadd45cb3")
     ];
 

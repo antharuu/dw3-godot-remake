@@ -161,7 +161,7 @@ public sealed class BattleModel
         // already reconstructed local VRAM and decoded its 256x256 texels.
         var textures = root.GetProperty("textures");
         if (textures.GetArrayLength() == 0) throw new InvalidOperationException("battle model has no textures");
-        var decodedTextures = LoadTextures(textures, Path.GetDirectoryName(jsonPath) ?? "");
+        var decodedTextures = LoadTextures(textures, Path.GetDirectoryName(jsonPath) ?? string.Empty);
         foreach (var texture in decodedTextures) model._faceTextures.Add(texture.Key, texture.Value);
         model.ConfigureFace(root, decodedTextures);
 

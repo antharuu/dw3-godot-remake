@@ -59,7 +59,7 @@ public sealed class BattleFlowController
 
     public BattleState State { get; private set; } = new();
     public BattleFlowPhase Phase { get; private set; } = BattleFlowPhase.PlayerCommand;
-    public string Message { get; private set; } = "";
+    public string Message { get; private set; } = string.Empty;
     /// <summary>The battle message shown below the action area. Menus never retain it.</summary>
     public bool MessageVisible { get; private set; }
 
@@ -203,7 +203,7 @@ public sealed class BattleFlowController
 
     private BattleMenuLine Line(int command, bool enabled) { var line = Text?.Command(command) ?? BattleTextLine.Missing; return new BattleMenuLine(line.Debug, enabled, line); }
     private void SetMessage(string key, params IReadOnlyList<TextToken>[] substitutions) { MessageText = Text?.Message(key, substitutions) ?? BattleTextLine.Missing; Message = MessageText.Debug; MessageVisible = MessageText != BattleTextLine.Missing; }
-    private void ClearMessage() { MessageText = BattleTextLine.Missing; Message = ""; MessageVisible = false; }
+    private void ClearMessage() { MessageText = BattleTextLine.Missing; Message = string.Empty; MessageVisible = false; }
     private IReadOnlyList<TextToken> NameTokens(BattleFighter? fighter) => fighter is not null && NameIds.TryGetValue(fighter.Id, out var nameId) ? Text?.DigimonByNameId(nameId).Tokens ?? [] : [];
     private IReadOnlyList<TextToken> ItemTokens(int itemId) => ItemText.TryGetValue(itemId, out var text) ? text.Tokens : [];
 

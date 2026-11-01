@@ -295,7 +295,7 @@ internal static class SyntheticDiscBuilder
         {
             // Entry 1: root directory.  Name = single byte 0x01; parent = 1 (self).
             1,                       // name length
-            0                       // ext attr record length
+            0 // ext attr record length
         };
         buf.AddRange(LE32(RootDirLba));
         buf.AddRange(LE16(1));            // parent = 1
@@ -350,8 +350,8 @@ internal static class SyntheticDiscBuilder
 
     private static byte[] LE32(int v) =>
     [
-        (byte)( v        & 0xFF),
-        (byte)((v >>  8) & 0xFF),
+        (byte)(v & 0xFF),
+        (byte)((v >> 8) & 0xFF),
         (byte)((v >> 16) & 0xFF),
         (byte)((v >> 24) & 0xFF),
     ];

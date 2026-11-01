@@ -144,7 +144,7 @@ public sealed class TextTableDecoderTests
             12, 0, 0, 0,            // offset[0] = 12
             14, 0, 0, 0,            // offset[1] = 14
             0x12, 0x00,             // entry 0: [0x12], null
-            0x34, 0x56, 0x00        // entry 1: [0x34, 0x56], null
+            0x34, 0x56, 0x00 // entry 1: [0x34, 0x56], null
         ];
         var entries = TextTableDecoder.DecodeFile(data);
         Assert.Equal(2, entries.Count);

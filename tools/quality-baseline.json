@@ -1321,25 +1321,19 @@
       "rule": "SA1001",
       "project": "Dw3.Game",
       "folder": "Conversion",
-      "count": 51
+      "count": 41
     },
     {
       "rule": "SA1001",
       "project": "Dw3.Game.Tests",
       "folder": ".",
-      "count": 45
+      "count": 40
     },
     {
       "rule": "SA1002",
       "project": "Dw3.Formats.Tests",
       "folder": "Field",
       "count": 2
-    },
-    {
-      "rule": "SA1008",
-      "project": "Dw3.Disc.Tests",
-      "folder": ".",
-      "count": 1
     },
     {
       "rule": "SA1009",
@@ -1356,54 +1350,6 @@
     {
       "rule": "SA1009",
       "project": "Dw3.Formats",
-      "folder": "Text",
-      "count": 1
-    },
-    {
-      "rule": "SA1010",
-      "project": "Dw3.Game.Tests",
-      "folder": ".",
-      "count": 2
-    },
-    {
-      "rule": "SA1011",
-      "project": "Dw3.Game.Tests",
-      "folder": ".",
-      "count": 2
-    },
-    {
-      "rule": "SA1021",
-      "project": "Dw3.Game.Tests",
-      "folder": ".",
-      "count": 1
-    },
-    {
-      "rule": "SA1025",
-      "project": "Dw3.Disc",
-      "folder": ".",
-      "count": 2
-    },
-    {
-      "rule": "SA1025",
-      "project": "Dw3.Disc.Tests",
-      "folder": ".",
-      "count": 3
-    },
-    {
-      "rule": "SA1025",
-      "project": "Dw3.Formats.Tests",
-      "folder": "Battle",
-      "count": 1
-    },
-    {
-      "rule": "SA1025",
-      "project": "Dw3.Formats.Tests",
-      "folder": "Binary",
-      "count": 2
-    },
-    {
-      "rule": "SA1025",
-      "project": "Dw3.Formats.Tests",
       "folder": "Text",
       "count": 1
     },
@@ -1818,26 +1764,8 @@
     {
       "rule": "SA1122",
       "project": "Dw3.Game",
-      "folder": ".",
-      "count": 1
-    },
-    {
-      "rule": "SA1122",
-      "project": "Dw3.Game",
-      "folder": "Diagnostics",
-      "count": 1
-    },
-    {
-      "rule": "SA1122",
-      "project": "Dw3.Game",
       "folder": "Presentation",
-      "count": 17
-    },
-    {
-      "rule": "SA1122",
-      "project": "Dw3.Game",
-      "folder": "Simulation",
-      "count": 2
+      "count": 1
     },
     {
       "rule": "SA1124",

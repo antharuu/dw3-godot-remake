@@ -46,7 +46,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
     private readonly PlayerIconController _icon = new();
     private readonly Dictionary<string, FieldZone> _zones = [];
     private BattleDataPackLoader? _battleLoader;
-    private string _dataRoot = "";
+    private string _dataRoot = string.Empty;
     private FieldDataPackLoader? _fieldLoader;
     private FieldAnimationDataPackLoader? _animationLoader;
     private int _zoneDecodeCount;

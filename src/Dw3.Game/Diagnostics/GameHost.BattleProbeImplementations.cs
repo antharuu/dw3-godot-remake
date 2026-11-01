@@ -307,7 +307,7 @@ public partial class GameHost
                 $"partner view is absent from the composed framebuffer changed={partnerCompositePixels}");
             // Ended is outside the player-turn presentation flow. Presenting it removes the layer, which proves the
             // lifecycle condition without forging a separate visibility switch in the renderer.
-            BattleRenderer.Present(new BattleView(BattleFlowPhase.Ended, BattleOutcome.None, [], [], "", null));
+            BattleRenderer.Present(new BattleView(BattleFlowPhase.Ended, BattleOutcome.None, [], [], string.Empty, null));
             await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
             Require(BattleRenderer.PartnerViewOpaquePixels() == 0, "partner view persists outside player turn");
             BattleRenderer.Present(BuildBattleView());
