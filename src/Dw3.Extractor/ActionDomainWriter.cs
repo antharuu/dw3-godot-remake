@@ -6,24 +6,6 @@ using Microsoft.Data.Sqlite;
 
 namespace Dw3.Extractor;
 
-/// <summary>One decoded TIM frame from a player action archive.</summary>
-public sealed record ActionFrame(int FrameId, int Width, int Height, byte[] RgbaPixels);
-
-/// <summary>One action set resolved from the archive's five directional references.</summary>
-public sealed record ActionSet(int SetId, string Name, ActionSequenceTerminator Terminator, IReadOnlyList<ActionAnimationRecord> Records);
-
-/// <summary>Disc-derived action archive metadata and decoded output for one domain.</summary>
-public sealed record ActionDomain(
-    string Name,
-    string ManifestSchema,
-    int FileId,
-    int AnimationSetEntry,
-    string DiscPath,
-    string Sha256,
-    int ByteCount,
-    IReadOnlyList<ActionFrame> Frames,
-    IReadOnlyList<ActionSet> Sets);
-
 /// <summary>Writes a player action domain as PNG frames, SQLite records, and its cache manifest.</summary>
 public static class ActionDomainWriter
 {

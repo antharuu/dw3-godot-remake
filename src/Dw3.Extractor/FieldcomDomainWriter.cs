@@ -6,12 +6,6 @@ using Microsoft.Data.Sqlite;
 
 namespace Dw3.Extractor;
 
-public sealed record FieldcomExtractedFrame(int FrameId, int Width, int Height, int OffsetX, int OffsetY, int Row, int Abr, byte[] RgbaPixels);
-public sealed record FieldcomExitRow(int Direction, int Row);
-public sealed record FieldcomNamedSequence(string Name, IReadOnlyList<FieldcomFrameStep> Steps);
-public sealed record FieldcomCueDomain(string DiscPath, string Sha256, int ByteCount, IReadOnlyList<FieldcomExtractedFrame> Frames, IReadOnlyList<FieldcomExitRow> ExitRows, IReadOnlyList<FieldcomNamedSequence> InnerSequences, IReadOnlyList<FieldcomNamedSequence> PopSequences);
-public sealed record FieldcomIconDomain(string DiscPath, string Sha256, int ByteCount, IReadOnlyList<FieldcomExtractedFrame> Frames, IReadOnlyList<FieldcomAnimation> Animations);
-
 /// <summary>Persists disc-derived FIELDCOM cue and icon resources.</summary>
 public static class FieldcomDomainWriter
 {

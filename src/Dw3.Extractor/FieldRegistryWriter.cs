@@ -78,12 +78,3 @@ public static class FieldRegistryWriter
         command.ExecuteNonQuery();
     }
 }
-
-/// <summary>A field stage classified and decoded entirely from user-disc members.</summary>
-public sealed record ExtractedFieldStage(
-    int StageId,
-    ushort Mode,
-    int OverlayFileId,
-    string Status,
-    string? Error,
-    IReadOnlyList<StageSlot> Slots);

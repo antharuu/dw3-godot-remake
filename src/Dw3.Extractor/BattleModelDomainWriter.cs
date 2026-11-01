@@ -6,14 +6,6 @@ using Microsoft.Data.Sqlite;
 namespace Dw3.Extractor;
 
 /// <summary>
-/// One fighter-table entry after extraction: its outcome and, when decoded, the model structure
-/// and the disc member it was read from.
-/// </summary>
-/// <param name="DiscPath">ISO path of the model file, null for a failed entry.</param>
-/// <param name="Sha256">SHA-256 of the model file, null for a failed entry.</param>
-public sealed record BattleModelExtraction(BattleModelOutcome Outcome, BattleModelStructure? Model, string? DiscPath, string? Sha256, BattleModelPayload? Payload = null);
-
-/// <summary>
 /// Writes the battle models domain into a data pack: one manifest per decoded fighter under
 /// <c>battle/models</c>, the decode report, and the <c>battle_models</c> / <c>battle_model_bones</c> index tables.
 /// </summary>
