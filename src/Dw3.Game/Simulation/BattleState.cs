@@ -167,7 +167,7 @@ public sealed class BattleState
         return state;
     }
 
-    /// <summary>The side whose next-turn time is due first (Player on a tie).</summary>
+    /// <summary>Gets the side whose next-turn time is due first (Player on a tie).</summary>
     public BattleSide NextActor => NextPlayerTurn <= NextEnemyTurn ? BattleSide.Player : BattleSide.Enemy;
 
     /// <summary>The active partner attacks the active enemy with its basic technique.</summary>

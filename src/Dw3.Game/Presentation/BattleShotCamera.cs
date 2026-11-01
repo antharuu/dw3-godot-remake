@@ -118,10 +118,10 @@ public sealed class BattleShotCamera
     /// <summary>Gets the camera frame to render.</summary>
     public SourceBattleCameraView View { get; private set; }
 
-    /// <summary>Gets whether the player's fighter is visible.</summary>
+    /// <summary>Gets a value indicating whether gets whether the player's fighter is visible.</summary>
     public bool PlayerVisible { get; private set; }
 
-    /// <summary>Gets whether the enemy fighter is visible.</summary>
+    /// <summary>Gets a value indicating whether gets whether the enemy fighter is visible.</summary>
     public bool EnemyVisible { get; private set; }
 
     /// <summary>Advances the battle shot by one frame.</summary>

@@ -46,7 +46,7 @@ public sealed class FighterModelTable
         _enemies = enemies;
     }
 
-    /// <summary>Entries in file order, without the zero-id terminator.</summary>
+    /// <summary>Gets entries in file order, without the zero-id terminator.</summary>
     public IReadOnlyList<FighterModelEntry> Entries { get; }
 
     /// <summary>Parses the header and entry list of a fighter table file.</summary>

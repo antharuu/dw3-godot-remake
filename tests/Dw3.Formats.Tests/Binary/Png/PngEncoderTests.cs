@@ -29,8 +29,8 @@ public sealed class PngEncoderTests
         var ihdr = ReadChunk(png, 8);
         Assert.Equal("IHDR", ihdr.Type);
         Assert.Equal(13, ihdr.Data.Length);
-        Assert.Equal(1u, BinaryPrimitives.ReadUInt32BigEndian(ihdr.Data[..4]));   // width
-        Assert.Equal(1u, BinaryPrimitives.ReadUInt32BigEndian(ihdr.Data[4..8]));  // height
+        Assert.Equal(1u, BinaryPrimitives.ReadUInt32BigEndian(ihdr.Data.AsSpan()[..4]));   // width
+        Assert.Equal(1u, BinaryPrimitives.ReadUInt32BigEndian(ihdr.Data.AsSpan()[4..8]));  // height
         Assert.Equal(8, ihdr.Data[8]);    // bit depth
         Assert.Equal(6, ihdr.Data[9]);    // colour type: RGBA
         Assert.Equal(0, ihdr.Data[10]);   // compression method
@@ -44,8 +44,8 @@ public sealed class PngEncoderTests
         var pixels = new byte[16 * 32 * 4];
         var png = PngEncoder.Encode(16, 32, pixels);
         var ihdr = ReadChunk(png, 8);
-        Assert.Equal(16u, BinaryPrimitives.ReadUInt32BigEndian(ihdr.Data[..4]));
-        Assert.Equal(32u, BinaryPrimitives.ReadUInt32BigEndian(ihdr.Data[4..8]));
+        Assert.Equal(16u, BinaryPrimitives.ReadUInt32BigEndian(ihdr.Data.AsSpan()[..4]));
+        Assert.Equal(32u, BinaryPrimitives.ReadUInt32BigEndian(ihdr.Data.AsSpan()[4..8]));
     }
 
     // ── Round-trip RGBA via IDAT decompression ────────────────────────────

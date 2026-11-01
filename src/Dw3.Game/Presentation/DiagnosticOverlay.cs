@@ -38,7 +38,7 @@ public sealed partial class DiagnosticOverlay
     public int HudRefreshes { get; private set; }
     public int DrawRequests { get; private set; }
 
-    /// <summary>Optional diagnostic-mode marker prepended to the HUD line (e.g. the DEC-019
+    /// <summary>Gets or sets optional diagnostic-mode marker prepended to the HUD line (e.g. the DEC-019
     /// DW3_START_ZONE selection). Null in a normal interactive session.</summary>
     public string? DiagnosticBadge { get; set; }
 

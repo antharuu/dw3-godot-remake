@@ -45,21 +45,21 @@ public sealed class DialogueController
     public int PageCount => _pages.Count;
     public IReadOnlyList<TextToken> CurrentPage => _pageIndex >= 0 && _pageIndex < _pages.Count ? _pages[_pageIndex] : [];
     public string? ZoneId => _zoneId;
-    /// <summary>The speaker-name tokens between the leading 02 07 and the closing 02 07 (empty when
+    /// <summary>Gets the speaker-name tokens between the leading 02 07 and the closing 02 07 (empty when
     /// the talk has no name). A lone 02 09 (control 9) is the player's own name.</summary>
     public IReadOnlyList<TextToken> SpeakerName { get; private set; } = [];
-    /// <summary>True when the speaker is the player (control 9 in the name field).</summary>
+    /// <summary>Gets a value indicating whether true when the speaker is the player (control 9 in the name field).</summary>
     public bool SpeakerIsPlayer { get; private set; }
-    /// <summary>The name-stripped full talk text (before paging), used to size the box like
+    /// <summary>Gets the name-stripped full talk text (before paging), used to size the box like
     /// createTalkBox's measure of the whole text.</summary>
     public IReadOnlyList<TextToken> FullText { get; private set; } = [];
-    /// <summary>How many tokens of the current page the typewriter has revealed so far.</summary>
+    /// <summary>Gets how many tokens of the current page the typewriter has revealed so far.</summary>
     public int RevealCount => _revealCount;
-    /// <summary>True when the current page is fully typed out.</summary>
+    /// <summary>Gets a value indicating whether true when the current page is fully typed out.</summary>
     public bool RevealComplete => _pageIndex >= 0 && _pageIndex < _pages.Count && _revealCount >= _pages[_pageIndex].Count;
-    /// <summary>True when the box waits for a Cross advance (a fully-typed non-final page).</summary>
+    /// <summary>Gets a value indicating whether true when the box waits for a Cross advance (a fully-typed non-final page).</summary>
     public bool WaitingForAdvance => RevealComplete && _pageIndex + 1 < _pages.Count;
-    /// <summary>True once the current (or just closed) conversation signalled its effect.</summary>
+    /// <summary>Gets a value indicating whether true once the current (or just closed) conversation signalled its effect.</summary>
     public bool EffectReported => _effectReported;
 
     /// <summary>Begins a conversation with <paramref name="actor"/>'s selected talk. The entry's

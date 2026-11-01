@@ -282,7 +282,7 @@ public partial class GameHost
             var partnerPsxFull = LoadPsxReference("battle/kotemon-383-command-menu-0.png");
             Require(partnerTarget is not null && !partnerTarget.IsEmpty(),
                 $"partner view references unreadable remake={partnerTargetPath}");
-            var partnerPsx = partnerPsxFull!.GetRegion(new Rect2I(208, 76, 100, 60));
+            var partnerPsx = partnerPsxFull.GetRegion(new Rect2I(208, 76, 100, 60));
             var partnerRemakeBox = PartnerTargetBoundingBox(partnerTarget!);
             var partnerPsxBox = PartnerPsxBoundingBox(partnerPsx);
             Require(partnerRemakeBox is not null && partnerPsxBox is not null,
@@ -647,7 +647,7 @@ public partial class GameHost
             await CaptureBattle(captureRoot, "report-panels.png");
             guard = 0;
             while (_fightReportController!.View.Message?.Entry != 2 && guard++ < 128) TickTestSimulation();
-            Require(_fightReportController!.View.Message?.Entry == 2, "report did not reach the EXP message");
+            Require(_fightReportController.View.Message?.Entry == 2, "report did not reach the EXP message");
             await CaptureBattle(captureRoot, "report-exp.png");
             _log.Info($"battle-report victory exp={report.Exp} money={report.Money} digimonExp={report.DigimonExp} partners=[{string.Join(",", report.Partners.Select(partner => $"{partner.Name}:+{partner.ExpGained}"))}]");
 

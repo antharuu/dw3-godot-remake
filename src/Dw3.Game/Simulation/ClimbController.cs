@@ -48,7 +48,7 @@ public sealed class ClimbController
     private bool _overEdgeOffsetApplied;
 
     /// <summary>
-    /// Gets whether the actor is currently committed to a wall traverse.
+    /// Gets a value indicating whether gets whether the actor is currently committed to a wall traverse.
     /// </summary>
     public bool IsActive => _substate != ClimbSubstate.None;
 

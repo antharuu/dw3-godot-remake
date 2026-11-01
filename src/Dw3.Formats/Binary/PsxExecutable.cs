@@ -27,13 +27,13 @@ public sealed class PsxExecutable
         ImageBytes = imageBytes;
     }
 
-    /// <summary>RAM address of the first image byte.</summary>
+    /// <summary>Gets rAM address of the first image byte.</summary>
     public uint LoadAddress { get; }
 
-    /// <summary>Number of image bytes the header declares (and the file contains).</summary>
+    /// <summary>Gets number of image bytes the header declares (and the file contains).</summary>
     public int ImageBytes { get; }
 
-    /// <summary>The whole executable file, header included.</summary>
+    /// <summary>Gets the whole executable file, header included.</summary>
     public ReadOnlySpan<byte> Bytes => _data;
 
     /// <summary>Validates the header and wraps the executable bytes without copying them.</summary>

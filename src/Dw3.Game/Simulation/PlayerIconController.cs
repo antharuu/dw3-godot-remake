@@ -40,7 +40,7 @@ public sealed class PlayerIconController
         _lastSourceTick = 0;
     }
 
-    /// <summary>The current frame + smooth position. Valid after <see cref="SetAnimation"/>.</summary>
+    /// <summary>Gets the current frame + smooth position. Valid after <see cref="SetAnimation"/>.</summary>
     public IconView View => new(_frame, _position);
 
     /// <summary>Places the icon exactly on the player (spawn / warp), no glide-in.</summary>

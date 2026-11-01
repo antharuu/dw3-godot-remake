@@ -61,14 +61,14 @@ public sealed class EncounterController
         _rng = rng ?? throw new ArgumentNullException(nameof(rng));
     }
 
-    /// <summary>GAME.battleSteps: steps remaining until the next field battle.</summary>
+    /// <summary>Gets or sets gAME.battleSteps: steps remaining until the next field battle.</summary>
     public int BattleSteps { get; set; }
 
-    /// <summary>BATTLE_SETUP.randomBattles: when false a roll-out only re-rolls, it starts nothing.</summary>
+    /// <summary>Gets or sets a value indicating whether bATTLE_SETUP.randomBattles: when false a roll-out only re-rolls, it starts nothing.</summary>
     public bool RandomBattles { get; set; }
 
     /// <summary>
-    /// The field-busy guard. True when any of FIELDSTG_state.busy/acting/frozen/battleStarting
+    /// Gets or sets a value indicating whether the field-busy guard. True when any of FIELDSTG_state.busy/acting/frozen/battleStarting
     /// is set, which suppresses counting entirely.
     /// </summary>
     public bool Busy { get; set; }

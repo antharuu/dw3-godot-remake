@@ -20,7 +20,7 @@ public sealed class BinarySpanReader
         _data = data ?? throw new ArgumentNullException(nameof(data));
     }
 
-    /// <summary>Total number of bytes in the buffer.</summary>
+    /// <summary>Gets total number of bytes in the buffer.</summary>
     public int Length => _data.Length;
 
     /// <summary>Returns the underlying buffer as a read-only span.</summary>

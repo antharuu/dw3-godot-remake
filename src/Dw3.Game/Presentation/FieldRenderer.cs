@@ -57,12 +57,12 @@ public sealed class FieldRenderer
     public int SimulationPresentationSteps { get; private set; }
     public int OverlayGeometryBuilds => _diagnosticOverlay.GeometryBuilds;
     public int OverlayHudRefreshes => _diagnosticOverlay.HudRefreshes;
-    /// <summary>Optional diagnostic-mode marker shown in the F3 HUD (DEC-019 DW3_START_ZONE).</summary>
+    /// <summary>Gets or sets optional diagnostic-mode marker shown in the F3 HUD (DEC-019 DW3_START_ZONE).</summary>
     public string? DiagnosticBadge { get => _diagnosticOverlay.DiagnosticBadge; set => _diagnosticOverlay.DiagnosticBadge = value; }
-    /// <summary>Number of visible NPC sprites currently in the loaded zone (test-only: re-entry leak check).</summary>
+    /// <summary>Gets number of visible NPC sprites currently in the loaded zone (test-only: re-entry leak check).</summary>
     public int NpcSpriteCount => _npcSprites.Count;
     /// <summary>
-    /// Test-only: when true, skips the Reverse() step in ArrangeCallbacksAtPlayerGroundY
+    /// Gets or sets a value indicating whether test-only: when true, skips the Reverse() step in ArrangeCallbacksAtPlayerGroundY
     /// so lower-SortY items draw last (wrong order) — used to confirm regression sensitivity.
     /// </summary>
     public bool TestReverseCallbackOrder { get; set; }

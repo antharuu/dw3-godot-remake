@@ -24,7 +24,7 @@ public sealed class FieldDataPackLoader : IDisposable
             throw new CacheResourceException("CACHE_INVALID", "data pack contains no loadable field zones");
     }
 
-    /// <summary>All loadable terrain stages in numeric order.</summary>
+    /// <summary>Gets all loadable terrain stages in numeric order.</summary>
     public IReadOnlyList<string> ZoneIds => _zoneIds;
 
     /// <summary>

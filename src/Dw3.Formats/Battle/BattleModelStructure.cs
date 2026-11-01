@@ -10,6 +10,6 @@ public sealed record BattleModelStructure(
     IReadOnlyList<BattleModelBone> Bones,
     IReadOnlyList<BattleMesh> Meshes)
 {
-    /// <summary>Number of bones, root included.</summary>
+    /// <summary>Gets number of bones, root included.</summary>
     public int BoneCount => Bones.Count;
 }

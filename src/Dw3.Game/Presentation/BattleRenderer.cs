@@ -74,7 +74,7 @@ public sealed partial class BattleRenderer
     private float _entrancePalFrames;
     private const int EntranceFadeFrames = 60;
 
-    /// <summary>Current source stage fade (0..1), shared by lights, stage colour and background.</summary>
+    /// <summary>Gets current source stage fade (0..1), shared by lights, stage colour and background.</summary>
     public float LightFade => _entranceFade / 4096f;
 
     // The battle camera (the decoded battle-camera record contract / the decoded fighter-camera record contract): source code negates FighterInfo
@@ -227,7 +227,7 @@ public sealed partial class BattleRenderer
         _world.AddChild(_floor);
     }
 
-    /// <summary>True once at least one battle model is built and the scene is showing.</summary>
+    /// <summary>Gets a value indicating whether true once at least one battle model is built and the scene is showing.</summary>
     public bool Built => _built;
 
     public void Show() => _layer.Visible = true;
@@ -271,7 +271,7 @@ public sealed partial class BattleRenderer
         }
     }
 
-    /// <summary>True once a decoded fight stage is loaded and drawn as the background.</summary>
+    /// <summary>Gets a value indicating whether true once a decoded fight stage is loaded and drawn as the background.</summary>
     public bool StageBuilt => _stage is not null;
 
     /// <summary>Builds the active player's model on the left and the real enemy model on the right.
@@ -450,7 +450,7 @@ public sealed partial class BattleRenderer
         _placeholders.Add((instance, fighterId, enemy));
     }
 
-    /// <summary>The number of real battle models built (player + any decoded enemy).</summary>
+    /// <summary>Gets the number of real battle models built (player + any decoded enemy).</summary>
     public int ModelCount => _models.Count;
 
     /// <summary>Poses every built model at <paramref name="frame"/> (for the probe's distinct-pose proof).</summary>
@@ -1074,7 +1074,7 @@ public sealed partial class BattleRenderer
             {
                 var rows = frame.ClutRows.Select(path => Image.LoadFromFile(path)).ToArray();
                 if (rows.Any(image => image is null || image.IsEmpty())) { GD.PushWarning($"WARN battle-hud-frame-unreadable frame={id}"); continue; }
-                _frameTextures[id] = [.. rows.Select(image => ImageTexture.CreateFromImage(image!))];
+                _frameTextures[id] = [.. rows.Select(image => ImageTexture.CreateFromImage(image))];
                 _frameOffsets[id] = new Vector2(frame.OffsetX, frame.OffsetY);
             }
             var cursorImage = Image.LoadFromFile(hud.Cursor.Path);
@@ -1099,7 +1099,7 @@ public sealed partial class BattleRenderer
                 var images = frame.ClutRows.Select(Image.LoadFromFile).ToArray();
                 if (images.Any(image => image is null || image.IsEmpty()))
                     throw new InvalidOperationException($"menu icon image unreadable frame={id}");
-                _menuIconTextures[id] = [.. images.Select(image => ImageTexture.CreateFromImage(image!))];
+                _menuIconTextures[id] = [.. images.Select(image => ImageTexture.CreateFromImage(image))];
             }
             QueueRedraw();
         }

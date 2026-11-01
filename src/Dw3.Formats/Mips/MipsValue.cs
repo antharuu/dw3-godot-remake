@@ -15,18 +15,18 @@ public readonly record struct MipsValue
 
     private readonly uint _constantOrAddress;
 
-    /// <summary>True for a symbolic loaded word, false for a plain constant.</summary>
+    /// <summary>Gets a value indicating whether true for a symbolic loaded word, false for a plain constant.</summary>
     public bool IsLoadedWord { get; }
 
-    /// <summary>Constant added to the loaded word. Always 0 for a plain constant.</summary>
+    /// <summary>Gets constant added to the loaded word. Always 0 for a plain constant.</summary>
     public int Addend { get; }
 
-    /// <summary>The constant value. Throws for a loaded word.</summary>
+    /// <summary>Gets the constant value. Throws for a loaded word.</summary>
     public uint ConstantValue => IsLoadedWord
         ? throw new InvalidOperationException("A loaded-word value has no constant value.")
         : _constantOrAddress;
 
-    /// <summary>The watched address the word was loaded from. Throws for a constant.</summary>
+    /// <summary>Gets the watched address the word was loaded from. Throws for a constant.</summary>
     public uint LoadAddress => IsLoadedWord
         ? _constantOrAddress
         : throw new InvalidOperationException("A constant value has no load address.");

@@ -37,22 +37,22 @@ public enum MipsOperation
 /// </summary>
 public readonly record struct MipsInstruction(int Offset, uint Word)
 {
-    /// <summary>Primary opcode, bits 31..26.</summary>
+    /// <summary>Gets primary opcode, bits 31..26.</summary>
     public int Opcode => (int)(Word >> 26);
-    /// <summary>First source register, bits 25..21.</summary>
+    /// <summary>Gets first source register, bits 25..21.</summary>
     public int Rs => (int)((Word >> 21) & 31);
-    /// <summary>Second source or I-type destination register, bits 20..16.</summary>
+    /// <summary>Gets second source or I-type destination register, bits 20..16.</summary>
     public int Rt => (int)((Word >> 16) & 31);
-    /// <summary>R-type destination register, bits 15..11.</summary>
+    /// <summary>Gets r-type destination register, bits 15..11.</summary>
     public int Rd => (int)((Word >> 11) & 31);
-    /// <summary>R-type function code, bits 5..0.</summary>
+    /// <summary>Gets r-type function code, bits 5..0.</summary>
     public int Function => (int)(Word & 63);
-    /// <summary>Zero-extended 16-bit immediate.</summary>
+    /// <summary>Gets zero-extended 16-bit immediate.</summary>
     public ushort UnsignedImmediate => (ushort)Word;
-    /// <summary>Sign-extended 16-bit immediate (also the load/store displacement).</summary>
+    /// <summary>Gets sign-extended 16-bit immediate (also the load/store displacement).</summary>
     public short SignedImmediate => (short)Word;
 
-    /// <summary>The recognised operation, or <see cref="MipsOperation.Other"/>.</summary>
+    /// <summary>Gets the recognised operation, or <see cref="MipsOperation.Other"/>.</summary>
     public MipsOperation Operation => Opcode switch
     {
         0x00 => Function switch
@@ -73,7 +73,7 @@ public readonly record struct MipsInstruction(int Offset, uint Word)
         _ => MipsOperation.Other,
     };
 
-    /// <summary>True when the following word executes in this instruction's branch delay slot.</summary>
+    /// <summary>Gets a value indicating whether true when the following word executes in this instruction's branch delay slot.</summary>
     public bool HasDelaySlot => Opcode switch
     {
         0x00 => Function is 0x08 or 0x09,
@@ -83,7 +83,7 @@ public readonly record struct MipsInstruction(int Offset, uint Word)
     };
 
     /// <summary>
-    /// The general-purpose register this instruction writes, or null when it writes none.
+    /// Gets the general-purpose register this instruction writes, or null when it writes none.
     /// Coprocessor moves to the CPU (<c>mfc</c>/<c>cfc</c>) write <c>rt</c>. Writes to
     /// <c>$zero</c> are reported as register 0, which callers must keep at zero.
     /// </summary>

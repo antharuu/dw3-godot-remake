@@ -78,7 +78,7 @@ public sealed partial class BattleProbe : Node2D
         _state.AnimationDirection = 1;
         _fieldRenderer.LoadZone(zone, player, _actionData, fieldLoader.PlayerFramePath, (set, frame) =>
             set is >= 0x16 and <= 0x19 ? loader.DropFramePath(frame) : loader.ClimbFramePath(frame), null);
-        _fieldRenderer.Present(_state, _zone!, f3On: false);
+        _fieldRenderer.Present(_state, _zone, f3On: false);
     }
 
     private ClimbData? _actionData;

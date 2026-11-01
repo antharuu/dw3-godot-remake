@@ -15,7 +15,7 @@ public sealed class DiscSourceException : Exception
     /// <summary>A required file is absent or corrupt on the disc.</summary>
     public const string DiscIncomplete = "SOURCE_INCOMPLETE";
 
-    /// <summary>Stable error code understood by the launcher UI.</summary>
+    /// <summary>Gets stable error code understood by the launcher UI.</summary>
     public string ErrorCode { get; }
 
     /// <inheritdoc />

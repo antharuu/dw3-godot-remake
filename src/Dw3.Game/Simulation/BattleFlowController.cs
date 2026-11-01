@@ -24,34 +24,34 @@ public sealed record BattleTechnique(int Id, string Label, TechData Tech, Battle
 /// </summary>
 public sealed class BattleFlowController
 {
-    /// <summary>The resolved basic attack (the active partner's first learned skill, source
+    /// <summary>Gets or sets the resolved basic attack (the active partner's first learned skill, source
     /// WFIGHTMN_runCommand case 0 -> FIGHTSTG_startFirstTech -> skills[0]).</summary>
     public TechData PlayerBasicTech { get; set; } = new();
 
-    /// <summary>The enemy's basic attack (its battle table's first technique).</summary>
+    /// <summary>Gets or sets the enemy's basic attack (its battle table's first technique).</summary>
     public TechData EnemyBasicTech { get; set; } = new();
 
-    /// <summary>The active partner's techniques, for the Technique submenu.</summary>
+    /// <summary>Gets or sets the active partner's techniques, for the Technique submenu.</summary>
     public IReadOnlyList<BattleTechnique> PlayerTechniques { get; set; } = [];
 
-    /// <summary>The technique catalogue (id -> resolved technique), for resolving the enemy's
+    /// <summary>Gets or sets the technique catalogue (id -> resolved technique), for resolving the enemy's
     /// battle-table techniques on its turn (RunEnemyTurn).</summary>
     public IReadOnlyDictionary<int, TechData> Techs { get; set; } = new Dictionary<int, TechData>();
 
-    /// <summary>The Digimon forms the active partner can digivolve into,
+    /// <summary>Gets or sets the Digimon forms the active partner can digivolve into,
     /// for the Digivolve submenu. The host refreshes it when the active partner changes.</summary>
     public IReadOnlyList<int> PlayerDigivolutions { get; set; } = [];
 
-    /// <summary>The battle-item catalogue, keyed by item id (BattleItemsData).</summary>
+    /// <summary>Gets or sets the battle-item catalogue, keyed by item id (BattleItemsData).</summary>
     public IReadOnlyDictionary<int, BattleItem> Items { get; set; } = new Dictionary<int, BattleItem>();
 
-    /// <summary>The bag: item id -> how many the party holds (GAME.items). Using an item
+    /// <summary>Gets or sets the bag: item id -> how many the party holds (GAME.items). Using an item
     /// decrements it; the item menu lists only the ids with a positive count.</summary>
     public Dictionary<int, int> ItemStock { get; set; } = [];
-    /// <summary>FSITMNAM token streams supplied with the decoded battle-item catalogue.</summary>
+    /// <summary>Gets or sets fSITMNAM token streams supplied with the decoded battle-item catalogue.</summary>
     public IReadOnlyDictionary<int, BattleTextLine> ItemText { get; set; } = new Dictionary<int, BattleTextLine>();
 
-    /// <summary>Fighter id -> display label, for the action log.</summary>
+    /// <summary>Gets or sets fighter id -> display label, for the action log.</summary>
     /// <summary>Fighter id -> source DIGNAM nameId. Enemies use BattleTableEntry.nameId and partners use DigimonData.nameId.</summary>
     public IReadOnlyDictionary<int, int> NameIds { get; set; } = new Dictionary<int, int>();
     public BattleTextCatalog? Text { get; set; }
@@ -60,7 +60,7 @@ public sealed class BattleFlowController
     public BattleState State { get; private set; } = new();
     public BattleFlowPhase Phase { get; private set; } = BattleFlowPhase.PlayerCommand;
     public string Message { get; private set; } = string.Empty;
-    /// <summary>The battle message shown below the action area. Menus never retain it.</summary>
+    /// <summary>Gets a value indicating whether the battle message shown below the action area. Menus never retain it.</summary>
     public bool MessageVisible { get; private set; }
 
     public BattleOutcome Outcome => State.Outcome;

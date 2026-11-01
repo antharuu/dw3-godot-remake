@@ -8,23 +8,23 @@ namespace Dw3.Formats.Binary.Tim;
 /// </summary>
 public sealed class TimImage
 {
-    /// <summary>Image width in pixels.</summary>
+    /// <summary>Gets image width in pixels.</summary>
     public int Width { get; }
 
-    /// <summary>Image height in pixels.</summary>
+    /// <summary>Gets image height in pixels.</summary>
     public int Height { get; }
 
     /// <summary>
-    /// Raw RGBA pixel data: 4 bytes (R, G, B, A) per pixel, row-major.
+    /// Gets raw RGBA pixel data: 4 bytes (R, G, B, A) per pixel, row-major.
     /// Length is exactly <c>Width * Height * 4</c>.
     /// </summary>
     public byte[] Pixels { get; }
 
-    /// <summary>TIM pixel mode that produced this image.</summary>
+    /// <summary>Gets tIM pixel mode that produced this image.</summary>
     public TimPixelMode Mode { get; }
 
     /// <summary>
-    /// Number of CLUT rows in the source TIM file.
+    /// Gets number of CLUT rows in the source TIM file.
     /// 0 for 16-bit direct images (no CLUT).
     /// </summary>
     public int ClutRowCount { get; }

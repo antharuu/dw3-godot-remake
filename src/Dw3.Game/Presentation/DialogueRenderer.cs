@@ -58,19 +58,19 @@ public sealed partial class DialogueRenderer
         return frame % 4;
     }
 
-    /// <summary>True when the current page contains at least one real glyph or icon draw.</summary>
+    /// <summary>Gets a value indicating whether true when the current page contains at least one real glyph or icon draw.</summary>
     public bool HasGlyphPixels => _box.GlyphCount > 0 || _box.IconCount > 0;
     public int GlyphCount => _box.GlyphCount;
     public int IconCount => _box.IconCount;
-    /// <summary>True when the speaker name window carries real glyph pixels.</summary>
+    /// <summary>Gets a value indicating whether true when the speaker name window carries real glyph pixels.</summary>
     public bool HasNamePixels => _box.NameGlyphCount > 0;
     public int NameGlyphCount => _box.NameGlyphCount;
-    /// <summary>True when the corner/edge sprites and the panel were laid out this frame.</summary>
+    /// <summary>Gets a value indicating whether true when the corner/edge sprites and the panel were laid out this frame.</summary>
     public bool HasFramePixels => _box.FrameRendered;
-    /// <summary>True when the blinking "next" arrow is visible this frame.</summary>
+    /// <summary>Gets a value indicating whether true when the blinking "next" arrow is visible this frame.</summary>
     public bool HasArrowPixels => _box.ArrowRendered;
     public int BoxType => _box.Type;
-    /// <summary>The panel rectangle in viewport pixels (the probe checks the bubble sits at the actor, not the bottom).</summary>
+    /// <summary>Gets the panel rectangle in viewport pixels (the probe checks the bubble sits at the actor, not the bottom).</summary>
     public Rect2 BoxScreenRect => _box.BoxScreenRect;
 
     public void Present(DialogueView? view) => _box.SetView(view);

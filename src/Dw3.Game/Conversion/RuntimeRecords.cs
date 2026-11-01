@@ -4,7 +4,7 @@ namespace Dw3Production.Conversion;
 public sealed record Layer(string Path, int SourceDepth);
 public sealed record Exit(int Slot, string Destination, int X, int Y, int Facing, int? Condition = null, string ConditionStatus = "unconditional")
 {
-    /// <summary>True when this physical edge is story-gated and opened for the exploration
+    /// <summary>Gets a value indicating whether true when this physical edge is story-gated and opened for the exploration
     /// phase without evaluating its condition. The raw condition stays on <see cref="Condition"/>.</summary>
     public bool IsUnevaluated => ConditionStatus == "unevaluated";
 }

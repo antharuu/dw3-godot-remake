@@ -51,13 +51,13 @@ public sealed class BattleMotionMachine
     /// <summary>Gets the most recently published fixed-point blend weight.</summary>
     public int Blend { get; private set; }
 
-    /// <summary>Gets whether the most recently published entry blends between poses.</summary>
+    /// <summary>Gets a value indicating whether gets whether the most recently published entry blends between poses.</summary>
     public bool Blending { get; private set; }
 
-    /// <summary>Gets whether the active motion reached its finish marker.</summary>
+    /// <summary>Gets a value indicating whether gets whether the active motion reached its finish marker.</summary>
     public bool MotionDone { get; private set; }
 
-    /// <summary>Gets whether the active motion returns to the selected idle motion when finished.</summary>
+    /// <summary>Gets a value indicating whether gets whether the active motion returns to the selected idle motion when finished.</summary>
     public bool ToIdle { get; private set; }
 
     /// <summary>Gets the destination frame of the current blend, or zero when none is active.</summary>
@@ -72,7 +72,7 @@ public sealed class BattleMotionMachine
     /// <summary>Gets the expanded values of the active motion timeline.</summary>
     public IReadOnlyList<int> Keyframes => _keyframes;
 
-    /// <summary>Gets whether the expanded motion ends in a loop marker.</summary>
+    /// <summary>Gets a value indicating whether gets whether the expanded motion ends in a loop marker.</summary>
     public bool Looping => _keyframes.Count > 0 && _keyframes[^1] == BlendFlag;
 
     /// <summary>

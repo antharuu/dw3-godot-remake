@@ -39,13 +39,13 @@ public sealed class BattleModel
     public bool Visible => Root.Visible;
     public int BoneCount { get; private set; }
     public int MeshCount { get; private set; }
-    /// <summary>Polygons whose source 0x9 command disabled new UV loading but which still
+    /// <summary>Gets polygons whose source 0x9 command disabled new UV loading but which still
     /// render through the residual POLY_FT/GT texture state.</summary>
     public int UntexturedPolygonCount { get; private set; }
-    /// <summary>The model's motions, index 0 = motion 1 (the idle). Each is a list of steps
+    /// <summary>Gets the model's motions, index 0 = motion 1 (the idle). Each is a list of steps
     /// <c>[index, count, frame, endFrame]</c> ending on the 0x7FFF terminator.</summary>
     public IReadOnlyList<IReadOnlyList<IReadOnlyList<int>>> Motions => _motions;
-    /// <summary>The fighter's camera views (the decoded fighter-camera record contract / the decoded battle-camera record contract), in PS1
+    /// <summary>Gets the fighter's camera views (the decoded fighter-camera record contract / the decoded battle-camera record contract), in PS1
     /// integer units: <c>[x, y, z]</c> position, reference and a projection distance. Empty
     /// for a fight stage (which has no fighter camera).</summary>
     public IReadOnlyList<BattleCameraView> Cameras { get; private set; } = [];
@@ -69,7 +69,7 @@ public sealed class BattleModel
         public LightingVertex[] Lighting { get; }
         public ShaderMaterial Material { get; }
         public Color[] Colors { get; }
-        /// <summary>Raw MeshDrawState.abr: 0 means opaque, 1..4 select PSX ABR 0..3.</summary>
+        /// <summary>Gets raw MeshDrawState.abr: 0 means opaque, 1..4 select PSX ABR 0..3.</summary>
         public int Abr { get; }
 
         public LitSurface(MeshInstance3D instance, int bone, Vector3[] positions, Vector2[] uvs,
@@ -530,7 +530,7 @@ public sealed class BattleModel
         UpdateFace(framesElapsed);
     }
 
-    /// <summary>Bone indices which the source scale threshold currently suppresses.</summary>
+    /// <summary>Gets bone indices which the source scale threshold currently suppresses.</summary>
     public IReadOnlyList<int> HiddenBones => [.. _bones.Where(pair => !pair.Value.Visible).Select(pair => pair.Key).Order()];
 
     /// <summary>Whether a particular source bone is visible after the most recent pose.</summary>
@@ -583,7 +583,7 @@ public sealed class BattleModel
     public static bool IsOpaqueMaterial(ShaderMaterial material) =>
         !material.Shader.Code.Contains("ALPHA =", StringComparison.Ordinal);
 
-    /// <summary>Probe view of every surface material, to assert the opaque/translucent split.</summary>
+    /// <summary>Gets probe view of every surface material, to assert the opaque/translucent split.</summary>
     public IReadOnlyList<ShaderMaterial> Materials => _materials;
 
     /// <summary>Compares ApplyPose's converted Godot basis and scale with the explicit

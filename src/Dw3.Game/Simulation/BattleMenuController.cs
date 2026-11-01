@@ -43,16 +43,16 @@ public sealed record BattleMenuView(BattleMenuKind Menu, int Cursor, int First, 
 public sealed class BattleMenuController
 {
     public BattleMenuKind Menu { get; private set; } = BattleMenuKind.Root;
-    /// <summary>Cursor row inside the current visible page.</summary>
+    /// <summary>Gets cursor row inside the current visible page.</summary>
     public int Cursor { get; private set; }
-    /// <summary>Absolute source-list index at the current page's first row.</summary>
+    /// <summary>Gets absolute source-list index at the current page's first row.</summary>
     public int First { get; private set; }
     public int PageSize { get; private set; }
     public int PageCount => Lines.Count == 0 ? 0 : (Lines.Count + PageSize - 1) / PageSize;
     public int SelectedIndex => First + Cursor;
     public IReadOnlyList<BattleMenuLine> Lines { get; private set; } = [];
 
-    /// <summary>The visible source page and relative cursor for presentation.</summary>
+    /// <summary>Gets the visible source page and relative cursor for presentation.</summary>
     public BattleMenuView View => new(Menu, Cursor, First, PageSize, PageCount,
         [.. Lines.Skip(First).Take(PageSize)], PreviousPageText, NextPageText, StatusText);
     private BattleTextLine? PreviousPageText { get; set; }
@@ -103,7 +103,7 @@ public sealed class BattleMenuController
     /// <summary>Source PAD_R1 behavior.</summary>
     public bool NextPage() => SetPage(CurrentPage + 1);
 
-    /// <summary>Whether the selected source-list line can be confirmed (not greyed out).</summary>
+    /// <summary>Gets a value indicating whether whether the selected source-list line can be confirmed (not greyed out).</summary>
     public bool CanConfirm => Lines.Count > 0 && SelectedIndex < Lines.Count && Lines[SelectedIndex].Enabled;
 
     private int CurrentPage => First / PageSize;

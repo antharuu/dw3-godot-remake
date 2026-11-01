@@ -13,6 +13,6 @@ public sealed record BattleModelOutcome(FighterModelEntry Entry, FighterModelRef
     /// <summary>A fighter whose resolution or model decoding failed with <paramref name="reason"/>.</summary>
     public static BattleModelOutcome Failed(FighterModelEntry entry, string reason) => new(entry, null, reason);
 
-    /// <summary>True when the model decoded.</summary>
+    /// <summary>Gets a value indicating whether true when the model decoded.</summary>
     public bool IsDecoded => Reason is null;
 }

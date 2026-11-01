@@ -98,7 +98,7 @@ public sealed class BattleDataDecoderTests
         Assert.Equal(1, record.DigimonExperience);
         Assert.Equal(-4, record.Experience);
         Assert.Equal(50, record.Money);
-        Assert.Throws<FormatException>(() => BattleDataDecoder.DecodeReward(bytes[..11], 0));
+        Assert.Throws<FormatException>(() => BattleDataDecoder.DecodeReward(bytes.AsSpan()[..11], 0));
     }
 
     [Fact]
@@ -117,7 +117,7 @@ public sealed class BattleDataDecoderTests
         Assert.Equal([4, 5, 6, 7, 8, 9, 10, 11, 12], growth.VitalRandom);
         Assert.Equal([13, 14, 15, 16, 17, 18, 19, 20, 21], growth.StatGains[0]);
         Assert.Equal([67, 68, 69, 70, 71, 72, 73, 74], growth.ResistanceGains);
-        Assert.Throws<FormatException>(() => BattleDataDecoder.DecodeGrowth(bytes[..315], 0));
+        Assert.Throws<FormatException>(() => BattleDataDecoder.DecodeGrowth(bytes.AsSpan()[..315], 0));
     }
 
     [Fact]
@@ -144,7 +144,7 @@ public sealed class BattleDataDecoderTests
         Assert.Equal(3, effect.Flags);
         Assert.Equal(1, effect.Kind);
         Assert.Equal(500, effect.Amount);
-        Assert.Throws<FormatException>(() => BattleDataDecoder.DecodeItem(bytes[..11], 0));
+        Assert.Throws<FormatException>(() => BattleDataDecoder.DecodeItem(bytes.AsSpan()[..11], 0));
     }
 
     [Fact]

@@ -10,7 +10,7 @@ public sealed class DataPackReader
     private const string DataDirectoryName = "data";
     private readonly string _rootDirectory;
 
-    /// <summary>The validated pack's active data directory.</summary>
+    /// <summary>Gets the validated pack's active data directory.</summary>
     public string DataDirectory => Path.Combine(_rootDirectory, DataDirectoryName);
 
     /// <summary>

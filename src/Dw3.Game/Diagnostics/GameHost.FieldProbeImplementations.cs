@@ -394,7 +394,7 @@ public partial class GameHost
             var imgCorrectOrder = GetViewport().GetTexture().GetImage();
             Require(imgCorrectOrder.SavePng(Path.Combine(captureRoot, "sorty-player-front.png")) == Error.Ok,
                 "sorty capture write failed: sorty-player-front.png");
-            var correctOrderCount = CountOpaqueSourceMatches(imgCorrectOrder, _water!.Zones["S200"]
+            var correctOrderCount = CountOpaqueSourceMatches(imgCorrectOrder, _water.Zones["S200"]
                 .First(w => w.Index == sortedObj.Index));
 
             // Regression: apply wrong (non-reversed) order → object erroneously in front.
