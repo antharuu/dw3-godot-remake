@@ -23,7 +23,7 @@ public sealed class CollisionManifestWriterTests
 
         var sb = new StringBuilder();
         using var sw = new StringWriter(sb);
-        CollisionManifestWriter.Write(sw, actors);
+        CollisionManifestWriter.WriteManifest(sw, actors);
         string json = sb.ToString();
 
         using var doc = JsonDocument.Parse(json);

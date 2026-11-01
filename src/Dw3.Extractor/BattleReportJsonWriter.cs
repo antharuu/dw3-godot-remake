@@ -49,6 +49,10 @@ internal static class BattleReportJsonWriter
     }
 
     /// <summary>Writes the source provenance block for sheet, texture, overlay and arrow.</summary>
+    /// <param name="json">The JSON writer to append to.</param>
+    /// <param name="sheetArchive">The raw sprite-sheet archive bytes.</param>
+    /// <param name="textureArchive">The raw texture archive bytes.</param>
+    /// <param name="overlay">The raw STFGTREP overlay bytes.</param>
     private static void WriteSourceSection(Utf8JsonWriter json, byte[] sheetArchive, byte[] textureArchive, byte[] overlay)
     {
         json.WriteStartObject("source");
@@ -80,6 +84,8 @@ internal static class BattleReportJsonWriter
     }
 
     /// <summary>Writes the frames object keyed by frame id with per-row CLUT data.</summary>
+    /// <param name="json">The JSON writer to append to.</param>
+    /// <param name="frames">Rendered report frame metadata in required-frame order.</param>
     private static void WriteFramesSection(
         Utf8JsonWriter json,
         List<(int Id, (string Path, int W, int H, int Ox, int Oy)[] Rows, (int Part, int Dx, int Dy)[] Parts)> frames)
@@ -115,6 +121,8 @@ internal static class BattleReportJsonWriter
     }
 
     /// <summary>Writes the animations array (8 rows × 7 frame values).</summary>
+    /// <param name="json">The JSON writer to append to.</param>
+    /// <param name="animations">The fixed partner-by-frame animation table.</param>
     private static void WriteAnimationsSection(Utf8JsonWriter json, int[,] animations)
     {
         json.WriteStartArray("animations");
@@ -130,6 +138,9 @@ internal static class BattleReportJsonWriter
     }
 
     /// <summary>Writes the arrow object with geometry and per-CLUT-row paths.</summary>
+    /// <param name="json">The JSON writer to append to.</param>
+    /// <param name="arrowRows">Rendered arrow variants in CLUT-row order.</param>
+    /// <param name="arrowPartsMeta">The canonical arrow-part geometry taken from the first CLUT row.</param>
     private static void WriteArrowSection(
         Utf8JsonWriter json,
         List<(string Path, int W, int H, int Ox, int Oy, IReadOnlyList<FieldFramePartMeta> Parts)> arrowRows,
@@ -159,6 +170,8 @@ internal static class BattleReportJsonWriter
     }
 
     /// <summary>Writes a parts array using (Part, Dx, Dy) tuples.</summary>
+    /// <param name="json">The JSON writer to append to.</param>
+    /// <param name="parts">The part index and offset tuples to write.</param>
     private static void WritePartsArray(Utf8JsonWriter json, (int Part, int Dx, int Dy)[] parts)
     {
         json.WriteStartArray("parts");
@@ -175,6 +188,8 @@ internal static class BattleReportJsonWriter
     }
 
     /// <summary>Writes a parts array using FieldFramePartMeta records.</summary>
+    /// <param name="json">The JSON writer to append to.</param>
+    /// <param name="parts">The field frame part metadata records to write.</param>
     private static void WriteFieldPartsArray(Utf8JsonWriter json, IReadOnlyList<FieldFramePartMeta> parts)
     {
         json.WriteStartArray("parts");

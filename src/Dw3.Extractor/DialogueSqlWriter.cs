@@ -34,20 +34,6 @@ internal static class DialogueSqlWriter
         }
     }
 
-    /// <summary>Persists a single talk entry with its codes and action families.</summary>
-    private static void InsertTalk(
-        DataPackWriteContext context, int stageId, int actorIndex, int talkIndex,
-        FieldTalk talk, bool selected)
-    {
-        string talkKind = talk.Actions.Count == 0 ? "simple" : "effect";
-        Insert(context, "INSERT INTO dialogue_talks (stage_id,actor_index,talk_index,text_entry,selected,kind) VALUES ($1,$2,$3,$4,$5,$6)",
-            stageId, actorIndex, talkIndex, talk.Entry, selected ? 1 : 0, talkKind);
-        InsertCodes(context, stageId, actorIndex, talkIndex, "condition", talk.Conditions, DialogueManifestWriter.ConditionKind);
-        InsertCodes(context, stageId, actorIndex, talkIndex, "action", talk.Actions, DialogueManifestWriter.ActionKind);
-        foreach (string family in talk.Actions.Select(item => DialogueManifestWriter.ActionKind(item.Code)).Distinct().Order(StringComparer.Ordinal))
-            Insert(context, "INSERT INTO dialogue_talk_families (stage_id,actor_index,talk_index,family) VALUES ($1,$2,$3,$4)", stageId, actorIndex, talkIndex, family);
-    }
-
     internal static void InsertCodes(
         DataPackWriteContext context, int stageId, int actorIndex, int talkIndex,
         string listKind, IReadOnlyList<NpcCondition> codes, Func<int, string> kind)
@@ -68,5 +54,25 @@ internal static class DialogueSqlWriter
         for (int index = 0; index < values.Length; index++)
             command.Parameters.AddWithValue($"${index + 1}", values[index]);
         command.ExecuteNonQuery();
+    }
+
+    /// <summary>Persists a single talk entry with its codes and action families.</summary>
+    /// <param name="context">The data pack write context providing the database and transaction.</param>
+    /// <param name="stageId">The stage the talk belongs to.</param>
+    /// <param name="actorIndex">The actor index within the stage.</param>
+    /// <param name="talkIndex">The talk index within the actor.</param>
+    /// <param name="talk">The talk to persist.</param>
+    /// <param name="selected">Whether this talk was selected by the snapshot evaluator.</param>
+    private static void InsertTalk(
+        DataPackWriteContext context, int stageId, int actorIndex, int talkIndex,
+        FieldTalk talk, bool selected)
+    {
+        string talkKind = talk.Actions.Count == 0 ? "simple" : "effect";
+        Insert(context, "INSERT INTO dialogue_talks (stage_id,actor_index,talk_index,text_entry,selected,kind) VALUES ($1,$2,$3,$4,$5,$6)",
+            stageId, actorIndex, talkIndex, talk.Entry, selected ? 1 : 0, talkKind);
+        InsertCodes(context, stageId, actorIndex, talkIndex, "condition", talk.Conditions, DialogueManifestWriter.ConditionKind);
+        InsertCodes(context, stageId, actorIndex, talkIndex, "action", talk.Actions, DialogueManifestWriter.ActionKind);
+        foreach (string family in talk.Actions.Select(item => DialogueManifestWriter.ActionKind(item.Code)).Distinct().Order(StringComparer.Ordinal))
+            Insert(context, "INSERT INTO dialogue_talk_families (stage_id,actor_index,talk_index,family) VALUES ($1,$2,$3,$4)", stageId, actorIndex, talkIndex, family);
     }
 }

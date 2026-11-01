@@ -63,6 +63,9 @@ internal static class DialogueAnalysisCommand
     }
 
     /// <summary>Writes the summary line, the failures and optionally the per-stage details.</summary>
+    /// <param name="result">The analysis result to report on.</param>
+    /// <param name="output">The text writer to receive the report lines.</param>
+    /// <param name="details">When true, writes one JSON line per analysed stage.</param>
     internal static void Report(RomAnalysisResult result, TextWriter output, bool details)
     {
         int total = result.Stages.Count + result.Failures.Count;

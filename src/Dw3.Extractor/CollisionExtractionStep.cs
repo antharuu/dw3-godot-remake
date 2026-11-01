@@ -67,7 +67,7 @@ internal static class CollisionExtractionStep
                 string manifestPath = context.GetImagePath("collision/collision-manifest.json");
                 Directory.CreateDirectory(Path.GetDirectoryName(manifestPath)!);
                 using var manifestWriter = new StreamWriter(manifestPath);
-                CollisionManifestWriter.Write(manifestWriter, actors);
+                CollisionManifestWriter.WriteManifest(manifestWriter, actors);
             });
 
             output.WriteLine("{\"event\":\"domain-complete\",\"domain\":\"collision\",\"stages\":2}");

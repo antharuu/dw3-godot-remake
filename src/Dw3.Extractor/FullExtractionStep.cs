@@ -80,6 +80,9 @@ internal static class FullExtractionStep
         }
     }
 
+    internal static void WriteError(TextWriter output, string code, string message) =>
+        output.WriteLine(JsonSerializer.Serialize(new { @event = "error", code, message }));
+
     private static void MergeDomainPacks(DataPackWriteContext context, string scratchDirectory)
     {
         using (SqliteCommand deferForeignKeys = context.Database.CreateCommand())
@@ -161,6 +164,10 @@ internal static class FullExtractionStep
     /// Builds the INSERT command text from pre-validated, pre-quoted fragments.
     /// Separated from CopyRows so the string interpolation does not reach Sonar's SQL taint sink.
     /// </summary>
+    /// <param name="quotedTable">Pre-validated and quoted target table name.</param>
+    /// <param name="columnList">Pre-validated and quoted column list.</param>
+    /// <param name="parameterList">Positional parameter list ($p0, $p1, …).</param>
+    /// <returns>INSERT OR REPLACE command text ready for <see cref="Microsoft.Data.Sqlite.SqliteCommand.CommandText"/>.</returns>
     private static string BuildInsertCommand(string quotedTable, string columnList, string parameterList) =>
         $"INSERT OR REPLACE INTO {quotedTable} ({columnList}) VALUES ({parameterList})";
 
@@ -168,6 +175,9 @@ internal static class FullExtractionStep
     /// Builds the SELECT command text from pre-validated, pre-quoted fragments.
     /// Separated from CopyRows so the string interpolation does not reach Sonar's SQL taint sink.
     /// </summary>
+    /// <param name="columnList">Pre-validated and quoted column list.</param>
+    /// <param name="quotedTable">Pre-validated and quoted source table name.</param>
+    /// <returns>SELECT command text ready for <see cref="Microsoft.Data.Sqlite.SqliteCommand.CommandText"/>.</returns>
     private static string BuildSelectCommand(string columnList, string quotedTable) =>
         $"SELECT {columnList} FROM {quotedTable}";
 
@@ -216,6 +226,7 @@ internal static class FullExtractionStep
     /// special characters; this guard ensures that any unexpected name causes an early, explicit failure
     /// rather than a potential SQL taint path.
     /// </summary>
+    /// <param name="name">The identifier to validate.</param>
     private static void ValidateIdentifier(string name)
     {
         foreach (char c in name)
@@ -224,7 +235,4 @@ internal static class FullExtractionStep
                 throw new InvalidDataException($"Identifier '{name}' contains an unsafe character '{c}'.");
         }
     }
-
-    internal static void WriteError(TextWriter output, string code, string message) =>
-        output.WriteLine(JsonSerializer.Serialize(new { @event = "error", code, message }));
 }

@@ -10,6 +10,13 @@ namespace Dw3.Extractor;
 /// </summary>
 internal static class DialogueManifestWriter
 {
+    /// <summary>
+    /// Evaluates the condition tables and snapshot progress to select the first applicable talk index.
+    /// </summary>
+    /// <param name="talks">The ordered talk alternatives for the actor.</param>
+    /// <param name="progress">The progress condition tables with range and special-progress definitions.</param>
+    /// <param name="snapshotProgress">The current snapshot progress value used for condition evaluation.</param>
+    /// <returns>The zero-based index of the first applicable talk, or null when no conditions match.</returns>
     internal static int? SelectTalk(IReadOnlyList<FieldTalk> talks, ProgressConditionTables progress, int snapshotProgress)
     {
         int? selected = null;
@@ -21,15 +28,22 @@ internal static class DialogueManifestWriter
                 selected ??= index;
                 break;
             }
+
             if (NpcSnapshotEvaluator.IsVisible(talk.Conditions, snapshotProgress, progress.Ranges, progress.SpecialProgressRanges))
             {
                 selected = index;
                 break;
             }
         }
+
         return selected;
     }
 
+    /// <summary>Writes the full dialogue manifest JSON to the data pack for all supplied stages.</summary>
+    /// <param name="context">The data pack write context providing image path resolution.</param>
+    /// <param name="stages">The analysed stage dialogue records ordered by stage id.</param>
+    /// <param name="progress">The progress condition tables for conditional talk selection.</param>
+    /// <param name="snapshotProgress">The snapshot progress value used for condition evaluation.</param>
     internal static void WriteManifest(
         DataPackWriteContext context,
         IReadOnlyList<StageDialogueAnalysis> stages,
@@ -64,28 +78,14 @@ internal static class DialogueManifestWriter
                 json.WriteEndArray();
                 json.WriteEndObject();
             }
+
             json.WriteEndArray();
             json.WriteEndObject();
         }
+
         json.WriteEndObject();
         json.WriteEndObject();
         json.Flush();
-    }
-
-    /// <summary>Writes a single talk entry object with entry, conditions, actions, kind, families and selected flag.</summary>
-    private static void WriteTalk(Utf8JsonWriter json, FieldTalk talk, bool selected)
-    {
-        json.WriteStartObject();
-        json.WriteNumber("entry", talk.Entry);
-        WriteCodes(json, "conditions", talk.Conditions, ConditionKind);
-        WriteCodes(json, "actions", talk.Actions, ActionKind);
-        json.WriteString("kind", talk.Actions.Count == 0 ? "simple" : "effect");
-        json.WriteStartArray("families");
-        foreach (string family in talk.Actions.Select(item => ActionKind(item.Code)).Distinct().Order(StringComparer.Ordinal))
-            json.WriteStringValue(family);
-        json.WriteEndArray();
-        json.WriteBoolean("selected", selected);
-        json.WriteEndObject();
     }
 
     internal static void WriteCodes(Utf8JsonWriter json, string name, IReadOnlyList<NpcCondition> codes, Func<int, string> kind)
@@ -99,6 +99,7 @@ internal static class DialogueManifestWriter
             json.WriteString("kind", kind(item.Code));
             json.WriteEndObject();
         }
+
         json.WriteEndArray();
     }
 
@@ -131,5 +132,24 @@ internal static class DialogueManifestWriter
             0x92 => "card",
             _ => "unknown",
         };
+    }
+
+    /// <summary>Writes a single talk entry object with entry, conditions, actions, kind, families and selected flag.</summary>
+    /// <param name="json">The JSON writer to append to.</param>
+    /// <param name="talk">The talk to serialize.</param>
+    /// <param name="selected">Whether this talk was selected by the snapshot evaluator.</param>
+    private static void WriteTalk(Utf8JsonWriter json, FieldTalk talk, bool selected)
+    {
+        json.WriteStartObject();
+        json.WriteNumber("entry", talk.Entry);
+        WriteCodes(json, "conditions", talk.Conditions, ConditionKind);
+        WriteCodes(json, "actions", talk.Actions, ActionKind);
+        json.WriteString("kind", talk.Actions.Count == 0 ? "simple" : "effect");
+        json.WriteStartArray("families");
+        foreach (string family in talk.Actions.Select(item => ActionKind(item.Code)).Distinct().Order(StringComparer.Ordinal))
+            json.WriteStringValue(family);
+        json.WriteEndArray();
+        json.WriteBoolean("selected", selected);
+        json.WriteEndObject();
     }
 }

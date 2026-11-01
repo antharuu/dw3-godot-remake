@@ -187,7 +187,6 @@ internal static class BattleReportExtractionStep
         File.WriteAllBytes(context.GetImagePath($"{directory}/manifest.json"), stream.ToArray());
     }
 
-
     private sealed class EngineFiles
     {
         private readonly DiscSource _disc;

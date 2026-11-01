@@ -127,6 +127,12 @@ public static class DiscStageModeReader
     }
 
     /// <summary>Exposed as internal for unit-testing with synthetic data.</summary>
+    /// <param name="fieldStgData">The FIELDSTG.PRO overlay bytes.</param>
+    /// <param name="fileSectors">The FILE_SECTORS LBA table extracted from SLES_039.36.</param>
+    /// <param name="lbaToStageName">Optional LBA-to-stage-name mapping for diagnostic output.</param>
+    /// <param name="entryCount">The number of entries in the FIELDSTG stages table; defaults to the EU value.</param>
+    /// <param name="tableOffset">The byte offset of the FIELDSTG stages table; defaults to the EU value.</param>
+    /// <returns>A dictionary mapping each stage mode to its stage id.</returns>
     internal static IReadOnlyDictionary<ushort, int> ParseStageModes(byte[] fieldStgData,
         IReadOnlyList<int> fileSectors, Dictionary<int, string> lbaToStageName,
         int entryCount = FieldStgStagesEntryCount, int tableOffset = FieldStgStagesFileOffset) =>

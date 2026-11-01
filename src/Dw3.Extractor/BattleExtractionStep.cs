@@ -158,6 +158,12 @@ internal static class BattleExtractionStep
         int offset = ReportOffset(EvolutionPointersAddress, Partners * 4, "evolution pointers");
         for (int i = 0; i < Partners; i++) if (BinaryPrimitives.ReadUInt32LittleEndian(report.AsSpan(offset + i * 4, 4)) != EvolutionAddress + (uint)(i * EvolutionsPerPartner * BattleDataDecoder.EvolutionStride)) throw new FormatException($"Evolution pointer {i} does not reference the contiguous evolution table.");
     }
+
+    /// <summary>Maps a PS1 RAM address into an offset within the STFGTREP.PRO overlay byte array, throwing on range violations.</summary>
+    /// <param name="address">The PS1 RAM address to map.</param>
+    /// <param name="length">The number of bytes required at the offset.</param>
+    /// <param name="name">A human-readable name for the data structure, used in error messages.</param>
+    /// <returns>The byte offset within the overlay byte array.</returns>
     private static int ReportOffset(uint address, int length, string name)
     {
         if (address < ReportBase)
@@ -168,9 +174,17 @@ internal static class BattleExtractionStep
         return (int)offset;
     }
 
+    /// <summary>Finds and returns the disc file entry with the given ISO path, throwing if absent.</summary>
+    /// <param name="entries">The full list of disc file entries to search.</param>
+    /// <param name="path">The ISO path to match.</param>
+    /// <returns>The matching <see cref="DiscFileEntry"/>.</returns>
     private static DiscFileEntry Require(IReadOnlyList<DiscFileEntry> entries, string path) =>
         entries.SingleOrDefault(entry => entry.IsoPath == path) ?? throw new InvalidDataException($"Required disc member missing: {path}");
 
+    /// <summary>Executes a parameterized INSERT command against the current transaction.</summary>
+    /// <param name="context">The data pack write context providing the database and transaction.</param>
+    /// <param name="sql">The parameterized SQL command text.</param>
+    /// <param name="values">The parameter values in positional order ($1, $2, …).</param>
     private static void Insert(DataPackWriteContext context, string sql, params object[] values)
     {
         using SqliteCommand command = context.Database.CreateCommand();

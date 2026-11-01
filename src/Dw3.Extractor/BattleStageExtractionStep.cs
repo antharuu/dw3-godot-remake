@@ -75,6 +75,12 @@ internal static class BattleStageExtractionStep
         }
     }
 
+    /// <summary>Writes the texture PNGs and model JSON for one decoded battle stage.</summary>
+    /// <param name="context">The data pack write context for image paths and registration.</param>
+    /// <param name="stageId">The zero-based stage index used as the output filename prefix.</param>
+    /// <param name="info">The stage metadata read from FILE_FIGHT_STAGES.</param>
+    /// <param name="payload">The decoded stage model with bones, meshes and textures.</param>
+    /// <param name="modelSha256">The raw SHA-256 hash of the model file bytes, used as provenance.</param>
     private static void WriteStageAssets(
         DataPackWriteContext context,
         int stageId,
