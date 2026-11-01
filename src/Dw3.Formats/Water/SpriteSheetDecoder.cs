@@ -28,12 +28,18 @@ public static class SpriteSheetDecoder
     {
         ArgumentOutOfRangeException.ThrowIfNegative(entryIndex);
         ReadOnlySpan<byte> span = archive.Span;
-        if (span.Length < (entryIndex + 2) * 4)
+        if (span.Length < ((entryIndex + 2) * 4))
+        {
             throw new FormatException("sprite sheet archive offset table truncated");
+        }
+
         uint start = BinaryPrimitives.ReadUInt32LittleEndian(span[(entryIndex * 4)..]);
         uint end = BinaryPrimitives.ReadUInt32LittleEndian(span[((entryIndex + 1) * 4)..]);
-        if (start < (entryIndex + 1) * 4 || end <= start || end > span.Length)
+        if (start < ((entryIndex + 1) * 4) || end <= start || end > span.Length)
+        {
             throw new FormatException("sprite sheet archive offsets invalid");
+        }
+
         return archive[(int)start..(int)end];
     }
 
@@ -45,7 +51,10 @@ public static class SpriteSheetDecoder
     {
         ReadOnlySpan<byte> span = entry.Span;
         if (span.Length < 12)
+        {
             throw new FormatException("sprite sheet truncated");
+        }
+
         uint partsOffset = BinaryPrimitives.ReadUInt32LittleEndian(span);
         uint idsOffset = BinaryPrimitives.ReadUInt32LittleEndian(span[4..]);
         if (partsOffset < 8 || partsOffset >= idsOffset || idsOffset >= span.Length)
@@ -147,5 +156,9 @@ public static class SpriteSheetDecoder
         return frames;
     }
 
+    /// <summary>Reads one signed 16-bit little-endian part-table field.</summary>
+    /// <param name="raw">The complete fixed-size source part record.</param>
+    /// <param name="offset">Byte offset of the two-byte signed field inside <paramref name="raw"/>.</param>
+    /// <returns>The decoded signed source field.</returns>
     private static short S16(ReadOnlySpan<byte> raw, int offset) => BinaryPrimitives.ReadInt16LittleEndian(raw[offset..]);
 }

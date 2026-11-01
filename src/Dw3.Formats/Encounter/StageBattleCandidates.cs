@@ -24,11 +24,11 @@ internal static class StageBattleCandidates
         uint overlayBase)
     {
         var addresses = new HashSet<uint>();
-        foreach (MipsStoreMatch store in MipsStoreScanner.FindStores(overlay, fieldStateAddress, battlesFieldOffset))
+        foreach (MipsValue value in MipsStoreScanner.FindStores(overlay, fieldStateAddress, battlesFieldOffset).Select(store => store.Value))
         {
-            if (!store.Value.IsLoadedWord && store.Value.ConstantValue >= overlayBase)
+            if (!value.IsLoadedWord && value.ConstantValue >= overlayBase)
             {
-                addresses.Add(store.Value.ConstantValue);
+                addresses.Add(value.ConstantValue);
             }
         }
 
@@ -95,7 +95,7 @@ internal static class StageBattleCandidates
     /// <param name="seen">Values already returned to the caller.</param>
     /// <param name="addresses">Destination list for newly discovered values.</param>
     private static void CollectCallArgument(
-        IReadOnlyList<MipsInstruction> instructions,
+        MipsInstruction[] instructions,
         int index,
         MipsRegisterTracker tracker,
         uint overlayBase,
@@ -110,7 +110,7 @@ internal static class StageBattleCandidates
         }
 
         MipsValue? value = tracker[RegisterA0];
-        if (index + 1 < instructions.Count)
+        if (index + 1 < instructions.Length)
         {
             value = ApplyDelaySlot(value, instructions[index + 1]);
         }

@@ -24,6 +24,11 @@ public static class SpriteFrameRenderer
     private const int FourBitPaletteSize = 16;
 
     /// <summary>Renders the frame with the palette shifted by <paramref name="clutRow"/>.</summary>
+    /// <param name="parts">Source parts addressed by each six-byte frame placement record.</param>
+    /// <param name="frame">Frame bytes beginning with count, CLUT shift, blend mode, and placements.</param>
+    /// <param name="vram">Object texture pages and alternate palette rows loaded from the TMPK archive.</param>
+    /// <param name="clutRow">Caller-selected CLUT row adjustment applied after the frame's signed shift.</param>
+    /// <returns>A composited frame retaining PS1 colour words and source blend mode.</returns>
     /// <exception cref="FormatException">The frame or one of its parts references data outside the loaded VRAM.</exception>
     public static SpriteFrameImage Render(IReadOnlyList<SpritePart> parts, ReadOnlySpan<byte> frame, ObjectVram vram, int clutRow)
     {
@@ -53,7 +58,7 @@ public static class SpriteFrameRenderer
             throw new FormatException("sprite frame part count invalid");
         }
 
-        if (frame.Length < 6 + (6 * count))
+        if (frame.Length < (6 + (6 * count)))
         {
             throw new FormatException("sprite frame truncated");
         }
@@ -129,11 +134,20 @@ public static class SpriteFrameRenderer
         }
     }
 
+    /// <summary>Samples one source part through its four-bit or eight-bit source palette.</summary>
+    /// <param name="part">Decoded texture coordinates, dimensions, CLUT location, and PS1 pixel mode.</param>
+    /// <param name="vram">Object texture pages and alternate palette rows.</param>
+    /// <param name="rowShift">Signed palette-row adjustment from the frame and caller.</param>
+    /// <returns>PS1 colour words in part-local row-major order, where zero is transparent.</returns>
+    /// <exception cref="FormatException">The part or palette falls outside the loaded object VRAM.</exception>
     private static ushort[] Sample(SpritePart part, ObjectVram vram, int rowShift)
     {
         if (Math.Min(Math.Min(part.U, part.V), Math.Min(Math.Min(part.Width, part.Height), Math.Min(part.ClutX, part.ClutY))) < 0 ||
             part.Width <= 0 || part.Height <= 0 || part.V + part.Height > ObjectTextureArchiveDecoder.PageRows)
+        {
             throw new FormatException("sprite part bounds invalid");
+        }
+
         return part.Mode switch
         {
             0 => SampleFourBit(part, vram, rowShift),
@@ -142,35 +156,55 @@ public static class SpriteFrameRenderer
         };
     }
 
+    /// <summary>Expands a four-bit part with its 16-word in-page CLUT.</summary>
+    /// <param name="part">Four-bit part with page-relative U and source CLUT coordinates.</param>
+    /// <param name="vram">Loaded 256-word object VRAM pages.</param>
+    /// <param name="rowShift">Signed palette-row adjustment.</param>
+    /// <returns>Expanded PS1 colour words in row-major order.</returns>
+    /// <exception cref="FormatException">The texture page or 16-word CLUT is unavailable.</exception>
     private static ushort[] SampleFourBit(SpritePart part, ObjectVram vram, int rowShift)
     {
         int page = part.U / FourBitPageTexels;
         int localU = part.U % FourBitPageTexels;
         if (page >= vram.Pages.Count || localU + part.Width > FourBitPageTexels)
+        {
             throw new FormatException("4-bit sprite references unavailable VRAM page");
+        }
+
         int paletteRow = part.ClutY + rowShift;
         int paletteX = VramPaletteOriginX + part.ClutX;
         int paletteWord = part.ClutX % ObjectTextureArchiveDecoder.PageWords;
         if (paletteRow < 0 || VramPaletteOriginY + paletteRow >= VramHeight ||
-            paletteX + FourBitPaletteSize > VramPaletteOriginX + vram.Pages.Count * ObjectTextureArchiveDecoder.PageWords ||
+            paletteX + FourBitPaletteSize > VramPaletteOriginX + (vram.Pages.Count * ObjectTextureArchiveDecoder.PageWords) ||
             paletteWord + FourBitPaletteSize > ObjectTextureArchiveDecoder.PageWords)
+        {
             throw new FormatException("4-bit sprite palette outside loaded VRAM");
+        }
+
         ushort[] palettePage = vram.Pages[part.ClutX / ObjectTextureArchiveDecoder.PageWords];
-        ReadOnlySpan<ushort> palette = palettePage.AsSpan(paletteRow * ObjectTextureArchiveDecoder.PageWords + paletteWord, FourBitPaletteSize);
+        ReadOnlySpan<ushort> palette = palettePage.AsSpan((paletteRow * ObjectTextureArchiveDecoder.PageWords) + paletteWord, FourBitPaletteSize);
 
         ushort[] texels = vram.Pages[page];
         var words = new ushort[part.Width * part.Height];
         for (int row = 0; row < part.Height; row++)
+        {
             for (int column = 0; column < part.Width; column++)
             {
                 int u = localU + column;
-                ushort packed = texels[(part.V + row) * ObjectTextureArchiveDecoder.PageWords + u / 4];
-                words[row * part.Width + column] = palette[(packed >> ((u & 3) * 4)) & 15];
+                ushort packed = texels[((part.V + row) * ObjectTextureArchiveDecoder.PageWords) + (u / 4)];
+                words[(row * part.Width) + column] = palette[(packed >> ((u & 3) * 4)) & 15];
             }
+        }
 
         return words;
     }
 
+    /// <summary>Expands an eight-bit part with its alternate 256-word CLUT row.</summary>
+    /// <param name="part">Eight-bit part with page-relative U and alternate CLUT coordinates.</param>
+    /// <param name="vram">Loaded object texture pages and alternate palette rows.</param>
+    /// <param name="rowShift">Signed palette-row adjustment.</param>
+    /// <returns>Expanded PS1 colour words in row-major order.</returns>
+    /// <exception cref="FormatException">The texture page or alternate 256-word CLUT is unavailable.</exception>
     private static ushort[] SampleEightBit(SpritePart part, ObjectVram vram, int rowShift)
     {
         int page = part.U / EightBitPageTexels;
@@ -178,18 +212,23 @@ public static class SpriteFrameRenderer
         int paletteRow = part.ClutY + rowShift - VramPaletteOriginY;
         if (page >= vram.Pages.Count || localU + part.Width > EightBitPageTexels || paletteRow < 0 ||
             paletteRow >= vram.AlternatePalettes.Count || part.ClutX + 256 > vram.AlternatePalettes[paletteRow].Length)
+        {
             throw new FormatException("8-bit sprite bounds or alternate CLUT invalid");
+        }
+
         ushort[] palette = vram.AlternatePalettes[paletteRow];
 
         ushort[] texels = vram.Pages[page];
         var words = new ushort[part.Width * part.Height];
         for (int row = 0; row < part.Height; row++)
+        {
             for (int column = 0; column < part.Width; column++)
             {
                 int u = localU + column;
-                ushort packed = texels[(part.V + row) * ObjectTextureArchiveDecoder.PageWords + u / 2];
-                words[row * part.Width + column] = palette[part.ClutX + ((packed >> (8 * (u & 1))) & 0xFF)];
+                ushort packed = texels[((part.V + row) * ObjectTextureArchiveDecoder.PageWords) + (u / 2)];
+                words[(row * part.Width) + column] = palette[part.ClutX + ((packed >> (8 * (u & 1))) & 0xFF)];
             }
+        }
 
         return words;
     }

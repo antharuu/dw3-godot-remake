@@ -88,94 +88,6 @@ public static class FontAtlasDecoder
         return new FontAtlas(palettes, pages, sha256Hex);
     }
 
-    /// <summary>Validates and decodes one decompressed 4-bit TIM page from the archive body.</summary>
-    /// <param name="timData">RLEN-expanded TIM bytes beginning with the 0x10 magic word.</param>
-    /// <param name="pageIndex">Zero-based archive entry index used only in format diagnostics.</param>
-    /// <returns>The page dimensions in texels and its packed four-bit pixel bytes.</returns>
-    private static FontAtlasPage DecodePage(ReadOnlySpan<byte> timData, int pageIndex)
-    {
-        // 4-bit TIM: magic 0x10, flags 0x02 (no CLUT block in header; CLUT is in-page).
-        if (timData.Length < 8)
-        {
-            throw new FormatException($"CMFONTTM page {pageIndex} TIM header is truncated.");
-        }
-
-        uint magic = BinaryPrimitives.ReadUInt32LittleEndian(timData);
-        uint flags = BinaryPrimitives.ReadUInt32LittleEndian(timData[4..]);
-        if (magic != 0x10u)
-        {
-            throw new FormatException($"CMFONTTM page {pageIndex} does not have TIM magic 0x10 (got 0x{magic:X8}).");
-        }
-
-        if (flags != 0x02u)
-        {
-            throw new FormatException($"CMFONTTM page {pageIndex} TIM flags 0x{flags:X8} are not the expected 4-bit 0x02.");
-        }
-
-        // Image block starts immediately at offset 8 (no CLUT block).
-        if (timData.Length < 8 + 12)
-        {
-            throw new FormatException($"CMFONTTM page {pageIndex} image block header is truncated.");
-        }
-
-        uint blockLen = BinaryPrimitives.ReadUInt32LittleEndian(timData[8..]);
-        if (blockLen < 12 || 8 + blockLen > (uint)timData.Length)
-        {
-            throw new FormatException($"CMFONTTM page {pageIndex} image block length {blockLen} is invalid.");
-        }
-
-        ushort words = BinaryPrimitives.ReadUInt16LittleEndian(timData[16..]);
-        ushort height = BinaryPrimitives.ReadUInt16LittleEndian(timData[18..]);
-        // 4-bit: four pixels per 16-bit halfword → 4 pixels per "word" of 2 bytes → width = words * 4.
-        int width = words * 4;
-        int expectedPixelBytes = (words * height) * 2;
-        if (8 + blockLen - 12 < (uint)expectedPixelBytes)
-        {
-            throw new FormatException($"CMFONTTM page {pageIndex} pixel data is truncated.");
-        }
-
-        byte[] pixels = timData.Slice(8 + 12, expectedPixelBytes).ToArray();
-
-        return new FontAtlasPage(width, height, pixels);
-    }
-
-    /// <summary>
-    /// Reads the eight 16-entry RGBA palettes embedded in the first atlas page.
-    /// </summary>
-    /// <param name="page0">First decoded TIM page, whose rows 232 through 239 contain the CLUT words.</param>
-    /// <returns>Eight palette rows in source-row order with zero words converted to transparent RGBA.</returns>
-    private static IReadOnlyList<IReadOnlyList<(byte R, byte G, byte B, byte A)>> ReadPalettes(FontAtlasPage page0)
-    {
-        // The page pixels are stored as 16-bit halfwords (words_per_line * height rows).
-        // CLUT rows are at pixel column ClutColumnX, rows ClutRowY .. ClutRowY+ClutPaletteCount-1.
-        // Each halfword encodes one 15-bit BGR colour plus STP bit 15 (ignored here).
-        int wordsPerLine = page0.Width / 4; // page.Width is 4× the halfword count
-        // The raw pixel bytes hold each pair of bytes as one 16-bit halfword (LE).
-        // Row-major: byte at (row * wordsPerLine + col) * 2.
-        if (page0.Width < (ClutColumnX + ClutEntriesPerRow) * 4 ||
-            page0.Height < ClutRowY + ClutPaletteCount)
-        {
-            throw new FormatException(
-                $"CMFONTTM page 0 ({page0.Width}×{page0.Height}) is too small to hold the in-page CLUT.");
-        }
-
-        var palettes = new List<IReadOnlyList<(byte R, byte G, byte B, byte A)>>(ClutPaletteCount);
-        for (int rowIndex = 0; rowIndex < ClutPaletteCount; rowIndex++)
-        {
-            var entries = new (byte R, byte G, byte B, byte A)[ClutEntriesPerRow];
-            for (int col = 0; col < ClutEntriesPerRow; col++)
-            {
-                int bytePos = (((ClutRowY + rowIndex) * wordsPerLine) + ClutColumnX + col) * 2;
-                ushort halfword = BinaryPrimitives.ReadUInt16LittleEndian(page0.IndexedPixels.AsSpan(bytePos, 2));
-                entries[col] = HalfwordToRgba(halfword);
-            }
-
-            palettes.Add(entries);
-        }
-
-        return palettes;
-    }
-
     /// <summary>Converts a 15-bit BGR halfword to RGBA. Word 0 is fully transparent.</summary>
     /// <param name="word">Little-endian TIM colour word with 5-bit B, G and R channels.</param>
     /// <returns>Opaque expanded RGBA channels, or four zero channels when <paramref name="word"/> is zero.</returns>
@@ -223,6 +135,97 @@ public static class FontAtlasDecoder
                 rgba[byteIndex++] = a1;
             }
         }
+
         return rgba;
+    }
+
+    /// <summary>Validates and decodes one decompressed 4-bit TIM page from the archive body.</summary>
+    /// <param name="timData">RLEN-expanded TIM bytes beginning with the 0x10 magic word.</param>
+    /// <param name="pageIndex">Zero-based archive entry index used only in format diagnostics.</param>
+    /// <returns>The page dimensions in texels and its packed four-bit pixel bytes.</returns>
+    private static FontAtlasPage DecodePage(ReadOnlySpan<byte> timData, int pageIndex)
+    {
+        // 4-bit TIM: magic 0x10, flags 0x02 (no CLUT block in header; CLUT is in-page).
+        if (timData.Length < 8)
+        {
+            throw new FormatException($"CMFONTTM page {pageIndex} TIM header is truncated.");
+        }
+
+        uint magic = BinaryPrimitives.ReadUInt32LittleEndian(timData);
+        uint flags = BinaryPrimitives.ReadUInt32LittleEndian(timData[4..]);
+        if (magic != 0x10u)
+        {
+            throw new FormatException($"CMFONTTM page {pageIndex} does not have TIM magic 0x10 (got 0x{magic:X8}).");
+        }
+
+        if (flags != 0x02u)
+        {
+            throw new FormatException($"CMFONTTM page {pageIndex} TIM flags 0x{flags:X8} are not the expected 4-bit 0x02.");
+        }
+
+        // Image block starts immediately at offset 8 (no CLUT block).
+        if (timData.Length < 8 + 12)
+        {
+            throw new FormatException($"CMFONTTM page {pageIndex} image block header is truncated.");
+        }
+
+        uint blockLen = BinaryPrimitives.ReadUInt32LittleEndian(timData[8..]);
+        if (blockLen < 12 || 8 + blockLen > (uint)timData.Length)
+        {
+            throw new FormatException($"CMFONTTM page {pageIndex} image block length {blockLen} is invalid.");
+        }
+
+        ushort words = BinaryPrimitives.ReadUInt16LittleEndian(timData[16..]);
+        ushort height = BinaryPrimitives.ReadUInt16LittleEndian(timData[18..]);
+
+        // 4-bit: four pixels per 16-bit halfword → 4 pixels per "word" of 2 bytes → width = words * 4.
+        int width = words * 4;
+        int expectedPixelBytes = (words * height) * 2;
+        if (8 + blockLen - 12 < (uint)expectedPixelBytes)
+        {
+            throw new FormatException($"CMFONTTM page {pageIndex} pixel data is truncated.");
+        }
+
+        byte[] pixels = timData.Slice(8 + 12, expectedPixelBytes).ToArray();
+
+        return new FontAtlasPage(width, height, pixels);
+    }
+
+    /// <summary>
+    /// Reads the eight 16-entry RGBA palettes embedded in the first atlas page.
+    /// </summary>
+    /// <param name="page0">First decoded TIM page, whose rows 232 through 239 contain the CLUT words.</param>
+    /// <returns>Eight palette rows in source-row order with zero words converted to transparent RGBA.</returns>
+    private static List<IReadOnlyList<(byte R, byte G, byte B, byte A)>> ReadPalettes(FontAtlasPage page0)
+    {
+        // The page pixels are stored as 16-bit halfwords (words_per_line * height rows).
+        // CLUT rows are at pixel column ClutColumnX, rows ClutRowY .. ClutRowY+ClutPaletteCount-1.
+        // Each halfword encodes one 15-bit BGR colour plus STP bit 15 (ignored here).
+        int wordsPerLine = page0.Width / 4; // page.Width is 4× the halfword count
+
+        // The raw pixel bytes hold each pair of bytes as one 16-bit halfword (LE).
+        // Row-major: byte at (row * wordsPerLine + col) * 2.
+        if (page0.Width < (ClutColumnX + ClutEntriesPerRow) * 4 ||
+            page0.Height < ClutRowY + ClutPaletteCount)
+        {
+            throw new FormatException(
+                $"CMFONTTM page 0 ({page0.Width}×{page0.Height}) is too small to hold the in-page CLUT.");
+        }
+
+        var palettes = new List<IReadOnlyList<(byte R, byte G, byte B, byte A)>>(ClutPaletteCount);
+        for (int rowIndex = 0; rowIndex < ClutPaletteCount; rowIndex++)
+        {
+            var entries = new (byte R, byte G, byte B, byte A)[ClutEntriesPerRow];
+            for (int col = 0; col < ClutEntriesPerRow; col++)
+            {
+                int bytePos = (((ClutRowY + rowIndex) * wordsPerLine) + ClutColumnX + col) * 2;
+                ushort halfword = BinaryPrimitives.ReadUInt16LittleEndian(page0.IndexedPixels.AsSpan(bytePos, 2));
+                entries[col] = HalfwordToRgba(halfword);
+            }
+
+            palettes.Add(entries);
+        }
+
+        return palettes;
     }
 }

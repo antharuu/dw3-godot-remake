@@ -43,9 +43,9 @@ public static class FontStyleDecoder
     private const int GlyphRecordSize = 11;
 
     // Disc-verified per-style constants (EU SLES-03936).
-    private static readonly int[] ExpectedLineHeights = [14, 11, 9];
     private const int ExpectedGlyphCount = 230;
     private const int ExpectedIconCount = 114;
+    private static readonly int[] ExpectedLineHeights = [14, 11, 9];
 
     /// <summary>
     /// Decodes styles 1, 2, and 3 from the given executable bytes.
@@ -73,6 +73,7 @@ public static class FontStyleDecoder
             int descriptorOffset = TextStyleTableOffset + ((FirstActiveStyleIndex + i) * TextStyleDescriptorSize);
             styles[i] = DecodeStyle(executable, descriptorOffset, i + 1);
         }
+
         return styles;
     }
 
@@ -144,9 +145,9 @@ public static class FontStyleDecoder
                 Height: exe[pos + 6],
                 Dx: (sbyte)exe[pos + 7],
                 Dy: (sbyte)exe[pos + 8],
-                // pos+10 (unused) discarded
                 Advance: exe[pos + 9]);
         }
+
         return metrics;
     }
 

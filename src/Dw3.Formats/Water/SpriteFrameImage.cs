@@ -41,9 +41,9 @@ public sealed record SpriteFrameImage(int Width, int Height, int OffsetX, int Of
 
             (byte r, byte g, byte b, _) = Rgba5551.ToRgba(word);
             rgba[index * 4] = r;
-            rgba[index * 4 + 1] = g;
-            rgba[index * 4 + 2] = b;
-            rgba[index * 4 + 3] = byte.MaxValue;
+            rgba[(index * 4) + 1] = g;
+            rgba[(index * 4) + 2] = b;
+            rgba[(index * 4) + 3] = byte.MaxValue;
         }
 
         return rgba;

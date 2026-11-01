@@ -24,35 +24,61 @@ public static class TalkBoxFrameDecoder
 
     // The menu texture is loaded at VRAM (0x140, 0), so VRAM x maps to texture x - 0x140.
     private const int TextureVramX = 0x140;
+
     // The panel samples texels u 0xBC..0xC7 (inclusive) and v 0..0x3D of texture page 0.
     private const int PanelU0 = 0xBC;
     private const int PanelU1 = 0xC7;
     private const int PanelV0 = 0;
     private const int PanelV1 = 0x3E;
+
     // A talk-box frame record holds at most sixteen parts.
     private const int MaxFrameParts = 16;
 
     /// <summary>Parses the four layout records from the executable's 128-byte layout table.</summary>
     /// <param name="table">The exact 128-byte little-endian table read from the field executable.</param>
+    /// <returns>The four records in source-table order.</returns>
     /// <exception cref="FormatException">The table length is wrong or a sprite id is negative.</exception>
     public static IReadOnlyList<TalkBoxLayoutRecord> ReadLayouts(ReadOnlySpan<byte> table)
     {
-        if (table.Length != LayoutCount * LayoutRecordBytes)
+        if (table.Length != (LayoutCount * LayoutRecordBytes))
+        {
             throw new FormatException($"Talk-box layout table is {table.Length} bytes, expected {LayoutCount * LayoutRecordBytes}.");
+        }
+
         var layouts = new TalkBoxLayoutRecord[LayoutCount];
         for (int layout = 0; layout < LayoutCount; layout++)
         {
             ReadOnlySpan<byte> record = table.Slice(layout * LayoutRecordBytes, LayoutRecordBytes);
             int sprite = BinaryPrimitives.ReadInt32LittleEndian(record);
             if (sprite < 0)
+            {
                 throw new FormatException($"Talk-box layout {layout} has a negative sprite id {sprite}.");
+            }
+
             var field = new int[14];
             for (int index = 0; index < field.Length; index++)
-                field[index] = BinaryPrimitives.ReadInt16LittleEndian(record[(4 + index * 2)..]);
-            layouts[layout] = new TalkBoxLayoutRecord(sprite,
-                field[0], field[1], field[2], field[3], field[4], field[5], field[6], field[7],
-                field[8], field[9], field[10], field[11], field[12], field[13]);
+            {
+                field[index] = BinaryPrimitives.ReadInt16LittleEndian(record[(4 + (index * 2))..]);
+            }
+
+            layouts[layout] = new TalkBoxLayoutRecord(
+                sprite,
+                field[0],
+                field[1],
+                field[2],
+                field[3],
+                field[4],
+                field[5],
+                field[6],
+                field[7],
+                field[8],
+                field[9],
+                field[10],
+                field[11],
+                field[12],
+                field[13]);
         }
+
         return layouts;
     }
 
@@ -81,7 +107,7 @@ public static class TalkBoxFrameDecoder
         ArgumentNullException.ThrowIfNull(ids);
         ArgumentNullException.ThrowIfNull(frameOffsets);
         ArgumentNullException.ThrowIfNull(sheet);
-        if (clutFrames <= 0) throw new ArgumentOutOfRangeException(nameof(clutFrames));
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(clutFrames);
         int position = FindFramePosition(ids, frameId);
         if (position < 0)
         {
@@ -108,7 +134,10 @@ public static class TalkBoxFrameDecoder
         IReadOnlyList<ushort> clutRow = ReadPanelClut(pages);
         (byte[] rgba, List<(byte R, byte G, byte B)> order, Dictionary<(byte R, byte G, byte B), int> counts) = DecodePanelPixels(pages[0], clutRow);
         if (order.Count == 0)
+        {
             throw new FormatException("Talk-box panel texture has no opaque texel.");
+        }
+
         (byte R, byte G, byte B) body = order[0];
         foreach ((byte R, byte G, byte B) colour in order)
         {
