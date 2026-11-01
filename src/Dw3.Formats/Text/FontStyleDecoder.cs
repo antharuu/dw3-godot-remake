@@ -60,7 +60,7 @@ public static class FontStyleDecoder
     public static IReadOnlyList<FontStyleMetrics> Decode(ReadOnlySpan<byte> executable)
     {
         int tableEnd = TextStyleTableOffset
-            + (FirstActiveStyleIndex + ActiveStyleCount) * TextStyleDescriptorSize;
+            + ((FirstActiveStyleIndex + ActiveStyleCount) * TextStyleDescriptorSize);
         if (executable.Length < tableEnd)
         {
             throw new FormatException(
@@ -70,7 +70,7 @@ public static class FontStyleDecoder
         var styles = new FontStyleMetrics[ActiveStyleCount];
         for (int i = 0; i < ActiveStyleCount; i++)
         {
-            int descriptorOffset = TextStyleTableOffset + (FirstActiveStyleIndex + i) * TextStyleDescriptorSize;
+            int descriptorOffset = TextStyleTableOffset + ((FirstActiveStyleIndex + i) * TextStyleDescriptorSize);
             styles[i] = DecodeStyle(executable, descriptorOffset, i + 1);
         }
         return styles;
@@ -133,7 +133,7 @@ public static class FontStyleDecoder
         var metrics = new GlyphMetric[count];
         for (int i = 0; i < count; i++)
         {
-            int pos = offset + i * GlyphRecordSize;
+            int pos = offset + (i * GlyphRecordSize);
             metrics[i] = new GlyphMetric(
                 Page: exe[pos],
                 U: exe[pos + 1],

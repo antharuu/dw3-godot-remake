@@ -2250,12 +2250,6 @@
     {
       "rule": "SA1407",
       "project": "Dw3.Formats",
-      "folder": "Text",
-      "count": 5
-    },
-    {
-      "rule": "SA1407",
-      "project": "Dw3.Formats",
       "folder": "Water",
       "count": 20
     },

@@ -48,7 +48,7 @@ public static class FontAtlasDecoder
         int tableIndex = 0;
         while (true)
         {
-            int tablePos = bodyBase + tableIndex * sizeof(uint);
+            int tablePos = bodyBase + (tableIndex * sizeof(uint));
             if (tablePos + sizeof(uint) > data.Length)
             {
                 throw new FormatException("CMFONTTM.BIN archive offset table is truncated.");
@@ -128,7 +128,7 @@ public static class FontAtlasDecoder
         ushort height = BinaryPrimitives.ReadUInt16LittleEndian(timData[18..]);
         // 4-bit: four pixels per 16-bit halfword → 4 pixels per "word" of 2 bytes → width = words * 4.
         int width = words * 4;
-        int expectedPixelBytes = words * height * 2;
+        int expectedPixelBytes = (words * height) * 2;
         if (8 + blockLen - 12 < (uint)expectedPixelBytes)
         {
             throw new FormatException($"CMFONTTM page {pageIndex} pixel data is truncated.");
@@ -165,7 +165,7 @@ public static class FontAtlasDecoder
             var entries = new (byte R, byte G, byte B, byte A)[ClutEntriesPerRow];
             for (int col = 0; col < ClutEntriesPerRow; col++)
             {
-                int bytePos = ((ClutRowY + rowIndex) * wordsPerLine + ClutColumnX + col) * 2;
+                int bytePos = (((ClutRowY + rowIndex) * wordsPerLine) + ClutColumnX + col) * 2;
                 ushort halfword = BinaryPrimitives.ReadUInt16LittleEndian(page0.IndexedPixels.AsSpan(bytePos, 2));
                 entries[col] = HalfwordToRgba(halfword);
             }
