@@ -19,6 +19,7 @@ public sealed class FieldRenderer : IDisposable
     private readonly FieldTextureCache _textureCache;
     private readonly FieldWaterLayer _waterLayer;
     private readonly FieldNpcLayer _npcLayer;
+    private readonly WaterData _water;
     private Sprite2D? _player;
     private Sprite2D? _cuePop;
     private Sprite2D? _cueInner;
@@ -38,9 +39,9 @@ public sealed class FieldRenderer : IDisposable
 
     public FieldRenderer(Node2D root, ExitCue cue, WaterData water, PlayerIconData icon)
     {
-        _ = water; // water is used via the FieldWaterLayer created below
         _root = root;
         _iconData = icon;
+        _water = water;
         foreach (var depth in new[] { 11, 7, 4, 3, 2, 1 })
         {
             var depthRoot = new Node2D { ZIndex = SourceDepth.ToGodotZIndex(depth), ZAsRelative = false };
@@ -113,7 +114,7 @@ public sealed class FieldRenderer : IDisposable
         _climbFramePath = climbFramePath;
 
         LoadZoneLayers(zone);
-        _waterLayer.LoadZone(new WaterData(new Dictionary<string, IReadOnlyList<WaterObject>> { [zone.Id] = [] }), zone, DepthRoot);
+        _waterLayer.LoadZone(_water, zone, DepthRoot);
         _npcLayer.LoadZone(npcs, DepthRoot(4));
 
         _playerShadow = new Sprite2D { Centered = false, Visible = false, Texture = _textureCache.ShadowTexture() };
