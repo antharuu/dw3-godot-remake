@@ -27,50 +27,100 @@ public static class SpriteFrameRenderer
     /// <exception cref="FormatException">The frame or one of its parts references data outside the loaded VRAM.</exception>
     public static SpriteFrameImage Render(IReadOnlyList<SpritePart> parts, ReadOnlySpan<byte> frame, ObjectVram vram, int clutRow)
     {
-        if (frame.Length < 6)
-            throw new FormatException("sprite frame truncated");
-
-        int count = BinaryPrimitives.ReadInt16LittleEndian(frame);
-        int frameRow = BinaryPrimitives.ReadInt16LittleEndian(frame[2..]);
-        int abr = BinaryPrimitives.ReadInt16LittleEndian(frame[4..]);
-        if (count <= 0 || count > MaximumParts)
-            throw new FormatException("sprite frame part count invalid");
-        if (frame.Length < 6 + 6 * count)
-        {
-            throw new FormatException("sprite frame truncated");
-        }
-
-        var placed = new (int X, int Y, int Width, int Height, ushort[] Words)[count];
-        for (int index = 0; index < count; index++)
-        {
-            int partIndex = BinaryPrimitives.ReadInt16LittleEndian(frame[(6 + 6 * index)..]);
-            int x = BinaryPrimitives.ReadInt16LittleEndian(frame[(8 + 6 * index)..]);
-            int y = BinaryPrimitives.ReadInt16LittleEndian(frame[(10 + 6 * index)..]);
-            if (partIndex < 0 || partIndex >= parts.Count)
-                throw new FormatException("sprite frame references missing part");
-
-            SpritePart part = parts[partIndex];
-            placed[index] = (x, y, part.Width, part.Height, Sample(part, vram, frameRow + clutRow));
-        }
-
+        (int count, int frameRow, int abr) = ReadFrameHeader(frame);
+        (int X, int Y, int Width, int Height, ushort[] Words)[] placed = PlaceParts(parts, frame, vram, count, frameRow + clutRow);
         int minX = placed.Min(item => item.X);
         int minY = placed.Min(item => item.Y);
         int width = placed.Max(item => item.X + item.Width) - minX;
         int height = placed.Max(item => item.Y + item.Height) - minY;
-        var words = new ushort[width * height];
-        for (int index = count - 1; index >= 0; index--)
+        return new SpriteFrameImage(width, height, minX, minY, abr, Compose(placed, width, height, minX, minY));
+    }
+
+    /// <summary>Reads the three signed words at the frame head and verifies its part records are present.</summary>
+    /// <param name="frame">Source frame beginning with count, CLUT shift and blend mode.</param>
+    /// <returns>The bounded count, palette-row shift and PS1 blend mode.</returns>
+    /// <exception cref="FormatException">The frame head is truncated or its part count is unsupported.</exception>
+    private static (int Count, int FrameRow, int Abr) ReadFrameHeader(ReadOnlySpan<byte> frame)
+    {
+        if (frame.Length < 6)
         {
-            var (x, y, partWidth, partHeight, partWords) = placed[index];
-            for (int row = 0; row < partHeight; row++)
-                for (int column = 0; column < partWidth; column++)
-                {
-                    ushort word = partWords[row * partWidth + column];
-                    if (word != 0)
-                        words[(y - minY + row) * width + x - minX + column] = word;
-                }
+            throw new FormatException("sprite frame truncated");
         }
 
-        return new SpriteFrameImage(width, height, minX, minY, abr, words);
+        int count = BinaryPrimitives.ReadInt16LittleEndian(frame);
+        if (count <= 0 || count > MaximumParts)
+        {
+            throw new FormatException("sprite frame part count invalid");
+        }
+
+        if (frame.Length < 6 + (6 * count))
+        {
+            throw new FormatException("sprite frame truncated");
+        }
+
+        return (count, BinaryPrimitives.ReadInt16LittleEndian(frame[2..]), BinaryPrimitives.ReadInt16LittleEndian(frame[4..]));
+    }
+
+    /// <summary>Samples every source part at its signed frame placement and resolved CLUT row.</summary>
+    /// <param name="parts">Indexed sprite-sheet parts referenced by the frame.</param>
+    /// <param name="frame">Validated frame bytes with six-byte placement records.</param>
+    /// <param name="vram">Loaded object texture pages and alternate palettes.</param>
+    /// <param name="count">Number of part placement records.</param>
+    /// <param name="paletteRow">Combined frame and caller palette-row shift.</param>
+    /// <returns>Sampled texture words with their local frame coordinates.</returns>
+    /// <exception cref="FormatException">A placement names no sprite-sheet part.</exception>
+    private static (int X, int Y, int Width, int Height, ushort[] Words)[] PlaceParts(IReadOnlyList<SpritePart> parts, ReadOnlySpan<byte> frame, ObjectVram vram, int count, int paletteRow)
+    {
+        var placed = new (int X, int Y, int Width, int Height, ushort[] Words)[count];
+        for (int index = 0; index < count; index++)
+        {
+            int offset = 6 + (6 * index);
+            int partIndex = BinaryPrimitives.ReadInt16LittleEndian(frame[offset..]);
+            if (partIndex < 0 || partIndex >= parts.Count)
+            {
+                throw new FormatException("sprite frame references missing part");
+            }
+
+            SpritePart part = parts[partIndex];
+            placed[index] = (BinaryPrimitives.ReadInt16LittleEndian(frame[(offset + 2)..]), BinaryPrimitives.ReadInt16LittleEndian(frame[(offset + 4)..]), part.Width, part.Height, Sample(part, vram, paletteRow));
+        }
+
+        return placed;
+    }
+
+    /// <summary>Overlays sampled parts in reverse source order, retaining each non-transparent PS1 word.</summary>
+    /// <param name="placed">Sampled parts with coordinates relative to the source frame.</param>
+    /// <param name="width">Output span in words.</param>
+    /// <param name="height">Output row count in pixels.</param>
+    /// <param name="minX">Left output origin in source coordinates.</param>
+    /// <param name="minY">Top output origin in source coordinates.</param>
+    /// <returns>Composed 16-bit PS1 pixels in row-major order.</returns>
+    private static ushort[] Compose((int X, int Y, int Width, int Height, ushort[] Words)[] placed, int width, int height, int minX, int minY)
+    {
+        var words = new ushort[width * height];
+        for (int index = placed.Length - 1; index >= 0; index--)
+        {
+            var (x, y, partWidth, partHeight, partWords) = placed[index];
+            OverlayPart(words, width, minX, minY, x, y, partWidth, partHeight, partWords);
+        }
+
+        return words;
+    }
+
+    /// <summary>Writes the opaque texels of one sampled part into its destination rectangle.</summary>
+    private static void OverlayPart(ushort[] destination, int destinationWidth, int minX, int minY, int x, int y, int partWidth, int partHeight, ushort[] source)
+    {
+        for (int row = 0; row < partHeight; row++)
+        {
+            for (int column = 0; column < partWidth; column++)
+            {
+                ushort word = source[(row * partWidth) + column];
+                if (word != 0)
+                {
+                    destination[((y - minY + row) * destinationWidth) + x - minX + column] = word;
+                }
+            }
+        }
     }
 
     private static ushort[] Sample(SpritePart part, ObjectVram vram, int rowShift)
