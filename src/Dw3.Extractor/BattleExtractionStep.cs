@@ -29,6 +29,7 @@ internal static class BattleExtractionStep
     private const uint GrowthAddress = 0x8008916C;
     private const int Partners = 8;
     private const int EvolutionsPerPartner = 44;
+    private static readonly JsonSerializerOptions IndentedJsonOptions = new() { WriteIndented = true };
     private static readonly string[] FrenchTextPaths =
     [
         "AAA/DAT/COUNTRY/FRA/FSMFIGHT.BIN", "AAA/DAT/COUNTRY/FRA/FSDIGNAM.BIN",
@@ -138,7 +139,7 @@ internal static class BattleExtractionStep
                 TextToken token = entries[entry][ordinal];
                 Insert(context, "INSERT INTO battle_text_tokens (disc_path,entry_ordinal,token_ordinal,kind,code,args_json) VALUES ($1,$2,$3,$4,$5,$6)", discPath, entry, ordinal, (int)token.Kind, token.Code, JsonSerializer.Serialize(token.Args));
             }
-        File.WriteAllText(path, JsonSerializer.Serialize(new { discPath, entries = entries.Select(entry => entry.Select(token => new { kind = (int)token.Kind, token.Code, token.Args })) }, new JsonSerializerOptions { WriteIndented = true }));
+        File.WriteAllText(path, JsonSerializer.Serialize(new { discPath, entries = entries.Select(entry => entry.Select(token => new { kind = (int)token.Kind, token.Code, token.Args })) }, IndentedJsonOptions));
     }
 
     private static void WriteGrowth(DataPackWriteContext context, BattleGrowthData growth)

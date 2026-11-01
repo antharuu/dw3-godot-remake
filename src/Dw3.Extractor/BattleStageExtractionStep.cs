@@ -95,7 +95,7 @@ internal static class BattleStageExtractionStep
     {
         private readonly DiscSource _disc;
         private readonly DiscFileTable _table;
-        private readonly IReadOnlyDictionary<string, DiscFileEntry> _byPath;
+        private readonly Dictionary<string, DiscFileEntry> _byPath;
 
         internal EngineFiles(DiscSource disc, IReadOnlyList<DiscFileEntry> entries, PsxExecutable executable)
         {

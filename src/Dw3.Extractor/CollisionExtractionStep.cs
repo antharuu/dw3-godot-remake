@@ -1,3 +1,4 @@
+using System.Globalization;
 using Dw3.Data;
 using Dw3.Disc;
 using Dw3.Formats.Field;
@@ -45,7 +46,7 @@ internal static class CollisionExtractionStep
             var actors = new Dictionary<string, Dictionary<string, FieldActor>>();
             foreach (var (stageName, stageActors) in ActorAddresses)
             {
-                int stageNum = int.Parse(stageName[1..]);
+                int stageNum = int.Parse(stageName[1..], CultureInfo.InvariantCulture);
                 DiscFileEntry overlayEntry = RequireFile(entries, $"AAA/PRO/WSTAG{stageNum:D3}.PRO", stageName);
                 byte[] overlay = disc.ReadFile(overlayEntry);
                 var decoded = new Dictionary<string, FieldActor>();

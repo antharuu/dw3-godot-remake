@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -169,7 +170,7 @@ internal static class BattleReportExtractionStep
             json.WriteStartObject(); json.WriteString("schema", "m6-battle-menu-icons-v1"); json.WriteStartObject("frames");
             foreach (var (id, frame) in frames)
             {
-                json.WriteStartObject(id.ToString()); json.WriteNumber("w", frame.W); json.WriteNumber("h", frame.H);
+                json.WriteStartObject(id.ToString(CultureInfo.InvariantCulture)); json.WriteNumber("w", frame.W); json.WriteNumber("h", frame.H);
                 json.WriteStartArray("offset"); json.WriteNumberValue(frame.Ox); json.WriteNumberValue(frame.Oy); json.WriteEndArray();
                 json.WriteNumber("clutFrames", frame.Paths.Length); json.WriteStartArray("paths");
                 foreach (string path in frame.Paths) json.WriteStringValue(path); json.WriteEndArray(); json.WriteEndObject();
@@ -229,7 +230,7 @@ internal static class BattleReportExtractionStep
             json.WriteStartObject("frames");
             foreach (var (frameId, rows, parts) in frames)
             {
-                json.WriteStartObject(frameId.ToString());
+                json.WriteStartObject(frameId.ToString(CultureInfo.InvariantCulture));
                 json.WriteString("path", rows[0].Path);
                 json.WriteNumber("w", rows[0].W);
                 json.WriteNumber("h", rows[0].H);
@@ -332,7 +333,7 @@ internal static class BattleReportExtractionStep
     {
         private readonly DiscSource _disc;
         private readonly DiscFileTable _table;
-        private readonly IReadOnlyDictionary<string, DiscFileEntry> _byPath;
+        private readonly Dictionary<string, DiscFileEntry> _byPath;
 
         internal EngineFiles(DiscSource disc, IReadOnlyList<DiscFileEntry> entries, PsxExecutable executable)
         {

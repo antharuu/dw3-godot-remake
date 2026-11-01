@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text.Json;
 using Dw3.Data;
@@ -246,7 +247,7 @@ internal static class EncounterExtractionStep
         writer.WriteStartObject("stages");
         foreach ((int stageId, StageData stageData) in stages.OrderBy(kv => kv.Key))
         {
-            writer.WriteStartObject(stageId.ToString());
+            writer.WriteStartObject(stageId.ToString(CultureInfo.InvariantCulture));
             writer.WriteString("overlay", stageData.OverlayName);
             writer.WriteString("overlay_sha256", stageData.OverlaySha256);
             writer.WriteStartArray("stageBattles");

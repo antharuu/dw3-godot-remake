@@ -10,7 +10,7 @@ namespace Dw3.Extractor;
 public static class DialogueDomainWriter
 {
     private const int SnapshotProgress = 4;
-    private static readonly IReadOnlySet<ushort> NonDialogueModes = new HashSet<ushort> { 0x204, 0x22D };
+    private static readonly HashSet<ushort> NonDialogueModes = [0x204, 0x22D];
 
     public static bool IsDialogueZone(StageDialogueAnalysis stage) => !NonDialogueModes.Contains(stage.Mode);
 

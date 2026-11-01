@@ -37,7 +37,7 @@
       "rule": "CA1305",
       "project": "Dw3.Extractor",
       "folder": ".",
-      "count": 13
+      "count": 5
     },
     {
       "rule": "CA1305",
@@ -229,7 +229,7 @@
       "rule": "CA1859",
       "project": "Dw3.Extractor",
       "folder": ".",
-      "count": 12
+      "count": 7
     },
     {
       "rule": "CA1859",
@@ -271,7 +271,7 @@
       "rule": "CA1869",
       "project": "Dw3.Extractor",
       "folder": ".",
-      "count": 2
+      "count": 1
     },
     {
       "rule": "CA1875",

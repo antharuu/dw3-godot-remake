@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using Dw3.Data;
 using Dw3.Formats.Binary.Png;
@@ -31,11 +32,11 @@ public static class FieldcomDomainWriter
         WriteManifest(context, "cue", cue.DiscPath, cue.Sha256, cue.ByteCount, cue.Frames, writer =>
         {
             writer.WriteStartObject("anchor"); writer.WriteNumber("depth", 1); writer.WriteString("layer", FieldLayer); writer.WriteNumber("y_offset", -27); writer.WriteEndObject();
-            writer.WriteStartObject("exit_rows"); foreach (FieldcomExitRow row in cue.ExitRows.OrderBy(x => x.Direction)) writer.WriteNumber(row.Direction.ToString(), row.Row); writer.WriteEndObject();
+            writer.WriteStartObject("exit_rows"); foreach (FieldcomExitRow row in cue.ExitRows.OrderBy(x => x.Direction)) writer.WriteNumber(row.Direction.ToString(CultureInfo.InvariantCulture), row.Row); writer.WriteEndObject();
             writer.WriteStartObject("inner_rows");
             foreach (FieldcomNamedSequence sequence in cue.InnerSequences.OrderBy(x => CueRow(x.Steps)))
             {
-                writer.WriteStartArray(CueRow(sequence.Steps).ToString());
+                writer.WriteStartArray(CueRow(sequence.Steps).ToString(CultureInfo.InvariantCulture));
                 foreach (FieldcomFrameStep step in sequence.Steps) { writer.WriteStartObject(); writer.WriteNumber("duration_ticks", step.Duration); writer.WriteNumber("frame", step.Frame); writer.WriteEndObject(); }
                 writer.WriteEndArray();
             }
@@ -100,7 +101,7 @@ public static class FieldcomDomainWriter
     private static void WriteManifest(DataPackWriteContext context, string domain, string discPath, string sha256, int bytes, IReadOnlyList<FieldcomExtractedFrame> frames, Action<Utf8JsonWriter> payload)
     {
         string path = context.GetImagePath($"{domain}/manifest.json"); Directory.CreateDirectory(Path.GetDirectoryName(path)!); using var stream = File.Create(path); using var json = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true }); json.WriteStartObject(); payload(json); json.WriteStartObject("frames");
-        foreach (FieldcomExtractedFrame frame in frames.OrderBy(x => x.FrameId)) { json.WriteStartObject(frame.FrameId.ToString()); json.WriteNumber("abr", frame.Abr); json.WriteStartArray("offset"); json.WriteNumberValue(frame.OffsetX); json.WriteNumberValue(frame.OffsetY); json.WriteEndArray(); json.WriteString("path", $"frame-{frame.FrameId:X2}.png"); json.WriteNumber("row", frame.Row); json.WriteStartArray("size"); json.WriteNumberValue(frame.Width); json.WriteNumberValue(frame.Height); json.WriteEndArray(); json.WriteEndObject(); }
+        foreach (FieldcomExtractedFrame frame in frames.OrderBy(x => x.FrameId)) { json.WriteStartObject(frame.FrameId.ToString(CultureInfo.InvariantCulture)); json.WriteNumber("abr", frame.Abr); json.WriteStartArray("offset"); json.WriteNumberValue(frame.OffsetX); json.WriteNumberValue(frame.OffsetY); json.WriteEndArray(); json.WriteString("path", $"frame-{frame.FrameId:X2}.png"); json.WriteNumber("row", frame.Row); json.WriteStartArray("size"); json.WriteNumberValue(frame.Width); json.WriteNumberValue(frame.Height); json.WriteEndArray(); json.WriteEndObject(); }
         json.WriteEndObject(); json.WriteString("schema", domain == "cue" ? "m1-exit-cue-v1" : "m5-icon-v1"); json.WriteStartObject("source"); json.WriteStartObject("archive_entries"); json.WriteNumber("sheet", 0); json.WriteStartArray("vram_pages"); json.WriteNumberValue(2); json.WriteNumberValue(3); json.WriteEndArray(); json.WriteEndObject(); json.WriteNumber("bytes", bytes); json.WriteNumber("file_id", FieldcomFileId); json.WriteString("path", discPath); json.WriteString("sha256", sha256); json.WriteEndObject(); json.WriteEndObject();
     }
 

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -135,7 +136,7 @@ internal static class BattleHudExtractionStep
             json.WriteStartObject("frames");
             foreach (var (frameId, rows) in frameRecords)
             {
-                json.WriteStartObject(frameId.ToString());
+                json.WriteStartObject(frameId.ToString(CultureInfo.InvariantCulture));
                 json.WriteString("path", rows[0].Path);
                 json.WriteNumber("w", rows[0].W);
                 json.WriteNumber("h", rows[0].H);
@@ -195,7 +196,7 @@ internal static class BattleHudExtractionStep
     {
         private readonly DiscSource _disc;
         private readonly DiscFileTable _table;
-        private readonly IReadOnlyDictionary<string, DiscFileEntry> _byPath;
+        private readonly Dictionary<string, DiscFileEntry> _byPath;
 
         internal EngineFiles(DiscSource disc, IReadOnlyList<DiscFileEntry> entries, PsxExecutable executable)
         {
