@@ -13,7 +13,7 @@ public sealed class DiscSource : IDisposable
 
     private DiscSource(FileStream stream, string binPath)
     {
-        _stream  = stream;
+        _stream = stream;
         _binPath = binPath;
     }
 

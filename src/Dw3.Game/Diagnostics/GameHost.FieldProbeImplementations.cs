@@ -176,19 +176,19 @@ public partial class GameHost
         if (playerImage is null || terrain is null || playerImage.IsEmpty() || terrain.IsEmpty())
             throw new InvalidOperationException($"depth probe images unreadable zone={zone.Zone.Id} layer={terrainLayer}");
         for (var topY = 0; topY <= zone.Zone.Height - playerImage.GetHeight(); topY++)
-        for (var topX = 0; topX <= zone.Zone.Width - playerImage.GetWidth(); topX++)
-        for (var py = 0; py < playerImage.GetHeight(); py++)
-        for (var px = 0; px < playerImage.GetWidth(); px++)
-        {
-            var playerPixel = playerImage.GetPixel(px, py);
-            if (playerPixel.A < 0.99f) continue;
-            var x = topX + px;
-            var y = topY + py;
-            var terrainPixel = terrain.GetPixel(x, y);
-            if (terrainPixel.A < 0.99f || !DifferentRgb(terrainPixel, playerPixel)) continue;
-            var expected = terrainLayer == 0 ? playerPixel : terrainPixel;
-            return new DepthOverlap(new NumericsVector2(topX - sample.OffsetX, topY - sample.OffsetY), new NumericsVector2(x, y), expected);
-        }
+            for (var topX = 0; topX <= zone.Zone.Width - playerImage.GetWidth(); topX++)
+                for (var py = 0; py < playerImage.GetHeight(); py++)
+                    for (var px = 0; px < playerImage.GetWidth(); px++)
+                    {
+                        var playerPixel = playerImage.GetPixel(px, py);
+                        if (playerPixel.A < 0.99f) continue;
+                        var x = topX + px;
+                        var y = topY + py;
+                        var terrainPixel = terrain.GetPixel(x, y);
+                        if (terrainPixel.A < 0.99f || !DifferentRgb(terrainPixel, playerPixel)) continue;
+                        var expected = terrainLayer == 0 ? playerPixel : terrainPixel;
+                        return new DepthOverlap(new NumericsVector2(topX - sample.OffsetX, topY - sample.OffsetY), new NumericsVector2(x, y), expected);
+                    }
         throw new InvalidOperationException($"depth probe found no opaque player/terrain overlap zone={zone.Zone.Id} layer={terrainLayer}");
     }
 
@@ -464,22 +464,22 @@ public partial class GameHost
             new Vector2(_state.Position.X, _state.Position.Y));
 
         var objScreenLeft = Mathf.RoundToInt((obj.X + frame.OffsetX - camera.X) * 3f + 640f);
-        var objScreenTop  = Mathf.RoundToInt((obj.Y + frame.OffsetY - camera.Y) * 3f + 360f);
+        var objScreenTop = Mathf.RoundToInt((obj.Y + frame.OffsetY - camera.Y) * 3f + 360f);
         var playerScreenLeft = Mathf.RoundToInt((_state.Position.X + sample.OffsetX - camera.X) * 3f + 640f);
-        var playerScreenTop  = Mathf.RoundToInt((_state.Position.Y + sample.OffsetY - camera.Y) * 3f + 360f);
+        var playerScreenTop = Mathf.RoundToInt((_state.Position.Y + sample.OffsetY - camera.Y) * 3f + 360f);
 
         for (var oy = 0; oy < objectImage.GetHeight(); oy++)
-        for (var ox = 0; ox < objectImage.GetWidth(); ox++)
-        {
-            if (objectImage.GetPixel(ox, oy).A < 0.99f) continue;
-            var screenX = objScreenLeft + ox * 3 + 1;
-            var screenY = objScreenTop  + oy * 3 + 1;
-            var playerOx = (screenX - playerScreenLeft - 1) / 3;
-            var playerOy = (screenY - playerScreenTop  - 1) / 3;
-            if (playerOx < 0 || playerOy < 0 || playerOx >= playerImage.GetWidth() || playerOy >= playerImage.GetHeight())
-                continue;
-            if (playerImage.GetPixel(playerOx, playerOy).A >= 0.99f) return true;
-        }
+            for (var ox = 0; ox < objectImage.GetWidth(); ox++)
+            {
+                if (objectImage.GetPixel(ox, oy).A < 0.99f) continue;
+                var screenX = objScreenLeft + ox * 3 + 1;
+                var screenY = objScreenTop + oy * 3 + 1;
+                var playerOx = (screenX - playerScreenLeft - 1) / 3;
+                var playerOy = (screenY - playerScreenTop - 1) / 3;
+                if (playerOx < 0 || playerOy < 0 || playerOx >= playerImage.GetWidth() || playerOy >= playerImage.GetHeight())
+                    continue;
+                if (playerImage.GetPixel(playerOx, playerOy).A >= 0.99f) return true;
+            }
         return false;
     }
 
@@ -505,38 +505,38 @@ public partial class GameHost
 
         // Object top-left in screen coordinates (source pixel → 3x scale).
         var objScreenLeft = Mathf.RoundToInt((obj.X + frame.OffsetX - camera.X) * 3f + 640f);
-        var objScreenTop  = Mathf.RoundToInt((obj.Y + frame.OffsetY - camera.Y) * 3f + 360f);
+        var objScreenTop = Mathf.RoundToInt((obj.Y + frame.OffsetY - camera.Y) * 3f + 360f);
 
         // Player top-left in screen coordinates (sprite drawn at position + offset).
         var playerScreenLeft = Mathf.RoundToInt((_state.Position.X + sample.OffsetX - camera.X) * 3f + 640f);
-        var playerScreenTop  = Mathf.RoundToInt((_state.Position.Y + sample.OffsetY - camera.Y) * 3f + 360f);
+        var playerScreenTop = Mathf.RoundToInt((_state.Position.Y + sample.OffsetY - camera.Y) * 3f + 360f);
 
         var matches = 0;
         for (var oy = 0; oy < objectImage.GetHeight(); oy++)
-        for (var ox = 0; ox < objectImage.GetWidth(); ox++)
-        {
-            var objPixel = objectImage.GetPixel(ox, oy);
-            if (objPixel.A < 0.99f) continue;
+            for (var ox = 0; ox < objectImage.GetWidth(); ox++)
+            {
+                var objPixel = objectImage.GetPixel(ox, oy);
+                if (objPixel.A < 0.99f) continue;
 
-            // Each source pixel maps to a 3×3 screen block; sample the center pixel.
-            var screenX = objScreenLeft + ox * 3 + 1;
-            var screenY = objScreenTop  + oy * 3 + 1;
-            if (screenX < 1 || screenY < 1 || screenX >= capture.GetWidth() - 1 || screenY >= capture.GetHeight() - 1)
-                continue;
+                // Each source pixel maps to a 3×3 screen block; sample the center pixel.
+                var screenX = objScreenLeft + ox * 3 + 1;
+                var screenY = objScreenTop + oy * 3 + 1;
+                if (screenX < 1 || screenY < 1 || screenX >= capture.GetWidth() - 1 || screenY >= capture.GetHeight() - 1)
+                    continue;
 
-            // Find the matching player source pixel for this screen position.
-            var playerOx = (screenX - playerScreenLeft - 1) / 3;
-            var playerOy = (screenY - playerScreenTop  - 1) / 3;
-            if (playerOx < 0 || playerOy < 0 || playerOx >= playerImage.GetWidth() || playerOy >= playerImage.GetHeight())
-                continue;
-            var playerPixel = playerImage.GetPixel(playerOx, playerOy);
-            if (playerPixel.A < 0.99f) continue;
+                // Find the matching player source pixel for this screen position.
+                var playerOx = (screenX - playerScreenLeft - 1) / 3;
+                var playerOy = (screenY - playerScreenTop - 1) / 3;
+                if (playerOx < 0 || playerOy < 0 || playerOx >= playerImage.GetWidth() || playerOy >= playerImage.GetHeight())
+                    continue;
+                var playerPixel = playerImage.GetPixel(playerOx, playerOy);
+                if (playerPixel.A < 0.99f) continue;
 
-            // This screen pixel has both object and player opaque — check expected foreground.
-            var captured = capture.GetPixel(screenX, screenY);
-            var expected = objectInFront ? objPixel : playerPixel;
-            if (SameRgb(captured, expected)) matches++;
-        }
+                // This screen pixel has both object and player opaque — check expected foreground.
+                var captured = capture.GetPixel(screenX, screenY);
+                var expected = objectInFront ? objPixel : playerPixel;
+                if (SameRgb(captured, expected)) matches++;
+            }
         return matches;
     }
 
@@ -572,14 +572,14 @@ public partial class GameHost
         var top = Mathf.RoundToInt((water.Y + frame.OffsetY - camera.Y) * 3f + 360f);
         var matches = 0;
         for (var y = 0; y < source.GetHeight(); y++)
-        for (var x = 0; x < source.GetWidth(); x++)
-        {
-            var expected = source.GetPixel(x, y);
-            var screenX = left + x * 3 + 1;
-            var screenY = top + y * 3 + 1;
-            if (expected.A < 0.99f || screenX < 0 || screenY < 0 || screenX >= capture.GetWidth() || screenY >= capture.GetHeight()) continue;
-            if (SameRgb(capture.GetPixel(screenX, screenY), expected)) matches++;
-        }
+            for (var x = 0; x < source.GetWidth(); x++)
+            {
+                var expected = source.GetPixel(x, y);
+                var screenX = left + x * 3 + 1;
+                var screenY = top + y * 3 + 1;
+                if (expected.A < 0.99f || screenX < 0 || screenY < 0 || screenX >= capture.GetWidth() || screenY >= capture.GetHeight()) continue;
+                if (SameRgb(capture.GetPixel(screenX, screenY), expected)) matches++;
+            }
         return matches;
     }
 
@@ -591,13 +591,13 @@ public partial class GameHost
         var top = Mathf.RoundToInt((water.Y + frame.OffsetY - camera.Y) * 3f + 360f);
         var changed = 0;
         for (var y = 0; y < 36; y++)
-        for (var x = 0; x < 48; x++)
-        {
-            var screenX = left + x * 3 + 1;
-            var screenY = top + y * 3 + 1;
-            if (screenX < 0 || screenY < 0 || screenX >= before.GetWidth() || screenY >= before.GetHeight()) continue;
-            if (DifferentRgb(before.GetPixel(screenX, screenY), after.GetPixel(screenX, screenY))) changed++;
-        }
+            for (var x = 0; x < 48; x++)
+            {
+                var screenX = left + x * 3 + 1;
+                var screenY = top + y * 3 + 1;
+                if (screenX < 0 || screenY < 0 || screenX >= before.GetWidth() || screenY >= before.GetHeight()) continue;
+                if (DifferentRgb(before.GetPixel(screenX, screenY), after.GetPixel(screenX, screenY))) changed++;
+            }
         return changed;
     }
 
@@ -663,18 +663,18 @@ public partial class GameHost
         var matched = 0;
         var changed = 0;
         for (var y = 0; y < cueImage.GetHeight(); y++)
-        for (var x = 0; x < cueImage.GetWidth(); x++)
-        {
-            var expected = cueImage.GetPixel(x, y);
-            if (expected.A < 0.99f) continue;
-            var screenX = originX + x * 3;
-            var screenY = originY + y * 3;
-            if (screenX < 0 || screenX >= present.GetWidth() || screenY < 0 || screenY >= present.GetHeight()) continue;
-            var before = absent.GetPixel(screenX, screenY);
-            var actual = present.GetPixel(screenX, screenY);
-            if (DifferentRgb(before, actual)) changed++;
-            if (SameRgb(actual, expected)) matched++;
-        }
+            for (var x = 0; x < cueImage.GetWidth(); x++)
+            {
+                var expected = cueImage.GetPixel(x, y);
+                if (expected.A < 0.99f) continue;
+                var screenX = originX + x * 3;
+                var screenY = originY + y * 3;
+                if (screenX < 0 || screenX >= present.GetWidth() || screenY < 0 || screenY >= present.GetHeight()) continue;
+                var before = absent.GetPixel(screenX, screenY);
+                var actual = present.GetPixel(screenX, screenY);
+                if (DifferentRgb(before, actual)) changed++;
+                if (SameRgb(actual, expected)) matched++;
+            }
         Require(changed > 0, $"{label}: framebuffer did not change inside source cue anchor bounds");
         Require(matched > 0, $"{label}: no opaque source cue pixel rendered at actor anchor/depth");
         Require(Renderer.CueSnapshot.Phase == ExitCuePhase.Open && Renderer.CueSnapshot.RawDirection == _state.OfferedTriggerDirection,
@@ -1018,12 +1018,12 @@ public partial class GameHost
         var screenY = Mathf.RoundToInt((cell.Y - camera.Y) * 3f + 360f);
         var matches = 0;
         for (var y = screenY - 4; y <= screenY + 4; y++)
-        for (var x = screenX - 4; x <= screenX + 4; x++)
-        {
-            if (x < 0 || y < 0 || x >= capture.GetWidth() || y >= capture.GetHeight()) continue;
-            var pixel = capture.GetPixel(x, y);
-            if (pixel.R8 > 200 && pixel.G8 >= 100 && pixel.G8 <= 155 && pixel.B8 < 60) matches++;
-        }
+            for (var x = screenX - 4; x <= screenX + 4; x++)
+            {
+                if (x < 0 || y < 0 || x >= capture.GetWidth() || y >= capture.GetHeight()) continue;
+                var pixel = capture.GetPixel(x, y);
+                if (pixel.R8 > 200 && pixel.G8 >= 100 && pixel.G8 <= 155 && pixel.B8 < 60) matches++;
+            }
         return matches;
     }
 
@@ -1352,12 +1352,12 @@ public partial class GameHost
     private static (NumericsVector2 Cell, int Dir) FindClimbTrigger(FieldZone zone, int slot)
     {
         for (var y = 0; y < zone.Triggers.Height; y++)
-        for (var x = 0; x < zone.Triggers.Width; x++)
-        {
-            var raw = zone.Triggers.CellAt(new NumericsVector2(x, y));
-            if (raw != 0 && (raw & 0x1F) == slot)
-                return (new NumericsVector2(x, y), raw >> 5);
-        }
+            for (var x = 0; x < zone.Triggers.Width; x++)
+            {
+                var raw = zone.Triggers.CellAt(new NumericsVector2(x, y));
+                if (raw != 0 && (raw & 0x1F) == slot)
+                    return (new NumericsVector2(x, y), raw >> 5);
+            }
         throw new InvalidOperationException($"climb slot={slot} trigger missing in zone={zone.Zone.Id}");
     }
 
@@ -1387,16 +1387,16 @@ public partial class GameHost
         var width = image.GetWidth();
         var matches = 0;
         for (var y = 0; y < image.GetHeight(); y++)
-        for (var x = 0; x < width; x++)
-        {
-            var expected = image.GetPixel(x, y);
-            if (expected.A < 0.99f) continue;
-            var sourceX = npc.FlipH ? width - 1 - x : x;
-            var screenX = left + sourceX * 3 + 1;
-            var screenY = top + y * 3 + 1;
-            if (screenX < 0 || screenY < 0 || screenX >= capture.GetWidth() || screenY >= capture.GetHeight()) continue;
-            if (SameRgb(capture.GetPixel(screenX, screenY), expected)) matches++;
-        }
+            for (var x = 0; x < width; x++)
+            {
+                var expected = image.GetPixel(x, y);
+                if (expected.A < 0.99f) continue;
+                var sourceX = npc.FlipH ? width - 1 - x : x;
+                var screenX = left + sourceX * 3 + 1;
+                var screenY = top + y * 3 + 1;
+                if (screenX < 0 || screenY < 0 || screenX >= capture.GetWidth() || screenY >= capture.GetHeight()) continue;
+                if (SameRgb(capture.GetPixel(screenX, screenY), expected)) matches++;
+            }
         return matches;
     }
 
@@ -1431,23 +1431,23 @@ public partial class GameHost
         var npcWidth = npcImage.GetWidth();
         var matches = 0;
         for (var oy = 0; oy < objImage.GetHeight(); oy++)
-        for (var ox = 0; ox < objImage.GetWidth(); ox++)
-        {
-            var objPixel = objImage.GetPixel(ox, oy);
-            if (objPixel.A < 0.99f) continue;
-            var screenX = objLeft + ox * 3 + 1;
-            var screenY = objTop + oy * 3 + 1;
-            if (screenX < 1 || screenY < 1 || screenX >= capture.GetWidth() - 1 || screenY >= capture.GetHeight() - 1) continue;
-            var rawNpcX = (screenX - npcLeft - 1) / 3;
-            var npcX = npc.FlipH ? npcWidth - 1 - rawNpcX : rawNpcX;
-            var npcY = (screenY - npcTop - 1) / 3;
-            if (npcX < 0 || npcY < 0 || npcX >= npcWidth || npcY >= npcImage.GetHeight()) continue;
-            var npcPixel = npcImage.GetPixel(npcX, npcY);
-            if (npcPixel.A < 0.99f) continue;
-            var captured = capture.GetPixel(screenX, screenY);
-            var expected = npcInFront ? npcPixel : objPixel;
-            if (SameRgb(captured, expected)) matches++;
-        }
+            for (var ox = 0; ox < objImage.GetWidth(); ox++)
+            {
+                var objPixel = objImage.GetPixel(ox, oy);
+                if (objPixel.A < 0.99f) continue;
+                var screenX = objLeft + ox * 3 + 1;
+                var screenY = objTop + oy * 3 + 1;
+                if (screenX < 1 || screenY < 1 || screenX >= capture.GetWidth() - 1 || screenY >= capture.GetHeight() - 1) continue;
+                var rawNpcX = (screenX - npcLeft - 1) / 3;
+                var npcX = npc.FlipH ? npcWidth - 1 - rawNpcX : rawNpcX;
+                var npcY = (screenY - npcTop - 1) / 3;
+                if (npcX < 0 || npcY < 0 || npcX >= npcWidth || npcY >= npcImage.GetHeight()) continue;
+                var npcPixel = npcImage.GetPixel(npcX, npcY);
+                if (npcPixel.A < 0.99f) continue;
+                var captured = capture.GetPixel(screenX, screenY);
+                var expected = npcInFront ? npcPixel : objPixel;
+                if (SameRgb(captured, expected)) matches++;
+            }
         return matches;
     }
 

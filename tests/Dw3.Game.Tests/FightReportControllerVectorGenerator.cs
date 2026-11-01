@@ -28,13 +28,13 @@ public sealed class FightReportControllerVectorGenerator
     private static JsonObject PartnerToJson(FightReportPartner p)
         => new()
         {
-            ["partyIndex"]     = p.PartyIndex,
-            ["partnerId"]      = p.PartnerId,
-            ["fighterId"]      = p.FighterId,
-            ["levelBefore"]    = p.LevelBefore,
-            ["expBefore"]      = p.ExpBefore,
-            ["expGained"]      = p.ExpGained,
-            ["levelAfter"]     = p.LevelAfter,
+            ["partyIndex"] = p.PartyIndex,
+            ["partnerId"] = p.PartnerId,
+            ["fighterId"] = p.FighterId,
+            ["levelBefore"] = p.LevelBefore,
+            ["expBefore"] = p.ExpBefore,
+            ["expGained"] = p.ExpGained,
+            ["levelAfter"] = p.LevelAfter,
             ["slotDigimonIds"] = IntArrayToJson(p.SlotDigimonIds.ToArray()),
         };
 
@@ -59,8 +59,8 @@ public sealed class FightReportControllerVectorGenerator
         foreach (var s in slots)
             a.Add(new JsonObject
             {
-                ["digimonId"]  = s.DigimonId,
-                ["visible"]    = s.Visible,
+                ["digimonId"] = s.DigimonId,
+                ["visible"] = s.Visible,
                 ["expApplied"] = s.ExpApplied,
                 ["blinkFrame"] = s.BlinkFrame,
             });
@@ -74,12 +74,12 @@ public sealed class FightReportControllerVectorGenerator
         foreach (var v in m.Substitutions) subs.Add(v);
         return new JsonObject
         {
-            ["entry"]          = m.Entry,
-            ["substitutions"]  = subs,
+            ["entry"] = m.Entry,
+            ["substitutions"] = subs,
             ["tokensRevealed"] = m.TokensRevealed,
-            ["tokenCount"]     = m.TokenCount,
-            ["arrowVisible"]   = m.ArrowVisible,
-            ["arrowFrame"]     = m.ArrowFrame,
+            ["tokenCount"] = m.TokenCount,
+            ["arrowVisible"] = m.ArrowVisible,
+            ["arrowFrame"] = m.ArrowFrame,
         };
     }
 
@@ -89,26 +89,26 @@ public sealed class FightReportControllerVectorGenerator
         foreach (var p in v.Partners)
             partners.Add(new JsonObject
             {
-                ["partyIndex"]      = p.PartyIndex,
-                ["partnerId"]       = p.PartnerId,
-                ["fighterId"]       = p.FighterId,
-                ["fade"]            = p.Fade,
-                ["selected"]        = p.Selected,
-                ["cursorFrame"]     = p.CursorFrame,
+                ["partyIndex"] = p.PartyIndex,
+                ["partnerId"] = p.PartnerId,
+                ["fighterId"] = p.FighterId,
+                ["fade"] = p.Fade,
+                ["selected"] = p.Selected,
+                ["cursorFrame"] = p.CursorFrame,
                 ["levelBlinkFrame"] = p.LevelBlinkFrame,
-                ["shownExp"]        = p.ShownExp,
-                ["animationFrame"]  = p.AnimationFrame,
-                ["slots"]           = SlotsToJson(p.Slots),
+                ["shownExp"] = p.ShownExp,
+                ["animationFrame"] = p.AnimationFrame,
+                ["slots"] = SlotsToJson(p.Slots),
             });
 
         var o = new JsonObject
         {
             ["headerFade"] = v.HeaderFade,
             ["footerFade"] = v.FooterFade,
-            ["bgScroll"]   = v.BgScroll,
-            ["partners"]   = partners,
-            ["exitFade"]   = v.ExitFade,
-            ["done"]       = v.Done,
+            ["bgScroll"] = v.BgScroll,
+            ["partners"] = partners,
+            ["exitFade"] = v.ExitFade,
+            ["done"] = v.Done,
         };
         var msg = MessageToJson(v.Message);
         o["message"] = msg is null ? null : msg;
@@ -123,10 +123,10 @@ public sealed class FightReportControllerVectorGenerator
         int result = FightReportController.RollStep(targetExp);
         return new JsonObject
         {
-            ["id"]        = id,
-            ["fn"]        = "RollStep",
+            ["id"] = id,
+            ["fn"] = "RollStep",
             ["targetExp"] = targetExp,
-            ["expected"]  = result,
+            ["expected"] = result,
         };
     }
 
@@ -161,17 +161,17 @@ public sealed class FightReportControllerVectorGenerator
 
         var o = new JsonObject
         {
-            ["id"]         = id,
-            ["fn"]         = "StepSequence",
-            ["label"]      = label,
+            ["id"] = id,
+            ["fn"] = "StepSequence",
+            ["label"] = label,
             ["input"] = new JsonObject
             {
-                ["partners"]           = inputPartners,
-                ["money"]              = input.Money,
-                ["item"]               = input.Item,
+                ["partners"] = inputPartners,
+                ["money"] = input.Money,
+                ["item"] = input.Item,
                 ["messageTokenCounts"] = tokenCounts is null ? null : tokenCounts,
             },
-            ["stepCount"]  = stepCount,
+            ["stepCount"] = stepCount,
             ["crossEvery"] = crossEvery,
         };
 
@@ -410,9 +410,9 @@ public sealed class FightReportControllerVectorGenerator
         while (cases.Count < 300)
         {
             int extra = cases.Count;
-            int expG   = 1 + extra % 50;
-            int money  = 10 + extra % 200;
-            int fr     = padFrame + (extra % 8) * 10;
+            int expG = 1 + extra % 50;
+            int money = 10 + extra % 200;
+            int fr = padFrame + (extra % 8) * 10;
             var inputPad = new FightReportInput(
                 [Partner(0, 1, 383, 25, extra % 1000, expG, 25, [])],
                 Money: money, Item: 0);
@@ -423,9 +423,9 @@ public sealed class FightReportControllerVectorGenerator
         {
             ["metadata"] = new JsonObject
             {
-                ["seed"]  = 42,
+                ["seed"] = 42,
                 ["count"] = cases.Count,
-                ["note"]  = "Fabricated vectors generated from the current FightReportController implementation. All inputs are invented; no game values are embedded.",
+                ["note"] = "Fabricated vectors generated from the current FightReportController implementation. All inputs are invented; no game values are embedded.",
             },
             ["cases"] = cases,
         };

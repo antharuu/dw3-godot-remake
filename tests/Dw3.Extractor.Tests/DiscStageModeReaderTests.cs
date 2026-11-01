@@ -108,7 +108,7 @@ public sealed class DiscStageModeReaderTests
         for (int i = 0; i < list.Count; i++)
         {
             int off = i * 12;
-            BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(off,     4), list[i].mode);
+            BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(off, 4), list[i].mode);
             BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(off + 4, 4), list[i].overlayIndex);
             BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(off + 8, 4), list[i].funcPtr);
         }

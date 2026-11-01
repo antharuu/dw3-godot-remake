@@ -85,8 +85,8 @@ public sealed partial class FightReportRenderer
             if (_view is not { } view || _catalog is null) return;
             // the battle report layout contract: tile sprite 0x1e at (bgScroll,bgScroll), covering the full report layer.
             for (var y = view.BgScroll - 96; y < 240; y += 96)
-            for (var x = view.BgScroll - 96; x < 320; x += 96)
-                DrawFrame(0x1e, x, y);
+                for (var x = view.BgScroll - 96; x < 320; x += 96)
+                    DrawFrame(0x1e, x, y);
             DrawScaledFrame(0x21, new Vector2(0, 0x0f), new Vector2(view.HeaderFade / 4096f, 1), new Vector2(0, 0x18));
             DrawScaledFrame(0x1d, new Vector2(0x0b, 0xbc), new Vector2(1, view.FooterFade / 4096f), new Vector2(0xa0, 0xce));
             for (var index = 0; index < view.Partners.Count; index++) DrawPartner(view.Partners[index], index);

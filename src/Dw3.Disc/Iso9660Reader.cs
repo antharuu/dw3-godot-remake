@@ -174,7 +174,7 @@ public static class Iso9660Reader
     {
         // Path table size and L-type path table LBA are at fixed PVD offsets.
         int tableSize = ReadU32LE(pvd, 132);
-        int tableLba  = ReadU32LE(pvd, 140);
+        int tableLba = ReadU32LE(pvd, 140);
 
         if (tableSize == 0)
             throw new DiscSourceException(DiscSourceException.FormatInvalid,
@@ -198,7 +198,7 @@ public static class Iso9660Reader
                 throw new DiscSourceException(DiscSourceException.FormatInvalid,
                     "Invalid ISO9660 path table entry: bad length.");
 
-            int lba    = ReadU32LE(tableData, cursor + 2);
+            int lba = ReadU32LE(tableData, cursor + 2);
             int parent = BitConverter.ToUInt16(tableData, cursor + 6);
             string name = Encoding.ASCII.GetString(tableData, cursor + 8, nameLen);
             entries.Add((name, lba, parent));

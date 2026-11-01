@@ -87,10 +87,26 @@ public sealed class LegacyBattleDataConsoleTests
     {
         object Digimon(int id) => new
         {
-            id, battleStats = new int[6], resistances = new int[7], skills = new int[7], pairTechnique = 0,
-            statusResistances = new int[5], skillLevels = new int[6], knownLevels = new int[5], experienceLevel = 0,
-            pairPartner = 0, experienceRate = 0, hp = 1, mp = 1, hpGrowth = 0, mpGrowth = 0,
-            statGrowth = new int[6], resistGrowth = new int[7], blastForms = new int[5], nameId = id, family = 0,
+            id,
+            battleStats = new int[6],
+            resistances = new int[7],
+            skills = new int[7],
+            pairTechnique = 0,
+            statusResistances = new int[5],
+            skillLevels = new int[6],
+            knownLevels = new int[5],
+            experienceLevel = 0,
+            pairPartner = 0,
+            experienceRate = 0,
+            hp = 1,
+            mp = 1,
+            hpGrowth = 0,
+            mpGrowth = 0,
+            statGrowth = new int[6],
+            resistGrowth = new int[7],
+            blastForms = new int[5],
+            nameId = id,
+            family = 0,
         };
         var action = new { target = 0, condition = 0, conditionArgument = 0 };
         var enemy = new { id = 0, item = 0, itemChance = 0, nameId = 0, techniques = new int[3], stats = new int[5], resistances = new int[12], family = 0, actions = new[] { action }, counter = action };
@@ -146,7 +162,8 @@ public sealed class LegacyBattleDataConsoleTests
         WriteFile(context, "battle/hud/cursor-off.png", "x");
         WriteJson(context, "battle/hud/hud.json", new
         {
-            schema = SyntheticDataPackFixture.BattleHudSchema, frameIds = new[] { 1 },
+            schema = SyntheticDataPackFixture.BattleHudSchema,
+            frameIds = new[] { 1 },
             frames = new Dictionary<string, object> { ["1"] = new { w = 1, h = 1, offsetX = 0, offsetY = 0, clutRows = rows.Select(path => new { path }).ToArray() } },
             cursor = new { path = "cursor.png", offPath = "cursor-off.png", w = 1, h = 1, frames = 1, frameW = 1, frameH = 1 },
         });

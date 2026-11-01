@@ -85,11 +85,11 @@ public sealed class PlayerArchiveDecoderTests
         {
             for (int xPair = 0; xPair < width / 2; xPair++)
             {
-                int xLeft  = xPair * 2;
+                int xLeft = xPair * 2;
                 int xRight = xPair * 2 + 1;
-                bool tLeft  = transparentPixels?.Contains((xLeft,  y)) ?? false;
+                bool tLeft = transparentPixels?.Contains((xLeft, y)) ?? false;
                 bool tRight = transparentPixels?.Contains((xRight, y)) ?? false;
-                byte lo = (byte)(tLeft  ? 0 : 1);
+                byte lo = (byte)(tLeft ? 0 : 1);
                 byte hi = (byte)(tRight ? 0 : 1);
                 tim[pos++] = (byte)(lo | (hi << 4));
             }
@@ -177,7 +177,7 @@ public sealed class PlayerArchiveDecoderTests
     public void ComputeVisibleBbox_TopRowTransparent_BboxStartsAtRow1()
     {
         // 4×4 image, top row is transparent (y=0 all transparent)
-        var transparent = new HashSet<(int, int)> { (0,0),(1,0),(2,0),(3,0) };
+        var transparent = new HashSet<(int, int)> { (0, 0), (1, 0), (2, 0), (3, 0) };
         var timBytes = BuildTim4Bit(widthWords: 1, height: 4, transparent);
         var tim = Dw3.Formats.Binary.Tim.TimDecoder.Decode(timBytes);
 
@@ -389,9 +389,9 @@ public sealed class PlayerArchiveDecoderTests
         foreach (var (duration, frame, ox, oy) in records)
         {
             WriteI32LE(data, pos, duration); pos += 4;
-            WriteI32LE(data, pos, frame);    pos += 4;
-            WriteI32LE(data, pos, ox);       pos += 4;
-            WriteI32LE(data, pos, oy);       pos += 4;
+            WriteI32LE(data, pos, frame); pos += 4;
+            WriteI32LE(data, pos, ox); pos += 4;
+            WriteI32LE(data, pos, oy); pos += 4;
         }
         WriteI32LE(data, pos, terminator);
 

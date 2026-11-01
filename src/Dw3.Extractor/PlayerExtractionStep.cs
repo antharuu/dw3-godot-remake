@@ -28,13 +28,13 @@ internal static class PlayerExtractionStep
 {
     // Source constants documented from the disc format.
     private const string CharacterLabel = "FIELD_CHARACTER_PLAYER = 2";
-    private const string FileEntryLabel  = "FIELDSTG_fileEntries[2] = 0x1870070";
-    private const int    FileNumber      = 0x187;   // 391
-    private const int    ActorWidthPx    = 0x20;    // 32
-    private const int    HalfWidthPx     = 0x10;    // 16
+    private const string FileEntryLabel = "FIELDSTG_fileEntries[2] = 0x1870070";
+    private const int FileNumber = 0x187;   // 391
+    private const int ActorWidthPx = 0x20;    // 32
+    private const int HalfWidthPx = 0x10;    // 16
     // FIELDSTG_drawActor: draw offset applied to every player frame.
-    private const int    AnchorOffsetX   = -16;
-    private const int    AnchorOffsetY   = -28;
+    private const int AnchorOffsetX = -16;
+    private const int AnchorOffsetY = -28;
 
     internal static int Extract(
         string cuePath,
@@ -96,7 +96,7 @@ internal static class PlayerExtractionStep
         for (int frameIndex = 0; frameIndex < PlayerArchiveDecoder.PlayerFrameCount; frameIndex++)
         {
             int start = offsets[frameIndex];
-            int end   = offsets[frameIndex + 1];
+            int end = offsets[frameIndex + 1];
             TimImage timImage = TimDecoder.Decode(archiveBytes.AsSpan(start, end - start));
 
             string relPath = $"{framesDir}/frame-{frameIndex:X2}.png";

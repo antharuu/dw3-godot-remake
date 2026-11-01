@@ -4,5 +4,5 @@ namespace Dw3Production.Conversion;
 /// with a stable code (CACHE_RESOURCE_UNAVAILABLE or CACHE_INVALID) followed by the detail.</summary>
 public sealed class CacheResourceException : Exception
 {
-	public CacheResourceException(string code, string detail) : base($"{code}: {detail}") { }
+    public CacheResourceException(string code, string detail) : base($"{code}: {detail}") { }
 }

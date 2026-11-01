@@ -104,8 +104,8 @@ public sealed partial class BattleProbe : Node2D
         if (image is null || image.IsEmpty()) throw new CacheResourceException("CACHE_RESOURCE_UNAVAILABLE", $"floor image unreadable: {zone.FloorCellsPath}");
         var cells = new byte[zone.Width * zone.Height];
         for (var y = 0; y < zone.Height; y++)
-        for (var x = 0; x < zone.Width; x++)
-            cells[y * zone.Width + x] = (byte)image.GetPixel(x, y).R8;
+            for (var x = 0; x < zone.Width; x++)
+                cells[y * zone.Width + x] = (byte)image.GetPixel(x, y).R8;
         return new FloorMap(zone.Width, zone.Height, cells);
     }
 
@@ -115,8 +115,8 @@ public sealed partial class BattleProbe : Node2D
         if (image is null || image.IsEmpty()) throw new CacheResourceException("CACHE_RESOURCE_UNAVAILABLE", $"trigger image unreadable: {zone.TriggerCellsPath}");
         var cells = new byte[zone.Width * zone.Height];
         for (var y = 0; y < zone.Height; y++)
-        for (var x = 0; x < zone.Width; x++)
-            cells[y * zone.Width + x] = (byte)image.GetPixel(x, y).R8;
+            for (var x = 0; x < zone.Width; x++)
+                cells[y * zone.Width + x] = (byte)image.GetPixel(x, y).R8;
         return new TriggerMap(zone.Width, zone.Height, cells);
     }
 
@@ -308,11 +308,11 @@ public sealed partial class BattleProbe : Node2D
         var height = image.GetHeight();
         var count = 0;
         for (var y = 0; y < height; y++)
-        for (var x = xMin; x < xMax; x++)
-        {
-            var index = (y * width + x) * bytesPerPixel;
-            if (data[index] + data[index + 1] + data[index + 2] > 120) count++;
-        }
+            for (var x = xMin; x < xMax; x++)
+            {
+                var index = (y * width + x) * bytesPerPixel;
+                if (data[index] + data[index + 1] + data[index + 2] > 120) count++;
+            }
         return count;
     }
 
@@ -326,12 +326,12 @@ public sealed partial class BattleProbe : Node2D
         var height = a.GetHeight();
         var count = 0;
         for (var y = 0; y < height; y++)
-        for (var x = xMin; x < xMax; x++)
-        {
-            var index = (y * width + x) * bytesPerPixel;
-            if (Math.Abs(ad[index] - bd[index]) + Math.Abs(ad[index + 1] - bd[index + 1]) + Math.Abs(ad[index + 2] - bd[index + 2]) > 30)
-                count++;
-        }
+            for (var x = xMin; x < xMax; x++)
+            {
+                var index = (y * width + x) * bytesPerPixel;
+                if (Math.Abs(ad[index] - bd[index]) + Math.Abs(ad[index + 1] - bd[index + 1]) + Math.Abs(ad[index + 2] - bd[index + 2]) > 30)
+                    count++;
+            }
         return count;
     }
 

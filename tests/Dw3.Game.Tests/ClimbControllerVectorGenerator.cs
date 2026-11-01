@@ -32,13 +32,13 @@ public sealed class ClimbControllerVectorGenerator
     {
         var sequences = new Dictionary<int, ClimbSequence>
         {
-            [0x1A] = new(0x1A, true,  [new ClimbRecord(0, 6, -21, -32), new ClimbRecord(1, 6, -21, -32)]),
-            [0x1B] = new(0x1B, true,  [new ClimbRecord(1, 6, -21, -32)]),
+            [0x1A] = new(0x1A, true, [new ClimbRecord(0, 6, -21, -32), new ClimbRecord(1, 6, -21, -32)]),
+            [0x1B] = new(0x1B, true, [new ClimbRecord(1, 6, -21, -32)]),
             [0x1C] = new(0x1C, false, [new ClimbRecord(0, 4, -17, -29), new ClimbRecord(1, 4, -17, -29)]),
             [0x1D] = new(0x1D, false, [new ClimbRecord(0, 4, -21, -32)]),
             [0x1E] = new(0x1E, false, [new ClimbRecord(0, 4, -25, -49)]),
             [0x1F] = new(0x1F, false, [new ClimbRecord(0, 4, -20, -32)]),
-            [0x20] = new(0x20, true,  [new ClimbRecord(0, 6, -21, -32)]),
+            [0x20] = new(0x20, true, [new ClimbRecord(0, 6, -21, -32)]),
         };
         return new ClimbData(sequences);
     }
@@ -50,8 +50,8 @@ public sealed class ClimbControllerVectorGenerator
         var inp = new InputState();
         switch (label)
         {
-            case "Up":   inp.SetDirections(left: false, right: false, up: true,  down: false); break;
-            case "Down": inp.SetDirections(left: false, right: false, up: false, down: true);  break;
+            case "Up": inp.SetDirections(left: false, right: false, up: true, down: false); break;
+            case "Down": inp.SetDirections(left: false, right: false, up: false, down: true); break;
             case "None": inp.SetDirections(left: false, right: false, up: false, down: false); break;
             default: throw new ArgumentException($"Unknown input label: {label}");
         }
@@ -84,22 +84,22 @@ public sealed class ClimbControllerVectorGenerator
         {
             recordsJson.Add(new JsonObject
             {
-                ["frame"]    = r.Frame,
+                ["frame"] = r.Frame,
                 ["duration"] = r.Duration,
-                ["offsetX"]  = r.OffsetX,
-                ["offsetY"]  = r.OffsetY,
+                ["offsetX"] = r.OffsetX,
+                ["offsetY"] = r.OffsetY,
             });
         }
 
         return new JsonObject
         {
-            ["id"]       = id,
-            ["fn"]       = "AnimSample",
-            ["set"]      = set,
-            ["loops"]    = loops,
-            ["records"]  = recordsJson,
-            ["ticks"]    = ticks,
-            ["expFrame"]   = result.Frame,
+            ["id"] = id,
+            ["fn"] = "AnimSample",
+            ["set"] = set,
+            ["loops"] = loops,
+            ["records"] = recordsJson,
+            ["ticks"] = ticks,
+            ["expFrame"] = result.Frame,
             ["expOffsetX"] = result.OffsetX,
             ["expOffsetY"] = result.OffsetY,
         };
@@ -112,7 +112,7 @@ public sealed class ClimbControllerVectorGenerator
         string[] inputs)
     {
         var state = new GameState { Position = new Vector2(x, y) };
-        var ctrl  = new ClimbController();
+        var ctrl = new ClimbController();
         ctrl.SetData(StandardData());
 
         if (startMethod == "Up")
@@ -128,27 +128,27 @@ public sealed class ClimbControllerVectorGenerator
 
         return new JsonObject
         {
-            ["id"]           = id,
-            ["fn"]           = "ClimbSequence",
-            ["startMethod"]  = startMethod,
-            ["dir"]          = dir,
-            ["x"]            = x,
-            ["y"]            = y,
-            ["height"]       = height,
-            ["inputs"]       = ToInputArray(inputs),
-            ["expClimbActive"]     = state.ClimbActive,
-            ["expClimbHeight"]     = state.ClimbHeight,
-            ["expClimbSide"]       = state.ClimbSide,
-            ["expAnimSet"]         = state.ClimbAnimationSet,
-            ["expAnimTicks"]       = state.ClimbAnimationTicks,
-            ["expAnimDirection"]   = state.AnimationDirection,
-            ["expPosX"]            = state.Position.X,
-            ["expPosY"]            = state.Position.Y,
-            ["expFacing"]          = state.Facing,
+            ["id"] = id,
+            ["fn"] = "ClimbSequence",
+            ["startMethod"] = startMethod,
+            ["dir"] = dir,
+            ["x"] = x,
+            ["y"] = y,
+            ["height"] = height,
+            ["inputs"] = ToInputArray(inputs),
+            ["expClimbActive"] = state.ClimbActive,
+            ["expClimbHeight"] = state.ClimbHeight,
+            ["expClimbSide"] = state.ClimbSide,
+            ["expAnimSet"] = state.ClimbAnimationSet,
+            ["expAnimTicks"] = state.ClimbAnimationTicks,
+            ["expAnimDirection"] = state.AnimationDirection,
+            ["expPosX"] = state.Position.X,
+            ["expPosY"] = state.Position.Y,
+            ["expFacing"] = state.Facing,
             ["expCameraSmoothing"] = state.CameraSmoothingTicks,
-            ["expOffer"]           = state.Offer,
-            ["expStateAnimSet"]    = state.AnimationSet,
-            ["expStateAnimTicks"]  = state.AnimationTicks,
+            ["expOffer"] = state.Offer,
+            ["expStateAnimSet"] = state.AnimationSet,
+            ["expStateAnimTicks"] = state.AnimationTicks,
         };
     }
 
@@ -211,7 +211,7 @@ public sealed class ClimbControllerVectorGenerator
         // ============================================================
 
         int[] heights = { 1, 2, 4, 8, 16, 32, 64, 128 };
-        int[] dirs    = { 0, 3, 5, 6 };
+        int[] dirs = { 0, 3, 5, 6 };
 
         // Full ClimbUp (hold Up until done): 8 × 4 = 32 cases.
         // Max ticks = height + 20 (GetOnWall=8, ClimbOff=4, buffer=8).
@@ -287,9 +287,9 @@ public sealed class ClimbControllerVectorGenerator
 
         // Mixed Up/Down/None: 8 ticks up, 4 none, 4 down: 4 heights × 2 dirs = 8 cases.
         var mixedInputs = new string[16];
-        for (int i = 0; i < 8;  i++) mixedInputs[i]      = "Up";
-        for (int i = 8; i < 12; i++) mixedInputs[i]      = "None";
-        for (int i = 12; i < 16; i++) mixedInputs[i]     = "Down";
+        for (int i = 0; i < 8; i++) mixedInputs[i] = "Up";
+        for (int i = 8; i < 12; i++) mixedInputs[i] = "None";
+        for (int i = 12; i < 16; i++) mixedInputs[i] = "Down";
 
         foreach (var h in new[] { 8, 32, 64, 128 })
         {
@@ -331,9 +331,9 @@ public sealed class ClimbControllerVectorGenerator
         {
             ["metadata"] = new JsonObject
             {
-                ["seed"]  = 42,
+                ["seed"] = 42,
                 ["count"] = cases.Count,
-                ["note"]  = "Fabricated differential vectors for ClimbController and " +
+                ["note"] = "Fabricated differential vectors for ClimbController and " +
                             "ClimbAnimation.Sample. All inputs are invented; no game values " +
                             "are embedded. Generated from the current implementation.",
                 ["standardDataNote"] = "ClimbSequence cases use a fixed animation data set: " +

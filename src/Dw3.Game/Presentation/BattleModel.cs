@@ -479,10 +479,10 @@ public sealed class BattleModel
     {
         var changed = 0;
         foreach (var part in _faceParts)
-        foreach (var texture in _faceTextures.Values)
-        for (var y = part.Y; y < part.Y + part.H; y++)
-        for (var x = part.X; x < part.X + part.W; x++)
-            if (texture.Source.GetPixel(x, y) != texture.Working.GetPixel(x, y)) changed++;
+            foreach (var texture in _faceTextures.Values)
+                for (var y = part.Y; y < part.Y + part.H; y++)
+                    for (var x = part.X; x < part.X + part.W; x++)
+                        if (texture.Source.GetPixel(x, y) != texture.Working.GetPixel(x, y)) changed++;
         return changed;
     }
     public string FaceSummary() => _faceParts.Count == 0 ? $"fighter={FighterId} parts=0" :
@@ -625,20 +625,20 @@ public sealed class BattleModel
     {
         var total = 0; var agree = 0;
         foreach (var surface in _litSurfaces)
-        for (var i = 0; i + 2 < surface.Positions.Length; i += 3)
-        {
-            var a = surface.Instance.GlobalTransform * surface.Positions[i];
-            var b = surface.Instance.GlobalTransform * surface.Positions[i + 1];
-            var c = surface.Instance.GlobalTransform * surface.Positions[i + 2];
-            var pa = camera.UnprojectPosition(a); var pb = camera.UnprojectPosition(b); var pc = camera.UnprojectPosition(c);
-            var screenFront = (pb.X - pa.X) * (pc.Y - pa.Y) - (pc.X - pa.X) * (pb.Y - pa.Y) > 0f;
-            // The PSX has no geometric normal-facing stage. the decoded mesh contract calls gte_nclip on
-            // these projected source vertices, so its source face normal is this signed screen
-            // area. Lighting normals are deliberately excluded: they are for gte_ncs only.
-            var sourceFront = (pb.X - pa.X) * (pc.Y - pa.Y) - (pc.X - pa.X) * (pb.Y - pa.Y) > 0f;
-            if (screenFront == sourceFront) agree++;
-            total++;
-        }
+            for (var i = 0; i + 2 < surface.Positions.Length; i += 3)
+            {
+                var a = surface.Instance.GlobalTransform * surface.Positions[i];
+                var b = surface.Instance.GlobalTransform * surface.Positions[i + 1];
+                var c = surface.Instance.GlobalTransform * surface.Positions[i + 2];
+                var pa = camera.UnprojectPosition(a); var pb = camera.UnprojectPosition(b); var pc = camera.UnprojectPosition(c);
+                var screenFront = (pb.X - pa.X) * (pc.Y - pa.Y) - (pc.X - pa.X) * (pb.Y - pa.Y) > 0f;
+                // The PSX has no geometric normal-facing stage. the decoded mesh contract calls gte_nclip on
+                // these projected source vertices, so its source face normal is this signed screen
+                // area. Lighting normals are deliberately excluded: they are for gte_ncs only.
+                var sourceFront = (pb.X - pa.X) * (pc.Y - pa.Y) - (pc.X - pa.X) * (pb.Y - pa.Y) > 0f;
+                if (screenFront == sourceFront) agree++;
+                total++;
+            }
         return (total, agree);
     }
 

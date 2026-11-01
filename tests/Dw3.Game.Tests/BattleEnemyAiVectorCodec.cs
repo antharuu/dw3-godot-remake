@@ -139,17 +139,17 @@ internal static class BattleEnemyAiVectorCodec
                         EnemyFromJson(c["enemy"]!), c["targetKind"]!.GetValue<int>()));
                     break;
                 case "PickAction":
-                {
-                    var ctx = ContextFromJson(c["ctx"]!);
-                    output["decision"] = DecisionToJson(BattleEnemyAi.PickAction(ctx.Enemy, ctx, rng));
-                    break;
-                }
+                    {
+                        var ctx = ContextFromJson(c["ctx"]!);
+                        output["decision"] = DecisionToJson(BattleEnemyAi.PickAction(ctx.Enemy, ctx, rng));
+                        break;
+                    }
                 case "PickCounter":
-                {
-                    var ctx = ContextFromJson(c["ctx"]!);
-                    output["decision"] = DecisionToJson(BattleEnemyAi.PickCounter(ctx.Enemy, ctx, rng));
-                    break;
-                }
+                    {
+                        var ctx = ContextFromJson(c["ctx"]!);
+                        output["decision"] = DecisionToJson(BattleEnemyAi.PickCounter(ctx.Enemy, ctx, rng));
+                        break;
+                    }
                 case "ResolveSwitch":
                     output["slot"] = BattleEnemyAi.ResolveSwitch(
                         DecisionFromJson(c["decision"]!),
@@ -157,17 +157,17 @@ internal static class BattleEnemyAiVectorCodec
                         c["activeEnemy"]!.GetValue<int>(), rng);
                     break;
                 case "DecisionFlags":
-                {
-                    var d = DecisionFromJson(c["decision"]!);
-                    output["flags"] = new JsonObject
                     {
-                        ["isAttack"] = d.IsAttack,
-                        ["isTechnique"] = d.IsTechnique,
-                        ["isSwitch"] = d.IsSwitch,
-                        ["isRunAway"] = d.IsRunAway,
-                    };
-                    break;
-                }
+                        var d = DecisionFromJson(c["decision"]!);
+                        output["flags"] = new JsonObject
+                        {
+                            ["isAttack"] = d.IsAttack,
+                            ["isTechnique"] = d.IsTechnique,
+                            ["isSwitch"] = d.IsSwitch,
+                            ["isRunAway"] = d.IsRunAway,
+                        };
+                        break;
+                    }
                 default:
                     throw new InvalidDataException($"unknown vector function '{fn}'");
             }

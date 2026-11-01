@@ -339,8 +339,13 @@ public sealed class LegacyBattleFlowConsoleTests
         setup.Partners[0] = new PartnerSeed { Id = 1, Hp = 1000, MaxHp = 1000, Mp = 100, MaxMp = 100, Stats = Stats(attack: 100, defense: 100) };
         setup.Enemies[0] = new BattleEnemy
         {
-            Fighter = 101, Hp = 1000, Mp = 100, Strength = 16, BaseStats = Stats(attack: 100, defense: 100),
-            Techs = new[] { 777, 0, 0 }, Actions = new[] { new BattleTableAction(6, 0, 0) },   // switch to slot 1
+            Fighter = 101,
+            Hp = 1000,
+            Mp = 100,
+            Strength = 16,
+            BaseStats = Stats(attack: 100, defense: 100),
+            Techs = new[] { 777, 0, 0 },
+            Actions = new[] { new BattleTableAction(6, 0, 0) },   // switch to slot 1
         };
         setup.Enemies[1] = new BattleEnemy { Fighter = 102, Hp = 1000, Mp = 100, Strength = 16, BaseStats = Stats(attack: 100, defense: 100) };
         var flow = Controller(BattleState.InitFighters(setup, digimon: 999));
@@ -369,12 +374,19 @@ public sealed class LegacyBattleFlowConsoleTests
         var setup = new BattleSetup();
         setup.Partners[0] = new PartnerSeed
         {
-            Id = 1, Hp = playerHp, MaxHp = playerHp, Mp = playerMp, MaxMp = playerMp,
+            Id = 1,
+            Hp = playerHp,
+            MaxHp = playerHp,
+            Mp = playerMp,
+            MaxMp = playerMp,
             Stats = Stats(playerAttack, playerDefense, speed: playerSpeed),
         };
         setup.Enemies[0] = new BattleEnemy
         {
-            Fighter = 101, Hp = enemyHp, Mp = enemyMp, Strength = enemyStrength,
+            Fighter = 101,
+            Hp = enemyHp,
+            Mp = enemyMp,
+            Strength = enemyStrength,
             BaseStats = Stats(enemyRawAttack, enemyRawDefense, speed: enemySpeed),
             Techs = new[] { 777, 0, 0 },
             Actions = new[] { new BattleTableAction(1, 0, 0) },   // one unconditional fallback: attack

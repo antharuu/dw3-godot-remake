@@ -101,16 +101,16 @@ public partial class FirstLaunchScreen : CanvasLayer
         {
             Color = new Color(0f, 0f, 0f, 0.88f),
             Position = Vector2.Zero,
-            Size     = vp.Size,
+            Size = vp.Size,
         };
         root.AddChild(background);
 
         var label = new Label
         {
             Position = new Vector2(vp.Size.X * 0.1f, vp.Size.Y * 0.4f),
-            Size     = new Vector2(vp.Size.X * 0.8f, vp.Size.Y * 0.2f),
+            Size = new Vector2(vp.Size.X * 0.8f, vp.Size.Y * 0.2f),
             HorizontalAlignment = HorizontalAlignment.Center,
-            VerticalAlignment   = VerticalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
             AutowrapMode = TextServer.AutowrapMode.WordSmart,
         };
         root.AddChild(label);
@@ -133,14 +133,14 @@ public partial class FirstLaunchScreen : CanvasLayer
     {
         var dialog = new FileDialog
         {
-            Title    = "Select Digimon World 2003 (Europe) disc",
+            Title = "Select Digimon World 2003 (Europe) disc",
             FileMode = FileDialog.FileModeEnum.OpenFile,
-            Access   = FileDialog.AccessEnum.Filesystem,
-            Filters  = ["*.cue ; Disc cue sheet (*.cue)"],
-            Size     = new Vector2I(700, 450),
+            Access = FileDialog.AccessEnum.Filesystem,
+            Filters = ["*.cue ; Disc cue sheet (*.cue)"],
+            Size = new Vector2I(700, 450),
         };
         dialog.FileSelected += OnDiscSelected;
-        dialog.Canceled     += () =>
+        dialog.Canceled += () =>
         {
             SetStatus("No disc selected. Close and restart the game to try again.");
             dialog.QueueFree();

@@ -38,13 +38,13 @@ public sealed class DamageCalculatorVectorTests
         Assert.True(File.Exists(VectorsPath),
             $"Vectors file not found: {VectorsPath}");
 
-        var doc   = JsonNode.Parse(File.ReadAllText(VectorsPath))!;
+        var doc = JsonNode.Parse(File.ReadAllText(VectorsPath))!;
         var cases = doc["cases"]!.AsArray();
         var errors = new List<string>();
 
         foreach (var c in cases)
         {
-            int    id = c!["id"]!.GetValue<int>();
+            int id = c!["id"]!.GetValue<int>();
             string fn = c!["fn"]!.GetValue<string>();
 
             try
@@ -114,11 +114,11 @@ public sealed class DamageCalculatorVectorTests
 
     private static void VerifyGetElementBoost(JsonNode c, int id, List<string> errors)
     {
-        int value       = I(c, "value");
-        int element     = I(c, "element");
-        int boostElem   = I(c, "boostElement");
+        int value = I(c, "value");
+        int element = I(c, "element");
+        int boostElem = I(c, "boostElement");
         int boostAmount = I(c, "boostAmount");
-        int expected    = I(c, "expected");
+        int expected = I(c, "expected");
 
         int actual = DamageCalculator.GetElementBoost(value, element, boostElem, boostAmount);
         if (actual != expected)
@@ -128,9 +128,9 @@ public sealed class DamageCalculatorVectorTests
 
     private static void VerifyGetTurnDelay(JsonNode c, int id, List<string> errors)
     {
-        int ownSpeed   = I(c, "ownSpeed");
+        int ownSpeed = I(c, "ownSpeed");
         int otherSpeed = I(c, "otherSpeed");
-        int expected   = I(c, "expected");
+        int expected = I(c, "expected");
 
         int actual = DamageCalculator.GetTurnDelay(ownSpeed, otherSpeed);
         if (actual != expected)
@@ -139,16 +139,16 @@ public sealed class DamageCalculatorVectorTests
 
     private static void VerifyTestRunAway(JsonNode c, int id, List<string> errors)
     {
-        int  runAttempts = I(c, "runAttempts");
-        int  atkLevel    = I(c, "atkLevel");
-        int  defLevel    = I(c, "defLevel");
-        int  atkSpeed    = I(c, "atkSpeed");
-        int  defSpeed    = I(c, "defSpeed");
-        int  bonus       = I(c, "runAwayBonus");
-        bool block       = B(c, "blockRunAway");
-        int  atkFlags    = I(c, "atkFlags");
-        int  rngValue    = I(c, "rngValue");
-        bool expected    = B(c, "expected");
+        int runAttempts = I(c, "runAttempts");
+        int atkLevel = I(c, "atkLevel");
+        int defLevel = I(c, "defLevel");
+        int atkSpeed = I(c, "atkSpeed");
+        int defSpeed = I(c, "defSpeed");
+        int bonus = I(c, "runAwayBonus");
+        bool block = B(c, "blockRunAway");
+        int atkFlags = I(c, "atkFlags");
+        int rngValue = I(c, "rngValue");
+        bool expected = B(c, "expected");
 
         var atk = new BattleStats { Level = atkLevel, RunAwayBonus = bonus };
         atk.Stats[BattleStat.Speed] = atkSpeed;
@@ -164,12 +164,12 @@ public sealed class DamageCalculatorVectorTests
 
     private static void VerifyTestEnemyRunAway(JsonNode c, int id, List<string> errors)
     {
-        int  atkSpeed      = I(c, "atkSpeed");
-        int  defSpeed      = I(c, "defSpeed");
-        int  runAwayGuard  = I(c, "runAwayGuard");
-        int  atkFlags      = I(c, "atkFlags");
-        int  rngValue      = I(c, "rngValue");
-        bool expected      = B(c, "expected");
+        int atkSpeed = I(c, "atkSpeed");
+        int defSpeed = I(c, "defSpeed");
+        int runAwayGuard = I(c, "runAwayGuard");
+        int atkFlags = I(c, "atkFlags");
+        int rngValue = I(c, "rngValue");
+        bool expected = B(c, "expected");
 
         var atk = new BattleStats();
         atk.Stats[BattleStat.Speed] = atkSpeed;
@@ -184,15 +184,15 @@ public sealed class DamageCalculatorVectorTests
 
     private static void VerifyComputeDamage(JsonNode c, int id, List<string> errors)
     {
-        var tech   = ReadTech(c);
-        var user   = ReadUserStats(c, "user");
+        var tech = ReadTech(c);
+        var user = ReadUserStats(c, "user");
         var target = ReadTargetStats(c);
         bool enemy = B(c, "enemyAttacker");
-        int  str   = I(c, "strength");
-        int  bElem = I(c, "boostElement");
-        int  bAmt  = I(c, "boostAmount");
-        int  crit  = I(c, "critRoll");
-        int  exp   = I(c, "expected");
+        int str = I(c, "strength");
+        int bElem = I(c, "boostElement");
+        int bAmt = I(c, "boostAmount");
+        int crit = I(c, "critRoll");
+        int exp = I(c, "expected");
 
         int actual = DamageCalculator.ComputeDamage(tech, user, target, enemy, str, bElem, bAmt, crit);
         if (actual != exp)
@@ -204,12 +204,12 @@ public sealed class DamageCalculatorVectorTests
     {
         var tech = new TechData
         {
-            Power         = I(c, "techPower"),
-            Element       = I(c, "techElement"),
-            ElementPower  = I(c, "techElementPower"),
-            Family        = I(c, "techFamily"),
-            Effect        = I(c, "techEffect"),
-            EffectPower   = I(c, "techEffectPower"),
+            Power = I(c, "techPower"),
+            Element = I(c, "techElement"),
+            ElementPower = I(c, "techElementPower"),
+            Family = I(c, "techFamily"),
+            Effect = I(c, "techEffect"),
+            EffectPower = I(c, "techEffectPower"),
         };
         var user = new BattleStats();
         user.Stats[BattleStat.Spirit] = I(c, "userSpirit");
@@ -222,11 +222,11 @@ public sealed class DamageCalculatorVectorTests
         target.Resist[6] = I(c, "targetResist6");
 
         bool enemy = B(c, "enemyAttacker");
-        int  str   = I(c, "strength");
-        int  bElem = I(c, "boostElement");
-        int  bAmt  = I(c, "boostAmount");
-        int  crit  = I(c, "critRoll");
-        int  exp   = I(c, "expected");
+        int str = I(c, "strength");
+        int bElem = I(c, "boostElement");
+        int bAmt = I(c, "boostAmount");
+        int crit = I(c, "critRoll");
+        int exp = I(c, "expected");
 
         int actual = DamageCalculator.ComputeMagicDamage(tech, user, target, enemy, str, bElem, bAmt, crit);
         if (actual != exp)
@@ -239,20 +239,20 @@ public sealed class DamageCalculatorVectorTests
     {
         var tech = new TechData
         {
-            Element      = I(c, "techElement"),
+            Element = I(c, "techElement"),
             ElementPower = I(c, "techElementPower"),
-            Family       = I(c, "techFamily"),
-            Effect       = I(c, "techEffect"),
-            EffectPower  = I(c, "techEffectPower"),
-            Script       = I(c, "techScript"),
+            Family = I(c, "techFamily"),
+            Effect = I(c, "techEffect"),
+            EffectPower = I(c, "techEffectPower"),
+            Script = I(c, "techScript"),
         };
         var user = new BattleStats
         {
-            Element      = I(c, "userElement"),
+            Element = I(c, "userElement"),
             ElementPower = I(c, "userElementPower"),
-            Family       = I(c, "userFamily"),
-            DamageBonus  = I(c, "userDamageBonus"),
-            TripleHit    = I(c, "userTripleHit"),
+            Family = I(c, "userFamily"),
+            DamageBonus = I(c, "userDamageBonus"),
+            TripleHit = I(c, "userTripleHit"),
         };
         user.Stats[BattleStat.Attack] = I(c, "userAttack");
         user.WeaponFamilies[0] = I(c, "userWeaponFamily0");
@@ -266,12 +266,12 @@ public sealed class DamageCalculatorVectorTests
         target.Resist[4] = I(c, "targetResist4"); target.Resist[5] = I(c, "targetResist5");
         target.Resist[6] = I(c, "targetResist6");
 
-        int  recv    = I(c, "receivedDamage");
-        int  bElem   = I(c, "boostElement");
-        int  bAmt    = I(c, "boostAmount");
-        int  crit    = I(c, "critRoll");
+        int recv = I(c, "receivedDamage");
+        int bElem = I(c, "boostElement");
+        int bAmt = I(c, "boostAmount");
+        int crit = I(c, "critRoll");
         bool special = B(c, "special");
-        int  exp     = I(c, "expected");
+        int exp = I(c, "expected");
 
         int actual = DamageCalculator.ComputeCounterDamage(tech, user, target, recv, bElem, bAmt, crit, special);
         if (actual != exp)
@@ -281,33 +281,33 @@ public sealed class DamageCalculatorVectorTests
     private static void VerifyComputeEnemyStats(JsonNode c, int id, List<string> errors)
     {
         var entry = new BattleStats { Family = I(c, "entryFamily") };
-        entry.Stats[0] = I(c, "entryAttack");  entry.Stats[1] = I(c, "entryDefense");
-        entry.Stats[2] = I(c, "entrySpirit");  entry.Stats[3] = I(c, "entryWisdom");
+        entry.Stats[0] = I(c, "entryAttack"); entry.Stats[1] = I(c, "entryDefense");
+        entry.Stats[2] = I(c, "entrySpirit"); entry.Stats[3] = I(c, "entryWisdom");
         entry.Stats[4] = I(c, "entrySpeed");
         entry.Resist[0] = I(c, "entryResist0"); entry.Resist[1] = I(c, "entryResist1");
         entry.Resist[2] = I(c, "entryResist2"); entry.Resist[3] = I(c, "entryResist3");
         entry.Resist[4] = I(c, "entryResist4"); entry.Resist[5] = I(c, "entryResist5");
         entry.Resist[6] = I(c, "entryResist6");
 
-        int level    = I(c, "level");
+        int level = I(c, "level");
         int strength = I(c, "strength");
 
-        int expAtk  = I(c, "expectedAttack");
-        int expDef  = I(c, "expectedDefense");
-        int expSpr  = I(c, "expectedSpirit");
-        int expWis  = I(c, "expectedWisdom");
-        int expSpd  = I(c, "expectedSpeed");
-        int expFam  = I(c, "expected");
+        int expAtk = I(c, "expectedAttack");
+        int expDef = I(c, "expectedDefense");
+        int expSpr = I(c, "expectedSpirit");
+        int expWis = I(c, "expectedWisdom");
+        int expSpd = I(c, "expectedSpeed");
+        int expFam = I(c, "expected");
 
         var result = DamageCalculator.ComputeEnemyStats(entry, level, strength);
 
-        if (result.Level    != level  ) errors.Add($"[id={id}] ComputeEnemyStats: Level={result.Level}, expected {level}");
-        if (result.Family   != expFam ) errors.Add($"[id={id}] ComputeEnemyStats: Family={result.Family}, expected {expFam}");
-        if (result.Stats[0] != expAtk ) errors.Add($"[id={id}] ComputeEnemyStats: Attack={result.Stats[0]}, expected {expAtk}");
-        if (result.Stats[1] != expDef ) errors.Add($"[id={id}] ComputeEnemyStats: Defense={result.Stats[1]}, expected {expDef}");
-        if (result.Stats[2] != expSpr ) errors.Add($"[id={id}] ComputeEnemyStats: Spirit={result.Stats[2]}, expected {expSpr}");
-        if (result.Stats[3] != expWis ) errors.Add($"[id={id}] ComputeEnemyStats: Wisdom={result.Stats[3]}, expected {expWis}");
-        if (result.Stats[4] != expSpd ) errors.Add($"[id={id}] ComputeEnemyStats: Speed={result.Stats[4]}, expected {expSpd}");
+        if (result.Level != level) errors.Add($"[id={id}] ComputeEnemyStats: Level={result.Level}, expected {level}");
+        if (result.Family != expFam) errors.Add($"[id={id}] ComputeEnemyStats: Family={result.Family}, expected {expFam}");
+        if (result.Stats[0] != expAtk) errors.Add($"[id={id}] ComputeEnemyStats: Attack={result.Stats[0]}, expected {expAtk}");
+        if (result.Stats[1] != expDef) errors.Add($"[id={id}] ComputeEnemyStats: Defense={result.Stats[1]}, expected {expDef}");
+        if (result.Stats[2] != expSpr) errors.Add($"[id={id}] ComputeEnemyStats: Spirit={result.Stats[2]}, expected {expSpr}");
+        if (result.Stats[3] != expWis) errors.Add($"[id={id}] ComputeEnemyStats: Wisdom={result.Stats[3]}, expected {expWis}");
+        if (result.Stats[4] != expSpd) errors.Add($"[id={id}] ComputeEnemyStats: Speed={result.Stats[4]}, expected {expSpd}");
         // Resist is copied verbatim; verify a spot check (resist[0])
         if (result.Resist[0] != I(c, "entryResist0"))
             errors.Add($"[id={id}] ComputeEnemyStats: Resist[0]={result.Resist[0]}, expected {I(c, "entryResist0")}");
@@ -317,11 +317,11 @@ public sealed class DamageCalculatorVectorTests
     {
         var tech = new TechData
         {
-            Element      = I(c, "techElement"),
+            Element = I(c, "techElement"),
             ElementPower = I(c, "techElementPower"),
-            Family       = I(c, "techFamily"),
-            Effect       = I(c, "techEffect"),
-            EffectPower  = I(c, "techEffectPower"),
+            Family = I(c, "techFamily"),
+            Effect = I(c, "techEffect"),
+            EffectPower = I(c, "techEffectPower"),
         };
         var atk = new BattleStats { Family = I(c, "atkFamily"), CriticalBonus = I(c, "atkCriticalBonus") };
         atk.WeaponFamilies[0] = I(c, "atkWeaponFamily0");
@@ -332,13 +332,13 @@ public sealed class DamageCalculatorVectorTests
         var atkF = new BattleFighter { Special = B(c, "atkFighterSpecial") };
         var defF = new BattleFighter
         {
-            Flags     = I(c, "defFighterFlags"),
+            Flags = I(c, "defFighterFlags"),
             Paralysis = I(c, "defFighterParalysis"),
-            Sleep     = I(c, "defFighterSleep"),
+            Sleep = I(c, "defFighterSleep"),
             Confusion = I(c, "defFighterConfusion"),
         };
 
-        int  rng      = I(c, "rngValue");
+        int rng = I(c, "rngValue");
         bool expected = B(c, "expected");
 
         bool actual = DamageCalculator.RollCritical(tech, atk, def, atkF, defF, rng);
@@ -351,9 +351,9 @@ public sealed class DamageCalculatorVectorTests
     {
         var tech = new TechData
         {
-            Element      = I(c, "techElement"),
+            Element = I(c, "techElement"),
             ElementPower = I(c, "techElementPower"),
-            Family       = I(c, "techFamily"),
+            Family = I(c, "techFamily"),
         };
         var def = new BattleStats { Family = I(c, "defFamily") };
         def.Resist[0] = I(c, "defResist0"); def.Resist[1] = I(c, "defResist1");
@@ -363,13 +363,13 @@ public sealed class DamageCalculatorVectorTests
 
         var defF = new BattleFighter
         {
-            Flags     = I(c, "defFighterFlags"),
+            Flags = I(c, "defFighterFlags"),
             Paralysis = I(c, "defFighterParalysis"),
-            Sleep     = I(c, "defFighterSleep"),
+            Sleep = I(c, "defFighterSleep"),
             Confusion = I(c, "defFighterConfusion"),
         };
 
-        int  rng      = I(c, "rngValue");
+        int rng = I(c, "rngValue");
         bool expected = B(c, "expected");
 
         bool actual = DamageCalculator.RollMagicCritical(tech, def, defF, rng);
@@ -384,33 +384,33 @@ public sealed class DamageCalculatorVectorTests
 
     private static TechData ReadTech(JsonNode c) => new()
     {
-        Power        = I(c, "techPower"),
-        Element      = I(c, "techElement"),
+        Power = I(c, "techPower"),
+        Element = I(c, "techElement"),
         ElementPower = I(c, "techElementPower"),
-        Family       = I(c, "techFamily"),
-        Effect       = I(c, "techEffect"),
-        EffectPower  = I(c, "techEffectPower"),
-        Script       = I(c, "techScript"),
+        Family = I(c, "techFamily"),
+        Effect = I(c, "techEffect"),
+        EffectPower = I(c, "techEffectPower"),
+        Script = I(c, "techScript"),
     };
 
     private static BattleStats ReadUserStats(JsonNode c, string _prefix)
     {
         var s = new BattleStats
         {
-            Family       = I(c, "userFamily"),
-            Element      = I(c, "userElement"),
+            Family = I(c, "userFamily"),
+            Element = I(c, "userElement"),
             ElementPower = I(c, "userElementPower"),
-            DamageBonus  = I(c, "userDamageBonus"),
-            TripleHit    = I(c, "userTripleHit"),
+            DamageBonus = I(c, "userDamageBonus"),
+            TripleHit = I(c, "userTripleHit"),
             CriticalBonus = I(c, "userCriticalBonus"),
             RunAwayBonus = I(c, "userRunAwayBonus"),
             RunAwayGuard = I(c, "userRunAwayGuard"),
         };
-        s.Stats[BattleStat.Attack]  = I(c, "userAttack");
+        s.Stats[BattleStat.Attack] = I(c, "userAttack");
         s.Stats[BattleStat.Defense] = I(c, "userDefense");
-        s.Stats[BattleStat.Spirit]  = I(c, "userSpirit");
-        s.Stats[BattleStat.Wisdom]  = I(c, "userWisdom");
-        s.Stats[BattleStat.Speed]   = I(c, "userSpeed");
+        s.Stats[BattleStat.Spirit] = I(c, "userSpirit");
+        s.Stats[BattleStat.Wisdom] = I(c, "userWisdom");
+        s.Stats[BattleStat.Speed] = I(c, "userSpeed");
         s.WeaponFamilies[0] = I(c, "userWeaponFamily0");
         s.WeaponFamilies[1] = I(c, "userWeaponFamily1");
         s.WeaponFamilies[2] = I(c, "userWeaponFamily2");
@@ -420,9 +420,9 @@ public sealed class DamageCalculatorVectorTests
     private static BattleStats ReadTargetStats(JsonNode c)
     {
         var t = new BattleStats { Family = I(c, "targetFamily"), DamageCut = I(c, "targetDamageCut") };
-        t.Stats[BattleStat.Attack]  = I(c, "targetAttack");
+        t.Stats[BattleStat.Attack] = I(c, "targetAttack");
         t.Stats[BattleStat.Defense] = I(c, "targetDefense");
-        t.Stats[BattleStat.Spirit]  = I(c, "targetSpirit");
+        t.Stats[BattleStat.Spirit] = I(c, "targetSpirit");
         t.Resist[0] = I(c, "targetResist0"); t.Resist[1] = I(c, "targetResist1");
         t.Resist[2] = I(c, "targetResist2"); t.Resist[3] = I(c, "targetResist3");
         t.Resist[4] = I(c, "targetResist4"); t.Resist[5] = I(c, "targetResist5");
@@ -434,6 +434,6 @@ public sealed class DamageCalculatorVectorTests
     // JSON helpers
     // ─────────────────────────────────────────────────────────────────────
 
-    private static int  I(JsonNode c, string k) => c![k]!.GetValue<int>();
+    private static int I(JsonNode c, string k) => c![k]!.GetValue<int>();
     private static bool B(JsonNode c, string k) => c![k]!.GetValue<bool>();
 }

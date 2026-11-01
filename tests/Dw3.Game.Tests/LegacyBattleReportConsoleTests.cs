@@ -35,7 +35,9 @@ public sealed class LegacyBattleReportConsoleTests
         var tables = Tables();
         var state = new PartnerGrowthState
         {
-            Level = 10, MaxHp = 100, MaxMp = 50,
+            Level = 10,
+            MaxHp = 100,
+            MaxMp = 50,
             BattleStats = [10, 10, 10, 10, 10, 10],
             Resistances = [5, 5, 5, 5, 5, 5, 5],
         };
@@ -63,7 +65,9 @@ public sealed class LegacyBattleReportConsoleTests
         var tables = Tables();
         var state = new PartnerGrowthState
         {
-            Level = 10, MaxHp = 0, MaxMp = 0,
+            Level = 10,
+            MaxHp = 0,
+            MaxMp = 0,
             BattleStats = [997, 0, 0, 0, 0, 0],
             Resistances = [997, 0, 0, 0, 0, 0, 0],
         };
@@ -80,7 +84,9 @@ public sealed class LegacyBattleReportConsoleTests
         var tables = Tables();
         var state = new PartnerGrowthState
         {
-            Level = 1, MaxHp = 100, MaxMp = 50,
+            Level = 1,
+            MaxHp = 100,
+            MaxMp = 50,
             BattleStats = [10, 10, 10, 10, 10, 10],
             Resistances = [5, 5, 5, 5, 5, 5, 5],
         };

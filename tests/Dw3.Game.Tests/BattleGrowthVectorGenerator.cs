@@ -39,27 +39,27 @@ public sealed class BattleGrowthVectorGenerator
     private static GrowthTables MakeTables(
         int[] levelExp, int[] vitalCuts, int[] vitalRandom,
         int[][] statGains, int[] resistGains) => new()
-    {
-        LevelExp    = levelExp,
-        VitalCuts   = vitalCuts,
-        VitalRandom = vitalRandom,
-        StatGains   = statGains,
-        ResistGains = resistGains,
-    };
+        {
+            LevelExp = levelExp,
+            VitalCuts = vitalCuts,
+            VitalRandom = vitalRandom,
+            StatGains = statGains,
+            ResistGains = resistGains,
+        };
 
     private static int[][] MakeStatGains(params int[][] rows) => rows;
 
     private static GrowthTables DefaultTables() => MakeTables(
-        levelExp:    new[] { 0, 100, 500, 1000 },
-        vitalCuts:   new[] { 5, 10, 15, 20 },
+        levelExp: new[] { 0, 100, 500, 1000 },
+        vitalCuts: new[] { 5, 10, 15, 20 },
         vitalRandom: new[] { 0, 2, 4, 6, 8, 10, 12, 14, 16 },
-        statGains:   MakeStatGains(
-            new[] { 1,2,3,4,5,6,7,8,9 },
-            new[] { 2,3,4,5,6,7,8,9,10 },
-            new[] { 3,4,5,6,7,8,9,10,11 },
-            new[] { 4,5,6,7,8,9,10,11,12 },
-            new[] { 5,6,7,8,9,10,11,12,13 },
-            new[] { 6,7,8,9,10,11,12,13,14 }),
+        statGains: MakeStatGains(
+            new[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 },
+            new[] { 2, 3, 4, 5, 6, 7, 8, 9, 10 },
+            new[] { 3, 4, 5, 6, 7, 8, 9, 10, 11 },
+            new[] { 4, 5, 6, 7, 8, 9, 10, 11, 12 },
+            new[] { 5, 6, 7, 8, 9, 10, 11, 12, 13 },
+            new[] { 6, 7, 8, 9, 10, 11, 12, 13, 14 }),
         resistGains: new[] { 0, 1, 2, 3, 4, 5, 6, 7 });
 
     // ------------------------------------------------------------------ JSON helpers
@@ -80,11 +80,11 @@ public sealed class BattleGrowthVectorGenerator
 
     private static PartnerGrowthState CloneState(PartnerGrowthState s) => new()
     {
-        Level       = s.Level,
-        Exp         = s.Exp,
-        Tp          = s.Tp,
-        MaxHp       = s.MaxHp,
-        MaxMp       = s.MaxMp,
+        Level = s.Level,
+        Exp = s.Exp,
+        Tp = s.Tp,
+        MaxHp = s.MaxHp,
+        MaxMp = s.MaxMp,
         BattleStats = (int[])s.BattleStats.Clone(),
         Resistances = (int[])s.Resistances.Clone(),
     };
@@ -93,15 +93,15 @@ public sealed class BattleGrowthVectorGenerator
         int level = 1, int exp = 0, int tp = 0,
         int maxHp = 100, int maxMp = 50,
         int[]? battleStats = null, int[]? resistances = null) => new()
-    {
-        Level       = level,
-        Exp         = exp,
-        Tp          = tp,
-        MaxHp       = maxHp,
-        MaxMp       = maxMp,
-        BattleStats = battleStats ?? new[] { 10, 10, 10, 10, 10, 10 },
-        Resistances = resistances ?? new[] { 100, 100, 100, 100, 100, 100, 100 },
-    };
+        {
+            Level = level,
+            Exp = exp,
+            Tp = tp,
+            MaxHp = maxHp,
+            MaxMp = maxMp,
+            BattleStats = battleStats ?? new[] { 10, 10, 10, 10, 10, 10 },
+            Resistances = resistances ?? new[] { 100, 100, 100, 100, 100, 100, 100 },
+        };
 
     // ------------------------------------------------------------------ case builders
 
@@ -117,25 +117,25 @@ public sealed class BattleGrowthVectorGenerator
 
         return new JsonObject
         {
-            ["id"]             = id,
-            ["fn"]             = "RaiseStats",
-            ["level"]          = level,
-            ["hpGrowth"]       = hpGrowth,
-            ["mpGrowth"]       = mpGrowth,
-            ["statGrowth"]     = ToJsonArray(statGrowth),
-            ["resistGrowth"]   = ToJsonArray(resistGrowth),
-            ["rngSequence"]    = ToJsonArray(rngValues),
-            ["inMaxHp"]        = stateIn.MaxHp,
-            ["inMaxMp"]        = stateIn.MaxMp,
-            ["inBattleStats"]  = ToJsonArray(stateIn.BattleStats),
-            ["inResistances"]  = ToJsonArray(stateIn.Resistances),
-            ["outMaxHp"]       = state.MaxHp,
-            ["outMaxMp"]       = state.MaxMp,
+            ["id"] = id,
+            ["fn"] = "RaiseStats",
+            ["level"] = level,
+            ["hpGrowth"] = hpGrowth,
+            ["mpGrowth"] = mpGrowth,
+            ["statGrowth"] = ToJsonArray(statGrowth),
+            ["resistGrowth"] = ToJsonArray(resistGrowth),
+            ["rngSequence"] = ToJsonArray(rngValues),
+            ["inMaxHp"] = stateIn.MaxHp,
+            ["inMaxMp"] = stateIn.MaxMp,
+            ["inBattleStats"] = ToJsonArray(stateIn.BattleStats),
+            ["inResistances"] = ToJsonArray(stateIn.Resistances),
+            ["outMaxHp"] = state.MaxHp,
+            ["outMaxMp"] = state.MaxMp,
             ["outBattleStats"] = ToJsonArray(state.BattleStats),
             ["outResistances"] = ToJsonArray(state.Resistances),
-            ["tableVitalCuts"]   = ToJsonArray(tables.VitalCuts),
+            ["tableVitalCuts"] = ToJsonArray(tables.VitalCuts),
             ["tableVitalRandom"] = ToJsonArray(tables.VitalRandom),
-            ["tableStatGains"]   = StatGainsToJson(tables.StatGains),
+            ["tableStatGains"] = StatGainsToJson(tables.StatGains),
             ["tableResistGains"] = ToJsonArray(tables.ResistGains),
         };
     }
@@ -153,34 +153,34 @@ public sealed class BattleGrowthVectorGenerator
 
         return new JsonObject
         {
-            ["id"]             = id,
-            ["fn"]             = "AddExp",
-            ["expRate"]        = expRate,
-            ["hpGrowth"]       = hpGrowth,
-            ["mpGrowth"]       = mpGrowth,
-            ["statGrowth"]     = ToJsonArray(statGrowth),
-            ["resistGrowth"]   = ToJsonArray(resistGrowth),
-            ["exp"]            = exp,
-            ["rngSequence"]    = ToJsonArray(rngValues),
-            ["inLevel"]        = stateIn.Level,
-            ["inExp"]          = stateIn.Exp,
-            ["inTp"]           = stateIn.Tp,
-            ["inMaxHp"]        = stateIn.MaxHp,
-            ["inMaxMp"]        = stateIn.MaxMp,
-            ["inBattleStats"]  = ToJsonArray(stateIn.BattleStats),
-            ["inResistances"]  = ToJsonArray(stateIn.Resistances),
-            ["outLevel"]       = state.Level,
-            ["outExp"]         = state.Exp,
-            ["outTp"]          = state.Tp,
-            ["outMaxHp"]       = state.MaxHp,
-            ["outMaxMp"]       = state.MaxMp,
+            ["id"] = id,
+            ["fn"] = "AddExp",
+            ["expRate"] = expRate,
+            ["hpGrowth"] = hpGrowth,
+            ["mpGrowth"] = mpGrowth,
+            ["statGrowth"] = ToJsonArray(statGrowth),
+            ["resistGrowth"] = ToJsonArray(resistGrowth),
+            ["exp"] = exp,
+            ["rngSequence"] = ToJsonArray(rngValues),
+            ["inLevel"] = stateIn.Level,
+            ["inExp"] = stateIn.Exp,
+            ["inTp"] = stateIn.Tp,
+            ["inMaxHp"] = stateIn.MaxHp,
+            ["inMaxMp"] = stateIn.MaxMp,
+            ["inBattleStats"] = ToJsonArray(stateIn.BattleStats),
+            ["inResistances"] = ToJsonArray(stateIn.Resistances),
+            ["outLevel"] = state.Level,
+            ["outExp"] = state.Exp,
+            ["outTp"] = state.Tp,
+            ["outMaxHp"] = state.MaxHp,
+            ["outMaxMp"] = state.MaxMp,
             ["outBattleStats"] = ToJsonArray(state.BattleStats),
             ["outResistances"] = ToJsonArray(state.Resistances),
-            ["outLeveled"]     = leveled,
-            ["tableLevelExp"]    = ToJsonArray(tables.LevelExp),
-            ["tableVitalCuts"]   = ToJsonArray(tables.VitalCuts),
+            ["outLeveled"] = leveled,
+            ["tableLevelExp"] = ToJsonArray(tables.LevelExp),
+            ["tableVitalCuts"] = ToJsonArray(tables.VitalCuts),
             ["tableVitalRandom"] = ToJsonArray(tables.VitalRandom),
-            ["tableStatGains"]   = StatGainsToJson(tables.StatGains),
+            ["tableStatGains"] = StatGainsToJson(tables.StatGains),
             ["tableResistGains"] = ToJsonArray(tables.ResistGains),
         };
     }
@@ -191,14 +191,14 @@ public sealed class BattleGrowthVectorGenerator
         int result = GrowthCalculator.GetDigimonExp(level, digimonExpLevel, entryLevel, exp, used);
         return new JsonObject
         {
-            ["id"]              = id,
-            ["fn"]              = "GetDigimonExp",
-            ["level"]           = level,
+            ["id"] = id,
+            ["fn"] = "GetDigimonExp",
+            ["level"] = level,
             ["digimonExpLevel"] = digimonExpLevel,
-            ["entryLevel"]      = entryLevel,
-            ["exp"]             = exp,
-            ["used"]            = used,
-            ["expected"]        = result,
+            ["entryLevel"] = entryLevel,
+            ["exp"] = exp,
+            ["used"] = used,
+            ["expected"] = result,
         };
     }
 
@@ -209,15 +209,15 @@ public sealed class BattleGrowthVectorGenerator
         bool leveled = GrowthCalculator.AddDigimonExp(expLevel, ref el, ref ee, exp);
         return new JsonObject
         {
-            ["id"]            = id,
-            ["fn"]            = "AddDigimonExp",
-            ["expLevel"]      = expLevel,
-            ["inEntryLevel"]  = entryLevel,
-            ["inEntryExp"]    = entryExp,
-            ["exp"]           = exp,
+            ["id"] = id,
+            ["fn"] = "AddDigimonExp",
+            ["expLevel"] = expLevel,
+            ["inEntryLevel"] = entryLevel,
+            ["inEntryExp"] = entryExp,
+            ["exp"] = exp,
             ["outEntryLevel"] = el,
-            ["outEntryExp"]   = ee,
-            ["outLeveled"]    = leveled,
+            ["outEntryExp"] = ee,
+            ["outLeveled"] = leveled,
         };
     }
 
@@ -226,11 +226,11 @@ public sealed class BattleGrowthVectorGenerator
         int result = GrowthCalculator.ExpShare(rewardExp, fought);
         return new JsonObject
         {
-            ["id"]        = id,
-            ["fn"]        = "ExpShare",
+            ["id"] = id,
+            ["fn"] = "ExpShare",
             ["rewardExp"] = rewardExp,
-            ["fought"]    = fought,
-            ["expected"]  = result,
+            ["fought"] = fought,
+            ["expected"] = result,
         };
     }
 
@@ -248,7 +248,7 @@ public sealed class BattleGrowthVectorGenerator
 
         // RNG sequences: 15 values covers the maximum (level<41: 2 vital + 6 stats + 7 resists).
         // For level >= 41: only 8 values are consumed; the extra values in the sequence are harmless.
-        int[] statGrowthBase   = { 0, 1, 2, 3, 2, 1 };
+        int[] statGrowthBase = { 0, 1, 2, 3, 2, 1 };
         int[] resistGrowthBase = { 0, 1, 2, 1, 0, 1, 2 };
 
         // ---- RaiseStats: all level tier boundaries ----
@@ -372,7 +372,7 @@ public sealed class BattleGrowthVectorGenerator
         foreach (var lv in tpLevels)
         {
             int nextLevel = lv + 1;
-            int nextTier  = nextLevel < 5 ? 0 : nextLevel < 20 ? 1 : nextLevel < 40 ? 2 : 3;
+            int nextTier = nextLevel < 5 ? 0 : nextLevel < 20 ? 1 : nextLevel < 40 ? 2 : 3;
             int threshold = (nextLevel * nextLevel * nextLevel + nextLevel * 5 - 6) * 10 / 10
                             + def.LevelExp[nextTier];
             cases.Add(AddExpCase(id++, def,
@@ -464,7 +464,7 @@ public sealed class BattleGrowthVectorGenerator
         foreach (var exp in new[] { 0, 1, 5, 10, 100 })
             cases.Add(AddDigimonExpCase(id++, expLv, 0, 0, exp));
         // level 1, need=10
-        foreach (var (ee, ex) in new[] { (0,9), (0,10), (0,11), (9,1), (9,0) })
+        foreach (var (ee, ex) in new[] { (0, 9), (0, 10), (0, 11), (9, 1), (9, 0) })
             cases.Add(AddDigimonExpCase(id++, expLv, 1, ee, ex));
         // level 2, need=20
         cases.Add(AddDigimonExpCase(id++, expLv, 2, 18, 2));
@@ -499,7 +499,7 @@ public sealed class BattleGrowthVectorGenerator
         foreach (var el in new[] { 3, 7, 10, 20 })
         {
             cases.Add(AddDigimonExpCase(id++, el, el - 1, 0, (el - 1) * 10 + 1));
-            cases.Add(AddDigimonExpCase(id++, el, el,     0, (el - 1) * 10 + 50 + 1));
+            cases.Add(AddDigimonExpCase(id++, el, el, 0, (el - 1) * 10 + 50 + 1));
         }
 
         // ---- ExpShare cases ----
@@ -513,8 +513,8 @@ public sealed class BattleGrowthVectorGenerator
         while (cases.Count < 300)
         {
             int extra = cases.Count;
-            int lv   = 1 + extra % 50;
-            int ex   = 10 + extra % 100;
+            int lv = 1 + extra % 50;
+            int ex = 10 + extra % 100;
             int used = 1 + extra % 3;
             cases.Add(GetDigimonExpCase(id++, lv, 6, 3 + extra % 5, ex, used));
         }
@@ -523,9 +523,9 @@ public sealed class BattleGrowthVectorGenerator
         {
             ["metadata"] = new JsonObject
             {
-                ["seed"]  = 42,
+                ["seed"] = 42,
                 ["count"] = cases.Count,
-                ["note"]  = "Fabricated vectors generated from the current GrowthCalculator implementation. All inputs are invented; no game values are embedded.",
+                ["note"] = "Fabricated vectors generated from the current GrowthCalculator implementation. All inputs are invented; no game values are embedded.",
             },
             ["cases"] = cases,
         };

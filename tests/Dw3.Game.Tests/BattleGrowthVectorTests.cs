@@ -55,10 +55,10 @@ public sealed class BattleGrowthVectorTests
 
     private static GrowthTables TablesFromCase(JsonNode c) => new()
     {
-        LevelExp    = c["tableLevelExp"] is JsonNode le ? ToIntArray(le) : new int[4],
-        VitalCuts   = ToIntArray(c["tableVitalCuts"]),
+        LevelExp = c["tableLevelExp"] is JsonNode le ? ToIntArray(le) : new int[4],
+        VitalCuts = ToIntArray(c["tableVitalCuts"]),
         VitalRandom = ToIntArray(c["tableVitalRandom"]),
-        StatGains   = ToInt2DArray(c["tableStatGains"]),
+        StatGains = ToInt2DArray(c["tableStatGains"]),
         ResistGains = ToIntArray(c["tableResistGains"]),
     };
 
@@ -67,10 +67,10 @@ public sealed class BattleGrowthVectorTests
         // AddExp cases embed LevelExp separately
         return new GrowthTables
         {
-            LevelExp    = c["tableLevelExp"] != null ? ToIntArray(c["tableLevelExp"]) : new int[4],
-            VitalCuts   = ToIntArray(c["tableVitalCuts"]),
+            LevelExp = c["tableLevelExp"] != null ? ToIntArray(c["tableLevelExp"]) : new int[4],
+            VitalCuts = ToIntArray(c["tableVitalCuts"]),
             VitalRandom = ToIntArray(c["tableVitalRandom"]),
-            StatGains   = ToInt2DArray(c["tableStatGains"]),
+            StatGains = ToInt2DArray(c["tableStatGains"]),
             ResistGains = ToIntArray(c["tableResistGains"]),
         };
     }
@@ -97,13 +97,13 @@ public sealed class BattleGrowthVectorTests
         Assert.True(File.Exists(VectorsPath),
             $"Vectors file not found: {VectorsPath}");
 
-        var doc   = JsonNode.Parse(File.ReadAllText(VectorsPath))!;
+        var doc = JsonNode.Parse(File.ReadAllText(VectorsPath))!;
         var cases = doc["cases"]!.AsArray();
         var errors = new List<string>();
 
         foreach (var c in cases)
         {
-            int    id = c!["id"]!.GetValue<int>();
+            int id = c!["id"]!.GetValue<int>();
             string fn = c!["fn"]!.GetValue<string>();
 
             try
@@ -153,26 +153,26 @@ public sealed class BattleGrowthVectorTests
 
         var state = new PartnerGrowthState
         {
-            MaxHp       = c["inMaxHp"]!.GetValue<int>(),
-            MaxMp       = c["inMaxMp"]!.GetValue<int>(),
+            MaxHp = c["inMaxHp"]!.GetValue<int>(),
+            MaxMp = c["inMaxMp"]!.GetValue<int>(),
             BattleStats = ToIntArray(c["inBattleStats"]),
             Resistances = ToIntArray(c["inResistances"]),
         };
 
-        int   hpGrowth     = c["hpGrowth"]!.GetValue<int>();
-        int   mpGrowth     = c["mpGrowth"]!.GetValue<int>();
-        int[] statGrowth   = ToIntArray(c["statGrowth"]);
+        int hpGrowth = c["hpGrowth"]!.GetValue<int>();
+        int mpGrowth = c["mpGrowth"]!.GetValue<int>();
+        int[] statGrowth = ToIntArray(c["statGrowth"]);
         int[] resistGrowth = ToIntArray(c["resistGrowth"]);
-        int   level        = c["level"]!.GetValue<int>();
-        int[] rngSeq       = ToIntArray(c["rngSequence"]);
-        BattleRng rng      = rngSeq.Length > 0 ? new SeqRng(rngSeq) : new ConstRng(0);
+        int level = c["level"]!.GetValue<int>();
+        int[] rngSeq = ToIntArray(c["rngSequence"]);
+        BattleRng rng = rngSeq.Length > 0 ? new SeqRng(rngSeq) : new ConstRng(0);
 
         GrowthCalculator.RaiseStats(tables, state, hpGrowth, mpGrowth, statGrowth, resistGrowth, level, rng);
 
-        int expMaxHp  = c["outMaxHp"]!.GetValue<int>();
-        int expMaxMp  = c["outMaxMp"]!.GetValue<int>();
-        int[] expBs   = ToIntArray(c["outBattleStats"]);
-        int[] expRes  = ToIntArray(c["outResistances"]);
+        int expMaxHp = c["outMaxHp"]!.GetValue<int>();
+        int expMaxMp = c["outMaxMp"]!.GetValue<int>();
+        int[] expBs = ToIntArray(c["outBattleStats"]);
+        int[] expRes = ToIntArray(c["outResistances"]);
 
         if (state.MaxHp != expMaxHp)
             errors.Add($"[{id}] RaiseStats MaxHp: got {state.MaxHp} expected {expMaxHp}");
@@ -192,40 +192,40 @@ public sealed class BattleGrowthVectorTests
 
         var state = new PartnerGrowthState
         {
-            Level       = c["inLevel"]!.GetValue<int>(),
-            Exp         = c["inExp"]!.GetValue<int>(),
-            Tp          = c["inTp"]!.GetValue<int>(),
-            MaxHp       = c["inMaxHp"]!.GetValue<int>(),
-            MaxMp       = c["inMaxMp"]!.GetValue<int>(),
+            Level = c["inLevel"]!.GetValue<int>(),
+            Exp = c["inExp"]!.GetValue<int>(),
+            Tp = c["inTp"]!.GetValue<int>(),
+            MaxHp = c["inMaxHp"]!.GetValue<int>(),
+            MaxMp = c["inMaxMp"]!.GetValue<int>(),
             BattleStats = ToIntArray(c["inBattleStats"]),
             Resistances = ToIntArray(c["inResistances"]),
         };
 
-        int   expRate      = c["expRate"]!.GetValue<int>();
-        int   hpGrowth     = c["hpGrowth"]!.GetValue<int>();
-        int   mpGrowth     = c["mpGrowth"]!.GetValue<int>();
-        int[] statGrowth   = ToIntArray(c["statGrowth"]);
+        int expRate = c["expRate"]!.GetValue<int>();
+        int hpGrowth = c["hpGrowth"]!.GetValue<int>();
+        int mpGrowth = c["mpGrowth"]!.GetValue<int>();
+        int[] statGrowth = ToIntArray(c["statGrowth"]);
         int[] resistGrowth = ToIntArray(c["resistGrowth"]);
-        int   exp          = c["exp"]!.GetValue<int>();
-        int[] rngSeq       = ToIntArray(c["rngSequence"]);
-        BattleRng rng      = rngSeq.Length > 0 ? new SeqRng(rngSeq) : new ConstRng(0);
+        int exp = c["exp"]!.GetValue<int>();
+        int[] rngSeq = ToIntArray(c["rngSequence"]);
+        BattleRng rng = rngSeq.Length > 0 ? new SeqRng(rngSeq) : new ConstRng(0);
 
         bool leveled = GrowthCalculator.AddExp(tables, state, expRate, hpGrowth, mpGrowth,
             statGrowth, resistGrowth, exp, rng);
 
-        bool expLeveled  = c["outLeveled"]!.GetValue<bool>();
-        int  expLevel    = c["outLevel"]!.GetValue<int>();
-        int  expExp      = c["outExp"]!.GetValue<int>();
-        int  expTp       = c["outTp"]!.GetValue<int>();
-        int  expMaxHp    = c["outMaxHp"]!.GetValue<int>();
-        int  expMaxMp    = c["outMaxMp"]!.GetValue<int>();
-        int[] expBs      = ToIntArray(c["outBattleStats"]);
-        int[] expRes     = ToIntArray(c["outResistances"]);
+        bool expLeveled = c["outLeveled"]!.GetValue<bool>();
+        int expLevel = c["outLevel"]!.GetValue<int>();
+        int expExp = c["outExp"]!.GetValue<int>();
+        int expTp = c["outTp"]!.GetValue<int>();
+        int expMaxHp = c["outMaxHp"]!.GetValue<int>();
+        int expMaxMp = c["outMaxMp"]!.GetValue<int>();
+        int[] expBs = ToIntArray(c["outBattleStats"]);
+        int[] expRes = ToIntArray(c["outResistances"]);
 
-        if (leveled  != expLeveled)  errors.Add($"[{id}] AddExp leveled: got {leveled} expected {expLeveled}");
+        if (leveled != expLeveled) errors.Add($"[{id}] AddExp leveled: got {leveled} expected {expLeveled}");
         if (state.Level != expLevel) errors.Add($"[{id}] AddExp Level: got {state.Level} expected {expLevel}");
-        if (state.Exp   != expExp)   errors.Add($"[{id}] AddExp Exp: got {state.Exp} expected {expExp}");
-        if (state.Tp    != expTp)    errors.Add($"[{id}] AddExp Tp: got {state.Tp} expected {expTp}");
+        if (state.Exp != expExp) errors.Add($"[{id}] AddExp Exp: got {state.Exp} expected {expExp}");
+        if (state.Tp != expTp) errors.Add($"[{id}] AddExp Tp: got {state.Tp} expected {expTp}");
         if (state.MaxHp != expMaxHp) errors.Add($"[{id}] AddExp MaxHp: got {state.MaxHp} expected {expMaxHp}");
         if (state.MaxMp != expMaxMp) errors.Add($"[{id}] AddExp MaxMp: got {state.MaxMp} expected {expMaxMp}");
         for (int i = 0; i < 6; i++)
@@ -238,12 +238,12 @@ public sealed class BattleGrowthVectorTests
 
     private static void VerifyGetDigimonExp(JsonNode c, int id, List<string> errors)
     {
-        int level          = c["level"]!.GetValue<int>();
-        int digimonExpLevel= c["digimonExpLevel"]!.GetValue<int>();
-        int entryLevel     = c["entryLevel"]!.GetValue<int>();
-        int exp            = c["exp"]!.GetValue<int>();
-        int used           = c["used"]!.GetValue<int>();
-        int expected       = c["expected"]!.GetValue<int>();
+        int level = c["level"]!.GetValue<int>();
+        int digimonExpLevel = c["digimonExpLevel"]!.GetValue<int>();
+        int entryLevel = c["entryLevel"]!.GetValue<int>();
+        int exp = c["exp"]!.GetValue<int>();
+        int used = c["used"]!.GetValue<int>();
+        int expected = c["expected"]!.GetValue<int>();
 
         int got = GrowthCalculator.GetDigimonExp(level, digimonExpLevel, entryLevel, exp, used);
         if (got != expected)
@@ -252,26 +252,26 @@ public sealed class BattleGrowthVectorTests
 
     private static void VerifyAddDigimonExp(JsonNode c, int id, List<string> errors)
     {
-        int expLevel       = c["expLevel"]!.GetValue<int>();
-        int entryLevel     = c["inEntryLevel"]!.GetValue<int>();
-        int entryExp       = c["inEntryExp"]!.GetValue<int>();
-        int exp            = c["exp"]!.GetValue<int>();
-        int expEntryLevel  = c["outEntryLevel"]!.GetValue<int>();
-        int expEntryExp    = c["outEntryExp"]!.GetValue<int>();
-        bool expLeveled    = c["outLeveled"]!.GetValue<bool>();
+        int expLevel = c["expLevel"]!.GetValue<int>();
+        int entryLevel = c["inEntryLevel"]!.GetValue<int>();
+        int entryExp = c["inEntryExp"]!.GetValue<int>();
+        int exp = c["exp"]!.GetValue<int>();
+        int expEntryLevel = c["outEntryLevel"]!.GetValue<int>();
+        int expEntryExp = c["outEntryExp"]!.GetValue<int>();
+        bool expLeveled = c["outLeveled"]!.GetValue<bool>();
 
         bool leveled = GrowthCalculator.AddDigimonExp(expLevel, ref entryLevel, ref entryExp, exp);
 
-        if (leveled    != expLeveled)    errors.Add($"[{id}] AddDigimonExp leveled: got {leveled} expected {expLeveled}");
+        if (leveled != expLeveled) errors.Add($"[{id}] AddDigimonExp leveled: got {leveled} expected {expLeveled}");
         if (entryLevel != expEntryLevel) errors.Add($"[{id}] AddDigimonExp entryLevel: got {entryLevel} expected {expEntryLevel}");
-        if (entryExp   != expEntryExp)   errors.Add($"[{id}] AddDigimonExp entryExp: got {entryExp} expected {expEntryExp}");
+        if (entryExp != expEntryExp) errors.Add($"[{id}] AddDigimonExp entryExp: got {entryExp} expected {expEntryExp}");
     }
 
     private static void VerifyExpShare(JsonNode c, int id, List<string> errors)
     {
         int rewardExp = c["rewardExp"]!.GetValue<int>();
-        int fought    = c["fought"]!.GetValue<int>();
-        int expected  = c["expected"]!.GetValue<int>();
+        int fought = c["fought"]!.GetValue<int>();
+        int expected = c["expected"]!.GetValue<int>();
 
         int got = GrowthCalculator.ExpShare(rewardExp, fought);
         if (got != expected)

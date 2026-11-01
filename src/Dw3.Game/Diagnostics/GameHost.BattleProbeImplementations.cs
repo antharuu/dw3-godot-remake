@@ -376,7 +376,7 @@ public partial class GameHost
         var fromX = Math.Max(0, (int)rect.Position.X); var toX = Math.Min(a.GetWidth(), (int)rect.End.X);
         var fromY = Math.Max(0, (int)rect.Position.Y); var toY = Math.Min(a.GetHeight(), (int)rect.End.Y);
         for (var y = fromY; y < toY; y++) for (var x = fromX; x < toX; x++)
-            if (DifferentRgb(a.GetPixel(x, y), b.GetPixel(x, y))) count++;
+                if (DifferentRgb(a.GetPixel(x, y), b.GetPixel(x, y))) count++;
         return count;
     }
 
@@ -386,10 +386,10 @@ public partial class GameHost
         var fromX = Math.Max(0, (int)rect.Position.X); var toX = Math.Min(image.GetWidth(), (int)rect.End.X);
         var fromY = Math.Max(0, (int)rect.Position.Y); var toY = Math.Min(image.GetHeight(), (int)rect.End.Y);
         for (var y = fromY; y < toY; y++) for (var x = fromX; x < toX; x++)
-        {
-            var pixel = image.GetPixel(x, y);
-            if (pixel.R + pixel.G + pixel.B > 0.45f) count++;
-        }
+            {
+                var pixel = image.GetPixel(x, y);
+                if (pixel.R + pixel.G + pixel.B > 0.45f) count++;
+            }
         return count;
     }
 
@@ -526,7 +526,8 @@ public partial class GameHost
             // the battle-message layout contract draws frame 10 only while it waits for Cross. Render the same active
             // battle through that wait view and prove its source rectangle is populated.
             var waiting = (BuildBattleView() ?? throw new InvalidOperationException("battle wait view unavailable"))
-                with { Message = "MESSAGE_WAIT_PROBE", MessageText = BattleTextLine.Missing, MessageVisible = true };
+                with
+            { Message = "MESSAGE_WAIT_PROBE", MessageText = BattleTextLine.Missing, MessageVisible = true };
             BattleRenderer.Present(waiting);
             var messageArrow = await CaptureBattle(captureRoot, "message-arrow.png");
             var (arrowX, arrowY) = BattleHudLayout.ToViewport(0x123, 0xD0);
@@ -749,10 +750,10 @@ public partial class GameHost
         {
             var image = Image.LoadFromFile(font.PalettePagePath(style, palette, page));
             for (var y = 0; y < image.GetHeight(); y++) for (var x = 0; x < image.GetWidth(); x++)
-            {
-                var pixel = image.GetPixel(x, y);
-                if (pixel.A8 != 0) colors.Add(((byte)pixel.R8, (byte)pixel.G8, (byte)pixel.B8));
-            }
+                {
+                    var pixel = image.GetPixel(x, y);
+                    if (pixel.A8 != 0) colors.Add(((byte)pixel.R8, (byte)pixel.G8, (byte)pixel.B8));
+                }
         }
         return colors;
     }
@@ -763,10 +764,10 @@ public partial class GameHost
         var fromX = Math.Max(0, (int)rect.Position.X); var toX = Math.Min(capture.GetWidth(), (int)rect.End.X);
         var fromY = Math.Max(0, (int)rect.Position.Y); var toY = Math.Min(capture.GetHeight(), (int)rect.End.Y);
         for (var y = fromY; y < toY; y++) for (var x = fromX; x < toX; x++)
-        {
-            var pixel = capture.GetPixel(x, y);
-            if (colors.Contains(((byte)pixel.R8, (byte)pixel.G8, (byte)pixel.B8))) count++;
-        }
+            {
+                var pixel = capture.GetPixel(x, y);
+                if (colors.Contains(((byte)pixel.R8, (byte)pixel.G8, (byte)pixel.B8))) count++;
+            }
         return count;
     }
 
@@ -812,7 +813,7 @@ public partial class GameHost
             var knockedOut = BattleFlow.State.Players.Select((player, index) => (player, index))
                 .First(pair => pair.player is not null && pair.index != BattleFlow.State.ActivePlayer).player!;
             knockedOut.Hp = 0;
-            OpenSubmenu(BattleMenuKind.Switch, SwitchLines(BattleFlow), slot => ! BattleFlow.State.Players[slot]!.IsKnockedOut);
+            OpenSubmenu(BattleMenuKind.Switch, SwitchLines(BattleFlow), slot => !BattleFlow.State.Players[slot]!.IsKnockedOut);
             var change = await CaptureBattle(captureRoot, "switch-ko.png");
             var koGrey = CountFontPalettePixels(change, new Rect2(SourceToViewport(new Vector2(36, 76)), new Vector2(360, 42)), grey);
             Require(koGrey > 8, $"KO switch name lacks GREY CLUT pixels count={koGrey}");
@@ -965,8 +966,8 @@ public partial class GameHost
         var mask = Image.CreateEmpty(320, 240, false, Image.Format.Rgba8);
         mask.Fill(Colors.Black);
         for (var y = Math.Max(0, region.Position.Y); y < Math.Min(240, region.End.Y); y++)
-        for (var x = Math.Max(0, region.Position.X); x < Math.Min(320, region.End.X); x++)
-            if ((silhouette is null || silhouette.GetPixel(x, y).R >= .5f) && select(image.GetPixel(x, y))) mask.SetPixel(x, y, Colors.White);
+            for (var x = Math.Max(0, region.Position.X); x < Math.Min(320, region.End.X); x++)
+                if ((silhouette is null || silhouette.GetPixel(x, y).R >= .5f) && select(image.GetPixel(x, y))) mask.SetPixel(x, y, Colors.White);
         return mask;
     }
     private static Image UnionMasks(IEnumerable<Image> masks)
@@ -1337,12 +1338,12 @@ public partial class GameHost
             throw new InvalidOperationException("sheet capture/background dimensions differ");
         var minX = image.GetWidth(); var minY = image.GetHeight(); var maxX = -1; var maxY = -1; var count = 0;
         for (var y = 0; y < image.GetHeight(); y++)
-        for (var x = 0; x < image.GetWidth(); x++)
-        {
-            var a = image.GetPixel(x, y); var b = background.GetPixel(x, y);
-            if (Mathf.Abs(a.R - b.R) * 255f + Mathf.Abs(a.G - b.G) * 255f + Mathf.Abs(a.B - b.B) * 255f <= 45f) continue;
-            count++; minX = Math.Min(minX, x); minY = Math.Min(minY, y); maxX = Math.Max(maxX, x); maxY = Math.Max(maxY, y);
-        }
+            for (var x = 0; x < image.GetWidth(); x++)
+            {
+                var a = image.GetPixel(x, y); var b = background.GetPixel(x, y);
+                if (Mathf.Abs(a.R - b.R) * 255f + Mathf.Abs(a.G - b.G) * 255f + Mathf.Abs(a.B - b.B) * 255f <= 45f) continue;
+                count++; minX = Math.Min(minX, x); minY = Math.Min(minY, y); maxX = Math.Max(maxX, x); maxY = Math.Max(maxY, y);
+            }
         return (count, count > 0 && (minX == 0 || minY == 0 || maxX == image.GetWidth() - 1 || maxY == image.GetHeight() - 1));
     }
 
@@ -1352,11 +1353,11 @@ public partial class GameHost
         var bytesPerPixel = image.GetFormat() == Image.Format.Rgba8 ? 4 : 3;
         var count = 0;
         for (var y = 0; y < image.GetHeight(); y++)
-        for (var x = xMin; x < xMax; x++)
-        {
-            var offset = (y * image.GetWidth() + x) * bytesPerPixel;
-            if (data[offset] + data[offset + 1] + data[offset + 2] > 120) count++;
-        }
+            for (var x = xMin; x < xMax; x++)
+            {
+                var offset = (y * image.GetWidth() + x) * bytesPerPixel;
+                if (data[offset] + data[offset + 1] + data[offset + 2] > 120) count++;
+            }
         return count;
     }
 
@@ -1366,14 +1367,14 @@ public partial class GameHost
         var bpp = image.GetFormat() == Image.Format.Rgba8 ? 4 : 3;
         var values = new List<double>();
         for (var y = 0; y < image.GetHeight(); y++)
-        for (var x = xMin; x < xMax; x++)
-        {
-            var offset = (y * image.GetWidth() + x) * bpp;
-            // The neutral baseline's black models intentionally contribute zero, while the
-            // fixed stage background is excluded by its near-black blue pixel range.
-            var luminance = (0.2126 * data[offset] + 0.7152 * data[offset + 1] + 0.0722 * data[offset + 2]) / 255d;
-            if (luminance > 0.12) values.Add(luminance);
-        }
+            for (var x = xMin; x < xMax; x++)
+            {
+                var offset = (y * image.GetWidth() + x) * bpp;
+                // The neutral baseline's black models intentionally contribute zero, while the
+                // fixed stage background is excluded by its near-black blue pixel range.
+                var luminance = (0.2126 * data[offset] + 0.7152 * data[offset + 1] + 0.0722 * data[offset + 2]) / 255d;
+                if (luminance > 0.12) values.Add(luminance);
+            }
         if (values.Count == 0) return 0;
         var mean = values.Average();
         return values.Sum(value => (value - mean) * (value - mean)) / values.Count;
@@ -1385,16 +1386,16 @@ public partial class GameHost
         var bpp = lit.GetFormat() == Image.Format.Rgba8 ? 4 : 3;
         var litValues = new List<double>();
         for (var y = 0; y < lit.GetHeight(); y++)
-        for (var x = xMin; x < xMax; x++)
-        {
-            var offset = (y * lit.GetWidth() + x) * bpp;
-            var delta = Math.Abs(a[offset] - b[offset]) + Math.Abs(a[offset + 1] - b[offset + 1]) + Math.Abs(a[offset + 2] - b[offset + 2]);
-            if (delta <= 30) continue;
-            // Light contribution over this exact silhouette mask. The neutral capture's
-            // contribution is zero by construction, while the lit capture preserves the
-            // per-normal GTE ncs variation independently of texture colour.
-            litValues.Add((0.2126 * (a[offset] - b[offset]) + 0.7152 * (a[offset + 1] - b[offset + 1]) + 0.0722 * (a[offset + 2] - b[offset + 2])) / 255d);
-        }
+            for (var x = xMin; x < xMax; x++)
+            {
+                var offset = (y * lit.GetWidth() + x) * bpp;
+                var delta = Math.Abs(a[offset] - b[offset]) + Math.Abs(a[offset + 1] - b[offset + 1]) + Math.Abs(a[offset + 2] - b[offset + 2]);
+                if (delta <= 30) continue;
+                // Light contribution over this exact silhouette mask. The neutral capture's
+                // contribution is zero by construction, while the lit capture preserves the
+                // per-normal GTE ncs variation independently of texture colour.
+                litValues.Add((0.2126 * (a[offset] - b[offset]) + 0.7152 * (a[offset + 1] - b[offset + 1]) + 0.0722 * (a[offset + 2] - b[offset + 2])) / 255d);
+            }
         if (litValues.Count == 0) return (0, 0);
         var mean = litValues.Average();
         return (litValues.Sum(value => (value - mean) * (value - mean)) / litValues.Count, 0);
@@ -1406,11 +1407,11 @@ public partial class GameHost
         var bytesPerPixel = a.GetFormat() == Image.Format.Rgba8 ? 4 : 3;
         var count = 0;
         for (var y = 0; y < a.GetHeight(); y++)
-        for (var x = xMin; x < xMax; x++)
-        {
-            var offset = (y * a.GetWidth() + x) * bytesPerPixel;
-            if (Math.Abs(ad[offset] - bd[offset]) + Math.Abs(ad[offset + 1] - bd[offset + 1]) + Math.Abs(ad[offset + 2] - bd[offset + 2]) > 30) count++;
-        }
+            for (var x = xMin; x < xMax; x++)
+            {
+                var offset = (y * a.GetWidth() + x) * bytesPerPixel;
+                if (Math.Abs(ad[offset] - bd[offset]) + Math.Abs(ad[offset + 1] - bd[offset + 1]) + Math.Abs(ad[offset + 2] - bd[offset + 2]) > 30) count++;
+            }
         return count;
     }
 
@@ -1451,11 +1452,11 @@ public partial class GameHost
     {
         double total = 0;
         for (var y = 0; y < image.GetHeight(); y++)
-        for (var x = 0; x < image.GetWidth(); x++)
-        {
-            var pixel = image.GetPixel(x, y);
-            total += pixel.R * 54.213 + pixel.G * 182.376 + pixel.B * 18.411;
-        }
+            for (var x = 0; x < image.GetWidth(); x++)
+            {
+                var pixel = image.GetPixel(x, y);
+                total += pixel.R * 54.213 + pixel.G * 182.376 + pixel.B * 18.411;
+            }
         return total / (image.GetWidth() * image.GetHeight());
     }
 
@@ -1468,23 +1469,23 @@ public partial class GameHost
         var fighterCount = 0;
         var sceneCount = 0;
         for (var y = 0; y < full.GetHeight(); y++)
-        for (var x = 0; x < full.GetWidth(); x++)
-        {
-            var a = full.GetPixel(x, y);
-            var b = stage.GetPixel(x, y);
-            var lum = a.R * 54.213 + a.G * 182.376 + a.B * 18.411;
-            total += lum;
-            if (Math.Abs(a.R - b.R) + Math.Abs(a.G - b.G) + Math.Abs(a.B - b.B) > .08f)
+            for (var x = 0; x < full.GetWidth(); x++)
             {
-                fighters += lum;
-                fighterCount++;
+                var a = full.GetPixel(x, y);
+                var b = stage.GetPixel(x, y);
+                var lum = a.R * 54.213 + a.G * 182.376 + a.B * 18.411;
+                total += lum;
+                if (Math.Abs(a.R - b.R) + Math.Abs(a.G - b.G) + Math.Abs(a.B - b.B) > .08f)
+                {
+                    fighters += lum;
+                    fighterCount++;
+                }
+                else
+                {
+                    scene += lum;
+                    sceneCount++;
+                }
             }
-            else
-            {
-                scene += lum;
-                sceneCount++;
-            }
-        }
         Require(fighterCount > 0, "entrance fighter difference mask is empty");
         Require(sceneCount > 0, "entrance stage difference complement is empty");
         return (fighters / fighterCount, scene / sceneCount, total / (full.GetWidth() * full.GetHeight()));
@@ -1494,10 +1495,10 @@ public partial class GameHost
     {
         var minX = image.GetWidth(); var minY = image.GetHeight(); var maxX = -1; var maxY = -1;
         for (var y = 0; y < image.GetHeight(); y++) for (var x = 0; x < image.GetWidth(); x++)
-        {
-            if (image.GetPixel(x, y).A8 == 0) continue;
-            minX = Math.Min(minX, x); minY = Math.Min(minY, y); maxX = Math.Max(maxX, x); maxY = Math.Max(maxY, y);
-        }
+            {
+                if (image.GetPixel(x, y).A8 == 0) continue;
+                minX = Math.Min(minX, x); minY = Math.Min(minY, y); maxX = Math.Max(maxX, x); maxY = Math.Max(maxY, y);
+            }
         return maxX < minX ? null : new Rect2(minX, minY, maxX - minX + 1, maxY - minY + 1);
     }
 
@@ -1506,10 +1507,10 @@ public partial class GameHost
         var panel = new Color(8 / 255f, 8 / 255f, 65 / 255f);
         var minX = image.GetWidth(); var minY = image.GetHeight(); var maxX = -1; var maxY = -1;
         for (var y = 0; y < image.GetHeight(); y++) for (var x = 0; x < image.GetWidth(); x++)
-        {
-            if (!DifferentRgb(image.GetPixel(x, y), panel)) continue;
-            minX = Math.Min(minX, x); minY = Math.Min(minY, y); maxX = Math.Max(maxX, x); maxY = Math.Max(maxY, y);
-        }
+            {
+                if (!DifferentRgb(image.GetPixel(x, y), panel)) continue;
+                minX = Math.Min(minX, x); minY = Math.Min(minY, y); maxX = Math.Max(maxX, x); maxY = Math.Max(maxY, y);
+            }
         return maxX < minX ? null : new Rect2(minX, minY, maxX - minX + 1, maxY - minY + 1);
     }
 
@@ -1517,10 +1518,10 @@ public partial class GameHost
     {
         var minX = a.GetWidth(); var minY = a.GetHeight(); var maxX = -1; var maxY = -1;
         for (var y = 0; y < a.GetHeight(); y++) for (var x = 0; x < a.GetWidth(); x++)
-        {
-            if (!DifferentRgb(a.GetPixel(x, y), b.GetPixel(x, y))) continue;
-            minX = Math.Min(minX, x); minY = Math.Min(minY, y); maxX = Math.Max(maxX, x); maxY = Math.Max(maxY, y);
-        }
+            {
+                if (!DifferentRgb(a.GetPixel(x, y), b.GetPixel(x, y))) continue;
+                minX = Math.Min(minX, x); minY = Math.Min(minY, y); maxX = Math.Max(maxX, x); maxY = Math.Max(maxY, y);
+            }
         return maxX < minX ? null : new Rect2(minX, minY, maxX - minX + 1, maxY - minY + 1);
     }
 
@@ -1528,10 +1529,10 @@ public partial class GameHost
     {
         var minX = mask.GetWidth(); var minY = mask.GetHeight(); var maxX = -1; var maxY = -1;
         for (var y = 0; y < mask.GetHeight(); y++) for (var x = 0; x < mask.GetWidth(); x++)
-        {
-            if (mask.GetPixel(x, y).R < .5f) continue;
-            minX = Math.Min(minX, x); minY = Math.Min(minY, y); maxX = Math.Max(maxX, x); maxY = Math.Max(maxY, y);
-        }
+            {
+                if (mask.GetPixel(x, y).R < .5f) continue;
+                minX = Math.Min(minX, x); minY = Math.Min(minY, y); maxX = Math.Max(maxX, x); maxY = Math.Max(maxY, y);
+            }
         return maxX < minX ? null : new Rect2(minX, minY, maxX - minX + 1, maxY - minY + 1);
     }
 
@@ -1541,11 +1542,11 @@ public partial class GameHost
         // from stage 18 and cyan HUD. Bound only that verified warm range, rather than its UI.
         var minX = image.GetWidth(); var minY = image.GetHeight(); var maxX = -1; var maxY = -1;
         for (var y = 55; y < 230; y++) for (var x = 80; x < 245; x++)
-        {
-            var p = image.GetPixel(x, y);
-            if (!(p.R8 > 70 && p.R8 > p.G8 * 1.2f && p.R8 > p.B8 * 1.15f)) continue;
-            minX = Math.Min(minX, x); minY = Math.Min(minY, y); maxX = Math.Max(maxX, x); maxY = Math.Max(maxY, y);
-        }
+            {
+                var p = image.GetPixel(x, y);
+                if (!(p.R8 > 70 && p.R8 > p.G8 * 1.2f && p.R8 > p.B8 * 1.15f)) continue;
+                minX = Math.Min(minX, x); minY = Math.Min(minY, y); maxX = Math.Max(maxX, x); maxY = Math.Max(maxY, y);
+            }
         return maxX < minX ? null : new Rect2(minX, minY, maxX - minX + 1, maxY - minY + 1);
     }
 
@@ -1572,14 +1573,14 @@ public partial class GameHost
         // body inside this entrance framing. Explicitly reject dark stage pixels and the
         // recomp's saturated green/magenta artefacts before retaining warm body texels.
         for (var y = 8; y < 235; y++)
-        for (var x = 18; x < 235; x++)
-        {
-            var p = image.GetPixel(x, y);
-            var max = Mathf.Max(p.R, Mathf.Max(p.G, p.B));
-            var min = Mathf.Min(p.R, Mathf.Min(p.G, p.B));
-            var warm = p.R > p.G * 1.08f && p.G > p.B * 1.04f && max > 0.10f && max - min > 0.06f;
-            if (warm) mask.SetPixel(x, y, Colors.White);
-        }
+            for (var x = 18; x < 235; x++)
+            {
+                var p = image.GetPixel(x, y);
+                var max = Mathf.Max(p.R, Mathf.Max(p.G, p.B));
+                var min = Mathf.Min(p.R, Mathf.Min(p.G, p.B));
+                var warm = p.R > p.G * 1.08f && p.G > p.B * 1.04f && max > 0.10f && max - min > 0.06f;
+                if (warm) mask.SetPixel(x, y, Colors.White);
+            }
         return mask;
     }
 
@@ -1588,13 +1589,13 @@ public partial class GameHost
         var mask = Image.CreateEmpty(320, 240, false, Image.Format.Rgba8);
         mask.Fill(Colors.Black);
         for (var y = 0; y < 240; y++)
-        for (var x = 0; x < 320; x++)
-        {
-            var a = model.GetPixel(x, y);
-            var b = stage.GetPixel(x, y);
-            if (Mathf.Abs(a.R - b.R) + Mathf.Abs(a.G - b.G) + Mathf.Abs(a.B - b.B) > 0.08f)
-                mask.SetPixel(x, y, Colors.White);
-        }
+            for (var x = 0; x < 320; x++)
+            {
+                var a = model.GetPixel(x, y);
+                var b = stage.GetPixel(x, y);
+                if (Mathf.Abs(a.R - b.R) + Mathf.Abs(a.G - b.G) + Mathf.Abs(a.B - b.B) > 0.08f)
+                    mask.SetPixel(x, y, Colors.White);
+            }
         return mask;
     }
 
@@ -1603,8 +1604,8 @@ public partial class GameHost
     private static Image CommonKuwagamonMask(Image mask)
     {
         for (var y = 0; y < mask.GetHeight(); y++)
-        for (var x = 0; x < mask.GetWidth(); x++)
-            if (x >= 160 || y < 24 || y >= 220) mask.SetPixel(x, y, Colors.Black);
+            for (var x = 0; x < mask.GetWidth(); x++)
+                if (x >= 160 || y < 24 || y >= 220) mask.SetPixel(x, y, Colors.Black);
         return mask;
     }
 
@@ -1612,12 +1613,12 @@ public partial class GameHost
     {
         var values = new List<float>();
         for (var y = 0; y < 240; y++)
-        for (var x = 0; x < 320; x++)
-        {
-            if (mask.GetPixel(x, y).R < 0.5f) continue;
-            var p = image.GetPixel(x, y);
-            values.Add(p.R * 54.213f + p.G * 182.376f + p.B * 18.411f);
-        }
+            for (var x = 0; x < 320; x++)
+            {
+                if (mask.GetPixel(x, y).R < 0.5f) continue;
+                var p = image.GetPixel(x, y);
+                values.Add(p.R * 54.213f + p.G * 182.376f + p.B * 18.411f);
+            }
         Require(values.Count >= minimumPixels, $"luminance mask too small pixels={values.Count} minimum={minimumPixels}");
         values.Sort();
         float Quantile(float q) => values[(int)Mathf.Clamp(Mathf.Round((values.Count - 1) * q), 0, values.Count - 1)];
@@ -1630,7 +1631,7 @@ public partial class GameHost
     {
         var count = 0;
         for (var y = 0; y < 240; y++)
-        for (var x = 0; x < 320; x++) if (mask.GetPixel(x, y).R >= .5f) count++;
+            for (var x = 0; x < 320; x++) if (mask.GetPixel(x, y).R >= .5f) count++;
         return count;
     }
 
@@ -1639,14 +1640,14 @@ public partial class GameHost
         var total = 0;
         var dark = 0;
         for (var y = 0; y < 240; y++)
-        for (var x = 0; x < 320; x++)
-        {
-            if (mask.GetPixel(x, y).R < .5f) continue;
-            total++;
-            var p = image.GetPixel(x, y);
-            var luminance = p.R * 54.213f + p.G * 182.376f + p.B * 18.411f;
-            if (luminance < threshold) dark++;
-        }
+            for (var x = 0; x < 320; x++)
+            {
+                if (mask.GetPixel(x, y).R < .5f) continue;
+                total++;
+                var p = image.GetPixel(x, y);
+                var luminance = p.R * 54.213f + p.G * 182.376f + p.B * 18.411f;
+                if (luminance < threshold) dark++;
+            }
         Require(total > 100, $"active fighter mask too small pixels={total}");
         return 100f * dark / total;
     }
@@ -1696,10 +1697,10 @@ public partial class GameHost
         {
             if (!glyphs.TryGetValue(c, out var glyph)) continue;
             for (var gy = 0; gy < glyph.Length; gy++)
-            for (var gx = 0; gx < glyph[gy].Length; gx++)
-            if (glyph[gy][gx] == '1')
-                for (var dy = 0; dy < 2; dy++)
-                for (var dx = 0; dx < 2; dx++) image.SetPixel(x + gx * 2 + dx, origin.Y + gy * 2 + dy, Colors.White);
+                for (var gx = 0; gx < glyph[gy].Length; gx++)
+                    if (glyph[gy][gx] == '1')
+                        for (var dy = 0; dy < 2; dy++)
+                            for (var dx = 0; dx < 2; dx++) image.SetPixel(x + gx * 2 + dx, origin.Y + gy * 2 + dy, Colors.White);
             x += 12;
         }
     }

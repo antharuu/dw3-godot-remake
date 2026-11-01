@@ -4,9 +4,9 @@ namespace Dw3Production.Conversion;
 public sealed record Layer(string Path, int SourceDepth);
 public sealed record Exit(int Slot, string Destination, int X, int Y, int Facing, int? Condition = null, string ConditionStatus = "unconditional")
 {
-	/// <summary>True when this physical edge is story-gated and opened for the exploration
-	/// phase without evaluating its condition. The raw condition stays on <see cref="Condition"/>.</summary>
-	public bool IsUnevaluated => ConditionStatus == "unevaluated";
+    /// <summary>True when this physical edge is story-gated and opened for the exploration
+    /// phase without evaluating its condition. The raw condition stays on <see cref="Condition"/>.</summary>
+    public bool IsUnevaluated => ConditionStatus == "unevaluated";
 }
 /// <summary>A SLOT_CLIMB_UP (Type 2) or SLOT_CLIMB_DOWN (Type 3) slot. X/Y are the source
 /// slot pixel coordinates the actor is placed at when the climb starts; Height is the wall

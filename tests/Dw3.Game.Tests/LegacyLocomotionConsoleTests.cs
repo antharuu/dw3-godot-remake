@@ -124,8 +124,8 @@ public sealed class LegacyLocomotionConsoleTests
         // source leading-edge probes catch each protruding cell.
         var cells = Enumerable.Repeat((byte)1, N * N).ToArray();
         for (var y = 0; y < N; y++)
-        for (var x = 0; x < N; x++)
-            if (2 * y >= x + 16) cells[y * N + x] = 0;
+            for (var x = 0; x < N; x++)
+                if (2 * y >= x + 16) cells[y * N + x] = 0;
         var map = new FloorMap(N, N, cells);
         var movement = new Locomotion();
         var state = Running(new Vector2(100, 20));
@@ -187,8 +187,8 @@ public sealed class LegacyLocomotionConsoleTests
         const int N = 128;
         var cells = Enumerable.Repeat((byte)1, N * N).ToArray();
         for (var y = 0; y < N; y++)
-        for (var x = 0; x < N; x++)
-            if (2 * y >= x + 16) cells[y * N + x] = 0;
+            for (var x = 0; x < N; x++)
+                if (2 * y >= x + 16) cells[y * N + x] = 0;
         var map = new FloorMap(N, N, cells);
         var movement = new Locomotion();
         // A push straight into the diagonal wall (down-right, perpendicular to its

@@ -230,12 +230,12 @@ public sealed class Locomotion
             var blocked = 0;
             var total = 0;
             for (var dy = -SurfaceSmoothRadius; dy <= SurfaceSmoothRadius; dy++)
-            for (var dx = -SurfaceSmoothRadius; dx <= SurfaceSmoothRadius; dx++)
-            {
-                total++;
-                var probe = new Vector2(bx + dx, by + dy);
-                if (!map.Contains(probe) || map.CellAt(probe) == 0) blocked++;
-            }
+                for (var dx = -SurfaceSmoothRadius; dx <= SurfaceSmoothRadius; dx++)
+                {
+                    total++;
+                    var probe = new Vector2(bx + dx, by + dy);
+                    if (!map.Contains(probe) || map.CellAt(probe) == 0) blocked++;
+                }
             return blocked / (float)total;
         }
 
@@ -297,17 +297,17 @@ public sealed class Locomotion
         var maxY = Math.Min(map.Height - 1, (int)MathF.Ceiling(next.Y + radius));
         var radiusSq = radius * radius;
         for (var cy = minY; cy <= maxY; cy++)
-        for (var cx = minX; cx <= maxX; cx++)
-        {
-            if (map.CellAt(new Vector2(cx, cy)) != 0) continue;
-            var closest = new Vector2(Math.Clamp(next.X, cx, cx + 1f), Math.Clamp(next.Y, cy, cy + 1f));
-            if (Vector2.DistanceSquared(next, closest) <= radiusSq)
+            for (var cx = minX; cx <= maxX; cx++)
             {
-                rejection = "void-footprint";
-                contact = closest;
-                return false;
+                if (map.CellAt(new Vector2(cx, cy)) != 0) continue;
+                var closest = new Vector2(Math.Clamp(next.X, cx, cx + 1f), Math.Clamp(next.Y, cy, cy + 1f));
+                if (Vector2.DistanceSquared(next, closest) <= radiusSq)
+                {
+                    rejection = "void-footprint";
+                    contact = closest;
+                    return false;
+                }
             }
-        }
 
         // Occupancy: the circle must not overlap an occupant's unchanged source diamond.
         foreach (var occupant in occupants)

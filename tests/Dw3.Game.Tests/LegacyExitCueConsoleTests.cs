@@ -88,7 +88,7 @@ public sealed class LegacyExitCueConsoleTests
         }
         catch (T)
         {
-                return;
+            return;
         }
         throw new InvalidOperationException($"FAIL: {name}");
     }

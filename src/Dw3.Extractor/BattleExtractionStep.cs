@@ -102,12 +102,12 @@ internal static class BattleExtractionStep
         ValidateEvolutionPointers(report);
         int evolutionOffset = ReportOffset(EvolutionAddress, Partners * EvolutionsPerPartner * BattleDataDecoder.EvolutionStride, "evolution list");
         for (int partner = 0; partner < Partners; partner++)
-        for (int entry = 0; entry < EvolutionsPerPartner; entry++)
-        {
-            EvolutionRecord evolution = BattleDataDecoder.DecodeEvolution(report, evolutionOffset + ((partner * EvolutionsPerPartner + entry) * BattleDataDecoder.EvolutionStride), ids);
-            Insert(context, "INSERT INTO digivolution_records (partner,ordinal,digimon_index,digimon_id,stat,value) VALUES ($1,$2,$3,$4,$5,$6)", partner, entry, evolution.DigimonIndex, evolution.DigimonId, evolution.Stat, evolution.Value);
-            for (int need = 0; need < evolution.Needs.Count; need++) Insert(context, "INSERT INTO digivolution_needs (partner,ordinal,need_ordinal,digimon_index,digimon_id,level) VALUES ($1,$2,$3,$4,$5,$6)", partner, entry, need, evolution.Needs[need].DigimonIndex, evolution.Needs[need].DigimonId, evolution.Needs[need].Level);
-        }
+            for (int entry = 0; entry < EvolutionsPerPartner; entry++)
+            {
+                EvolutionRecord evolution = BattleDataDecoder.DecodeEvolution(report, evolutionOffset + ((partner * EvolutionsPerPartner + entry) * BattleDataDecoder.EvolutionStride), ids);
+                Insert(context, "INSERT INTO digivolution_records (partner,ordinal,digimon_index,digimon_id,stat,value) VALUES ($1,$2,$3,$4,$5,$6)", partner, entry, evolution.DigimonIndex, evolution.DigimonId, evolution.Stat, evolution.Value);
+                for (int need = 0; need < evolution.Needs.Count; need++) Insert(context, "INSERT INTO digivolution_needs (partner,ordinal,need_ordinal,digimon_index,digimon_id,level) VALUES ($1,$2,$3,$4,$5,$6)", partner, entry, need, evolution.Needs[need].DigimonIndex, evolution.Needs[need].DigimonId, evolution.Needs[need].Level);
+            }
         var partnerRecords = new List<EvolutionRecord>[Partners];
         for (int partner = 0; partner < Partners; partner++)
         {
@@ -133,10 +133,10 @@ internal static class BattleExtractionStep
         string path = context.GetImagePath($"battle/text/{fileName}.json"); Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         Insert(context, "INSERT INTO battle_text_tables (disc_path,entry_count) VALUES ($1,$2)", discPath, entries.Count);
         for (int entry = 0; entry < entries.Count; entry++) for (int ordinal = 0; ordinal < entries[entry].Count; ordinal++)
-        {
-            TextToken token = entries[entry][ordinal];
-            Insert(context, "INSERT INTO battle_text_tokens (disc_path,entry_ordinal,token_ordinal,kind,code,args_json) VALUES ($1,$2,$3,$4,$5,$6)", discPath, entry, ordinal, (int)token.Kind, token.Code, JsonSerializer.Serialize(token.Args));
-        }
+            {
+                TextToken token = entries[entry][ordinal];
+                Insert(context, "INSERT INTO battle_text_tokens (disc_path,entry_ordinal,token_ordinal,kind,code,args_json) VALUES ($1,$2,$3,$4,$5,$6)", discPath, entry, ordinal, (int)token.Kind, token.Code, JsonSerializer.Serialize(token.Args));
+            }
         File.WriteAllText(path, JsonSerializer.Serialize(new { discPath, entries = entries.Select(entry => entry.Select(token => new { kind = (int)token.Kind, token.Code, token.Args })) }, new JsonSerializerOptions { WriteIndented = true }));
     }
 

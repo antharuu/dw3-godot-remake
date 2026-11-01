@@ -755,12 +755,19 @@ public sealed class LegacyBattleConsoleTests
         var setup = new BattleSetup();
         setup.Partners[0] = new PartnerSeed
         {
-            Id = 1, Hp = playerHp, MaxHp = playerHp, Mp = playerMp, MaxMp = playerMp,
+            Id = 1,
+            Hp = playerHp,
+            MaxHp = playerHp,
+            Mp = playerMp,
+            MaxMp = playerMp,
             Stats = Stats(playerAttack, playerDefense, speed: playerSpeed),
         };
         setup.Enemies[0] = new BattleEnemy
         {
-            Fighter = 101, Hp = enemyHp, Mp = enemyMp, Strength = enemyStrength,
+            Fighter = 101,
+            Hp = enemyHp,
+            Mp = enemyMp,
+            Strength = enemyStrength,
             BaseStats = Stats(enemyRawAttack, enemyRawDefense, speed: enemySpeed),
         };
         return BattleState.InitFighters(setup, digimon: 999);
@@ -793,8 +800,14 @@ public sealed class LegacyBattleConsoleTests
     {
         return new TechData
         {
-            Power = power, Element = element, ElementPower = elementPower, Family = family,
-            Effect = effect, Script = script, Icon = icon, Mp = mp,
+            Power = power,
+            Element = element,
+            ElementPower = elementPower,
+            Family = family,
+            Effect = effect,
+            Script = script,
+            Icon = icon,
+            Mp = mp,
         };
     }
 
@@ -835,13 +848,13 @@ public sealed class LegacyBattleConsoleTests
 
     private static EnemyAiContext Ctx(BattleFighter enemy, BattleFighter? player = null,
         BattleFighter?[]? enemies = null, int activeEnemy = 0, IReadOnlyCollection<int>? starters = null) => new()
-    {
-        Enemy = enemy,
-        ActivePlayer = player,
-        Enemies = enemies ?? new BattleFighter?[] { enemy },
-        ActiveEnemy = activeEnemy,
-        StarterDigimonIds = starters ?? [],
-    };
+        {
+            Enemy = enemy,
+            ActivePlayer = player,
+            Enemies = enemies ?? new BattleFighter?[] { enemy },
+            ActiveEnemy = activeEnemy,
+            StarterDigimonIds = starters ?? [],
+        };
 
     private static void Check(bool condition, string name)
     {

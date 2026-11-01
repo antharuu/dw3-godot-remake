@@ -27,7 +27,7 @@ public sealed class StageBattlesScannerTests
         // Layout: FieldBattles[] | padding | AreaBattles[0..n-1][8] | BattleLists[0..n-1]
         int areaBase = battlesDataOffset + entryCount * 28 + 0x100;
         int listBase = areaBase + entryCount * 8 * 12;  // after all entries' 8 AreaBattles
-        int dataEnd  = listBase + entryCount * 36 + 0x100;
+        int dataEnd = listBase + entryCount * 36 + 0x100;
         int overlaySize = ((dataEnd + 3) / 4) * 4;
         byte[] overlay = new byte[overlaySize];
 
@@ -59,7 +59,7 @@ public sealed class StageBattlesScannerTests
             }
 
             // Write FieldBattles
-            BinaryPrimitives.WriteInt32LittleEndian(overlay.AsSpan(fb),     entry + 1);   // serial (non-zero)
+            BinaryPrimitives.WriteInt32LittleEndian(overlay.AsSpan(fb), entry + 1);   // serial (non-zero)
             BinaryPrimitives.WriteInt32LittleEndian(overlay.AsSpan(fb + 4), entry);       // id
             BinaryPrimitives.WriteInt32LittleEndian(overlay.AsSpan(fb + 8), 0);           // pad8 = 0
             uint blPtr = OverlayBase + (uint)blOff;
@@ -141,14 +141,14 @@ public sealed class StageBattlesScannerTests
         // sw $t2, 0x20($t0)     ← second store (element 1 pointer)
         // jr $ra / nop
         uint fsUpper = FieldStateAddress >> 16;
-        uint fsLow   = (uint)(FieldStateAddress & 0xFFFF);
+        uint fsLow = (uint)(FieldStateAddress & 0xFFFF);
         uint arrUpper = arrayAddress >> 16;
-        uint arrLow   = (uint)(arrayAddress & 0xFFFF);
+        uint arrLow = (uint)(arrayAddress & 0xFFFF);
         uint e1Upper = elem1 >> 16;
-        uint e1Low   = (uint)(elem1 & 0xFFFF);
+        uint e1Low = (uint)(elem1 & 0xFFFF);
         if ((FieldStateAddress & 0x8000) != 0) fsUpper++;
-        if ((arrayAddress   & 0x8000) != 0) arrUpper++;
-        if ((elem1          & 0x8000) != 0) e1Upper++;
+        if ((arrayAddress & 0x8000) != 0) arrUpper++;
+        if ((elem1 & 0x8000) != 0) e1Upper++;
 
         uint[] mips =
         [
@@ -188,11 +188,11 @@ public sealed class StageBattlesScannerTests
 
         // Overwrite MIPS stub: store addrB to battles (confirmed), materialise addrA (Strategy C).
         uint fsUpper = FieldStateAddress >> 16;
-        uint fsLow   = (uint)(FieldStateAddress & 0xFFFF);
-        uint bUpper  = addrB >> 16;
-        uint bLow    = (uint)(addrB & 0xFFFF);
-        uint aUpper  = addrA >> 16;
-        uint aLow    = (uint)(addrA & 0xFFFF);
+        uint fsLow = (uint)(FieldStateAddress & 0xFFFF);
+        uint bUpper = addrB >> 16;
+        uint bLow = (uint)(addrB & 0xFFFF);
+        uint aUpper = addrA >> 16;
+        uint aLow = (uint)(addrA & 0xFFFF);
         if ((FieldStateAddress & 0x8000) != 0) fsUpper++;
         if ((addrB & 0x8000) != 0) bUpper++;
         if ((addrA & 0x8000) != 0) aUpper++;

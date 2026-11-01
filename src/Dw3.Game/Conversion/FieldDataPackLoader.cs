@@ -94,21 +94,21 @@ public sealed class FieldDataPackLoader : IDisposable
             JsonElement anchor = player.GetProperty("render_anchor").GetProperty("offset");
             var sequences = new List<PlayerSequence>();
             foreach (JsonElement set in player.GetProperty("sets").EnumerateArray())
-            foreach (JsonElement sequence in set.GetProperty("sequences").EnumerateArray())
-            {
-                var records = new List<AnimationRecord>();
-                foreach (JsonElement record in sequence.GetProperty("records").EnumerateArray())
+                foreach (JsonElement sequence in set.GetProperty("sequences").EnumerateArray())
                 {
-                    JsonElement offset = record.GetProperty("offset");
-                    JsonElement foot = record.GetProperty("foot_ground_contact");
-                    records.Add(new AnimationRecord(
-                        record.GetProperty("frame").GetInt32(),
-                        record.GetProperty("duration").GetInt32(),
-                        offset[0].GetInt32(), offset[1].GetInt32(),
-                        (int)Math.Round(foot[0].GetDouble()), (int)Math.Round(foot[1].GetDouble())));
+                    var records = new List<AnimationRecord>();
+                    foreach (JsonElement record in sequence.GetProperty("records").EnumerateArray())
+                    {
+                        JsonElement offset = record.GetProperty("offset");
+                        JsonElement foot = record.GetProperty("foot_ground_contact");
+                        records.Add(new AnimationRecord(
+                            record.GetProperty("frame").GetInt32(),
+                            record.GetProperty("duration").GetInt32(),
+                            offset[0].GetInt32(), offset[1].GetInt32(),
+                            (int)Math.Round(foot[0].GetDouble()), (int)Math.Round(foot[1].GetDouble())));
+                    }
+                    sequences.Add(new PlayerSequence(set.GetProperty("set").GetInt32(), sequence.GetProperty("direction").GetInt32(), records));
                 }
-                sequences.Add(new PlayerSequence(set.GetProperty("set").GetInt32(), sequence.GetProperty("direction").GetInt32(), records));
-            }
             if (sequences.Count == 0) throw new JsonException("player manifest has no animation sequences");
             return new PlayerData(sequences, anchor[0].GetInt32(), anchor[1].GetInt32());
         }
@@ -279,8 +279,14 @@ public sealed class FieldDataPackLoader : IDisposable
 
     private static (int Direction, bool FlipH) ResolveNpcSpriteDirection(int direction) => direction switch
     {
-        0 => (0, false), 1 => (1, false), 2 => (2, false), 3 => (3, false), 4 => (4, false),
-        5 => (3, true), 6 => (2, true), 7 => (1, true),
+        0 => (0, false),
+        1 => (1, false),
+        2 => (2, false),
+        3 => (3, false),
+        4 => (4, false),
+        5 => (3, true),
+        6 => (2, true),
+        7 => (1, true),
         _ => throw new CacheResourceException("CACHE_INVALID", $"invalid NPC direction {direction}"),
     };
 

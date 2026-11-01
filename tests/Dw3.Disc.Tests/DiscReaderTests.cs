@@ -144,7 +144,7 @@ public sealed class DiscReaderTests : IDisposable
         var files = disc.ListFiles();
 
         byte[] hello = disc.ReadFile(files.Single(f => f.IsoPath == "HELLO.TXT"));
-        byte[] data  = disc.ReadFile(files.Single(f => f.IsoPath == "SUBDIR/DATA.BIN"));
+        byte[] data = disc.ReadFile(files.Single(f => f.IsoPath == "SUBDIR/DATA.BIN"));
 
         Assert.Equal(SyntheticDiscBuilder.HelloContent, hello);
         Assert.Equal(SyntheticDiscBuilder.DataContent, data);
@@ -175,20 +175,20 @@ public sealed class DiscReaderTests : IDisposable
 /// </summary>
 internal static class SyntheticDiscBuilder
 {
-    private const int Sec  = Iso9660Reader.SectorBytes;
-    private const int UDO  = Iso9660Reader.UserDataOffset;
-    private const int UDB  = Iso9660Reader.UserDataBytes;
+    private const int Sec = Iso9660Reader.SectorBytes;
+    private const int UDO = Iso9660Reader.UserDataOffset;
+    private const int UDB = Iso9660Reader.UserDataBytes;
 
-    private const int PvdLba     = 16;
-    private const int PTabLba    = 17;
+    private const int PvdLba = 16;
+    private const int PTabLba = 17;
     private const int RootDirLba = 18;
-    private const int SubDirLba  = 19;
-    private const int HelloLba   = 20;
-    private const int DataLba    = 21;
-    private const int TotalSecs  = 22;
+    private const int SubDirLba = 19;
+    private const int HelloLba = 20;
+    private const int DataLba = 21;
+    private const int TotalSecs = 22;
 
     public static readonly byte[] HelloContent = Encoding.ASCII.GetBytes("hello world");
-    public static readonly byte[] DataContent  = [0x01, 0x02, 0x03, 0x04];
+    public static readonly byte[] DataContent = [0x01, 0x02, 0x03, 0x04];
 
     public static byte[] Build()
     {
@@ -197,7 +197,7 @@ internal static class SyntheticDiscBuilder
         // ── Directory records ──────────────────────────────────────────────
 
         // Root directory.  Pass the correct sizes after we know them.
-        byte[] subDir  = MakeDirectory(SubDirLba, RootDirLba, 0,
+        byte[] subDir = MakeDirectory(SubDirLba, RootDirLba, 0,
             [MakeFileRecord("DATA.BIN;1", DataLba, DataContent.Length)]);
         // Now we know subDir.Length, so build root with correct subdir data length.
         byte[] rootDir = MakeDirectory(RootDirLba, RootDirLba, 0,
@@ -207,7 +207,7 @@ internal static class SyntheticDiscBuilder
             ]);
         // Patch dot-entry sizes now that we know the actual lengths.
         PatchU32(rootDir, 10, rootDir.Length);
-        PatchU32(subDir,  10, subDir.Length);
+        PatchU32(subDir, 10, subDir.Length);
 
         // ── Path table ─────────────────────────────────────────────────────
         byte[] pathTable = MakePathTable();
@@ -216,12 +216,12 @@ internal static class SyntheticDiscBuilder
         byte[] pvd = MakePvd(PTabLba, pathTable.Length, RootDirLba, rootDir.Length);
 
         // ── Write sectors ──────────────────────────────────────────────────
-        Write(bin, PvdLba,     pvd);
-        Write(bin, PTabLba,    pathTable);
+        Write(bin, PvdLba, pvd);
+        Write(bin, PTabLba, pathTable);
         Write(bin, RootDirLba, rootDir);
-        Write(bin, SubDirLba,  subDir);
-        Write(bin, HelloLba,   HelloContent);
-        Write(bin, DataLba,    DataContent);
+        Write(bin, SubDirLba, subDir);
+        Write(bin, HelloLba, HelloContent);
+        Write(bin, DataLba, DataContent);
         return bin;
     }
 
@@ -235,7 +235,7 @@ internal static class SyntheticDiscBuilder
     private static byte[] MakeDirectory(int ownLba, int parentLba, int ownSize,
         IReadOnlyList<byte[]> extra)
     {
-        byte[] dot    = MakeSpecialDirRec(0x00, ownLba,    ownSize);
+        byte[] dot = MakeSpecialDirRec(0x00, ownLba, ownSize);
         byte[] dotdot = MakeSpecialDirRec(0x01, parentLba, 0);
         int total = dot.Length + dotdot.Length + extra.Sum(r => r.Length);
         byte[] buf = new byte[total];
@@ -281,7 +281,7 @@ internal static class SyntheticDiscBuilder
         int raw = 33 + nameLen;
         int len = raw % 2 == 0 ? raw : raw + 1;
         byte[] r = new byte[len];
-        r[0]  = (byte)len;
+        r[0] = (byte)len;
         r[25] = flags;
         r[32] = (byte)nameLen;
         r[28] = 1; // Volume Sequence Number LE = 1
@@ -338,7 +338,7 @@ internal static class SyntheticDiscBuilder
 
     private static void Write(byte[] bin, int lba, byte[] userData)
     {
-        int off  = lba * Sec + UDO;
+        int off = lba * Sec + UDO;
         int copy = Math.Min(userData.Length, UDB);
         Array.Copy(userData, 0, bin, off, copy);
     }

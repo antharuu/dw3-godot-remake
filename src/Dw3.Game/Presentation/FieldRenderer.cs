@@ -243,14 +243,14 @@ public sealed class FieldRenderer
         if (_shadowTexture is not null) return _shadowTexture;
         var image = Image.CreateEmpty(32, 16, false, Image.Format.Rgba8);
         for (var y = 0; y < 16; y++)
-        for (var x = 0; x < 32; x++)
-        {
-            var dx = (x - 15.5f) / 16f;
-            var dy = (y - 7.5f) / 8f;
-            var distance = dx * dx + dy * dy;
-            var alpha = distance >= 1f ? 0f : 0.35f * (1f - distance);
-            image.SetPixel(x, y, new Color(0f, 0f, 0f, alpha));
-        }
+            for (var x = 0; x < 32; x++)
+            {
+                var dx = (x - 15.5f) / 16f;
+                var dy = (y - 7.5f) / 8f;
+                var distance = dx * dx + dy * dy;
+                var alpha = distance >= 1f ? 0f : 0.35f * (1f - distance);
+                image.SetPixel(x, y, new Color(0f, 0f, 0f, alpha));
+            }
         _shadowTexture = ImageTexture.CreateFromImage(image);
         return _shadowTexture;
     }

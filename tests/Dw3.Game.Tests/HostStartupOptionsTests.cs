@@ -210,10 +210,10 @@ public sealed class HostStartupOptionsTests
     {
         var opts = HostStartupOptions.From(k => k switch
         {
-            "DW3_BATTLE_MODEL"       => "/m.bin",
+            "DW3_BATTLE_MODEL" => "/m.bin",
             "DW3_BATTLE_ENEMY_MODEL" => "/e.bin",
-            "DW3_BATTLE_STAGE"       => "/s.bin",
-            _                        => null,
+            "DW3_BATTLE_STAGE" => "/s.bin",
+            _ => null,
         });
         Assert.Equal("/m.bin", opts.BattleModel);
         Assert.Equal("/e.bin", opts.BattleEnemyModel);

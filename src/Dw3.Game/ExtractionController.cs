@@ -134,7 +134,7 @@ public sealed class ExtractionController
             if (root.TryGetProperty("step", out JsonElement stepProp))
             {
                 string domain = stepProp.GetString() ?? string.Empty;
-                int done  = root.GetProperty("done").GetInt32();
+                int done = root.GetProperty("done").GetInt32();
                 int total = root.GetProperty("total").GetInt32();
                 ProgressUpdated?.Invoke(domain, done, total);
                 return;

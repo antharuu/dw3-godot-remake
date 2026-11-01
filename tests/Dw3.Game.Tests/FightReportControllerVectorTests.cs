@@ -82,13 +82,13 @@ public sealed class FightReportControllerVectorTests
         Assert.True(File.Exists(VectorsPath),
             $"Vectors file not found: {VectorsPath}");
 
-        var doc   = JsonNode.Parse(File.ReadAllText(VectorsPath))!;
+        var doc = JsonNode.Parse(File.ReadAllText(VectorsPath))!;
         var cases = doc["cases"]!.AsArray();
         var errors = new List<string>();
 
         foreach (var c in cases)
         {
-            int    id = c!["id"]!.GetValue<int>();
+            int id = c!["id"]!.GetValue<int>();
             string fn = c["fn"]!.GetValue<string>();
 
             try
@@ -121,7 +121,7 @@ public sealed class FightReportControllerVectorTests
     private static void VerifyRollStep(JsonNode c, int id, List<string> errors)
     {
         int targetExp = c["targetExp"]!.GetValue<int>();
-        int expected  = c["expected"]!.GetValue<int>();
+        int expected = c["expected"]!.GetValue<int>();
         int got = FightReportController.RollStep(targetExp);
         if (got != expected)
             errors.Add($"[{id}] RollStep({targetExp}): got {got} expected {expected}");
@@ -129,8 +129,8 @@ public sealed class FightReportControllerVectorTests
 
     private static void VerifyStepSequence(JsonNode c, int id, List<string> errors)
     {
-        var input      = InputFromJson(c);
-        int stepCount  = c["stepCount"]!.GetValue<int>();
+        var input = InputFromJson(c);
+        int stepCount = c["stepCount"]!.GetValue<int>();
         int crossEvery = c["crossEvery"]!.GetValue<int>();
 
         var ctrl = new FightReportController(input);
@@ -146,15 +146,15 @@ public sealed class FightReportControllerVectorTests
         // Scalar view fields
         int expHeaderFade = c["out_headerFade"]!.GetValue<int>();
         int expFooterFade = c["out_footerFade"]!.GetValue<int>();
-        int expBgScroll   = c["out_bgScroll"]!.GetValue<int>();
-        int expExitFade   = c["out_exitFade"]!.GetValue<int>();
-        bool expDone      = c["out_done"]!.GetValue<bool>();
+        int expBgScroll = c["out_bgScroll"]!.GetValue<int>();
+        int expExitFade = c["out_exitFade"]!.GetValue<int>();
+        bool expDone = c["out_done"]!.GetValue<bool>();
 
         if (v.HeaderFade != expHeaderFade) errors.Add($"{pfx} HeaderFade: got {v.HeaderFade} expected {expHeaderFade}");
         if (v.FooterFade != expFooterFade) errors.Add($"{pfx} FooterFade: got {v.FooterFade} expected {expFooterFade}");
-        if (v.BgScroll   != expBgScroll)   errors.Add($"{pfx} BgScroll: got {v.BgScroll} expected {expBgScroll}");
-        if (v.ExitFade   != expExitFade)   errors.Add($"{pfx} ExitFade: got {v.ExitFade} expected {expExitFade}");
-        if (v.Done       != expDone)       errors.Add($"{pfx} Done: got {v.Done} expected {expDone}");
+        if (v.BgScroll != expBgScroll) errors.Add($"{pfx} BgScroll: got {v.BgScroll} expected {expBgScroll}");
+        if (v.ExitFade != expExitFade) errors.Add($"{pfx} ExitFade: got {v.ExitFade} expected {expExitFade}");
+        if (v.Done != expDone) errors.Add($"{pfx} Done: got {v.Done} expected {expDone}");
 
         // Partners
         var expPartnersArr = c["out_partners"]!.AsArray();
@@ -169,15 +169,15 @@ public sealed class FightReportControllerVectorTests
                 var ep = expPartnersArr[pi]!;
                 var gp = v.Partners[pi];
                 string pp = $"{pfx}[P{pi}]";
-                if (gp.PartyIndex      != ep["partyIndex"]!.GetValue<int>())      errors.Add($"{pp} partyIndex");
-                if (gp.PartnerId       != ep["partnerId"]!.GetValue<int>())       errors.Add($"{pp} partnerId");
-                if (gp.FighterId       != ep["fighterId"]!.GetValue<int>())       errors.Add($"{pp} fighterId");
-                if (gp.Fade            != ep["fade"]!.GetValue<int>())            errors.Add($"{pp} Fade: got {gp.Fade} expected {ep["fade"]!.GetValue<int>()}");
-                if (gp.Selected        != ep["selected"]!.GetValue<bool>())       errors.Add($"{pp} Selected: got {gp.Selected} expected {ep["selected"]!.GetValue<bool>()}");
-                if (gp.CursorFrame     != ep["cursorFrame"]!.GetValue<int>())     errors.Add($"{pp} CursorFrame: got {gp.CursorFrame} expected {ep["cursorFrame"]!.GetValue<int>()}");
+                if (gp.PartyIndex != ep["partyIndex"]!.GetValue<int>()) errors.Add($"{pp} partyIndex");
+                if (gp.PartnerId != ep["partnerId"]!.GetValue<int>()) errors.Add($"{pp} partnerId");
+                if (gp.FighterId != ep["fighterId"]!.GetValue<int>()) errors.Add($"{pp} fighterId");
+                if (gp.Fade != ep["fade"]!.GetValue<int>()) errors.Add($"{pp} Fade: got {gp.Fade} expected {ep["fade"]!.GetValue<int>()}");
+                if (gp.Selected != ep["selected"]!.GetValue<bool>()) errors.Add($"{pp} Selected: got {gp.Selected} expected {ep["selected"]!.GetValue<bool>()}");
+                if (gp.CursorFrame != ep["cursorFrame"]!.GetValue<int>()) errors.Add($"{pp} CursorFrame: got {gp.CursorFrame} expected {ep["cursorFrame"]!.GetValue<int>()}");
                 if (gp.LevelBlinkFrame != ep["levelBlinkFrame"]!.GetValue<int>()) errors.Add($"{pp} LevelBlinkFrame");
-                if (gp.ShownExp        != ep["shownExp"]!.GetValue<int>())        errors.Add($"{pp} ShownExp: got {gp.ShownExp} expected {ep["shownExp"]!.GetValue<int>()}");
-                if (gp.AnimationFrame  != ep["animationFrame"]!.GetValue<int>())  errors.Add($"{pp} AnimationFrame");
+                if (gp.ShownExp != ep["shownExp"]!.GetValue<int>()) errors.Add($"{pp} ShownExp: got {gp.ShownExp} expected {ep["shownExp"]!.GetValue<int>()}");
+                if (gp.AnimationFrame != ep["animationFrame"]!.GetValue<int>()) errors.Add($"{pp} AnimationFrame");
 
                 // Slots
                 var expSlots = ep["slots"]!.AsArray();
@@ -191,10 +191,10 @@ public sealed class FightReportControllerVectorTests
                     {
                         var es = expSlots[si]!;
                         var gs = gp.Slots[si];
-                        if (gs.DigimonId  != es["digimonId"]!.GetValue<int>())   errors.Add($"{pp}[S{si}] DigimonId");
-                        if (gs.Visible    != es["visible"]!.GetValue<bool>())    errors.Add($"{pp}[S{si}] Visible");
+                        if (gs.DigimonId != es["digimonId"]!.GetValue<int>()) errors.Add($"{pp}[S{si}] DigimonId");
+                        if (gs.Visible != es["visible"]!.GetValue<bool>()) errors.Add($"{pp}[S{si}] Visible");
                         if (gs.ExpApplied != es["expApplied"]!.GetValue<bool>()) errors.Add($"{pp}[S{si}] ExpApplied");
-                        if (gs.BlinkFrame != es["blinkFrame"]!.GetValue<int>())  errors.Add($"{pp}[S{si}] BlinkFrame");
+                        if (gs.BlinkFrame != es["blinkFrame"]!.GetValue<int>()) errors.Add($"{pp}[S{si}] BlinkFrame");
                     }
                 }
             }
@@ -218,11 +218,11 @@ public sealed class FightReportControllerVectorTests
         {
             var em = expMsgNode!;
             var gm = v.Message;
-            if (gm.Entry          != em["entry"]!.GetValue<int>())          errors.Add($"{pfx} Message.Entry: got {gm.Entry} expected {em["entry"]!.GetValue<int>()}");
+            if (gm.Entry != em["entry"]!.GetValue<int>()) errors.Add($"{pfx} Message.Entry: got {gm.Entry} expected {em["entry"]!.GetValue<int>()}");
             if (gm.TokensRevealed != em["tokensRevealed"]!.GetValue<int>()) errors.Add($"{pfx} Message.TokensRevealed: got {gm.TokensRevealed} expected {em["tokensRevealed"]!.GetValue<int>()}");
-            if (gm.TokenCount     != em["tokenCount"]!.GetValue<int>())     errors.Add($"{pfx} Message.TokenCount");
-            if (gm.ArrowVisible   != em["arrowVisible"]!.GetValue<bool>())  errors.Add($"{pfx} Message.ArrowVisible: got {gm.ArrowVisible} expected {em["arrowVisible"]!.GetValue<bool>()}");
-            if (gm.ArrowFrame     != em["arrowFrame"]!.GetValue<int>())     errors.Add($"{pfx} Message.ArrowFrame: got {gm.ArrowFrame} expected {em["arrowFrame"]!.GetValue<int>()}");
+            if (gm.TokenCount != em["tokenCount"]!.GetValue<int>()) errors.Add($"{pfx} Message.TokenCount");
+            if (gm.ArrowVisible != em["arrowVisible"]!.GetValue<bool>()) errors.Add($"{pfx} Message.ArrowVisible: got {gm.ArrowVisible} expected {em["arrowVisible"]!.GetValue<bool>()}");
+            if (gm.ArrowFrame != em["arrowFrame"]!.GetValue<int>()) errors.Add($"{pfx} Message.ArrowFrame: got {gm.ArrowFrame} expected {em["arrowFrame"]!.GetValue<int>()}");
         }
 
         // Logs

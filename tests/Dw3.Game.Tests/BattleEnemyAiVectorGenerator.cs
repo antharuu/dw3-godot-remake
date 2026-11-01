@@ -22,13 +22,17 @@ public sealed class BattleEnemyAiVectorGenerator
     private static BattleFighter Enemy(int hp = 50, int maxHp = 100, int mp = 10, int charge = 0,
         int turns = 0, int[]? boosts = null, int[]? techs = null,
         BattleTableAction[]? actions = null, BattleTableAction counter = default) => new()
-    {
-        Hp = hp, MaxHp = maxHp, Mp = mp, Charge = charge, Turns = turns,
-        Boosts = boosts ?? [0, 0, 0, 0],
-        Techs = techs ?? [101, 102, 103],
-        Actions = actions ?? [],
-        Counter = counter,
-    };
+        {
+            Hp = hp,
+            MaxHp = maxHp,
+            Mp = mp,
+            Charge = charge,
+            Turns = turns,
+            Boosts = boosts ?? [0, 0, 0, 0],
+            Techs = techs ?? [101, 102, 103],
+            Actions = actions ?? [],
+            Counter = counter,
+        };
 
     private static BattleFighter Slot(int id, int hp, int maxHp = 100, int flags = 0) =>
         new() { Id = id, Hp = hp, MaxHp = maxHp, Flags = flags };
@@ -36,16 +40,16 @@ public sealed class BattleEnemyAiVectorGenerator
     private static EnemyAiContext Ctx(BattleFighter? enemy = null, BattleFighter? player = null,
         BattleFighter?[]? enemies = null, int activeEnemy = 0, int boostElement = 0,
         int battleId = 0, int encounterKind = 0, int[]? starters = null) => new()
-    {
-        Enemy = enemy ?? Enemy(),
-        ActivePlayer = player,
-        Enemies = enemies ?? [],
-        ActiveEnemy = activeEnemy,
-        BoostElement = boostElement,
-        BattleId = battleId,
-        EncounterKind = encounterKind,
-        StarterDigimonIds = starters ?? [],
-    };
+        {
+            Enemy = enemy ?? Enemy(),
+            ActivePlayer = player,
+            Enemies = enemies ?? [],
+            ActiveEnemy = activeEnemy,
+            BoostElement = boostElement,
+            BattleId = battleId,
+            EncounterKind = encounterKind,
+            StarterDigimonIds = starters ?? [],
+        };
 
     private void Add(JsonObject input, string note)
     {

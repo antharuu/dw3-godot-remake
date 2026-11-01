@@ -87,12 +87,12 @@ public static class NpcOverlayReader
                 $"Actor record at overlay offset 0x{fileOffset:X} extends beyond overlay ({overlay.Length} bytes).");
 
         uint conditionsPtr = BinaryPrimitives.ReadUInt32LittleEndian(overlay.Slice(fileOffset, 4));
-        uint talksPtr      = BinaryPrimitives.ReadUInt32LittleEndian(overlay.Slice(fileOffset + 4, 4));
-        short actorId      = BinaryPrimitives.ReadInt16LittleEndian(overlay.Slice(fileOffset + 8, 2));
-        short image        = BinaryPrimitives.ReadInt16LittleEndian(overlay.Slice(fileOffset + 10, 2));
-        short x            = BinaryPrimitives.ReadInt16LittleEndian(overlay.Slice(fileOffset + 12, 2));
-        short y            = BinaryPrimitives.ReadInt16LittleEndian(overlay.Slice(fileOffset + 14, 2));
-        short direction    = BinaryPrimitives.ReadInt16LittleEndian(overlay.Slice(fileOffset + 16, 2));
+        uint talksPtr = BinaryPrimitives.ReadUInt32LittleEndian(overlay.Slice(fileOffset + 4, 4));
+        short actorId = BinaryPrimitives.ReadInt16LittleEndian(overlay.Slice(fileOffset + 8, 2));
+        short image = BinaryPrimitives.ReadInt16LittleEndian(overlay.Slice(fileOffset + 10, 2));
+        short x = BinaryPrimitives.ReadInt16LittleEndian(overlay.Slice(fileOffset + 12, 2));
+        short y = BinaryPrimitives.ReadInt16LittleEndian(overlay.Slice(fileOffset + 14, 2));
+        short direction = BinaryPrimitives.ReadInt16LittleEndian(overlay.Slice(fileOffset + 16, 2));
 
         if (direction is < 0 or > 7)
             throw new FormatException($"Actor at 0x{actorAddress:X8} has invalid direction {direction} (expected 0..7).");
@@ -167,10 +167,10 @@ public static class NpcOverlayReader
             ushort type = BinaryPrimitives.ReadUInt16LittleEndian(overlay.Slice(cursor + 8, 2));
             if (type == 0)
                 break;
-            ushort arg  = BinaryPrimitives.ReadUInt16LittleEndian(overlay.Slice(cursor + 10, 2));
-            ushort x    = BinaryPrimitives.ReadUInt16LittleEndian(overlay.Slice(cursor + 12, 2));
-            ushort y    = BinaryPrimitives.ReadUInt16LittleEndian(overlay.Slice(cursor + 14, 2));
-            ushort dir  = BinaryPrimitives.ReadUInt16LittleEndian(overlay.Slice(cursor + 16, 2));
+            ushort arg = BinaryPrimitives.ReadUInt16LittleEndian(overlay.Slice(cursor + 10, 2));
+            ushort x = BinaryPrimitives.ReadUInt16LittleEndian(overlay.Slice(cursor + 12, 2));
+            ushort y = BinaryPrimitives.ReadUInt16LittleEndian(overlay.Slice(cursor + 14, 2));
+            ushort dir = BinaryPrimitives.ReadUInt16LittleEndian(overlay.Slice(cursor + 16, 2));
             result.Add(new NpcStageSlot(type, arg, x, y, dir));
             cursor += StageSlotBytes;
             if (result.Count >= MaxSlots)

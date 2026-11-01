@@ -190,7 +190,8 @@ public static class BattleModelJsonWriter
 
     private static void WriteMotions(Utf8JsonWriter json, string name, IReadOnlyList<IReadOnlyList<BattleMotionStep>> motions)
     {
-        json.WriteStartArray(name); foreach (IReadOnlyList<BattleMotionStep> motion in motions) { json.WriteStartArray(); foreach (BattleMotionStep step in motion) WriteStep(json, step); json.WriteEndArray(); } json.WriteEndArray();
+        json.WriteStartArray(name); foreach (IReadOnlyList<BattleMotionStep> motion in motions) { json.WriteStartArray(); foreach (BattleMotionStep step in motion) WriteStep(json, step); json.WriteEndArray(); }
+        json.WriteEndArray();
     }
 
     private static void WriteStep(Utf8JsonWriter json, BattleMotionStep step) => WriteInts(json, [step.Index, step.Count, step.Frame, step.EndFrame]);
@@ -198,7 +199,8 @@ public static class BattleModelJsonWriter
     private static void WriteFace(Utf8JsonWriter json, BattleFace face)
     {
         json.WriteStartObject("face"); json.WriteStartObject("source"); json.WriteString("file", "SMDLDATA.PRO"); json.WriteNumber("record_offset", face.Source.RecordOffset); json.WriteNumber("face_pointer_offset", face.Source.FacePointerOffset); json.WriteNumber("face_offset", face.Source.FaceOffset); json.WriteNumber("record_size", face.Source.RecordSize); json.WriteString("terminator", face.Source.Terminator); json.WriteEndObject();
-        json.WriteStartArray("parts"); foreach (BattleFacePart part in face.Parts) { json.WriteStartObject(); json.WriteNumber("index", part.Index); json.WriteNumber("x", part.X); json.WriteNumber("y", part.Y); json.WriteNumber("w", part.Width); json.WriteNumber("h", part.Height); json.WriteStartArray("frames"); foreach (BattleFaceFrame frame in part.Frames) WriteInts(json, [frame.X, frame.Y]); json.WriteEndArray(); json.WriteEndObject(); } json.WriteEndArray(); json.WriteEndObject();
+        json.WriteStartArray("parts"); foreach (BattleFacePart part in face.Parts) { json.WriteStartObject(); json.WriteNumber("index", part.Index); json.WriteNumber("x", part.X); json.WriteNumber("y", part.Y); json.WriteNumber("w", part.Width); json.WriteNumber("h", part.Height); json.WriteStartArray("frames"); foreach (BattleFaceFrame frame in part.Frames) WriteInts(json, [frame.X, frame.Y]); json.WriteEndArray(); json.WriteEndObject(); }
+        json.WriteEndArray(); json.WriteEndObject();
     }
 
     private static void WriteMesh(Utf8JsonWriter json, BattleMesh mesh, BattleTextureSet? textures)

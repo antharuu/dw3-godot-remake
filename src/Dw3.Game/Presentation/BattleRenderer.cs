@@ -200,14 +200,14 @@ public sealed partial class BattleRenderer
     {
         var image = Image.CreateEmpty(16, 16, false, Image.Format.Rgba8);
         for (var y = 0; y < 16; y++)
-        for (var x = 0; x < 16; x++)
-        {
-            var dx = x - 7.5f;
-            var dy = y - 7.5f;
-            var d = Mathf.Sqrt(dx * dx + dy * dy);
-            var alpha = Mathf.Clamp(1f - d / 7.5f, 0f, 1f);
-            image.SetPixel(x, y, new Color(1, 1, 0.85f, alpha));
-        }
+            for (var x = 0; x < 16; x++)
+            {
+                var dx = x - 7.5f;
+                var dy = y - 7.5f;
+                var d = Mathf.Sqrt(dx * dx + dy * dy);
+                var alpha = Mathf.Clamp(1f - d / 7.5f, 0f, 1f);
+                image.SetPixel(x, y, new Color(1, 1, 0.85f, alpha));
+            }
         return ImageTexture.CreateFromImage(image);
     }
 
@@ -419,7 +419,7 @@ public sealed partial class BattleRenderer
         var image = _partnerViewport.GetTexture().GetImage();
         var count = 0;
         for (var y = 0; y < image.GetHeight(); y++) for (var x = 0; x < image.GetWidth(); x++)
-            if (image.GetPixel(x, y).A8 > 0) count++;
+                if (image.GetPixel(x, y).A8 > 0) count++;
         return count;
     }
 
@@ -826,8 +826,13 @@ public sealed partial class BattleRenderer
             var source = cameras[index];
             return new SourceBattleCameraView
             {
-                Vpx = source.CamPos[0], Vpy = source.CamPos[1], Vpz = source.CamPos[2],
-                Vrx = source.CamRef[0], Vry = source.CamRef[1], Vrz = source.CamRef[2], Projection = source.Proj,
+                Vpx = source.CamPos[0],
+                Vpy = source.CamPos[1],
+                Vpz = source.CamPos[2],
+                Vrx = source.CamRef[0],
+                Vry = source.CamRef[1],
+                Vrz = source.CamRef[2],
+                Projection = source.Proj,
             };
         }
         _shotCamera = new BattleShotCamera(_shotRng, new BattleShotCameraViews
@@ -938,9 +943,9 @@ public sealed partial class BattleRenderer
     private static IEnumerable<Vector3> Corners(Aabb bounds)
     {
         for (var x = 0; x <= 1; x++)
-        for (var y = 0; y <= 1; y++)
-        for (var z = 0; z <= 1; z++)
-            yield return bounds.Position + new Vector3(x * bounds.Size.X, y * bounds.Size.Y, z * bounds.Size.Z);
+            for (var y = 0; y <= 1; y++)
+                for (var z = 0; z <= 1; z++)
+                    yield return bounds.Position + new Vector3(x * bounds.Size.X, y * bounds.Size.Y, z * bounds.Size.Z);
     }
 
     /// <summary>Sets the white-flash overlay level (0 = off, 1 = full white).</summary>
@@ -1224,13 +1229,13 @@ public sealed partial class BattleRenderer
             int[][] iconX = [[0x10F, 0x11A, 0x125], [0x25, 0x1A, 0x0F]];
             var sides = new[] { view.Players, view.Enemies };
             for (var side = 0; side < sides.Length; side++)
-            for (var slot = 0; slot < Math.Min(3, sides[side].Count); slot++)
-            {
-                var fighter = sides[side][slot];
-                if (fighter.Id == 0) continue;
-                var baseFrame = fighter.KnockedOut ? 2 : fighter.Hp != fighter.MaxHp ? 1 : 0;
-                DrawFrame(baseFrame + (fighter.Active ? 0xC : 0x3C), iconX[side][slot], 0x30);
-            }
+                for (var slot = 0; slot < Math.Min(3, sides[side].Count); slot++)
+                {
+                    var fighter = sides[side][slot];
+                    if (fighter.Id == 0) continue;
+                    var baseFrame = fighter.KnockedOut ? 2 : fighter.Hp != fighter.MaxHp ? 1 : 0;
+                    DrawFrame(baseFrame + (fighter.Active ? 0xC : 0x3C), iconX[side][slot], 0x30);
+                }
         }
 
         /// <summary>The six-command menu at the source left column, with the cursor highlight.</summary>

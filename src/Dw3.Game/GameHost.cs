@@ -1278,12 +1278,12 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
     {
         if (_encounterData is null) return 18; // the F8 test encounter 200's stage, when the manifest is absent
         foreach (var stage in _encounterData.Stages.Values)
-        foreach (var array in stage.StageBattles)
-        foreach (var place in array.Places)
-        foreach (var area in place.Areas)
-        foreach (var battle in area.Battles)
-            if (battle.Encounter == encounterIndex)
-                return battle.Stage;
+            foreach (var array in stage.StageBattles)
+                foreach (var place in array.Places)
+                    foreach (var area in place.Areas)
+                        foreach (var battle in area.Battles)
+                            if (battle.Encounter == encounterIndex)
+                                return battle.Stage;
         return 18;
     }
 
@@ -1348,11 +1348,11 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         var limit = (int)MathF.Ceiling(radius) + 1;
         var dirs = new[] { (0, 1), (0, -1), (1, 0), (-1, 0), (1, 1), (1, -1), (-1, 1), (-1, -1) };
         for (var dist = 1; dist <= limit; dist++)
-        foreach (var (dx, dy) in dirs)
-        {
-            var candidate = new NumericsVector2(pos.X + dx * dist, pos.Y + dy * dist);
-            if (CircleFreeAt(candidate)) { _state.Position = candidate; return; }
-        }
+            foreach (var (dx, dy) in dirs)
+            {
+                var candidate = new NumericsVector2(pos.X + dx * dist, pos.Y + dy * dist);
+                if (CircleFreeAt(candidate)) { _state.Position = candidate; return; }
+            }
     }
 
     private bool CircleFreeAt(NumericsVector2 pos)
@@ -1366,12 +1366,12 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         var maxY = Math.Min(map.Height - 1, (int)MathF.Ceiling(pos.Y + radius));
         var radiusSq = radius * radius;
         for (var cy = minY; cy <= maxY; cy++)
-        for (var cx = minX; cx <= maxX; cx++)
-        {
-            if (map.CellAt(new NumericsVector2(cx, cy)) != 0) continue;
-            var closest = new NumericsVector2(Math.Clamp(pos.X, cx, cx + 1f), Math.Clamp(pos.Y, cy, cy + 1f));
-            if (NumericsVector2.DistanceSquared(pos, closest) <= radiusSq) return false;
-        }
+            for (var cx = minX; cx <= maxX; cx++)
+            {
+                if (map.CellAt(new NumericsVector2(cx, cy)) != 0) continue;
+                var closest = new NumericsVector2(Math.Clamp(pos.X, cx, cx + 1f), Math.Clamp(pos.Y, cy, cy + 1f));
+                if (NumericsVector2.DistanceSquared(pos, closest) <= radiusSq) return false;
+            }
         return true;
     }
 
@@ -1577,8 +1577,8 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         var minY = Math.Max(0, (int)MathF.Floor(region.Position.Y));
         var maxY = Math.Min(after.GetHeight() - 1, (int)MathF.Ceiling(region.End.Y));
         for (var y = minY; y <= maxY; y++)
-        for (var x = minX; x <= maxX; x++)
-            if (DifferentRgb(before.GetPixel(x, y), after.GetPixel(x, y))) count++;
+            for (var x = minX; x <= maxX; x++)
+                if (DifferentRgb(before.GetPixel(x, y), after.GetPixel(x, y))) count++;
         return count;
     }
 
@@ -1591,14 +1591,14 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         if (image is null || image.IsEmpty()) return 0;
         var count = 0;
         for (var y = 0; y < image.GetHeight(); y++)
-        for (var x = 0; x < image.GetWidth(); x++)
-        {
-            if (image.GetPixel(x, y).A < 0.99f) continue;
-            var sx = (int)viewportTopLeft.X + x * 3 + 1;
-            var sy = (int)viewportTopLeft.Y + y * 3 + 1;
-            if (sx < 0 || sy < 0 || sx >= after.GetWidth() || sy >= after.GetHeight()) continue;
-            if (DifferentRgb(before.GetPixel(sx, sy), after.GetPixel(sx, sy))) count++;
-        }
+            for (var x = 0; x < image.GetWidth(); x++)
+            {
+                if (image.GetPixel(x, y).A < 0.99f) continue;
+                var sx = (int)viewportTopLeft.X + x * 3 + 1;
+                var sy = (int)viewportTopLeft.Y + y * 3 + 1;
+                if (sx < 0 || sy < 0 || sx >= after.GetWidth() || sy >= after.GetHeight()) continue;
+                if (DifferentRgb(before.GetPixel(sx, sy), after.GetPixel(sx, sy))) count++;
+            }
         return count;
     }
 
@@ -1614,10 +1614,10 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         var minY = Math.Max(0, (int)MathF.Floor(region.Position.Y));
         var maxY = Math.Min(image.GetHeight() - 1, (int)MathF.Ceiling(region.End.Y));
         for (var y = minY; y <= maxY; y++)
-        for (var x = minX; x <= maxX; x++)
-        {
-            if (predicate(image.GetPixel(x, y))) count++;
-        }
+            for (var x = minX; x <= maxX; x++)
+            {
+                if (predicate(image.GetPixel(x, y))) count++;
+            }
         return count;
     }
 
@@ -1650,21 +1650,21 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         if (image is null || image.IsEmpty()) return 0;
         var count = 0;
         for (var y = 0; y < image.GetHeight(); y++)
-        for (var x = 0; x < image.GetWidth(); x++)
-        {
-            var texel = image.GetPixel(x, y);
-            if (texel.A < 0.99f) continue;
-            var sx = (int)viewportTopLeft.X + x * 3 + 1;
-            var sy = (int)viewportTopLeft.Y + y * 3 + 1;
-            if (sx < 0 || sy < 0 || sx >= after.GetWidth() || sy >= after.GetHeight()) continue;
-            var rendered = after.GetPixel(sx, sy);
-            var back = before.GetPixel(sx, sy);
-            var blended = new Color(
-                texel.R * 0.5f + back.R * 0.5f,
-                texel.G * 0.5f + back.G * 0.5f,
-                texel.B * 0.5f + back.B * 0.5f);
-            if (ColorDistance(rendered, blended) < ColorDistance(rendered, texel)) count++;
-        }
+            for (var x = 0; x < image.GetWidth(); x++)
+            {
+                var texel = image.GetPixel(x, y);
+                if (texel.A < 0.99f) continue;
+                var sx = (int)viewportTopLeft.X + x * 3 + 1;
+                var sy = (int)viewportTopLeft.Y + y * 3 + 1;
+                if (sx < 0 || sy < 0 || sx >= after.GetWidth() || sy >= after.GetHeight()) continue;
+                var rendered = after.GetPixel(sx, sy);
+                var back = before.GetPixel(sx, sy);
+                var blended = new Color(
+                    texel.R * 0.5f + back.R * 0.5f,
+                    texel.G * 0.5f + back.G * 0.5f,
+                    texel.B * 0.5f + back.B * 0.5f);
+                if (ColorDistance(rendered, blended) < ColorDistance(rendered, texel)) count++;
+            }
         return count;
     }
 
@@ -1678,21 +1678,21 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         if (image is null || image.IsEmpty()) return 0;
         var count = 0;
         for (var y = 0; y < image.GetHeight(); y++)
-        for (var x = 0; x < image.GetWidth(); x++)
-        {
-            var texel = image.GetPixel(x, y);
-            if (texel.A < 0.99f) continue;
-            var sx = (int)viewportTopLeft.X + x * 3 + 1;
-            var sy = (int)viewportTopLeft.Y + y * 3 + 1;
-            if (sx < 0 || sy < 0 || sx >= after.GetWidth() || sy >= after.GetHeight()) continue;
-            var rendered = after.GetPixel(sx, sy);
-            var back = before.GetPixel(sx, sy);
-            var blended = new Color(
-                texel.R * 0.5f + back.R * 0.5f,
-                texel.G * 0.5f + back.G * 0.5f,
-                texel.B * 0.5f + back.B * 0.5f);
-            if (ColorDistance(rendered, texel) < ColorDistance(rendered, blended)) count++;
-        }
+            for (var x = 0; x < image.GetWidth(); x++)
+            {
+                var texel = image.GetPixel(x, y);
+                if (texel.A < 0.99f) continue;
+                var sx = (int)viewportTopLeft.X + x * 3 + 1;
+                var sy = (int)viewportTopLeft.Y + y * 3 + 1;
+                if (sx < 0 || sy < 0 || sx >= after.GetWidth() || sy >= after.GetHeight()) continue;
+                var rendered = after.GetPixel(sx, sy);
+                var back = before.GetPixel(sx, sy);
+                var blended = new Color(
+                    texel.R * 0.5f + back.R * 0.5f,
+                    texel.G * 0.5f + back.G * 0.5f,
+                    texel.B * 0.5f + back.B * 0.5f);
+                if (ColorDistance(rendered, texel) < ColorDistance(rendered, blended)) count++;
+            }
         return count;
     }
 
@@ -1993,11 +1993,11 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
     private static int FindTriggerDirection(FieldZone zone, int slot)
     {
         for (var y = 0; y < zone.Triggers.Height; y++)
-        for (var x = 0; x < zone.Triggers.Width; x++)
-        {
-            var raw = zone.Triggers.CellAt(new NumericsVector2(x, y));
-            if (raw != 0 && (raw & 0x1F) == slot) return raw >> 5;
-        }
+            for (var x = 0; x < zone.Triggers.Width; x++)
+            {
+                var raw = zone.Triggers.CellAt(new NumericsVector2(x, y));
+                if (raw != 0 && (raw & 0x1F) == slot) return raw >> 5;
+            }
         throw new InvalidOperationException($"trigger slot={slot} missing in zone={zone.Zone.Id}");
     }
 
@@ -2005,11 +2005,11 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
     {
         var cells = new List<NumericsVector2>();
         for (var y = 0; y < zone.Triggers.Height; y++)
-        for (var x = 0; x < zone.Triggers.Width; x++)
-        {
-            var raw = zone.Triggers.CellAt(new NumericsVector2(x, y));
-            if (raw != 0 && (raw & 0x1F) == slot) cells.Add(new NumericsVector2(x, y));
-        }
+            for (var x = 0; x < zone.Triggers.Width; x++)
+            {
+                var raw = zone.Triggers.CellAt(new NumericsVector2(x, y));
+                if (raw != 0 && (raw & 0x1F) == slot) cells.Add(new NumericsVector2(x, y));
+            }
         if (cells.Count == 0) throw new InvalidOperationException($"trigger slot={slot} missing in zone={zone.Zone.Id}");
 
         var minX = cells.Min(c => c.X);
@@ -2149,12 +2149,12 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         var radiusPx = Mathf.RoundToInt(Locomotion.PlayerCollisionRadius * 3f);
         var matches = 0;
         for (var y = centerY - radiusPx - 3; y <= centerY + radiusPx + 3; y++)
-        for (var x = centerX - radiusPx - 3; x <= centerX + radiusPx + 3; x++)
-        {
-            if (x < 0 || y < 0 || x >= capture.GetWidth() || y >= capture.GetHeight()) continue;
-            var pixel = capture.GetPixel(x, y);
-            if (pixel.R8 > 240 && pixel.G8 > 240 && pixel.B8 < 40) matches++;
-        }
+            for (var x = centerX - radiusPx - 3; x <= centerX + radiusPx + 3; x++)
+            {
+                if (x < 0 || y < 0 || x >= capture.GetWidth() || y >= capture.GetHeight()) continue;
+                var pixel = capture.GetPixel(x, y);
+                if (pixel.R8 > 240 && pixel.G8 > 240 && pixel.B8 < 40) matches++;
+            }
         return matches;
     }
 
@@ -2221,15 +2221,15 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
             var blueCount = 0;
             var sampleCount = 0;
             for (var dy = -1; dy <= 1; dy++)
-            for (var dx = -1; dx <= 1; dx++)
-            {
-                var px = screenX + dx * 3;
-                var py = screenY + dy * 3;
-                if (px < 0 || px >= 1280 || py < 0 || py >= 720) continue;
-                var pixel = capture.GetPixel(px, py);
-                sampleCount++;
-                if (pixel.B8 > pixel.R8 + 25 && pixel.B8 > pixel.G8 + 15) blueCount++;
-            }
+                for (var dx = -1; dx <= 1; dx++)
+                {
+                    var px = screenX + dx * 3;
+                    var py = screenY + dy * 3;
+                    if (px < 0 || px >= 1280 || py < 0 || py >= 720) continue;
+                    var pixel = capture.GetPixel(px, py);
+                    sampleCount++;
+                    if (pixel.B8 > pixel.R8 + 25 && pixel.B8 > pixel.G8 + 15) blueCount++;
+                }
             Require(sampleCount > 0, $"canal region at screen ({screenX},{screenY}) yielded no valid pixels");
             Require(blueCount * 2 >= sampleCount,
                 $"canal water not blue: blueCount={blueCount}/{sampleCount} at screen ({screenX},{screenY}) — " +
@@ -2303,12 +2303,12 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
     private static NumericsVector2 FindTriggerCell(FieldZone zone, int slot)
     {
         for (var y = 0; y < zone.Triggers.Height; y++)
-        for (var x = 0; x < zone.Triggers.Width; x++)
-        {
-            var raw = zone.Triggers.CellAt(new NumericsVector2(x, y));
-            if (raw != 0 && (raw & 0x1F) == slot)
-                return new NumericsVector2(x, y);
-        }
+            for (var x = 0; x < zone.Triggers.Width; x++)
+            {
+                var raw = zone.Triggers.CellAt(new NumericsVector2(x, y));
+                if (raw != 0 && (raw & 0x1F) == slot)
+                    return new NumericsVector2(x, y);
+            }
         throw new InvalidOperationException($"trigger slot={slot} missing in zone={zone.Zone.Id}");
     }
 
@@ -2401,15 +2401,15 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         if (IsWalkableCell(zone, centerX, centerY)) return new NumericsVector2(centerX, centerY);
         var maxRadius = Math.Max(zone.Floor.Width, zone.Floor.Height);
         for (var radius = 1; radius <= maxRadius; radius++)
-        for (var dy = -radius; dy <= radius; dy++)
-        for (var dx = -radius; dx <= radius; dx++)
-        {
-            if (Math.Max(Math.Abs(dx), Math.Abs(dy)) != radius) continue;
-            var x = centerX + dx;
-            var y = centerY + dy;
-            if (x < 0 || y < 0 || x >= zone.Floor.Width || y >= zone.Floor.Height) continue;
-            if (IsWalkableCell(zone, x, y)) return new NumericsVector2(x, y);
-        }
+            for (var dy = -radius; dy <= radius; dy++)
+                for (var dx = -radius; dx <= radius; dx++)
+                {
+                    if (Math.Max(Math.Abs(dx), Math.Abs(dy)) != radius) continue;
+                    var x = centerX + dx;
+                    var y = centerY + dy;
+                    if (x < 0 || y < 0 || x >= zone.Floor.Width || y >= zone.Floor.Height) continue;
+                    if (IsWalkableCell(zone, x, y)) return new NumericsVector2(x, y);
+                }
         throw new CacheResourceException("CACHE_RESOURCE_UNAVAILABLE", $"zone={zone.Zone.Id} has no walkable floor cell");
     }
 
@@ -2467,8 +2467,8 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
             throw new CacheResourceException("CACHE_INVALID", $"{kind} image dimensions mismatch: {path}");
         var cells = new byte[zone.Width * zone.Height];
         for (var y = 0; y < zone.Height; y++)
-        for (var x = 0; x < zone.Width; x++)
-            cells[y * zone.Width + x] = (byte)image.GetPixel(x, y).R8;
+            for (var x = 0; x < zone.Width; x++)
+                cells[y * zone.Width + x] = (byte)image.GetPixel(x, y).R8;
         return cells;
     }
 
@@ -2605,19 +2605,19 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         var red = 0;
         var blue = 0;
         for (var y = 0; y < source.GetHeight(); y++)
-        for (var x = 0; x < source.GetWidth(); x++)
-        {
-            var expected = source.GetPixel(x, y);
-            if (expected.A < 0.99f) continue;
-            var screenX = left + x * 3 + 1;
-            var screenY = top + y * 3 + 1;
-            if (screenX < 0 || screenY < 0 || screenX >= capture.GetWidth() || screenY >= capture.GetHeight()) continue;
-            var actual = capture.GetPixel(screenX, screenY);
-            if (!SameRgb(actual, expected)) continue;
-            matched++;
-            if (expected.R8 > 150 && expected.G8 < 120 && expected.B8 < 120) red++;
-            else if (expected.B8 > 150 && expected.R8 < 120) blue++;
-        }
+            for (var x = 0; x < source.GetWidth(); x++)
+            {
+                var expected = source.GetPixel(x, y);
+                if (expected.A < 0.99f) continue;
+                var screenX = left + x * 3 + 1;
+                var screenY = top + y * 3 + 1;
+                if (screenX < 0 || screenY < 0 || screenX >= capture.GetWidth() || screenY >= capture.GetHeight()) continue;
+                var actual = capture.GetPixel(screenX, screenY);
+                if (!SameRgb(actual, expected)) continue;
+                matched++;
+                if (expected.R8 > 150 && expected.G8 < 120 && expected.B8 < 120) red++;
+                else if (expected.B8 > 150 && expected.R8 < 120) blue++;
+            }
         return new IconPixelCount(matched, red, blue);
     }
 

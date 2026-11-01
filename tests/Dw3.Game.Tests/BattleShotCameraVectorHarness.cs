@@ -40,9 +40,20 @@ internal static class BattleShotCameraVectorHarness
 
     public static SourceBattleCameraView ToView(int[] f) => new()
     {
-        Vpx = f[0], Vpy = f[1], Vpz = f[2], Vrx = f[3], Vry = f[4], Vrz = f[5],
-        Tx = f[6], Ty = f[7], Tz = f[8], RotationX = f[9], RotationY = f[10], RotationZ = f[11],
-        Rz = f[12], Projection = f[13],
+        Vpx = f[0],
+        Vpy = f[1],
+        Vpz = f[2],
+        Vrx = f[3],
+        Vry = f[4],
+        Vrz = f[5],
+        Tx = f[6],
+        Ty = f[7],
+        Tz = f[8],
+        RotationX = f[9],
+        RotationY = f[10],
+        RotationZ = f[11],
+        Rz = f[12],
+        Projection = f[13],
     };
 
     public static int[] FromView(SourceBattleCameraView v) =>

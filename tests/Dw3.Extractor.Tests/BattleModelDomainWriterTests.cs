@@ -43,10 +43,10 @@ public sealed class BattleModelDomainWriterTests : IDisposable
     public void Dispose()
     {
         if (Directory.Exists(_root))
-        // Release pooled connections before deletion; on Windows, the pool keeps
-        // the file handle open past Dispose(), preventing Directory.Delete.
-        SqliteConnection.ClearAllPools();
-            Directory.Delete(_root, recursive: true);
+            // Release pooled connections before deletion; on Windows, the pool keeps
+            // the file handle open past Dispose(), preventing Directory.Delete.
+            SqliteConnection.ClearAllPools();
+        Directory.Delete(_root, recursive: true);
     }
 
     /// <summary>Archive: 0 descriptor (one non-root bone), 1 texture placeholder, 2 mesh, 3 key placeholder.</summary>

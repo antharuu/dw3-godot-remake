@@ -177,7 +177,7 @@ public static class PlayerArchiveDecoder
         {
             if (offsets[i] <= offsets[i - 1])
                 throw new FormatException(
-                    $"Player archive offsets are not strictly ascending at index {i}: offsets[{i-1}]=0x{offsets[i-1]:X}, offsets[{i}]=0x{offsets[i]:X}.");
+                    $"Player archive offsets are not strictly ascending at index {i}: offsets[{i - 1}]=0x{offsets[i - 1]:X}, offsets[{i}]=0x{offsets[i]:X}.");
         }
 
         return offsets;
@@ -367,7 +367,7 @@ public static class PlayerArchiveDecoder
                 throw new FormatException(
                     $"Sequence {index} at cursor {cursor}: truncated frame record (need 4 words, {wordCount - cursor} remain).");
 
-            int frame   = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(start + (cursor + 1) * 4, 4));
+            int frame = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(start + (cursor + 1) * 4, 4));
             int offsetX = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(start + (cursor + 2) * 4, 4));
             int offsetY = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(start + (cursor + 3) * 4, 4));
 

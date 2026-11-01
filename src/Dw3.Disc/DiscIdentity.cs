@@ -58,8 +58,8 @@ public static class DiscIdentity
     /// </summary>
     public static (string Md5, string Sha1, string Sha256) DigestFile(string path)
     {
-        using var md5    = IncrementalHash.CreateHash(HashAlgorithmName.MD5);
-        using var sha1   = IncrementalHash.CreateHash(HashAlgorithmName.SHA1);
+        using var md5 = IncrementalHash.CreateHash(HashAlgorithmName.MD5);
+        using var sha1 = IncrementalHash.CreateHash(HashAlgorithmName.SHA1);
         using var sha256 = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
 
         const int BufferSize = 1 << 20; // 1 MiB

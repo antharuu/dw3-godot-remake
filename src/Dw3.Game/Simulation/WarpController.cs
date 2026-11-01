@@ -45,11 +45,11 @@ public sealed class TriggerMap
         var minY = Math.Max(0, (int)MathF.Ceiling(position.Y - radius));
         var maxY = Math.Min(Height - 1, (int)MathF.Floor(position.Y + radius));
         for (var y = minY; y <= maxY; y++)
-        for (var x = minX; x <= maxX; x++)
-        {
-            var candidate = new Vector2(x, y);
-            if (Vector2.Distance(position, candidate) <= radius) yield return (candidate, _cells[y * Width + x]);
-        }
+            for (var x = minX; x <= maxX; x++)
+            {
+                var candidate = new Vector2(x, y);
+                if (Vector2.Distance(position, candidate) <= radius) yield return (candidate, _cells[y * Width + x]);
+            }
     }
 }
 

@@ -154,7 +154,7 @@ public static class Cli
             foreach (var entry in files)
             {
                 byte[] content = disc.ReadFile(entry);
-                string sha256  = Convert.ToHexStringLower(SHA256.HashData(content));
+                string sha256 = Convert.ToHexStringLower(SHA256.HashData(content));
                 output.WriteLine($"{sha256}  {entry.IsoPath}");
             }
             return 0;

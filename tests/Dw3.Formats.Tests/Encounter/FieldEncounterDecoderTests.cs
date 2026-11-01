@@ -9,9 +9,9 @@ public sealed class FieldEncounterDecoderTests
 {
     // ── Layout constants (EU disc, FIELDSTG.PRO loads at 0x80082CB0) ─────────
     private const uint FieldOverlayBase = 0x80082CB0u;
-    private const uint EnemiesAddr      = 0x80092DFCu; // FIELDSTG_enemies
-    private const uint EncountersAddr   = 0x80094680u; // FIELDSTG_encounters
-    private const uint BattleRatesAddr  = 0x8009B6ACu; // FIELDSTG_battleRates
+    private const uint EnemiesAddr = 0x80092DFCu; // FIELDSTG_enemies
+    private const uint EncountersAddr = 0x80094680u; // FIELDSTG_encounters
+    private const uint BattleRatesAddr = 0x8009B6ACu; // FIELDSTG_battleRates
 
     // ── Enemy record layout ────────────────────────────────────────────────────
     [Fact]
@@ -128,7 +128,7 @@ public sealed class FieldEncounterDecoderTests
         // Fabricated area battle: encounter=200, stage=18, music=0x60080000
         byte[] overlay = new byte[256];
         const int offset = 0x20;
-        BinaryPrimitives.WriteInt32LittleEndian(overlay.AsSpan(offset),     200);
+        BinaryPrimitives.WriteInt32LittleEndian(overlay.AsSpan(offset), 200);
         BinaryPrimitives.WriteInt32LittleEndian(overlay.AsSpan(offset + 4), 18);
         BinaryPrimitives.WriteInt32LittleEndian(overlay.AsSpan(offset + 8), unchecked((int)0x60080000u));
 

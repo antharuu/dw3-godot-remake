@@ -83,7 +83,7 @@ public static class FieldEncounterDecoder
     {
         uint u = unchecked((uint)music);
         int bank = (int)((u >> 18) & 0x3F);
-        int n    = (int)(u & 0x3FFFFu);
+        int n = (int)(u & 0x3FFFFu);
         return $"MUSIC({bank},{n})";
     }
 
@@ -95,10 +95,10 @@ public static class FieldEncounterDecoder
     {
         if (offset < 0 || checked(offset + EnemyStride) > data.Length)
             throw new FormatException("BattleEnemy record lies outside the supplied buffer.");
-        int   fighter  = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(offset, 4));
-        short level    = BinaryPrimitives.ReadInt16LittleEndian(data.Slice(offset + 4, 2));
-        short hp       = BinaryPrimitives.ReadInt16LittleEndian(data.Slice(offset + 6, 2));
-        short mp       = BinaryPrimitives.ReadInt16LittleEndian(data.Slice(offset + 8, 2));
+        int fighter = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(offset, 4));
+        short level = BinaryPrimitives.ReadInt16LittleEndian(data.Slice(offset + 4, 2));
+        short hp = BinaryPrimitives.ReadInt16LittleEndian(data.Slice(offset + 6, 2));
+        short mp = BinaryPrimitives.ReadInt16LittleEndian(data.Slice(offset + 8, 2));
         short strength = BinaryPrimitives.ReadInt16LittleEndian(data.Slice(offset + 10, 2));
         return new BattleEnemy(0, fighter, level, hp, mp, strength);
     }
@@ -153,7 +153,7 @@ public static class FieldEncounterDecoder
             uint p2 = BinaryPrimitives.ReadUInt32LittleEndian(fieldStg.Slice(offset + 8, 4));
             int[] indices = [ResolveEnemyIndex(p0), ResolveEnemyIndex(p1), ResolveEnemyIndex(p2)];
             byte ambush = fieldStg[offset + 12];
-            byte kind   = fieldStg[offset + 13];
+            byte kind = fieldStg[offset + 13];
             byte[] blocks = fieldStg.Slice(offset + 14, 12).ToArray();
             var slots = indices
                 .Select(idx => new EncounterEnemySlot(idx, enemies[idx]))
@@ -184,8 +184,8 @@ public static class FieldEncounterDecoder
         if (offset + AreaBattleStride > overlay.Length)
             throw new FormatException($"AreaBattle record lies outside overlay at 0x{pointer:X8}.");
         int encounter = BinaryPrimitives.ReadInt32LittleEndian(overlay.Slice(offset, 4));
-        int stage     = BinaryPrimitives.ReadInt32LittleEndian(overlay.Slice(offset + 4, 4));
-        int music     = BinaryPrimitives.ReadInt32LittleEndian(overlay.Slice(offset + 8, 4));
+        int stage = BinaryPrimitives.ReadInt32LittleEndian(overlay.Slice(offset + 4, 4));
+        int music = BinaryPrimitives.ReadInt32LittleEndian(overlay.Slice(offset + 8, 4));
         return new AreaBattle(encounter, stage, music, MusicLabel(music));
     }
 
@@ -217,9 +217,9 @@ public static class FieldEncounterDecoder
         int offset = OverlayOffset(pointer, overlayBase, overlay.Length, "FieldBattles");
         if (offset + FieldBattlesStride > overlay.Length)
             throw new FormatException($"FieldBattles record lies outside overlay at 0x{pointer:X8}.");
-        int serial  = BinaryPrimitives.ReadInt32LittleEndian(overlay.Slice(offset, 4));
-        int id      = BinaryPrimitives.ReadInt32LittleEndian(overlay.Slice(offset + 4, 4));
-        int pad8    = BinaryPrimitives.ReadInt32LittleEndian(overlay.Slice(offset + 8, 4));
+        int serial = BinaryPrimitives.ReadInt32LittleEndian(overlay.Slice(offset, 4));
+        int id = BinaryPrimitives.ReadInt32LittleEndian(overlay.Slice(offset + 4, 4));
+        int pad8 = BinaryPrimitives.ReadInt32LittleEndian(overlay.Slice(offset + 8, 4));
         var areas = new List<BattleList>(4);
         for (int i = 0; i < 4; i++)
         {

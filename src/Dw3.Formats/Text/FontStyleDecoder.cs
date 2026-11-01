@@ -124,7 +124,7 @@ public static class FontStyleDecoder
                 Dx: (sbyte)exe[pos + 7],
                 Dy: (sbyte)exe[pos + 8],
                 Advance: exe[pos + 9]
-                // pos+10 (unused) discarded
+            // pos+10 (unused) discarded
             );
         }
         return metrics;

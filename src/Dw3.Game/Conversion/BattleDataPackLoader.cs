@@ -200,10 +200,17 @@ public sealed class BattleDataPackLoader : IDisposable
             var commands = Enumerable.Range(1, 6).Select(entry => new BattleTextTemplate(entry, "menu", [], "disc battle menu")).ToArray();
             var messages = new Dictionary<string, BattleTextTemplate>
             {
-                ["actor"] = Template(22, "actor"), ["basicAttack"] = Template(8, "actor"), ["damage"] = Template(11, "value"),
-                ["digivolve"] = Template(55, "actor", "digimon"), ["fledPlayer"] = Template(67, "actor"), ["item"] = Template(9, "actor", "item"),
-                ["lost"] = Template(83), ["noMp"] = Template(37), ["switch"] = Template(56, "actor"),
-                ["technique"] = Template(9, "actor", "technique"), ["won"] = Template(82),
+                ["actor"] = Template(22, "actor"),
+                ["basicAttack"] = Template(8, "actor"),
+                ["damage"] = Template(11, "value"),
+                ["digivolve"] = Template(55, "actor", "digimon"),
+                ["fledPlayer"] = Template(67, "actor"),
+                ["item"] = Template(9, "actor", "item"),
+                ["lost"] = Template(83),
+                ["noMp"] = Template(37),
+                ["switch"] = Template(56, "actor"),
+                ["technique"] = Template(9, "actor", "technique"),
+                ["won"] = Template(82),
             };
             var reportTemplates = new Dictionary<string, int> { ["digimonLearned"] = 8, ["expGained"] = 2, ["expLabel"] = 1, ["itemGained"] = 11, ["levelGained"] = 4, ["moneyGained"] = 10, ["partnerLevel"] = 7, ["skillKnown"] = 6, ["skillLearned"] = 5 };
             return new BattleTextData(menu, names, techniques, skillInfo, itemInfo, report, commands, messages, reportTemplates);

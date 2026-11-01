@@ -19,9 +19,9 @@ public sealed record ZoneDialogue(int TalkFile, IReadOnlyList<DialogueActor> Act
 /// or a control (t=c, command 0..9 with its arguments).</summary>
 public sealed record TextToken(string Type, int Code, int Command, IReadOnlyList<int> Args)
 {
-	public bool IsGlyph => Type == "g";
-	public bool IsIcon => Type == "i";
-	public bool IsControl => Type == "c";
+    public bool IsGlyph => Type == "g";
+    public bool IsIcon => Type == "i";
+    public bool IsControl => Type == "c";
 }
 /// <summary>One glyph/icon metric row: the atlas source rectangle plus draw offset and advance.</summary>
 public sealed record GlyphMetric(int Page, int U, int V, int ClutX, int ClutY, int W, int H, int Dx, int Dy, int Advance);

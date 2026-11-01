@@ -90,16 +90,16 @@ public sealed class BattleFlowController
                 SetMessage("basicAttack", NameTokens(actor));
                 break;
             case BattleCommand.Technique:
-            {
-                var technique = PlayerTechniques.FirstOrDefault(candidate => candidate.Id == arg);
-                if (technique is null || !State.PlayerTechnique(technique.Tech, rng))
                 {
-                    SetMessage("noMp");
-                    return false;
+                    var technique = PlayerTechniques.FirstOrDefault(candidate => candidate.Id == arg);
+                    if (technique is null || !State.PlayerTechnique(technique.Tech, rng))
+                    {
+                        SetMessage("noMp");
+                        return false;
+                    }
+                    SetMessage("technique", NameTokens(actor), technique.Text?.Tokens ?? []);
+                    break;
                 }
-                SetMessage("technique", NameTokens(actor), technique.Text?.Tokens ?? []);
-                break;
-            }
             case BattleCommand.Digivolve:
                 if (!State.PlayerDigivolve(arg))
                 {
@@ -125,11 +125,11 @@ public sealed class BattleFlowController
                 SetMessage("item", NameTokens(actor), ItemTokens(arg));
                 break;
             case BattleCommand.Flee:
-            {
-                var fled = State.PlayerFlee(rng);
-                if (fled) SetMessage("fledPlayer", NameTokens(actor));
-                break;
-            }
+                {
+                    var fled = State.PlayerFlee(rng);
+                    if (fled) SetMessage("fledPlayer", NameTokens(actor));
+                    break;
+                }
         }
         AdvancePhase();
         return true;

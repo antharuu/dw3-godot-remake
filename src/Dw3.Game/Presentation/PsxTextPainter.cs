@@ -18,14 +18,14 @@ public sealed class PsxTextPainter
         _font = font;
         _pages.Clear();
         for (var style = 1; style <= 3; style++)
-        for (var palette = 0; palette < 8; palette++)
-        for (var page = 0; page < 2; page++)
-        {
-            var image = Image.LoadFromFile(font.PalettePagePath(style, palette, page));
-            if (image is null || image.IsEmpty())
-                throw new CacheResourceException("CACHE_RESOURCE_UNAVAILABLE", $"font palette image unreadable style={style} palette={palette} page={page}");
-            _pages[(style, palette, page)] = ImageTexture.CreateFromImage(image);
-        }
+            for (var palette = 0; palette < 8; palette++)
+                for (var page = 0; page < 2; page++)
+                {
+                    var image = Image.LoadFromFile(font.PalettePagePath(style, palette, page));
+                    if (image is null || image.IsEmpty())
+                        throw new CacheResourceException("CACHE_RESOURCE_UNAVAILABLE", $"font palette image unreadable style={style} palette={palette} page={page}");
+                    _pages[(style, palette, page)] = ImageTexture.CreateFromImage(image);
+                }
     }
 
     public void DrawWindow(int style, int x, int y, string text, bool rightAlign, int palette) =>

@@ -273,25 +273,25 @@ public sealed class BattleState
         switch (item.Effect)
         {
             case "heal":
-            {
-                var fighter = ActivePlayerFighter;
-                if (fighter != null) fighter.Hp = Math.Min(fighter.Hp + item.Amount, fighter.MaxHp);
-                break;
-            }
+                {
+                    var fighter = ActivePlayerFighter;
+                    if (fighter != null) fighter.Hp = Math.Min(fighter.Hp + item.Amount, fighter.MaxHp);
+                    break;
+                }
             case "revive":
                 foreach (var player in Players)
                     if (player is { Id: not 0, Hp: 0 }) player.Hp = player.MaxHp;
                 break;
             case "restoreHalfHpMp":
-            {
-                var fighter = ActivePlayerFighter;
-                if (fighter != null)
                 {
-                    fighter.Hp = Math.Min(fighter.Hp + fighter.MaxHp / 2, fighter.MaxHp);
-                    fighter.Mp = Math.Min(fighter.Mp + fighter.MaxMp / 2, fighter.MaxMp);
+                    var fighter = ActivePlayerFighter;
+                    if (fighter != null)
+                    {
+                        fighter.Hp = Math.Min(fighter.Hp + fighter.MaxHp / 2, fighter.MaxHp);
+                        fighter.Mp = Math.Min(fighter.Mp + fighter.MaxMp / 2, fighter.MaxMp);
+                    }
+                    break;
                 }
-                break;
-            }
         }
     }
 
@@ -412,18 +412,18 @@ public sealed class BattleState
         switch (decision.Kind)
         {
             case EnemyActionKind.Attack:
-            {
-                var tech = ResolveTech(decision.TechId);
-                if (tech != null) EnemyAttack(tech, rng); else EndEnemyTurn();
-                break;
-            }
+                {
+                    var tech = ResolveTech(decision.TechId);
+                    if (tech != null) EnemyAttack(tech, rng); else EndEnemyTurn();
+                    break;
+                }
             case EnemyActionKind.Technique1:
             case EnemyActionKind.Technique2:
-            {
-                var tech = ResolveTech(decision.TechId);
-                if (tech != null) EnemyTechnique(tech, rng); else EndEnemyTurn();
-                break;
-            }
+                {
+                    var tech = ResolveTech(decision.TechId);
+                    if (tech != null) EnemyTechnique(tech, rng); else EndEnemyTurn();
+                    break;
+                }
             case EnemyActionKind.SwitchTo0:
             case EnemyActionKind.SwitchTo1:
             case EnemyActionKind.SwitchTo2:

@@ -21,8 +21,13 @@ internal static class ActionExtractionStep
         "AAA/DAT/FIELD/SPRT/P002PLYL.BIN",
         new Dictionary<int, string>
         {
-            [0x1A] = "CLIMB_UP", [0x1B] = "CLIMB_DOWN", [0x1C] = "GET_ON_WALL",
-            [0x1D] = "CLIMB_OFF_TOP", [0x1E] = "GET_OVER_EDGE", [0x1F] = "CLIMB_OFF_BOTTOM", [0x20] = "CLIMB",
+            [0x1A] = "CLIMB_UP",
+            [0x1B] = "CLIMB_DOWN",
+            [0x1C] = "GET_ON_WALL",
+            [0x1D] = "CLIMB_OFF_TOP",
+            [0x1E] = "GET_OVER_EDGE",
+            [0x1F] = "CLIMB_OFF_BOTTOM",
+            [0x20] = "CLIMB",
         });
 
     private static readonly ActionDefinition Drop = new(
@@ -33,7 +38,10 @@ internal static class ActionExtractionStep
         "AAA/DAT/FIELD/SPRT/P002PLYD.BIN",
         new Dictionary<int, string>
         {
-            [0x16] = "DROP_OFF", [0x17] = "FALL", [0x18] = "FALL_FAR", [0x19] = "LAND",
+            [0x16] = "DROP_OFF",
+            [0x17] = "FALL",
+            [0x18] = "FALL_FAR",
+            [0x19] = "LAND",
         });
 
     internal static int Extract(string cuePath, string outputDirectory, string domain, TextWriter output, TextWriter error)

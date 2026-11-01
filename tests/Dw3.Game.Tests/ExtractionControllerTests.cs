@@ -58,7 +58,8 @@ public sealed class ExtractionControllerTests
             started.Wait();
             observed = controller.State;
             release.Set();
-        }) { IsBackground = true };
+        })
+        { IsBackground = true };
         thread.Start();
 
         controller.Extract("/fake/disc.cue", "/fake/out");
