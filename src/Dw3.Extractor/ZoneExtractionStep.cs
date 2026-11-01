@@ -178,38 +178,33 @@ internal static class ZoneExtractionStep
                 : null;
             if (floor.Width != terrain.Width || floor.Height != terrain.Height ||
                 (triggerMap is not null && (triggerMap.Width != floor.Width || triggerMap.Height != floor.Height)))
+            {
                 throw new FormatException($"Stage S{stage:D3} has TMPK dimensions inconsistent with its terrain packet.");
+            }
 
             // Try to find an areas map in the TMPK by dimension-matching.
             // The areas entry is whichever non-floor/non-trigger entry at indices 2–5 decodes
             // to the same tile dimensions as the floor map. This handles all but 5 stages on
             // the EU disc; those 5 have a known override in AreasEntryOverrides.
             // Stages in NoAreasStages have no areas map despite a dimension-match candidate.
-            int? areasEntryIndex;
-            if (NoAreasStages.Contains(stage))
-                areasEntryIndex = null;
-            else if (AreasEntryOverrides.TryGetValue(stage, out int overrideEntry))
-                areasEntryIndex = overrideEntry;
-            else
-                areasEntryIndex = TryFindAreasEntry(tmpk, selection.FloorEntry, resolvedTriggerEntry, floor.Width / 128, floor.Height / 128);
-            TmpkMap? areasMap = null;
-            if (areasEntryIndex is int ae)
-            {
-                try { areasMap = TmpkMapDecoder.DecodeEntry(tmpk, ae); }
-                catch (FormatException) { areasEntryIndex = null; } // not a valid areas map
-            }
+            // Resolve the TMPK areas (encounter-zone) map entry index and decode the map.
+            (int? areasEntryIndex, TmpkMap? areasMap) = ResolveAreasEntry(tmpk, stage, selection, resolvedTriggerEntry, floor);
 
             // Compute required_offsets from the TMPK header.
             int maxRequired = Math.Max(Math.Max(selection.FloorEntry, resolvedTriggerEntry ?? 0), areasEntryIndex ?? 0) + 1;
             int[] requiredOffsets = new int[maxRequired];
             for (int i = 0; i < maxRequired; i++)
+            {
                 requiredOffsets[i] = (int)BinaryPrimitives.ReadUInt32LittleEndian(tmpk.AsSpan(i * 4, 4));
+            }
 
             // Write all images to zones/SXxx/ (same directory as the manifest).
             string zoneDir = $"zones/S{stage:D3}";
             InsertZone(context, stage, terrain);
             for (int depth = 0; depth < terrain.Layers.Count; depth++)
+            {
                 WriteImage(context, $"{zoneDir}/depth-{depth}.png", terrain.Width, terrain.Height, terrain.Layers[depth]);
+            }
             WriteImage(context, $"{zoneDir}/composite-back-to-front.png", terrain.Width, terrain.Height, terrain.Composite);
             WriteCells(context, $"{zoneDir}/floor-cells.png", floor);
             WriteCells(context, $"{zoneDir}/trigger-cells.png", triggerMap ?? new TmpkMap(floor.Width, floor.Height, new byte[floor.Cells.Length]));
@@ -253,7 +248,9 @@ internal static class ZoneExtractionStep
     {
         // tile_bytes is at offset 12 in the PACK header (little-endian i32).
         if (packBytes.Length < 16)
+        {
             return 2048;
+        }
         int value = BinaryPrimitives.ReadInt32LittleEndian(packBytes.AsSpan(12, 4));
         return value > 0 ? value : 2048;
     }
@@ -262,6 +259,52 @@ internal static class ZoneExtractionStep
     {
         byte[] hash = SHA256.HashData(data);
         return Convert.ToHexStringLower(hash);
+    }
+
+    private static (int? AreasEntryIndex, TmpkMap? AreasMap) ResolveAreasEntry(
+        byte[] tmpk,
+        int stage,
+        TmpkMapSelection selection,
+        int? resolvedTriggerEntry,
+        TmpkMap floor)
+    {
+        // The areas entry is whichever non-floor/non-trigger entry at indices 2-5 decodes
+        // to the same tile dimensions as the floor map. Five EU-disc stages use overrides;
+        // stages in NoAreasStages have no areas map despite a dimension-match candidate.
+        int? areasEntryIndex;
+        if (NoAreasStages.Contains(stage))
+        {
+            areasEntryIndex = null;
+        }
+        else if (AreasEntryOverrides.TryGetValue(stage, out int overrideEntry))
+        {
+            areasEntryIndex = overrideEntry;
+        }
+        else
+        {
+            areasEntryIndex = TryFindAreasEntry(tmpk, selection.FloorEntry, resolvedTriggerEntry, floor.Width / 128, floor.Height / 128);
+        }
+
+        TmpkMap? areasMap = null;
+        if (areasEntryIndex is int ae)
+        {
+            try
+            {
+                areasMap = TmpkMapDecoder.DecodeEntry(tmpk, ae);
+            }
+            catch (FormatException)
+            {
+                areasEntryIndex = null; // not a valid areas map
+            }
+        }
+
+        return (areasEntryIndex, areasMap);
+    }
+
+    private static bool IsTmpkDimensionMatch(byte[] tmpk, long gridAt, int widthTiles, int heightTiles)
+    {
+        // The first two bytes at gridAt are the tile dimensions [width, height].
+        return tmpk[(int)gridAt] == widthTiles && tmpk[(int)gridAt + 1] == heightTiles;
     }
 
     /// <summary>
@@ -275,22 +318,30 @@ internal static class ZoneExtractionStep
         foreach (int candidate in new[] { 3, 4, 2, 5 })
         {
             if (candidate == floorEntry || candidate == triggerEntry)
+            {
                 continue;
+            }
             int headerOffset = candidate * 4;
             if (headerOffset + 4 > tmpk.Length)
+            {
                 continue;
+            }
             uint entryOffset = BinaryPrimitives.ReadUInt32LittleEndian(tmpk.AsSpan(headerOffset, 4));
             if (entryOffset == 0 || entryOffset + 4 >= tmpk.Length)
+            {
                 continue;
+            }
             // The first sub-offset in the entry points to the grid header [width, height].
             uint subOffset0 = BinaryPrimitives.ReadUInt32LittleEndian(tmpk.AsSpan((int)entryOffset, 4));
             long gridAt = (long)entryOffset + subOffset0;
             if (gridAt + 2 > tmpk.Length)
+            {
                 continue;
-            int aw = tmpk[(int)gridAt];
-            int ah = tmpk[(int)gridAt + 1];
-            if (aw == floorWidthTiles && ah == floorHeightTiles)
+            }
+            if (IsTmpkDimensionMatch(tmpk, gridAt, floorWidthTiles, floorHeightTiles))
+            {
                 return candidate;
+            }
         }
         return null;
     }
@@ -333,6 +384,13 @@ internal static class ZoneExtractionStep
         WriteImage(context, relativePath, map.Width, map.Height, rgba);
     }
 
+    /// <summary>Locates a required disc file by its stage-numbered path, or throws if absent.</summary>
+    /// <param name="entries">Full disc file listing as returned by <see cref="DiscSource.ListFiles"/>.</param>
+    /// <param name="prefix">Path prefix before the three-digit stage number (e.g. "AAA/PRO/WSTAG").</param>
+    /// <param name="suffix">Extension after the stage number (e.g. ".PRO").</param>
+    /// <param name="stage">Numeric stage ID used to form the three-digit segment of the path.</param>
+    /// <returns>The matching disc file entry.</returns>
+    /// <exception cref="InvalidDataException">Thrown when no entry matches the constructed path.</exception>
     internal static DiscFileEntry RequireStageFile(IReadOnlyList<DiscFileEntry> entries, string prefix, string suffix, int stage)
     {
         string path = $"{prefix}{stage:D3}{suffix}";
@@ -345,7 +403,10 @@ internal static class ZoneExtractionStep
         const string prefix = "AAA/PRO/WSTAG";
         const string suffix = ".PRO";
         if (!isoPath.StartsWith(prefix, StringComparison.Ordinal) || !isoPath.EndsWith(suffix, StringComparison.Ordinal))
+        {
             return null;
+        }
+
         ReadOnlySpan<char> number = isoPath.AsSpan(prefix.Length, isoPath.Length - prefix.Length - suffix.Length);
         return number.Length == 3 && int.TryParse(number, NumberStyles.None, CultureInfo.InvariantCulture, out int stage) ? stage : null;
     }
@@ -355,7 +416,10 @@ internal static class ZoneExtractionStep
         const string prefix = "AAA/DAT/Z_STAGE/S";
         const string suffix = "PACK.BIN";
         if (!isoPath.StartsWith(prefix, StringComparison.Ordinal) || !isoPath.EndsWith(suffix, StringComparison.Ordinal))
+        {
             return null;
+        }
+
         ReadOnlySpan<char> number = isoPath.AsSpan(prefix.Length, isoPath.Length - prefix.Length - suffix.Length);
         return number.Length == 3 && int.TryParse(number, NumberStyles.None, CultureInfo.InvariantCulture, out int stage) ? stage : null;
     }

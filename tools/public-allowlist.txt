@@ -101,6 +101,7 @@ src/Dw3.Extractor/NpcSequenceTerminator.cs
 src/Dw3.Extractor/Cli.cs
 src/Dw3.Extractor/PlayerExtractionStep.cs
 src/Dw3.Extractor/Program.cs
+src/Dw3.Extractor/TalkBoxDomain.cs
 src/Dw3.Extractor/TalkBoxDomainWriter.cs
 src/Dw3.Extractor/TalkBoxExtractionStep.cs
 src/Dw3.Extractor/TextExtractionStep.cs

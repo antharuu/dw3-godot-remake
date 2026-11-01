@@ -5,12 +5,6 @@ using Microsoft.Data.Sqlite;
 
 namespace Dw3.Extractor;
 
-/// <summary>The decoded field talk box: its frame sprites, panel texture and four layouts.</summary>
-public sealed record TalkBoxDomain(
-    IReadOnlyList<TalkBoxFrameImage> Frames,
-    TalkBoxPanelImage Panel,
-    IReadOnlyList<TalkBoxLayoutRecord> Layouts);
-
 /// <summary>Persists the talk box as PNG images under dialogue/frame and three SQLite tables.</summary>
 public static class TalkBoxDomainWriter
 {
@@ -74,6 +68,7 @@ public static class TalkBoxDomainWriter
         {
             command.Parameters.AddWithValue($"${index + 1}", values[index]);
         }
+
         command.ExecuteNonQuery();
     }
 }

@@ -234,6 +234,7 @@ internal static class PlayerExtractionStep
             w.WriteNumberValue(kv.Value);
             w.WriteEndArray();
         }
+
         w.WriteEndArray();
 
         // frames  (keys are decimal integers as strings, ascending)
@@ -258,6 +259,7 @@ internal static class PlayerExtractionStep
             w.WriteEndArray();
             w.WriteEndObject();
         }
+
         w.WriteEndObject();
 
         // render_anchor
@@ -270,6 +272,7 @@ internal static class PlayerExtractionStep
             w.WriteNumberValue((int)cy);  // y is always integer (offset_y + lower_excl + 1)
             w.WriteEndArray();
         }
+
         w.WriteEndArray();
         w.WriteString("note",
             "FIELDSTG_drawActor draws the whole 32x32 TIM with its top-left at (tile + offset); " +
@@ -320,14 +323,17 @@ internal static class PlayerExtractionStep
                     w.WriteEndArray();
                     w.WriteEndObject();
                 }
+
                 w.WriteEndArray();
                 w.WriteString("terminator", seq.Terminator == PlayerAnimSequenceTerminator.Loop ? "loop" : "end");
                 w.WriteEndObject();
             }
+
             w.WriteEndArray();
             w.WriteNumber("set", ds.SetId);
             w.WriteEndObject();
         }
+
         w.WriteEndArray();
 
         // source

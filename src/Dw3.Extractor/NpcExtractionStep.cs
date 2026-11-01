@@ -91,6 +91,13 @@ internal static class NpcExtractionStep
         }
     }
 
+    /// <summary>Extracts all actors from one stage's field overlay and returns the zone with decoded character counts.</summary>
+    /// <param name="disc">Open disc source for reading the stage overlay bytes.</param>
+    /// <param name="entries">Full disc file listing for resolving overlay and archive paths.</param>
+    /// <param name="stageId">Numeric stage ID whose overlay file is WSTAG{stageId:D3}.PRO.</param>
+    /// <param name="tableSource">Resolves actor IDs to file entries and sprite archives.</param>
+    /// <param name="context">Active write context used to persist decoded character archives.</param>
+    /// <returns>The decoded zone record plus counts of visible and successfully decoded characters.</returns>
     private static (NpcExtractedZone Zone, int Characters, int Visible) ExtractStage(
         DiscSource disc,
         IReadOnlyList<DiscFileEntry> entries,
@@ -119,12 +126,12 @@ internal static class NpcExtractionStep
             bool actorVisible = tableSource.IsVisible(conditions);
             bool isPlayerLead = tableSource.IsPlayerLead(actor.ActorId);
             int? width = tableSource.GetActorWidth(actor.ActorId);
-            (int fileNumber, int archiveEntry)? packedEntry = tableSource.GetActorSpriteEntry(actor.ActorId);
-            string? archivePath = packedEntry is null ? null : tableSource.GetDiscFilePath(packedEntry.Value.fileNumber);
+            var packedEntry = tableSource.GetActorSpriteEntry(actor.ActorId);
+            (string? archivePath, NpcFileEntry? fileEntry) = ResolveActorArchive(tableSource, packedEntry);
             extractedActors.Add(new NpcExtractedActor(
                 actorReference.Index, actor.ActorId, actor.Image, actor.X, actor.Y, actor.Direction,
                 width, isPlayerLead, actorVisible, conditions,
-                packedEntry is null ? null : new NpcFileEntry(packedEntry.Value.fileNumber, packedEntry.Value.archiveEntry),
+                fileEntry,
                 archivePath));
 
             if (!actorVisible || isPlayerLead)
@@ -147,7 +154,7 @@ internal static class NpcExtractionStep
 
             byte[] archiveBytes = disc.ReadFile(archiveFile);
             NpcExtractedCharacter character = DecodeCharacter(
-                archiveBytes, archivePath, packedEntry.Value.archiveEntry,
+                archiveBytes, archivePath, packedEntry.Value.ArchiveEntry,
                 actor.ActorId, stageId, actorReference.Index);
             NpcDomainWriter.Write(context, character);
             characters++;
@@ -161,6 +168,23 @@ internal static class NpcExtractionStep
                 extractedActors),
             characters,
             visible);
+    }
+
+    /// <summary>Resolves the disc archive path and file entry record for an actor sprite, or returns nulls when absent.</summary>
+    /// <param name="tableSource">Source that maps file numbers to disc paths.</param>
+    /// <param name="packedEntry">Packed file and archive entry numbers, or null when the actor has no sprite archive.</param>
+    /// <returns>Tuple of disc path and file-entry record; both are null when packedEntry is null.</returns>
+    private static (string? ArchivePath, NpcFileEntry? FileEntry) ResolveActorArchive(
+        INpcActorTableSource tableSource,
+        (int FileNumber, int ArchiveEntry)? packedEntry)
+    {
+        if (packedEntry is null)
+        {
+            return (null, null);
+        }
+
+        string? path = tableSource.GetDiscFilePath(packedEntry.Value.FileNumber);
+        return (path, new NpcFileEntry(packedEntry.Value.FileNumber, packedEntry.Value.ArchiveEntry));
     }
 
     private static NpcExtractedCharacter DecodeCharacter(

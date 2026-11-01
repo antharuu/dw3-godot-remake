@@ -30,7 +30,6 @@ internal static class TextExtractionStep
     private const string CmfonttmDiscPath = "AAA/DAT/COUNTRY/CMFONTTM.BIN";
     // French talk text file paths: FSTALK00.BIN .. FSTALK09.BIN.
     private const int TalkFileCount = 10;
-    private static string TalkDiscPath(int index) => $"AAA/DAT/COUNTRY/FRA/FSTALK{index:D2}.BIN";
 
     // Atlas palette count (matches Python decoder FONT_CLUT_ROWS=8).
     private const int PaletteCount = 8;
@@ -42,6 +41,8 @@ internal static class TextExtractionStep
     // Style IDs for glyph token code: glyphs start at 0x04, icons at 0x01.
     private const int GlyphCodeBase = 4;
     private const int IconCodeBase = 1;
+
+    private static string TalkDiscPath(int index) => $"AAA/DAT/COUNTRY/FRA/FSTALK{index:D2}.BIN";
 
     internal static int Extract(string cuePath, string outputDirectory, string domain, TextWriter output, TextWriter error)
     {

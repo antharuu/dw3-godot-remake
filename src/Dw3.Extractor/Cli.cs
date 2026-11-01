@@ -9,7 +9,18 @@ namespace Dw3.Extractor;
 /// </summary>
 public static class Cli
 {
+    /// <summary>Groups the parsed options for the extract subcommand.</summary>
+    private sealed record ExtractOptions(
+        string? CuePath,
+        string? OutputPath,
+        string? OnlyDomain,
+        string? ProgressFormat);
+
     /// <summary>Dispatches a CLI invocation and returns a POSIX exit code.</summary>
+    /// <param name="arguments">Command-line arguments, as passed to the entry point.</param>
+    /// <param name="output">Standard output stream for normal program output.</param>
+    /// <param name="error">Standard error stream for diagnostics and usage messages.</param>
+    /// <returns>POSIX exit code: 0 on success, 1 on extraction error, 2 on usage error.</returns>
     public static int Run(IReadOnlyList<string> arguments, TextWriter output, TextWriter error)
     {
         if (arguments.Count == 1 && arguments[0] == "--version")
@@ -52,55 +63,50 @@ public static class Cli
         bool jsonlRequested = arguments.Skip(1).Any(
             arg => string.Equals(arg, "--progress", StringComparison.Ordinal));
 
-        if (!TryParseExtractOptions(
-            arguments, jsonlRequested, output, error,
-            out string? cuePath, out string? outputPath, out string? onlyDomain, out string? progressFormat))
+        ExtractOptions? opts = TryParseExtractOptions(arguments, jsonlRequested, output, error);
+        if (opts is null)
         {
             return 2;
         }
 
-        if (!string.Equals(progressFormat, "jsonl", StringComparison.Ordinal) && progressFormat is not null)
+        if (!string.Equals(opts.ProgressFormat, "jsonl", StringComparison.Ordinal) && opts.ProgressFormat is not null)
         {
             return ExtractUsageError("Only --progress jsonl is supported.", jsonlRequested, output, error);
         }
 
-        if (string.IsNullOrWhiteSpace(cuePath) || string.IsNullOrWhiteSpace(outputPath))
+        if (string.IsNullOrWhiteSpace(opts.CuePath) || string.IsNullOrWhiteSpace(opts.OutputPath))
         {
             return ExtractUsageError("Both --disc and --out are required.", jsonlRequested, output, error);
         }
 
-        if (onlyDomain is null)
+        if (opts.OnlyDomain is null)
         {
-            if (!string.Equals(progressFormat, "jsonl", StringComparison.Ordinal))
+            if (!string.Equals(opts.ProgressFormat, "jsonl", StringComparison.Ordinal))
             {
                 return ExtractUsageError("Full extraction requires --progress jsonl.", false, output, error);
             }
 
-            return FullExtractionStep.Extract(cuePath, outputPath, output);
+            return FullExtractionStep.Extract(opts.CuePath, opts.OutputPath, output);
         }
 
-        if (progressFormat is not null)
+        if (opts.ProgressFormat is not null)
         {
             return ExtractUsageError("--progress jsonl is only available for full extraction.", true, output, error);
         }
 
-        return DispatchSingleDomain(onlyDomain, cuePath, outputPath, output, error);
+        return DispatchSingleDomain(opts.OnlyDomain, opts.CuePath, opts.OutputPath, output, error);
     }
 
-    private static bool TryParseExtractOptions(
+    private static ExtractOptions? TryParseExtractOptions(
         IReadOnlyList<string> arguments,
         bool jsonlRequested,
         TextWriter output,
-        TextWriter error,
-        out string? cuePath,
-        out string? outputPath,
-        out string? onlyDomain,
-        out string? progressFormat)
+        TextWriter error)
     {
-        cuePath = null;
-        outputPath = null;
-        onlyDomain = null;
-        progressFormat = null;
+        string? cuePath = null;
+        string? outputPath = null;
+        string? onlyDomain = null;
+        string? progressFormat = null;
         for (int index = 1; index < arguments.Count; index++)
         {
             string option = arguments[index];
@@ -109,7 +115,7 @@ public static class Cli
                 if (++index >= arguments.Count)
                 {
                     ExtractUsageError($"Missing value for {option}.", jsonlRequested, output, error);
-                    return false;
+                    return null;
                 }
 
                 switch (option)
@@ -123,11 +129,11 @@ public static class Cli
             else
             {
                 ExtractUsageError($"Unknown extract option: {option}", jsonlRequested, output, error);
-                return false;
+                return null;
             }
         }
 
-        return true;
+        return new ExtractOptions(cuePath, outputPath, onlyDomain, progressFormat);
     }
 
     private static int DispatchSingleDomain(
@@ -284,6 +290,10 @@ public static class Cli
     /// Lists every file on the disc with its SHA-256 digest, sorted by ISO path.
     /// Output format (one line per file): &lt;sha256&gt;  &lt;iso/path&gt;
     /// </summary>
+    /// <param name="arguments">Full argument list including the "list-files" verb.</param>
+    /// <param name="output">Receives one line per disc file: sha256  iso/path.</param>
+    /// <param name="error">Receives the usage message when --disc is absent.</param>
+    /// <returns>0 on success, 1 on disc error, 2 on missing --disc argument.</returns>
     private static int RunListFiles(IReadOnlyList<string> arguments, TextWriter output, TextWriter error)
     {
         string? cuePath = null;

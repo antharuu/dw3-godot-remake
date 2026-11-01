@@ -12,7 +12,13 @@ namespace Dw3.Extractor;
 /// </summary>
 public static class NpcDomainWriter
 {
+    private static readonly System.Text.Json.JsonSerializerOptions ManifestSerializerOptions =
+        new() { WriteIndented = true };
+
     /// <summary>Writes the disc-derived actor placement manifest and normalized SQLite rows.</summary>
+    /// <param name="context">Active write context with open SQLite transaction and image registry.</param>
+    /// <param name="zones">All decoded NPC zones to persist, in stage-ID order.</param>
+    /// <param name="snapshotProgress">Progress token written to the manifest JSON snapshot field.</param>
     public static void WritePlacements(
         DataPackWriteContext context,
         IReadOnlyList<NpcExtractedZone> zones,
@@ -34,6 +40,8 @@ public static class NpcDomainWriter
     }
 
     /// <summary>Writes one NPC character beneath its stage and actor-index path in the data pack.</summary>
+    /// <param name="context">Active write context with open SQLite transaction and image registry.</param>
+    /// <param name="character">Decoded character archive to persist as PNG frames and SQLite rows.</param>
     public static void Write(DataPackWriteContext context, NpcExtractedCharacter character)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -64,6 +72,10 @@ public static class NpcDomainWriter
         WriteManifest(context, character, prefix);
     }
 
+    /// <summary>Writes a single actor placement row to the npc_actors SQLite table.</summary>
+    /// <param name="context">Active write context with open SQLite transaction.</param>
+    /// <param name="stageId">Disc stage ID to which the actor belongs.</param>
+    /// <param name="actor">Decoded actor entry with position and sprite reference fields.</param>
     private static void InsertActorRecord(DataPackWriteContext context, int stageId, NpcExtractedActor actor)
     {
         Insert(
@@ -84,6 +96,11 @@ public static class NpcDomainWriter
             actor.ArchiveDiscPath is null ? DBNull.Value : actor.ArchiveDiscPath);
     }
 
+    /// <summary>Writes all condition rows for one actor to the npc_actor_conditions table.</summary>
+    /// <param name="context">Active write context with open SQLite transaction.</param>
+    /// <param name="stageId">Stage ID used as the row's foreign key.</param>
+    /// <param name="actorIndex">Actor index used as the row's foreign key.</param>
+    /// <param name="conditions">Decoded condition list from the stage overlay.</param>
     private static void InsertActorConditionRows(
         DataPackWriteContext context,
         int stageId,
@@ -104,6 +121,10 @@ public static class NpcDomainWriter
         }
     }
 
+    /// <summary>Writes the zone placement manifest JSON file under npc/ in the data pack.</summary>
+    /// <param name="context">Active write context supplying the image-path resolver.</param>
+    /// <param name="zones">All decoded zones, ordered by stage ID in the JSON output.</param>
+    /// <param name="snapshotProgress">Progress token written to the snapshot_progress field.</param>
     private static void WritePlacementsJson(
         DataPackWriteContext context,
         IReadOnlyList<NpcExtractedZone> zones,
@@ -126,6 +147,9 @@ public static class NpcDomainWriter
         json.WriteEndObject();
     }
 
+    /// <summary>Writes one stage zone object (WSTAG key) into the placements manifest JSON.</summary>
+    /// <param name="json">JSON writer positioned at the zones object start.</param>
+    /// <param name="zone">Decoded zone whose actors and source data are serialized.</param>
     private static void WriteZoneJsonObject(Utf8JsonWriter json, NpcExtractedZone zone)
     {
         json.WriteStartObject($"WSTAG{zone.StageId}");
@@ -145,6 +169,9 @@ public static class NpcDomainWriter
         json.WriteEndObject();
     }
 
+    /// <summary>Writes one actor object entry into the placements manifest JSON actors array.</summary>
+    /// <param name="json">JSON writer positioned inside the actors array.</param>
+    /// <param name="actor">Decoded actor entry whose fields and conditions are serialized.</param>
     private static void WriteActorJsonObject(Utf8JsonWriter json, NpcExtractedActor actor)
     {
         json.WriteStartObject();
@@ -179,6 +206,9 @@ public static class NpcDomainWriter
         json.WriteEndObject();
     }
 
+    /// <summary>Writes the file-entry section (file, archive_entry, file_name, sprite) for one actor.</summary>
+    /// <param name="json">JSON writer positioned after the conditions array.</param>
+    /// <param name="actor">Actor whose optional sprite-archive reference is serialized.</param>
     private static void WriteActorFileEntryJson(Utf8JsonWriter json, NpcExtractedActor actor)
     {
         if (actor.FileEntry is NpcFileEntry entry)
@@ -315,9 +345,9 @@ public static class NpcDomainWriter
                 terminator = s.Terminator.ToString().ToLowerInvariant(),
                 records = s.Records.Select(r => new { r.Duration, r.Frame, r.OffsetX, r.OffsetY }).ToArray(),
             }).ToArray(),
-            frames = c.Frames.ToDictionary(f => f.FrameId.ToString(), f => new { size = new[] { f.Width, f.Height } }),
+            frames = c.Frames.ToDictionary(f => f.FrameId.ToString(System.Globalization.CultureInfo.InvariantCulture), f => new { size = new[] { f.Width, f.Height } }),
         };
-        File.WriteAllText(path, JsonSerializer.Serialize(manifest, new JsonSerializerOptions { WriteIndented = true }));
+        File.WriteAllText(path, System.Text.Json.JsonSerializer.Serialize(manifest, ManifestSerializerOptions));
     }
 
     private static void Insert(DataPackWriteContext context, string sql, params object[] parameters)

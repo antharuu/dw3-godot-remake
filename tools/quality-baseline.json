@@ -37,7 +37,7 @@
       "rule": "CA1305",
       "project": "Dw3.Extractor",
       "folder": ".",
-      "count": 5
+      "count": 1
     },
     {
       "rule": "CA1305",
@@ -211,7 +211,7 @@
       "rule": "CA1859",
       "project": "Dw3.Extractor",
       "folder": ".",
-      "count": 7
+      "count": 6
     },
     {
       "rule": "CA1859",
@@ -250,12 +250,6 @@
       "count": 7
     },
     {
-      "rule": "CA1869",
-      "project": "Dw3.Extractor",
-      "folder": ".",
-      "count": 1
-    },
-    {
       "rule": "CA1875",
       "project": "Dw3.Repository.Tests",
       "folder": ".",
@@ -283,7 +277,7 @@
       "rule": "CS1591",
       "project": "Dw3.Extractor",
       "folder": ".",
-      "count": 23
+      "count": 1
     },
     {
       "rule": "CS1591",
@@ -551,12 +545,6 @@
     },
     {
       "rule": "S134",
-      "project": "Dw3.Extractor",
-      "folder": ".",
-      "count": 4
-    },
-    {
-      "rule": "S134",
       "project": "Dw3.Game",
       "folder": ".",
       "count": 8
@@ -601,7 +589,7 @@
       "rule": "S138",
       "project": "Dw3.Extractor",
       "folder": ".",
-      "count": 7
+      "count": 2
     },
     {
       "rule": "S138",
@@ -877,7 +865,7 @@
       "rule": "S3776",
       "project": "Dw3.Extractor",
       "folder": ".",
-      "count": 9
+      "count": 1
     },
     {
       "rule": "S3776",
@@ -960,12 +948,6 @@
     {
       "rule": "S4036",
       "project": "Dw3.Game",
-      "folder": ".",
-      "count": 1
-    },
-    {
-      "rule": "S4136",
-      "project": "Dw3.Extractor",
       "folder": ".",
       "count": 1
     },
@@ -1111,7 +1093,7 @@
       "rule": "SA1116",
       "project": "Dw3.Extractor",
       "folder": ".",
-      "count": 26
+      "count": 19
     },
     {
       "rule": "SA1116",
@@ -1207,7 +1189,7 @@
       "rule": "SA1117",
       "project": "Dw3.Extractor",
       "folder": ".",
-      "count": 59
+      "count": 51
     },
     {
       "rule": "SA1117",
@@ -1829,12 +1811,6 @@
     },
     {
       "rule": "SA1316",
-      "project": "Dw3.Extractor",
-      "folder": ".",
-      "count": 2
-    },
-    {
-      "rule": "SA1316",
       "project": "Dw3.Extractor.Tests",
       "folder": ".",
       "count": 3
@@ -1879,7 +1855,7 @@
       "rule": "SA1402",
       "project": "Dw3.Extractor",
       "folder": ".",
-      "count": 12
+      "count": 3
     },
     {
       "rule": "SA1402",
@@ -1951,7 +1927,7 @@
       "rule": "SA1407",
       "project": "Dw3.Extractor",
       "folder": ".",
-      "count": 18
+      "count": 17
     },
     {
       "rule": "SA1407",
@@ -2119,7 +2095,7 @@
       "rule": "SA1501",
       "project": "Dw3.Extractor",
       "folder": ".",
-      "count": 8
+      "count": 6
     },
     {
       "rule": "SA1501",
@@ -2257,7 +2233,7 @@
       "rule": "SA1503",
       "project": "Dw3.Extractor",
       "folder": ".",
-      "count": 158
+      "count": 86
     },
     {
       "rule": "SA1503",
@@ -2491,7 +2467,7 @@
       "rule": "SA1513",
       "project": "Dw3.Extractor",
       "folder": ".",
-      "count": 73
+      "count": 46
     },
     {
       "rule": "SA1513",
@@ -2585,12 +2561,6 @@
     },
     {
       "rule": "SA1514",
-      "project": "Dw3.Extractor",
-      "folder": ".",
-      "count": 1
-    },
-    {
-      "rule": "SA1514",
       "project": "Dw3.Formats",
       "folder": "Battle",
       "count": 1
@@ -2653,7 +2623,7 @@
       "rule": "SA1515",
       "project": "Dw3.Extractor",
       "folder": ".",
-      "count": 18
+      "count": 17
     },
     {
       "rule": "SA1515",
@@ -2755,7 +2725,7 @@
       "rule": "SA1516",
       "project": "Dw3.Extractor",
       "folder": ".",
-      "count": 15
+      "count": 3
     },
     {
       "rule": "SA1516",
@@ -2851,7 +2821,7 @@
       "rule": "SA1519",
       "project": "Dw3.Extractor",
       "folder": ".",
-      "count": 10
+      "count": 8
     },
     {
       "rule": "SA1519",
@@ -2918,12 +2888,6 @@
       "project": "Dw3.Repository.Tests",
       "folder": ".",
       "count": 8
-    },
-    {
-      "rule": "SA1520",
-      "project": "Dw3.Extractor",
-      "folder": ".",
-      "count": 2
     },
     {
       "rule": "SA1520",
@@ -3139,7 +3103,7 @@
       "rule": "SA1611",
       "project": "Dw3.Extractor",
       "folder": ".",
-      "count": 36
+      "count": 28
     },
     {
       "rule": "SA1611",
@@ -3229,7 +3193,7 @@
       "rule": "SA1615",
       "project": "Dw3.Extractor",
       "folder": ".",
-      "count": 5
+      "count": 4
     },
     {
       "rule": "SA1615",
@@ -3367,7 +3331,7 @@
       "rule": "SA1649",
       "project": "Dw3.Extractor",
       "folder": ".",
-      "count": 4
+      "count": 1
     },
     {
       "rule": "SA1649",
