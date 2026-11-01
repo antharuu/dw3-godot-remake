@@ -50,6 +50,11 @@ public sealed class DataPackWriter
             }
 
             DataPackValidator.Validate(stagingDirectory, DataPackSchema.Version);
+            // Release any pooled SQLite connections that may hold a native file handle
+            // on the staging database before renaming the directory. On Windows, an open
+            // handle prevents Directory.Move even after the SqliteConnection is disposed,
+            // because the connection pool keeps the underlying handle alive.
+            SqliteConnection.ClearAllPools();
             Promote(stagingDirectory);
         }
         catch
