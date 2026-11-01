@@ -1312,48 +1312,6 @@
       "count": 1
     },
     {
-      "rule": "SA1001",
-      "project": "Dw3.Formats.Tests",
-      "folder": "Binary",
-      "count": 1
-    },
-    {
-      "rule": "SA1001",
-      "project": "Dw3.Game",
-      "folder": "Conversion",
-      "count": 41
-    },
-    {
-      "rule": "SA1001",
-      "project": "Dw3.Game.Tests",
-      "folder": ".",
-      "count": 40
-    },
-    {
-      "rule": "SA1002",
-      "project": "Dw3.Formats.Tests",
-      "folder": "Field",
-      "count": 2
-    },
-    {
-      "rule": "SA1009",
-      "project": "Dw3.Extractor",
-      "folder": ".",
-      "count": 2
-    },
-    {
-      "rule": "SA1009",
-      "project": "Dw3.Extractor.Tests",
-      "folder": ".",
-      "count": 1
-    },
-    {
-      "rule": "SA1009",
-      "project": "Dw3.Formats",
-      "folder": "Text",
-      "count": 1
-    },
-    {
       "rule": "SA1107",
       "project": "Dw3.Disc.Tests",
       "folder": ".",
@@ -1448,24 +1406,6 @@
       "project": "Dw3.Game.Tests",
       "folder": ".",
       "count": 35
-    },
-    {
-      "rule": "SA1111",
-      "project": "Dw3.Extractor",
-      "folder": ".",
-      "count": 1
-    },
-    {
-      "rule": "SA1111",
-      "project": "Dw3.Extractor.Tests",
-      "folder": ".",
-      "count": 1
-    },
-    {
-      "rule": "SA1111",
-      "project": "Dw3.Formats",
-      "folder": "Text",
-      "count": 1
     },
     {
       "rule": "SA1116",
@@ -1759,12 +1699,6 @@
       "rule": "SA1119",
       "project": "Dw3.Formats.Tests",
       "folder": "Text",
-      "count": 1
-    },
-    {
-      "rule": "SA1122",
-      "project": "Dw3.Game",
-      "folder": "Presentation",
       "count": 1
     },
     {

@@ -165,8 +165,8 @@ public sealed class NpcOverlayReaderTests
         BinaryPrimitives.WriteUInt16LittleEndian(overlay.AsSpan(6), 0);
         BinaryPrimitives.WriteUInt16LittleEndian(overlay.AsSpan(8), 9);   // type
         BinaryPrimitives.WriteUInt16LittleEndian(overlay.AsSpan(10), 3);  // arg
-        BinaryPrimitives.WriteUInt16LittleEndian(overlay.AsSpan(12), 100);// x
-        BinaryPrimitives.WriteUInt16LittleEndian(overlay.AsSpan(14), 200);// y
+        BinaryPrimitives.WriteUInt16LittleEndian(overlay.AsSpan(12), 100); // x
+        BinaryPrimitives.WriteUInt16LittleEndian(overlay.AsSpan(14), 200); // y
         BinaryPrimitives.WriteUInt16LittleEndian(overlay.AsSpan(16), 1);  // direction
         // Terminator slot at offset 24: type=0
         BinaryPrimitives.WriteUInt16LittleEndian(overlay.AsSpan(24 + 8), 0); // type=0

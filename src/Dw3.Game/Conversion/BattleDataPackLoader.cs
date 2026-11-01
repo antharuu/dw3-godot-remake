@@ -340,12 +340,12 @@ public sealed class BattleDataPackLoader : IDisposable
     {
         (int Low, int High, string Effect, string Target)[] ranges =
         [
-            (0x2B, 0x2E,"heal","partner"), (0x42,0x45,"cureStatus","partner"), (0x46,0x46,"revive","party"),
-            (0x47, 0x47,"restoreHalfHpMp","partner"), (0x48,0x48,"boostSpeed","partner"), (0x49,0x49, "boostAttack","partner"),
-            (0x4A, 0x4A,"boostDefense","partner"), (0x4B,0x4B,"special","partner"), (0x4C,0x4C,"fillGauge", "partner"),
-            (0x4D, 0x53,"boostElement","field"), (0x54,0x54,"boostRandomElement","field"), (0x55,0x55, "drain","enemy"),
-            (0x56, 0x56,"confuse","enemy"), (0x57,0x57,"weakenDefense","enemy"), (0x58,0x58,"lowerStat", "enemy"),
-            (0x59, 0x59,"lowerSpeed","enemy"), (0x5A,0x5A,"itemTech","enemy"),
+            (0x2B, 0x2E, "heal", "partner"), (0x42, 0x45, "cureStatus", "partner"), (0x46, 0x46, "revive", "party"),
+            (0x47, 0x47, "restoreHalfHpMp", "partner"), (0x48, 0x48, "boostSpeed", "partner"), (0x49, 0x49, "boostAttack", "partner"),
+            (0x4A, 0x4A, "boostDefense", "partner"), (0x4B, 0x4B, "special", "partner"), (0x4C, 0x4C, "fillGauge", "partner"),
+            (0x4D, 0x53, "boostElement", "field"), (0x54, 0x54, "boostRandomElement", "field"), (0x55, 0x55, "drain", "enemy"),
+            (0x56, 0x56, "confuse", "enemy"), (0x57, 0x57, "weakenDefense", "enemy"), (0x58, 0x58, "lowerStat", "enemy"),
+            (0x59, 0x59, "lowerSpeed", "enemy"), (0x5A, 0x5A, "itemTech", "enemy"),
         ];
         foreach (var range in ranges) if (id >= range.Low && id <= range.High) { effect = range.Effect; target = range.Target; return true; }
         effect = target = string.Empty; return false;

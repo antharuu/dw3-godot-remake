@@ -30,5 +30,4 @@ public sealed record ZoneManifestData(
     byte[]? StreamDepth11Modulate,
     IReadOnlyList<StageSlot> Slots,
     IReadOnlyDictionary<ushort, int>? StageModes,
-    string Status
-);
+    string Status);

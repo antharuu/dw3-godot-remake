@@ -95,7 +95,7 @@ public sealed class TimDecoderTests
         clut[0] = 0x0000;   // transparent
         clut[1] = 0x001F;   // R=31 → R=255, G=0, B=0, A=255
                             // pixel byte: lo nibble=1, hi nibble=0 → pixel0=clut[1], pixel1=clut[0]
-        _ = Build4Or8BitTim(is4Bit: true, clut, pixelData: [0x01], widthWords: 1 /* 4px? no */ , height: 1);
+        _ = Build4Or8BitTim(is4Bit: true, clut, pixelData: [0x01], widthWords: 1 /* 4px? no */, height: 1);
 
         // 2 pixels wide: widthWords=1, width=1*4=4 — too wide. Let's correct:
         // For a 2×1 image: widthWords=1, width=4. But pixelData[0]=0x01 gives pixel0=index1, pixel1=index0, pixel2=index0, pixel3=index0

@@ -123,9 +123,8 @@ public static class FontStyleDecoder
                 Height: exe[pos + 6],
                 Dx: (sbyte)exe[pos + 7],
                 Dy: (sbyte)exe[pos + 8],
-                Advance: exe[pos + 9]
             // pos+10 (unused) discarded
-            );
+                Advance: exe[pos + 9]);
         }
         return metrics;
     }

@@ -236,8 +236,7 @@ internal static class ZoneExtractionStep
                 StreamDepth11Modulate: stageColor,
                 Slots: slots,
                 StageModes: stageModes,
-                Status: "loadable"
-            );
+                Status: "loadable");
             using var manifest = new StreamWriter(manifestPath);
             ZoneManifestWriter.Write(manifest, manifestData);
 

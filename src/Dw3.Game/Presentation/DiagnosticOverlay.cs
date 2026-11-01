@@ -57,7 +57,7 @@ public sealed partial class DiagnosticOverlay
         if (_hudAge >= HudIntervalSeconds)
         {
             _hudAge = 0;
-            _label.Text = $"{(DiagnosticBadge is { } badge ? badge + "   " : "")}{actualFps:0} FPS  {zone.Zone.Id}   green path  red block  amber unknown  cyan exit  orange gated exit  magenta climb";
+            _label.Text = $"{(DiagnosticBadge is { } badge ? badge + "   " : string.Empty)}{actualFps:0} FPS  {zone.Zone.Id}   green path  red block  amber unknown  cyan exit  orange gated exit  magenta climb";
             HudRefreshes++;
         }
         _world.Update(_cache, viewport, new Vector2(state.Position.X, state.Position.Y));

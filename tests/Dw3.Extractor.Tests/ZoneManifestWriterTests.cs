@@ -49,8 +49,7 @@ public sealed class ZoneManifestWriterTests
             StreamDepth11Modulate: [84, 103, 150],
             Slots: slots,
             StageModes: stageModes,
-            Status: "loadable"
-        );
+            Status: "loadable");
 
         using var output = new StringWriter();
         ZoneManifestWriter.Write(output, data);
