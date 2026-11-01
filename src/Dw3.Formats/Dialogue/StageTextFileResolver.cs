@@ -2,13 +2,6 @@ using System.Globalization;
 
 namespace Dw3.Formats.Dialogue;
 
-/// <summary>The stage talk text file selected for one language.</summary>
-/// <param name="Selector">Value the stage setup adds to the language global (file id of language copy 0).</param>
-/// <param name="FileId">Engine file id of the selected language copy.</param>
-/// <param name="IsoPath">ISO path of that disc member.</param>
-/// <param name="TalkIndex">Two-digit talk file number <c>NN</c> from the <c>?STALKNN.BIN</c> member name.</param>
-public sealed record StageTextFile(int Selector, int FileId, string IsoPath, int TalkIndex);
-
 /// <summary>
 /// Resolves a stage text selector to the language copy stored in one country folder of the disc.
 /// </summary>

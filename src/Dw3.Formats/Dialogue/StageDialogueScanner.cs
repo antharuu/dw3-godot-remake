@@ -3,11 +3,6 @@ using Dw3.Formats.Mips;
 
 namespace Dw3.Formats.Dialogue;
 
-/// <summary>What a stage overlay's setup routine stores into the field state record for dialogue.</summary>
-/// <param name="TextSelector">Immediate the setup adds to the language global to pick the stage talk file.</param>
-/// <param name="ActorList">The validated actor pointer list, or null for a stage whose setup stores none.</param>
-public sealed record StageDialogueSetup(int TextSelector, NpcStageActorList? ActorList);
-
 /// <summary>
 /// Recovers the dialogue setup of a WSTAG overlay from its code.
 /// </summary>

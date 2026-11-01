@@ -1,16 +1,13 @@
 namespace Dw3.Formats.Text;
 
 /// <summary>
-/// Decoded metrics for one TextStyle: line height, glyph table, and icon table.
-///
-/// The three active styles carry line heights 14, 11, and 9 pixels respectively.
-/// Each style shares the same two font atlas pages from CMFONTTM.BIN; only the
-/// glyph geometry and CLUT origin differ across styles.
+/// Decoded metrics for one <c>TextStyle</c> descriptor.
 /// </summary>
-public sealed record FontStyleMetrics(
-    /// <summary>Pixels between successive text baselines for this style.</summary>
-    int LineHeight,
-    /// <summary>Glyph metrics indexed 0–(count-1); token glyph code = index + 4.</summary>
-    IReadOnlyList<GlyphMetric> Glyphs,
-    /// <summary>Icon metrics indexed 0–(count-1); token icon code = index + 1.</summary>
-    IReadOnlyList<GlyphMetric> Icons);
+/// <remarks>
+/// The active European styles have baseline distances of 14, 11, and 9 pixels. They share
+/// the two atlas pages and differ only in glyph geometry and CLUT origin.
+/// </remarks>
+/// <param name="LineHeight">Pixels between successive text baselines.</param>
+/// <param name="Glyphs">Glyph metrics indexed by token code minus four.</param>
+/// <param name="Icons">Icon metrics indexed by token code minus one.</param>
+public sealed record FontStyleMetrics(int LineHeight, IReadOnlyList<GlyphMetric> Glyphs, IReadOnlyList<GlyphMetric> Icons);

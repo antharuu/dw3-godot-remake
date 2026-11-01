@@ -1,45 +1,6 @@
 using System.Buffers.Binary;
-using Dw3.Formats.Binary.Tim;
 
 namespace Dw3.Formats.Water;
-
-/// <summary>
-/// One composed sprite frame as raw 16-bit PS1 colour words. Word 0 is a transparent
-/// texel; a non-zero word with bit 15 set is a semi-transparent (STP) texel.
-/// </summary>
-/// <param name="Width">Width of the frame bounding box.</param>
-/// <param name="Height">Height of the frame bounding box.</param>
-/// <param name="OffsetX">X of the bounding box relative to the object position.</param>
-/// <param name="OffsetY">Y of the bounding box relative to the object position.</param>
-/// <param name="Abr">Semi-transparency blend mode recorded by the frame, or a negative value.</param>
-/// <param name="Words">Row-major colour words.</param>
-public sealed record SpriteFrameImage(int Width, int Height, int OffsetX, int OffsetY, int Abr, ushort[] Words)
-{
-    /// <summary>RGBA of the opaque (non-STP) texels; every other texel is fully transparent.</summary>
-    public byte[] ToOpaqueRgba() => Select(stp: false);
-
-    /// <summary>RGBA of the STP texels drawn fully opaque; every other texel is fully transparent.</summary>
-    public byte[] ToStpRgba() => Select(stp: true);
-
-    private byte[] Select(bool stp)
-    {
-        var rgba = new byte[Words.Length * 4];
-        for (int index = 0; index < Words.Length; index++)
-        {
-            ushort word = Words[index];
-            if (word == 0 || Rgba5551.IsStp(word) != stp)
-                continue;
-
-            (byte r, byte g, byte b, _) = Rgba5551.ToRgba(word);
-            rgba[index * 4] = r;
-            rgba[index * 4 + 1] = g;
-            rgba[index * 4 + 2] = b;
-            rgba[index * 4 + 3] = byte.MaxValue;
-        }
-
-        return rgba;
-    }
-}
 
 /// <summary>
 /// Composes a sprite-sheet frame from its parts sampled in the object VRAM.
