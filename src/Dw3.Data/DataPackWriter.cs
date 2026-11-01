@@ -75,7 +75,7 @@ public sealed class DataPackWriter
                 Directory.Move(activeDirectory, previousDirectory);
             }
 
-            Directory.Move(stagingDirectory, activeDirectory);
+            MoveWithRetry(stagingDirectory, activeDirectory);
         }
         catch
         {
@@ -86,6 +86,31 @@ public sealed class DataPackWriter
 
         if (previousDirectory is not null && Directory.Exists(previousDirectory))
             Directory.Delete(previousDirectory, recursive: true);
+    }
+
+    /// <summary>
+    /// Moves a directory, retrying on transient <see cref="IOException"/> failures.
+    /// On Windows, antivirus or file-system indexers may briefly hold a handle on a
+    /// file inside the source directory, causing <c>Directory.Move</c> to throw
+    /// <c>IOException</c> ("Access to the path is denied"). An exponential back-off
+    /// gives the external process time to release the handle.
+    /// </summary>
+    private static void MoveWithRetry(string source, string destination)
+    {
+        const int MaxAttempts = 8;
+        const int InitialDelayMs = 50;
+        for (int attempt = 0; attempt < MaxAttempts; attempt++)
+        {
+            try
+            {
+                Directory.Move(source, destination);
+                return;
+            }
+            catch (IOException) when (attempt < MaxAttempts - 1)
+            {
+                System.Threading.Thread.Sleep(InitialDelayMs << attempt);
+            }
+        }
     }
 
     private void RemoveOrphanedStagingDirectories()
