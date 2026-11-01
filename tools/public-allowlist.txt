@@ -539,9 +539,12 @@ tests/Dw3.Data.Tests/DataPackTests.cs
 tests/Dw3.Data.Tests/Dw3.Data.Tests.csproj
 tests/Dw3.Data.Tests/SqliteRoundtripTests.cs
 tests/Dw3.Disc.Tests/AssemblyVersionTests.cs
+tests/Dw3.Disc.Tests/DiscFormatErrorTests.cs
 tests/Dw3.Disc.Tests/DiscReaderTests.cs
 tests/Dw3.Disc.Tests/Dw3.Disc.Tests.csproj
 tests/Dw3.Extractor.Tests/ActionDomainWriterTests.cs
+tests/Dw3.Extractor.Tests/BattleReportJsonWriterTests.cs
+tests/Dw3.Extractor.Tests/EncounterWritersTests.cs
 tests/Dw3.Extractor.Tests/BattleModelDomainWriterTests.cs
 tests/Dw3.Extractor.Tests/CliTests.cs
 tests/Dw3.Extractor.Tests/CollisionManifestWriterTests.cs
