@@ -17,6 +17,10 @@ public static class FieldTalkReader
     private const int MaximumTalks = 64;
 
     /// <summary>Reads the table at <paramref name="tableAddress"/>; a null pointer is an actor without talks.</summary>
+    /// <param name="overlay">Raw WSTAG overlay bytes containing 12-byte FieldTalk records.</param>
+    /// <param name="tableAddress">RAM address of the table's first record, or zero for no table.</param>
+    /// <param name="overlayLoadAddress">RAM address at which <paramref name="overlay"/> starts.</param>
+    /// <returns>The decoded records before the all-zero terminator, or an empty list for a null pointer.</returns>
     /// <exception cref="FormatException">A record or list leaves the overlay, or the sentinel is missing.</exception>
     public static IReadOnlyList<FieldTalk> Read(ReadOnlySpan<byte> overlay, uint tableAddress, uint overlayLoadAddress)
     {

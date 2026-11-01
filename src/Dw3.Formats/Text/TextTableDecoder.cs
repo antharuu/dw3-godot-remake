@@ -46,6 +46,10 @@ public static class TextTableDecoder
     /// Tokenises one null-terminated string in <paramref name="data"/>[<paramref name="start"/>..
     /// <paramref name="end"/>).
     /// </summary>
+    /// <param name="data">Full FSTALK file bytes containing the bounded string.</param>
+    /// <param name="start">Inclusive byte offset of the first token.</param>
+    /// <param name="end">Exclusive byte offset of the null terminator.</param>
+    /// <returns>Tokens in byte-stream order, excluding the terminator.</returns>
     /// <exception cref="FormatException">Unknown control command, truncated control or icon, or reserved byte 0x03.</exception>
     public static IReadOnlyList<TextToken> Tokenize(ReadOnlySpan<byte> data, int start, int end) =>
         TextEntryTokenizer.Tokenize(data, start, end);
