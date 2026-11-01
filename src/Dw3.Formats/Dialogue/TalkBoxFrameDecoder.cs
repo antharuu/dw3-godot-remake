@@ -82,26 +82,14 @@ public static class TalkBoxFrameDecoder
         ArgumentNullException.ThrowIfNull(frameOffsets);
         ArgumentNullException.ThrowIfNull(sheet);
         if (clutFrames <= 0) throw new ArgumentOutOfRangeException(nameof(clutFrames));
-        int position = -1;
-        for (int index = 0; index < ids.Count; index++)
-            if (ids[index] == frameId) { position = index; break; }
+        int position = FindFramePosition(ids, frameId);
         if (position < 0)
         {
             throw new FormatException($"Menu sprite sheet lacks frame {frameId}.");
         }
 
         ReadOnlySpan<byte> body = sheet.AsSpan(4);
-        int offset = frameOffsets[position];
-        if (offset + 6 > body.Length)
-            throw new FormatException($"Menu sprite frame {frameId} record is truncated.");
-        short count = BinaryPrimitives.ReadInt16LittleEndian(body[offset..]);
-        short rate = BinaryPrimitives.ReadInt16LittleEndian(body[(offset + 4)..]);
-        if (count is <= 0 or > MaxFrameParts)
-            throw new FormatException($"Menu sprite frame {frameId} has invalid part count {count}.");
-        if (rate is < -1 or > 3)
-        {
-            throw new FormatException($"Menu sprite frame {frameId} has invalid semi-transparency rate {rate}.");
-        }
+        (int offset, short rate) = ReadFrameMetadata(body, frameOffsets[position], frameId);
 
         var (rgba, width, height, _, _) = BattleHudDecoder.RenderFieldFrame(parts, body, offset, pages);
         return new TalkBoxFrameImage(frameId, width, height, clutFrames, rate != -1, rgba);
@@ -117,48 +105,159 @@ public static class TalkBoxFrameDecoder
     public static TalkBoxPanelImage DecodePanel(IReadOnlyList<HudTexturePage> pages)
     {
         ArgumentNullException.ThrowIfNull(pages);
-        int clutX = (PanelClut & 0x3F) * 16 - TextureVramX;
+        IReadOnlyList<ushort> clutRow = ReadPanelClut(pages);
+        (byte[] rgba, List<(byte R, byte G, byte B)> order, Dictionary<(byte R, byte G, byte B), int> counts) = DecodePanelPixels(pages[0], clutRow);
+        if (order.Count == 0)
+            throw new FormatException("Talk-box panel texture has no opaque texel.");
+        (byte R, byte G, byte B) body = order[0];
+        foreach ((byte R, byte G, byte B) colour in order)
+        {
+            if (counts[colour] > counts[body])
+            {
+                body = colour;
+            }
+        }
+
+        return new TalkBoxPanelImage(PanelU1 - PanelU0 + 1, PanelV1 - PanelV0, body.R, body.G, body.B, PanelTexturePage, PanelClut, rgba);
+    }
+
+    /// <summary>Finds a dialogue frame identifier in the source order used by its offset table.</summary>
+    /// <param name="ids">Source frame identifiers paired with byte offsets.</param>
+    /// <param name="frameId">Frame identifier requested by a layout record.</param>
+    /// <returns>The matching offset-table index, or -1 when the frame is absent.</returns>
+    private static int FindFramePosition(IReadOnlyList<int> ids, int frameId)
+    {
+        for (int index = 0; index < ids.Count; index++)
+        {
+            if (ids[index] == frameId)
+            {
+                return index;
+            }
+        }
+
+        return -1;
+    }
+
+    /// <summary>Reads and validates the fixed six-byte header preceding a talk-box frame part list.</summary>
+    /// <param name="body">Sprite-sheet bytes after their four-byte archive header.</param>
+    /// <param name="offset">Frame header offset inside <paramref name="body"/>.</param>
+    /// <param name="frameId">Identifier used in diagnostics for the malformed source record.</param>
+    /// <returns>The retained offset and source semi-transparency rate.</returns>
+    /// <exception cref="FormatException">The frame header, part count, or blend rate is invalid.</exception>
+    private static (int Offset, short Rate) ReadFrameMetadata(ReadOnlySpan<byte> body, int offset, int frameId)
+    {
+        if (offset + 6 > body.Length)
+        {
+            throw new FormatException($"Menu sprite frame {frameId} record is truncated.");
+        }
+
+        short count = BinaryPrimitives.ReadInt16LittleEndian(body[offset..]);
+        short rate = BinaryPrimitives.ReadInt16LittleEndian(body[(offset + 4)..]);
+        if (count is <= 0 or > MaxFrameParts)
+        {
+            throw new FormatException($"Menu sprite frame {frameId} has invalid part count {count}.");
+        }
+
+        if (rate is < -1 or > 3)
+        {
+            throw new FormatException($"Menu sprite frame {frameId} has invalid semi-transparency rate {rate}.");
+        }
+
+        return (offset, rate);
+    }
+
+    /// <summary>Locates the 16-word panel CLUT in the menu texture pages.</summary>
+    /// <param name="pages">Decoded pages that include the panel palette row.</param>
+    /// <returns>The complete source palette row containing the panel CLUT.</returns>
+    /// <exception cref="FormatException">The CLUT page or its 16 words are unavailable.</exception>
+    private static IReadOnlyList<ushort> ReadPanelClut(IReadOnlyList<HudTexturePage> pages)
+    {
+        int clutX = ((PanelClut & 0x3F) * 16) - TextureVramX;
         int clutY = PanelClut >> 6;
         int clutPage = clutX / BattleHudDecoder.PageWidthWords;
         int clutWord = clutX % BattleHudDecoder.PageWidthWords;
         if (pages.Count == 0 || clutPage >= pages.Count || clutY >= pages[clutPage].Height)
+        {
             throw new FormatException("Talk-box panel CLUT lies outside the loaded menu texture.");
+        }
+
         IReadOnlyList<ushort> clutRow = pages[clutPage].Rows[clutY];
         if (clutWord + 16 > clutRow.Count)
         {
             throw new FormatException("Talk-box panel CLUT row is truncated.");
         }
 
+        return clutRow;
+    }
+
+    /// <summary>Expands the fixed panel rectangle and counts opaque colours in first-seen order.</summary>
+    /// <param name="texture">Texture page zero containing the panel's packed 4-bit texels.</param>
+    /// <param name="clutRow">Palette row containing the panel's 16 colour entries.</param>
+    /// <returns>RGBA pixels, opaque colour order, and opaque colour occurrence counts.</returns>
+    private static (byte[] Rgba, List<(byte R, byte G, byte B)> Order, Dictionary<(byte R, byte G, byte B), int> Counts) DecodePanelPixels(HudTexturePage texture, IReadOnlyList<ushort> clutRow)
+    {
         int width = PanelU1 - PanelU0 + 1;
-        int height = PanelV1 - PanelV0;
-        var rgba = new byte[width * height * 4];
+        int clutWord = (((PanelClut & 0x3F) * 16) - TextureVramX) % BattleHudDecoder.PageWidthWords;
+        var rgba = new byte[width * (PanelV1 - PanelV0) * 4];
         var counts = new Dictionary<(byte R, byte G, byte B), int>();
         var order = new List<(byte R, byte G, byte B)>();
-        HudTexturePage texture = pages[0];
         for (int v = PanelV0; v < PanelV1; v++)
         {
-            IReadOnlyList<ushort> row = texture.Rows[v];
-            for (int u = PanelU0; u <= PanelU1; u++)
+            DecodePanelRow(texture.Rows[v], clutRow, clutWord, v, rgba, counts, order);
+        }
+
+        return (rgba, order, counts);
+    }
+
+    /// <summary>Expands one packed panel row and records opaque colours for the body-colour vote.</summary>
+    /// <param name="row">Packed source texels at the selected vertical coordinate.</param>
+    /// <param name="clutRow">Palette row holding the panel CLUT.</param>
+    /// <param name="clutWord">Word offset of the 16-colour CLUT inside <paramref name="clutRow"/>.</param>
+    /// <param name="v">Panel texture v coordinate of <paramref name="row"/>.</param>
+    /// <param name="rgba">Destination RGBA buffer.</param>
+    /// <param name="counts">Opaque colour occurrence counters.</param>
+    /// <param name="order">First-seen opaque colours.</param>
+    private static void DecodePanelRow(IReadOnlyList<ushort> row, IReadOnlyList<ushort> clutRow, int clutWord, int v, byte[] rgba, Dictionary<(byte R, byte G, byte B), int> counts, List<(byte R, byte G, byte B)> order)
+    {
+        int width = PanelU1 - PanelU0 + 1;
+        for (int u = PanelU0; u <= PanelU1; u++)
+        {
+            int index = (row[u / 4] >> ((u & 3) * 4)) & 0xF;
+            ushort word = clutRow[clutWord + index];
+            if (word == 0)
             {
-                int index = (row[u / 4] >> ((u & 3) * 4)) & 0xF;
-                ushort word = clutRow[clutWord + index];
-                if (word == 0) continue;
-                byte r = BattleHudDecoder.Ps1Channel(word & 31);
-                byte g = BattleHudDecoder.Ps1Channel((word >> 5) & 31);
-                byte b = BattleHudDecoder.Ps1Channel((word >> 10) & 31);
-                bool stp = (word & 0x8000) != 0;
-                int at = ((v - PanelV0) * width + (u - PanelU0)) * 4;
-                rgba[at] = r; rgba[at + 1] = g; rgba[at + 2] = b; rgba[at + 3] = stp ? (byte)128 : (byte)255;
-                if (stp) continue;
-                if (counts.TryGetValue((r, g, b), out int seen)) counts[(r, g, b)] = seen + 1;
-                else { counts.Add((r, g, b), 1); order.Add((r, g, b)); }
+                continue;
+            }
+
+            byte r = BattleHudDecoder.Ps1Channel(word & 31);
+            byte g = BattleHudDecoder.Ps1Channel((word >> 5) & 31);
+            byte b = BattleHudDecoder.Ps1Channel((word >> 10) & 31);
+            bool stp = (word & 0x8000) != 0;
+            int at = (((v - PanelV0) * width) + (u - PanelU0)) * 4;
+            rgba[at] = r;
+            rgba[at + 1] = g;
+            rgba[at + 2] = b;
+            rgba[at + 3] = stp ? (byte)128 : byte.MaxValue;
+            if (!stp)
+            {
+                RecordOpaqueColour((r, g, b), counts, order);
             }
         }
-        if (order.Count == 0)
-            throw new FormatException("Talk-box panel texture has no opaque texel.");
-        (byte R, byte G, byte B) body = order[0];
-        foreach ((byte R, byte G, byte B) colour in order)
-            if (counts[colour] > counts[body]) body = colour;
-        return new TalkBoxPanelImage(width, height, body.R, body.G, body.B, PanelTexturePage, PanelClut, rgba);
+    }
+
+    /// <summary>Increments one opaque colour and preserves the source's first-seen tie ordering.</summary>
+    /// <param name="colour">Decoded non-STP RGB colour to count.</param>
+    /// <param name="counts">Occurrence count keyed by RGB triplet.</param>
+    /// <param name="order">Colours in their first source appearance order.</param>
+    private static void RecordOpaqueColour((byte R, byte G, byte B) colour, Dictionary<(byte R, byte G, byte B), int> counts, List<(byte R, byte G, byte B)> order)
+    {
+        if (counts.TryGetValue(colour, out int seen))
+        {
+            counts[colour] = seen + 1;
+            return;
+        }
+
+        counts.Add(colour, 1);
+        order.Add(colour);
     }
 }

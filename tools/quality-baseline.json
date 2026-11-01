@@ -1050,12 +1050,6 @@
     {
       "rule": "S3776",
       "project": "Dw3.Formats",
-      "folder": "Dialogue",
-      "count": 1
-    },
-    {
-      "rule": "S3776",
-      "project": "Dw3.Formats",
       "folder": "Field",
       "count": 12
     },
@@ -1232,12 +1226,6 @@
       "project": "Dw3.Formats",
       "folder": "Battle",
       "count": 79
-    },
-    {
-      "rule": "SA1107",
-      "project": "Dw3.Formats",
-      "folder": "Dialogue",
-      "count": 5
     },
     {
       "rule": "SA1107",
@@ -2233,7 +2221,7 @@
       "rule": "SA1407",
       "project": "Dw3.Formats",
       "folder": "Dialogue",
-      "count": 3
+      "count": 1
     },
     {
       "rule": "SA1407",
@@ -2424,12 +2412,6 @@
     {
       "rule": "SA1501",
       "project": "Dw3.Formats",
-      "folder": "Dialogue",
-      "count": 2
-    },
-    {
-      "rule": "SA1501",
-      "project": "Dw3.Formats",
       "folder": "Field",
       "count": 2
     },
@@ -2581,7 +2563,7 @@
       "rule": "SA1503",
       "project": "Dw3.Formats",
       "folder": "Dialogue",
-      "count": 13
+      "count": 5
     },
     {
       "rule": "SA1503",
@@ -2839,7 +2821,7 @@
       "rule": "SA1513",
       "project": "Dw3.Formats",
       "folder": "Dialogue",
-      "count": 3
+      "count": 2
     },
     {
       "rule": "SA1513",
@@ -3337,12 +3319,6 @@
       "rule": "SA1520",
       "project": "Dw3.Formats",
       "folder": "Battle",
-      "count": 1
-    },
-    {
-      "rule": "SA1520",
-      "project": "Dw3.Formats",
-      "folder": "Dialogue",
       "count": 1
     },
     {
