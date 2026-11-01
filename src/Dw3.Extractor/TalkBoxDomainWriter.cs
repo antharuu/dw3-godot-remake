@@ -22,9 +22,14 @@ public static class TalkBoxDomainWriter
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(domain);
         if (domain.Frames.Count == 0)
+        {
             throw new ArgumentException("The talk box needs at least one frame sprite.", nameof(domain));
+        }
+
         if (domain.Layouts.Count != TalkBoxFrameDecoder.LayoutCount)
+        {
             throw new ArgumentException($"The talk box needs {TalkBoxFrameDecoder.LayoutCount} layouts, got {domain.Layouts.Count}.", nameof(domain));
+        }
 
         foreach (TalkBoxFrameImage frame in domain.Frames.OrderBy(frame => frame.FrameId))
         {
@@ -66,7 +71,9 @@ public static class TalkBoxDomainWriter
         command.Transaction = context.Transaction;
         command.CommandText = sql;
         for (int index = 0; index < values.Length; index++)
+        {
             command.Parameters.AddWithValue($"${index + 1}", values[index]);
+        }
         command.ExecuteNonQuery();
     }
 }

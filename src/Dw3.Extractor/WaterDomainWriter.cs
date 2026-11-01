@@ -49,7 +49,9 @@ public static class WaterDomainWriter
         json.WriteEndArray();
         json.WriteStartObject("zones");
         foreach (ExtractedWaterZone zone in zones)
+        {
             WriteZone(context, json, zone);
+        }
         json.WriteEndObject();
         json.WriteEndObject();
     }
@@ -149,7 +151,9 @@ public static class WaterDomainWriter
         command.Transaction = context.Transaction;
         command.CommandText = sql;
         for (int index = 0; index < values.Length; index++)
+        {
             command.Parameters.AddWithValue($"${index + 1}", values[index]);
+        }
         command.ExecuteNonQuery();
     }
 

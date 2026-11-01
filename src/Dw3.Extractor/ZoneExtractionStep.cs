@@ -58,11 +58,16 @@ internal static class ZoneExtractionStep
                 .OrderBy(item => item.Stage)
                 .ToArray();
             if (packs.Length == 0)
+            {
                 throw new InvalidDataException("The supported disc contains no field terrain packet files.");
+            }
+
             packs = [.. packs.Where(item => FieldOverlayClassifier.IsLoadable(disc.ReadFile(
                 RequireStageFile(entries, "AAA/PRO/WSTAG", ".PRO", item.Stage!.Value))))];
             if (packs.Length == 0)
+            {
                 throw new InvalidDataException("The supported disc contains no loadable field-zone overlays.");
+            }
 
             var writer = new DataPackWriter(outputDirectory);
             DateTimeOffset started = DateTimeOffset.UtcNow;
