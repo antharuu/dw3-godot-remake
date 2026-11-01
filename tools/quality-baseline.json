@@ -233,12 +233,6 @@
     },
     {
       "rule": "CA1859",
-      "project": "Dw3.Formats",
-      "folder": "Battle",
-      "count": 1
-    },
-    {
-      "rule": "CA1859",
       "project": "Dw3.Formats.Tests",
       "folder": "Field",
       "count": 1
@@ -955,7 +949,7 @@
       "rule": "S3776",
       "project": "Dw3.Formats",
       "folder": "Battle",
-      "count": 5
+      "count": 1
     },
     {
       "rule": "S3776",
@@ -1123,7 +1117,7 @@
       "rule": "SA1107",
       "project": "Dw3.Formats",
       "folder": "Battle",
-      "count": 74
+      "count": 72
     },
     {
       "rule": "SA1107",
@@ -1661,12 +1655,6 @@
     },
     {
       "rule": "SA1202",
-      "project": "Dw3.Formats",
-      "folder": "Battle",
-      "count": 1
-    },
-    {
-      "rule": "SA1202",
       "project": "Dw3.Formats.Tests",
       "folder": "Battle",
       "count": 2
@@ -2065,7 +2053,7 @@
       "rule": "SA1407",
       "project": "Dw3.Formats",
       "folder": "Battle",
-      "count": 34
+      "count": 24
     },
     {
       "rule": "SA1407",
@@ -2159,12 +2147,6 @@
     },
     {
       "rule": "SA1408",
-      "project": "Dw3.Formats",
-      "folder": "Battle",
-      "count": 1
-    },
-    {
-      "rule": "SA1408",
       "project": "Dw3.Game.Tests",
       "folder": ".",
       "count": 1
@@ -2239,7 +2221,7 @@
       "rule": "SA1501",
       "project": "Dw3.Formats",
       "folder": "Battle",
-      "count": 7
+      "count": 5
     },
     {
       "rule": "SA1501",
@@ -2383,7 +2365,7 @@
       "rule": "SA1503",
       "project": "Dw3.Formats",
       "folder": "Battle",
-      "count": 87
+      "count": 53
     },
     {
       "rule": "SA1503",
@@ -2623,7 +2605,7 @@
       "rule": "SA1513",
       "project": "Dw3.Formats",
       "folder": "Battle",
-      "count": 37
+      "count": 24
     },
     {
       "rule": "SA1513",
@@ -2887,7 +2869,7 @@
       "rule": "SA1516",
       "project": "Dw3.Formats",
       "folder": "Battle",
-      "count": 6
+      "count": 5
     },
     {
       "rule": "SA1516",
@@ -2983,7 +2965,7 @@
       "rule": "SA1519",
       "project": "Dw3.Formats",
       "folder": "Battle",
-      "count": 6
+      "count": 1
     },
     {
       "rule": "SA1519",

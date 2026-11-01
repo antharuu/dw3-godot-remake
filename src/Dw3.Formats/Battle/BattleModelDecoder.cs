@@ -29,42 +29,42 @@ public static class BattleModelDecoder
         ArgumentNullException.ThrowIfNull(data);
         IReadOnlyList<ArchiveRange> bounds = ModelArchive.ReadBounds(data);
         if (modelEntry < 0 || modelEntry >= bounds.Count)
+        {
             throw new FormatException($"Model archive entry {modelEntry} is absent.");
+        }
+
         (int start, int end) = (bounds[modelEntry].Start, bounds[modelEntry].End);
         if (start + 8 > end)
+        {
             throw new FormatException("Model descriptor overruns its archive entry.");
+        }
+
         uint textureEntry = ReadU32(data, start);
         uint lastBone = ReadU32(data, start + 4);
         if (textureEntry >= bounds.Count)
+        {
             throw new FormatException($"Model texture archive entry outside file: {textureEntry}.");
+        }
+
         long boneCount = (long)lastBone + 1;
         if (boneCount < MinimumBones || boneCount > MaximumBones)
+        {
             throw new FormatException($"Invalid bone count {boneCount}.");
-        if (start + 8 + (boneCount - 1) * BoneRecordBytes > end)
+        }
+
+        if (start + 8 + ((boneCount - 1) * BoneRecordBytes) > end)
         {
             throw new FormatException("Model descriptor overruns its archive entry.");
         }
 
-        var bones = new List<BattleModelBone> { new(0, null, null, null) };
-        for (int index = 1; index < boneCount; index++)
-        {
-            int record = start + 8 + (index - 1) * BoneRecordBytes;
-            uint parent = ReadU32(data, record);
-            uint mesh = ReadU32(data, record + 4);
-            uint key = ReadU32(data, record + 8);
-            if (parent >= index)
-                throw new FormatException($"bone {index}: parent {parent} is not an earlier bone");
-            if (mesh >= bounds.Count || key >= bounds.Count)
-                throw new FormatException($"bone {index}: source entry outside archive");
-            bones.Add(new BattleModelBone(index, (int)parent, (int)mesh, (int)key));
-        }
-
+        List<BattleModelBone> bones = ReadBones(data, start + 8, (int)boneCount, bounds.Count);
         var meshes = new List<BattleMesh>(bones.Count - 1);
         foreach (BattleModelBone bone in bones.Skip(1))
         {
             ArchiveRange range = bounds[bone.MeshEntry!.Value];
             meshes.Add(BattleMeshDecoder.Decode(data, range.Start, range.End, bone.Index));
         }
+
         return new BattleModelStructure(modelEntry, (int)textureEntry, bones, meshes);
     }
 
@@ -74,26 +74,22 @@ public static class BattleModelDecoder
     {
         BattleModelStructure structure = Decode(modelData, modelEntry);
         IReadOnlyList<ArchiveRange> modelBounds = ModelArchive.ReadBounds(modelData);
-        var tracks = new Dictionary<int, BattleBoneTracks>();
-        foreach (BattleModelBone bone in structure.Bones.Skip(1))
-        {
-            ArchiveRange range = modelBounds[bone.KeyEntry!.Value];
-            tracks.Add(bone.Index, BattleAnimationDecoder.DecodeTracks(modelData, range.Start, range.End, bone.Index));
-        }
-        ArchiveRange textureRange = modelBounds[structure.TextureEntry];
-        byte[] textureArchive = modelData[textureRange.Start..textureRange.End];
-        IEnumerable<MeshTextureState> consumers = structure.Meshes.SelectMany(mesh => mesh.Polygons)
-            .Where(polygon => polygon.Uvs.Count > 0)
-            .Select(polygon => polygon.Texture);
-        BattleTextureSet textures = BattleTextureDecoder.Decode(textureArchive, consumers);
+        Dictionary<int, BattleBoneTracks> tracks = DecodeTracks(structure, modelData, modelBounds);
+        BattleTextureSet textures = DecodeTextures(structure, modelData, modelBounds);
 
         IReadOnlyList<ArchiveRange> motionBounds = ReferenceEquals(modelData, motionData) ? modelBounds : ModelArchive.ReadBounds(motionData);
         if (motionEntry < 0 || motionEntry >= motionBounds.Count || motionBounds[motionEntry].Start == 0)
+        {
             throw new FormatException($"Motion archive entry {motionEntry} is absent.");
+        }
+
         ArchiveRange motionRange = motionBounds[motionEntry];
         IReadOnlyList<IReadOnlyList<BattleMotionStep>> motions = BattleAnimationDecoder.DecodeMotions(motionData, motionRange.Start, motionRange.End);
         if (motions[0][0].Index != 0)
+        {
             throw new FormatException($"motion 1 does not start at index 0: {motions[0][0]}");
+        }
+
         return new BattleModelPayload(structure, tracks, textures, motions, metadata);
     }
 
@@ -109,21 +105,14 @@ public static class BattleModelDecoder
     {
         BattleModelStructure structure = Decode(modelData, modelEntry);
         IReadOnlyList<ArchiveRange> bounds = ModelArchive.ReadBounds(modelData);
-        var tracks = new Dictionary<int, BattleBoneTracks>();
-        foreach (BattleModelBone bone in structure.Bones.Skip(1))
-        {
-            ArchiveRange range = bounds[bone.KeyEntry!.Value];
-            tracks.Add(bone.Index, BattleAnimationDecoder.DecodeTracks(modelData, range.Start, range.End, bone.Index));
-        }
-        ArchiveRange textureRange = bounds[structure.TextureEntry];
-        byte[] textureArchive = modelData[textureRange.Start..textureRange.End];
-        IEnumerable<MeshTextureState> consumers = structure.Meshes.SelectMany(mesh => mesh.Polygons)
-            .Where(polygon => polygon.Uvs.Count > 0)
-            .Select(polygon => polygon.Texture);
-        BattleTextureSet textures = BattleTextureDecoder.Decode(textureArchive, consumers);
+        Dictionary<int, BattleBoneTracks> tracks = DecodeTracks(structure, modelData, bounds);
+        BattleTextureSet textures = DecodeTextures(structure, modelData, bounds);
 
         if (motionEntry < 0 || motionEntry >= bounds.Count || bounds[motionEntry].Start == 0)
+        {
             throw new FormatException($"Fight stage motion archive entry {motionEntry} is absent.");
+        }
+
         ArchiveRange motionRange = bounds[motionEntry];
         IReadOnlyList<IReadOnlyList<BattleMotionStep>> motions = BattleAnimationDecoder.DecodeMotions(modelData, motionRange.Start, motionRange.End);
         if (motions[0][0].Index != 0)
@@ -136,6 +125,70 @@ public static class BattleModelDecoder
             [], new BattleGeometry(0, 0),
             new BattleFace(new BattleFaceSource(0, 0, 0, 0, string.Empty), []));
         return new BattleModelPayload(structure, tracks, textures, motions, emptyMetadata);
+    }
+
+    /// <summary>Reads the 12-byte records of bones 1..<paramref name="boneCount"/> - 1 after the implicit root.</summary>
+    /// <param name="data">Whole model file.</param>
+    /// <param name="firstRecord">File offset of bone 1's record (descriptor start + 8).</param>
+    /// <param name="boneCount">Bone count including the root, 2..64.</param>
+    /// <param name="entryCount">Number of archive entries; mesh and key entries must be below it.</param>
+    /// <returns>All bones, root first.</returns>
+    /// <exception cref="FormatException">A parent is not an earlier bone or an entry lies outside the archive.</exception>
+    private static List<BattleModelBone> ReadBones(byte[] data, int firstRecord, int boneCount, int entryCount)
+    {
+        var bones = new List<BattleModelBone> { new(0, null, null, null) };
+        for (int index = 1; index < boneCount; index++)
+        {
+            int record = firstRecord + ((index - 1) * BoneRecordBytes);
+            uint parent = ReadU32(data, record);
+            uint mesh = ReadU32(data, record + 4);
+            uint key = ReadU32(data, record + 8);
+            if (parent >= index)
+            {
+                throw new FormatException($"bone {index}: parent {parent} is not an earlier bone");
+            }
+
+            if (mesh >= entryCount || key >= entryCount)
+            {
+                throw new FormatException($"bone {index}: source entry outside archive");
+            }
+
+            bones.Add(new BattleModelBone(index, (int)parent, (int)mesh, (int)key));
+        }
+
+        return bones;
+    }
+
+    /// <summary>Decodes the key tracks of every non-root bone.</summary>
+    /// <param name="structure">Decoded hierarchy.</param>
+    /// <param name="data">Whole model file.</param>
+    /// <param name="bounds">Archive entry ranges of <paramref name="data"/>.</param>
+    /// <returns>Tracks keyed by bone index.</returns>
+    private static Dictionary<int, BattleBoneTracks> DecodeTracks(BattleModelStructure structure, byte[] data, IReadOnlyList<ArchiveRange> bounds)
+    {
+        var tracks = new Dictionary<int, BattleBoneTracks>();
+        foreach (BattleModelBone bone in structure.Bones.Skip(1))
+        {
+            ArchiveRange range = bounds[bone.KeyEntry!.Value];
+            tracks.Add(bone.Index, BattleAnimationDecoder.DecodeTracks(data, range.Start, range.End, bone.Index));
+        }
+
+        return tracks;
+    }
+
+    /// <summary>Decodes the textures that the model's UV-carrying polygons select from its texture archive entry.</summary>
+    /// <param name="structure">Decoded hierarchy and meshes.</param>
+    /// <param name="data">Whole model file.</param>
+    /// <param name="bounds">Archive entry ranges of <paramref name="data"/>.</param>
+    /// <returns>The decoded texture set.</returns>
+    private static BattleTextureSet DecodeTextures(BattleModelStructure structure, byte[] data, IReadOnlyList<ArchiveRange> bounds)
+    {
+        ArchiveRange textureRange = bounds[structure.TextureEntry];
+        byte[] textureArchive = data[textureRange.Start..textureRange.End];
+        IEnumerable<MeshTextureState> consumers = structure.Meshes.SelectMany(mesh => mesh.Polygons)
+            .Where(polygon => polygon.Uvs.Count > 0)
+            .Select(polygon => polygon.Texture);
+        return BattleTextureDecoder.Decode(textureArchive, consumers);
     }
 
     private static uint ReadU32(byte[] data, int at) => BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(at, 4));

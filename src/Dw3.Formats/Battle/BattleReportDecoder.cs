@@ -53,16 +53,6 @@ public static class BattleReportDecoder
         { 21, 22, 23, 24, 23, 22, -1 },
     };
 
-    private static IReadOnlyDictionary<int, int> BuildRequiredRows()
-    {
-        var d = new Dictionary<int, int>();
-        for (int f = 0x00; f <= 0x1C; f++) d[f] = 1;
-        for (int f = 0x1D; f <= 0x23; f++) d[f] = 11;
-        d[0x24] = 4;
-        d[0x25] = 4;
-        return d;
-    }
-
     /// <summary>
     /// Reads and validates the STFGTREP_animations table from the STFGTREP.PRO overlay.
     /// The table is 8 rows × 7 s32 values at address 0x8008905C (EU overlay base 0x80082CB0).
@@ -78,27 +68,9 @@ public static class BattleReportDecoder
             throw new FormatException($"STFGTREP_animations at 0x{AnimationsAddr:X} lies outside STFGTREP.PRO.");
         }
 
-        var result = new int[AnimationPartners, AnimationFrames];
-        for (int p = 0; p < AnimationPartners; p++)
-            for (int f = 0; f < AnimationFrames; f++)
-                result[p, f] = BinaryPrimitives.ReadInt32LittleEndian(
-                    overlay.AsSpan(offset + (p * AnimationFrames + f) * 4));
-
-        // Verify against pinned EU source.
-        for (int p = 0; p < AnimationPartners; p++)
-            for (int f = 0; f < AnimationFrames; f++)
-                if (result[p, f] != PinnedAnimations[p, f])
-                    throw new FormatException(
-                        $"STFGTREP_animations[{p},{f}] is {result[p, f]}, expected {PinnedAnimations[p, f]} (EU).");
-
-        // Every row must have a -1 terminator before index 7.
-        for (int p = 0; p < AnimationPartners; p++)
-        {
-            bool found = false;
-            for (int f = 0; f < AnimationFrames; f++) if (result[p, f] == -1) { found = true; break; }
-            if (!found) throw new FormatException($"STFGTREP_animations row {p} has no -1 terminator.");
-        }
-
+        int[,] result = ReadTable(overlay, offset);
+        VerifyPinnedValues(result);
+        VerifyTerminators(result);
         return result;
     }
 
@@ -106,7 +78,83 @@ public static class BattleReportDecoder
     public static int FramePosition(IReadOnlyList<int> ids, int frameId)
     {
         for (int i = 0; i < ids.Count; i++)
-            if (ids[i] == frameId) return i;
+        {
+            if (ids[i] == frameId)
+            {
+                return i;
+            }
+        }
+
         throw new FormatException($"Sprite sheet lacks required frame id {frameId}.");
+    }
+
+    private static Dictionary<int, int> BuildRequiredRows()
+    {
+        var d = new Dictionary<int, int>();
+        for (int f = 0x00; f <= 0x1C; f++)
+        {
+            d[f] = 1;
+        }
+
+        for (int f = 0x1D; f <= 0x23; f++)
+        {
+            d[f] = 11;
+        }
+
+        d[0x24] = 4;
+        d[0x25] = 4;
+        return d;
+    }
+
+    /// <summary>Reads the 8 × 7 s32 animation table, row-major, at <paramref name="offset"/>.</summary>
+    /// <param name="overlay">STFGTREP.PRO bytes.</param>
+    /// <param name="offset">File offset of the table, already bounds-checked.</param>
+    /// <returns>Frame ids per partner row and slot; -1 marks the end of a row.</returns>
+    private static int[,] ReadTable(byte[] overlay, int offset)
+    {
+        var result = new int[AnimationPartners, AnimationFrames];
+        for (int p = 0; p < AnimationPartners; p++)
+        {
+            for (int f = 0; f < AnimationFrames; f++)
+            {
+                result[p, f] = BinaryPrimitives.ReadInt32LittleEndian(
+                    overlay.AsSpan(offset + (((p * AnimationFrames) + f) * 4)));
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>Checks every slot against the sequences pinned for the EU disc.</summary>
+    /// <param name="table">Table read from the overlay.</param>
+    /// <exception cref="FormatException">A slot differs from the pinned value.</exception>
+    private static void VerifyPinnedValues(int[,] table)
+    {
+        for (int p = 0; p < AnimationPartners; p++)
+        {
+            for (int f = 0; f < AnimationFrames; f++)
+            {
+                if (table[p, f] != PinnedAnimations[p, f])
+                {
+                    throw new FormatException(
+                        $"STFGTREP_animations[{p},{f}] is {table[p, f]}, expected {PinnedAnimations[p, f]} (EU).");
+                }
+            }
+        }
+    }
+
+    /// <summary>Checks that every row holds a -1 terminator within its 7 slots.</summary>
+    /// <param name="table">Table read from the overlay.</param>
+    /// <exception cref="FormatException">A row has no -1.</exception>
+    private static void VerifyTerminators(int[,] table)
+    {
+        for (int p = 0; p < AnimationPartners; p++)
+        {
+            int row = p;
+            if (!Enumerable.Range(0, AnimationFrames).Any(f => table[row, f] == -1))
+            {
+                throw new FormatException($"STFGTREP_animations row {p} has no -1 terminator.");
+            }
+        }
     }
 }

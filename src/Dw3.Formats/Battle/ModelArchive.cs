@@ -19,36 +19,31 @@ public static class ModelArchive
     public static IReadOnlyList<ArchiveRange> ReadBounds(ReadOnlySpan<byte> data)
     {
         if (data.Length < 4)
+        {
             throw new FormatException("Model archive is shorter than one offset.");
+        }
+
         uint first = BinaryPrimitives.ReadUInt32LittleEndian(data);
         if (first < 4 || first % 4 != 0 || first > data.Length)
-            throw new FormatException($"Model archive first offset 0x{first:X} is invalid.");
-        int count = (int)(first / 4);
-        var offsets = new int[count];
-        int previous = -1;
-        for (int i = 0; i < count; i++)
         {
-            uint value = BinaryPrimitives.ReadUInt32LittleEndian(data.Slice(i * 4, 4));
-            if (value == 0)
-                continue;
-            if (value < first || value >= data.Length)
-                throw new FormatException($"Model archive entry {i} offset 0x{value:X} lies outside the data.");
-            if ((int)value <= previous)
-                throw new FormatException("Model archive offsets are not increasing.");
-            offsets[i] = previous = (int)value;
+            throw new FormatException($"Model archive first offset 0x{first:X} is invalid.");
         }
-        var bounds = new ArchiveRange[count];
+
+        int[] offsets = ReadOffsetTable(data, first);
+        var bounds = new ArchiveRange[offsets.Length];
         int end = data.Length;
-        for (int i = count - 1; i >= 0; i--)
+        for (int i = offsets.Length - 1; i >= 0; i--)
         {
             if (offsets[i] == 0)
             {
                 bounds[i] = new ArchiveRange(0, 0);
                 continue;
             }
+
             bounds[i] = new ArchiveRange(offsets[i], end);
             end = offsets[i];
         }
+
         return bounds;
     }
 
@@ -62,17 +57,61 @@ public static class ModelArchive
     public static int[] ReadNestedOffsets(ReadOnlySpan<byte> data, int start, int end, int entryCount)
     {
         if (start < 0 || start >= end || end > data.Length)
+        {
             throw new FormatException($"Invalid nested archive bounds 0x{start:X}..0x{end:X}.");
-        if (start + entryCount * 4 > data.Length)
+        }
+
+        if (start + (entryCount * 4) > data.Length)
+        {
             throw new FormatException($"Nested archive table at 0x{start:X} overruns the data.");
+        }
+
         var offsets = new int[entryCount];
         for (int i = 0; i < entryCount; i++)
         {
-            uint value = BinaryPrimitives.ReadUInt32LittleEndian(data.Slice(start + i * 4, 4));
+            uint value = BinaryPrimitives.ReadUInt32LittleEndian(data.Slice(start + (i * 4), 4));
             if (value != 0 && (value < entryCount * 4 || value >= end - start))
+            {
                 throw new FormatException($"Nested archive entry {i} has invalid offset 0x{value:X}.");
+            }
+
             offsets[i] = (int)value;
         }
+
+        return offsets;
+    }
+
+    /// <summary>Reads the first / 4 offsets of the table; absent entries stay 0.</summary>
+    /// <param name="data">Whole archive.</param>
+    /// <param name="first">First offset, a validated non-zero multiple of four that also sizes the table.</param>
+    /// <returns>One offset per entry.</returns>
+    /// <exception cref="FormatException">A present offset lies inside the table, past the data, or is not increasing.</exception>
+    private static int[] ReadOffsetTable(ReadOnlySpan<byte> data, uint first)
+    {
+        int count = (int)(first / 4);
+        var offsets = new int[count];
+        int previous = -1;
+        for (int i = 0; i < count; i++)
+        {
+            uint value = BinaryPrimitives.ReadUInt32LittleEndian(data.Slice(i * 4, 4));
+            if (value == 0)
+            {
+                continue;
+            }
+
+            if (value < first || value >= data.Length)
+            {
+                throw new FormatException($"Model archive entry {i} offset 0x{value:X} lies outside the data.");
+            }
+
+            if ((int)value <= previous)
+            {
+                throw new FormatException("Model archive offsets are not increasing.");
+            }
+
+            offsets[i] = previous = (int)value;
+        }
+
         return offsets;
     }
 }
