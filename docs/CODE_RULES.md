@@ -10,6 +10,7 @@ tracked by the quality ratchet described below. New code must follow every rule.
 | Rule | Limit | Why |
 | --- | --- | --- |
 | S3776 cognitive complexity | 13 per method | A method has to be understood in one reading. Branches, loops and nesting add up fast. |
+| DW3001 class cognitive complexity | 50 per class | The sum of cognitive complexity across all methods in a class. Large classes that are hard to navigate break this limit. Configurable in `.editorconfig` via `dw3_class_cognitive_complexity_max`. |
 | S138 method length | 60 lines | A method that does not fit on a screen usually does more than one job. |
 | S107 parameter count | 7 per method | Long parameter lists make call sites unreadable. Group related values in a type. |
 | S134 nesting depth | 3 levels of `if`, `for`, `while`, `switch`, `try` | Deep nesting hides the main path. Return early or extract a method. |
@@ -88,3 +89,24 @@ Never edit the baseline by hand to make room for new violations.
 Exit codes: `0` the ratchet holds, `1` a regression or a refused update, `2` a missing or
 unreadable input (no SARIF log for a project, no coverage report with `--require-coverage`,
 an invalid baseline).
+
+## DW3001 — Class cognitive complexity
+
+The custom Roslyn analyser `tools/Dw3.Analyzers` reports DW3001 when the total cognitive
+complexity of a class (sum across all methods, constructors and property accessors, including
+all `partial` declarations) exceeds the configured limit.
+
+The algorithm follows G. Ann Campbell's public specification (SonarSource, "Cognitive
+Complexity, a new way of measuring understandability"): increments for `if`/`else if`/`else`,
+ternary, `switch`, loops, `catch`, logical operator sequences and recursion, plus a nesting
+increment for each level of nesting.
+
+The limit defaults to 50 and is configurable per file in `.editorconfig`:
+
+```editorconfig
+dw3_class_cognitive_complexity_max = 50
+```
+
+Nested types are counted for themselves, not for their enclosing type. When a class exceeds
+the limit, the right fix is to extract a smaller, focused type or break a complex method into
+helpers.

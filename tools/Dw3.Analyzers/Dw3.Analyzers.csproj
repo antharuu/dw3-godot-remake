@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Roslyn analyzers must target netstandard2.0 so they are loadable by any host compiler. -->
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <!-- Force C# 12 so nullable references, collection expressions and file-scoped namespaces work. -->
+    <LangVersion>12</LangVersion>
+    <!-- Prevent this assembly from becoming a runtime dependency of referencing projects. -->
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <!-- Required by RS1036: analyzer projects must declare this flag. -->
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Release-tracking files required by RS2008 (auto-discovered by the SDK but listed
+         explicitly here so the project file documents the convention). -->
+    <AdditionalFiles Include="AnalyzerReleases.Shipped.md" />
+    <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Roslyn compiler API surface, compile-only (the host provides the actual runtime assembly). -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.12.0" PrivateAssets="all" />
+    <!-- Force 3.11.0 (overrides the transitive 3.3.4 pulled in by Microsoft.CodeAnalysis.CSharp)
+         so that RS2007 / RS2008 use the regex-based table parser that accepts ## Unreleased format. -->
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" PrivateAssets="all" />
+  </ItemGroup>
+</Project>

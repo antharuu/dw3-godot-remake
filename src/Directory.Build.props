@@ -1,0 +1,15 @@
+<Project>
+  <!-- Inherit the root build properties. -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))"/>
+
+  <!--
+    DW3001 custom Roslyn analyser (tools/Dw3.Analyzers).
+    OutputItemType="Analyzer"          — the assembly is loaded as an analyser, not a runtime reference.
+    ReferenceOutputAssembly="false"    — the assembly is not added to the compilation references.
+  -->
+  <ItemGroup>
+    <ProjectReference Include="$(MSBuildThisFileDirectory)..\tools\Dw3.Analyzers\Dw3.Analyzers.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
+  </ItemGroup>
+</Project>

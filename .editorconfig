@@ -78,3 +78,7 @@ dotnet_diagnostic.SA1602.severity = none
 dotnet_diagnostic.SA1611.severity = none
 dotnet_diagnostic.SA1615.severity = none
 dotnet_diagnostic.SA1618.severity = none
+
+# DW3001: custom class cognitive complexity analyser (tools/Dw3.Analyzers).
+# Limit the total cognitive complexity of a class so each type can be understood without jumping between files.
+dw3_class_cognitive_complexity_max = 50

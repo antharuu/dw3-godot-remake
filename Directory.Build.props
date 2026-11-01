@@ -33,6 +33,8 @@
     <QualityRatchetedRules>$(QualityRatchetedRules);S101;S107;S108;S127;S134;S138;S927;S1066;S1075;S1104;S1121;S1144;S1215;S1244;S1450;S1481;S1854;S1905;S1994</QualityRatchetedRules>
     <QualityRatchetedRules>$(QualityRatchetedRules);S2077;S2245;S2325;S2681;S2737;S3011;S3168;S3218;S3267;S3358;S3376;S3398;S3626;S3776;S3871;S3903;S3928;S3973</QualityRatchetedRules>
     <QualityRatchetedRules>$(QualityRatchetedRules);S4036;S4136;S4487;S6444;S6580;S6608;S8969</QualityRatchetedRules>
+    <!-- DW3001: custom class cognitive complexity analyser (new; baseline violations ratcheted at introduction). -->
+    <QualityRatchetedRules>$(QualityRatchetedRules);DW3001</QualityRatchetedRules>
     <!-- StyleCop spacing, readability and ordering rules. -->
     <QualityRatchetedRules>$(QualityRatchetedRules);SA1001;SA1002;SA1008;SA1009;SA1010;SA1011;SA1021;SA1025;SA1107;SA1111;SA1116;SA1117;SA1118;SA1119;SA1122;SA1124;SA1127;SA1128;SA1131;SA1132;SA1136;SA1139</QualityRatchetedRules>
     <QualityRatchetedRules>$(QualityRatchetedRules);SA1200;SA1201;SA1202;SA1203;SA1204;SA1208;SA1210;SA1211;SA1214;SA1302;SA1313;SA1316</QualityRatchetedRules>
