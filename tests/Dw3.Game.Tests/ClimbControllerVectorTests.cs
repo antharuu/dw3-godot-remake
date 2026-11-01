@@ -62,9 +62,9 @@ public sealed class ClimbControllerVectorTests
         {
             recs.Add(new ClimbRecord(
                 r!["frame"]!.GetValue<int>(),
-                r!["duration"]!.GetValue<int>(),
-                r!["offsetX"]!.GetValue<int>(),
-                r!["offsetY"]!.GetValue<int>()));
+                r["duration"]!.GetValue<int>(),
+                r["offsetX"]!.GetValue<int>(),
+                r["offsetY"]!.GetValue<int>()));
         }
         var seq = new ClimbSequence(set, loops, recs);
         var seqDict = new Dictionary<int, ClimbSequence> { [set] = seq };
@@ -100,7 +100,7 @@ public sealed class ClimbControllerVectorTests
         foreach (var c in cases)
         {
             int caseId = c!["id"]!.GetValue<int>();
-            string fn = c!["fn"]!.GetValue<string>()!;
+            string fn = c["fn"]!.GetValue<string>();
 
             try
             {
@@ -152,7 +152,7 @@ public sealed class ClimbControllerVectorTests
 
     private static void VerifyClimbSequence(JsonNode c, int id, List<string> errors)
     {
-        string startMethod = c["startMethod"]!.GetValue<string>()!;
+        string startMethod = c["startMethod"]!.GetValue<string>();
         int dir = c["dir"]!.GetValue<int>();
         float x = c["x"]!.GetValue<float>();
         float y = c["y"]!.GetValue<float>();
@@ -176,7 +176,7 @@ public sealed class ClimbControllerVectorTests
         foreach (var inp in inputArr)
         {
             if (!state.ClimbActive) break;  // stop when the climb has ended
-            ctrl.Tick(state, MakeInput(inp!.GetValue<string>()!));
+            ctrl.Tick(state, MakeInput(inp!.GetValue<string>()));
         }
 
         bool expClimbActive = c["expClimbActive"]!.GetValue<bool>();

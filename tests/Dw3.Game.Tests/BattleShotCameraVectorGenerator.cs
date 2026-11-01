@@ -106,10 +106,10 @@ public sealed class BattleShotCameraVectorGenerator
                 ["rng"] = Arr(Rng),
                 ["enemyViews"] = Rows(Enemy?.Issued ?? []),
                 ["fighterViews"] = Rows(Fighter?.Issued ?? []),
-                ["ops"] = new JsonArray(Session.Ops.Select(o => (JsonNode)o!).ToArray()),
+                ["ops"] = new JsonArray(Session.Ops.Select(o => (JsonNode)o).ToArray()),
                 ["snapshots"] = Rows(r.Snapshots),
                 ["calls"] = new JsonArray(r.Calls.Select(c =>
-                    (JsonNode)new JsonArray(c.Select(s => (JsonNode)s!).ToArray())).ToArray()),
+                    (JsonNode)new JsonArray(c.Select(s => (JsonNode)s).ToArray())).ToArray()),
                 ["throwsAt"] = r.ThrowsAt,
                 ["exception"] = r.Exception,
             };

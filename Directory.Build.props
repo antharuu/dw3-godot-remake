@@ -26,7 +26,7 @@
     <QualitySarifFile>$(QualityArtifactsDir)sarif/$(MSBuildProjectName).sarif</QualitySarifFile>
     <ErrorLog>$(QualitySarifFile),version=2.1</ErrorLog>
     <!-- .NET analyzers (Recommended mode). -->
-    <QualityRatchetedRules>CA1001;CA1050;CA1051;CA1305;CA1512;CA1707;CA1715;CA1716;CA1725;CA1822;CA1826;CA1832;CA1859;CA1861;CA1869;CA1875;CA2208</QualityRatchetedRules>
+    <QualityRatchetedRules>CA1001;CA1050;CA1051;CA1305;CA1512;CA1707;CA1715;CA1716;CA1725;CA1822;CA1826;CA1859;CA1861;CA1869;CA1875;CA2208</QualityRatchetedRules>
     <!-- Compiler documentation diagnostics. -->
     <QualityRatchetedRules>$(QualityRatchetedRules);CS1573;CS1591;CS1734</QualityRatchetedRules>
     <!-- Sonar rules. -->
@@ -41,7 +41,7 @@
     <!-- StyleCop maintainability and layout rules. -->
     <QualityRatchetedRules>$(QualityRatchetedRules);SA1401;SA1402;SA1407;SA1408;SA1413;SA1414;SA1500;SA1501;SA1502;SA1503;SA1505;SA1507;SA1508;SA1512;SA1513;SA1514;SA1515;SA1516;SA1517;SA1519;SA1520</QualityRatchetedRules>
     <!-- StyleCop documentation rules. -->
-    <QualityRatchetedRules>$(QualityRatchetedRules);SA1600;SA1601;SA1602;SA1604;SA1611;SA1612;SA1615;SA1623;SA1626;SA1627;SA1629;SA1642;SA1648;SA1649</QualityRatchetedRules>
+    <QualityRatchetedRules>$(QualityRatchetedRules);SA1600;SA1601;SA1602;SA1604;SA1611;SA1612;SA1615;SA1626;SA1627;SA1629;SA1642;SA1648;SA1649</QualityRatchetedRules>
     <WarningsNotAsErrors>$(WarningsNotAsErrors);$(QualityRatchetedRules)</WarningsNotAsErrors>
   </PropertyGroup>
 

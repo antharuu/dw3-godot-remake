@@ -104,7 +104,7 @@ public sealed class BattleGrowthVectorTests
         foreach (var c in cases)
         {
             int id = c!["id"]!.GetValue<int>();
-            string fn = c!["fn"]!.GetValue<string>();
+            string fn = c["fn"]!.GetValue<string>();
 
             try
             {

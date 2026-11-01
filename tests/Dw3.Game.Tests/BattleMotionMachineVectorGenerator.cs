@@ -280,8 +280,8 @@ public sealed class BattleMotionMachineVectorGenerator
                 ["family"] = s.Family,
                 ["motions"] = new JsonArray(s.Motions.Select(m => (JsonNode)new JsonArray(m.Select(st => (JsonNode)Arr(st)).ToArray())).ToArray()),
                 ["idle"] = s.Idle,
-                ["ops"] = new JsonArray(executed.Select(o => (JsonNode)o!).ToArray()),
-                ["outcomes"] = new JsonArray(r.Outcomes.Select(o => (JsonNode)o!).ToArray()),
+                ["ops"] = new JsonArray(executed.Select(o => (JsonNode)o).ToArray()),
+                ["outcomes"] = new JsonArray(r.Outcomes.Select(o => (JsonNode)o).ToArray()),
                 ["snapshots"] = new JsonArray([.. r.Snapshots.Select(v => v is null ? null : (JsonNode)Arr(v))]),
                 ["keyframes"] = new JsonArray([.. r.Keyframes.Select(v => v is null ? null : (JsonNode)Arr(v))]),
             };
