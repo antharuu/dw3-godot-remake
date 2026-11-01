@@ -3600,12 +3600,6 @@
     {
       "rule": "SA1611",
       "project": "Dw3.Formats",
-      "folder": "Dialogue",
-      "count": 9
-    },
-    {
-      "rule": "SA1611",
-      "project": "Dw3.Formats",
       "folder": "Field",
       "count": 50
     },
@@ -3709,7 +3703,7 @@
       "rule": "SA1615",
       "project": "Dw3.Formats",
       "folder": "Dialogue",
-      "count": 3
+      "count": 1
     },
     {
       "rule": "SA1615",

@@ -33,6 +33,7 @@ public static class TalkBoxFrameDecoder
     private const int MaxFrameParts = 16;
 
     /// <summary>Parses the four layout records from the executable's 128-byte layout table.</summary>
+    /// <param name="table">The exact 128-byte little-endian table read from the field executable.</param>
     /// <exception cref="FormatException">The table length is wrong or a sprite id is negative.</exception>
     public static IReadOnlyList<TalkBoxLayoutRecord> ReadLayouts(ReadOnlySpan<byte> table)
     {
@@ -59,6 +60,14 @@ public static class TalkBoxFrameDecoder
     /// Renders one talk-box frame. A frame whose semi-transparency rate is -1 is opaque; rates
     /// 0..3 are semi-transparent. Texels carrying the STP bit keep alpha 128.
     /// </summary>
+    /// <param name="parts">Decoded menu-sprite definitions referenced by the requested frame.</param>
+    /// <param name="ids">Frame identifiers in the same order as <paramref name="frameOffsets"/>.</param>
+    /// <param name="frameOffsets">Byte offsets, after the four-byte sprite-sheet header, for each frame.</param>
+    /// <param name="sheet">Complete menu sprite-sheet bytes, including its four-byte header.</param>
+    /// <param name="pages">Menu texture pages used by the source sprite renderer.</param>
+    /// <param name="frameId">Source frame identifier requested by the dialogue layout.</param>
+    /// <param name="clutFrames">Positive count of palette animation frames carried by the talk box.</param>
+    /// <returns>The rendered talk-box sprite and its source transparency metadata.</returns>
     /// <exception cref="FormatException">The frame is absent, has too many parts or an invalid rate.</exception>
     public static TalkBoxFrameImage RenderFrame(
         IReadOnlyList<HudSpritePart> parts,
@@ -102,6 +111,8 @@ public static class TalkBoxFrameDecoder
     /// Decodes the panel's 12x62 texture from texture page 0 through the panel CLUT. The body
     /// colour is the most frequent opaque texel colour (first seen wins a tie).
     /// </summary>
+    /// <param name="pages">Decoded menu texture pages whose first page embeds the panel and CLUT.</param>
+    /// <returns>The panel pixels, dominant opaque colour, and original texture-page identifiers.</returns>
     /// <exception cref="FormatException">The texture or CLUT is absent, or the panel has no opaque texel.</exception>
     public static TalkBoxPanelImage DecodePanel(IReadOnlyList<HudTexturePage> pages)
     {
