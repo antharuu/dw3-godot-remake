@@ -74,6 +74,9 @@ src/Dw3.Extractor/DiscFieldStage.cs
 src/Dw3.Extractor/DiscStageModeReader.cs
 src/Dw3.Extractor/Dw3.Extractor.csproj
 src/Dw3.Extractor/EncounterExtractionStep.cs
+src/Dw3.Extractor/EncounterJsonWriter.cs
+src/Dw3.Extractor/EncounterSqlWriter.cs
+src/Dw3.Extractor/EncounterStageData.cs
 src/Dw3.Extractor/ExtractedFieldStage.cs
 src/Dw3.Extractor/FieldcomCueDomain.cs
 src/Dw3.Extractor/FieldcomDomainWriter.cs
