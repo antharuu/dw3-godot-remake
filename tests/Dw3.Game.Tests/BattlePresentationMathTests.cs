@@ -13,14 +13,14 @@ public sealed class BattlePresentationMathTests
     private static readonly List<Vector4> TwoKeys = [new(0, 0, 0, 0), new(4096, -100, 50, 10)];
 
     [Fact]
-    public void Sample_interpolates_with_a_12_bit_factor_and_arithmetic_shift()
+    public void SampleInterpolatesWithA12BitFactorAndArithmeticShift()
     {
         Assert.Equal(new Vector3(2048, -50, 25), BattleKeyTrack.Sample(TwoKeys, 5));
         Assert.Equal(new Vector3(409, -10, 4), BattleKeyTrack.Sample(TwoKeys, 1));
     }
 
     [Fact]
-    public void Sample_holds_the_end_keys_and_returns_zero_for_an_empty_channel()
+    public void SampleHoldsTheEndKeysAndReturnsZeroForAnEmptyChannel()
     {
         Assert.Equal(Vector3.Zero, BattleKeyTrack.Sample(TwoKeys, -3));
         Assert.Equal(new Vector3(4096, -100, 50), BattleKeyTrack.Sample(TwoKeys, 10));
@@ -29,7 +29,7 @@ public sealed class BattlePresentationMathTests
     }
 
     [Fact]
-    public void FirstKeyAtOrAfter_takes_the_next_key_or_the_last_one()
+    public void FirstKeyAtOrAfterTakesTheNextKeyOrTheLastOne()
     {
         Assert.Equal(new Vector3(4096, -100, 50), BattleKeyTrack.FirstKeyAtOrAfter(TwoKeys, 3));
         Assert.Equal(Vector3.Zero, BattleKeyTrack.FirstKeyAtOrAfter(TwoKeys, 0));
@@ -37,7 +37,7 @@ public sealed class BattlePresentationMathTests
     }
 
     [Fact]
-    public void FixedBlend_and_HasZero_follow_the_integer_rules()
+    public void FixedBlendAndHasZeroFollowTheIntegerRules()
     {
         Assert.Equal(new Vector3(50, -50, 4), BattleKeyTrack.FixedBlend(Vector3.Zero, new Vector3(100, -100, 8), 2048));
         Assert.True(BattleKeyTrack.HasZero(new Vector3(1, 0, 1)));
@@ -45,7 +45,7 @@ public sealed class BattlePresentationMathTests
     }
 
     [Fact]
-    public void PalClock_carries_the_fraction_between_calls()
+    public void PalClockCarriesTheFractionBetweenCalls()
     {
         var clock = new BattlePalClock();
         Assert.Equal(12, clock.Advance(0.25f));
@@ -56,7 +56,7 @@ public sealed class BattlePresentationMathTests
     }
 
     [Fact]
-    public void EntranceFade_advances_by_whole_frames_and_stops_at_full()
+    public void EntranceFadeAdvancesByWholeFramesAndStopsAtFull()
     {
         var fade = new BattleEntranceFade();
         Assert.True(fade.Advance(0.5f));
@@ -70,7 +70,7 @@ public sealed class BattlePresentationMathTests
     }
 
     [Fact]
-    public void EntranceFade_writes_black_as_one_and_ramps_the_stage_grey()
+    public void EntranceFadeWritesBlackAsOneAndRampsTheStageGrey()
     {
         var fade = new BattleEntranceFade();
         Assert.Equal(new Color(1f / 255f, 1f / 255f, 1f / 255f), fade.Background(new Color(1f, 1f, 1f)));
@@ -80,7 +80,7 @@ public sealed class BattlePresentationMathTests
     }
 
     [Fact]
-    public void CameraFade_snaps_or_reaches_its_target_on_the_last_step()
+    public void CameraFadeSnapsOrReachesItsTargetOnTheLastStep()
     {
         var fade = new BattleCameraFade();
         var target = new Vector3(1, 2, 3);

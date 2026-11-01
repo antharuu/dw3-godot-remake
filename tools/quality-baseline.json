@@ -13,7 +13,7 @@
       "rule": "CA1001",
       "project": "Dw3.Game",
       "folder": "Presentation",
-      "count": 6
+      "count": 5
     },
     {
       "rule": "CA1050",
@@ -43,7 +43,7 @@
       "rule": "CA1305",
       "project": "Dw3.Game",
       "folder": "Presentation",
-      "count": 10
+      "count": 1
     },
     {
       "rule": "CA1305",
@@ -55,7 +55,7 @@
       "rule": "CA1512",
       "project": "Dw3.Game",
       "folder": "Presentation",
-      "count": 6
+      "count": 5
     },
     {
       "rule": "CA1707",
@@ -154,12 +154,6 @@
       "count": 2
     },
     {
-      "rule": "CA1822",
-      "project": "Dw3.Game",
-      "folder": "Presentation",
-      "count": 1
-    },
-    {
       "rule": "CA1826",
       "project": "Dw3.Game",
       "folder": ".",
@@ -188,12 +182,6 @@
       "project": "Dw3.Game",
       "folder": "Conversion",
       "count": 9
-    },
-    {
-      "rule": "CA1859",
-      "project": "Dw3.Game",
-      "folder": "Presentation",
-      "count": 1
     },
     {
       "rule": "CA1859",
@@ -283,7 +271,7 @@
       "rule": "CS1591",
       "project": "Dw3.Game",
       "folder": "Presentation",
-      "count": 123
+      "count": 121
     },
     {
       "rule": "CS1591",
@@ -319,7 +307,7 @@
       "rule": "DW3001",
       "project": "Dw3.Game",
       "folder": "Presentation",
-      "count": 5
+      "count": 3
     },
     {
       "rule": "S1066",
@@ -413,12 +401,6 @@
     },
     {
       "rule": "S1144",
-      "project": "Dw3.Game",
-      "folder": "Presentation",
-      "count": 3
-    },
-    {
-      "rule": "S1144",
       "project": "Dw3.Repository.Tests",
       "folder": ".",
       "count": 1
@@ -487,7 +469,7 @@
       "rule": "S134",
       "project": "Dw3.Game",
       "folder": "Presentation",
-      "count": 5
+      "count": 2
     },
     {
       "rule": "S134",
@@ -517,7 +499,7 @@
       "rule": "S138",
       "project": "Dw3.Game",
       "folder": "Presentation",
-      "count": 3
+      "count": 1
     },
     {
       "rule": "S1450",
@@ -602,12 +584,6 @@
       "project": "Dw3.Game",
       "folder": "Logging",
       "count": 2
-    },
-    {
-      "rule": "S2325",
-      "project": "Dw3.Game",
-      "folder": "Presentation",
-      "count": 1
     },
     {
       "rule": "S2681",
@@ -715,7 +691,7 @@
       "rule": "S3358",
       "project": "Dw3.Game",
       "folder": "Presentation",
-      "count": 11
+      "count": 7
     },
     {
       "rule": "S3358",
@@ -787,7 +763,7 @@
       "rule": "S3776",
       "project": "Dw3.Game",
       "folder": "Presentation",
-      "count": 14
+      "count": 9
     },
     {
       "rule": "S3776",
@@ -820,12 +796,6 @@
       "count": 1
     },
     {
-      "rule": "S3973",
-      "project": "Dw3.Game",
-      "folder": "Presentation",
-      "count": 1
-    },
-    {
       "rule": "S4036",
       "project": "Dw3.Game",
       "folder": ".",
@@ -836,12 +806,6 @@
       "project": "Dw3.Game",
       "folder": ".",
       "count": 1
-    },
-    {
-      "rule": "S4487",
-      "project": "Dw3.Game",
-      "folder": "Presentation",
-      "count": 2
     },
     {
       "rule": "S6444",
@@ -937,7 +901,7 @@
       "rule": "SA1107",
       "project": "Dw3.Game",
       "folder": "Presentation",
-      "count": 30
+      "count": 11
     },
     {
       "rule": "SA1107",
@@ -1033,7 +997,7 @@
       "rule": "SA1116",
       "project": "Dw3.Game",
       "folder": "Presentation",
-      "count": 7
+      "count": 3
     },
     {
       "rule": "SA1116",
@@ -1141,7 +1105,7 @@
       "rule": "SA1117",
       "project": "Dw3.Game",
       "folder": "Presentation",
-      "count": 16
+      "count": 5
     },
     {
       "rule": "SA1117",
@@ -1375,7 +1339,7 @@
       "rule": "SA1201",
       "project": "Dw3.Game",
       "folder": "Presentation",
-      "count": 27
+      "count": 12
     },
     {
       "rule": "SA1201",
@@ -1471,7 +1435,7 @@
       "rule": "SA1202",
       "project": "Dw3.Game",
       "folder": "Presentation",
-      "count": 12
+      "count": 1
     },
     {
       "rule": "SA1202",
@@ -1513,7 +1477,7 @@
       "rule": "SA1203",
       "project": "Dw3.Game",
       "folder": "Presentation",
-      "count": 5
+      "count": 2
     },
     {
       "rule": "SA1203",
@@ -1561,7 +1525,7 @@
       "rule": "SA1204",
       "project": "Dw3.Game",
       "folder": "Presentation",
-      "count": 11
+      "count": 8
     },
     {
       "rule": "SA1204",
@@ -1592,12 +1556,6 @@
       "project": "Dw3.Game",
       "folder": ".",
       "count": 2
-    },
-    {
-      "rule": "SA1208",
-      "project": "Dw3.Game",
-      "folder": "Presentation",
-      "count": 1
     },
     {
       "rule": "SA1210",
@@ -1633,7 +1591,7 @@
       "rule": "SA1210",
       "project": "Dw3.Game",
       "folder": "Presentation",
-      "count": 8
+      "count": 7
     },
     {
       "rule": "SA1210",
@@ -1657,7 +1615,7 @@
       "rule": "SA1214",
       "project": "Dw3.Game",
       "folder": "Presentation",
-      "count": 11
+      "count": 5
     },
     {
       "rule": "SA1214",
@@ -1861,7 +1819,7 @@
       "rule": "SA1407",
       "project": "Dw3.Game",
       "folder": "Presentation",
-      "count": 71
+      "count": 23
     },
     {
       "rule": "SA1407",
@@ -1909,7 +1867,7 @@
       "rule": "SA1413",
       "project": "Dw3.Game",
       "folder": "Presentation",
-      "count": 2
+      "count": 1
     },
     {
       "rule": "SA1414",
@@ -1999,7 +1957,7 @@
       "rule": "SA1501",
       "project": "Dw3.Game",
       "folder": "Presentation",
-      "count": 16
+      "count": 10
     },
     {
       "rule": "SA1501",
@@ -2053,7 +2011,7 @@
       "rule": "SA1502",
       "project": "Dw3.Game",
       "folder": "Presentation",
-      "count": 4
+      "count": 1
     },
     {
       "rule": "SA1502",
@@ -2167,7 +2125,7 @@
       "rule": "SA1503",
       "project": "Dw3.Game",
       "folder": "Presentation",
-      "count": 251
+      "count": 121
     },
     {
       "rule": "SA1503",
@@ -2207,21 +2165,9 @@
     },
     {
       "rule": "SA1507",
-      "project": "Dw3.Game",
-      "folder": "Presentation",
-      "count": 4
-    },
-    {
-      "rule": "SA1507",
       "project": "Dw3.Game.Tests",
       "folder": ".",
       "count": 2
-    },
-    {
-      "rule": "SA1508",
-      "project": "Dw3.Game",
-      "folder": "Presentation",
-      "count": 1
     },
     {
       "rule": "SA1512",
@@ -2365,7 +2311,7 @@
       "rule": "SA1513",
       "project": "Dw3.Game",
       "folder": "Presentation",
-      "count": 80
+      "count": 35
     },
     {
       "rule": "SA1513",
@@ -2407,7 +2353,7 @@
       "rule": "SA1514",
       "project": "Dw3.Game",
       "folder": "Presentation",
-      "count": 24
+      "count": 20
     },
     {
       "rule": "SA1514",
@@ -2521,7 +2467,7 @@
       "rule": "SA1515",
       "project": "Dw3.Game",
       "folder": "Presentation",
-      "count": 44
+      "count": 12
     },
     {
       "rule": "SA1515",
@@ -2617,7 +2563,7 @@
       "rule": "SA1516",
       "project": "Dw3.Game",
       "folder": "Presentation",
-      "count": 63
+      "count": 34
     },
     {
       "rule": "SA1516",
@@ -2689,7 +2635,7 @@
       "rule": "SA1519",
       "project": "Dw3.Game",
       "folder": "Presentation",
-      "count": 20
+      "count": 8
     },
     {
       "rule": "SA1519",
@@ -2725,7 +2671,7 @@
       "rule": "SA1520",
       "project": "Dw3.Game",
       "folder": "Presentation",
-      "count": 4
+      "count": 3
     },
     {
       "rule": "SA1520",
@@ -2809,7 +2755,7 @@
       "rule": "SA1600",
       "project": "Dw3.Game",
       "folder": "Presentation",
-      "count": 273
+      "count": 255
     },
     {
       "rule": "SA1600",
@@ -2965,7 +2911,7 @@
       "rule": "SA1611",
       "project": "Dw3.Game",
       "folder": "Presentation",
-      "count": 155
+      "count": 135
     },
     {
       "rule": "SA1611",
@@ -3169,7 +3115,7 @@
       "rule": "SA1649",
       "project": "Dw3.Game",
       "folder": "Presentation",
-      "count": 6
+      "count": 5
     },
     {
       "rule": "SA1649",
