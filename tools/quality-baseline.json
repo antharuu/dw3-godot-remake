@@ -397,7 +397,7 @@
       "rule": "DW3001",
       "project": "Dw3.Formats",
       "folder": "Battle",
-      "count": 2
+      "count": 1
     },
     {
       "rule": "DW3001",
@@ -596,12 +596,6 @@
       "project": "Dw3.Extractor",
       "folder": ".",
       "count": 9
-    },
-    {
-      "rule": "S134",
-      "project": "Dw3.Formats",
-      "folder": "Battle",
-      "count": 2
     },
     {
       "rule": "S134",
@@ -894,12 +888,6 @@
     {
       "rule": "S3358",
       "project": "Dw3.Formats",
-      "folder": "Battle",
-      "count": 1
-    },
-    {
-      "rule": "S3358",
-      "project": "Dw3.Formats",
       "folder": "Mips",
       "count": 1
     },
@@ -967,7 +955,7 @@
       "rule": "S3776",
       "project": "Dw3.Formats",
       "folder": "Battle",
-      "count": 8
+      "count": 5
     },
     {
       "rule": "S3776",
@@ -1135,7 +1123,7 @@
       "rule": "SA1107",
       "project": "Dw3.Formats",
       "folder": "Battle",
-      "count": 76
+      "count": 74
     },
     {
       "rule": "SA1107",
@@ -1237,7 +1225,7 @@
       "rule": "SA1116",
       "project": "Dw3.Formats",
       "folder": "Battle",
-      "count": 4
+      "count": 3
     },
     {
       "rule": "SA1116",
@@ -1333,7 +1321,7 @@
       "rule": "SA1117",
       "project": "Dw3.Formats",
       "folder": "Battle",
-      "count": 15
+      "count": 14
     },
     {
       "rule": "SA1117",
@@ -2077,7 +2065,7 @@
       "rule": "SA1407",
       "project": "Dw3.Formats",
       "folder": "Battle",
-      "count": 40
+      "count": 34
     },
     {
       "rule": "SA1407",
@@ -2173,7 +2161,7 @@
       "rule": "SA1408",
       "project": "Dw3.Formats",
       "folder": "Battle",
-      "count": 2
+      "count": 1
     },
     {
       "rule": "SA1408",
@@ -2210,12 +2198,6 @@
       "project": "Dw3.Game",
       "folder": "Presentation",
       "count": 2
-    },
-    {
-      "rule": "SA1414",
-      "project": "Dw3.Formats",
-      "folder": "Battle",
-      "count": 4
     },
     {
       "rule": "SA1414",
@@ -2257,7 +2239,7 @@
       "rule": "SA1501",
       "project": "Dw3.Formats",
       "folder": "Battle",
-      "count": 9
+      "count": 7
     },
     {
       "rule": "SA1501",
@@ -2401,7 +2383,7 @@
       "rule": "SA1503",
       "project": "Dw3.Formats",
       "folder": "Battle",
-      "count": 103
+      "count": 87
     },
     {
       "rule": "SA1503",
@@ -2641,7 +2623,7 @@
       "rule": "SA1513",
       "project": "Dw3.Formats",
       "folder": "Battle",
-      "count": 42
+      "count": 37
     },
     {
       "rule": "SA1513",
@@ -2905,7 +2887,7 @@
       "rule": "SA1516",
       "project": "Dw3.Formats",
       "folder": "Battle",
-      "count": 10
+      "count": 6
     },
     {
       "rule": "SA1516",
@@ -3001,7 +2983,7 @@
       "rule": "SA1519",
       "project": "Dw3.Formats",
       "folder": "Battle",
-      "count": 7
+      "count": 6
     },
     {
       "rule": "SA1519",
@@ -3139,7 +3121,7 @@
       "rule": "SA1600",
       "project": "Dw3.Formats",
       "folder": "Battle",
-      "count": 102
+      "count": 98
     },
     {
       "rule": "SA1600",

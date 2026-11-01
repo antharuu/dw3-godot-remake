@@ -152,6 +152,9 @@ src/Dw3.Formats/Battle/HudSpriteSheetParser.cs
 src/Dw3.Formats/Battle/HudTexturePageDecoder.cs
 src/Dw3.Formats/Battle/MeshCommandReader.cs
 src/Dw3.Formats/Battle/MeshDrawState.cs
+src/Dw3.Formats/Battle/BattleLocalVram.cs
+src/Dw3.Formats/Battle/BattleTextureCombination.cs
+src/Dw3.Formats/Battle/BattleTexturePageDecoder.cs
 src/Dw3.Formats/Binary/BinarySpanReader.cs
 src/Dw3.Formats/Binary/Png/PngEncoder.cs
 src/Dw3.Formats/Binary/PsxExecutable.cs
