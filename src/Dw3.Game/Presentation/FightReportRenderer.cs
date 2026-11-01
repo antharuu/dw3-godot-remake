@@ -60,13 +60,13 @@ public sealed partial class FightReportRenderer
                 var images = frame.ClutRows.Select(Image.LoadFromFile).ToArray();
                 if (images.Any(image => image is null || image.IsEmpty()))
                     throw new CacheResourceException("CACHE_RESOURCE_UNAVAILABLE", $"battle report frame unreadable frame={id}");
-                _frames[id] = images.Select(image => ImageTexture.CreateFromImage(image!)).ToArray();
+                _frames[id] = [.. images.Select(image => ImageTexture.CreateFromImage(image!))];
                 _offsets[id] = new Vector2(frame.OffsetX, frame.OffsetY);
             }
             var arrowImages = sprites.Arrow.ClutRows.Select(Image.LoadFromFile).ToArray();
             if (arrowImages.Any(image => image is null || image.IsEmpty()))
                 throw new CacheResourceException("CACHE_RESOURCE_UNAVAILABLE", "battle report arrow unreadable");
-            _arrow = arrowImages.Select(image => ImageTexture.CreateFromImage(image!)).ToArray();
+            _arrow = [.. arrowImages.Select(image => ImageTexture.CreateFromImage(image!))];
             _arrowOffset = new Vector2(sprites.Arrow.OffsetX, sprites.Arrow.OffsetY);
             _animations = sprites.Animations;
             _text.SetFont(font);

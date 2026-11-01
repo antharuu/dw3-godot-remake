@@ -69,7 +69,7 @@ public sealed class BattleMotionMachineVectorGenerator
         if (kind == 0 && lastWasBlend) steps.Add([pos, r.Next(1, 4), r.Next(0, 300), 7]);
         steps.Add(terminator);
         if (r.Next(5) == 0) steps.Add([r.Next(0, 9), r.Next(0, 9), r.Next(0, 300), r.Next(0, 300)]); // ignored tail
-        return steps.ToArray();
+        return [.. steps];
     }
 
     private static int[][][] RandomTable(Random r, int min = 1, int max = 6)
@@ -106,7 +106,7 @@ public sealed class BattleMotionMachineVectorGenerator
         return ops;
     }
 
-    private static List<string> Repeat(string op, int n) => Enumerable.Repeat(op, n).ToList();
+    private static List<string> Repeat(string op, int n) => [.. Enumerable.Repeat(op, n)];
 
     private static IEnumerable<Scenario> Edges()
     {
@@ -282,8 +282,8 @@ public sealed class BattleMotionMachineVectorGenerator
                 ["idle"] = s.Idle,
                 ["ops"] = new JsonArray(executed.Select(o => (JsonNode)o!).ToArray()),
                 ["outcomes"] = new JsonArray(r.Outcomes.Select(o => (JsonNode)o!).ToArray()),
-                ["snapshots"] = new JsonArray(r.Snapshots.Select(v => v is null ? null : (JsonNode)Arr(v)).ToArray()),
-                ["keyframes"] = new JsonArray(r.Keyframes.Select(v => v is null ? null : (JsonNode)Arr(v)).ToArray()),
+                ["snapshots"] = new JsonArray([.. r.Snapshots.Select(v => v is null ? null : (JsonNode)Arr(v))]),
+                ["keyframes"] = new JsonArray([.. r.Keyframes.Select(v => v is null ? null : (JsonNode)Arr(v))]),
             };
             sb.Append("    ").Append(obj.ToJsonString());
             sb.Append(i + 1 < scenarios.Count ? ",\n" : "\n");
@@ -299,5 +299,5 @@ public sealed class BattleMotionMachineVectorGenerator
         Assert.True(scenarios.Count >= 300, $"Generated {scenarios.Count} vectors, need at least 300.");
     }
 
-    private static JsonArray Arr(int[] a) => new(a.Select(v => (JsonNode)v).ToArray());
+    private static JsonArray Arr(int[] a) => [.. a.Select(v => (JsonNode)v).ToArray()];
 }

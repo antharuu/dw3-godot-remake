@@ -78,7 +78,7 @@ public sealed class FightReportController
     {
         _input = input ?? throw new ArgumentNullException(nameof(input));
         ArgumentNullException.ThrowIfNull(input.Partners);
-        _partners = input.Partners.Select(partner => new PartnerState(partner)).ToArray();
+        _partners = [.. input.Partners.Select(partner => new PartnerState(partner))];
         View = BuildView();
     }
 

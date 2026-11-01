@@ -34,9 +34,9 @@ internal static class BattleMotionMachineVectorHarness
     private static int B(bool v) => v ? 1 : 0;
 
     public static int[][][] Motions(JsonNode? node) =>
-        node!.AsArray().Select(m => m!.AsArray().Select(s => Ints(s)).ToArray()).ToArray();
+        [.. node!.AsArray().Select(m => m!.AsArray().Select(s => Ints(s)).ToArray())];
 
-    public static int[] Ints(JsonNode? node) => node!.AsArray().Select(v => v!.GetValue<int>()).ToArray();
+    public static int[] Ints(JsonNode? node) => [.. node!.AsArray().Select(v => v!.GetValue<int>())];
 
     public static Result Run(int[][][] motions, int idle, IReadOnlyList<string> ops)
     {

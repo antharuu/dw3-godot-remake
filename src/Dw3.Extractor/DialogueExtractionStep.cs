@@ -15,16 +15,13 @@ internal static class DialogueExtractionStep
             SupportedEdition edition = disc.IdentifyEdition();
             IReadOnlyList<DiscFileEntry> entries = disc.ListFiles();
             RomAnalysisResult analysis = DiscDialogueAnalysisReader.Read(disc, entries);
-            StageAnalysisException[] unexpected = analysis.Failures
-                .Where(failure => failure.Mode != 0x210)
-                .ToArray();
+            StageAnalysisException[] unexpected = [.. analysis.Failures.Where(failure => failure.Mode != 0x210)];
             if (unexpected.Length != 0)
                 throw new FormatException(string.Join(Environment.NewLine, unexpected.Select(item => item.Message)));
 
-            StageDialogueAnalysis[] stages = analysis.Stages
+            StageDialogueAnalysis[] stages = [.. analysis.Stages
                 .Where(DialogueDomainWriter.IsDialogueZone)
-                .OrderBy(stage => stage.StageId)
-                .ToArray();
+                .OrderBy(stage => stage.StageId)];
             new DataPackWriter(outputDirectory).Write(
                 new DataPackMetadata(
                     typeof(DialogueExtractionStep).Assembly.GetName().Version?.ToString(3) ?? "0.1.0",

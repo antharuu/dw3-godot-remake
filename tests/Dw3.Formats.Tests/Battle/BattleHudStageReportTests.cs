@@ -108,12 +108,10 @@ public sealed class BattleHudStageReportTests
     [Fact]
     public void RenderFrame_PreservesNegativePartOffsets()
     {
-        ushort[][] pixels = Enumerable.Range(0, BattleHudDecoder.PageHeight)
-            .Select(_ => new ushort[BattleHudDecoder.PageWidthWords])
-            .ToArray();
+        ushort[][] pixels = [.. Enumerable.Range(0, BattleHudDecoder.PageHeight).Select(_ => new ushort[BattleHudDecoder.PageWidthWords])];
         for (int index = 0; index < 16; index++) pixels[0][index] = 0x7FFF;
         pixels[10][0] = 0x1111;
-        var pages = new[] { new HudTexturePage(pixels.Select(row => (IReadOnlyList<ushort>)row).ToArray()) };
+        var pages = new[] { new HudTexturePage([.. pixels.Select(row => (IReadOnlyList<ushort>)row)]) };
         var parts = new[] { new HudSpritePart(0, 10, 4, 2, 0, 0, 0) };
         byte[] frame = new byte[12];
         BinaryPrimitives.WriteInt16LittleEndian(frame, 1);
@@ -268,7 +266,7 @@ public sealed class BattleHudStageReportTests
         int totalBody = frameDataStart + numFrames * frameSize;
 
         byte[] data = new byte[4 + totalBody];
-        ReadOnlySpan<byte> zeros = data.AsSpan(4); // body
+        _ = data.AsSpan(4); // body
         BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(4), (uint)partsOff);
         BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(8), (uint)idsOff);
 

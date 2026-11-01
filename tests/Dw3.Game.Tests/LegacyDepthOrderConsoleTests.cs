@@ -31,15 +31,15 @@ public sealed class LegacyDepthOrderConsoleTests
 
     private static void OrdersCallbacksByGroundYAndRegistration()
     {
-        var ordered = SourceCallbackOrder.Order(new[]
-        {
+        var ordered = SourceCallbackOrder.Order(
+        [
             (Item: "water-behind", Priority: 246, Registration: SourceCallbackOrder.MapObjectRegistration),
             (Item: "player", Priority: 246, Registration: SourceCallbackOrder.PlayerRegistration),
             (Item: "water-front", Priority: 247, Registration: SourceCallbackOrder.MapObjectRegistration),
             (Item: "far-water", Priority: 245, Registration: SourceCallbackOrder.MapObjectRegistration),
-        });
+        ]);
         var order = ordered.ToArray();
-        Check(order.SequenceEqual(new[] { "far-water", "player", "water-behind", "water-front" }),
+        Check(order.SequenceEqual(["far-water", "player", "water-behind", "water-front"]),
             "callback painter order must be proportional Y with later actor registration first on an equal key");
         Check(Array.IndexOf(order, "water-behind") < Array.IndexOf(order, "water-front"),
             "a lower sortY must draw before a higher sortY");

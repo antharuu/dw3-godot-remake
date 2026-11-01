@@ -459,6 +459,7 @@ public static class BattleHudDecoder
     /// </summary>
     public static ushort[] ReadPalette(IReadOnlyList<HudTexturePage> pages, int clutX, int clutY, bool abr)
     {
+        _ = abr;
         int page = clutX / PageWidthWords;
         int word = clutX % PageWidthWords;
         if (page >= pages.Count || clutY < 0 || clutY >= PageHeight)

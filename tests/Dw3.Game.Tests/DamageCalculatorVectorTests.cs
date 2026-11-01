@@ -1,4 +1,3 @@
-using System.Text.Json;
 using System.Text.Json.Nodes;
 using Dw3Production.Simulation;
 using Xunit;
@@ -395,6 +394,7 @@ public sealed class DamageCalculatorVectorTests
 
     private static BattleStats ReadUserStats(JsonNode c, string _prefix)
     {
+        _ = _prefix;
         var s = new BattleStats
         {
             Family = I(c, "userFamily"),

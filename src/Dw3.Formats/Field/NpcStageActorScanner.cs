@@ -29,10 +29,9 @@ public static class NpcStageActorScanner
         uint fieldStateAddress,
         short actorListFieldOffset = ActorListFieldOffset)
     {
-        uint[] stored = MipsStoreScanner.FindStores(overlay, fieldStateAddress, actorListFieldOffset)
+        uint[] stored = [.. MipsStoreScanner.FindStores(overlay, fieldStateAddress, actorListFieldOffset)
             .Where(store => !store.Value.IsLoadedWord)
-            .Select(store => store.Value.ConstantValue)
-            .ToArray();
+            .Select(store => store.Value.ConstantValue)];
         var candidates = new List<NpcStageActorList>();
         foreach (uint pointer in stored.Distinct())
         {

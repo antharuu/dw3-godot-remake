@@ -136,5 +136,5 @@ public sealed class BattleModelAssetsTests
     private static byte[] I16(int value) { byte[] b = new byte[2]; BinaryPrimitives.WriteInt16LittleEndian(b, (short)value); return b; }
     private static byte[] U32(uint value) { byte[] b = new byte[4]; WriteU32(b, 0, value); return b; }
     private static void WriteU32(byte[] data, int offset, uint value) => BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(offset), value);
-    private static byte[] Concat(params byte[][] parts) => parts.SelectMany(part => part).ToArray();
+    private static byte[] Concat(params byte[][] parts) => [.. parts.SelectMany(part => part)];
 }

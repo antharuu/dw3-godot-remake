@@ -205,8 +205,8 @@ public sealed class LegacyBattleConsoleTests
     {
         // layer.c: DrawOTag traverses the table from its last entry down. addPrim prepends,
         // so a larger key draws first and a later primitive wins inside its equal-key bucket.
-        var order = RenderOrderingTable.DrawOrder(new[] { 5, 9, 5, 1 });
-        Check(order.SequenceEqual(new[] { 1, 2, 0, 3 }), $"OT draw order={string.Join(",", order)}");
+        var order = RenderOrderingTable.DrawOrder([5, 9, 5, 1]);
+        Check(order.SequenceEqual([1, 2, 0, 3]), $"OT draw order={string.Join(",", order)}");
         Check(RenderOrderingTable.DepthBucketCount == 0x1000 && RenderOrderingTable.DepthShift(RenderOrderingTable.DepthBucketShift) == 2,
             "otShift 12 selects 0x1000 buckets and projectMesh shifts Z by two");
         Check(RenderOrderingTable.TriangleKey(400, 800, 1200, shift: 2) == RenderOrderingTable.TriangleKey(800, 800, 800, shift: 2),
@@ -220,7 +220,7 @@ public sealed class LegacyBattleConsoleTests
         Check(!RenderOrderingTable.FacesCamera(new(0, 0), new(0, 0), new(0, 10)), "nclip rejects coincident screen points");
         Check(!RenderOrderingTable.FacesCamera(new(0, 0), new(10, 0), new(0, 10), new(10, 0)),
             "nclip rejects a quad whose fourth screen point coincides");
-        Check(RenderOrderingTable.WholeQuadIndices().SequenceEqual(new[] { 0, 1, 2, 2, 1, 3 }),
+        Check(RenderOrderingTable.WholeQuadIndices().SequenceEqual([0, 1, 2, 2, 1, 3]),
             "a source quad remains one ordered primitive and emits its two triangles only after ordering");
     }
 
@@ -244,12 +244,12 @@ public sealed class LegacyBattleConsoleTests
         Assert.Throws<ArgumentOutOfRangeException>(() => BattleRenderer.ProbeAnimationMilliseconds(-1));
     }
 
-    private static IReadOnlyList<IReadOnlyList<IReadOnlyList<int>>> KotemonMotions() => new List<IReadOnlyList<IReadOnlyList<int>>>
-    {
-        new List<IReadOnlyList<int>> { new[] { 0, 61, 10, 70 }, new[] { 61, 0, -32768, 0 }, new[] { 32767, 0, 0, 0 } },
-        new List<IReadOnlyList<int>> { new[] { 0, 91, 90, 180 }, new[] { 91, 0, -32768, 0 }, new[] { 32767, 0, 0, 0 } },
-        new List<IReadOnlyList<int>> { new[] { 0, 10, 0, 0 }, new[] { 10, 1, 200, 200 }, new[] { 11, 20, 0, 0 }, new[] { 31, 0, -1, 0 }, new[] { 32767, 0, 0, 0 } },
-    };
+    private static IReadOnlyList<IReadOnlyList<IReadOnlyList<int>>> KotemonMotions() =>
+    [
+        [[0, 61, 10, 70], [61, 0, -32768, 0], [32767, 0, 0, 0]],
+        [[0, 91, 90, 180], [91, 0, -32768, 0], [32767, 0, 0, 0]],
+        [[0, 10, 0, 0], [10, 1, 200, 200], [11, 20, 0, 0], [31, 0, -1, 0], [32767, 0, 0, 0]],
+    ];
 
     // ---- DamageCalculator: adjustDamage ----
 
@@ -607,7 +607,7 @@ public sealed class LegacyBattleConsoleTests
         Check(BattleEnemyAi.TestEnemyCondition(10, 0, Ctx(active, enemies: row, activeEnemy: 0), new NoRng()), "condition 10 holds when another enemy is alive");
         Check(BattleEnemyAi.TestEnemyCondition(10, 102, Ctx(active, enemies: row, activeEnemy: 0), new NoRng()), "condition 10 holds for a specific other enemy id");
         Check(!BattleEnemyAi.TestEnemyCondition(10, 103, Ctx(active, enemies: row, activeEnemy: 0), new NoRng()), "condition 10 fails for a dead enemy id");
-        Check(!BattleEnemyAi.TestEnemyCondition(10, 0, Ctx(active, enemies: new BattleFighter?[] { active }, activeEnemy: 0), new NoRng()), "condition 10 fails with no other living enemy");
+        Check(!BattleEnemyAi.TestEnemyCondition(10, 0, Ctx(active, enemies: [active], activeEnemy: 0), new NoRng()), "condition 10 fails with no other living enemy");
     }
 
     private static void EnemyConditionBoostBattleKind()
@@ -644,8 +644,8 @@ public sealed class LegacyBattleConsoleTests
     private static void PickActionSingleFallback()
     {
         var enemy = Enemy();
-        enemy.Techs = new[] { 5, 0, 0 };
-        enemy.Actions = new[] { new BattleTableAction(1, 0, 0) };
+        enemy.Techs = [5, 0, 0];
+        enemy.Actions = [new BattleTableAction(1, 0, 0)];
         var decision = BattleEnemyAi.PickAction(enemy, Ctx(enemy), new NoRng());
         Check(decision.Kind == EnemyActionKind.Attack && decision.TechId == 5, "a single action is the unconditional fallback (an attack)");
     }
@@ -653,14 +653,14 @@ public sealed class LegacyBattleConsoleTests
     private static void PickActionFallbackWhenConditionsFail()
     {
         var enemy = Enemy(turns: 3);   // hp 500, mp 100
-        enemy.Techs = new[] { 5, 6, 7 };
-        enemy.Actions = new[]
-        {
+        enemy.Techs = [5, 6, 7];
+        enemy.Actions =
+        [
             new BattleTableAction(2, 18, 2),   // technique 1 on even turns -> false (3 % 2 != 0)
             new BattleTableAction(3, 2, 64),   // technique 2 under half HP -> false (500)
             new BattleTableAction(4, 4, 50),   // run away under 50 MP -> false (100)
             new BattleTableAction(1, 0, 0),    // fallback: attack
-        };
+        ];
         var decision = BattleEnemyAi.PickAction(enemy, Ctx(enemy), new NoRng());
         Check(decision.Kind == EnemyActionKind.Attack && decision.TechId == 5, "the fallback attack is taken when no condition holds");
     }
@@ -668,12 +668,12 @@ public sealed class LegacyBattleConsoleTests
     private static void PickActionFirstHoldingCondition()
     {
         var enemy = Enemy(turns: 4);   // even turns
-        enemy.Techs = new[] { 5, 6, 7 };
-        enemy.Actions = new[]
-        {
+        enemy.Techs = [5, 6, 7];
+        enemy.Actions =
+        [
             new BattleTableAction(2, 18, 2),   // technique 1 on even turns -> true
             new BattleTableAction(1, 0, 0),    // fallback attack
-        };
+        ];
         var decision = BattleEnemyAi.PickAction(enemy, Ctx(enemy), new NoRng());
         Check(decision.Kind == EnemyActionKind.Technique1 && decision.TechId == 6, "the first holding condition wins (technique 1)");
     }
@@ -681,12 +681,12 @@ public sealed class LegacyBattleConsoleTests
     private static void PickActionTechniqueOnLowHp()
     {
         var enemy = Enemy(hp: 30, maxHp: 100);   // under half
-        enemy.Techs = new[] { 5, 6, 7 };
-        enemy.Actions = new[]
-        {
+        enemy.Techs = [5, 6, 7];
+        enemy.Actions =
+        [
             new BattleTableAction(2, 2, 64),    // technique 1 under half HP -> true
             new BattleTableAction(1, 0, 0),     // fallback attack
-        };
+        ];
         var decision = BattleEnemyAi.PickAction(enemy, Ctx(enemy), new NoRng());
         Check(decision.Kind == EnemyActionKind.Technique1 && decision.TechId == 6, "a low-HP condition picks the technique");
     }
@@ -701,7 +701,7 @@ public sealed class LegacyBattleConsoleTests
     private static void PickCounterAttackWhenConditionHolds()
     {
         var enemy = Enemy(hp: 30, maxHp: 100);   // under half
-        enemy.Techs = new[] { 5, 6, 7 };
+        enemy.Techs = [5, 6, 7];
         enemy.Counter = new BattleTableAction(1, 2, 64);   // counter with the basic attack under half HP
         var decision = BattleEnemyAi.PickCounter(enemy, Ctx(enemy), new NoRng());
         Check(decision.Kind == EnemyActionKind.Attack && decision.TechId == 5, "a held counter condition counter-attacks with the first technique");
@@ -710,7 +710,7 @@ public sealed class LegacyBattleConsoleTests
     private static void PickCounterTechnique()
     {
         var enemy = Enemy();
-        enemy.Techs = new[] { 5, 6, 7 };
+        enemy.Techs = [5, 6, 7];
         enemy.Counter = new BattleTableAction(2, 3, 0);   // counter with technique 1, hp >= 0 (always)
         var decision = BattleEnemyAi.PickCounter(enemy, Ctx(enemy), new NoRng());
         Check(decision.Kind == EnemyActionKind.Technique1 && decision.TechId == 6, "a counter target of kind 2 uses the second technique");
@@ -719,7 +719,7 @@ public sealed class LegacyBattleConsoleTests
     private static void PickCounterConditionFails()
     {
         var enemy = Enemy(hp: 100, maxHp: 100);   // not under half
-        enemy.Techs = new[] { 5, 6, 7 };
+        enemy.Techs = [5, 6, 7];
         enemy.Counter = new BattleTableAction(1, 2, 64);   // counter under half HP
         Check(BattleEnemyAi.PickCounter(enemy, Ctx(enemy), new NoRng()).Kind == EnemyActionKind.None, "a counter whose condition fails does not trigger");
     }
@@ -740,7 +740,7 @@ public sealed class LegacyBattleConsoleTests
             "a switch-to-any with one other living enemy picks that slot");
         Check(BattleEnemyAi.ResolveSwitch(new EnemyDecision(EnemyActionKind.SwitchToAny, 0, -1), row, activeEnemy: 2, new NoRng()) == 0,
             "a switch-to-any with two living enemies picks the first on a roll of 0");
-        Check(BattleEnemyAi.ResolveSwitch(new EnemyDecision(EnemyActionKind.SwitchToAny, 0, -1), new BattleFighter?[] { slot0 }, activeEnemy: 0, new NoRng()) == -1,
+        Check(BattleEnemyAi.ResolveSwitch(new EnemyDecision(EnemyActionKind.SwitchToAny, 0, -1), [slot0], activeEnemy: 0, new NoRng()) == -1,
             "a switch-to-any with no other living enemy resolves to no switch");
     }
 
@@ -851,7 +851,7 @@ public sealed class LegacyBattleConsoleTests
         {
             Enemy = enemy,
             ActivePlayer = player,
-            Enemies = enemies ?? new BattleFighter?[] { enemy },
+            Enemies = enemies ?? [enemy],
             ActiveEnemy = activeEnemy,
             StarterDigimonIds = starters ?? [],
         };

@@ -1,12 +1,7 @@
-using System.Diagnostics;
 using System.Globalization;
 using System.Text.Json;
 using Godot;
-using Dw3.Data;
-using Microsoft.Data.Sqlite;
 using Dw3Production.Conversion;
-using Dw3Production.Input;
-using Dw3Production.Logging;
 using Dw3Production.Presentation;
 using Dw3Production.Simulation;
 using NumericsVector2 = System.Numerics.Vector2;

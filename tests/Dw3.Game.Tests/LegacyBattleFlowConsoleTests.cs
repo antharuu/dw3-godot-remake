@@ -221,7 +221,7 @@ public sealed class LegacyBattleFlowConsoleTests
     {
         var flow = Controller(SimpleBattle());
         flow.Items = new Dictionary<int, BattleItem> { [43] = new BattleItem(43, "heal", "partner", 500) };
-        flow.ItemStock = new Dictionary<int, int>();
+        flow.ItemStock = [];
 
         Check(!flow.Choose(BattleCommand.Item, 43, new NoRng()), "an item with no stock is refused");
         Check(flow.Phase == BattleFlowPhase.PlayerCommand, "the menu stays open after a refused item");
@@ -302,8 +302,8 @@ public sealed class LegacyBattleFlowConsoleTests
     {
         var flow = Controller(SimpleBattle(enemyRawAttack: 100, playerDefense: 10, playerHp: 1000, enemyMp: 100));
         var enemy = flow.State.Enemies[0]!;
-        enemy.Techs = new[] { 777, 888, 0 };
-        enemy.Actions = new[] { new BattleTableAction(2, 0, 0) };   // target 2 = technique 1, always
+        enemy.Techs = [777, 888, 0];
+        enemy.Actions = [new BattleTableAction(2, 0, 0)];   // target 2 = technique 1, always
         flow.State.Techs = new Dictionary<int, TechData>
         {
             [777] = new TechData { Power = 10, Mp = 0 },
@@ -322,7 +322,7 @@ public sealed class LegacyBattleFlowConsoleTests
         var flow = Controller(SimpleBattle(playerAttack: 50, enemyRawDefense: 10, enemyHp: 1000,
             playerHp: 1000, enemyRawAttack: 100, playerDefense: 10));
         var enemy = flow.State.Enemies[0]!;
-        enemy.Techs = new[] { 777, 0, 0 };
+        enemy.Techs = [777, 0, 0];
         enemy.Counter = new BattleTableAction(1, 3, 0);   // counter with the basic attack, hp >= 0 (always)
         flow.State.Techs = new Dictionary<int, TechData>
         {
@@ -344,8 +344,8 @@ public sealed class LegacyBattleFlowConsoleTests
             Mp = 100,
             Strength = 16,
             BaseStats = Stats(attack: 100, defense: 100),
-            Techs = new[] { 777, 0, 0 },
-            Actions = new[] { new BattleTableAction(6, 0, 0) },   // switch to slot 1
+            Techs = [777, 0, 0],
+            Actions = [new BattleTableAction(6, 0, 0)],   // switch to slot 1
         };
         setup.Enemies[1] = new BattleEnemy { Fighter = 102, Hp = 1000, Mp = 100, Strength = 16, BaseStats = Stats(attack: 100, defense: 100) };
         var flow = Controller(BattleState.InitFighters(setup, digimon: 999));
@@ -358,8 +358,8 @@ public sealed class LegacyBattleFlowConsoleTests
     {
         var flow = Controller(SimpleBattle(enemyHp: 1000, playerHp: 1000));
         var enemy = flow.State.Enemies[0]!;
-        enemy.Techs = new[] { 777, 0, 0 };
-        enemy.Actions = new[] { new BattleTableAction(4, 0, 0) };   // run away, always
+        enemy.Techs = [777, 0, 0];
+        enemy.Actions = [new BattleTableAction(4, 0, 0)];   // run away, always
         flow.Choose(BattleCommand.Attack, 0, new NoRng());
         if (flow.Phase == BattleFlowPhase.EnemyTurn) flow.EnemyAct(new NoRng());
         Check(flow.Outcome == BattleOutcome.Fled, "the enemy's run-away action ends the battle as fled");
@@ -388,8 +388,8 @@ public sealed class LegacyBattleFlowConsoleTests
             Mp = enemyMp,
             Strength = enemyStrength,
             BaseStats = Stats(enemyRawAttack, enemyRawDefense, speed: enemySpeed),
-            Techs = new[] { 777, 0, 0 },
-            Actions = new[] { new BattleTableAction(1, 0, 0) },   // one unconditional fallback: attack
+            Techs = [777, 0, 0],
+            Actions = [new BattleTableAction(1, 0, 0)],   // one unconditional fallback: attack
         };
         return BattleState.InitFighters(setup, digimon: 999);
     }
@@ -419,10 +419,10 @@ public sealed class LegacyBattleFlowConsoleTests
 
     private static BattleTextCatalog TestText()
     {
-        var token = (IReadOnlyList<TextToken>)new[] { new TextToken("g", 14, 0, []) };
+        var token = (IReadOnlyList<TextToken>)[new TextToken("g", 14, 0, [])];
         var table = Enumerable.Range(0, 500).Select(_ => token).ToArray();
         var data = new BattleTextData(table, table, table, table, table, table,
-            Enumerable.Range(0, 6).Select(i => new BattleTextTemplate(i + 1, "menu", [], "disc battle menu")).ToArray(),
+            [.. Enumerable.Range(0, 6).Select(i => new BattleTextTemplate(i + 1, "menu", [], "disc battle menu"))],
             new Dictionary<string, BattleTextTemplate>
             {
                 ["actor"] = new(22, "message", ["actor"], "disc battle behavior"),

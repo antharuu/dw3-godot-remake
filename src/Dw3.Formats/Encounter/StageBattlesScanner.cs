@@ -104,7 +104,7 @@ public static class StageBattlesScanner
                 && delta / FieldEncounterDecoder.FieldBattlesStride < MaxEntries;
         }));
 
-        uint[] sorted = all.OrderBy(a => a).ToArray();
+        uint[] sorted = [.. all.OrderBy(a => a)];
         var subsumed = new HashSet<uint>();
         var result = new List<StageBattleArray>();
 
@@ -172,9 +172,7 @@ public static class StageBattlesScanner
         var result = new List<uint>();
         uint overlayEnd = overlayBase + (uint)overlay.Length;
 
-        MipsInstruction[] instructions = MipsInstruction
-            .DecodeRange(overlay, 0, MipsInstruction.WholeWordEnd(overlay.Length))
-            .ToArray();
+        MipsInstruction[] instructions = [.. MipsInstruction.DecodeRange(overlay, 0, MipsInstruction.WholeWordEnd(overlay.Length))];
 
         for (int idx = 0; idx < instructions.Length; idx++)
         {

@@ -10,11 +10,17 @@ public sealed class RlenDecoderTests
     /// <summary>Builds a minimal valid RLEN stream from commands.</summary>
     private static byte[] BuildRlen(uint targetSize, params byte[] commands)
     {
-        var stream = new List<byte> { (byte)'R', (byte)'L', (byte)'E', (byte)'N' };
-        stream.Add((byte)(targetSize & 0xFF));
-        stream.Add((byte)((targetSize >> 8) & 0xFF));
-        stream.Add((byte)((targetSize >> 16) & 0xFF));
-        stream.Add((byte)((targetSize >> 24) & 0xFF));
+        var stream = new List<byte>
+        {
+            (byte)'R',
+            (byte)'L',
+            (byte)'E',
+            (byte)'N',
+            (byte)(targetSize & 0xFF),
+            (byte)((targetSize >> 8) & 0xFF),
+            (byte)((targetSize >> 16) & 0xFF),
+            (byte)((targetSize >> 24) & 0xFF)
+        };
         stream.AddRange(commands);
         stream.Add(0); // terminator
         return [.. stream];

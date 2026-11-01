@@ -8,7 +8,7 @@ public sealed class ContributorQualityTests
     private static readonly string RepoRoot = FindRepoRoot();
 
     [Fact]
-    public void EditorConfig_ProvidesConservativeCSharpStyleBaseline()
+    public void EditorConfig_EnforcesCSharpStyleBaseline()
     {
         string path = Path.Combine(RepoRoot, ".editorconfig");
         Assert.True(File.Exists(path), "A root .editorconfig is required for C# contributors.");
@@ -17,9 +17,16 @@ public sealed class ContributorQualityTests
         Assert.Contains("root = true", content, StringComparison.Ordinal);
         Assert.Contains("[*.cs]", content, StringComparison.Ordinal);
         Assert.Contains("indent_size = 4", content, StringComparison.Ordinal);
-        Assert.Contains("dotnet_diagnostic.IDE0005.severity = suggestion", content, StringComparison.Ordinal);
-        Assert.Contains("dotnet_diagnostic.IDE0058.severity = suggestion", content, StringComparison.Ordinal);
-        Assert.Contains("dotnet_diagnostic.IDE0060.severity = suggestion", content, StringComparison.Ordinal);
+        Assert.Contains("dotnet_diagnostic.IDE0005.severity = warning", content, StringComparison.Ordinal);
+        Assert.Contains("dotnet_diagnostic.IDE0059.severity = warning", content, StringComparison.Ordinal);
+        Assert.Contains("dotnet_diagnostic.IDE0060.severity = warning", content, StringComparison.Ordinal);
+        Assert.Contains("dotnet_diagnostic.IDE0031.severity = warning", content, StringComparison.Ordinal);
+        Assert.Contains("dotnet_diagnostic.IDE0028.severity = warning", content, StringComparison.Ordinal);
+        Assert.Contains("dotnet_diagnostic.IDE0300.severity = warning", content, StringComparison.Ordinal);
+        Assert.Contains("dotnet_diagnostic.IDE0301.severity = warning", content, StringComparison.Ordinal);
+        Assert.Contains("dotnet_diagnostic.IDE0305.severity = warning", content, StringComparison.Ordinal);
+        Assert.Contains("dotnet_diagnostic.IDE0058.severity = none", content, StringComparison.Ordinal);
+        Assert.Contains("dotnet_diagnostic.IDE0290.severity = none", content, StringComparison.Ordinal);
     }
 
     [Fact]

@@ -111,7 +111,7 @@ public sealed class LegacyBattleDataConsoleTests
         var action = new { target = 0, condition = 0, conditionArgument = 0 };
         var enemy = new { id = 0, item = 0, itemChance = 0, nameId = 0, techniques = new int[3], stats = new int[5], resistances = new int[12], family = 0, actions = new[] { action }, counter = action };
         object Technique(int id) => new { id, mp = 0, power = 1, icon = 0, kind = 0, accuracy = 100, element = 0, elementPower = 0, family = 0, effect = 0, effectChance = 0, effectPower = 0, scriptStage = 0, scriptEffect = 0, scriptSound = 0, script = 0, hitCount = 1 };
-        int[] itemIds = Enumerable.Range(0x2B, 4).Concat(Enumerable.Range(0x42, 25)).ToArray();
+        int[] itemIds = [.. Enumerable.Range(0x2B, 4), .. Enumerable.Range(0x42, 25)];
         object Item(int id) => new { id, type = 0, price = 1, sellPrice = 0, effect = new { flags = 1, kind = 1, amount = 1 } };
         object Reward(int id) => new { id, digimonExperience = 0, experience = 0, money = 0 };
         return new
@@ -156,7 +156,7 @@ public sealed class LegacyBattleDataConsoleTests
 
     private static void WriteHud(DataPackWriteContext context)
     {
-        string[] rows = Enumerable.Range(0, 5).Select(index => $"frame-1-{index}.png").ToArray();
+        string[] rows = [.. Enumerable.Range(0, 5).Select(index => $"frame-1-{index}.png")];
         foreach (string row in rows) WriteFile(context, $"battle/hud/{row}", "x");
         WriteFile(context, "battle/hud/cursor.png", "x");
         WriteFile(context, "battle/hud/cursor-off.png", "x");
@@ -171,7 +171,7 @@ public sealed class LegacyBattleDataConsoleTests
 
     private static void WriteReport(DataPackWriteContext context)
     {
-        string[] rows = Enumerable.Range(0, 5).Select(index => $"arrow-{index}.png").ToArray();
+        string[] rows = [.. Enumerable.Range(0, 5).Select(index => $"arrow-{index}.png")];
         foreach (string row in rows) WriteFile(context, $"battle/report/{row}", "x");
         WriteFile(context, "battle/report/frame.png", "x");
         WriteJson(context, "battle/report/report.json", new

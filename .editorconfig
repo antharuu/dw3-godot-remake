@@ -7,13 +7,35 @@ insert_final_newline = true
 indent_style = space
 indent_size = 4
 
-# Keep existing source style readable without converting the current build
-# into a broad formatting migration. These diagnostics are visible in editors.
-dotnet_diagnostic.IDE0005.severity = suggestion
-dotnet_diagnostic.IDE0058.severity = suggestion
-dotnet_diagnostic.IDE0060.severity = suggestion
+# Enforce unused-using removal because imports should describe actual dependencies.
+dotnet_diagnostic.IDE0005.severity = warning
+# Enforce unused-value removal because ignored local computations conceal mistakes.
+dotnet_diagnostic.IDE0059.severity = warning
+# Enforce unused-parameter removal because private signatures must describe required input.
+dotnet_diagnostic.IDE0060.severity = warning
+# Enforce null-check simplification where the equivalent expression is clearer.
+dotnet_diagnostic.IDE0031.severity = warning
+# Enforce collection initializer simplification for concise, consistent construction.
+dotnet_diagnostic.IDE0028.severity = warning
+# Enforce collection expressions for consistent C# 12+ collection construction.
+dotnet_diagnostic.IDE0300.severity = warning
+# Enforce collection expressions for consistent C# 12+ empty collection construction.
+dotnet_diagnostic.IDE0301.severity = warning
+# Enforce collection expressions for consistent C# 12+ collection initialization.
+dotnet_diagnostic.IDE0305.severity = warning
+
+# Allow ignored expression values because fluent Godot APIs intentionally return values.
+dotnet_diagnostic.IDE0058.severity = none
+# Keep ordinary constructors because they make ownership and initialization explicit.
+dotnet_diagnostic.IDE0290.severity = none
+# Keep explicit Slice calls because range syntax is less legible in binary decoding code.
+dotnet_diagnostic.IDE0057.severity = none
+# Keep explicit variables because deconstruction can obscure binary-field meaning.
+dotnet_diagnostic.IDE0042.severity = none
+# Enforce unnecessary-suppression removal because suppressions must remain justified.
 dotnet_diagnostic.IDE0079.severity = warning
 
-# The existing codebase uses explicit types in public and engine-facing code.
+# Keep explicit types in public and engine-facing code for readability at integration boundaries.
 dotnet_diagnostic.IDE0007.severity = none
+# Keep explicit types in public and engine-facing code for readability at integration boundaries.
 dotnet_diagnostic.IDE0008.severity = none

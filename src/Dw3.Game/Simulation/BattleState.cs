@@ -275,7 +275,7 @@ public sealed class BattleState
             case "heal":
                 {
                     var fighter = ActivePlayerFighter;
-                    if (fighter != null) fighter.Hp = Math.Min(fighter.Hp + item.Amount, fighter.MaxHp);
+                    fighter?.Hp = Math.Min(fighter.Hp + item.Amount, fighter.MaxHp);
                     break;
                 }
             case "revive":

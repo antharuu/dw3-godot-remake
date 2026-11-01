@@ -4,7 +4,7 @@ namespace Dw3Production.Logging;
 
 public sealed class QuietLog
 {
-    private readonly Dictionary<string, int> _repetitions = new();
+    private readonly Dictionary<string, int> _repetitions = [];
 
     public void Info(string message) => GD.Print($"INFO {message}");
 

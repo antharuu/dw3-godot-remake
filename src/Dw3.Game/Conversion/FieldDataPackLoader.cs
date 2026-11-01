@@ -264,7 +264,7 @@ public sealed class FieldDataPackLoader : IDisposable
         if (element.ValueKind == JsonValueKind.Null) return null;
         if (element.ValueKind != JsonValueKind.Array || element.GetArrayLength() != 3)
             throw new JsonException("depth-11 stream modulate must be three channels or null");
-        int[] channels = element.EnumerateArray().Select(item => item.GetInt32()).ToArray();
+        int[] channels = [.. element.EnumerateArray().Select(item => item.GetInt32())];
         if (channels.Any(channel => channel is < 0 or > 255))
             throw new JsonException("depth-11 stream channel outside byte range");
         return new StreamModulate(channels[0] / 128f, channels[1] / 128f, channels[2] / 128f);

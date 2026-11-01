@@ -34,7 +34,7 @@ public sealed class BattleShotCameraVectorTests
             foreach (var s in c!["snapshots"]!.AsArray()) substates.Add(s![3]!.GetValue<int>());
             if (c["exception"] is not null) failures++;
         }
-        Assert.Equal(new[] { 1, 3, 4, 5, 6, 7, 9, 10 }, substates.OrderBy(v => v).ToArray());
+        Assert.Equal([1, 3, 4, 5, 6, 7, 9, 10], [.. substates.OrderBy(v => v)]);
         Assert.True(failures > 0, "expected at least one failing-RNG scenario");
     }
 

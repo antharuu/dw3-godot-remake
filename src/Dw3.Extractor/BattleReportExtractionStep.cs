@@ -107,7 +107,7 @@ internal static class BattleReportExtractionStep
             {
                 var (rgba, w, h, ox, oy, _, meta) = BattleHudDecoder.RenderFrameWithMeta(
                     reportParts, reportBody, reportOffsets[pos], reportPages, row);
-                if (row == 0) partsMeta = meta.ToArray();
+                if (row == 0) partsMeta = [.. meta];
                 string name = $"frame-{frameId:X2}-clut{row}.png";
                 string rel = $"{OutputSubdir}/{name}";
                 File.WriteAllBytes(context.GetImagePath(rel), PngEncoder.Encode(w, h, rgba));

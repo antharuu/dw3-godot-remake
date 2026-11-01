@@ -121,8 +121,7 @@ public partial class FirstLaunchScreen : CanvasLayer
 
     private void SetStatus(string text)
     {
-        if (_statusLabel is not null)
-            _statusLabel.Text = text;
+        _statusLabel?.Text = text;
     }
 
     // ---------------------------------------------------------------------------

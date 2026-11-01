@@ -110,7 +110,7 @@ public sealed class BattleModelDecoderTests
         bytes.AddRange(commands);
         int boundsAt = bytes.Count;
         bytes.AddRange(new byte[8]);
-        byte[] data = bytes.ToArray();
+        byte[] data = [.. bytes];
         WriteU32(data, 0, (uint)verticesAt);
         WriteU32(data, 4, (uint)normalsAt);
         WriteU32(data, 8, (uint)commandsAt);
@@ -247,7 +247,7 @@ public sealed class BattleModelDecoderTests
             WriteU32(offsets, i * 4, (uint)data.Count);
             data.AddRange(entries[i]);
         }
-        byte[] result = data.ToArray();
+        byte[] result = [.. data];
         offsets.CopyTo(result, 0);
         return result;
     }
@@ -346,5 +346,5 @@ public sealed class BattleModelDecoderTests
         return bytes;
     }
 
-    private static byte[] Concat(params byte[][] parts) => parts.SelectMany(part => part).ToArray();
+    private static byte[] Concat(params byte[][] parts) => [.. parts.SelectMany(part => part)];
 }

@@ -2,7 +2,6 @@ using Microsoft.Data.Sqlite;
 using System.Buffers.Binary;
 using System.Text.Json;
 using Dw3.Data;
-using Dw3.Extractor;
 using Dw3.Formats.Battle;
 using Xunit;
 
@@ -76,7 +75,7 @@ public sealed class BattleModelDomainWriterTests : IDisposable
         }
         WriteU32(table, 16, (uint)data.Count);
         data.AddRange(new byte[8]);
-        byte[] result = data.ToArray();
+        byte[] result = [.. data];
         table.CopyTo(result, 0);
         return result;
     }

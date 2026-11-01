@@ -20,4 +20,6 @@ jobs:
         with:
           dotnet-version: "10.0.x"
       - run: dotnet build Dw3.sln --nologo
+      - if: runner.os == 'Linux'
+        run: dotnet format Dw3.sln --verify-no-changes --no-restore
       - run: dotnet test Dw3.sln --nologo

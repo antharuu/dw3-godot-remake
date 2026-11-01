@@ -60,6 +60,7 @@ public sealed class DropController
 
     public void Tick(GameState state, InputState input)
     {
+        _ = input;
         if (!IsActive) throw new InvalidOperationException("drop tick without an active drop");
         switch (_substate)
         {

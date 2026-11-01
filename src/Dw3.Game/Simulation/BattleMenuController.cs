@@ -54,7 +54,7 @@ public sealed class BattleMenuController
 
     /// <summary>The visible source page and relative cursor for presentation.</summary>
     public BattleMenuView View => new(Menu, Cursor, First, PageSize, PageCount,
-        Lines.Skip(First).Take(PageSize).ToArray(), PreviousPageText, NextPageText, StatusText);
+        [.. Lines.Skip(First).Take(PageSize)], PreviousPageText, NextPageText, StatusText);
     private BattleTextLine? PreviousPageText { get; set; }
     private BattleTextLine? NextPageText { get; set; }
     private BattleMenuStatusText? StatusText { get; set; }

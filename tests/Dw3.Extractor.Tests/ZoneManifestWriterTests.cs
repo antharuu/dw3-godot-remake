@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Dw3.Extractor;
 using Dw3.Formats.Field;
 using Xunit;
 

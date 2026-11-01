@@ -26,9 +26,9 @@ internal static class BattleEnemyAiVectorCodec
     }
 
     public static int[] Ints(JsonNode? node) =>
-        node is null ? [] : node.AsArray().Select(v => v!.GetValue<int>()).ToArray();
+        node is null ? [] : [.. node.AsArray().Select(v => v!.GetValue<int>())];
 
-    public static JsonArray ToJson(IEnumerable<int> values) => new(values.Select(v => (JsonNode?)v).ToArray());
+    public static JsonArray ToJson(IEnumerable<int> values) => new([.. values.Select(v => (JsonNode?)v)]);
 
     public static JsonArray ToJson(BattleTableAction a) => ToJson([a.Target, a.Condition, a.ConditionArg]);
 
@@ -48,7 +48,7 @@ internal static class BattleEnemyAiVectorCodec
         ["turns"] = f.Turns,
         ["boosts"] = ToJson(f.Boosts),
         ["techs"] = ToJson(f.Techs),
-        ["actions"] = new JsonArray(f.Actions.Select(a => (JsonNode?)ToJson(a)).ToArray()),
+        ["actions"] = new JsonArray([.. f.Actions.Select(a => (JsonNode?)ToJson(a))]),
         ["counter"] = ToJson(f.Counter),
     };
 
@@ -61,7 +61,7 @@ internal static class BattleEnemyAiVectorCodec
         Turns = n["turns"]!.GetValue<int>(),
         Boosts = Ints(n["boosts"]),
         Techs = Ints(n["techs"]),
-        Actions = n["actions"]!.AsArray().Select(Action).ToArray(),
+        Actions = [.. n["actions"]!.AsArray().Select(Action)],
         Counter = Action(n["counter"]),
     };
 
@@ -84,7 +84,7 @@ internal static class BattleEnemyAiVectorCodec
     {
         ["enemy"] = EnemyToJson(c.Enemy),
         ["activePlayer"] = SlotToJson(c.ActivePlayer),
-        ["enemies"] = new JsonArray(c.Enemies.Select(SlotToJson).ToArray()),
+        ["enemies"] = new JsonArray([.. c.Enemies.Select(SlotToJson)]),
         ["activeEnemy"] = c.ActiveEnemy,
         ["boostElement"] = c.BoostElement,
         ["battleId"] = c.BattleId,
@@ -96,7 +96,7 @@ internal static class BattleEnemyAiVectorCodec
     {
         Enemy = EnemyFromJson(n["enemy"]!),
         ActivePlayer = SlotFromJson(n["activePlayer"]),
-        Enemies = n["enemies"]!.AsArray().Select(SlotFromJson).ToArray(),
+        Enemies = [.. n["enemies"]!.AsArray().Select(SlotFromJson)],
         ActiveEnemy = n["activeEnemy"]!.GetValue<int>(),
         BoostElement = n["boostElement"]!.GetValue<int>(),
         BattleId = n["battleId"]!.GetValue<int>(),
@@ -153,7 +153,7 @@ internal static class BattleEnemyAiVectorCodec
                 case "ResolveSwitch":
                     output["slot"] = BattleEnemyAi.ResolveSwitch(
                         DecisionFromJson(c["decision"]!),
-                        c["enemies"]!.AsArray().Select(SlotFromJson).ToArray(),
+                        [.. c["enemies"]!.AsArray().Select(SlotFromJson)],
                         c["activeEnemy"]!.GetValue<int>(), rng);
                     break;
                 case "DecisionFlags":

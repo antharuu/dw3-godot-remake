@@ -36,7 +36,7 @@ public static class RenderOrderingTable
 
     /// <summary>Returns polygon indices in painter order.</summary>
     public static int[] DrawOrder(IReadOnlyList<int> keys) =>
-        Enumerable.Range(0, keys.Count).OrderByDescending(i => keys[i]).ThenByDescending(i => i).ToArray();
+        [.. Enumerable.Range(0, keys.Count).OrderByDescending(i => keys[i]).ThenByDescending(i => i)];
 
     /// <summary>Expands one already ordered quad into two triangles.</summary>
     public static ReadOnlySpan<int> WholeQuadIndices() => [0, 1, 2, 2, 1, 3];

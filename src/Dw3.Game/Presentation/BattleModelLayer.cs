@@ -123,7 +123,7 @@ public sealed class BattleModelLayer
 
     private void EmitMesh(IReadOnlyList<PendingPolygon> pending)
     {
-        var order = RenderOrderingTable.DrawOrder(pending.Select(polygon => polygon.Key).ToArray());
+        var order = RenderOrderingTable.DrawOrder([.. pending.Select(polygon => polygon.Key)]);
         var vertices = new List<Vector3>();
         var uvs = new List<Vector2>();
         var uv2 = new List<Vector2>();
@@ -131,7 +131,7 @@ public sealed class BattleModelLayer
         foreach (var index in order)
         {
             var polygon = pending[index];
-            var indices = polygon.Positions.Length == 3 ? new[] { 0, 1, 2 } : RenderOrderingTable.WholeQuadIndices().ToArray();
+            var indices = polygon.Positions.Length == 3 ? [0, 1, 2] : RenderOrderingTable.WholeQuadIndices().ToArray();
             foreach (var corner in indices)
             {
                 vertices.Add(polygon.Positions[corner]);

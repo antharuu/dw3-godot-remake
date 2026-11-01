@@ -180,7 +180,7 @@ public sealed class DialogueDataPackLoader : IDisposable
                     {
                         "g" => new TextToken("g", token.GetProperty("c").GetInt32(), 0, []),
                         "i" => new TextToken("i", token.GetProperty("c").GetInt32(), 0, []),
-                        "c" => new TextToken("c", 0, token.GetProperty("cmd").GetInt32(), token.GetProperty("args").EnumerateArray().Select(arg => arg.GetInt32()).ToArray()),
+                        "c" => new TextToken("c", 0, token.GetProperty("cmd").GetInt32(), [.. token.GetProperty("args").EnumerateArray().Select(arg => arg.GetInt32())]),
                         _ => throw new JsonException($"unknown token type {type}"),
                     });
                 }

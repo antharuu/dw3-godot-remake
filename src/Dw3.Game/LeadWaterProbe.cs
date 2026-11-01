@@ -1,7 +1,5 @@
 using Godot;
 using Dw3Production.Presentation;
-using System;
-using System.Collections.Generic;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
@@ -22,7 +20,7 @@ public partial class LeadWaterProbe : Node2D
             var texture = ImageTexture.CreateFromImage(test);
             foreach (var abr in new[] { 0, 1, 2, 3 })
             {
-                AddChild(new Sprite2D { Texture = texture, Centered = false, Position = new Vector2(20 + abr * 80, 20), Scale = new Vector2(25, 25), Material = (ShaderMaterial)method.Invoke(renderer, new object[] { abr })! });
+                AddChild(new Sprite2D { Texture = texture, Centered = false, Position = new Vector2(20 + abr * 80, 20), Scale = new Vector2(25, 25), Material = (ShaderMaterial)method.Invoke(renderer, [abr])! });
             }
             await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
             await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);

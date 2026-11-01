@@ -13,9 +13,8 @@ public static class SourceCallbackOrder
     public const int PlayerRegistration = 1;
 
     public static IReadOnlyList<T> Order<T>(IEnumerable<(T Item, int Priority, int Registration)> callbacks)
-        => callbacks
+        => [.. callbacks
             .OrderBy(entry => entry.Priority)
             .ThenByDescending(entry => entry.Registration)
-            .Select(entry => entry.Item)
-            .ToArray();
+            .Select(entry => entry.Item)];
 }

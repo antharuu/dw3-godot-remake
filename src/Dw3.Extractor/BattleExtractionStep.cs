@@ -66,6 +66,7 @@ internal static class BattleExtractionStep
 
     private static void WriteBattle(DataPackWriteContext context, DiscSource disc, IReadOnlyList<DiscFileEntry> entries, PsxExecutable executable, byte[] executableBytes)
     {
+        _ = executableBytes;
         var digimon = new List<DigimonRecord>();
         for (int i = 0; i < DigimonCount; i++)
             digimon.Add(BattleDataDecoder.DecodeDigimon(executable.Slice(DigimonAddress + (uint)(i * BattleDataDecoder.DigimonStride), BattleDataDecoder.DigimonStride), 0));

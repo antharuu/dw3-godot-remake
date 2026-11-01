@@ -298,7 +298,7 @@ public sealed class PlayerArchiveDecoderTests
 
         Assert.Single(groups);
         Assert.Equal(1, groups[0].SetId);
-        Assert.Equal(seqIndices.Select(x => (int)x).ToList(), groups[0].SequenceIndices.ToList());
+        Assert.Equal(seqIndices.Select(x => (int)x).ToList(), [.. groups[0].SequenceIndices]);
     }
 
     [Fact]

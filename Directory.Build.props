@@ -4,10 +4,12 @@
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <ImplicitUsings>enable</ImplicitUsings>
-    <!-- Keep analyzer behavior stable while the existing code-style baseline is adopted.
-         Code-style diagnostics stay editor suggestions until each rule is deliberately promoted. -->
+    <!-- Treat the selected .editorconfig style diagnostics as build errors. -->
     <AnalysisLevel>10.0</AnalysisLevel>
-    <EnforceCodeStyleInBuild>false</EnforceCodeStyleInBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- The generated XML file enables IDE0005 during builds; documentation completeness remains outside this style gate. -->
+    <NoWarn>$(NoWarn);1570;1573;1587;1591;1734</NoWarn>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <Version>0.1.0</Version>
   </PropertyGroup>
   <!-- Pin SQLitePCLRaw native lib to a non-vulnerable version across all projects.

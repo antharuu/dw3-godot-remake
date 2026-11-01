@@ -17,6 +17,7 @@ Run these commands from the repository root:
 
 ```sh
 dotnet build Dw3.sln --nologo
+dotnet format Dw3.sln         # required before committing; verified by Linux CI
 dotnet test Dw3.sln --nologo
 ```
 

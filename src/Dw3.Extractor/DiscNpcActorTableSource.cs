@@ -63,7 +63,7 @@ internal sealed class DiscNpcActorTableSource : INpcActorTableSource
         }
 
         IReadOnlyList<DiscFieldStage> registry = DiscStageModeReader.BuildRegistry(disc, entries);
-        int[] stageIds = registry.Select(stage => stage.StageId).Distinct().Order().ToArray();
+        int[] stageIds = [.. registry.Select(stage => stage.StageId).Distinct().Order()];
         var actors = new Dictionary<int, IReadOnlyList<NpcActorReference>>();
         foreach (int stageId in stageIds)
         {
@@ -71,7 +71,7 @@ internal sealed class DiscNpcActorTableSource : INpcActorTableSource
             byte[] overlay = disc.ReadFile(Require(entries, path));
             IReadOnlyList<uint> addresses = NpcStageActorScanner.FindActorAddresses(
                 overlay, OverlayLoadBase, FieldStateAddress);
-            actors[stageId] = addresses.Select((address, index) => new NpcActorReference(address, index)).ToArray();
+            actors[stageId] = [.. addresses.Select((address, index) => new NpcActorReference(address, index))];
         }
         return new DiscNpcActorTableSource(tables, actors, filePaths, stageIds);
     }

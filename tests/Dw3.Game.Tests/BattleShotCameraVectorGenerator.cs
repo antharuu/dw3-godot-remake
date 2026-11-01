@@ -28,7 +28,7 @@ public sealed class BattleShotCameraVectorGenerator
     {
         private readonly Random _random;
         private readonly bool _extreme;
-        public List<int[]> Issued { get; } = new();
+        public List<int[]> Issued { get; } = [];
 
         public ViewSource(Random random, bool extreme)
         {
@@ -119,8 +119,8 @@ public sealed class BattleShotCameraVectorGenerator
         public int RandomInt(int min, int max) => _random.Next(min, max);
     }
 
-    private static JsonArray Arr(int[] a) => new(a.Select(v => (JsonNode)v).ToArray());
-    private static JsonArray Rows(IEnumerable<int[]> rows) => new(rows.Select(r => (JsonNode)Arr(r)).ToArray());
+    private static JsonArray Arr(int[] a) => [.. a.Select(v => (JsonNode)v).ToArray()];
+    private static JsonArray Rows(IEnumerable<int[]> rows) => [.. rows.Select(r => (JsonNode)Arr(r)).ToArray()];
 
     private static int[] RandomRng(Random random, int maxLength = 5)
     {

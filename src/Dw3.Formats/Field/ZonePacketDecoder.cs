@@ -65,7 +65,7 @@ public static class ZonePacketDecoder
         if (actualPresent != presentTiles)
             throw new FormatException("Field packet tile-size table does not match the declared present tile count.");
 
-        return new ZoneTerrain(columns, rows, layers.Select(layer => layer.Pixels).ToArray(), composite.Pixels, tileRecords);
+        return new ZoneTerrain(columns, rows, [.. layers.Select(layer => layer.Pixels)], composite.Pixels, tileRecords);
     }
 
     private static (IReadOnlyList<(int Depth, RgbaImage Image)>, ZoneTileRecord) DecodeTileWithMetadata(ReadOnlySpan<byte> rawPacket, int tileIndex)

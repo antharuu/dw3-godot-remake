@@ -49,7 +49,7 @@ public sealed class FightReportControllerVectorTests
         var tcNode = c["input"]!["messageTokenCounts"];
         if (tcNode is JsonObject tcObj)
         {
-            tokenCounts = new Dictionary<int, int>();
+            tokenCounts = [];
             foreach (var kv in tcObj) tokenCounts[int.Parse(kv.Key)] = kv.Value!.GetValue<int>();
         }
 

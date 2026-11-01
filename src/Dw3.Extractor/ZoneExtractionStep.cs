@@ -1,6 +1,5 @@
 using System.Buffers.Binary;
 using System.Globalization;
-using System.Reflection;
 using System.Security.Cryptography;
 using Dw3.Data;
 using Dw3.Disc;
@@ -60,8 +59,8 @@ internal static class ZoneExtractionStep
                 .ToArray();
             if (packs.Length == 0)
                 throw new InvalidDataException("The supported disc contains no field terrain packet files.");
-            packs = packs.Where(item => FieldOverlayClassifier.IsLoadable(disc.ReadFile(
-                RequireStageFile(entries, "AAA/PRO/WSTAG", ".PRO", item.Stage!.Value)))).ToArray();
+            packs = [.. packs.Where(item => FieldOverlayClassifier.IsLoadable(disc.ReadFile(
+                RequireStageFile(entries, "AAA/PRO/WSTAG", ".PRO", item.Stage!.Value))))];
             if (packs.Length == 0)
                 throw new InvalidDataException("The supported disc contains no loadable field-zone overlays.");
 
@@ -129,7 +128,7 @@ internal static class ZoneExtractionStep
             throw new InvalidDataException(
                 $"Disc field registry yielded {result.Count} stages instead of {ExpectedFieldStageCount}. " +
                 $"Structurally rejected entries: {string.Join(" | ", structurallyRejected)}");
-        return result.OrderBy(stage => stage.StageId).ToArray();
+        return [.. result.OrderBy(stage => stage.StageId)];
     }
 
     private static void WriteZones(

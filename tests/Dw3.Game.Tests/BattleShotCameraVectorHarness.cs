@@ -72,7 +72,7 @@ internal static class BattleShotCameraVectorHarness
     /// </summary>
     public sealed class Session
     {
-        private List<string> _current = new();
+        private List<string> _current = [];
 
         public Session(int[] rngValues, Func<int[]>? nextEnemyView, Func<int[]>? nextFighterView)
         {
@@ -98,9 +98,9 @@ internal static class BattleShotCameraVectorHarness
         }
 
         public BattleShotCamera Camera { get; }
-        public List<string> Ops { get; } = new();
-        public List<int[]> Snapshots { get; } = new();
-        public List<List<string>> Calls { get; } = new();
+        public List<string> Ops { get; } = [];
+        public List<int[]> Snapshots { get; } = [];
+        public List<List<string>> Calls { get; } = [];
         public int ThrowsAt { get; private set; } = -1;
         public string? Exception { get; private set; }
         public bool Failed => Exception is not null;
@@ -110,7 +110,7 @@ internal static class BattleShotCameraVectorHarness
         {
             if (Failed) throw new InvalidOperationException("session already failed");
             Ops.Add(op);
-            _current = new List<string>();
+            _current = [];
             try
             {
                 ApplyOp(Camera, op);

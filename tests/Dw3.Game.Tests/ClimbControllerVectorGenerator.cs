@@ -194,9 +194,9 @@ public sealed class ClimbControllerVectorGenerator
         };
 
         int[] sampleTicks =
-        {
+        [
             0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 20, 50, 100, 999
-        };
+        ];
 
         foreach (var (set, loops, records) in stdSets)
         {
@@ -210,8 +210,8 @@ public sealed class ClimbControllerVectorGenerator
         // Section B: ClimbSequence cases — full traversals
         // ============================================================
 
-        int[] heights = { 1, 2, 4, 8, 16, 32, 64, 128 };
-        int[] dirs = { 0, 3, 5, 6 };
+        int[] heights = [1, 2, 4, 8, 16, 32, 64, 128];
+        int[] dirs = [0, 3, 5, 6];
 
         // Full ClimbUp (hold Up until done): 8 × 4 = 32 cases.
         // Max ticks = height + 20 (GetOnWall=8, ClimbOff=4, buffer=8).
@@ -313,7 +313,7 @@ public sealed class ClimbControllerVectorGenerator
         // Pad to reach 300 if needed (extra AnimSample with additional tick values).
         // ============================================================
 
-        int[] extraTicks = { 17, 18, 19, 21, 22, 23, 24, 25, 30, 40, 60, 75, 200, 500 };
+        int[] extraTicks = [17, 18, 19, 21, 22, 23, 24, 25, 30, 40, 60, 75, 200, 500];
         int padIdx = 0;
         while (cases.Count < 300)
         {

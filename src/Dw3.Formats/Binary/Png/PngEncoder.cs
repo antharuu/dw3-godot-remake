@@ -98,7 +98,7 @@ public static class PngEncoder
 
     private static void WriteIend(Stream out_)
     {
-        WriteChunk(out_, "IEND"u8, ReadOnlySpan<byte>.Empty);
+        WriteChunk(out_, "IEND"u8, []);
     }
 
     // ── Chunk helper ───────────────────────────────────────────────────────

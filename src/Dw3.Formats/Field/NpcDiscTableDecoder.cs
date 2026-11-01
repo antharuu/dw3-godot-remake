@@ -37,7 +37,7 @@ public static class NpcDiscTableDecoder
             if (packed != 0)
                 entries[index] = new NpcFileEntry((int)(packed >> 16), (int)(packed & 0xFFFF));
         }
-        int[] widths = fieldStg.Slice(widthsOffset, widthCount).ToArray().Select(value => (int)value).ToArray();
+        int[] widths = [.. fieldStg.Slice(widthsOffset, widthCount).ToArray().Select(value => (int)value)];
         return new NpcDiscTables(entries, widths, progress.Ranges, progress.SpecialProgressRanges);
     }
 

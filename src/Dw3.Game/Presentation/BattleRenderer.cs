@@ -180,8 +180,7 @@ public sealed partial class BattleRenderer
         // the render-layer contract:createLayer takes the first free slot, so the auxiliary fighter-view contract's 0x1009 is created
         // after FIGHTSTG_CREATE_LAYERS' SCREEN/MENUS/FRONT layers. It must draw over frame 10.
         _layer.MoveChild(_partnerScreen, _layer.GetChildCount() - 1);
-
-        var sparkMesh = new QuadMesh { Size = new Vector2(1.4f, 1.4f) };
+        _ = new QuadMesh { Size = new Vector2(1.4f, 1.4f) };
         _hitSpark = new Sprite3D
         {
             Texture = MakeSparkTexture(),
@@ -627,8 +626,8 @@ public sealed partial class BattleRenderer
     {
         if (_stageLights is not { } source) return;
         var fade = _entranceFade / 4096f;
-        var set = new BattleModel.BattleLightSet(source.Lights.Select(light =>
-            new BattleModel.BattleLight(light.Direction, light.Rgb * fade)).ToArray(), source.Ambient * fade);
+        var set = new BattleModel.BattleLightSet([.. source.Lights.Select(light =>
+            new BattleModel.BattleLight(light.Direction, light.Rgb * fade))], source.Ambient * fade);
         foreach (var model in _models) model.SetLighting(set);
         _partnerModel?.SetLighting(set);
         _stage?.SetLighting(set);
@@ -816,6 +815,7 @@ public sealed partial class BattleRenderer
     /// only to the small partner-view layer, so using them for the full viewport hides Kuwagamon.</summary>
     public void SetCommandMenuCamera(bool snap = false)
     {
+        _ = snap;
         var players = FighterCameras(enemy: false);
         var enemies = FighterCameras(enemy: true);
         if (players.Count == 0 || enemies.Count == 0) throw new InvalidOperationException("source shot camera unavailable");
@@ -1014,8 +1014,8 @@ public sealed partial class BattleRenderer
     private sealed partial class BattleHudNode : Control
     {
         // the HUD layout contract FIGHTSTG_hpBars (EU): source 320x240 pixels, transformed once by the node.
-        private static readonly Vector2[] PlayerBar = { new(0xAF, 0x25), new(0x12F, 0x25), new(0xAF, 0x2B), new(0x12F, 0x2B) };
-        private static readonly Vector2[] EnemyBar = { new(0x8F, 0x25), new(0x0F, 0x25), new(0x8F, 0x2B), new(0x0F, 0x2B) };
+        private static readonly Vector2[] PlayerBar = [new(0xAF, 0x25), new(0x12F, 0x25), new(0xAF, 0x2B), new(0x12F, 0x2B)];
+        private static readonly Vector2[] EnemyBar = [new(0x8F, 0x25), new(0x0F, 0x25), new(0x8F, 0x2B), new(0x0F, 0x2B)];
         // the HUD layout contract FIGHTSTG_hpBarColors: {0} green dark, {1} green light (above a quarter HP),
         // {2} red dark, {3} red light (at or below a quarter).
         private static readonly Color GreenDark = new(0.0f, 0.44f, 0.16f);
@@ -1033,12 +1033,12 @@ public sealed partial class BattleRenderer
         // already recoloured by its exact PSX CLUT row, never Godot-tinted.
         private readonly PsxTextPainter _textPainter;
         private BattleHudData? _hud;
-        private readonly Dictionary<int, ImageTexture[]> _frameTextures = new();
-        private readonly Dictionary<int, Vector2> _frameOffsets = new();
+        private readonly Dictionary<int, ImageTexture[]> _frameTextures = [];
+        private readonly Dictionary<int, Vector2> _frameOffsets = [];
         private ImageTexture? _cursorTexture;
         private ImageTexture? _cursorOffTexture;
         private BattleMenuIconsData? _menuIcons;
-        private readonly Dictionary<int, ImageTexture[]> _menuIconTextures = new();
+        private readonly Dictionary<int, ImageTexture[]> _menuIconTextures = [];
         private int _previousCursor = -1;
         private ulong? _probeAnimationMilliseconds;
         private ulong AnimationMilliseconds => _probeAnimationMilliseconds ?? Time.GetTicksMsec();
@@ -1052,6 +1052,8 @@ public sealed partial class BattleRenderer
 
         public void SetFont(FontData font, Texture2D page0, Texture2D page1)
         {
+            _ = page0;
+            _ = page1;
             _font = font;
             _textPainter.SetFont(font);
             QueueRedraw();
@@ -1072,7 +1074,7 @@ public sealed partial class BattleRenderer
             {
                 var rows = frame.ClutRows.Select(path => Image.LoadFromFile(path)).ToArray();
                 if (rows.Any(image => image is null || image.IsEmpty())) { GD.PushWarning($"WARN battle-hud-frame-unreadable frame={id}"); continue; }
-                _frameTextures[id] = rows.Select(image => ImageTexture.CreateFromImage(image!)).ToArray();
+                _frameTextures[id] = [.. rows.Select(image => ImageTexture.CreateFromImage(image!))];
                 _frameOffsets[id] = new Vector2(frame.OffsetX, frame.OffsetY);
             }
             var cursorImage = Image.LoadFromFile(hud.Cursor.Path);
@@ -1097,7 +1099,7 @@ public sealed partial class BattleRenderer
                 var images = frame.ClutRows.Select(Image.LoadFromFile).ToArray();
                 if (images.Any(image => image is null || image.IsEmpty()))
                     throw new InvalidOperationException($"menu icon image unreadable frame={id}");
-                _menuIconTextures[id] = images.Select(image => ImageTexture.CreateFromImage(image!)).ToArray();
+                _menuIconTextures[id] = [.. images.Select(image => ImageTexture.CreateFromImage(image!))];
             }
             QueueRedraw();
         }
@@ -1179,6 +1181,7 @@ public sealed partial class BattleRenderer
         /// quarter HP and red at or below it.</summary>
         private void DrawHpBar(BattleView view, int side, IReadOnlyList<BattleFighterView> fighters)
         {
+            _ = view;
             var active = fighters.FirstOrDefault(fighter => fighter.Active);
             if (active.Id == 0) return;
             var points = side == 0 ? PlayerBar : EnemyBar;

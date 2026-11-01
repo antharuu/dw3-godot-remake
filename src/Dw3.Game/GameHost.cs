@@ -1,6 +1,4 @@
 using System.Diagnostics;
-using System.Globalization;
-using System.Text.Json;
 using Godot;
 using Dw3.Data;
 using Microsoft.Data.Sqlite;
@@ -46,7 +44,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
     private readonly HostStartupOptions _options = HostStartupOptions.FromEnvironment();
     private readonly WarpController _warp = new();
     private readonly PlayerIconController _icon = new();
-    private readonly Dictionary<string, FieldZone> _zones = new();
+    private readonly Dictionary<string, FieldZone> _zones = [];
     private BattleDataPackLoader? _battleLoader;
     private string _dataRoot = "";
     private FieldDataPackLoader? _fieldLoader;
@@ -421,7 +419,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         // overlay visible and skip the field frame.
         if (_inTitle)
         {
-            if (_titleScreen is not null) _titleScreen.Visible = true;
+            _titleScreen?.Visible = true;
             return;
         }
 
@@ -531,9 +529,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
     // A battle area with no random battles, reused when a zone has no FIELD_MAP_AREAS
     // or no battle table. Its count (0) maps to FIELDSTG_battleRates[0] = 2000, but the
     // runtime never decrements it because safe zones have a null AreaMap.
-    private static readonly BattleList[] EmptyBattles = Enumerable.Range(0, 4)
-        .Select(_ => new BattleList(0, Enumerable.Range(0, 8).Select(_ => new AreaBattle(0, 0, 0)).ToArray()))
-        .ToArray();
+    private static readonly BattleList[] EmptyBattles = [.. Enumerable.Range(0, 4).Select(_ => new BattleList(0, [.. Enumerable.Range(0, 8).Select(_ => new AreaBattle(0, 0, 0))]))];
 
     /// <summary>FIELDSTG_countBattleSteps: one battle step every 8 movement frames while the
     /// player walks inside a battle area. The controller owns the countdown and the draws.</summary>
@@ -616,7 +612,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         _activeBattle = new BattleSetup { Battle = encounter };
         _battleFlow = flow;
         _lastBattleEncounter = encounter;
-        _lastBattleEnemyIds = flow.State.Enemies.Select(enemy => enemy?.Id ?? 0).ToArray();
+        _lastBattleEnemyIds = [.. flow.State.Enemies.Select(enemy => enemy?.Id ?? 0)];
         _battleCatalogForId = -1;
         _battlePrevUp = false;
         _battlePrevDown = false;
@@ -695,7 +691,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         if (outcome == BattleOutcome.Lost)
         {
             _inTitle = true;
-            if (_titleScreen is not null) _titleScreen.Visible = true;
+            _titleScreen?.Visible = true;
             _log.Info($"battle-end outcome={outcome} return-to-title zone={_state.ZoneId}");
         }
         else
@@ -722,7 +718,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         }
         var lists = place.Areas.Select(area => new BattleList(
             area.Count,
-            area.Battles.Select(battle => new AreaBattle(battle.Encounter, battle.Stage, battle.Music)).ToArray())).ToArray();
+            [.. area.Battles.Select(battle => new AreaBattle(battle.Encounter, battle.Stage, battle.Music))])).ToArray();
         _encounter.SetBattles(lists);
     }
 
@@ -942,7 +938,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
 
     private IReadOnlyDictionary<int, BattleTextLine> BuildReportNames() => _fightReportInput?.Partners
         .ToDictionary(partner => partner.FighterId, partner => NameLine(partner.FighterId))
-        ?? new Dictionary<int, BattleTextLine>();
+        ?? [];
 
     /// <summary>The encounter's reward, or an explicit zero reward when the id is absent or
     /// out of the manifest (never invented).</summary>
@@ -2003,6 +1999,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
 
     private static NumericsVector2 FindTriggerApproachCell(FieldZone zone, int slot, NumericsVector2 start, SemanticDirection input)
     {
+        _ = input;
         var cells = new List<NumericsVector2>();
         for (var y = 0; y < zone.Triggers.Height; y++)
             for (var x = 0; x < zone.Triggers.Width; x++)
@@ -2064,14 +2061,14 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         foreach (var key in direction switch
         {
             SemanticDirection.Up => new[] { Key.Z },
-            SemanticDirection.UpRight => new[] { Key.Z, Key.D },
-            SemanticDirection.Right => new[] { Key.D },
-            SemanticDirection.DownRight => new[] { Key.S, Key.D },
-            SemanticDirection.Down => new[] { Key.S },
-            SemanticDirection.DownLeft => new[] { Key.S, Key.Q },
-            SemanticDirection.Left => new[] { Key.Q },
-            SemanticDirection.UpLeft => new[] { Key.Z, Key.Q },
-            _ => Array.Empty<Key>(),
+            SemanticDirection.UpRight => [Key.Z, Key.D],
+            SemanticDirection.Right => [Key.D],
+            SemanticDirection.DownRight => [Key.S, Key.D],
+            SemanticDirection.Down => [Key.S],
+            SemanticDirection.DownLeft => [Key.S, Key.Q],
+            SemanticDirection.Left => [Key.Q],
+            SemanticDirection.UpLeft => [Key.Z, Key.Q],
+            _ => [],
         })
             _input.Handle(new InputEventKey { Keycode = key, Pressed = true });
     }
@@ -2690,7 +2687,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
     /// <summary>Loads a PSX reference image from DW3_PSX_REFERENCE_DIR.
     /// <para>sub-path is relative to that root, using forward slashes,
     /// e.g. <c>"battle/kotemon-383-command-menu-0.png"</c>.</para>
-    /// Throws <see cref="PsxReferenceUnavailableException"/> (exit&nbsp;5) when the variable is
+    /// Throws <see cref="PsxReferenceUnavailableException"/> (exit 5) when the variable is
     /// unset or the file does not exist, instead of crashing on a bad image path.</summary>
     private static Image LoadPsxReference(string subPath)
     {

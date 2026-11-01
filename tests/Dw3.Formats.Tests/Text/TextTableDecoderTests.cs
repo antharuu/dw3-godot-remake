@@ -148,7 +148,7 @@ public sealed class TextTableDecoderTests
         ];
         var entries = TextTableDecoder.DecodeFile(data);
         Assert.Equal(2, entries.Count);
-        var entry0Token = Assert.Single(entries[0]);
+        _ = Assert.Single(entries[0]);
         Assert.Equal(0x12, entries[0][0].Code);
         Assert.Equal(2, entries[1].Count);
         Assert.Equal(0x56, entries[1][1].Code);

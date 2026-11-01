@@ -185,6 +185,7 @@ public static class NpcDomainWriter
 
     private static void InsertCharacter(DataPackWriteContext context, NpcExtractedCharacter c, string prefix)
     {
+        _ = prefix;
         Insert(context,
             """
             INSERT INTO npc_characters

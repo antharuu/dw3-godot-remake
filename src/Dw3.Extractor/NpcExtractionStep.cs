@@ -140,7 +140,7 @@ internal static class NpcExtractionStep
             sequences.Add(new NpcAnimSequence(
                 seqIndex,
                 raw.Terminator == ActionSequenceTerminator.Loop ? NpcSequenceTerminator.Loop : NpcSequenceTerminator.End,
-                raw.Records.Select(r => new NpcAnimRecord(r.Duration, r.Frame, r.OffsetX, r.OffsetY)).ToArray()));
+                [.. raw.Records.Select(r => new NpcAnimRecord(r.Duration, r.Frame, r.OffsetX, r.OffsetY))]));
         }
 
         // Decode all TIM4 frames from 0 to the highest frame referenced in any sequence.
@@ -154,7 +154,7 @@ internal static class NpcExtractionStep
             frames.Add(new NpcExtractedFrame(frameId, image.Width, image.Height, image.Pixels));
         }
 
-        var sets = rawSets.Select(s => new NpcAnimSet(s.SetId, s.SequenceIndices.ToArray())).ToArray();
+        var sets = rawSets.Select(s => new NpcAnimSet(s.SetId, [.. s.SequenceIndices])).ToArray();
         string sha256 = Convert.ToHexStringLower(SHA256.HashData(archiveBytes));
 
         return new NpcExtractedCharacter(

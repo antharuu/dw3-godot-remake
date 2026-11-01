@@ -11,7 +11,7 @@ namespace Dw3.Repository.Tests;
 
 public sealed class RepositoryGuardTests : IDisposable
 {
-    private readonly List<string> _tempDirs = new();
+    private readonly List<string> _tempDirs = [];
 
     // ─────────────────────────────────────────────────────────────────────
     // Helpers

@@ -47,7 +47,7 @@ public sealed class BattleFlowController
 
     /// <summary>The bag: item id -> how many the party holds (GAME.items). Using an item
     /// decrements it; the item menu lists only the ids with a positive count.</summary>
-    public Dictionary<int, int> ItemStock { get; set; } = new();
+    public Dictionary<int, int> ItemStock { get; set; } = [];
     /// <summary>FSITMNAM token streams supplied with the decoded battle-item catalogue.</summary>
     public IReadOnlyDictionary<int, BattleTextLine> ItemText { get; set; } = new Dictionary<int, BattleTextLine>();
 

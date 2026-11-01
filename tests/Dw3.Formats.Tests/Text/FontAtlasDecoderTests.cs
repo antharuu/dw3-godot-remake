@@ -36,10 +36,17 @@ public sealed class FontAtlasDecoderTests
         int outputSize = tim.Length;
         // RLEN header: "RLEN" + u32 outputSize
         // Commands: for each chunk of up to 127 bytes, emit literal run cmd (1..127) followed by bytes.
-        var rlen = new List<byte>();
-        rlen.Add((byte)'R'); rlen.Add((byte)'L'); rlen.Add((byte)'E'); rlen.Add((byte)'N');
-        rlen.Add((byte)(outputSize & 0xFF)); rlen.Add((byte)((outputSize >> 8) & 0xFF));
-        rlen.Add((byte)((outputSize >> 16) & 0xFF)); rlen.Add((byte)((outputSize >> 24) & 0xFF));
+        var rlen = new List<byte>
+        {
+            (byte)'R',
+            (byte)'L',
+            (byte)'E',
+            (byte)'N',
+            (byte)(outputSize & 0xFF),
+            (byte)((outputSize >> 8) & 0xFF),
+            (byte)((outputSize >> 16) & 0xFF),
+            (byte)((outputSize >> 24) & 0xFF)
+        };
         int pos = 0;
         while (pos < tim.Length)
         {

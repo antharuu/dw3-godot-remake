@@ -25,7 +25,7 @@ public sealed class FieldcomBehaviorDecoderTests
         IReadOnlyList<FieldcomAnimation> icons = FieldcomBehaviorDecoder.DecodeIconAnimations(overlay, Enumerable.Range(0x23, 15).ToHashSet());
 
         Assert.Equal(5, inner.Count);
-        Assert.Equal(new[] { 0x0C, 0x0E, 0x10, 0x12, 0x45 }, inner.Select(sequence => sequence.Steps[0].Frame).Order());
+        Assert.Equal([0x0C, 0x0E, 0x10, 0x12, 0x45], inner.Select(sequence => sequence.Steps[0].Frame).Order());
         Assert.Equal(4, icons.Count);
         Assert.Equal(0, icons[0].LoopTarget);
         Assert.Equal(2, icons[3].LoopTarget);

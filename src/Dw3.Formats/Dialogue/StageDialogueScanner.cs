@@ -25,12 +25,11 @@ public static class StageDialogueScanner
     public static StageDialogueSetup Scan(ReadOnlySpan<byte> overlay, DialogueRomLayout layout)
     {
         ArgumentNullException.ThrowIfNull(layout);
-        int[] selectors = MipsStoreScanner
+        int[] selectors = [.. MipsStoreScanner
             .FindStores(overlay, layout.FieldStateAddress, layout.TextFileFieldOffset, [layout.LanguageAddress])
             .Where(store => store.Value.IsLoadedWord && store.Value.LoadAddress == layout.LanguageAddress)
             .Select(store => store.Value.Addend)
-            .Distinct()
-            .ToArray();
+            .Distinct()];
         if (selectors.Length != 1)
         {
             string found = selectors.Length == 0 ? "none" : string.Join(", ", selectors.Select(value => $"0x{value:X}"));

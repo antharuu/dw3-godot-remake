@@ -51,7 +51,7 @@ public interface EncounterRng
 public sealed class EncounterController
 {
     /// <summary>FIELDSTG_battleRates: how much each BattleList.Count lowers the step countdown.</summary>
-    public static readonly int[] BattleRates = { 2000, 3, 4, 6, 9, 18 };
+    public static readonly int[] BattleRates = [2000, 3, 4, 6, 9, 18];
 
     private readonly EncounterRng _rng;
     private BattleList[]? _battles;
@@ -76,7 +76,7 @@ public sealed class EncounterController
     public void SetBattles(IReadOnlyList<BattleList> battles)
     {
         if (battles.Count != 4) throw new ArgumentException("a FieldBattles holds four battle areas", nameof(battles));
-        _battles = battles.ToArray();
+        _battles = [.. battles];
     }
 
     /// <summary>FIELDSTG_rollBattleSteps: roll the steps to the next battle from the RNG.</summary>

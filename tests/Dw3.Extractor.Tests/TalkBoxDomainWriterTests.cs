@@ -1,5 +1,4 @@
 using Dw3.Data;
-using Dw3.Extractor;
 using Dw3.Formats.Dialogue;
 using Microsoft.Data.Sqlite;
 using Xunit;

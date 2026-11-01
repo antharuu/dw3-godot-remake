@@ -47,7 +47,7 @@ public sealed class BattleDataPackLoader : IDisposable
                 enemy.GetProperty("hp").GetInt32(), enemy.GetProperty("mp").GetInt32(), enemy.GetProperty("strength").GetInt32())).ToArray();
             var encounters = root.GetProperty("encounters").EnumerateArray().Select(encounter => new EncounterEntry(
                 encounter.GetProperty("index").GetInt32(), Ints(encounter.GetProperty("enemyIndices")),
-                encounter.GetProperty("enemies").EnumerateArray().Select(enemy => enemy.GetProperty("fighter").GetInt32()).ToArray(),
+                [.. encounter.GetProperty("enemies").EnumerateArray().Select(enemy => enemy.GetProperty("fighter").GetInt32())],
                 encounter.GetProperty("ambushChance").GetInt32(), encounter.GetProperty("kind").GetInt32(), Ints(encounter.GetProperty("blocks")))).ToArray();
             var stages = new Dictionary<string, EncounterStage>();
             foreach (JsonProperty stageProperty in root.GetProperty("stages").EnumerateObject())
@@ -106,7 +106,7 @@ public sealed class BattleDataPackLoader : IDisposable
                 table.Add(new BattleTableEntry(entry.GetProperty("id").GetInt32(), entry.GetProperty("item").GetInt32(), entry.GetProperty("itemChance").GetInt32(),
                     entry.GetProperty("nameId").GetInt32(), Ints(entry.GetProperty("techniques")), Ints(entry.GetProperty("stats")),
                     Ints(entry.GetProperty("resistances")), entry.GetProperty("family").GetInt32(),
-                    entry.GetProperty("actions").EnumerateArray().Select(Action).ToArray(), Action(entry.GetProperty("counter"))));
+                    [.. entry.GetProperty("actions").EnumerateArray().Select(Action)], Action(entry.GetProperty("counter"))));
             if (digimon.Count != 55 || table.Count == 0) throw new JsonException("fighter inventory is incomplete");
             return new FighterData(digimon, ordered, table);
         }
@@ -127,7 +127,7 @@ public sealed class BattleDataPackLoader : IDisposable
             {
                 var evolutions = partner.GetProperty("evolutions").EnumerateArray().Select(entry => new DigivolutionEntry(
                     entry.GetProperty("digimonIndex").GetInt32(), entry.GetProperty("digimonId").GetInt32(),
-                    entry.GetProperty("needs").EnumerateArray().Select(need => new EvolutionNeed(need.GetProperty("digimonIndex").GetInt32(), need.GetProperty("digimonId").GetInt32(), need.GetProperty("level").GetInt32())).ToArray(),
+                    [.. entry.GetProperty("needs").EnumerateArray().Select(need => new EvolutionNeed(need.GetProperty("digimonIndex").GetInt32(), need.GetProperty("digimonId").GetInt32(), need.GetProperty("level").GetInt32()))],
                     entry.GetProperty("stat").GetInt32(), entry.GetProperty("value").GetInt32())).ToArray();
                 if (evolutions.Length != 44) throw new JsonException("digivolution list must contain 44 entries");
                 partners.Add(new PartnerDigivolution(partner.GetProperty("partner").GetInt32(), partner.GetProperty("baseId").GetInt32(), evolutions));
@@ -176,7 +176,7 @@ public sealed class BattleDataPackLoader : IDisposable
                 entry.GetProperty("digimonExperience").GetInt32(), entry.GetProperty("experience").GetInt32(), entry.GetProperty("money").GetInt32())).ToArray();
             JsonElement growth = root.GetProperty("growth");
             var tables = new GrowthTablesData(Ints(growth.GetProperty("levelExperience")), Ints(growth.GetProperty("vitalCuts")), Ints(growth.GetProperty("vitalRandom")),
-                growth.GetProperty("statGains").EnumerateArray().Select(Ints).Cast<IReadOnlyList<int>>().ToArray(), Ints(growth.GetProperty("resistanceGains")));
+                [.. growth.GetProperty("statGains").EnumerateArray().Select(Ints).Cast<IReadOnlyList<int>>()], Ints(growth.GetProperty("resistanceGains")));
             if (rewards.Length != 335) throw new JsonException($"reward inventory has {rewards.Length} entries");
             return new RewardsData(rewards, tables);
         }
@@ -233,7 +233,7 @@ public sealed class BattleDataPackLoader : IDisposable
             {
                 int id = int.Parse(property.Name, System.Globalization.CultureInfo.InvariantCulture);
                 JsonElement frame = property.Value;
-                string[] rows = frame.GetProperty("clutRows").EnumerateArray().Select(row => RequireFile("battle/hud/" + (row.GetProperty("path").GetString() ?? throw new JsonException("HUD frame path missing")), $"HUD frame {id}")).ToArray();
+                string[] rows = [.. frame.GetProperty("clutRows").EnumerateArray().Select(row => RequireFile("battle/hud/" + (row.GetProperty("path").GetString() ?? throw new JsonException("HUD frame path missing")), $"HUD frame {id}"))];
                 if (rows.Length != 5) throw new JsonException($"HUD frame {id} lacks five palettes");
                 frames.Add(id, new BattleHudFrame(id, rows, frame.GetProperty("w").GetInt32(), frame.GetProperty("h").GetInt32(), frame.GetProperty("offsetX").GetInt32(), frame.GetProperty("offsetY").GetInt32()));
             }
@@ -259,12 +259,12 @@ public sealed class BattleDataPackLoader : IDisposable
             foreach (JsonProperty property in root.GetProperty("frames").EnumerateObject())
             {
                 int id = int.Parse(property.Name, System.Globalization.CultureInfo.InvariantCulture); JsonElement frame = property.Value;
-                string[] rows = frame.GetProperty("clutRows").EnumerateArray().Select(row => RequireFile("battle/report/" + row.GetProperty("path").GetString()!, $"report frame {id}")).ToArray();
+                string[] rows = [.. frame.GetProperty("clutRows").EnumerateArray().Select(row => RequireFile("battle/report/" + row.GetProperty("path").GetString()!, $"report frame {id}"))];
                 frames.Add(id, new BattleHudFrame(id, rows, frame.GetProperty("w").GetInt32(), frame.GetProperty("h").GetInt32(), frame.GetProperty("offsetX").GetInt32(), frame.GetProperty("offsetY").GetInt32()));
             }
-            int[][] animations = root.GetProperty("animations").EnumerateArray().Select(Ints).ToArray();
+            int[][] animations = [.. root.GetProperty("animations").EnumerateArray().Select(Ints)];
             JsonElement arrow = root.GetProperty("arrow");
-            string[] arrowRows = arrow.GetProperty("clutRows").EnumerateArray().Select(row => RequireFile("battle/report/" + row.GetProperty("path").GetString()!, "report arrow")).ToArray();
+            string[] arrowRows = [.. arrow.GetProperty("clutRows").EnumerateArray().Select(row => RequireFile("battle/report/" + row.GetProperty("path").GetString()!, "report arrow"))];
             if (animations.Length != 8 || animations.Any(row => row.Length != 7) || arrowRows.Length != 5) throw new JsonException("battle report shape mismatch");
             return new BattleReportSprites(frames, animations, new BattleHudFrame(10, arrowRows, arrow.GetProperty("w").GetInt32(), arrow.GetProperty("h").GetInt32(), arrow.GetProperty("offsetX").GetInt32(), arrow.GetProperty("offsetY").GetInt32()));
         }
@@ -283,7 +283,7 @@ public sealed class BattleDataPackLoader : IDisposable
             foreach (JsonProperty property in root.GetProperty("frames").EnumerateObject())
             {
                 int id = int.Parse(property.Name, System.Globalization.CultureInfo.InvariantCulture); JsonElement frame = property.Value;
-                string[] rows = frame.GetProperty("paths").EnumerateArray().Select(path => RequireFile(NormalizePackPath("battle/menu-icons", path.GetString()), $"menu icon {id}")).ToArray();
+                string[] rows = [.. frame.GetProperty("paths").EnumerateArray().Select(path => RequireFile(NormalizePackPath("battle/menu-icons", path.GetString()), $"menu icon {id}"))];
                 int[] offset = Ints(frame.GetProperty("offset"));
                 frames.Add(id, new BattleMenuIconFrame(id, rows, frame.GetProperty("w").GetInt32(), frame.GetProperty("h").GetInt32(), offset[0], offset[1]));
             }
@@ -324,13 +324,13 @@ public sealed class BattleDataPackLoader : IDisposable
         using JsonDocument document = ReadJson(relativePath, subject);
         var entries = new List<IReadOnlyList<TextToken>>();
         foreach (JsonElement entry in document.RootElement.GetProperty("entries").EnumerateArray())
-            entries.Add(entry.EnumerateArray().Select(token => token.GetProperty("kind").GetInt32() switch
+            entries.Add([.. entry.EnumerateArray().Select(token => token.GetProperty("kind").GetInt32() switch
             {
                 0 => new TextToken("g", token.GetProperty("Code").GetInt32(), 0, []),
                 1 => new TextToken("i", token.GetProperty("Code").GetInt32(), 0, []),
                 2 => new TextToken("c", 0, token.GetProperty("Code").GetInt32(), Ints(token.GetProperty("Args"))),
                 int kind => throw new JsonException($"unknown text token kind {kind}"),
-            }).ToArray());
+            })]);
         return entries;
     }
 
@@ -370,7 +370,7 @@ public sealed class BattleDataPackLoader : IDisposable
         { throw Invalid($"{subject} is unreadable: {error.Message}"); }
     }
 
-    private static int[] Ints(JsonElement element) => element.EnumerateArray().Select(value => value.GetInt32()).ToArray();
+    private static int[] Ints(JsonElement element) => [.. element.EnumerateArray().Select(value => value.GetInt32())];
 
     private static string NormalizePackPath(string directory, string? path)
     {

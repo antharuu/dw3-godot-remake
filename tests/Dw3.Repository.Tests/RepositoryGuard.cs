@@ -14,7 +14,7 @@ public sealed record Violation(string Path, string Rule, string Note);
 /// <summary>
 /// Checks a Git repository against provenance and architecture rules required
 /// for public release. Reads tracked files via <c>git ls-files</c> and scans
-// text content with per-rule regular expressions.
+/// text content with per-rule regular expressions.
 /// </summary>
 public static class RepositoryGuard
 {
@@ -323,11 +323,10 @@ public static class RepositoryGuard
         using var proc = Process.Start(psi)!;
         var output = proc.StandardOutput.ReadToEnd();
         proc.WaitForExit();
-        return output
+        return [.. output
             .Split('\n', StringSplitOptions.RemoveEmptyEntries)
             .Select(l => l.Trim())
-            .Where(l => !string.IsNullOrEmpty(l))
-            .ToList();
+            .Where(l => !string.IsNullOrEmpty(l))];
     }
 
     /// <summary>

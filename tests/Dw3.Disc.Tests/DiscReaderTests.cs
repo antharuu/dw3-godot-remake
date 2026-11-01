@@ -1,4 +1,3 @@
-using System.Security.Cryptography;
 using System.Text;
 using Xunit;
 
@@ -229,7 +228,7 @@ internal static class SyntheticDiscBuilder
 
     /// <summary>
     /// Builds a directory blob containing dot, dotdot, plus <paramref name="extra"/> records.
-    /// dotSize / dotDotSize are set to <paramref name="ownSize"/> / <paramref name="parentSize"/>
+    /// dotSize / dotDotSize are set to <paramref name="ownSize"/> initially
     /// as initial values; callers patch offset 10 afterwards when real sizes are known.
     /// </summary>
     private static byte[] MakeDirectory(int ownLba, int parentLba, int ownSize,
@@ -292,11 +291,12 @@ internal static class SyntheticDiscBuilder
 
     private static byte[] MakePathTable()
     {
-        var buf = new List<byte>();
-
-        // Entry 1: root directory.  Name = single byte 0x01; parent = 1 (self).
-        buf.Add(1);                       // name length
-        buf.Add(0);                       // ext attr record length
+        var buf = new List<byte>
+        {
+            // Entry 1: root directory.  Name = single byte 0x01; parent = 1 (self).
+            1,                       // name length
+            0                       // ext attr record length
+        };
         buf.AddRange(LE32(RootDirLba));
         buf.AddRange(LE16(1));            // parent = 1
         buf.Add(0x01);                    // name

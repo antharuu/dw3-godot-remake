@@ -16,8 +16,8 @@ namespace Dw3Production.Presentation;
 /// </summary>
 public sealed class BattleModel
 {
-    private readonly Dictionary<int, Node3D> _bones = new();
-    private readonly Dictionary<int, List<Vector4>[]> _tracks = new();
+    private readonly Dictionary<int, Node3D> _bones = [];
+    private readonly Dictionary<int, List<Vector4>[]> _tracks = [];
     private readonly List<List<List<int>>> _motions = [];
     private readonly List<ShaderMaterial> _materials = [];
     private readonly Dictionary<int, (Vector3 Position, Vector3 Rotation, Vector3 Scale)> _blendPose = [];
@@ -230,7 +230,7 @@ public sealed class BattleModel
                     var uv = polygon.GetProperty("uv");
                     var count = indices.GetArrayLength();
                     if (count != 3 && count != 4) throw new InvalidOperationException("battle model polygon is not triangle or quad");
-                    var order = count == 3 ? new[] { 0, 1, 2 } : new[] { 0, 1, 2, 2, 1, 3 };
+                    var order = count == 3 ? new[] { 0, 1, 2 } : [0, 1, 2, 2, 1, 3];
                     var vertexStart = surfacePositions.Count;
                     foreach (var i in order)
                     {
@@ -266,8 +266,8 @@ public sealed class BattleModel
                 model._materials.Add(material);
                 var instance = new MeshInstance3D { Mesh = surface.Commit(), MaterialOverride = material };
                 model._bones[bone].AddChild(instance);
-                var litSurface = new LitSurface(instance, bone, surfacePositions.ToArray(), surfaceUvs.ToArray(),
-                    surfaceLighting.ToArray(), material, key.Abr);
+                var litSurface = new LitSurface(instance, bone, [.. surfacePositions], [.. surfaceUvs],
+                    [.. surfaceLighting], material, key.Abr);
                 model._litSurfaces.Add(litSurface);
                 foreach (var state in sourceStates)
                     model._sourcePolygons.Add(new SourcePolygonState(litSurface, bone, state.Command, state.VertexStart,
@@ -386,7 +386,7 @@ public sealed class BattleModel
     {
         foreach (var state in _sourcePolygons.Where(polygon => polygon.Bone != 0).OrderBy(polygon => polygon.Bone).ThenBy(polygon => polygon.Command))
         {
-            var offsets = state.Size == 3 ? new[] { 0, 1, 2 } : new[] { 0, 1, 2, 5 };
+            var offsets = state.Size == 3 ? new[] { 0, 1, 2 } : [0, 1, 2, 5];
             var positions = offsets.Select(offset => state.Surface.Positions[state.VertexStart + offset]).ToArray();
             var uvs = offsets.Select(offset => state.Surface.Uvs[state.VertexStart + offset]).ToArray();
             var colors = offsets.Select(offset => state.Surface.Colors[state.VertexStart + offset]).ToArray();
@@ -431,6 +431,7 @@ public sealed class BattleModel
     /// page, copied from an immutable source page, so palette variants use their exact pixels.</summary>
     private void ConfigureFace(JsonElement root, IReadOnlyDictionary<int, FaceTexture> textures)
     {
+        _ = textures;
         if (!root.TryGetProperty("face", out var face)) return;
         foreach (var value in face.GetProperty("parts").EnumerateArray())
         {
@@ -530,7 +531,7 @@ public sealed class BattleModel
     }
 
     /// <summary>Bone indices which the source scale threshold currently suppresses.</summary>
-    public IReadOnlyList<int> HiddenBones => _bones.Where(pair => !pair.Value.Visible).Select(pair => pair.Key).Order().ToArray();
+    public IReadOnlyList<int> HiddenBones => [.. _bones.Where(pair => !pair.Value.Visible).Select(pair => pair.Key).Order()];
 
     /// <summary>Whether a particular source bone is visible after the most recent pose.</summary>
     public bool IsBoneVisible(int index) => _bones.TryGetValue(index, out var bone) && bone.Visible;

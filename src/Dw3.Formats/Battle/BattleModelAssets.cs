@@ -162,7 +162,7 @@ public static class BattleTextureDecoder
         if (keys.Count == 0) throw new FormatException("battle model has no textured polygon combinations");
         var textures = keys.OrderBy(pair => pair.Value).Select(pair => DecodePage(vram, maxX, maxY, pair.Key, pair.Value)).ToArray();
         return new BattleTextureSet(textures,
-            new BattleTextureVram(maxX, maxY, uploads.Select(u => new BattleTextureUpload(u.X, u.Width, u.Height)).ToArray()), keys);
+            new BattleTextureVram(maxX, maxY, [.. uploads.Select(u => new BattleTextureUpload(u.X, u.Width, u.Height))]), keys);
     }
 
     private static BattleTexture DecodePage(ushort[] vram, int width, int height, (int Mode, int Page, int? X, int? Y) key, int index)
@@ -227,7 +227,7 @@ public static class BattleTextureDecoder
         }
         if (!terminated) throw new FormatException("texture archive has too many entries");
         if (offsets.Count == 0) throw new FormatException("texture archive has no entries");
-        return offsets.Select((start, index) => archive[start..(index + 1 < offsets.Count ? offsets[index + 1] : archive.Length)]).ToArray();
+        return [.. offsets.Select((start, index) => archive[start..(index + 1 < offsets.Count ? offsets[index + 1] : archive.Length)])];
     }
 
     private static (int Width, int Height, ushort[] Words) ReadTimUpload(byte[] data)

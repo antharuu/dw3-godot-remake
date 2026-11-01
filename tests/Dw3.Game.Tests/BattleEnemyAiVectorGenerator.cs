@@ -16,7 +16,7 @@ namespace Dw3.Game.Tests;
 public sealed class BattleEnemyAiVectorGenerator
 {
     private const int Seed = 33;
-    private readonly JsonArray _cases = new();
+    private readonly JsonArray _cases = [];
     private readonly Random _random = new(Seed);
 
     private static BattleFighter Enemy(int hp = 50, int maxHp = 100, int mp = 10, int charge = 0,
@@ -79,7 +79,7 @@ public sealed class BattleEnemyAiVectorGenerator
     {
         ["fn"] = "ResolveSwitch",
         ["decision"] = BattleEnemyAiVectorCodec.DecisionToJson(d),
-        ["enemies"] = new JsonArray(enemies.Select(BattleEnemyAiVectorCodec.SlotToJson).ToArray()),
+        ["enemies"] = new JsonArray([.. enemies.Select(BattleEnemyAiVectorCodec.SlotToJson)]),
         ["activeEnemy"] = active,
         ["rng"] = BattleEnemyAiVectorCodec.ToJson(rng),
     }, note);
@@ -300,7 +300,7 @@ public sealed class BattleEnemyAiVectorGenerator
         }
     }
 
-    private int[] RandomRolls(int n) => Enumerable.Range(0, n).Select(_ => _random.Next(0, 0x8000)).ToArray();
+    private int[] RandomRolls(int n) => [.. Enumerable.Range(0, n).Select(_ => _random.Next(0, 0x8000))];
 
     private EnemyAiContext RandomContext(BattleTableAction[] actions, BattleTableAction counter)
     {

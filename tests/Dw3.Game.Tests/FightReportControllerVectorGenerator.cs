@@ -35,7 +35,7 @@ public sealed class FightReportControllerVectorGenerator
             ["expBefore"] = p.ExpBefore,
             ["expGained"] = p.ExpGained,
             ["levelAfter"] = p.LevelAfter,
-            ["slotDigimonIds"] = IntArrayToJson(p.SlotDigimonIds.ToArray()),
+            ["slotDigimonIds"] = IntArrayToJson([.. p.SlotDigimonIds]),
         };
 
     private static JsonArray IntArrayToJson(int[] arr)
@@ -155,7 +155,7 @@ public sealed class FightReportControllerVectorGenerator
         JsonObject? tokenCounts = null;
         if (input.MessageTokenCounts is not null)
         {
-            tokenCounts = new JsonObject();
+            tokenCounts = [];
             foreach (var kv in input.MessageTokenCounts) tokenCounts[kv.Key.ToString()] = kv.Value;
         }
 
@@ -264,8 +264,8 @@ public sealed class FightReportControllerVectorGenerator
         int id = 1;
 
         // ---- RollStep cases ----
-        int[] rollInputs = { -100, -1, 0, 1, 2, 4, 9, 10, 11, 50, 99, 100, 101, 250, 500,
-                             999, 1000, 1001, 4999, 5000, 9999, 10000, 99999, 100000, 999999 };
+        int[] rollInputs = [ -100, -1, 0, 1, 2, 4, 9, 10, 11, 50, 99, 100, 101, 250, 500,
+                             999, 1000, 1001, 4999, 5000, 9999, 10000, 99999, 100000, 999999 ];
         foreach (var ri in rollInputs)
             cases.Add(RollStepCase(id++, ri));
 
@@ -273,9 +273,9 @@ public sealed class FightReportControllerVectorGenerator
 
         // A: single partner, exp=4, no level-up, money=50, item=0
         // Capture at many frame counts to test all report phases
-        int[] framesA = { 1, 2, 3, 5, 10, 14, 15, 20, 25, 26, 30, 37, 38, 40, 44, 50,
+        int[] framesA = [ 1, 2, 3, 5, 10, 14, 15, 20, 25, 26, 30, 37, 38, 40, 44, 50,
                           60, 61, 63, 65, 69, 70, 72, 73, 78, 79, 80, 87, 100, 101,
-                          107, 108, 120, 138, 139, 200 };
+                          107, 108, 120, 138, 139, 200 ];
         foreach (var f in framesA)
             cases.Add(StepCase(id++, InputA(), f, crossEvery: 20, label: $"A-frame{f}"));
 

@@ -23,6 +23,7 @@ Before opening a PR, verify each item:
 - [ ] No code copied or line-by-line translated from a decompilation
 - [ ] Disc structures are described by file path and byte offset, not by symbol or function name from a decompilation
 - [ ] Tests use only fabricated data and pass without a disc present
+- [ ] `dotnet format Dw3.sln` has been run before committing
 - [ ] `dotnet test Dw3.sln` passes locally
 
 ## Setup
@@ -33,6 +34,7 @@ See the Quick start in [README.md](README.md). Local overrides go in `.env.local
 
 ```sh
 dotnet build Dw3.sln
+dotnet format Dw3.sln         # the CI verifies this is clean on Linux
 dotnet test Dw3.sln          # all synthetic tests, including the provenance guard
 ```
 

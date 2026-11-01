@@ -115,7 +115,7 @@ public sealed class StageBattlesScannerTests
     [Fact]
     public void Scan_TwoEntryArray_FindsBothEntries()
     {
-        var (overlay, arrayAddress, expectedCount) = BuildOverlayWithBattles(0x800, 2);
+        var (overlay, arrayAddress, _) = BuildOverlayWithBattles(0x800, 2);
 
         IReadOnlyList<StageBattleArray> arrays = StageBattlesScanner.Scan(
             overlay, OverlayBase, FieldStateAddress, BattlesFieldOffset);

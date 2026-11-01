@@ -46,8 +46,7 @@ public sealed class BattleTextCatalog
 
     public static IReadOnlyList<TextToken> Number(int value)
     {
-        return value.ToString(System.Globalization.CultureInfo.InvariantCulture)
-            .Select(character => new TextToken("g", 4 + character - '0', 0, [])).ToArray();
+        return [.. value.ToString(System.Globalization.CultureInfo.InvariantCulture).Select(character => new TextToken("g", 4 + character - '0', 0, []))];
     }
 
     private BattleTextLine FromMenu(int entry, string debug) => From(_data.Menu, entry, debug);

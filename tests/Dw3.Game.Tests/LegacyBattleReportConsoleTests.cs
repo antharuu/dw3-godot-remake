@@ -47,8 +47,8 @@ public sealed class LegacyBattleReportConsoleTests
 
         Check(state.MaxHp == 110, "raiseStats added the HP growth (vital cut and swing are zero)");
         Check(state.MaxMp == 55, "raiseStats added the MP growth");
-        Check(state.BattleStats.SequenceEqual(new[] { 12, 13, 14, 12, 13, 14 }), "each battle stat grew by its statGrowth column");
-        Check(state.Resistances.SequenceEqual(new[] { 7, 7, 7, 7, 7, 7, 7 }), "each resistance grew by its resistGrowth column");
+        Check(state.BattleStats.SequenceEqual([12, 13, 14, 12, 13, 14]), "each battle stat grew by its statGrowth column");
+        Check(state.Resistances.SequenceEqual([7, 7, 7, 7, 7, 7, 7]), "each resistance grew by its resistGrowth column");
     }
 
     private static void RaiseStatsCapsMaxHp()
@@ -100,7 +100,7 @@ public sealed class LegacyBattleReportConsoleTests
         Check(state.Exp == 13, "the exp was added");
         Check(state.Tp == 5, "each level-up adds 5 TP");
         Check(state.MaxHp == 110, "the level-up raised the max HP via RaiseStats");
-        Check(state.BattleStats.SequenceEqual(new[] { 12, 13, 14, 12, 13, 14 }), "the level-up raised the battle stats");
+        Check(state.BattleStats.SequenceEqual([12, 13, 14, 12, 13, 14]), "the level-up raised the battle stats");
     }
 
     private static void AddExpStaysPutBelowThreshold()
@@ -258,7 +258,7 @@ public sealed class LegacyBattleReportConsoleTests
             report.Step(crossPressedEdge: i % 20 == 0);
         }
         Check(report.View.Done, "report reaches Done with Cross presses");
-        Check(seen.SequenceEqual(new[] { 2, 10 }),
+        Check(seen.SequenceEqual([2, 10]),
             $"FGTRPT messages={string.Join(",", seen)} expected=2,10");
         Check(report.View.ExitFade == 0x1000, "the 30-frame report fader reaches opaque black at Done");
     }

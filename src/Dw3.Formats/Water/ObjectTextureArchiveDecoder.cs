@@ -92,7 +92,7 @@ public static class ObjectTextureArchiveDecoder
             if (offsets[index] <= offsets[index - 1])
                 throw new FormatException("archive offsets invalid");
         int archiveLength = archive.Length;
-        return offsets.Select((start, index) => (start, index + 1 < offsets.Count ? offsets[index + 1] : archiveLength)).ToArray();
+        return [.. offsets.Select((start, index) => (start, index + 1 < offsets.Count ? offsets[index + 1] : archiveLength))];
     }
 
     private static byte[] Unpack(ReadOnlySpan<byte> raw)

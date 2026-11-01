@@ -136,8 +136,8 @@ public static class BattleSetupFactory
                 Mp = source.Mp,
                 Strength = source.Strength,
                 BaseStats = ToEnemyBaseStats(battleEntry),
-                Techs = battleEntry.Techs.ToArray(),
-                Actions = battleEntry.Actions.Select(ToAction).ToArray(),
+                Techs = [.. battleEntry.Techs],
+                Actions = [.. battleEntry.Actions.Select(ToAction)],
                 Counter = ToAction(battleEntry.Counter),
             };
         }
@@ -169,6 +169,7 @@ public static class BattleSetupFactory
         FighterData fighters, TechniqueData techs, EncounterData encounters, int encounterIndex,
         IReadOnlyList<int> partyDigimonIds, IReadOnlyDictionary<int, int> nameIds, BattleTextCatalog text, int level)
     {
+        _ = level;
         var entry = encounters.Encounters.FirstOrDefault(candidate => candidate.Index == encounterIndex)
             ?? throw new InvalidOperationException($"encounter {encounterIndex} not in the manifest");
         var byIndex = encounters.Enemies.ToDictionary(enemy => enemy.Index);
@@ -215,10 +216,9 @@ public static class BattleSetupFactory
     {
         var partner = digivolutions.Partners.FirstOrDefault(candidate => candidate.Partner == partnerIndex);
         if (partner is null) return [];
-        return partner.Evolutions
+        return [.. partner.Evolutions
             .Where(entry => entry.Stat == 7 && entry.Value <= level && entry.DigimonId != 0)
-            .Select(entry => entry.DigimonId)
-            .ToList();
+            .Select(entry => entry.DigimonId)];
     }
 
     /// <summary>

@@ -1,7 +1,6 @@
 using Godot;
 using Dw3Production.Conversion;
 using Dw3Production.Simulation;
-using NumericsVector2 = System.Numerics.Vector2;
 
 namespace Dw3Production.Presentation;
 
@@ -32,7 +31,7 @@ public sealed class FieldRenderer
     }
 
     private readonly Node2D _root;
-    private readonly Dictionary<int, Node2D> _depthRoots = new();
+    private readonly Dictionary<int, Node2D> _depthRoots = [];
     private readonly Camera2D _camera;
     private readonly CameraController _cameraController;
     private readonly DiagnosticOverlay _diagnosticOverlay;
@@ -49,7 +48,7 @@ public sealed class FieldRenderer
     private int _localSimulationSteps;
     private int _lastSourceTick;
     private readonly Dictionary<string, Texture2D> _textures = new(StringComparer.Ordinal);
-    private readonly Dictionary<int, ShaderMaterial> _waterBlendMaterials = new();
+    private readonly Dictionary<int, ShaderMaterial> _waterBlendMaterials = [];
     private ExitCueSnapshot _cueSnapshot = new(ExitCuePhase.Hidden, 0, null, 0);
 
     public int ImageDecodes { get; private set; }
@@ -220,7 +219,7 @@ public sealed class FieldRenderer
             _player.Offset = new Vector2(sample.OffsetX, sample.OffsetY);
             _player.FlipH = sample.FlipH;
             _player.Position = new Vector2(state.Position.X, state.Position.Y);
-            if (_playerShadow is not null) _playerShadow.Visible = false;
+            _playerShadow?.Visible = false;
         }
         PresentIcon(iconView);
         var sortY = Mathf.FloorToInt(state.Position.Y - (climbing ? state.ClimbHeight / 256f : 0f));

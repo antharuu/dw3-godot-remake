@@ -100,6 +100,7 @@ public static class DiscStageModeReader
     private static int[] ReadFileSectors(byte[] slesData, Dictionary<int, string> lbaToStageName,
         IReadOnlyList<DiscFileEntry> entries)
     {
+        _ = lbaToStageName;
         // The FILE_SECTORS array is a flat int32[] at a known offset in SLES_039.36.
         // We verify by checking that FILE_SECTORS[466] equals the LBA of WSTAG200.PRO.
         int verificationLba = 0;

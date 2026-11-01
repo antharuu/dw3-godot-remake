@@ -39,7 +39,7 @@ public static class FieldcomBehaviorDecoder
         }
         if (sequences.Count != ExpectedCueSequences)
             throw new FormatException($"FIELDCOM cue data has {sequences.Count} terminated inner sequences, expected {ExpectedCueSequences}");
-        return sequences.OrderBy(sequence => sequence.Steps[0].Frame).ToArray();
+        return [.. sequences.OrderBy(sequence => sequence.Steps[0].Frame)];
     }
 
     /// <exception cref="FormatException">The overlay lacks exactly four valid icon loops.</exception>

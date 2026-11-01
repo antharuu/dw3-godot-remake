@@ -1,6 +1,5 @@
 using System.Text.Json;
 using Dw3.Data;
-using Dw3.Extractor;
 using Dw3.Formats.Field;
 using Microsoft.Data.Sqlite;
 using Xunit;

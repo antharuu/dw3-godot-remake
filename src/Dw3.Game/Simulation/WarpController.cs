@@ -25,7 +25,7 @@ public sealed class TriggerMap
         if (cells.Length != checked(width * height)) throw new ArgumentException("trigger cell count does not match dimensions", nameof(cells));
         Width = width;
         Height = height;
-        _cells = cells.ToArray();
+        _cells = [.. cells];
     }
 
     public int Width { get; }
@@ -63,7 +63,7 @@ public sealed class AreaMap
         if (cells.Length != checked(width * height)) throw new ArgumentException("area cell count does not match dimensions", nameof(cells));
         Width = width;
         Height = height;
-        _cells = cells.ToArray();
+        _cells = [.. cells];
     }
 
     public int Width { get; }
@@ -115,7 +115,7 @@ public sealed class WarpController
     private FieldZone? _pendingTarget;
     private int _fadeRemaining;
     private string? _reportedUnimplemented;
-    private readonly HashSet<string> _reportedExitConditions = new();
+    private readonly HashSet<string> _reportedExitConditions = [];
 
     public WarpState State { get; private set; } = WarpState.Idle;
     public bool InputLocked => State is WarpState.LockInput or WarpState.ValidateTarget or WarpState.Fade or WarpState.Commit;

@@ -36,7 +36,7 @@ public static class BattleModelDomainWriter
                 WriteFailed(context, ordinal, fighter.Outcome);
         }
         File.WriteAllText(context.GetImagePath($"{ModelsDirectory}/decode-report.json"),
-            BattleModelJsonWriter.WriteReport(fighters.Select(fighter => fighter.Outcome).ToArray(),
+            BattleModelJsonWriter.WriteReport([.. fighters.Select(fighter => fighter.Outcome)],
                 fighters.Count(fighter => fighter.Payload?.Metadata.Face.Parts.Count > 0)));
     }
 

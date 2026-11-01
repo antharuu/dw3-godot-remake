@@ -58,7 +58,7 @@ public sealed class PlayerAnimRecord
     /// <summary>Duration in game ticks (> 0).</summary>
     public int Duration { get; }
 
-    /// <summary>Zero-based index into the frame table (< FrameCount).</summary>
+    /// <summary>Zero-based index into the frame table (&lt; FrameCount).</summary>
     public int Frame { get; }
 
     /// <summary>Draw offset X in pixels (tile-relative, from FIELDSTG_drawActor).</summary>

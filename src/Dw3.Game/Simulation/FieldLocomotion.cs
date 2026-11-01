@@ -12,7 +12,7 @@ public sealed class FloorMap
         if (cells.Length != checked(width * height)) throw new ArgumentException("floor cell count does not match dimensions", nameof(cells));
         Width = width;
         Height = height;
-        _cells = cells.ToArray();
+        _cells = [.. cells];
     }
 
     public int Width { get; }

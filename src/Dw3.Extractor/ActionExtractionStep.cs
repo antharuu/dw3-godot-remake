@@ -95,7 +95,7 @@ internal static class ActionExtractionStep
                 sequences.Add(firstSequence, ActionArchiveDecoder.DecodeSequence(archive, offsets, firstSequence, definition.AnimationSetEntry));
         }
 
-        int[] frameIds = sequences.Values.SelectMany(sequence => sequence.Records).Select(record => record.Frame).Distinct().Order().ToArray();
+        int[] frameIds = [.. sequences.Values.SelectMany(sequence => sequence.Records).Select(record => record.Frame).Distinct().Order()];
         var frames = new List<ActionFrame>(frameIds.Length);
         foreach (int frameId in frameIds)
         {

@@ -50,17 +50,17 @@ public sealed class BattleGrowthVectorGenerator
     private static int[][] MakeStatGains(params int[][] rows) => rows;
 
     private static GrowthTables DefaultTables() => MakeTables(
-        levelExp: new[] { 0, 100, 500, 1000 },
-        vitalCuts: new[] { 5, 10, 15, 20 },
-        vitalRandom: new[] { 0, 2, 4, 6, 8, 10, 12, 14, 16 },
+        levelExp: [0, 100, 500, 1000],
+        vitalCuts: [5, 10, 15, 20],
+        vitalRandom: [0, 2, 4, 6, 8, 10, 12, 14, 16],
         statGains: MakeStatGains(
-            new[] { 1, 2, 3, 4, 5, 6, 7, 8, 9 },
-            new[] { 2, 3, 4, 5, 6, 7, 8, 9, 10 },
-            new[] { 3, 4, 5, 6, 7, 8, 9, 10, 11 },
-            new[] { 4, 5, 6, 7, 8, 9, 10, 11, 12 },
-            new[] { 5, 6, 7, 8, 9, 10, 11, 12, 13 },
-            new[] { 6, 7, 8, 9, 10, 11, 12, 13, 14 }),
-        resistGains: new[] { 0, 1, 2, 3, 4, 5, 6, 7 });
+            [1, 2, 3, 4, 5, 6, 7, 8, 9],
+            [2, 3, 4, 5, 6, 7, 8, 9, 10],
+            [3, 4, 5, 6, 7, 8, 9, 10, 11],
+            [4, 5, 6, 7, 8, 9, 10, 11, 12],
+            [5, 6, 7, 8, 9, 10, 11, 12, 13],
+            [6, 7, 8, 9, 10, 11, 12, 13, 14]),
+        resistGains: [0, 1, 2, 3, 4, 5, 6, 7]);
 
     // ------------------------------------------------------------------ JSON helpers
 
@@ -99,8 +99,8 @@ public sealed class BattleGrowthVectorGenerator
             Tp = tp,
             MaxHp = maxHp,
             MaxMp = maxMp,
-            BattleStats = battleStats ?? new[] { 10, 10, 10, 10, 10, 10 },
-            Resistances = resistances ?? new[] { 100, 100, 100, 100, 100, 100, 100 },
+            BattleStats = battleStats ?? [10, 10, 10, 10, 10, 10],
+            Resistances = resistances ?? [100, 100, 100, 100, 100, 100, 100],
         };
 
     // ------------------------------------------------------------------ case builders
@@ -248,11 +248,11 @@ public sealed class BattleGrowthVectorGenerator
 
         // RNG sequences: 15 values covers the maximum (level<41: 2 vital + 6 stats + 7 resists).
         // For level >= 41: only 8 values are consumed; the extra values in the sequence are harmless.
-        int[] statGrowthBase = { 0, 1, 2, 3, 2, 1 };
-        int[] resistGrowthBase = { 0, 1, 2, 1, 0, 1, 2 };
+        int[] statGrowthBase = [0, 1, 2, 3, 2, 1];
+        int[] resistGrowthBase = [0, 1, 2, 1, 0, 1, 2];
 
         // ---- RaiseStats: all level tier boundaries ----
-        int[] raiseLevels = { 1, 4, 5, 19, 20, 39, 40, 41, 59, 60, 79, 80, 99 };
+        int[] raiseLevels = [1, 4, 5, 19, 20, 39, 40, 41, 59, 60, 79, 80, 99];
 
         foreach (var lv in raiseLevels)
         {
@@ -274,17 +274,17 @@ public sealed class BattleGrowthVectorGenerator
             cases.Add(RaiseStatsCase(id++, def,
                 MakeState(level: lv),
                 hpGrowth: 25, mpGrowth: 15,
-                statGrowth: new[] { 1, 2, 3, 2, 1, 0 }, resistGrowth: new[] { 1, 2, 1, 0, 2, 1, 0 },
-                level: lv, rngValues: new[] { 3, 6, 1, 2, 3, 4, 0, 1, 2, 0, 1, 2, 3, 1, 0 }));
+                statGrowth: [1, 2, 3, 2, 1, 0], resistGrowth: [1, 2, 1, 0, 2, 1, 0],
+                level: lv, rngValues: [3, 6, 1, 2, 3, 4, 0, 1, 2, 0, 1, 2, 3, 1, 0]));
         }
 
         // RaiseStats: near-saturation
         cases.Add(RaiseStatsCase(id++, def,
             MakeState(maxHp: 9990, maxMp: 9990,
-                battleStats: new[] { 995, 996, 997, 998, 999, 999 },
-                resistances: new[] { 998, 999, 999, 995, 996, 997, 998 }),
+                battleStats: [995, 996, 997, 998, 999, 999],
+                resistances: [998, 999, 999, 995, 996, 997, 998]),
             hpGrowth: 50, mpGrowth: 50,
-            statGrowth: new[] { 4, 4, 4, 4, 4, 4 }, resistGrowth: new[] { 4, 4, 4, 4, 4, 4, 4 },
+            statGrowth: [4, 4, 4, 4, 4, 4], resistGrowth: [4, 4, 4, 4, 4, 4, 4],
             level: 1, rngValues: ConstSeq(8, 15)));
 
         // RaiseStats: negative gain (vitalCut > hpGrowth + swing)
@@ -310,7 +310,7 @@ public sealed class BattleGrowthVectorGenerator
             cases.Add(RaiseStatsCase(id++, def,
                 MakeState(level: lv, maxHp: lv * 50, maxMp: lv * 30),
                 hpGrowth: 20 + lv / 10, mpGrowth: 15 + lv / 10,
-                statGrowth: new[] { 2, 2, 2, 2, 2, 2 }, resistGrowth: new[] { 1, 1, 1, 1, 1, 1, 1 },
+                statGrowth: [2, 2, 2, 2, 2, 2], resistGrowth: [1, 1, 1, 1, 1, 1, 1],
                 level: lv, rngValues: ConstSeq(3, 15)));
         }
 
@@ -320,7 +320,7 @@ public sealed class BattleGrowthVectorGenerator
             MakeState(level: 1, exp: 0), expRate: 10,
             hpGrowth: 30, mpGrowth: 20,
             statGrowth: statGrowthBase, resistGrowth: resistGrowthBase,
-            exp: 5, rngValues: Array.Empty<int>()));
+            exp: 5, rngValues: []));
 
         // exactly one level-up (level 1→2, threshold = (8+10-6)*10/10 + 0 = 12)
         cases.Add(AddExpCase(id++, def,
@@ -341,7 +341,7 @@ public sealed class BattleGrowthVectorGenerator
             MakeState(level: 99, exp: 0), expRate: 10,
             hpGrowth: 30, mpGrowth: 20,
             statGrowth: statGrowthBase, resistGrowth: resistGrowthBase,
-            exp: 9999, rngValues: Array.Empty<int>()));
+            exp: 9999, rngValues: []));
 
         // exp cap at 999999
         cases.Add(AddExpCase(id++, def,
@@ -355,11 +355,11 @@ public sealed class BattleGrowthVectorGenerator
             MakeState(level: 1, exp: 0), expRate: 0,
             hpGrowth: 30, mpGrowth: 20,
             statGrowth: statGrowthBase, resistGrowth: resistGrowthBase,
-            exp: 5, rngValues: Array.Empty<int>()));
+            exp: 5, rngValues: []));
 
         // expRate = 0 with large LevelExp[0]=5 → level-up at 6
         var tablesHighBase = MakeTables(
-            new[] { 5, 100, 500, 1000 },
+            [5, 100, 500, 1000],
             def.VitalCuts, def.VitalRandom, def.StatGains, def.ResistGains);
         cases.Add(AddExpCase(id++, tablesHighBase,
             MakeState(level: 1, exp: 0), expRate: 0,
@@ -368,7 +368,7 @@ public sealed class BattleGrowthVectorGenerator
             exp: 6, rngValues: ConstSeq(0, 15)));
 
         // tier boundary level-ups (4→5, 19→20, 39→40)
-        int[] tpLevels = { 4, 19, 39 };
+        int[] tpLevels = [4, 19, 39];
         foreach (var lv in tpLevels)
         {
             int nextLevel = lv + 1;
@@ -393,14 +393,14 @@ public sealed class BattleGrowthVectorGenerator
         cases.Add(AddExpCase(id++, def,
             MakeState(level: 5, exp: 0), expRate: 10,
             hpGrowth: 20, mpGrowth: 15,
-            statGrowth: new[] { 2, 2, 2, 2, 2, 2 }, resistGrowth: new[] { 1, 1, 1, 1, 1, 1, 1 },
-            exp: 5000, rngValues: new[] {
+            statGrowth: [2, 2, 2, 2, 2, 2], resistGrowth: [1, 1, 1, 1, 1, 1, 1],
+            exp: 5000, rngValues: [
                 3,6,2,1,3,0,2,1, 2,3,1,
                 4,5,3,0,1,2,4,3, 1,2,0,
                 0,0,0,0,0,0,0,0, 0,0,0,
                 1,1,1,1,1,1,1,1, 1,1,1,
                 2,2,2,2,2,2,2,2, 2,2,2,
-            }));
+            ]));
 
         // varied expRate
         foreach (var rate in new[] { 5, 15, 20, 50 })
@@ -408,7 +408,7 @@ public sealed class BattleGrowthVectorGenerator
             cases.Add(AddExpCase(id++, def,
                 MakeState(level: 1, exp: 0), expRate: rate,
                 hpGrowth: 20, mpGrowth: 10,
-                statGrowth: new[] { 1, 1, 1, 1, 1, 1 }, resistGrowth: new[] { 0, 0, 0, 0, 0, 0, 0 },
+                statGrowth: [1, 1, 1, 1, 1, 1], resistGrowth: [0, 0, 0, 0, 0, 0, 0],
                 exp: 200, rngValues: ConstSeq(0, 60)));
         }
 

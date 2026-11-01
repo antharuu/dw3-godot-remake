@@ -263,7 +263,7 @@ public sealed class LegacyLocomotionConsoleTests
 
     private static GameState Running(Vector2 position) => new() { Position = position, Facing = (int)SemanticDirection.Right, AnimationSet = 1, AnimationDirection = (int)SemanticDirection.Right, IsRunning = true };
 
-    private static FloorMap Map(int width, int height, byte cell) => new(width, height, Enumerable.Repeat(cell, width * height).ToArray());
+    private static FloorMap Map(int width, int height, byte cell) => new(width, height, [.. Enumerable.Repeat(cell, width * height)]);
 
     private static void Check(bool condition, string name)
     {
