@@ -2245,7 +2245,7 @@
       "rule": "SA1402",
       "project": "Dw3.Formats",
       "folder": "Text",
-      "count": 3
+      "count": 1
     },
     {
       "rule": "SA1402",
@@ -4177,7 +4177,7 @@
       "rule": "SA1649",
       "project": "Dw3.Formats",
       "folder": "Text",
-      "count": 2
+      "count": 1
     },
     {
       "rule": "SA1649",
