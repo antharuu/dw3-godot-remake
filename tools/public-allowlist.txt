@@ -1,5 +1,6 @@
 Directory.Build.props
 .editorconfig
+global.json
 docs/DEVELOPMENT.md
 docs/OVERVIEW.md
 docs/formats/collision-and-stage-semantics.md
