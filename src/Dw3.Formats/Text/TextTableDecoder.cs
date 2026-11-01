@@ -24,7 +24,7 @@ public static class TextTableDecoder
     // FONT_CODE_LENGTHS[cmd] = total bytes consumed starting at 0x02 (includes the 0x02 byte itself).
     private static readonly int[] ControlLengths = [1, 2, 3, 2, 5, 3, 3, 2, 3, 2];
 
-    /// <summary>Maximum valid control command (inclusive).</summary>
+    /// <summary>Gets maximum valid control command (inclusive).</summary>
     public static int MaxControl => ControlLengths.Length - 1;
 
     /// <summary>

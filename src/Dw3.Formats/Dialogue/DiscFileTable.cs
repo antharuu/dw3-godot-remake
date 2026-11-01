@@ -18,10 +18,13 @@ public sealed class DiscFileTable
         _pathByLba = pathByLba;
     }
 
-    /// <summary>Number of file ids in the table.</summary>
+    /// <summary>Gets number of file ids in the table.</summary>
     public int Count => _lbas.Length;
 
     /// <summary>Reads <paramref name="count"/> little-endian u32 start LBAs at <paramref name="tableAddress"/>.</summary>
+    /// <param name="executable">Executable containing the file-sector table.</param>
+    /// <param name="tableAddress">RAM address of the first little-endian LBA entry.</param>
+    /// <param name="count">Number of file-id entries to decode.</param>
     /// <param name="pathByLba">ISO path of every disc member, keyed by its first LBA.</param>
     /// <exception cref="FormatException">The table is outside the executable image.</exception>
     public static DiscFileTable Read(PsxExecutable executable, uint tableAddress, int count, IReadOnlyDictionary<int, string> pathByLba)
