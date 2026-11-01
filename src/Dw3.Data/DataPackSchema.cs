@@ -19,7 +19,25 @@ public static class DataPackSchema
     public static void Create(SqliteConnection connection)
     {
         ArgumentNullException.ThrowIfNull(connection);
+        CreatePackMetaTables(connection);
+        CreateFieldTables(connection);
+        CreateWaterTables(connection);
+        CreateOverlayAnimationTables(connection);
+        CreateActionTables(connection);
+        CreateNpcActorTables(connection);
+        CreateNpcCharacterCoreTables(connection);
+        CreateNpcAnimationSequenceTables(connection);
+        CreateFontTables(connection);
+        CreateDialogueTables(connection);
+        CreateTalkBoxTables(connection);
+        CreateEncounterTables(connection);
+        CreateBattleAndModelTables(connection);
+    }
 
+    /// <summary>Creates the pack metadata and zone geometry schema tables.</summary>
+    /// <param name="connection">An open SQLite connection to the data-pack database.</param>
+    private static void CreatePackMetaTables(SqliteConnection connection)
+    {
         using SqliteCommand command = connection.CreateCommand();
         command.CommandText = """
             CREATE TABLE meta (
@@ -39,6 +57,16 @@ public static class DataPackSchema
                 width_pixels INTEGER NOT NULL,
                 height_pixels INTEGER NOT NULL
             );
+            """;
+        command.ExecuteNonQuery();
+    }
+
+    /// <summary>Creates the field stage and warp schema tables.</summary>
+    /// <param name="connection">An open SQLite connection to the data-pack database.</param>
+    private static void CreateFieldTables(SqliteConnection connection)
+    {
+        using SqliteCommand command = connection.CreateCommand();
+        command.CommandText = """
             CREATE TABLE field_stages (
                 stage_id INTEGER PRIMARY KEY NOT NULL,
                 mode INTEGER UNIQUE NOT NULL,
@@ -60,6 +88,16 @@ public static class DataPackSchema
                 FOREIGN KEY (source_stage_id) REFERENCES field_stages(stage_id),
                 FOREIGN KEY (destination_stage_id) REFERENCES field_stages(stage_id)
             );
+            """;
+        command.ExecuteNonQuery();
+    }
+
+    /// <summary>Creates the water zone, object, and frame schema tables.</summary>
+    /// <param name="connection">An open SQLite connection to the data-pack database.</param>
+    private static void CreateWaterTables(SqliteConnection connection)
+    {
+        using SqliteCommand command = connection.CreateCommand();
+        command.CommandText = """
             CREATE TABLE water_zones (
                 stage_id INTEGER PRIMARY KEY NOT NULL,
                 overlay_sha256 TEXT NOT NULL,
@@ -106,12 +144,32 @@ public static class DataPackSchema
                 PRIMARY KEY (stage_id, object_index, ordinal),
                 FOREIGN KEY (stage_id, object_index) REFERENCES water_objects(stage_id, object_index)
             );
+            """;
+        command.ExecuteNonQuery();
+    }
+
+    /// <summary>Creates the overlay, cue, and icon animation schema tables.</summary>
+    /// <param name="connection">An open SQLite connection to the data-pack database.</param>
+    private static void CreateOverlayAnimationTables(SqliteConnection connection)
+    {
+        using SqliteCommand command = connection.CreateCommand();
+        command.CommandText = """
             CREATE TABLE fieldcom_domains (domain TEXT PRIMARY KEY NOT NULL, disc_path TEXT NOT NULL, sha256 TEXT NOT NULL, bytes INTEGER NOT NULL);
             CREATE TABLE fieldcom_frames (domain TEXT NOT NULL, frame_id INTEGER NOT NULL, width INTEGER NOT NULL, height INTEGER NOT NULL, offset_x INTEGER NOT NULL, offset_y INTEGER NOT NULL, row INTEGER NOT NULL, abr INTEGER NOT NULL, image_path TEXT NOT NULL, PRIMARY KEY(domain, frame_id));
             CREATE TABLE cue_exit_rows (direction INTEGER PRIMARY KEY NOT NULL, row INTEGER NOT NULL);
             CREATE TABLE cue_sequences (kind TEXT NOT NULL, name TEXT NOT NULL, ordinal INTEGER NOT NULL, frame_id INTEGER NOT NULL, duration INTEGER NOT NULL, field_row INTEGER NULL, PRIMARY KEY(kind,name,ordinal));
             CREATE TABLE icon_animations (animation INTEGER PRIMARY KEY NOT NULL, loop_target INTEGER NOT NULL);
             CREATE TABLE icon_animation_steps (animation INTEGER NOT NULL, ordinal INTEGER NOT NULL, frame_id INTEGER NOT NULL, duration INTEGER NOT NULL, PRIMARY KEY(animation,ordinal));
+            """;
+        command.ExecuteNonQuery();
+    }
+
+    /// <summary>Creates the action animation domain, frame, set, and record schema tables.</summary>
+    /// <param name="connection">An open SQLite connection to the data-pack database.</param>
+    private static void CreateActionTables(SqliteConnection connection)
+    {
+        using SqliteCommand command = connection.CreateCommand();
+        command.CommandText = """
             CREATE TABLE action_domains (
                 domain TEXT PRIMARY KEY NOT NULL,
                 file_id INTEGER NOT NULL,
@@ -149,6 +207,16 @@ public static class DataPackSchema
                 PRIMARY KEY (domain, set_id, ordinal),
                 FOREIGN KEY (domain, set_id) REFERENCES action_sets(domain, set_id)
             );
+            """;
+        command.ExecuteNonQuery();
+    }
+
+    /// <summary>Creates the NPC actor and actor-condition schema tables.</summary>
+    /// <param name="connection">An open SQLite connection to the data-pack database.</param>
+    private static void CreateNpcActorTables(SqliteConnection connection)
+    {
+        using SqliteCommand command = connection.CreateCommand();
+        command.CommandText = """
             CREATE TABLE npc_actors (
                 stage_id INTEGER NOT NULL,
                 actor_index INTEGER NOT NULL,
@@ -174,6 +242,16 @@ public static class DataPackSchema
                 PRIMARY KEY (stage_id, actor_index, ordinal),
                 FOREIGN KEY (stage_id, actor_index) REFERENCES npc_actors(stage_id, actor_index)
             );
+            """;
+        command.ExecuteNonQuery();
+    }
+
+    /// <summary>Creates the NPC character identity and animation-set schema tables.</summary>
+    /// <param name="connection">An open SQLite connection to the data-pack database.</param>
+    private static void CreateNpcCharacterCoreTables(SqliteConnection connection)
+    {
+        using SqliteCommand command = connection.CreateCommand();
+        command.CommandText = """
             CREATE TABLE npc_characters (
                 actor_id INTEGER NOT NULL,
                 stage_id INTEGER NOT NULL,
@@ -200,6 +278,16 @@ public static class DataPackSchema
                 FOREIGN KEY (actor_id, stage_id, actor_index)
                     REFERENCES npc_characters(actor_id, stage_id, actor_index)
             );
+            """;
+        command.ExecuteNonQuery();
+    }
+
+    /// <summary>Creates the NPC sequence, sequence-record, and frame schema tables.</summary>
+    /// <param name="connection">An open SQLite connection to the data-pack database.</param>
+    private static void CreateNpcAnimationSequenceTables(SqliteConnection connection)
+    {
+        using SqliteCommand command = connection.CreateCommand();
+        command.CommandText = """
             CREATE TABLE npc_sequences (
                 actor_id INTEGER NOT NULL,
                 stage_id INTEGER NOT NULL,
@@ -236,6 +324,16 @@ public static class DataPackSchema
                 FOREIGN KEY (actor_id, stage_id, actor_index)
                     REFERENCES npc_characters(actor_id, stage_id, actor_index)
             );
+            """;
+        command.ExecuteNonQuery();
+    }
+
+    /// <summary>Creates the font style, glyph, and icon schema tables.</summary>
+    /// <param name="connection">An open SQLite connection to the data-pack database.</param>
+    private static void CreateFontTables(SqliteConnection connection)
+    {
+        using SqliteCommand command = connection.CreateCommand();
+        command.CommandText = """
             CREATE TABLE font_styles (
                 style_id INTEGER PRIMARY KEY NOT NULL,
                 line_height INTEGER NOT NULL,
@@ -274,6 +372,16 @@ public static class DataPackSchema
                 PRIMARY KEY (style_id, code),
                 FOREIGN KEY (style_id) REFERENCES font_styles(style_id)
             );
+            """;
+        command.ExecuteNonQuery();
+    }
+
+    /// <summary>Creates the text file, dialogue zone, actor, talk, code, and family schema tables.</summary>
+    /// <param name="connection">An open SQLite connection to the data-pack database.</param>
+    private static void CreateDialogueTables(SqliteConnection connection)
+    {
+        using SqliteCommand command = connection.CreateCommand();
+        command.CommandText = """
             CREATE TABLE text_files (
                 file_index INTEGER PRIMARY KEY NOT NULL,
                 disc_path TEXT NOT NULL,
@@ -324,6 +432,16 @@ public static class DataPackSchema
                 PRIMARY KEY (stage_id, actor_index, talk_index, family),
                 FOREIGN KEY (stage_id, actor_index, talk_index) REFERENCES dialogue_talks(stage_id, actor_index, talk_index)
             );
+            """;
+        command.ExecuteNonQuery();
+    }
+
+    /// <summary>Creates the talk-box frame, layout, and panel schema tables.</summary>
+    /// <param name="connection">An open SQLite connection to the data-pack database.</param>
+    private static void CreateTalkBoxTables(SqliteConnection connection)
+    {
+        using SqliteCommand command = connection.CreateCommand();
+        command.CommandText = """
             CREATE TABLE talk_box_frames (
                 frame_id INTEGER PRIMARY KEY NOT NULL,
                 width INTEGER NOT NULL,
@@ -361,6 +479,16 @@ public static class DataPackSchema
                 height INTEGER NOT NULL,
                 image_path TEXT NOT NULL
             );
+            """;
+        command.ExecuteNonQuery();
+    }
+
+    /// <summary>Creates the encounter enemy, record, rate, and stage-array schema tables.</summary>
+    /// <param name="connection">An open SQLite connection to the data-pack database.</param>
+    private static void CreateEncounterTables(SqliteConnection connection)
+    {
+        using SqliteCommand command = connection.CreateCommand();
+        command.CommandText = """
             CREATE TABLE encounter_enemies (
                 enemy_index INTEGER PRIMARY KEY NOT NULL,
                 fighter INTEGER NOT NULL,
@@ -390,6 +518,16 @@ public static class DataPackSchema
                 overlay_sha256 TEXT NOT NULL,
                 PRIMARY KEY (stage_id, array_index)
             );
+            """;
+        command.ExecuteNonQuery();
+    }
+
+    /// <summary>Creates the battle combatant, item, reward, digivolution, text, and model schema tables.</summary>
+    /// <param name="connection">An open SQLite connection to the data-pack database.</param>
+    private static void CreateBattleAndModelTables(SqliteConnection connection)
+    {
+        using SqliteCommand command = connection.CreateCommand();
+        command.CommandText = """
             CREATE TABLE battle_digimon (id INTEGER PRIMARY KEY NOT NULL, name_id INTEGER NOT NULL, family INTEGER NOT NULL);
             CREATE TABLE battle_techniques (id INTEGER PRIMARY KEY NOT NULL, mp INTEGER NOT NULL, power INTEGER NOT NULL, icon INTEGER NOT NULL, kind INTEGER NOT NULL, accuracy INTEGER NOT NULL, element INTEGER NOT NULL, family INTEGER NOT NULL);
             CREATE TABLE battle_enemy_table (id INTEGER PRIMARY KEY NOT NULL, item INTEGER NOT NULL, item_chance INTEGER NOT NULL, name_id INTEGER NOT NULL, family INTEGER NOT NULL);
@@ -409,16 +547,3 @@ public static class DataPackSchema
         command.ExecuteNonQuery();
     }
 }
-
-/// <summary>
-/// Describes the source and completion identity persisted with a data pack.
-/// </summary>
-/// <param name="ExtractorVersion">Version of the extractor that produced the pack.</param>
-/// <param name="DiscSha1">SHA-1 fingerprint of the user-supplied disc image.</param>
-/// <param name="Edition">Edition identifier recognized by the extractor.</param>
-/// <param name="CompletedAt">UTC timestamp at which validation completed.</param>
-public sealed record DataPackMetadata(
-    string ExtractorVersion,
-    string DiscSha1,
-    string Edition,
-    DateTimeOffset CompletedAt);

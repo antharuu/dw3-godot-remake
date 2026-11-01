@@ -66,7 +66,10 @@ public sealed class DataPackWriter
             // open even after Dispose(), preventing Directory.Delete from succeeding.
             SqliteConnection.ClearAllPools();
             if (Directory.Exists(stagingDirectory))
+            {
                 Directory.Delete(stagingDirectory, recursive: true);
+            }
+
             throw;
         }
     }
@@ -92,17 +95,22 @@ public sealed class DataPackWriter
         catch
         {
             if (previousDirectory is not null && Directory.Exists(previousDirectory) && !Directory.Exists(activeDirectory))
+            {
                 Directory.Move(previousDirectory, activeDirectory);
+            }
+
             throw;
         }
 
         if (previousDirectory is not null && Directory.Exists(previousDirectory))
+        {
             // Best-effort: if an open reader holds a native handle on a file inside the previous
             // directory, Directory.Delete throws IOException or UnauthorizedAccessException on
             // Windows.  The pack has already been promoted successfully at this point, so a
             // cleanup failure is non-critical.  Orphaned data.previous-* directories are removed
             // on the next DataPackWriter construction via RemoveOrphanedDirectories().
             TryDeleteDirectory(previousDirectory);
+        }
     }
 
     /// <summary>
@@ -138,11 +146,16 @@ public sealed class DataPackWriter
     {
         // Remove incomplete staging directories left by interrupted extractions.
         foreach (string directory in Directory.EnumerateDirectories(_rootDirectory, "data.staging-*", SearchOption.TopDirectoryOnly))
+        {
             TryDeleteDirectory(directory);
+        }
+
         // Remove superseded previous-pack directories whose cleanup was deferred because
         // an open reader held a file handle at promotion time (Windows only).
         foreach (string directory in Directory.EnumerateDirectories(_rootDirectory, "data.previous-*", SearchOption.TopDirectoryOnly))
+        {
             TryDeleteDirectory(directory);
+        }
     }
 
     /// <summary>
@@ -179,67 +192,8 @@ public sealed class DataPackWriter
     private static void ValidateMetadata(DataPackMetadata metadata)
     {
         if (string.IsNullOrWhiteSpace(metadata.ExtractorVersion) || string.IsNullOrWhiteSpace(metadata.DiscSha1) || string.IsNullOrWhiteSpace(metadata.Edition))
+        {
             throw new ArgumentException("Data-pack metadata fields must be non-empty.", nameof(metadata));
-    }
-}
-
-/// <summary>
-/// Supplies a transaction and staging paths to extractor code writing one data pack.
-/// </summary>
-public sealed class DataPackWriteContext
-{
-    private readonly string _stagingDirectory;
-
-    internal DataPackWriteContext(SqliteConnection database, SqliteTransaction transaction, string stagingDirectory)
-    {
-        Database = database;
-        Transaction = transaction;
-        _stagingDirectory = stagingDirectory;
-    }
-
-    /// <summary>
-    /// Gets the open database connection for creating domain tables and inserting extracted data.
-    /// </summary>
-    public SqliteConnection Database { get; }
-
-    /// <summary>
-    /// Gets the transaction that must be assigned to commands written through <see cref="Database"/>.
-    /// </summary>
-    public SqliteTransaction Transaction { get; }
-
-    /// <summary>
-    /// Resolves a relative image path inside the staging directory.
-    /// </summary>
-    /// <param name="relativePath">Slash-separated image path beneath the pack root.</param>
-    /// <returns>Absolute path inside the current staging directory.</returns>
-    public string GetImagePath(string relativePath) => ResolveRelativePath(relativePath);
-
-    /// <summary>
-    /// Registers an image that must exist before the pack can be promoted.
-    /// </summary>
-    /// <param name="relativePath">Slash-separated image path beneath the pack root.</param>
-    public void RegisterImage(string relativePath)
-    {
-        string normalizedPath = NormalizeRelativePath(relativePath);
-        using SqliteCommand command = Database.CreateCommand();
-        command.Transaction = Transaction;
-        command.CommandText = "INSERT INTO pack_images (relative_path) VALUES ($relativePath)";
-        command.Parameters.AddWithValue("$relativePath", normalizedPath);
-        command.ExecuteNonQuery();
-    }
-
-    private string ResolveRelativePath(string relativePath)
-    {
-        string normalizedPath = NormalizeRelativePath(relativePath);
-        return Path.Combine(_stagingDirectory, normalizedPath.Replace('/', Path.DirectorySeparatorChar));
-    }
-
-    internal static string NormalizeRelativePath(string relativePath)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(relativePath);
-        string normalizedPath = relativePath.Replace('\\', '/');
-        if (Path.IsPathRooted(normalizedPath) || normalizedPath.Split('/').Any(part => part is "." or ".." || part.Length == 0))
-            throw new ArgumentException("Image paths must be non-rooted paths beneath the data pack.", nameof(relativePath));
-        return normalizedPath;
+        }
     }
 }
