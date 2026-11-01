@@ -1,0 +1,18 @@
+#!/bin/sh
+# Refuse pushes outside main or release tags and require the provenance guard.
+set -eu
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  case "$remote_ref" in
+    refs/heads/main|refs/tags/v*) ;;
+    *)
+      echo "PRE_PUSH_REFUSED: only main and v* tags may be pushed (got $remote_ref)" >&2
+      exit 1
+      ;;
+  esac
+done
+
+dotnet test tests/Dw3.Repository.Tests --nologo -v q >/dev/null || {
+  echo "PRE_PUSH_REFUSED: provenance guard failed" >&2
+  exit 1
+}

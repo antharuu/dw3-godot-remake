@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource path="res://GameHost.cs" type="Script" id="1_host"]
+
+[node name="GameHost" type="Node2D"]
+script = ExtResource("1_host")

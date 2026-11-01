@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../Dw3.Data/Dw3.Data.csproj" />
+    <ProjectReference Include="../Dw3.Disc/Dw3.Disc.csproj" />
+    <ProjectReference Include="../Dw3.Formats/Dw3.Formats.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Dw3.Extractor.Tests" />
+  </ItemGroup>
+</Project>

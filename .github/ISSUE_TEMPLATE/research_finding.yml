@@ -1,0 +1,39 @@
+name: Research finding
+description: Share a reverse-engineering finding about a disc format or system.
+labels: [research]
+body:
+  - type: input
+    id: format
+    attributes:
+      label: Format or system
+      description: "e.g. WSTAG terrain overlay, FSTALK dialogue archive"
+    validations:
+      required: true
+  - type: textarea
+    id: files
+    attributes:
+      label: Disc file(s) and offsets
+      description: "Name the disc file(s) and byte offsets involved."
+    validations:
+      required: true
+  - type: textarea
+    id: structure
+    attributes:
+      label: Structure description
+      description: "Describe the format in plain terms: field sizes, endianness, relationships."
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: How you verified it
+      description: "Describe the method: pattern matching, cross-referencing known values, etc."
+    validations:
+      required: true
+  - type: checkboxes
+    id: provenance
+    attributes:
+      label: Provenance
+      options:
+        - label: I describe disc structures only — no dumped content, decoded game text or extracted assets.
+          required: true

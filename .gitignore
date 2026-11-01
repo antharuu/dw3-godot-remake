@@ -1,0 +1,56 @@
+# ROM et assets extraits — hors dépôt
+# rom/ contient uniquement des instructions (rom/README.md est suivi).
+# Le disque fourni par l'utilisateur et tout contenu dérivé ne sont jamais suivis.
+rom/*
+!rom/README.md
+extracted/
+*.bin
+*.iso
+*.cue
+
+# Formats de données jeu (PSX)
+*.tim
+*.clut
+*.vab
+*.vag
+*.pro
+*.pak
+*.str
+*.xa
+*.img
+
+# Build
+target/
+bin/
+obj/
+
+# Godot cache et artefacts générés (expériences locales uniquement)
+.godot/
+.verify/
+*.uid
+
+# Python cache
+__pycache__/
+
+# Generated output root (séparé des sources, jamais dans Git)
+generated/
+
+# Captures et traces d'expériences
+captures/
+capture/
+traces/
+trace/
+
+# Sorties externes de scripts de décodage
+decoded-semantics-*/
+
+# Données extraites du disque — dossier utilisateur local, jamais versionnées
+data/
+data.staging-*/
+
+# Référence interne et recherche (hors dépôt)
+_reference/
+
+# Override local de variables d'environnement
+.env.local
+tools/detect_duplicates.py

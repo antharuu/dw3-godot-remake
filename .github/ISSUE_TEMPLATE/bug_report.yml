@@ -1,0 +1,35 @@
+name: Bug report
+description: Something behaves differently from the original game or crashes.
+labels: [bug, triage]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: "Steps to reproduce, zone (WSTAG number, F3 shows it), expected vs actual."
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Launcher and Godot output
+      render: text
+  - type: input
+    id: commit
+    attributes:
+      label: Commit
+      description: "git rev-parse --short HEAD"
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: OS
+      options: [Linux, Windows, macOS]
+  - type: checkboxes
+    id: content
+    attributes:
+      label: Content check
+      options:
+        - label: I did not attach game files, dumps or copyrighted text.
+          required: true

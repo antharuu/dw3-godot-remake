@@ -1,0 +1,35 @@
+name: Feature request
+description: Propose an improvement or new feature.
+labels: [enhancement, triage]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What limitation or missing behavior prompted this request?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposal
+      description: Describe the change you would like to see.
+    validations:
+      required: true
+  - type: textarea
+    id: original
+    attributes:
+      label: Original game behavior (if relevant)
+      description: How does the original PS1 game handle this?
+  - type: dropdown
+    id: improvement
+    attributes:
+      label: Is this an opt-in improvement over the original?
+      options: ["Yes", "No"]
+  - type: checkboxes
+    id: content
+    attributes:
+      label: Content check
+      options:
+        - label: I did not attach game files, dumps or copyrighted text.
+          required: true

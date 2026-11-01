@@ -1,0 +1,3 @@
+#!/bin/sh
+# Delegate to the tracked maintainer guard.
+exec "$(dirname "$0")/../pre-push" "$@"

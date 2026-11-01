@@ -1,0 +1,38 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dw3.Game", "Dw3.Game.csproj", "{F71503D6-A70D-4B83-866E-A627FEF62C21}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Dw3.Data", "..\Dw3.Data\Dw3.Data.csproj", "{415416D0-56AE-4111-8FD1-4336FA585018}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+		ExportDebug|Any CPU = ExportDebug|Any CPU
+		ExportRelease|Any CPU = ExportRelease|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F71503D6-A70D-4B83-866E-A627FEF62C21}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F71503D6-A70D-4B83-866E-A627FEF62C21}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F71503D6-A70D-4B83-866E-A627FEF62C21}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F71503D6-A70D-4B83-866E-A627FEF62C21}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F71503D6-A70D-4B83-866E-A627FEF62C21}.ExportDebug|Any CPU.ActiveCfg = ExportDebug|Any CPU
+		{F71503D6-A70D-4B83-866E-A627FEF62C21}.ExportDebug|Any CPU.Build.0 = ExportDebug|Any CPU
+		{F71503D6-A70D-4B83-866E-A627FEF62C21}.ExportRelease|Any CPU.ActiveCfg = ExportRelease|Any CPU
+		{F71503D6-A70D-4B83-866E-A627FEF62C21}.ExportRelease|Any CPU.Build.0 = ExportRelease|Any CPU
+		{415416D0-56AE-4111-8FD1-4336FA585018}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{415416D0-56AE-4111-8FD1-4336FA585018}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{415416D0-56AE-4111-8FD1-4336FA585018}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{415416D0-56AE-4111-8FD1-4336FA585018}.Release|Any CPU.Build.0 = Release|Any CPU
+		{415416D0-56AE-4111-8FD1-4336FA585018}.ExportDebug|Any CPU.ActiveCfg = Debug|Any CPU
+		{415416D0-56AE-4111-8FD1-4336FA585018}.ExportDebug|Any CPU.Build.0 = Debug|Any CPU
+		{415416D0-56AE-4111-8FD1-4336FA585018}.ExportRelease|Any CPU.ActiveCfg = Release|Any CPU
+		{415416D0-56AE-4111-8FD1-4336FA585018}.ExportRelease|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

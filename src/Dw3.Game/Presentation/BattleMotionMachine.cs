@@ -1,0 +1,224 @@
+namespace Dw3Production.Presentation;
+
+/// <summary>
+/// Expands a fighter's motion steps and advances the resulting animation timeline.
+/// </summary>
+public sealed class BattleMotionMachine
+{
+    private const int BlendFlag = 0x8000;
+    private const int ValueMask = 0xFFFF;
+    private const int FinishMarker = 0xFFFF;
+    private const int StepEndMarker = 0x7FFF;
+    private const int BlendScale = 4096;
+
+    private readonly IReadOnlyList<IReadOnlyList<IReadOnlyList<int>>> _motions;
+    private readonly int[] _idleFrames;
+    private readonly List<int> _keyframes = [];
+    private readonly List<int> _targets = [];
+    private readonly List<int> _sources = [];
+
+    /// <summary>
+    /// Creates a motion machine from decoded fighter motions and activates the selected idle motion.
+    /// </summary>
+    /// <param name="motions">Motions containing ordered animation steps.</param>
+    /// <param name="idleMotion">Idle selection, normally zero or one.</param>
+    public BattleMotionMachine(
+        IReadOnlyList<IReadOnlyList<IReadOnlyList<int>>> motions,
+        int idleMotion = 0)
+    {
+        _motions = motions ?? throw new ArgumentNullException(nameof(motions));
+        _idleFrames = [ReadInitialFrame(0), ReadInitialFrame(1)];
+
+        Motion = 1;
+        IdleMotion = idleMotion;
+        Keyframe = 1;
+        BlendSource = -1;
+        SetMotion(unchecked(idleMotion + 1), restart: true);
+    }
+
+    /// <summary>Gets the active one-based motion number.</summary>
+    public int Motion { get; private set; }
+
+    /// <summary>Gets the idle selection, where zero and one select the first two motions.</summary>
+    public int IdleMotion { get; private set; }
+
+    /// <summary>Gets the cursor into <see cref="Keyframes"/>.</summary>
+    public int Keyframe { get; private set; }
+
+    /// <summary>Gets the animation frame most recently published by <see cref="Step"/>.</summary>
+    public int Frame { get; private set; }
+
+    /// <summary>Gets the most recently published fixed-point blend weight.</summary>
+    public int Blend { get; private set; }
+
+    /// <summary>Gets whether the most recently published entry blends between poses.</summary>
+    public bool Blending { get; private set; }
+
+    /// <summary>Gets whether the active motion reached its finish marker.</summary>
+    public bool MotionDone { get; private set; }
+
+    /// <summary>Gets whether the active motion returns to the selected idle motion when finished.</summary>
+    public bool ToIdle { get; private set; }
+
+    /// <summary>Gets the destination frame of the current blend, or zero when none is active.</summary>
+    public int BlendTarget { get; private set; }
+
+    /// <summary>
+    /// Gets the current blend source frame. A value of 65535 selects the displayed pose and
+    /// negative one means that no blend source has been selected.
+    /// </summary>
+    public int BlendSource { get; private set; }
+
+    /// <summary>Gets the expanded values of the active motion timeline.</summary>
+    public IReadOnlyList<int> Keyframes => _keyframes;
+
+    /// <summary>Gets whether the expanded motion ends in a loop marker.</summary>
+    public bool Looping => _keyframes.Count > 0 && _keyframes[^1] == BlendFlag;
+
+    /// <summary>
+    /// Activates and expands a one-based motion unless the same motion is already active and a
+    /// restart was not requested.
+    /// </summary>
+    /// <param name="motion">One-based motion number.</param>
+    /// <param name="restart">Whether to rebuild an already active motion.</param>
+    public void SetMotion(int motion, bool restart)
+    {
+        if (!restart && motion == Motion)
+            return;
+        if (motion < 1 || motion > _motions.Count)
+            throw new ArgumentOutOfRangeException(nameof(motion));
+
+        Motion = motion;
+        if (motion == 1)
+            IdleMotion = 0;
+        else if (motion == 2)
+            IdleMotion = 1;
+
+        Keyframe = 1;
+        MotionDone = false;
+        ToIdle = false;
+        Blending = false;
+        BlendTarget = 0;
+        BlendSource = -1;
+        _keyframes.Clear();
+        _targets.Clear();
+        _sources.Clear();
+
+        Expand(_motions[motion - 1]);
+        if (_keyframes.Count == 0)
+            throw new InvalidOperationException("Motion expands to an empty animation timeline.");
+    }
+
+    /// <summary>Publishes the current timeline entry and advances by the requested frame count.</summary>
+    /// <param name="framesElapsed">Non-negative number of animation frames to advance.</param>
+    public void Step(int framesElapsed)
+    {
+        if (framesElapsed < 0)
+            throw new ArgumentOutOfRangeException(nameof(framesElapsed));
+
+        if (MotionDone)
+        {
+            Blending = false;
+            BlendTarget = 0;
+            if (ToIdle)
+                SetMotion(unchecked(IdleMotion + 1), restart: false);
+            return;
+        }
+
+        PublishEntry(Keyframe);
+
+        Keyframe = Math.Min(unchecked(Keyframe + framesElapsed), _keyframes.Count - 1);
+        var landedValue = _keyframes[Keyframe];
+        if (landedValue == BlendFlag)
+            Keyframe = _targets[Keyframe];
+        else if (landedValue == FinishMarker)
+            MotionDone = true;
+    }
+
+    /// <summary>Changes which of the first two motions is used as the idle motion.</summary>
+    /// <param name="idleMotion">Zero for the first idle motion or one for the second.</param>
+    public void SetIdleMotion(int idleMotion)
+    {
+        if (idleMotion is not (0 or 1))
+            throw new ArgumentOutOfRangeException(nameof(idleMotion));
+        IdleMotion = idleMotion;
+    }
+
+    private int ReadInitialFrame(int motionIndex)
+    {
+        if (motionIndex >= _motions.Count || _motions[motionIndex].Count == 0)
+            return 0;
+        return _motions[motionIndex][0][2];
+    }
+
+    private void Expand(IReadOnlyList<IReadOnlyList<int>> steps)
+    {
+        for (var stepIndex = 0; stepIndex < steps.Count; stepIndex++)
+        {
+            var step = steps[stepIndex];
+            var index = step[0];
+            if (index == StepEndMarker)
+                break;
+
+            var count = step[1];
+            if (count == 0)
+            {
+                AddEntry(step[2] & ValueMask, step[3], -1);
+                break;
+            }
+
+            var firstFrame = step[2];
+            var endFrame = step[3];
+            if (endFrame != 0)
+            {
+                for (var offset = 0; offset < count; offset++)
+                    AddEntry(unchecked(firstFrame + offset), 0, -1);
+                continue;
+            }
+
+            var target = steps[stepIndex + 1][2];
+            if (target == -1)
+            {
+                target = _idleFrames[IdleMotion];
+                ToIdle = true;
+            }
+
+            var source = index == 0 ? FinishMarker : steps[stepIndex - 1][3];
+            for (var offset = 1; offset <= count; offset++)
+            {
+                var weighted = unchecked(offset * BlendScale) / unchecked(count + 1);
+                AddEntry(weighted | BlendFlag, target, source);
+            }
+        }
+    }
+
+    private void AddEntry(int value, int target, int source)
+    {
+        _keyframes.Add(value);
+        _targets.Add(target);
+        _sources.Add(source);
+    }
+
+    private void PublishEntry(int index)
+    {
+        var value = _keyframes[index];
+        if ((value & BlendFlag) != 0)
+        {
+            var target = _targets[index];
+            if (BlendTarget != target)
+            {
+                BlendTarget = target;
+                BlendSource = _sources[index];
+            }
+            Frame = target;
+            Blend = value & 0x7FFF;
+            Blending = true;
+            return;
+        }
+
+        BlendTarget = 0;
+        BlendSource = -1;
+        Frame = value;
+        Blending = false;
+    }
+}

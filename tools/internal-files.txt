@@ -1,0 +1,19 @@
+# Internal-only paths. Patterns use .gitignore syntax.
+# These files remain on local maintainer checkouts but are excluded from a public history.
+/AGENTS.md
+/.hermes/
+/.verify/
+/SUIVI.md
+/agent-notes/
+/archive/
+/research/
+/_reference/
+/docs/research/
+/docs/technical/
+/docs/M[0-9]*_*.md
+/docs/ICON_SMOOTH_FOLLOW.md
+/docs/COMBAT_ROADMAP.md
+/README.md
+/src/Dw3.Game/README.md
+
+/tools/detect_duplicates.py

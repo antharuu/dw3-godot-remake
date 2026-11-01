@@ -1,0 +1,19 @@
+root = true
+
+[*.cs]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+indent_style = space
+indent_size = 4
+
+# Keep existing source style readable without converting the current build
+# into a broad formatting migration. These diagnostics are visible in editors.
+dotnet_diagnostic.IDE0005.severity = suggestion
+dotnet_diagnostic.IDE0058.severity = suggestion
+dotnet_diagnostic.IDE0060.severity = suggestion
+dotnet_diagnostic.IDE0079.severity = warning
+
+# The existing codebase uses explicit types in public and engine-facing code.
+dotnet_diagnostic.IDE0007.severity = none
+dotnet_diagnostic.IDE0008.severity = none
