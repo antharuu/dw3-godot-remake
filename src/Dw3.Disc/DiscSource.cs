@@ -39,6 +39,7 @@ public sealed class DiscSource : IDisposable
             throw new DiscSourceException(DiscSourceException.FormatInvalid,
                 $"Cannot open BIN file: {binPath}", ex);
         }
+
         return new DiscSource(stream, binPath);
     }
 
@@ -74,15 +75,22 @@ public sealed class DiscSource : IDisposable
         SupportedEdition edition = DiscIdentity.Identify(md5, sha1);
 
         string volumeId;
-        try { volumeId = ReadVolumeId(); }
+        try
+        {
+            volumeId = ReadVolumeId();
+        }
         catch (DiscSourceException ex)
         {
             throw new DiscSourceException(DiscSourceException.FormatInvalid,
                 $"BIN is not a supported Mode-2 ISO9660 disc: {ex.Message}", ex);
         }
+
         if (volumeId != "DMW3")
+        {
             throw new DiscSourceException(DiscSourceException.EditionInvalid,
                 $"Disc volume ID is '{volumeId}', expected 'DMW3'.");
+        }
+
         return edition;
     }
 

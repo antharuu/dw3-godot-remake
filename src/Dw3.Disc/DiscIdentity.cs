@@ -3,15 +3,6 @@ using System.Security.Cryptography;
 namespace Dw3.Disc;
 
 /// <summary>
-/// Identifies a known supported game edition by its disc fingerprint.
-/// No game-derived bytes are embedded: only cryptographic hashes of the user's disc.
-/// </summary>
-/// <param name="Label">Human-readable edition name.</param>
-/// <param name="BinMd5">MD5 hex digest of the BIN file (lower-case).</param>
-/// <param name="BinSha1">SHA-1 hex digest of the BIN file (lower-case).</param>
-public sealed record SupportedEdition(string Label, string BinMd5, string BinSha1);
-
-/// <summary>
 /// Matches a BIN file against the table of known supported editions and computes disc digests.
 /// </summary>
 public static class DiscIdentity
@@ -43,8 +34,11 @@ public static class DiscIdentity
         {
             if (string.Equals(edition.BinMd5, binMd5, StringComparison.OrdinalIgnoreCase)
              && string.Equals(edition.BinSha1, binSha1, StringComparison.OrdinalIgnoreCase))
+            {
                 return edition;
+            }
         }
+
         throw new DiscSourceException(DiscSourceException.EditionInvalid,
             "BIN digest does not match the supported Europe SLES-03936 edition; " +
             "provide the documented BIN/CUE pair.");
@@ -72,6 +66,7 @@ public static class DiscIdentity
             sha1.AppendData(buffer, 0, read);
             sha256.AppendData(buffer, 0, read);
         }
+
         return (
             Convert.ToHexStringLower(md5.GetHashAndReset()),
             Convert.ToHexStringLower(sha1.GetHashAndReset()),
