@@ -38,7 +38,7 @@ internal static class EncounterSqlWriter
                 context,
                 "INSERT INTO encounter_enemies (enemy_index,fighter,level,hp,mp,strength) VALUES ($1,$2,$3,$4,$5,$6)",
                 enemy.Index,
-                (int)enemy.Fighter,
+                enemy.Fighter,
                 (int)enemy.Level,
                 (int)enemy.Hp,
                 (int)enemy.Mp,

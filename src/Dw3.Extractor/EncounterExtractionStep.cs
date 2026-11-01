@@ -25,16 +25,15 @@ internal static class EncounterExtractionStep
             IReadOnlyList<BattleEnemy> enemies = FieldEncounterDecoder.DecodeEnemies(fieldStg);
             IReadOnlyList<EncounterRecord> encounters = FieldEncounterDecoder.DecodeEncounters(fieldStg, enemies);
             IReadOnlyList<int> battleRates = FieldEncounterDecoder.DecodeBattleRates(fieldStg);
-            IReadOnlyDictionary<int, EncounterStageData> stages = ScanStageArrays(disc, entries);
-            WriteDataPack(
-                outputDirectory,
-                edition,
+            Dictionary<int, EncounterStageData> stages = ScanStageArrays(disc, entries);
+            var data = new EncounterDataPack(
                 enemies,
                 encounters,
                 battleRates,
                 stages,
                 fieldStgEntry.IsoPath,
                 Convert.ToHexStringLower(SHA256.HashData(fieldStg)));
+            WriteDataPack(outputDirectory, edition, data);
             WriteCompletion(output, enemies.Count, encounters.Count, stages.Count);
             return 0;
         }
@@ -52,7 +51,7 @@ internal static class EncounterExtractionStep
             ?? throw new InvalidDataException($"Required disc member missing: {FieldStgPath}");
     }
 
-    private static IReadOnlyDictionary<int, EncounterStageData> ScanStageArrays(
+    private static Dictionary<int, EncounterStageData> ScanStageArrays(
         DiscSource disc,
         IReadOnlyList<DiscFileEntry> entries)
     {
@@ -76,7 +75,7 @@ internal static class EncounterExtractionStep
     private static void TryAddStageArrays(
         DiscSource disc,
         DiscFileEntry entry,
-        IDictionary<int, EncounterStageData> stages)
+        Dictionary<int, EncounterStageData> stages)
     {
         string baseName = Path.GetFileName(entry.IsoPath);
         string stem = Path.GetFileNameWithoutExtension(baseName);
@@ -111,15 +110,7 @@ internal static class EncounterExtractionStep
         return int.TryParse(stem.AsSpan(5), out stageId);
     }
 
-    private static void WriteDataPack(
-        string outputDirectory,
-        SupportedEdition edition,
-        IReadOnlyList<BattleEnemy> enemies,
-        IReadOnlyList<EncounterRecord> encounters,
-        IReadOnlyList<int> battleRates,
-        IReadOnlyDictionary<int, EncounterStageData> stages,
-        string fieldStgIsoPath,
-        string fieldStgSha256)
+    private static void WriteDataPack(string outputDirectory, SupportedEdition edition, EncounterDataPack data)
     {
         new DataPackWriter(outputDirectory).Write(
             new DataPackMetadata(
@@ -129,8 +120,8 @@ internal static class EncounterExtractionStep
                 DateTimeOffset.UtcNow),
             context =>
             {
-                EncounterSqlWriter.Write(context, enemies, encounters, battleRates, stages);
-                EncounterJsonWriter.Write(context, enemies, encounters, battleRates, stages, fieldStgIsoPath, fieldStgSha256);
+                EncounterSqlWriter.Write(context, data.Enemies, data.Encounters, data.BattleRates, data.Stages);
+                EncounterJsonWriter.Write(context, data.Enemies, data.Encounters, data.BattleRates, data.Stages, data.FieldStgIsoPath, data.FieldStgSha256);
             });
     }
 
