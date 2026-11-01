@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using Dw3.Formats.Field;
 
@@ -40,11 +41,14 @@ public static class ZoneManifestWriter
 
     private static void WriteMapSection(Utf8JsonWriter writer, string key, TmpkMap map)
     {
-        var histogram = BuildHistogram(map.Cells);
+        Dictionary<byte, int> histogram = BuildHistogram(map.Cells);
         writer.WriteStartObject(key);
         writer.WriteStartObject("histogram");
         foreach (var (value, count) in histogram.OrderBy(kv => kv.Key))
-            writer.WriteNumber(value.ToString(), count);
+        {
+            writer.WriteNumber(value.ToString(CultureInfo.InvariantCulture), count);
+        }
+
         writer.WriteEndObject();
         writer.WriteStartArray("size");
         writer.WriteNumberValue(map.Width);
@@ -53,15 +57,19 @@ public static class ZoneManifestWriter
         writer.WriteEndObject();
     }
 
-    private static IReadOnlyDictionary<byte, int> BuildHistogram(byte[] cells)
+    private static Dictionary<byte, int> BuildHistogram(byte[] cells)
     {
         var result = new Dictionary<byte, int>();
         foreach (byte b in cells)
         {
             if (!result.TryGetValue(b, out int count))
+            {
                 count = 0;
+            }
+
             result[b] = count + 1;
         }
+
         return result;
     }
 
@@ -72,22 +80,34 @@ public static class ZoneManifestWriter
         {
             StageSlot slot = slots[index];
             if (slot.Type != 1)
+            {
                 continue;
+            }
+
             writer.WriteStartObject();
             if (slot.Condition != ushort.MaxValue)
+            {
                 writer.WriteNumber("condition", slot.Condition);
+            }
+
             WriteCondition(writer, slot.Condition);
             // Write null when the mode has no known disc stage mapping (e.g. excluded or unreachable stages).
             if (stageModes is not null && stageModes.TryGetValue(slot.Argument, out int destStage))
+            {
                 writer.WriteString("destination", $"S{destStage:D3}");
+            }
             else
+            {
                 writer.WriteNull("destination");
+            }
+
             writer.WriteNumber("facing", slot.Direction);
             writer.WriteNumber("slot", index);
             writer.WriteNumber("x", slot.X);
             writer.WriteNumber("y", slot.Y);
             writer.WriteEndObject();
         }
+
         writer.WriteEndArray();
     }
 
@@ -95,21 +115,34 @@ public static class ZoneManifestWriter
     {
         writer.WriteStartObject("map_entries_source");
         if (data.AreasEntry is int areasEntry)
+        {
             writer.WriteNumber("areas_entry", areasEntry);
+        }
         else
+        {
             writer.WriteNull("areas_entry");
+        }
+
         writer.WriteNumber("bytes", data.TmpkBytes);
         writer.WriteNumber("floor_entry", data.FloorEntry);
         writer.WriteString("path", data.TmpkPath);
         writer.WriteStartArray("required_offsets");
         foreach (int offset in data.RequiredOffsets)
+        {
             writer.WriteNumberValue(offset);
+        }
+
         writer.WriteEndArray();
         writer.WriteString("sha256", data.TmpkSha256);
         if (data.TriggerEntry is int triggerEntry)
+        {
             writer.WriteNumber("trigger_entry", triggerEntry);
+        }
         else
+        {
             writer.WriteNull("trigger_entry");
+        }
+
         writer.WriteEndObject();
     }
 
@@ -145,54 +178,66 @@ public static class ZoneManifestWriter
         {
             writer.WriteStartArray("stream_depth11_modulate");
             foreach (byte b in data.StreamDepth11Modulate)
+            {
                 writer.WriteNumberValue(b);
+            }
+
             writer.WriteEndArray();
         }
         else
         {
             writer.WriteNull("stream_depth11_modulate");
         }
+
         writer.WriteStartArray("tile_records");
         foreach (ZoneTileRecord rec in data.TileRecords)
         {
-            writer.WriteStartObject();
-            if (rec.Present)
-            {
-                writer.WriteNumber("decoded_bytes", rec.DecodedBytes);
-                writer.WriteBoolean("present", true);
-                writer.WriteBoolean("rlen", rec.Rlen);
-                writer.WriteStartArray("sprites");
-                if (rec.Sprites is not null)
-                {
-                    foreach (ZoneSpriteRecord sprite in rec.Sprites)
-                    {
-                        writer.WriteStartObject();
-                        writer.WriteNumber("depth", sprite.Depth);
-                        writer.WriteNumber("h", sprite.H);
-                        writer.WriteNumber("u", sprite.U);
-                        writer.WriteNumber("v", sprite.V);
-                        writer.WriteNumber("w", sprite.W);
-                        writer.WriteNumber("x", sprite.X);
-                        writer.WriteNumber("y", sprite.Y);
-                        writer.WriteEndObject();
-                    }
-                }
-                writer.WriteEndArray();
-                writer.WriteNumber("tile", rec.Tile);
-                writer.WriteNumber("tim_offset", rec.TimOffset);
-                writer.WriteStartArray("tim_size");
-                writer.WriteNumberValue(rec.TimWidth);
-                writer.WriteNumberValue(rec.TimHeight);
-                writer.WriteEndArray();
-            }
-            else
-            {
-                writer.WriteBoolean("present", false);
-                writer.WriteNumber("tile", rec.Tile);
-            }
-            writer.WriteEndObject();
+            WriteTileRecord(writer, rec);
         }
+
         writer.WriteEndArray();
+        writer.WriteEndObject();
+    }
+
+    private static void WriteTileRecord(Utf8JsonWriter writer, ZoneTileRecord rec)
+    {
+        writer.WriteStartObject();
+        if (rec.Present)
+        {
+            writer.WriteNumber("decoded_bytes", rec.DecodedBytes);
+            writer.WriteBoolean("present", true);
+            writer.WriteBoolean("rlen", rec.Rlen);
+            writer.WriteStartArray("sprites");
+            if (rec.Sprites is not null)
+            {
+                foreach (ZoneSpriteRecord sprite in rec.Sprites)
+                {
+                    writer.WriteStartObject();
+                    writer.WriteNumber("depth", sprite.Depth);
+                    writer.WriteNumber("h", sprite.H);
+                    writer.WriteNumber("u", sprite.U);
+                    writer.WriteNumber("v", sprite.V);
+                    writer.WriteNumber("w", sprite.W);
+                    writer.WriteNumber("x", sprite.X);
+                    writer.WriteNumber("y", sprite.Y);
+                    writer.WriteEndObject();
+                }
+            }
+
+            writer.WriteEndArray();
+            writer.WriteNumber("tile", rec.Tile);
+            writer.WriteNumber("tim_offset", rec.TimOffset);
+            writer.WriteStartArray("tim_size");
+            writer.WriteNumberValue(rec.TimWidth);
+            writer.WriteNumberValue(rec.TimHeight);
+            writer.WriteEndArray();
+        }
+        else
+        {
+            writer.WriteBoolean("present", false);
+            writer.WriteNumber("tile", rec.Tile);
+        }
+
         writer.WriteEndObject();
     }
 
@@ -211,6 +256,7 @@ public static class ZoneManifestWriter
             writer.WriteNumber("y", slot.Y);
             writer.WriteEndObject();
         }
+
         writer.WriteEndArray();
     }
 
@@ -219,17 +265,40 @@ public static class ZoneManifestWriter
 
     private sealed class StreamWriterAdapter(TextWriter writer) : Stream
     {
+        /// <inheritdoc/>
         public override bool CanRead => false;
+
+        /// <inheritdoc/>
         public override bool CanSeek => false;
+
+        /// <inheritdoc/>
         public override bool CanWrite => true;
+
+        /// <inheritdoc/>
         public override long Length => throw new NotSupportedException();
+
+        /// <inheritdoc/>
         public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+
+        /// <inheritdoc/>
         public override void Flush() => writer.Flush();
+
+        /// <inheritdoc/>
         public override Task FlushAsync(CancellationToken cancellationToken) => writer.FlushAsync(cancellationToken);
+
+        /// <inheritdoc/>
         public override void Write(byte[] buffer, int offset, int count) => writer.Write(System.Text.Encoding.UTF8.GetString(buffer, offset, count));
+
+        /// <inheritdoc/>
         public override void Write(ReadOnlySpan<byte> buffer) => writer.Write(System.Text.Encoding.UTF8.GetString(buffer));
+
+        /// <inheritdoc/>
         public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+        /// <inheritdoc/>
         public override void SetLength(long value) => throw new NotSupportedException();
+
+        /// <inheritdoc/>
         public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
     }
 }
