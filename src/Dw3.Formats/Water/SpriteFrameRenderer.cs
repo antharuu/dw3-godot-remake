@@ -72,7 +72,9 @@ public static class SpriteFrameRenderer
         if (count <= 0 || count > MaximumParts)
             throw new FormatException("sprite frame part count invalid");
         if (frame.Length < 6 + 6 * count)
+        {
             throw new FormatException("sprite frame truncated");
+        }
 
         var placed = new (int X, int Y, int Width, int Height, ushort[] Words)[count];
         for (int index = 0; index < count; index++)

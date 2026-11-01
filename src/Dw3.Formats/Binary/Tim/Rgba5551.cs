@@ -32,7 +32,9 @@ public static class Rgba5551
     public static (byte R, byte G, byte B, byte A) ToRgba(ushort word)
     {
         if (word == 0)
+        {
             return (0, 0, 0, 0);
+        }
 
         // 5-bit components are scaled to 0–255 using integer arithmetic
         // that matches the Python formula: (component * 255) / 31.

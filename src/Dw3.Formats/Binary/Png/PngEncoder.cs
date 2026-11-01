@@ -115,7 +115,9 @@ public static class PngEncoder
 
         // Data
         if (!data.IsEmpty)
+        {
             out_.Write(data);
+        }
 
         // CRC-32 of type + data
         uint crc = ComputeCrc(type, data);

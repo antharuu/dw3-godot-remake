@@ -71,7 +71,9 @@ public static class BattleStageDecoder
             throw new FormatException($"Fight stage id {stageId} is out of range (must be 0..{StageCount - 1}).");
         int offset = stageId * Stride;
         if (offset + Stride > data.Length)
+        {
             throw new FormatException($"Fight stage record {stageId} overruns the file (file length {data.Length}).");
+        }
 
         // Model and motions are packed as high16=fileId, low16=archiveEntry.
         uint model = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(offset + OffModel));

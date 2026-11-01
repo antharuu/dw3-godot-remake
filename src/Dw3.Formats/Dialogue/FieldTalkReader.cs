@@ -29,7 +29,9 @@ public static class FieldTalkReader
         if (tableAddress == 0)
             return [];
         if (tableAddress < overlayLoadAddress || tableAddress - overlayLoadAddress > (uint)overlay.Length)
+        {
             throw new FormatException($"FieldTalk table 0x{tableAddress:X8} is outside the overlay.");
+        }
 
         int offset = (int)(tableAddress - overlayLoadAddress);
         var talks = new List<FieldTalk>();

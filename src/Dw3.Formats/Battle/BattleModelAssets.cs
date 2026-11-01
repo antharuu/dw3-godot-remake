@@ -149,7 +149,9 @@ public static class BattleTextureDecoder
         var vram = new ushort[maxX * maxY];
         foreach (var upload in uploads)
             for (int y = 0; y < upload.Height; y++)
+            {
                 upload.Words.AsSpan(y * upload.Width, upload.Width).CopyTo(vram.AsSpan(y * maxX + upload.X, upload.Width));
+            }
 
         var keys = new Dictionary<(int, int, int?, int?), int>();
         foreach (MeshTextureState state in consumers)

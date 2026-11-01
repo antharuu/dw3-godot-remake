@@ -272,7 +272,9 @@ public sealed class BattleHudStageReportTests
 
         // Frame offsets (pointing into body).
         for (int i = 0; i < numFrames; i++)
+        {
             BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(4 + 8 + i * 4), (uint)(frameDataStart + i * frameSize));
+        }
 
         // Parts table (numParts × 14 bytes, valid but zeroed — mode 0, w/h = 0).
         // Set width and height to 1 to pass validation.

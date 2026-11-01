@@ -115,7 +115,9 @@ public static class BattleMeshDecoder
     {
         int[] offsets = ModelArchive.ReadNestedOffsets(data, start, end, EntryCount);
         if (offsets[0] == 0 || offsets[2] == 0 || offsets[5] == 0)
+        {
             throw Fail(bone, "missing vertices, commands, or bounds archive entry");
+        }
 
         MeshVector[] vertices = ReadVertices(data, start + offsets[0], end, bone);
         MeshVector[] normals = offsets[1] == 0 ? [] : ReadNormals(data, start + offsets[1], end, bone);

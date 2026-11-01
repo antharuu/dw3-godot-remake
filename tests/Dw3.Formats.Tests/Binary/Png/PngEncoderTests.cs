@@ -153,7 +153,9 @@ public sealed class PngEncoderTests
         var raw = new byte[(stride + 1) * height];
         idat.Position = 0;
         using (var zlib = new ZLibStream(idat, CompressionMode.Decompress))
+        {
             zlib.ReadExactly(raw);
+        }
 
         var result = new byte[stride * height];
         for (int y = 0; y < height; y++)

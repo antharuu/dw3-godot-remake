@@ -97,7 +97,9 @@ public static class TimDecoder
     {
         // CLUT block at offset 8
         if (data.Length < 12)
+        {
             throw new FormatException("4-bit TIM CLUT block truncated");
+        }
 
         uint clutBlockLen = BinaryPrimitives.ReadUInt32LittleEndian(data[8..12]);
         if (clutBlockLen < 12 || (long)8 + clutBlockLen > data.Length)
@@ -150,7 +152,9 @@ public static class TimDecoder
     private static TimImage Decode8Bit(ReadOnlySpan<byte> data, int clutRow)
     {
         if (data.Length < 12)
+        {
             throw new FormatException("8-bit TIM CLUT block truncated");
+        }
 
         uint clutBlockLen = BinaryPrimitives.ReadUInt32LittleEndian(data[8..12]);
         if (clutBlockLen < 12 || (long)8 + clutBlockLen > data.Length)
@@ -185,7 +189,9 @@ public static class TimDecoder
 
         var pixels = new byte[width * height * 4];
         for (int i = 0; i < pixelData.Length; i++)
+        {
             WriteRgba(pixels, i * 4, palette[pixelData[i]]);
+        }
 
         return new TimImage(width, height, pixels, TimPixelMode.Indexed8Bit, numRows);
     }

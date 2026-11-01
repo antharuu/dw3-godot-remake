@@ -2773,19 +2773,19 @@
       "rule": "SA1503",
       "project": "Dw3.Formats",
       "folder": "Battle",
-      "count": 191
+      "count": 170
     },
     {
       "rule": "SA1503",
       "project": "Dw3.Formats",
       "folder": "Binary",
-      "count": 20
+      "count": 15
     },
     {
       "rule": "SA1503",
       "project": "Dw3.Formats",
       "folder": "Dialogue",
-      "count": 30
+      "count": 25
     },
     {
       "rule": "SA1503",
@@ -2809,25 +2809,25 @@
       "rule": "SA1503",
       "project": "Dw3.Formats",
       "folder": "Text",
-      "count": 22
+      "count": 18
     },
     {
       "rule": "SA1503",
       "project": "Dw3.Formats",
       "folder": "Water",
-      "count": 40
+      "count": 37
     },
     {
       "rule": "SA1503",
       "project": "Dw3.Formats.Tests",
       "folder": "Battle",
-      "count": 9
+      "count": 7
     },
     {
       "rule": "SA1503",
       "project": "Dw3.Formats.Tests",
       "folder": "Binary",
-      "count": 6
+      "count": 5
     },
     {
       "rule": "SA1503",
@@ -2839,13 +2839,13 @@
       "rule": "SA1503",
       "project": "Dw3.Formats.Tests",
       "folder": "Encounter",
-      "count": 17
+      "count": 10
     },
     {
       "rule": "SA1503",
       "project": "Dw3.Formats.Tests",
       "folder": "Field",
-      "count": 16
+      "count": 8
     },
     {
       "rule": "SA1503",
@@ -2875,13 +2875,13 @@
       "rule": "SA1503",
       "project": "Dw3.Game",
       "folder": "Conversion",
-      "count": 84
+      "count": 81
     },
     {
       "rule": "SA1503",
       "project": "Dw3.Game",
       "folder": "Diagnostics",
-      "count": 146
+      "count": 145
     },
     {
       "rule": "SA1503",
@@ -2905,13 +2905,13 @@
       "rule": "SA1503",
       "project": "Dw3.Game",
       "folder": "Simulation",
-      "count": 230
+      "count": 221
     },
     {
       "rule": "SA1503",
       "project": "Dw3.Game.Tests",
       "folder": ".",
-      "count": 238
+      "count": 237
     },
     {
       "rule": "SA1503",

@@ -75,7 +75,9 @@ public sealed class ZonePacketDecoderTests
         for (int index = 0; index < Math.Min(tileCount, declaredPresent); index++)
             BinaryPrimitives.WriteUInt16LittleEndian(file.AsSpan(16 + index * 2, 2), 1);
         if (declaredPresent != 1 || tileCount != 1)
+        {
             return file;
+        }
 
         Span<byte> tile = file.AsSpan(sector, sector);
         BinaryPrimitives.WriteInt32LittleEndian(tile, textureOffset);

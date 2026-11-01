@@ -69,7 +69,9 @@ public static class BattleModelDecoder
         if (boneCount < MinimumBones || boneCount > MaximumBones)
             throw new FormatException($"Invalid bone count {boneCount}.");
         if (start + 8 + (boneCount - 1) * BoneRecordBytes > end)
+        {
             throw new FormatException("Model descriptor overruns its archive entry.");
+        }
 
         var bones = new List<BattleModelBone> { new(0, null, null, null) };
         for (int index = 1; index < boneCount; index++)
@@ -153,7 +155,9 @@ public static class BattleModelDecoder
         ArchiveRange motionRange = bounds[motionEntry];
         IReadOnlyList<IReadOnlyList<BattleMotionStep>> motions = BattleAnimationDecoder.DecodeMotions(modelData, motionRange.Start, motionRange.End);
         if (motions[0][0].Index != 0)
+        {
             throw new FormatException($"Fight stage motion 1 does not start at index 0: {motions[0][0]}");
+        }
 
         // Fight stages carry no fighter metadata (no cameras, geometry or face animation).
         var emptyMetadata = new BattleFighterMetadata(

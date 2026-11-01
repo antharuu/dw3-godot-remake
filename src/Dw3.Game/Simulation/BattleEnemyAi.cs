@@ -142,7 +142,9 @@ public static class BattleEnemyAi
     {
         BattleTableAction counter = enemy.Counter;
         if (counter.Condition == 0 || !TestEnemyCondition(counter.Condition, counter.ConditionArg, ctx, rng))
+        {
             return EnemyDecision.None;
+        }
 
         EnemyDecision decision = GetEnemyAction(enemy, counter.Target);
         return decision.IsAttack || decision.IsTechnique ? decision : EnemyDecision.None;

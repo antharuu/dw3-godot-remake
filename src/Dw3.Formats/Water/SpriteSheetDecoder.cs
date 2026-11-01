@@ -59,14 +59,18 @@ public static class SpriteSheetDecoder
         uint partsOffset = BinaryPrimitives.ReadUInt32LittleEndian(span);
         uint idsOffset = BinaryPrimitives.ReadUInt32LittleEndian(span[4..]);
         if (partsOffset < 8 || partsOffset >= idsOffset || idsOffset >= span.Length)
+        {
             throw new FormatException("sprite sheet offsets invalid");
+        }
 
         var ids = new List<int>();
         int cursor = (int)idsOffset;
         while (cursor < span.Length && span[cursor] is not 0xFF and not 0x88)
             ids.Add(span[cursor++]);
         if (ids.Count == 0 || cursor >= span.Length)
+        {
             throw new FormatException("sprite sheet has no frame terminator");
+        }
 
         var offsets = new uint[ids.Count];
         for (int index = 0; index < ids.Count; index++)

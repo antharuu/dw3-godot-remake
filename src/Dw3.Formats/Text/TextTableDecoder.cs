@@ -56,7 +56,9 @@ public static class TextTableDecoder
         int count = (int)rawCount;
         int headerSize = 4 + count * 4;
         if (headerSize > data.Length)
+        {
             throw new FormatException($"Text table offset header is truncated (needs {headerSize} bytes, got {data.Length}).");
+        }
 
         var offsets = new int[count];
         for (int i = 0; i < count; i++)
@@ -70,7 +72,9 @@ public static class TextTableDecoder
         // Offsets must be monotonically non-decreasing.
         for (int i = 1; i < count; i++)
             if (offsets[i] < offsets[i - 1])
+            {
                 throw new FormatException($"Text table offsets are not monotonic at index {i}.");
+            }
 
         var entries = new IReadOnlyList<TextToken>[count];
         for (int i = 0; i < count; i++)

@@ -74,7 +74,9 @@ public sealed class BattleShotCameraVectorTests
         var expectedThrowsAt = c["throwsAt"]!.GetValue<int>();
         var expectedException = c["exception"]?.GetValue<string>();
         if (r.ThrowsAt != expectedThrowsAt || r.Exception != expectedException)
+        {
             errors.Add($"[{id}] exception: got {r.Exception}@{r.ThrowsAt} expected {expectedException}@{expectedThrowsAt}");
+        }
 
         var snapshots = c["snapshots"]!.AsArray();
         if (snapshots.Count != r.Snapshots.Count)

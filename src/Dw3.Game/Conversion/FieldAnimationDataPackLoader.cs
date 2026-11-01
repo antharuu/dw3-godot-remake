@@ -53,7 +53,9 @@ public sealed class FieldAnimationDataPackLoader : IDisposable
         IReadOnlyDictionary<int, (string Path, int OffsetX, int OffsetY)> sprites = ReadFieldcomFrames("icon");
         var frames = sprites.ToDictionary(pair => pair.Key, pair => new PlayerIconFrame(pair.Key, pair.Value.Path, pair.Value.OffsetX, pair.Value.OffsetY));
         for (int frame = FirstIconFrame; frame <= LastIconFrame; frame++)
+        {
             if (!frames.ContainsKey(frame)) throw Invalid($"icon frame 0x{frame:X} missing");
+        }
 
         var steps = new Dictionary<int, List<PlayerIconStep>>();
         using (SqliteCommand command = Command("SELECT animation, frame_id, duration FROM icon_animation_steps ORDER BY animation, ordinal"))

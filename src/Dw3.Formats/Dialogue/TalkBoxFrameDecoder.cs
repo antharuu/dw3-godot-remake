@@ -94,7 +94,9 @@ public static class TalkBoxFrameDecoder
         for (int index = 0; index < ids.Count; index++)
             if (ids[index] == frameId) { position = index; break; }
         if (position < 0)
+        {
             throw new FormatException($"Menu sprite sheet lacks frame {frameId}.");
+        }
 
         ReadOnlySpan<byte> body = sheet.AsSpan(4);
         int offset = frameOffsets[position];
@@ -105,7 +107,9 @@ public static class TalkBoxFrameDecoder
         if (count is <= 0 or > MaxFrameParts)
             throw new FormatException($"Menu sprite frame {frameId} has invalid part count {count}.");
         if (rate is < -1 or > 3)
+        {
             throw new FormatException($"Menu sprite frame {frameId} has invalid semi-transparency rate {rate}.");
+        }
 
         var (rgba, width, height, _, _) = BattleHudDecoder.RenderFieldFrame(parts, body, offset, pages);
         return new TalkBoxFrameImage(frameId, width, height, clutFrames, rate != -1, rgba);
@@ -127,7 +131,9 @@ public static class TalkBoxFrameDecoder
             throw new FormatException("Talk-box panel CLUT lies outside the loaded menu texture.");
         IReadOnlyList<ushort> clutRow = pages[clutPage].Rows[clutY];
         if (clutWord + 16 > clutRow.Count)
+        {
             throw new FormatException("Talk-box panel CLUT row is truncated.");
+        }
 
         int width = PanelU1 - PanelU0 + 1;
         int height = PanelV1 - PanelV0;

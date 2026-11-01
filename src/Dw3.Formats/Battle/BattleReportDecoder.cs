@@ -74,7 +74,9 @@ public static class BattleReportDecoder
         int offset = (int)(AnimationsAddr - OverlayBase);
         int size = AnimationPartners * AnimationFrames * 4;
         if (offset < 0 || offset + size > overlay.Length)
+        {
             throw new FormatException($"STFGTREP_animations at 0x{AnimationsAddr:X} lies outside STFGTREP.PRO.");
+        }
 
         var result = new int[AnimationPartners, AnimationFrames];
         for (int p = 0; p < AnimationPartners; p++)

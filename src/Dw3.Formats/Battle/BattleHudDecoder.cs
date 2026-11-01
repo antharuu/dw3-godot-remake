@@ -137,12 +137,16 @@ public static class BattleHudDecoder
     {
         ArgumentNullException.ThrowIfNull(imagesData);
         if (imagesData.Length < 8)
+        {
             throw new FormatException("FILE_BATTLE_IMAGES is too short for two archive entries.");
+        }
 
         // Outer archive: u32[0]=entry0_offset, u32[1]=entry1_offset.
         int entry1Off = (int)BinaryPrimitives.ReadUInt32LittleEndian(imagesData.AsSpan(4));
         if (entry1Off < 8 || entry1Off >= imagesData.Length)
+        {
             throw new FormatException("FILE_BATTLE_IMAGES entry 1 offset is out of range.");
+        }
 
         // Entry 1 is itself a one-entry inner archive.
         ReadOnlySpan<byte> inner = imagesData.AsSpan(entry1Off);
@@ -150,7 +154,9 @@ public static class BattleHudDecoder
             throw new FormatException("FILE_BATTLE_IMAGES inner archive is too short.");
         int texOff = (int)BinaryPrimitives.ReadUInt32LittleEndian(inner);
         if (texOff < 4 || texOff >= inner.Length)
+        {
             throw new FormatException("FILE_BATTLE_IMAGES inner texture offset is out of range.");
+        }
 
         // RLEN-compressed TIM.
         byte[] raw = DecompressRlen(inner.Slice(texOff));
@@ -169,7 +175,9 @@ public static class BattleHudDecoder
             throw new FormatException("Report texture file is too short.");
         uint skip = BinaryPrimitives.ReadUInt32LittleEndian(archiveWithSkip.AsSpan());
         if (skip != 4)
+        {
             throw new FormatException($"Report texture file outer pointer is {skip}, expected 4.");
+        }
 
         // Strip the leading 4-byte skip and parse the inner archive.
         byte[] archive = archiveWithSkip[4..];
@@ -197,7 +205,9 @@ public static class BattleHudDecoder
     {
         ArgumentNullException.ThrowIfNull(data);
         if (data.Length < 16)
+        {
             throw new FormatException("Menu texture archive is truncated.");
+        }
 
         // Offset table starts at byte 4, entries are relative to byte 4, terminated by 0.
         var offsets = new List<int>();
@@ -213,7 +223,9 @@ public static class BattleHudDecoder
             offsets.Add(offset);
         }
         if (offsets.Count == 0)
+        {
             throw new FormatException("Menu texture archive has no entries.");
+        }
 
         var pages = new List<HudTexturePage>();
         foreach (int offset in offsets)
@@ -232,7 +244,9 @@ public static class BattleHudDecoder
     {
         ArgumentNullException.ThrowIfNull(raw);
         if (raw.Length < 8 || BinaryPrimitives.ReadUInt32LittleEndian(raw) != 0x10)
+        {
             throw new FormatException("4-bit TIM magic 0x10 not found.");
+        }
 
         int cursor = 8;
         uint flags = BinaryPrimitives.ReadUInt32LittleEndian(raw.AsSpan(4));
@@ -276,17 +290,23 @@ public static class BattleHudDecoder
     {
         ArgumentNullException.ThrowIfNull(imagesData);
         if (imagesData.Length < 8)
+        {
             throw new FormatException("FILE_BATTLE_IMAGES is too short.");
+        }
 
         int entry0Off = (int)BinaryPrimitives.ReadUInt32LittleEndian(imagesData.AsSpan());
         int entry1Off = (int)BinaryPrimitives.ReadUInt32LittleEndian(imagesData.AsSpan(4));
         if (entry0Off < 4 || entry1Off <= entry0Off || entry1Off > imagesData.Length)
+        {
             throw new FormatException("FILE_BATTLE_IMAGES cursor bar archive offsets are invalid.");
+        }
 
         // Direct-16 TIM: no CLUT, image block starts at byte 8.
         ReadOnlySpan<byte> tim = imagesData.AsSpan(entry0Off, entry1Off - entry0Off);
         if (tim.Length < 20 || BinaryPrimitives.ReadUInt32LittleEndian(tim) != 0x10)
+        {
             throw new FormatException("Battle HUD cursor bar is not a direct-16 TIM.");
+        }
 
         ushort words = BinaryPrimitives.ReadUInt16LittleEndian(tim.Slice(16));
         ushort height = BinaryPrimitives.ReadUInt16LittleEndian(tim.Slice(18));
@@ -294,7 +314,9 @@ public static class BattleHudDecoder
         if (tim.Length < 20 + pixelCount * 2)
             throw new FormatException("Battle HUD cursor bar TIM pixel data is truncated.");
         if (words < (CursorFrames + 1) * CursorW || height != CursorH)
+        {
             throw new FormatException($"Battle HUD cursor strip is {words}×{height}, expected at least {(CursorFrames + 1) * CursorW}×{CursorH}.");
+        }
 
         var rgba = new byte[pixelCount * 4];
         for (int i = 0; i < pixelCount; i++)
@@ -330,13 +352,17 @@ public static class BattleHudDecoder
         ArgumentNullException.ThrowIfNull(parts);
         ArgumentNullException.ThrowIfNull(pages);
         if (frameOffset < 0 || frameOffset + 6 > sheetBody.Length)
+        {
             throw new FormatException("Sprite frame offset is out of range.");
+        }
 
         short count = BinaryPrimitives.ReadInt16LittleEndian(sheetBody.Slice(frameOffset));
         short frameRow = BinaryPrimitives.ReadInt16LittleEndian(sheetBody.Slice(frameOffset + 2));
         short abr = BinaryPrimitives.ReadInt16LittleEndian(sheetBody.Slice(frameOffset + 4));
         if (count <= 0 || count > 64)
+        {
             throw new FormatException($"Sprite frame has invalid part count {count}.");
+        }
 
         var rendered = new (int Dx, int Dy, int W, int H, byte[] Rgba)[count];
         for (int i = 0; i < count; i++)
@@ -350,7 +376,9 @@ public static class BattleHudDecoder
                 throw new FormatException($"Sprite frame references missing part {partIdx}.");
             HudSpritePart part = parts[partIdx];
             if (part.Mode != 0 || part.Width <= 0 || part.Height <= 0)
+            {
                 throw new FormatException("Sprite part bounds are invalid.");
+            }
 
             int clutY = part.ClutY + frameRow + (clutRowOverride ?? 0);
             ushort[] palette = ReadPalette(pages, part.ClutX, clutY, abr != 0);
@@ -477,7 +505,9 @@ public static class BattleHudDecoder
         int pageIndex = part.U / 256;
         int localU = part.U % 256;
         if (pageIndex >= pages.Count || localU + part.Width > 256 || part.V + part.Height > PageHeight)
+        {
             throw new FormatException("Sprite part exceeds loaded texture page bounds.");
+        }
 
         var rgba = new byte[part.Width * part.Height * 4];
         int pixel = 0;

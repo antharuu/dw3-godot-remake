@@ -81,7 +81,9 @@ public static class GrowthCalculator
         }
 
         if (level >= 41)
+        {
             return;
+        }
 
         for (var index = 0; index < state.Resistances.Length; index++)
         {
@@ -104,18 +106,24 @@ public static class GrowthCalculator
     {
         state.Exp += exp;
         if (state.Exp > 999_999)
+        {
             state.Exp = 999_999;
+        }
 
         var leveled = false;
         for (var level = state.Level + 1; level < 100; level++)
         {
             var tier = ExperienceTier(level);
             if (tier < 0)
+            {
                 break;
+            }
 
             var threshold = (level * level * level + level * 5 - 6) * expRate / 10 + tables.LevelExp[tier];
             if (threshold >= state.Exp)
+            {
                 break;
+            }
 
             state.Level++;
             if (state.Level < 100)
@@ -145,7 +153,9 @@ public static class GrowthCalculator
         };
 
         if (share <= 0)
+        {
             return 1;
+        }
 
         return entryLevel < digimonExpLevel
             ? Math.Min(share, 10)
@@ -157,10 +167,14 @@ public static class GrowthCalculator
     {
         entryExp += exp;
         if (entryExp > 9_999_999)
+        {
             entryExp = 9_999_999;
+        }
 
         if (entryLevel >= 99)
+        {
             return false;
+        }
 
         var leveled = false;
         while (entryLevel < 99)
@@ -169,7 +183,9 @@ public static class GrowthCalculator
                 ? entryLevel * 10
                 : (expLevel - 1) * 10 + (entryLevel - (expLevel - 1)) * 50;
             if (entryExp < needed)
+            {
                 break;
+            }
 
             entryLevel++;
             leveled = true;

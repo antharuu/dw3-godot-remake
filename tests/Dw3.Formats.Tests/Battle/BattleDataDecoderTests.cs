@@ -106,7 +106,9 @@ public sealed class BattleDataDecoderTests
     {
         byte[] bytes = new byte[316];
         for (int index = 0; index < 79; index++)
+        {
             BinaryPrimitives.WriteInt32LittleEndian(bytes.AsSpan(index * 4), index - 4);
+        }
 
         BattleGrowthData growth = BattleDataDecoder.DecodeGrowth(bytes, 0);
 

@@ -88,7 +88,9 @@ public sealed class FieldEncounterDecoderTests
         byte[] data = new byte[bufferSize];
         int[] rates = [100, 3, 4, 6, 9, 18];
         for (int i = 0; i < 6; i++)
+        {
             BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(ratesOffset + i * 4), rates[i]);
+        }
 
         IReadOnlyList<int> decoded = FieldEncounterDecoder.DecodeBattleRates(data);
 
@@ -154,7 +156,9 @@ public sealed class FieldEncounterDecoderTests
         // Fill 8 pointers with plausible values (pointing to valid AreaBattle slots in the buffer)
         uint areaBase = StageOverlayBase + 0x60;
         for (int i = 0; i < 8; i++)
+        {
             BinaryPrimitives.WriteUInt32LittleEndian(overlay.AsSpan(offset + 4 + i * 4), areaBase);
+        }
 
         uint ptr = StageOverlayBase + offset;
         Assert.Throws<FormatException>(() => FieldEncounterDecoder.DecodeBattleList(overlay, ptr, StageOverlayBase));
@@ -185,7 +189,9 @@ public sealed class FieldEncounterDecoderTests
         BinaryPrimitives.WriteInt32LittleEndian(overlay.AsSpan(0x200), 0); // count (battle-rate index 0)
         uint areaAddr = StageOverlayBase + 0x100;
         for (int i = 0; i < 8; i++)
+        {
             BinaryPrimitives.WriteUInt32LittleEndian(overlay.AsSpan(0x204 + i * 4), areaAddr + (uint)(i * 12));
+        }
 
         // FieldBattles at offset 0x300: serial=131, id=0, pad8=0, 4 pointers to BattleList
         BinaryPrimitives.WriteInt32LittleEndian(overlay.AsSpan(0x300), 131); // serial
@@ -193,7 +199,9 @@ public sealed class FieldEncounterDecoderTests
         BinaryPrimitives.WriteInt32LittleEndian(overlay.AsSpan(0x308), 0);   // pad8
         uint listAddr = StageOverlayBase + 0x200;
         for (int i = 0; i < 4; i++)
+        {
             BinaryPrimitives.WriteUInt32LittleEndian(overlay.AsSpan(0x30C + i * 4), listAddr);
+        }
 
         uint fbAddr = StageOverlayBase + 0x300;
         FieldBattles fb = FieldEncounterDecoder.DecodeFieldBattles(overlay, fbAddr, StageOverlayBase);

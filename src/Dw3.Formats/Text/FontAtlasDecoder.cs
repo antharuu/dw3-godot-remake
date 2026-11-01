@@ -53,7 +53,9 @@ public static class FontAtlasDecoder
     public static FontAtlas Decode(ReadOnlySpan<byte> data, string sha256Hex)
     {
         if (data.Length < FileCacheHeaderSize + 4)
+        {
             throw new FormatException("CMFONTTM.BIN is too short to contain a valid archive header.");
+        }
 
         // The archive body begins at offset 4 (after FILE_CACHE count header).
         // The offset table within the body is a zero-terminated sequence of u32
@@ -99,7 +101,9 @@ public static class FontAtlasDecoder
         if (magic != 0x10u)
             throw new FormatException($"CMFONTTM page {pageIndex} does not have TIM magic 0x10 (got 0x{magic:X8}).");
         if (flags != 0x02u)
+        {
             throw new FormatException($"CMFONTTM page {pageIndex} TIM flags 0x{flags:X8} are not the expected 4-bit 0x02.");
+        }
 
         // Image block starts immediately at offset 8 (no CLUT block).
         if (timData.Length < 8 + 12)

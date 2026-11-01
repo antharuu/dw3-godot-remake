@@ -128,7 +128,9 @@ public sealed class NpcOverlayReaderTests
         byte[] overlay = new byte[1200];
         uint ptr = LoadBase;
         for (int i = 0; i < overlay.Length; i += 2)
+        {
             BinaryPrimitives.WriteUInt16LittleEndian(overlay.AsSpan(i), 0x6001);
+        }
 
         Assert.Throws<FormatException>(() =>
             NpcOverlayReader.ReadConditionList(overlay, ptr, LoadBase));

@@ -160,7 +160,9 @@ public sealed class StageBattlesScannerTests
             0x03E0_0008u, 0x0000_0000u,                                     // jr $ra / nop
         ];
         for (int i = 0; i < mips.Length; i++)
+        {
             BinaryPrimitives.WriteUInt32LittleEndian(overlay.AsSpan(i * 4), mips[i]);
+        }
 
         IReadOnlyList<StageBattleArray> arrays = StageBattlesScanner.Scan(
             overlay, OverlayBase, FieldStateAddress, BattlesFieldOffset);
@@ -206,7 +208,9 @@ public sealed class StageBattlesScannerTests
             0x03E0_0008u, 0x0000_0000u,                                  // jr $ra / nop
         ];
         for (int i = 0; i < mips.Length; i++)
+        {
             BinaryPrimitives.WriteUInt32LittleEndian(overlay.AsSpan(i * 4), mips[i]);
+        }
 
         IReadOnlyList<StageBattleArray> arrays = StageBattlesScanner.Scan(
             overlay, OverlayBase, FieldStateAddress, BattlesFieldOffset);
@@ -226,7 +230,9 @@ public sealed class StageBattlesScannerTests
         byte[] overlay = new byte[28];
         // nop-filled
         for (int i = 0; i < overlay.Length / 4; i++)
+        {
             BinaryPrimitives.WriteUInt32LittleEndian(overlay.AsSpan(i * 4), 0x0000_0000u);
+        }
 
         IReadOnlyList<StageBattleArray> arrays = StageBattlesScanner.Scan(
             overlay, OverlayBase, FieldStateAddress, BattlesFieldOffset);

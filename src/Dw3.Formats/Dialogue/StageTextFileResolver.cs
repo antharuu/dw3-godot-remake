@@ -37,7 +37,9 @@ public sealed class StageTextFileResolver(DiscFileTable files, int languageCopie
                 matches.Add((selector + copy, path));
         }
         if (matches.Count != 1)
+        {
             throw new FormatException($"Text selector 0x{selector:X} has {matches.Count} language copies under {_folderPrefix}, expected exactly one.");
+        }
 
         (int fileId, string isoPath) = matches[0];
         return new StageTextFile(selector, fileId, isoPath, ParseTalkIndex(isoPath));

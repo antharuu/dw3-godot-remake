@@ -197,7 +197,9 @@ public sealed class PlayerArchiveDecoderTests
         for (int y = 0; y < 2; y++)
             for (int x = 0; x < 4; x++)
                 if (!(x == 2 && y == 1))
+                {
                     transparent.Add((x, y));
+                }
 
         var timBytes = BuildTim4Bit(widthWords: 1, height: 2, transparent);
         var tim = Dw3.Formats.Binary.Tim.TimDecoder.Decode(timBytes);
@@ -217,7 +219,9 @@ public sealed class PlayerArchiveDecoderTests
         var transparent = new HashSet<(int, int)>();
         for (int y = 0; y < 2; y++)
             for (int x = 0; x < 4; x++)
+            {
                 transparent.Add((x, y));
+            }
 
         var timBytes = BuildTim4Bit(widthWords: 1, height: 2, transparent);
         var tim = Dw3.Formats.Binary.Tim.TimDecoder.Decode(timBytes);
@@ -235,7 +239,9 @@ public sealed class PlayerArchiveDecoderTests
         for (int y = 0; y < 4; y++)
             for (int x = 0; x < 4; x++)
                 if (!(x >= 1 && x <= 2 && y >= 1 && y <= 2))
+                {
                     transparent.Add((x, y));
+                }
 
         var timBytes = BuildTim4Bit(widthWords: 1, height: 4, transparent);
         var tim = Dw3.Formats.Binary.Tim.TimDecoder.Decode(timBytes);

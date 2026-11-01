@@ -53,7 +53,9 @@ public sealed class DialogueDataPackLoader : IDisposable
                     reader.GetInt32(1), reader.GetInt32(2), reader.GetInt32(3), reader.GetInt32(4) != 0));
             }
         foreach (int required in RequiredFrames)
+        {
             if (!frames.ContainsKey(required)) throw Invalid($"talk-box frame {required} missing");
+        }
 
         PanelSpec? panel = null;
         using (SqliteCommand command = Command("SELECT red, green, blue, semi, texture_page, clut, image_path, width, height FROM talk_box_panel"))
@@ -199,7 +201,9 @@ public sealed class DialogueDataPackLoader : IDisposable
         var lineHeights = new Dictionary<int, int>();
         using (SqliteCommand command = Command("SELECT style_id, line_height FROM font_styles ORDER BY style_id"))
         using (SqliteDataReader reader = command.ExecuteReader())
+        {
             while (reader.Read()) lineHeights.Add(reader.GetInt32(0), reader.GetInt32(1));
+        }
 
         var styles = new Dictionary<int, FontStyleData>();
         foreach ((int style, int expectedLineHeight) in StyleLineHeights)

@@ -517,7 +517,9 @@ public partial class GameHost
                 var screenX = objScreenLeft + ox * 3 + 1;
                 var screenY = objScreenTop + oy * 3 + 1;
                 if (screenX < 1 || screenY < 1 || screenX >= capture.GetWidth() - 1 || screenY >= capture.GetHeight() - 1)
+                {
                     continue;
+                }
 
                 // Find the matching player source pixel for this screen position.
                 var playerOx = (screenX - playerScreenLeft - 1) / 3;
