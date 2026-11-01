@@ -2,18 +2,6 @@ using Dw3Production.Conversion;
 
 namespace Dw3Production.Simulation;
 
-/// <summary>The battle's presentation phases. The menu shows in PlayerCommand; the
-/// enemy's turn is EnemyTurn; Ended is any terminal outcome (won/lost/fled).</summary>
-public enum BattleFlowPhase
-{
-    PlayerCommand,
-    EnemyTurn,
-    Ended,
-}
-
-/// <summary>One technique the active partner can pick in the Technique submenu.</summary>
-public sealed record BattleTechnique(int Id, string Label, TechData Tech, BattleTextLine? Text = null);
-
 /// <summary>
 /// The battle's turn flow, the thin engine-free wrapper over the BattleState that
 /// the presentation drives. It owns the menu phase (player command vs enemy turn), the six
@@ -79,58 +67,29 @@ public sealed class BattleFlowController
     /// or the item id (Item), ignored for Attack and Flee. Returns false when the command was
     /// not spendable (an unaffordable technique, a barred digivolution, an invalid switch or a
     /// missing item), leaving the menu open.</summary>
-    public bool Choose(BattleCommand command, int arg, BattleRng rng)
+    public bool Choose(BattleCommand command, int arg, IBattleRng rng)
     {
-        if (Phase != BattleFlowPhase.PlayerCommand) return false;
-        var actor = State.ActivePlayerFighter;
-        switch (command)
+        if (Phase != BattleFlowPhase.PlayerCommand)
         {
-            case BattleCommand.Attack:
-                if (!State.PlayerAttack(PlayerBasicTech, rng)) return false;
-                SetMessage("basicAttack", NameTokens(actor));
-                break;
-            case BattleCommand.Technique:
-                {
-                    var technique = PlayerTechniques.FirstOrDefault(candidate => candidate.Id == arg);
-                    if (technique is null || !State.PlayerTechnique(technique.Tech, rng))
-                    {
-                        SetMessage("noMp");
-                        return false;
-                    }
-                    SetMessage("technique", NameTokens(actor), technique.Text?.Tokens ?? []);
-                    break;
-                }
-            case BattleCommand.Digivolve:
-                if (!State.PlayerDigivolve(arg))
-                {
-                    MessageText = BattleTextLine.Missing;
-                    return false;
-                }
-                SetMessage("digivolve", NameTokens(actor), NameTokens(State.ActivePlayerFighter));
-                break;
-            case BattleCommand.Switch:
-                if (!State.PlayerSwitch(arg))
-                {
-                    MessageText = BattleTextLine.Missing;
-                    return false;
-                }
-                SetMessage("switch", NameTokens(State.ActivePlayerFighter));
-                break;
-            case BattleCommand.Item:
-                if (!UseItem(arg))
-                {
-                    MessageText = BattleTextLine.Missing;
-                    return false;
-                }
-                SetMessage("item", NameTokens(actor), ItemTokens(arg));
-                break;
-            case BattleCommand.Flee:
-                {
-                    var fled = State.PlayerFlee(rng);
-                    if (fled) SetMessage("fledPlayer", NameTokens(actor));
-                    break;
-                }
+            return false;
         }
+
+        var actor = State.ActivePlayerFighter;
+        bool spent = command switch
+        {
+            BattleCommand.Attack => ChooseAttack(actor, rng),
+            BattleCommand.Technique => ChooseTechnique(actor, arg, rng),
+            BattleCommand.Digivolve => ChooseDigivolve(actor, arg),
+            BattleCommand.Switch => ChooseSwitch(arg),
+            BattleCommand.Item => ChooseItem(actor, arg),
+            BattleCommand.Flee => ChooseFlee(actor, rng),
+            _ => true,
+        };
+        if (!spent)
+        {
+            return false;
+        }
+
         AdvancePhase();
         return true;
     }
@@ -139,9 +98,16 @@ public sealed class BattleFlowController
     /// (UseItem): the item must be in the catalogue and the stock positive.</summary>
     private bool UseItem(int itemId)
     {
-        if (!Items.TryGetValue(itemId, out var item)) return false;
-        if (!ItemStock.TryGetValue(itemId, out var count) || count <= 0) return false;
-        if (!State.PlayerItem(item)) return false;
+        if (!Items.TryGetValue(itemId, out var item) || !ItemStock.TryGetValue(itemId, out var count) || count <= 0)
+        {
+            return false;
+        }
+
+        if (!State.PlayerItem(item))
+        {
+            return false;
+        }
+
         ItemStock[itemId] = count - 1;
         return true;
     }
@@ -149,9 +115,13 @@ public sealed class BattleFlowController
     /// <summary>Resolves the enemy's turn: it decides its action from its battle table
     /// (attack/technique/switch/run-away; its counter-attack fires inside the player's hit) and
     /// executes it, then advances the phase.</summary>
-    public void EnemyAct(BattleRng rng)
+    public void EnemyAct(IBattleRng rng)
     {
-        if (Phase != BattleFlowPhase.EnemyTurn) return;
+        if (Phase != BattleFlowPhase.EnemyTurn)
+        {
+            return;
+        }
+
         var decision = State.RunEnemyTurn(rng);
         var enemy = State.ActiveEnemyFighter;
         SetMessage(decision.Kind is EnemyActionKind.Technique1 or EnemyActionKind.Technique2 ? "technique" : "actor", NameTokens(enemy));
@@ -183,13 +153,24 @@ public sealed class BattleFlowController
     {
         if (State.Outcome != BattleOutcome.None)
         {
-            if (State.Outcome == BattleOutcome.Won) SetMessage("won");
-            else if (State.Outcome == BattleOutcome.Lost) SetMessage("lost");
+            if (State.Outcome == BattleOutcome.Won)
+            {
+                SetMessage("won");
+            }
+            else if (State.Outcome == BattleOutcome.Lost)
+            {
+                SetMessage("lost");
+            }
+
             Phase = BattleFlowPhase.Ended;
             return;
         }
+
         Phase = State.NextActor == BattleSide.Player ? BattleFlowPhase.PlayerCommand : BattleFlowPhase.EnemyTurn;
-        if (Phase == BattleFlowPhase.PlayerCommand) ClearMessage();
+        if (Phase == BattleFlowPhase.PlayerCommand)
+        {
+            ClearMessage();
+        }
     }
 
     /// <summary>Force-ends the battle with the given outcome: the test driver sets the battle's result directly,
@@ -201,11 +182,114 @@ public sealed class BattleFlowController
         Phase = BattleFlowPhase.Ended;
     }
 
+    /// <summary>The basic attack; refused without a message when no hit can land.</summary>
+    /// <param name="actor">The active partner before the command, named in the message.</param>
+    /// <param name="rng">The battle's random source.</param>
+    /// <returns>Whether the command spent the turn.</returns>
+    private bool ChooseAttack(BattleFighter? actor, IBattleRng rng)
+    {
+        if (!State.PlayerAttack(PlayerBasicTech, rng))
+        {
+            return false;
+        }
+
+        SetMessage("basicAttack", NameTokens(actor));
+        return true;
+    }
+
+    /// <summary>
+    /// A technique from the submenu, by technique id. An unknown id or an unaffordable technique
+    /// shows the "no MP" message and leaves the menu open.
+    /// </summary>
+    /// <param name="actor">The active partner before the command, named in the message.</param>
+    /// <param name="techniqueId">The picked technique id.</param>
+    /// <param name="rng">The battle's random source.</param>
+    /// <returns>Whether the command spent the turn.</returns>
+    private bool ChooseTechnique(BattleFighter? actor, int techniqueId, IBattleRng rng)
+    {
+        var technique = PlayerTechniques.FirstOrDefault(candidate => candidate.Id == techniqueId);
+        if (technique is null || !State.PlayerTechnique(technique.Tech, rng))
+        {
+            SetMessage("noMp");
+            return false;
+        }
+
+        SetMessage("technique", NameTokens(actor), technique.Text?.Tokens ?? []);
+        return true;
+    }
+
+    /// <summary>A digivolution into the Digimon form id; the message names the form before and after.</summary>
+    /// <param name="actor">The active partner before the command, named in the message.</param>
+    /// <param name="form">The Digimon form id to change into.</param>
+    /// <returns>Whether the command spent the turn.</returns>
+    private bool ChooseDigivolve(BattleFighter? actor, int form)
+    {
+        if (!State.PlayerDigivolve(form))
+        {
+            return RejectCommand();
+        }
+
+        SetMessage("digivolve", NameTokens(actor), NameTokens(State.ActivePlayerFighter));
+        return true;
+    }
+
+    /// <summary>A manual switch to the party slot; the message names the incoming partner.</summary>
+    /// <param name="slot">The party slot (0..2) to bring in.</param>
+    /// <returns>Whether the command spent the turn.</returns>
+    private bool ChooseSwitch(int slot)
+    {
+        if (!State.PlayerSwitch(slot))
+        {
+            return RejectCommand();
+        }
+
+        SetMessage("switch", NameTokens(State.ActivePlayerFighter));
+        return true;
+    }
+
+    /// <summary>An item from the bag, by item id.</summary>
+    /// <param name="actor">The active partner, named in the message.</param>
+    /// <param name="itemId">The item id picked from the bag.</param>
+    /// <returns>Whether the command spent the turn.</returns>
+    private bool ChooseItem(BattleFighter? actor, int itemId)
+    {
+        if (!UseItem(itemId))
+        {
+            return RejectCommand();
+        }
+
+        SetMessage("item", NameTokens(actor), ItemTokens(itemId));
+        return true;
+    }
+
+    /// <summary>A run-away attempt. It always spends the turn; only a success shows a message.</summary>
+    /// <param name="actor">The active partner, named in the message.</param>
+    /// <param name="rng">The battle's random source.</param>
+    /// <returns>Always <see langword="true"/>.</returns>
+    private bool ChooseFlee(BattleFighter? actor, IBattleRng rng)
+    {
+        if (State.PlayerFlee(rng))
+        {
+            SetMessage("fledPlayer", NameTokens(actor));
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Refuses a digivolve, switch or item command: the pending message text is dropped while the
+    /// visible message line is left as it was.
+    /// </summary>
+    /// <returns>Always <see langword="false"/>, so a handler can return it directly.</returns>
+    private bool RejectCommand()
+    {
+        MessageText = BattleTextLine.Missing;
+        return false;
+    }
+
     private BattleMenuLine Line(int command, bool enabled) { var line = Text?.Command(command) ?? BattleTextLine.Missing; return new BattleMenuLine(line.Debug, enabled, line); }
     private void SetMessage(string key, params IReadOnlyList<TextToken>[] substitutions) { MessageText = Text?.Message(key, substitutions) ?? BattleTextLine.Missing; Message = MessageText.Debug; MessageVisible = MessageText != BattleTextLine.Missing; }
     private void ClearMessage() { MessageText = BattleTextLine.Missing; Message = string.Empty; MessageVisible = false; }
     private IReadOnlyList<TextToken> NameTokens(BattleFighter? fighter) => fighter is not null && NameIds.TryGetValue(fighter.Id, out var nameId) ? Text?.DigimonByNameId(nameId).Tokens ?? [] : [];
     private IReadOnlyList<TextToken> ItemTokens(int itemId) => ItemText.TryGetValue(itemId, out var text) ? text.Tokens : [];
-
-
 }

@@ -451,9 +451,9 @@ public sealed class LegacyBattleFlowConsoleTests
         return s;
     }
 
-    private sealed class NoRng : BattleRng
+    private sealed class NoRng : IBattleRng
     {
-        public int Next() => 0;
+        public int NextValue() => 0;
     }
 
     private static void Check(bool condition, string name)

@@ -119,7 +119,7 @@ public sealed class DamageCalculatorVectorTests
         int boostAmount = I(c, "boostAmount");
         int expected = I(c, "expected");
 
-        int actual = DamageCalculator.GetElementBoost(value, element, boostElem, boostAmount);
+        int actual = DamageCalculator.GetElementBoost(value, element, new ElementBoost(boostElem, boostAmount));
         if (actual != expected)
             errors.Add($"[id={id}] GetElementBoost(value={value},element={element}," +
                        $"boostElement={boostElem},boostAmount={boostAmount}) = {actual}, expected {expected}");
@@ -154,7 +154,7 @@ public sealed class DamageCalculatorVectorTests
         var def = new BattleStats { Level = defLevel };
         def.Stats[BattleStat.Speed] = defSpeed;
 
-        bool actual = DamageCalculator.TestRunAway(runAttempts, atk, def, block, atkFlags, rngValue);
+        bool actual = RunAwayRules.TestRunAway(runAttempts, atk, def, block, atkFlags, rngValue);
         if (actual != expected)
             errors.Add($"[id={id}] TestRunAway(attempts={runAttempts},atkLvl={atkLevel}," +
                        $"defLvl={defLevel},atkSpd={atkSpeed},defSpd={defSpeed}," +
@@ -175,7 +175,7 @@ public sealed class DamageCalculatorVectorTests
         var def = new BattleStats { RunAwayGuard = runAwayGuard };
         def.Stats[BattleStat.Speed] = defSpeed;
 
-        bool actual = DamageCalculator.TestEnemyRunAway(atk, def, atkFlags, rngValue);
+        bool actual = RunAwayRules.TestEnemyRunAway(atk, def, atkFlags, rngValue);
         if (actual != expected)
             errors.Add($"[id={id}] TestEnemyRunAway(atkSpd={atkSpeed},defSpd={defSpeed}," +
                        $"guard={runAwayGuard},flags=0x{atkFlags:X},rng={rngValue}) = {actual}, expected {expected}");
@@ -193,7 +193,7 @@ public sealed class DamageCalculatorVectorTests
         int crit = I(c, "critRoll");
         int exp = I(c, "expected");
 
-        int actual = DamageCalculator.ComputeDamage(tech, user, target, enemy, str, bElem, bAmt, crit);
+        int actual = DamageCalculator.ComputeDamage(tech, user, target, enemy, str, new ElementBoost(bElem, bAmt), crit);
         if (actual != exp)
             errors.Add($"[id={id}] ComputeDamage(power={tech.Power},atkAtk={user.Stats[BattleStat.Attack]}," +
                        $"defDef={target.Stats[BattleStat.Defense]},enemy={enemy},str={str},crit={crit}) = {actual}, expected {exp}");
@@ -227,7 +227,7 @@ public sealed class DamageCalculatorVectorTests
         int crit = I(c, "critRoll");
         int exp = I(c, "expected");
 
-        int actual = DamageCalculator.ComputeMagicDamage(tech, user, target, enemy, str, bElem, bAmt, crit);
+        int actual = DamageCalculator.ComputeMagicDamage(tech, user, target, enemy, str, new ElementBoost(bElem, bAmt), crit);
         if (actual != exp)
             errors.Add($"[id={id}] ComputeMagicDamage(power={tech.Power},elem={tech.Element}," +
                        $"userSpirit={user.Stats[BattleStat.Spirit]},targetSpirit={target.Stats[BattleStat.Spirit]}," +
@@ -272,7 +272,7 @@ public sealed class DamageCalculatorVectorTests
         bool special = B(c, "special");
         int exp = I(c, "expected");
 
-        int actual = DamageCalculator.ComputeCounterDamage(tech, user, target, recv, bElem, bAmt, crit, special);
+        int actual = DamageCalculator.ComputeCounterDamage(tech, user, target, recv, new ElementBoost(bElem, bAmt), crit, special);
         if (actual != exp)
             errors.Add($"[id={id}] ComputeCounterDamage(recv={recv},effectPower={tech.EffectPower},special={special}) = {actual}, expected {exp}");
     }
@@ -340,7 +340,7 @@ public sealed class DamageCalculatorVectorTests
         int rng = I(c, "rngValue");
         bool expected = B(c, "expected");
 
-        bool actual = DamageCalculator.RollCritical(tech, atk, def, atkF, defF, rng);
+        bool actual = CriticalHitRules.RollCritical(tech, atk, def, atkF, defF, rng);
         if (actual != expected)
             errors.Add($"[id={id}] RollCritical(techFam={tech.Family},techEffect={tech.Effect}," +
                        $"atkCritBonus={atk.CriticalBonus},defFam={def.Family},rng={rng}) = {actual}, expected {expected}");
@@ -371,7 +371,7 @@ public sealed class DamageCalculatorVectorTests
         int rng = I(c, "rngValue");
         bool expected = B(c, "expected");
 
-        bool actual = DamageCalculator.RollMagicCritical(tech, def, defF, rng);
+        bool actual = CriticalHitRules.RollMagicCritical(tech, def, defF, rng);
         if (actual != expected)
             errors.Add($"[id={id}] RollMagicCritical(elem={tech.Element},elemPow={tech.ElementPower}," +
                        $"resist={def.Resist[tech.Element - BattleConst.ElementFirst]},rng={rng}) = {actual}, expected {expected}");

@@ -42,8 +42,7 @@ public sealed class LegacyBattleReportConsoleTests
             Resistances = [5, 5, 5, 5, 5, 5, 5],
         };
         // identity tables + a zero RNG make each gain exactly the growth value.
-        GrowthCalculator.RaiseStats(tables, state, hpGrowth: 10, mpGrowth: 5,
-            statGrowth: [2, 3, 4, 2, 3, 4], resistGrowth: [2, 2, 2, 2, 2, 2, 2], level: 10, new NoRng());
+        GrowthCalculator.RaiseStats(tables, state, new PartnerGrowthCurve(0, 10, 5, [2, 3, 4, 2, 3, 4], [2, 2, 2, 2, 2, 2, 2]), level: 10, new NoRng());
 
         Check(state.MaxHp == 110, "raiseStats added the HP growth (vital cut and swing are zero)");
         Check(state.MaxMp == 55, "raiseStats added the MP growth");
@@ -55,8 +54,7 @@ public sealed class LegacyBattleReportConsoleTests
     {
         var tables = Tables();
         var state = new PartnerGrowthState { Level = 10, MaxHp = 9995, MaxMp = 50, BattleStats = new int[6], Resistances = new int[7] };
-        GrowthCalculator.RaiseStats(tables, state, hpGrowth: 10, mpGrowth: 0,
-            statGrowth: [0, 0, 0, 0, 0, 0], resistGrowth: [0, 0, 0, 0, 0, 0, 0], level: 10, new NoRng());
+        GrowthCalculator.RaiseStats(tables, state, new PartnerGrowthCurve(0, 10, 0, [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0]), level: 10, new NoRng());
         Check(state.MaxHp == 9999, "max HP caps at 9999 (growth.c STAT_MAX_HP cap)");
     }
 
@@ -71,8 +69,7 @@ public sealed class LegacyBattleReportConsoleTests
             BattleStats = [997, 0, 0, 0, 0, 0],
             Resistances = [997, 0, 0, 0, 0, 0, 0],
         };
-        GrowthCalculator.RaiseStats(tables, state, hpGrowth: 0, mpGrowth: 0,
-            statGrowth: [3, 0, 0, 0, 0, 0], resistGrowth: [3, 0, 0, 0, 0, 0, 0], level: 10, new NoRng());
+        GrowthCalculator.RaiseStats(tables, state, new PartnerGrowthCurve(0, 0, 0, [3, 0, 0, 0, 0, 0], [3, 0, 0, 0, 0, 0, 0]), level: 10, new NoRng());
         Check(state.BattleStats[0] == 999, "a battle stat caps at 999");
         Check(state.Resistances[0] == 999, "a resistance caps at 999");
     }
@@ -91,8 +88,7 @@ public sealed class LegacyBattleReportConsoleTests
             Resistances = [5, 5, 5, 5, 5, 5, 5],
         };
         // Level 2's threshold: (2^3 + 2*5 - 6) * 10 / 10 + 0 = 12, so exp 13 crosses it.
-        var leveled = GrowthCalculator.AddExp(tables, state, expRate: 10,
-            hpGrowth: 10, mpGrowth: 5, statGrowth: [2, 3, 4, 2, 3, 4], resistGrowth: [2, 2, 2, 2, 2, 2, 2],
+        var leveled = GrowthCalculator.AddExp(tables, state, new PartnerGrowthCurve(10, 10, 5, [2, 3, 4, 2, 3, 4], [2, 2, 2, 2, 2, 2, 2]),
             exp: 13, new NoRng());
 
         Check(leveled, "adding exp past the threshold levels the partner up");
@@ -107,8 +103,7 @@ public sealed class LegacyBattleReportConsoleTests
     {
         var tables = Tables();
         var state = new PartnerGrowthState { Level = 1, MaxHp = 100, MaxMp = 50, BattleStats = new int[6], Resistances = new int[7] };
-        var leveled = GrowthCalculator.AddExp(tables, state, expRate: 10,
-            hpGrowth: 10, mpGrowth: 5, statGrowth: [2, 2, 2, 2, 2, 2], resistGrowth: [2, 2, 2, 2, 2, 2, 2],
+        var leveled = GrowthCalculator.AddExp(tables, state, new PartnerGrowthCurve(10, 10, 5, [2, 2, 2, 2, 2, 2], [2, 2, 2, 2, 2, 2, 2]),
             exp: 12, new NoRng());
 
         Check(!leveled, "exp below the threshold does not level up");
@@ -121,8 +116,7 @@ public sealed class LegacyBattleReportConsoleTests
         var tables = Tables();
         var state = new PartnerGrowthState { Level = 1, MaxHp = 0, MaxMp = 0, BattleStats = new int[6], Resistances = new int[7] };
         // Thresholds: level 2 = 12, level 3 = 36, level 4 = 78, level 5 = 144 (tier 0, expRate 10).
-        var leveled = GrowthCalculator.AddExp(tables, state, expRate: 10,
-            hpGrowth: 0, mpGrowth: 0, statGrowth: [0, 0, 0, 0, 0, 0], resistGrowth: [0, 0, 0, 0, 0, 0, 0],
+        var leveled = GrowthCalculator.AddExp(tables, state, new PartnerGrowthCurve(10, 0, 0, [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0]),
             exp: 100, new NoRng());
 
         Check(leveled, "enough exp levels up several times");
@@ -134,8 +128,7 @@ public sealed class LegacyBattleReportConsoleTests
     {
         var tables = Tables();
         var state = new PartnerGrowthState { Level = 99, Exp = 999990, MaxHp = 0, MaxMp = 0, BattleStats = new int[6], Resistances = new int[7] };
-        GrowthCalculator.AddExp(tables, state, expRate: 10,
-            hpGrowth: 0, mpGrowth: 0, statGrowth: [0, 0, 0, 0, 0, 0], resistGrowth: [0, 0, 0, 0, 0, 0, 0],
+        GrowthCalculator.AddExp(tables, state, new PartnerGrowthCurve(10, 0, 0, [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0]),
             exp: 100, new NoRng());
         Check(state.Exp == 999999, "exp caps at 999999");
     }
@@ -231,9 +224,9 @@ public sealed class LegacyBattleReportConsoleTests
         return s;
     }
 
-    private sealed class NoRng : BattleRng
+    private sealed class NoRng : IBattleRng
     {
-        public int Next() => 0;
+        public int NextValue() => 0;
     }
 
     // ---- report.c / partner.c: engine-free STFGTREP controller ----

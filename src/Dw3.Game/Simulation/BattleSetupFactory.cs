@@ -39,9 +39,21 @@ public static class BattleSetupFactory
     public static BattleStats ToPlayerStats(Conversion.DigimonData digimon, int level)
     {
         var stats = new BattleStats { Level = level, Family = digimon.Family };
-        for (var i = 0; i < 5; i++) stats.Stats[i] = digimon.BattleStats[i];
-        for (var i = 0; i < 7; i++) stats.Resist[i] = digimon.Resistances[i];
-        for (var i = 0; i < 5; i++) stats.Resist[7 + i] = digimon.StatusResists[i];
+        for (var i = 0; i < 5; i++)
+        {
+            stats.Stats[i] = digimon.BattleStats[i];
+        }
+
+        for (var i = 0; i < 7; i++)
+        {
+            stats.Resist[i] = digimon.Resistances[i];
+        }
+
+        for (var i = 0; i < 5; i++)
+        {
+            stats.Resist[7 + i] = digimon.StatusResists[i];
+        }
+
         return stats;
     }
 
@@ -56,9 +68,16 @@ public static class BattleSetupFactory
     {
         var stats = ToPlayerStats(digimon, level);
         var grown = level - 1;
-        if (grown <= 0) return stats;
+        if (grown <= 0)
+        {
+            return stats;
+        }
+
         for (var i = 0; i < 5 && i < digimon.StatGrowth.Count; i++)
+        {
             stats.Stats[i] += digimon.StatGrowth[i] * grown;
+        }
+
         return stats;
     }
 
@@ -67,7 +86,10 @@ public static class BattleSetupFactory
     public static TechData PlayerBasicTech(FighterData fighters, TechniqueData techs, int digimonId)
     {
         if (!fighters.Digimon.TryGetValue(digimonId, out var digimon) || digimon.Skills.Count == 0)
+        {
             return new TechData();
+        }
+
         var skill = digimon.Skills[0];
         return skill != 0 && techs.Techs.TryGetValue(skill, out var tech) ? ToTech(tech) : new TechData();
     }
@@ -76,8 +98,16 @@ public static class BattleSetupFactory
     public static BattleStats ToEnemyBaseStats(Conversion.BattleTableEntry entry)
     {
         var stats = new BattleStats { Family = entry.Family };
-        for (var i = 0; i < 5; i++) stats.Stats[i] = entry.Stats[i];
-        for (var i = 0; i < 12; i++) stats.Resist[i] = entry.Resist[i];
+        for (var i = 0; i < 5; i++)
+        {
+            stats.Stats[i] = entry.Stats[i];
+        }
+
+        for (var i = 0; i < 12; i++)
+        {
+            stats.Resist[i] = entry.Resist[i];
+        }
+
         return stats;
     }
 
@@ -91,10 +121,14 @@ public static class BattleSetupFactory
         for (var i = 0; i < 3 && i < digimonIds.Count; i++)
         {
             var id = digimonIds[i];
-            if (id == 0 || !fighters.Digimon.TryGetValue(id, out var digimon)) continue;
+            if (id == 0 || !fighters.Digimon.TryGetValue(id, out var digimon))
+            {
+                continue;
+            }
+
             var grown = level - 1;
-            var hp = digimon.Hp + digimon.HpGrowth * grown;
-            var mp = digimon.Mp + digimon.MpGrowth * grown;
+            var hp = digimon.Hp + (digimon.HpGrowth * grown);
+            var mp = digimon.Mp + (digimon.MpGrowth * grown);
             partners[i] = new PartnerSeed
             {
                 Id = id,
@@ -105,6 +139,7 @@ public static class BattleSetupFactory
                 Stats = ToPlayerStatsAtLevel(digimon, level),
             };
         }
+
         return partners;
     }
 
@@ -125,9 +160,16 @@ public static class BattleSetupFactory
         for (var i = 0; i < 3 && i < entry.EnemyIndices.Count; i++)
         {
             var poolIndex = entry.EnemyIndices[i];
-            if (poolIndex == 0 || !byIndex.TryGetValue(poolIndex, out var source)) continue;
+            if (poolIndex == 0 || !byIndex.TryGetValue(poolIndex, out var source))
+            {
+                continue;
+            }
+
             if (!table.TryGetValue(source.Fighter, out var battleEntry))
+            {
                 throw new InvalidOperationException($"fighter {source.Fighter} has no battle-table entry");
+            }
+
             enemies[i] = new BattleEnemy
             {
                 Fighter = source.Fighter,
@@ -141,13 +183,18 @@ public static class BattleSetupFactory
                 Counter = ToAction(battleEntry.Counter),
             };
         }
+
         return enemies;
     }
 
     /// <summary>The active partner's techniques (its non-zero learned skills), for the submenu.</summary>
     public static IReadOnlyList<BattleTechnique> PlayerTechniques(FighterData fighters, TechniqueData techs, int digimonId, BattleTextCatalog text)
     {
-        if (!fighters.Digimon.TryGetValue(digimonId, out var digimon)) return [];
+        if (!fighters.Digimon.TryGetValue(digimonId, out var digimon))
+        {
+            return [];
+        }
+
         var result = new List<BattleTechnique>();
         // DIGIMON_DATA.skills[0] is the basic attack (FIGHTSTG_startFirstTech), not a
         // Technique-menu entry. The slice has no PartnerEntry save slots yet, so entries
@@ -155,10 +202,15 @@ public static class BattleSetupFactory
         foreach (var rawSkill in digimon.Skills.Skip(1))
         {
             var skill = SkillId(rawSkill);
-            if (skill == 0 || !techs.Techs.TryGetValue(skill, out var tech)) continue;
+            if (skill == 0 || !techs.Techs.TryGetValue(skill, out var tech))
+            {
+                continue;
+            }
+
             var name = text.Technique(skill);
             result.Add(new BattleTechnique(skill, name.Debug, ToTech(tech), name));
         }
+
         return result;
     }
 
@@ -167,9 +219,8 @@ public static class BattleSetupFactory
     /// technique menus, and the display labels.</summary>
     public static BattleFlowController BuildFlow(
         FighterData fighters, TechniqueData techs, EncounterData encounters, int encounterIndex,
-        IReadOnlyList<int> partyDigimonIds, IReadOnlyDictionary<int, int> nameIds, BattleTextCatalog text, int level)
+        IReadOnlyList<int> partyDigimonIds, IReadOnlyDictionary<int, int> nameIds, BattleTextCatalog text)
     {
-        _ = level;
         var entry = encounters.Encounters.FirstOrDefault(candidate => candidate.Index == encounterIndex)
             ?? throw new InvalidOperationException($"encounter {encounterIndex} not in the manifest");
         var byIndex = encounters.Enemies.ToDictionary(enemy => enemy.Index);
@@ -185,7 +236,9 @@ public static class BattleSetupFactory
         if (enemyPoolIndex != 0 && byIndex.TryGetValue(enemyPoolIndex, out var enemySource)
             && table.TryGetValue(enemySource.Fighter, out var enemyEntry)
             && enemyEntry.Techs[0] != 0 && techs.Techs.TryGetValue(enemyEntry.Techs[0], out var enemySkill))
+        {
             enemyBasic = ToTech(enemySkill);
+        }
 
         var flow = new BattleFlowController
         {
@@ -215,7 +268,11 @@ public static class BattleSetupFactory
     public static IReadOnlyList<int> DigivolutionForms(DigivolutionData digivolutions, int partnerIndex, int level)
     {
         var partner = digivolutions.Partners.FirstOrDefault(candidate => candidate.Partner == partnerIndex);
-        if (partner is null) return [];
+        if (partner is null)
+        {
+            return [];
+        }
+
         return [.. partner.Evolutions
             .Where(entry => entry.Stat == 7 && entry.Value <= level && entry.DigimonId != 0)
             .Select(entry => entry.DigimonId)];
@@ -232,8 +289,13 @@ public static class BattleSetupFactory
         int[] balancedPack = [0, 6, 7];
         var result = new List<int>();
         foreach (var partner in balancedPack)
+        {
             if (partner >= 0 && partner < fighters.DigimonOrdered.Count)
+            {
                 result.Add(fighters.DigimonOrdered[partner].Id);
+            }
+        }
+
         return result;
     }
 
@@ -242,7 +304,13 @@ public static class BattleSetupFactory
     public static int DigimonIndexFor(FighterData fighters, int digimonId)
     {
         for (var i = 0; i < fighters.DigimonOrdered.Count; i++)
-            if (fighters.DigimonOrdered[i].Id == digimonId) return i;
+        {
+            if (fighters.DigimonOrdered[i].Id == digimonId)
+            {
+                return i;
+            }
+        }
+
         return -1;
     }
 }

@@ -1,16 +1,5 @@
 namespace Dw3Production.Simulation;
 
-/// <summary>FIGHTER_* flags (battle.h): the statuses a technique can inflict.</summary>
-public static class FighterFlags
-{
-    public const int Poisoned = 1;
-    public const int Paralyzed = 2;
-    public const int Confused = 4;
-    public const int Asleep = 8;
-    public const int NoSwitch = 0x10;
-    public const int NoDigivolve = 0x20;
-}
-
 /// <summary>
 /// One of the battle's fighters (battle.h BattleFighter), three per side. Engine-free.
 /// A partner's HP/MP go back to the party when the battle ends. The resolved battle
@@ -21,37 +10,108 @@ public static class FighterFlags
 /// </summary>
 public sealed class BattleFighter
 {
-    public int Id;          // the Digimon (DIGIMON_DATA)
-    public int PrevId;      // its own id while id is a temporary one
-    public int Turns;       // an enemy's, for its battle table's conditions
-    public int MaxHp;
-    public int Hp;
-    public int MaxMp;
-    public int Mp;
-    public int Charge;      // added in 64ths to its next technique's damage
-    public int[] Boosts = new int[4];
-    public int Item;
-    public bool Temporary;
-    public bool Special;
-    public int Flags;       // FighterFlags
-    public int Paralysis;
-    public int Sleep;
-    public int Confusion;
+    public int Id { get; set; } // the Digimon (DIGIMON_DATA)
 
-    /// <summary>The resolved battle stats (see class comment).</summary>
-    public BattleStats Stats = new();
+    public int PrevId { get; set; } // its own id while id is a temporary one
 
-    /// <summary>The enemy's strength in 16ths (BattleEnemy.strength); 0 for a partner.</summary>
-    public int Strength;
+    public int Turns { get; set; } // an enemy's, for its battle table's conditions
 
-    /// <summary>The enemy's battle-table techniques techs[0..2] (battle.h BattleTableEntry).</summary>
-    public int[] Techs = new int[3];
+    public int MaxHp { get; set; }
 
-    /// <summary>Its four actions (0..2 conditional, 3 the untested fallback).</summary>
-    public BattleTableAction[] Actions = [];
+    public int Hp { get; set; }
 
-    /// <summary>Its counter-attack entry from the battle table (condition 0 means no counter).</summary>
-    public BattleTableAction Counter;
+    public int MaxMp { get; set; }
+
+    public int Mp { get; set; }
+
+    public int Charge { get; set; } // added in 64ths to its next technique's damage
+
+    public int[] Boosts { get; set; } = new int[4];
+
+    public int Item { get; set; }
+
+    public bool Temporary { get; set; }
+
+    public bool Special { get; set; }
+
+    public int Flags { get; set; } // FighterFlags
+
+    public int Paralysis { get; set; }
+
+    public int Sleep { get; set; }
+
+    public int Confusion { get; set; }
+
+    /// <summary>Gets or sets the resolved battle stats (see class comment).</summary>
+    public BattleStats Stats { get; set; } = new();
+
+    /// <summary>Gets or sets the enemy's strength in 16ths (BattleEnemy.strength); 0 for a partner.</summary>
+    public int Strength { get; set; }
+
+    /// <summary>Gets or sets the enemy's battle-table techniques techs[0..2] (battle.h BattleTableEntry).</summary>
+    public int[] Techs { get; set; } = new int[3];
+
+    /// <summary>Gets or sets its four actions (0..2 conditional, 3 the untested fallback).</summary>
+    public BattleTableAction[] Actions { get; set; } = [];
+
+    /// <summary>Gets or sets its counter-attack entry from the battle table (condition 0 means no counter).</summary>
+    public BattleTableAction Counter { get; set; }
 
     public bool IsKnockedOut => Hp <= 0;
+
+    /// <summary>Takes <paramref name="damage"/> off the fighter's HP, which never drops below 0.</summary>
+    /// <param name="damage">The hit's damage, as the damage formulas return it.</param>
+    public void TakeDamage(int damage)
+    {
+        Hp = Math.Max(Hp - damage, 0);
+    }
+
+    /// <summary>
+    /// Loads a party member for the battle. The fighter shares the seed's resolved stats object,
+    /// whose flags and damage bonus are reset to the fresh fighter's (no status, no charge).
+    /// </summary>
+    /// <param name="seed">The party slot's HP, MP and resolved stats.</param>
+    /// <param name="id">The Digimon the partner fights as (the active Digimon for slot 0).</param>
+    /// <returns>The loaded fighter.</returns>
+    public static BattleFighter FromPartner(PartnerSeed seed, int id)
+    {
+        var fighter = new BattleFighter
+        {
+            Id = id,
+            Hp = seed.Hp,
+            MaxHp = seed.MaxHp,
+            Mp = seed.Mp,
+            MaxMp = seed.MaxMp,
+            Stats = seed.Stats,
+        };
+        fighter.Stats.Flags = fighter.Flags;
+        fighter.Stats.DamageBonus = fighter.Charge;
+        return fighter;
+    }
+
+    /// <summary>
+    /// Loads an enemy for the battle, at full HP and MP, with its battle-table stats scaled by
+    /// its strength in 16ths and its action table and counter copied over.
+    /// </summary>
+    /// <param name="enemy">The encounter's enemy entry.</param>
+    /// <returns>The loaded fighter.</returns>
+    public static BattleFighter FromEnemy(BattleEnemy enemy)
+    {
+        var fighter = new BattleFighter
+        {
+            Id = enemy.Fighter,
+            Hp = enemy.Hp,
+            MaxHp = enemy.Hp,
+            Mp = enemy.Mp,
+            MaxMp = enemy.Mp,
+            Strength = enemy.Strength,
+            Techs = enemy.Techs,
+            Actions = enemy.Actions,
+            Counter = enemy.Counter,
+        };
+        fighter.Stats = DamageCalculator.ComputeEnemyStats(enemy.BaseStats, enemy.Level, enemy.Strength);
+        fighter.Stats.Flags = fighter.Flags;
+        fighter.Stats.DamageBonus = fighter.Charge;
+        return fighter;
+    }
 }

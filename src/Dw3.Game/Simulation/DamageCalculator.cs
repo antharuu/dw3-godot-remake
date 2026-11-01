@@ -1,24 +1,25 @@
 namespace Dw3Production.Simulation;
 
-/// <summary>Supplies battle random values to the simulation.</summary>
-public interface BattleRng
-{
-    /// <summary>Returns the next raw random value for a battle decision.</summary>
-    int Next();
-}
-
-/// <summary>Provides deterministic integer calculations for battle damage, timing, and chance rolls.</summary>
+/// <summary>Provides deterministic integer calculations for battle damage and turn timing.</summary>
 public static class DamageCalculator
 {
     /// <summary>Maps each element to the element that counters it.</summary>
     public static readonly int[] OpposedElements = [0, 0, 4, 2, 5, 3, 7, 8, 6];
 
     /// <summary>Returns the adjustment caused by the active battle element.</summary>
-    public static int GetElementBoost(int value, int element, int boostElement, int boostAmount)
+    public static int GetElementBoost(int value, int element, ElementBoost boost)
     {
-        if (boostElement < BattleConst.ElementFirst) return 0;
-        if (element == boostElement) return value * boostAmount / 128;
-        return OpposedElements[element] == boostElement ? -(value * boostAmount / 256) : 0;
+        if (boost.Element < BattleConst.ElementFirst)
+        {
+            return 0;
+        }
+
+        if (element == boost.Element)
+        {
+            return value * boost.Amount / 128;
+        }
+
+        return OpposedElements[element] == boost.Element ? -(value * boost.Amount / 256) : 0;
     }
 
     /// <summary>Returns the tick delay before the acting side receives another turn.</summary>
@@ -29,168 +30,187 @@ public static class DamageCalculator
         int product = ownSpeed * otherSpeed;
         int root = 999;
         for (var iteration = 0; iteration < 10; iteration++)
-            root = (root + product / root) / 2;
+        {
+            root = (root + (product / root)) / 2;
+        }
+
         return Math.Clamp(1000 * otherSpeed / root, 707, 1414);
     }
 
-    /// <summary>Returns whether a player's attempt to leave a battle succeeds.</summary>
-    public static bool TestRunAway(int runAttempts, BattleStats atk, BattleStats def, bool blockRunAway, int atkFlags, int rngValue)
-    {
-        if (blockRunAway || (atkFlags & (FighterFlags.Asleep | FighterFlags.NoSwitch)) != 0) return false;
-        int chance = (runAttempts + 1) * 8;
-        if ((atkFlags & FighterFlags.Paralyzed) != 0) chance >>= 1;
-        if (atk.Level > def.Level) chance += atk.Level - def.Level;
-        if (atk.Stats[BattleStat.Speed] > def.Stats[BattleStat.Speed])
-            chance += (atk.Stats[BattleStat.Speed] - def.Stats[BattleStat.Speed]) / 10;
-        chance += atk.RunAwayBonus;
-        return (rngValue & 0x7f) < chance;
-    }
-
-    /// <summary>Returns whether an enemy attempt to leave a battle succeeds.</summary>
-    public static bool TestEnemyRunAway(BattleStats atk, BattleStats def, int atkFlags, int rngValue)
-    {
-        if ((atkFlags & FighterFlags.Asleep) != 0) return false;
-        int chance = def.RunAwayGuard != 0 ? 0x20 : 0x40;
-        if ((atkFlags & FighterFlags.Paralyzed) != 0) chance >>= 1;
-        chance += (atk.Stats[BattleStat.Speed] - def.Stats[BattleStat.Speed]) / 10;
-        return (rngValue & 0x7f) < chance;
-    }
-
     /// <summary>Applies elemental, family, critical, and defensive adjustments to physical damage.</summary>
-    public static int AdjustDamage(TechData tech, BattleStats user, BattleStats target, int value, int boostElement, int boostAmount, int critRoll)
+    public static int AdjustDamage(TechData tech, BattleStats user, BattleStats target, int value, ElementBoost boost, int critRoll)
     {
         int result = value;
-        result += GetElementBoost(result, tech.Element, boostElement, boostAmount);
+        result += GetElementBoost(result, tech.Element, boost);
+        result += FamilyBonus(tech, user, target, result);
 
-        if (tech.Family >= BattleConst.FamilyFirst)
+        if (user.DamageBonus != 0)
         {
-            if (tech.Family == target.Family) result += result / 2;
-        }
-        else if (HasFamilyWeapon(user, target.Family))
-        {
-            result += result / 2;
+            result += result * user.DamageBonus / 64;
         }
 
-        if (user.DamageBonus != 0) result += result * user.DamageBonus / 64;
+        result += ElementPowerBonus(tech, user, target, result);
 
-        if (tech.Element >= BattleConst.ElementFirst)
-            result += result * tech.ElementPower * 2 / target.Resist[tech.Element - BattleConst.ElementFirst];
-        else if ((tech.Script < 11 || tech.Script > 12) && user.Element != 0)
-            result += result * user.ElementPower * 2 / target.Resist[user.Element - BattleConst.ElementFirst];
-
-        if (tech.Effect < BattleConst.TechEffectFirst && user.TripleHit != 0 && (tech.Script < 11 || tech.Script > 12))
+        if (tech.Effect < BattleConst.TechEffectFirst && user.TripleHit != 0 && !IsScriptedElementTech(tech))
+        {
             result = result * 4 / 10;
-        if (critRoll >= 0) result += result * (critRoll + 0x20) / 64;
-        result = ApplyDamageCut(result, target.DamageCut);
-        if (result > value * 5) result = value * 5;
-        return result >= 10000 ? 9999 : result;
+        }
+
+        return FinishDamage(result, value, target.DamageCut, critRoll);
     }
 
     /// <summary>Computes physical technique damage for either battle side.</summary>
-    public static int ComputeDamage(TechData tech, BattleStats user, BattleStats target, bool enemyAttacker, int strength, int boostElement, int boostAmount, int critRoll)
+    public static int ComputeDamage(TechData tech, BattleStats user, BattleStats target, bool enemyAttacker, int strength, ElementBoost boost, int critRoll)
     {
         int value = enemyAttacker
             ? tech.Power * strength / 16 * user.Stats[BattleStat.Attack] / target.Stats[BattleStat.Defense]
             : tech.Power * user.Stats[BattleStat.Attack] / target.Stats[BattleStat.Defense];
-        return AdjustDamage(tech, user, target, value, boostElement, boostAmount, critRoll);
+        return AdjustDamage(tech, user, target, value, boost, critRoll);
     }
 
     /// <summary>Computes magic technique damage for either battle side.</summary>
-    public static int ComputeMagicDamage(TechData tech, BattleStats user, BattleStats target, bool enemyAttacker, int strength, int boostElement, int boostAmount, int critRoll)
+    public static int ComputeMagicDamage(TechData tech, BattleStats user, BattleStats target, bool enemyAttacker, int strength, ElementBoost boost, int critRoll)
     {
         int basePower = enemyAttacker ? tech.Power * strength / 16 : tech.Power;
-        int power = basePower * (user.Stats[BattleStat.Spirit] * 50 / target.Stats[BattleStat.Spirit] + 50) / 100;
+        int power = basePower * ((user.Stats[BattleStat.Spirit] * 50 / target.Stats[BattleStat.Spirit]) + 50) / 100;
         power = Math.Clamp(power, basePower / 2, basePower * 2);
-        int result = power + GetElementBoost(power, tech.Element, boostElement, boostAmount);
+        int result = power + GetElementBoost(power, tech.Element, boost);
 
         if (tech.Element >= BattleConst.ElementFirst)
         {
-            int resist = target.Resist[tech.Element - BattleConst.ElementFirst];
-            result = resist < 100
-                ? result * (400 - resist * 3) / 100
-                : resist >= 300
-                    ? result * (65 - resist / 20) / 100
-                    : result * (125 - resist / 4) / 100;
+            result = ApplyMagicResistance(result, target.Resist[tech.Element - BattleConst.ElementFirst]);
         }
 
-        if (tech.Family >= BattleConst.FamilyFirst && tech.Family == target.Family) result += result / 2;
-        if (critRoll >= 0) result += result * (critRoll + 0x20) / 64;
-        result = ApplyDamageCut(result, target.DamageCut);
-        if (result > power * 5) result = power * 5;
-        return result >= 10000 ? 9999 : result;
+        if (tech.Family >= BattleConst.FamilyFirst && tech.Family == target.Family)
+        {
+            result += result / 2;
+        }
+
+        return FinishDamage(result, power, target.DamageCut, critRoll);
     }
 
     /// <summary>Computes an enemy counterattack from the damage it received.</summary>
-    public static int ComputeCounterDamage(TechData tech, BattleStats user, BattleStats target, int receivedDamage, int boostElement, int boostAmount, int critRoll, bool special = false)
+    public static int ComputeCounterDamage(TechData tech, BattleStats user, BattleStats target, int receivedDamage, ElementBoost boost, int critRoll, bool special = false)
     {
         int value = receivedDamage * tech.EffectPower / (special ? 32 : 64);
-        return AdjustDamage(tech, user, target, value, boostElement, boostAmount, critRoll);
+        return AdjustDamage(tech, user, target, value, boost, critRoll);
     }
 
     /// <summary>Scales an enemy table entry into the resolved stats used for a battle.</summary>
     public static BattleStats ComputeEnemyStats(BattleStats entry, int level, int strength)
     {
         var result = new BattleStats { Level = level, Family = entry.Family };
-        for (var index = 0; index < result.Stats.Length; index++) result.Stats[index] = entry.Stats[index] * strength / 16;
-        for (var index = 0; index < result.Resist.Length; index++) result.Resist[index] = entry.Resist[index];
+        for (var index = 0; index < result.Stats.Length; index++)
+        {
+            result.Stats[index] = entry.Stats[index] * strength / 16;
+        }
+
+        for (var index = 0; index < result.Resist.Length; index++)
+        {
+            result.Resist[index] = entry.Resist[index];
+        }
+
         return result;
     }
 
-    /// <summary>Returns whether a physical technique receives a critical hit.</summary>
-    public static bool RollCritical(TechData tech, BattleStats atk, BattleStats def, BattleFighter atkFighter, BattleFighter defFighter, int rngValue)
+    /// <summary>
+    /// The family bonus of a physical hit: +50 % when the technique's own family matches the
+    /// target, or, for a family-less technique, when one of the user's weapons matches it.
+    /// </summary>
+    /// <param name="tech">The technique used.</param>
+    /// <param name="user">The attacker's resolved stats.</param>
+    /// <param name="target">The defender's resolved stats.</param>
+    /// <param name="damage">The damage so far.</param>
+    /// <returns>The damage to add.</returns>
+    private static int FamilyBonus(TechData tech, BattleStats user, BattleStats target, int damage)
     {
-        int chance = 4;
-        if (tech.Effect >= BattleConst.TechEffectFirst)
-        {
-            if (tech.Effect == BattleConst.TechEffectCritical) chance += tech.EffectPower;
-        }
-        else if (atk.CriticalBonus != 0)
-        {
-            chance = atkFighter.Special ? atk.CriticalBonus * 2 + 4 : atk.CriticalBonus + 4;
-        }
-
-        if (tech.Family >= BattleConst.FamilyFirst)
-        {
-            if (tech.Family == def.Family) chance += 0x3c;
-        }
-        else if (HasFamilyWeapon(atk, def.Family))
-        {
-            chance += 0x10;
-        }
-
-        chance += StatusCriticalBonus(defFighter);
-        return (rngValue & 0x7f) < chance;
+        bool matches = tech.Family >= BattleConst.FamilyFirst
+            ? tech.Family == target.Family
+            : user.HasFamilyWeapon(target.Family);
+        return matches ? damage / 2 : 0;
     }
 
-    /// <summary>Returns whether a magic technique receives a critical hit.</summary>
-    public static bool RollMagicCritical(TechData tech, BattleStats def, BattleFighter defFighter, int rngValue)
+    /// <summary>
+    /// The elemental power bonus of a physical hit, scaled by the target's resistance to that
+    /// element: the technique's element when it has one, otherwise the user's accessory element
+    /// (except for scripts 11 and 12, which never take the accessory's).
+    /// </summary>
+    /// <param name="tech">The technique used.</param>
+    /// <param name="user">The attacker's resolved stats.</param>
+    /// <param name="target">The defender's resolved stats; its resistance is the divisor.</param>
+    /// <param name="damage">The damage so far.</param>
+    /// <returns>The damage to add.</returns>
+    private static int ElementPowerBonus(TechData tech, BattleStats user, BattleStats target, int damage)
     {
-        int value = Math.Min(tech.ElementPower * 100 / def.Resist[tech.Element - BattleConst.ElementFirst], 0x40);
-        int chance = value + 4;
-        if (tech.Family >= BattleConst.FamilyFirst && tech.Family == def.Family) chance = value + 0x40;
-        chance += StatusCriticalBonus(defFighter);
-        return (rngValue & 0x7f) < chance;
+        if (tech.Element >= BattleConst.ElementFirst)
+        {
+            return damage * tech.ElementPower * 2 / target.Resist[tech.Element - BattleConst.ElementFirst];
+        }
+
+        if (!IsScriptedElementTech(tech) && user.Element != 0)
+        {
+            return damage * user.ElementPower * 2 / target.Resist[user.Element - BattleConst.ElementFirst];
+        }
+
+        return 0;
     }
 
-    private static bool HasFamilyWeapon(BattleStats user, int family)
+    /// <summary>Whether the technique runs script 11 or 12, which ignore the accessory element and the triple hit.</summary>
+    /// <param name="tech">The technique used.</param>
+    /// <returns><see langword="true"/> for scripts 11 and 12.</returns>
+    private static bool IsScriptedElementTech(TechData tech) => tech.Script is >= 11 and <= 12;
+
+    /// <summary>
+    /// Magic damage against an elemental resistance (100 is neutral): below 100 the damage
+    /// rises steeply, from 300 up it falls towards immunity, in between it falls gently.
+    /// </summary>
+    /// <param name="damage">The magic damage so far.</param>
+    /// <param name="resist">The target's resistance to the technique's element.</param>
+    /// <returns>The adjusted damage.</returns>
+    private static int ApplyMagicResistance(int damage, int resist)
     {
-        foreach (int weaponFamily in user.WeaponFamilies)
-            if (weaponFamily >= BattleConst.FamilyFirst && weaponFamily == family) return true;
-        return false;
+        if (resist < 100)
+        {
+            return damage * (400 - (resist * 3)) / 100;
+        }
+
+        return resist >= 300
+            ? damage * (65 - (resist / 20)) / 100
+            : damage * (125 - (resist / 4)) / 100;
+    }
+
+    /// <summary>
+    /// The steps every hit ends with: the critical bonus (a roll of -1 means no critical), the
+    /// target's flat damage cut, the cap at five times the unadjusted value, and the 9999 display cap.
+    /// </summary>
+    /// <param name="damage">The adjusted damage.</param>
+    /// <param name="unadjusted">The damage before any adjustment, the base of the 5x cap.</param>
+    /// <param name="damageCut">The target's flat damage cut.</param>
+    /// <param name="critRoll">The critical strength, or -1.</param>
+    /// <returns>The final damage, 0..9999.</returns>
+    private static int FinishDamage(int damage, int unadjusted, int damageCut, int critRoll)
+    {
+        if (critRoll >= 0)
+        {
+            damage += damage * (critRoll + 0x20) / 64;
+        }
+
+        damage = ApplyDamageCut(damage, damageCut);
+        if (damage > unadjusted * 5)
+        {
+            damage = unadjusted * 5;
+        }
+
+        return damage >= 10000 ? 9999 : damage;
     }
 
     private static int ApplyDamageCut(int value, int damageCut)
     {
-        if (damageCut == 0) return value;
-        return Math.Max(value - damageCut, 0);
-    }
+        if (damageCut == 0)
+        {
+            return value;
+        }
 
-    private static int StatusCriticalBonus(BattleFighter fighter)
-    {
-        int bonus = 0;
-        if ((fighter.Flags & FighterFlags.Paralyzed) != 0) bonus += fighter.Paralysis >> 3;
-        if ((fighter.Flags & FighterFlags.Asleep) != 0) bonus += fighter.Sleep >> 3;
-        if ((fighter.Flags & FighterFlags.Confused) != 0) bonus += fighter.Confusion >> 1;
-        return bonus;
+        return Math.Max(value - damageCut, 0);
     }
 }

@@ -144,7 +144,7 @@ public sealed partial class BattleProbe : Node2D
             var state = BattleState.InitFighters(setup, digimon: 3);
 
             var flow = BattleSetupFactory.BuildFlow(fighters, techs, encounters, 200, [3], nameIds,
-                new BattleTextCatalog(loader.LoadBattleText()), level: 1);
+                new BattleTextCatalog(loader.LoadBattleText()));
             flow.Start(state);
 
             _battleRenderer = new BattleRenderer(this);
@@ -342,10 +342,10 @@ public sealed partial class BattleProbe : Node2D
 
     /// <summary>A fixed, deterministic RNG for the probe (never returns the same roll twice in a row
     /// unless asked).</summary>
-    private sealed class FixedRng : BattleRng
+    private sealed class FixedRng : IBattleRng
     {
         private int _value;
         public FixedRng(int seed) => _value = seed;
-        public int Next() => _value = (_value * 1103515245 + 12345) & 0x7FFFFFFF;
+        public int NextValue() => _value = (_value * 1103515245 + 12345) & 0x7FFFFFFF;
     }
 }

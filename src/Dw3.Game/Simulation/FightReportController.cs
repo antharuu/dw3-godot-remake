@@ -1,75 +1,20 @@
 namespace Dw3Production.Simulation;
 
-/// <summary>Describes one party member's reward state after a battle.</summary>
-public sealed record FightReportPartner(
-    int PartyIndex,
-    int PartnerId,
-    int FighterId,
-    int LevelBefore,
-    int ExpBefore,
-    int ExpGained,
-    int LevelAfter,
-    IReadOnlyList<int> SlotDigimonIds);
-
-/// <summary>Supplies the rewards and party data displayed by a battle report.</summary>
-public sealed record FightReportInput(
-    IReadOnlyList<FightReportPartner> Partners,
-    int Money,
-    int Item,
-    IReadOnlyDictionary<int, int>? MessageTokenCounts = null);
-
-/// <summary>Describes a visible Digimon slot in a party member's report panel.</summary>
-public sealed record FightReportSlotView(int DigimonId, bool Visible, bool ExpApplied, int BlinkFrame);
-
-/// <summary>Describes the visible state of one party member's report panel.</summary>
-public sealed record FightReportPartnerView(
-    int PartyIndex,
-    int PartnerId,
-    int FighterId,
-    int Fade,
-    bool Selected,
-    int CursorFrame,
-    int LevelBlinkFrame,
-    int ShownExp,
-    int AnimationFrame,
-    IReadOnlyList<FightReportSlotView> Slots);
-
-/// <summary>Describes the message currently displayed by the battle report.</summary>
-public sealed record FightReportMessage(
-    int Entry,
-    IReadOnlyList<int> Substitutions,
-    int TokensRevealed,
-    int TokenCount,
-    bool ArrowVisible,
-    int ArrowFrame);
-
-/// <summary>Provides a complete frame snapshot for the battle reward report.</summary>
-public sealed record FightReportView(
-    int HeaderFade,
-    int FooterFade,
-    int BgScroll,
-    IReadOnlyList<FightReportPartnerView> Partners,
-    FightReportMessage? Message,
-    int ExitFade,
-    bool Done);
-
 /// <summary>Advances the animated battle reward report one display frame at a time.</summary>
 public sealed class FightReportController
 {
-    private const int FullFade = 4096;
     private readonly FightReportInput _input;
-    private readonly PartnerState[] _partners;
+    private readonly FightReportPartnerPanel[] _partners;
     private readonly List<string> _logs = [];
-    private readonly Fade _header = new();
-    private readonly Fade _footer = new();
-    private readonly Fade _exit = new();
-    private ReportPhase _phase;
-    private MessageState? _message;
+    private readonly FightReportFade _header = new();
+    private readonly FightReportFade _footer = new();
+    private readonly FightReportFade _exit = new();
+    private readonly FightReportMessageBox _message;
+    private FightReportPhase _phase;
     private int _time;
     private int _bgScroll;
     private bool _scrollSkip;
     private int _partnerIndex;
-    private bool _slotWarningLogged;
     private bool _done;
 
     /// <summary>Creates a report controller from one completed battle's reward data.</summary>
@@ -78,7 +23,8 @@ public sealed class FightReportController
     {
         _input = input ?? throw new ArgumentNullException(nameof(input));
         ArgumentNullException.ThrowIfNull(input.Partners);
-        _partners = [.. input.Partners.Select(partner => new PartnerState(partner))];
+        _partners = [.. input.Partners.Select(partner => new FightReportPartnerPanel(partner))];
+        _message = new FightReportMessageBox(input.MessageTokenCounts);
         View = BuildView();
     }
 
@@ -91,359 +37,233 @@ public sealed class FightReportController
     /// <summary>Calculates the decimal-wheel increment used by an animated experience counter.</summary>
     public static int RollStep(int targetExp)
     {
-        if (targetExp <= 0) return -954437177;
-        var value = targetExp;
+        if (targetExp <= 0)
+        {
+            return -954437177;
+        }
 
+        var value = targetExp;
         var result = 0;
         while (value > 0)
         {
-            result = result * 10 + 1;
+            result = (result * 10) + 1;
             value /= 10;
         }
+
         return result;
     }
 
     /// <summary>Advances the report by one PAL frame and handles one Cross button edge.</summary>
     public void Step(bool crossPressedEdge)
     {
-        if (_done) return;
+        if (_done)
+        {
+            return;
+        }
 
         _time++;
         TickBackground();
-        TickMessage(crossPressedEdge);
-        foreach (var partner in _partners) TickPartner(partner);
-        TickReport();
+        _message.Tick(crossPressedEdge);
+        foreach (var partner in _partners)
+        {
+            partner.Tick(_time, _message, _logs);
+        }
+
+        _phase = NextPhase();
         View = BuildView();
     }
 
+    /// <summary>Scrolls the background one pixel every other frame, wrapping at 96.</summary>
     private void TickBackground()
     {
         if (_scrollSkip)
         {
             _bgScroll = (_bgScroll + 1) % 96;
-            _scrollSkip = false;
         }
-        else _scrollSkip = true;
+
+        _scrollSkip = !_scrollSkip;
     }
 
-    private void TickMessage(bool crossPressedEdge)
+    /// <summary>Runs the current report phase for one frame and returns the phase for the next frame.</summary>
+    /// <returns>The phase for the next frame.</returns>
+    private FightReportPhase NextPhase() => _phase switch
     {
-        if (_message is not { Finished: false } message) return;
-        if (message.Waiting)
-        {
-            if (crossPressedEdge) message.Finished = true;
-            return;
-        }
+        FightReportPhase.Initial => FightReportPhase.ShowPanels,
+        FightReportPhase.ShowPanels => ShowPanels(),
+        FightReportPhase.WaitPanels => WaitPanels(),
+        FightReportPhase.FooterIn => _footer.Update() ? FightReportPhase.SelectPartner : _phase,
+        FightReportPhase.SelectPartner => SelectPartner(),
+        FightReportPhase.HeaderIn => HeaderIn(),
+        FightReportPhase.ExpMessage => ExpMessage(),
+        FightReportPhase.RaisePartner => RaisePartner(),
+        FightReportPhase.HeaderOut => _header.Update() ? FightReportPhase.SelectPartner : _phase,
+        FightReportPhase.Money => Money(),
+        FightReportPhase.ItemStart => ItemStart(),
+        FightReportPhase.ItemMessage => _message.TakeFinished() ? FightReportPhase.BeginExit : _phase,
+        FightReportPhase.StartExit => FightReportPhase.BeginExit,
+        FightReportPhase.BeginExit => StartExit(),
+        FightReportPhase.ExitPanels => ExitPanels(),
+        FightReportPhase.ExitFade => ExitFade(),
+        _ => _phase,
+    };
 
-        if (crossPressedEdge)
-        {
-            message.Revealed = message.TokenCount;
-            message.Waiting = true;
-            return;
-        }
-
-        if (++message.RevealTimer > 6)
-        {
-            message.RevealTimer = 0;
-            message.Revealed++;
-            if (message.Revealed >= message.TokenCount) message.Waiting = true;
-        }
+    /// <summary>Starts every partner panel's fade in.</summary>
+    /// <returns>The panel wait phase.</returns>
+    private FightReportPhase ShowPanels()
+    {
+        SetPartnerPhases(FightReportPartnerPhase.ShowStart);
+        return FightReportPhase.WaitPanels;
     }
 
-    private void TickPartner(PartnerState partner)
+    /// <summary>Starts the footer's fade in once every panel is shown.</summary>
+    /// <returns>The footer phase once every panel is idle, otherwise the current phase.</returns>
+    private FightReportPhase WaitPanels()
     {
-        if (partner.Selected && _time % 5 == 0) partner.CursorFrame = (partner.CursorFrame + 1) % 4;
-        if (partner.LevelBlink && _time % 3 == 0) partner.LevelBlinkFrame = Math.Min(10, partner.LevelBlinkFrame + 1);
-        if (partner.Fade.Level != 0 && _time % 13 == 0) partner.AnimationFrame++;
-
-        if (partner.ExpSequenceStarted && partner.Phase != PartnerPhase.Hidden) RollExp(partner);
-
-        switch (partner.Phase)
+        if (!_partners.All(partner => partner.Phase == FightReportPartnerPhase.Idle))
         {
-            case PartnerPhase.ShowStart:
-                partner.Fade.Start(true, 10);
-                partner.Phase = PartnerPhase.ShowFade;
-                break;
-            case PartnerPhase.ShowFade:
-                if (partner.Fade.Update()) partner.Phase = PartnerPhase.Idle;
-                break;
-            case PartnerPhase.HideStart:
-                partner.Fade.Start(false, 10);
-                partner.Phase = PartnerPhase.HideFade;
-                break;
-            case PartnerPhase.HideFade:
-                if (partner.Fade.Update()) partner.Phase = PartnerPhase.Hidden;
-                break;
-            case PartnerPhase.SlotExp:
-                if (!_slotWarningLogged)
-                {
-                    _logs.Add("report-digimon-exp-unwired");
-                    _slotWarningLogged = true;
-                }
-                partner.Phase = PartnerPhase.SlotLevel;
-                break;
-            case PartnerPhase.SlotLevel:
-                partner.Phase = PartnerPhase.NextSlot;
-                break;
-            case PartnerPhase.NextSlot:
-                partner.SlotIndex++;
-                partner.Phase = partner.SlotIndex < 3 ? PartnerPhase.SlotExp : PartnerPhase.PartnerLevel;
-                break;
-            case PartnerPhase.PartnerLevel:
-                if (partner.Source.LevelAfter > partner.Source.LevelBefore)
-                {
-                    partner.LevelBlink = true;
-                    StartMessage(7, partner.Source.PartnerId, partner.Source.LevelAfter);
-                    partner.Phase = PartnerPhase.LevelMessage;
-                }
-                else partner.Phase = PartnerPhase.NewDigimon;
-                break;
-            case PartnerPhase.LevelMessage:
-                if (_message?.Finished == true)
-                {
-                    _message = null;
-                    partner.Phase = PartnerPhase.NewDigimon;
-                }
-                break;
-            case PartnerPhase.NewDigimon:
-                partner.Phase = PartnerPhase.WaitBlinks;
-                break;
-            case PartnerPhase.WaitBlinks:
-                if (!partner.LevelBlink || partner.LevelBlinkFrame >= 10)
-                {
-                    partner.Selected = false;
-                    partner.Phase = PartnerPhase.Idle;
-                }
-                break;
-        }
-    }
-
-    private void RollExp(PartnerState partner)
-    {
-        var target = Math.Min(999999, partner.Source.ExpBefore + partner.Source.ExpGained);
-        if (++partner.RollTime >= 10)
-        {
-            partner.ShownExp = target;
-            return;
+            return _phase;
         }
 
-        var step = RollStep(target);
-        partner.ShownExp += step;
-        if (partner.ShownExp > step * 9) partner.ShownExp -= step * 9 + 1;
+        _footer.Start(true, 10);
+        return FightReportPhase.FooterIn;
     }
 
-    private void TickReport()
+    /// <summary>
+    /// Selects the next partner that earned experience and fades the header in for it; with no
+    /// partner left, moves on to the money message.
+    /// </summary>
+    /// <returns>The header phase, or the money phase when no partner is left.</returns>
+    private FightReportPhase SelectPartner()
     {
-        switch (_phase)
+        while (_partnerIndex < _partners.Length && _partners[_partnerIndex].Source.ExpGained == 0)
         {
-            case ReportPhase.Initial:
-                _phase = ReportPhase.ShowPanels;
-                break;
-            case ReportPhase.ShowPanels:
-                foreach (var partner in _partners) partner.Phase = PartnerPhase.ShowStart;
-                _phase = ReportPhase.WaitPanels;
-                break;
-            case ReportPhase.WaitPanels:
-                if (_partners.All(partner => partner.Phase == PartnerPhase.Idle))
-                {
-                    _footer.Start(true, 10);
-                    _phase = ReportPhase.FooterIn;
-                }
-                break;
-            case ReportPhase.FooterIn:
-                if (_footer.Update()) _phase = ReportPhase.SelectPartner;
-                break;
-            case ReportPhase.SelectPartner:
-                SelectPartner();
-                break;
-            case ReportPhase.HeaderIn:
-                if (_header.Update())
-                {
-                    StartMessage(2, _partners[_partnerIndex].Source.ExpGained);
-                    _phase = ReportPhase.ExpMessage;
-                }
-                break;
-            case ReportPhase.ExpMessage:
-                if (_message?.Finished == true)
-                {
-                    _message = null;
-                    var partner = _partners[_partnerIndex];
-                    partner.ExpSequenceStarted = true;
-                    partner.Phase = PartnerPhase.SlotExp;
-                    _phase = ReportPhase.RaisePartner;
-                }
-                break;
-            case ReportPhase.RaisePartner:
-                if (_partners[_partnerIndex].Phase == PartnerPhase.Idle)
-                {
-                    _header.Start(false, 10);
-                    _partnerIndex++;
-                    _phase = ReportPhase.HeaderOut;
-                }
-                break;
-            case ReportPhase.HeaderOut:
-                if (_header.Update()) _phase = ReportPhase.SelectPartner;
-                break;
-            case ReportPhase.Money:
-                if (_message is null)
-                {
-                    StartMessage(10, _input.Money);
-                    break;
-                }
-                if (_message?.Finished == true)
-                {
-                    _message = null;
-                    if (_input.Item == 0) _phase = ReportPhase.StartExit;
-                    else _phase = ReportPhase.ItemStart;
-                }
-                break;
-            case ReportPhase.ItemStart:
-                StartMessage(11, _input.Item);
-                _phase = ReportPhase.ItemMessage;
-                break;
-            case ReportPhase.ItemMessage:
-                if (_message?.Finished == true)
-                {
-                    _message = null;
-                    _phase = ReportPhase.BeginExit;
-                }
-                break;
-            case ReportPhase.StartExit:
-                _phase = ReportPhase.BeginExit;
-                break;
-            case ReportPhase.BeginExit:
-                StartExit();
-                break;
-            case ReportPhase.ExitPanels:
-                if (_footer.Update() && _partners.All(partner => partner.Phase == PartnerPhase.Hidden))
-                    _phase = ReportPhase.ExitFade;
-                break;
-            case ReportPhase.ExitFade:
-                if (_exit.Update())
-                {
-                    _done = true;
-                    _phase = ReportPhase.Done;
-                }
-                break;
+            _partnerIndex++;
         }
-    }
 
-    private void SelectPartner()
-    {
-        while (_partnerIndex < _partners.Length && _partners[_partnerIndex].Source.ExpGained == 0) _partnerIndex++;
         if (_partnerIndex >= _partners.Length)
         {
-            _phase = ReportPhase.Money;
-            return;
+            return FightReportPhase.Money;
         }
 
         _partners[_partnerIndex].Selected = true;
         _header.Start(true, 10);
-        _phase = ReportPhase.HeaderIn;
+        return FightReportPhase.HeaderIn;
     }
 
-    private void StartExit()
+    /// <summary>Once the header is in, shows message 2 with the selected partner's experience gain.</summary>
+    /// <returns>The experience message phase once the header is in, otherwise the current phase.</returns>
+    private FightReportPhase HeaderIn()
+    {
+        if (!_header.Update())
+        {
+            return _phase;
+        }
+
+        _message.Start(2, _partners[_partnerIndex].Source.ExpGained);
+        return FightReportPhase.ExpMessage;
+    }
+
+    /// <summary>Once the experience message is read, starts the selected panel's experience sequence.</summary>
+    /// <returns>The raise phase once the message is read, otherwise the current phase.</returns>
+    private FightReportPhase ExpMessage()
+    {
+        if (!_message.TakeFinished())
+        {
+            return _phase;
+        }
+
+        var partner = _partners[_partnerIndex];
+        partner.ExpSequenceStarted = true;
+        partner.Phase = FightReportPartnerPhase.SlotExp;
+        return FightReportPhase.RaisePartner;
+    }
+
+    /// <summary>Once the selected panel is back to idle, fades the header out and moves to the next partner.</summary>
+    /// <returns>The header-out phase once the panel is idle, otherwise the current phase.</returns>
+    private FightReportPhase RaisePartner()
+    {
+        if (_partners[_partnerIndex].Phase != FightReportPartnerPhase.Idle)
+        {
+            return _phase;
+        }
+
+        _header.Start(false, 10);
+        _partnerIndex++;
+        return FightReportPhase.HeaderOut;
+    }
+
+    /// <summary>
+    /// Shows message 10 with the money won, then, once it is read, the item message when the
+    /// battle dropped an item (item 0 means none) or the exit.
+    /// </summary>
+    /// <returns>The item or exit phase once the money message is read, otherwise the current phase.</returns>
+    private FightReportPhase Money()
+    {
+        if (_message.IsEmpty)
+        {
+            _message.Start(10, _input.Money);
+            return _phase;
+        }
+
+        if (!_message.TakeFinished())
+        {
+            return _phase;
+        }
+
+        return _input.Item == 0 ? FightReportPhase.StartExit : FightReportPhase.ItemStart;
+    }
+
+    /// <summary>Shows message 11 with the dropped item.</summary>
+    /// <returns>The item message phase.</returns>
+    private FightReportPhase ItemStart()
+    {
+        _message.Start(11, _input.Item);
+        return FightReportPhase.ItemMessage;
+    }
+
+    /// <summary>Starts the 30-frame exit fade and fades the footer and every panel out.</summary>
+    /// <returns>The panel exit phase.</returns>
+    private FightReportPhase StartExit()
     {
         _exit.Start(true, 30);
         _footer.Start(false, 10);
-        foreach (var partner in _partners) partner.Phase = PartnerPhase.HideStart;
-        _phase = ReportPhase.ExitPanels;
+        SetPartnerPhases(FightReportPartnerPhase.HideStart);
+        return FightReportPhase.ExitPanels;
     }
 
-    private void StartMessage(int entry, params int[] substitutions)
+    /// <summary>Waits for the footer and every panel to be hidden.</summary>
+    /// <returns>The exit fade phase once everything is hidden, otherwise the current phase.</returns>
+    private FightReportPhase ExitPanels() =>
+        _footer.Update() && _partners.All(partner => partner.Phase == FightReportPartnerPhase.Hidden)
+            ? FightReportPhase.ExitFade
+            : _phase;
+
+    /// <summary>Ends the report once the exit fade is complete.</summary>
+    /// <returns>The done phase once the fade is complete, otherwise the current phase.</returns>
+    private FightReportPhase ExitFade()
     {
-        var count = _input.MessageTokenCounts is not null && _input.MessageTokenCounts.TryGetValue(entry, out var configured)
-            ? configured
-            : 1;
-        _message = new MessageState(entry, substitutions, Math.Max(1, count));
+        if (!_exit.Update())
+        {
+            return _phase;
+        }
+
+        _done = true;
+        return FightReportPhase.Done;
+    }
+
+    /// <summary>Puts every partner panel into <paramref name="phase"/>.</summary>
+    /// <param name="phase">The phase every panel starts.</param>
+    private void SetPartnerPhases(FightReportPartnerPhase phase)
+    {
+        foreach (var partner in _partners)
+        {
+            partner.Phase = phase;
+        }
     }
 
     private FightReportView BuildView()
     {
-        var partnerViews = _partners.Select(BuildPartnerView).ToArray();
-        FightReportMessage? message = null;
-        if (_message is { } active)
-        {
-            message = new FightReportMessage(active.Entry, active.Substitutions, active.Revealed, active.TokenCount,
-                active.Waiting && !active.Finished, (_time / 5) % 5);
-        }
-        return new FightReportView(_header.Level, _footer.Level, _bgScroll, partnerViews, message, _exit.Level, _done);
+        var partnerViews = _partners.Select(partner => partner.ToView()).ToArray();
+        return new FightReportView(_header.Level, _footer.Level, _bgScroll, partnerViews, _message.ToView(_time), _exit.Level, _done);
     }
-
-    private static FightReportPartnerView BuildPartnerView(PartnerState partner)
-    {
-        var slots = Enumerable.Range(0, 3)
-            .Select(index => new FightReportSlotView(
-                index < partner.Source.SlotDigimonIds.Count ? partner.Source.SlotDigimonIds[index] : -1,
-                index < partner.Source.SlotDigimonIds.Count,
-                false,
-                0))
-            .ToArray();
-        return new FightReportPartnerView(partner.Source.PartyIndex, partner.Source.PartnerId, partner.Source.FighterId,
-            partner.Fade.Level, partner.Selected, partner.CursorFrame, partner.LevelBlinkFrame, partner.ShownExp,
-            partner.AnimationFrame, slots);
-    }
-
-    private sealed class Fade
-    {
-        public int Level { get; private set; }
-        private int Step { get; set; }
-        private bool Active { get; set; }
-
-        public void Start(bool fadeIn, int duration)
-        {
-            Level = fadeIn ? 0 : FullFade;
-            Step = (fadeIn ? 1 : -2) * (FullFade / duration);
-            Active = true;
-        }
-
-        public bool Update()
-        {
-            if (!Active) return true;
-            Level += Step;
-            if (Step > 0 && Level > FullFade)
-            {
-                Level = FullFade;
-                Active = false;
-                return true;
-            }
-            if (Step < 0 && Level < 0)
-            {
-                Level = 0;
-                Active = false;
-                return true;
-            }
-            return false;
-        }
-    }
-
-    private sealed class PartnerState(FightReportPartner source)
-    {
-        public FightReportPartner Source { get; } = source;
-        public Fade Fade { get; } = new();
-        public PartnerPhase Phase { get; set; }
-        public bool Selected { get; set; }
-        public int CursorFrame { get; set; }
-        public bool LevelBlink { get; set; }
-        public int LevelBlinkFrame { get; set; }
-        public int ShownExp { get; set; } = source.ExpBefore;
-        public int AnimationFrame { get; set; }
-        public int SlotIndex { get; set; }
-        public bool ExpSequenceStarted { get; set; }
-        public int RollTime { get; set; }
-    }
-
-    private sealed class MessageState(int entry, IReadOnlyList<int> substitutions, int tokenCount)
-    {
-        public int Entry { get; } = entry;
-        public IReadOnlyList<int> Substitutions { get; } = substitutions;
-        public int TokenCount { get; } = tokenCount;
-        public int Revealed { get; set; }
-        public int RevealTimer { get; set; }
-        public bool Waiting { get; set; }
-        public bool Finished { get; set; }
-    }
-
-    private enum ReportPhase { Initial, ShowPanels, WaitPanels, FooterIn, SelectPartner, HeaderIn, ExpMessage, RaisePartner, HeaderOut, Money, ItemStart, ItemMessage, StartExit, BeginExit, ExitPanels, ExitFade, Done }
-    private enum PartnerPhase { Idle, ShowStart, ShowFade, HideStart, HideFade, Hidden, SlotExp, SlotLevel, NextSlot, PartnerLevel, LevelMessage, NewDigimon, WaitBlinks }
 }

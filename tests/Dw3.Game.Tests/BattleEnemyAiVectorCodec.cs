@@ -11,13 +11,13 @@ namespace Dw3.Game.Tests;
 internal static class BattleEnemyAiVectorCodec
 {
     /// <summary>A scripted random source that also counts how many values were drawn.</summary>
-    internal sealed class CountingRng : BattleRng
+    internal sealed class CountingRng : IBattleRng
     {
         private readonly int[] _values;
         public int Calls { get; private set; }
         public CountingRng(int[] values) => _values = values;
 
-        public int Next()
+        public int NextValue()
         {
             if (Calls >= _values.Length)
                 throw new InvalidOperationException($"random sequence exhausted after {Calls} values");

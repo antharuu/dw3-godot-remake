@@ -2,40 +2,6 @@ using Dw3Production.Conversion;
 
 namespace Dw3Production.Simulation;
 
-/// <summary>Which battle menu is open: the six-command root, or one of the four submenus.</summary>
-public enum BattleMenuKind
-{
-    Root,
-    Technique,
-    Digivolve,
-    Item,
-    Switch,
-    /// <summary>First page when switching in: choose the incoming partner's Digimon.</summary>
-    SwitchIn,
-    /// <summary>Second page when switching in: choose to swap partners or use the pair technique.</summary>
-    PairSwitch,
-}
-
-/// <summary>One line of the battle menu: its label and whether it can be confirmed.</summary>
-public sealed record BattleMenuLine(
-    string Label,
-    bool Enabled,
-    BattleTextLine? Text = null,
-    int Icon = -1,
-    int Cost = -1,
-    int Quantity = -1,
-    string Description = "",
-    BattleTextLine? DescriptionText = null,
-    BattleTextLine? CostLabelText = null);
-
-/// <summary>Source MFIGHT labels for the Technique and Item status windows.</summary>
-public sealed record BattleMenuStatusText(BattleTextLine Header, BattleTextLine? CurrentOverride = null,
-    BattleTextLine? Separator = null);
-
-/// <summary>The engine-free view of the battle menu, with its source page slice.</summary>
-public sealed record BattleMenuView(BattleMenuKind Menu, int Cursor, int First, int PageSize, int PageCount, IReadOnlyList<BattleMenuLine> Lines,
-    BattleTextLine? PreviousPageText, BattleTextLine? NextPageText, BattleMenuStatusText? StatusText);
-
 /// <summary>
 /// The battle menu state machine. Technique and Item use the source's discrete L1/R1 pages,
 /// not a fabricated vertical scrolling list. A page turn resets the cursor to row zero.
@@ -84,7 +50,11 @@ public sealed class BattleMenuController
     /// <summary>Moves the cursor up, clamped to the current source page.</summary>
     public bool MoveUp()
     {
-        if (Cursor <= 0) return false;
+        if (Cursor <= 0)
+        {
+            return false;
+        }
+
         Cursor--;
         return true;
     }
@@ -92,7 +62,11 @@ public sealed class BattleMenuController
     /// <summary>Moves the cursor down, clamped to the current page's populated rows.</summary>
     public bool MoveDown()
     {
-        if (Cursor >= VisibleCount - 1) return false;
+        if (Cursor >= VisibleCount - 1)
+        {
+            return false;
+        }
+
         Cursor++;
         return true;
     }
@@ -111,9 +85,17 @@ public sealed class BattleMenuController
 
     private bool SetPage(int page)
     {
-        if (Menu is not (BattleMenuKind.Technique or BattleMenuKind.Item) || PageCount == 0) return false;
+        if (Menu is not (BattleMenuKind.Technique or BattleMenuKind.Item) || PageCount == 0)
+        {
+            return false;
+        }
+
         var clamped = Math.Clamp(page, 0, PageCount - 1);
-        if (clamped == CurrentPage) return false;
+        if (clamped == CurrentPage)
+        {
+            return false;
+        }
+
         First = clamped * PageSize;
         Cursor = 0;
         return true;

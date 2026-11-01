@@ -255,7 +255,7 @@ public sealed class LegacyBattleConsoleTests
 
     private static void AdjustDamageBaseValue()
     {
-        int dmg = DamageCalculator.AdjustDamage(Tech(), Stats(), Stats(), 100, 0, 0, -1);
+        int dmg = DamageCalculator.AdjustDamage(Tech(), Stats(), Stats(), 100, new ElementBoost(0, 0), -1);
         Check(dmg == 100, "no modifiers leaves the base value untouched");
     }
 
@@ -263,14 +263,14 @@ public sealed class LegacyBattleConsoleTests
     {
         var tech = Tech(family: 2);
         var target = Stats(family: 2);
-        int dmg = DamageCalculator.AdjustDamage(tech, Stats(), target, 100, 0, 0, -1);
+        int dmg = DamageCalculator.AdjustDamage(tech, Stats(), target, 100, new ElementBoost(0, 0), -1);
         Check(dmg == 150, "matching family adds half again (+50%)");
     }
 
     private static void AdjustDamageDamageCut()
     {
         var target = Stats(); target.DamageCut = 30;
-        int dmg = DamageCalculator.AdjustDamage(Tech(), Stats(), target, 100, 0, 0, -1);
+        int dmg = DamageCalculator.AdjustDamage(Tech(), Stats(), target, 100, new ElementBoost(0, 0), -1);
         Check(dmg == 70, "damage cut subtracts from each hit");
     }
 
@@ -278,7 +278,7 @@ public sealed class LegacyBattleConsoleTests
     {
         var tech = Tech(element: 2, elementPower: 10);
         var target = Stats(); target.Resist[0] = 2;
-        int dmg = DamageCalculator.AdjustDamage(tech, Stats(), target, 100, 0, 0, -1);
+        int dmg = DamageCalculator.AdjustDamage(tech, Stats(), target, 100, new ElementBoost(0, 0), -1);
         Check(dmg == 500, "result is capped at 5x the base value");
     }
 
@@ -286,7 +286,7 @@ public sealed class LegacyBattleConsoleTests
     {
         var tech = Tech(element: 2, elementPower: 10);
         var target = Stats(); target.Resist[0] = 1;
-        int dmg = DamageCalculator.AdjustDamage(tech, Stats(), target, 3000, 0, 0, -1);
+        int dmg = DamageCalculator.AdjustDamage(tech, Stats(), target, 3000, new ElementBoost(0, 0), -1);
         Check(dmg == 9999, "EU/JP caps damage at 9999");
     }
 
@@ -294,36 +294,36 @@ public sealed class LegacyBattleConsoleTests
     {
         var tech = Tech(element: 2, elementPower: 5);
         var target = Stats(); target.Resist[0] = 10;
-        int dmg = DamageCalculator.AdjustDamage(tech, Stats(), target, 100, 0, 0, -1);
+        int dmg = DamageCalculator.AdjustDamage(tech, Stats(), target, 100, new ElementBoost(0, 0), -1);
         Check(dmg == 200, "elementPower * 2 / resist adds to the damage");
     }
 
     private static void AdjustDamageTripleHit()
     {
         var user = Stats(); user.TripleHit = 1;
-        int dmg = DamageCalculator.AdjustDamage(Tech(), user, Stats(), 100, 0, 0, -1);
+        int dmg = DamageCalculator.AdjustDamage(Tech(), user, Stats(), 100, new ElementBoost(0, 0), -1);
         Check(dmg == 40, "a plain technique under tripleHit deals 0.4 of the damage");
     }
 
     private static void AdjustDamageCritical()
     {
-        int dmg = DamageCalculator.AdjustDamage(Tech(), Stats(), Stats(), 100, 0, 0, 0);
+        int dmg = DamageCalculator.AdjustDamage(Tech(), Stats(), Stats(), 100, new ElementBoost(0, 0), 0);
         Check(dmg == 150, "a critical at roll 0 adds 0x20/64 (half) of the damage");
     }
 
     private static void GetElementBoostBoostedAndOpposed()
     {
-        Check(DamageCalculator.GetElementBoost(100, 2, 2, 128) == 100, "boosted element adds amount/128 of the value");
-        Check(DamageCalculator.GetElementBoost(100, 3, 2, 128) == -50, "opposed element (3 vs boost 2) takes half off");
-        Check(DamageCalculator.GetElementBoost(100, 2, 0, 128) == 0, "no boost element adds nothing");
-        Check(DamageCalculator.GetElementBoost(100, 6, 2, 128) == 0, "an unrelated element is untouched");
+        Check(DamageCalculator.GetElementBoost(100, 2, new ElementBoost(2, 128)) == 100, "boosted element adds amount/128 of the value");
+        Check(DamageCalculator.GetElementBoost(100, 3, new ElementBoost(2, 128)) == -50, "opposed element (3 vs boost 2) takes half off");
+        Check(DamageCalculator.GetElementBoost(100, 2, new ElementBoost(0, 128)) == 0, "no boost element adds nothing");
+        Check(DamageCalculator.GetElementBoost(100, 6, new ElementBoost(2, 128)) == 0, "an unrelated element is untouched");
     }
 
     private static void ComputeDamagePlayerPhysical()
     {
         var user = Stats(attack: 50);
         var target = Stats(defense: 10);
-        int dmg = DamageCalculator.ComputeDamage(Tech(power: 20), user, target, false, 0, 0, 0, -1);
+        int dmg = DamageCalculator.ComputeDamage(Tech(power: 20), user, target, false, 0, new ElementBoost(0, 0), -1);
         Check(dmg == 100, "power * attack / defense is the physical base");
     }
 
@@ -331,7 +331,7 @@ public sealed class LegacyBattleConsoleTests
     {
         var user = Stats(attack: 50);
         var target = Stats(defense: 20);
-        int dmg = DamageCalculator.ComputeDamage(Tech(power: 10), user, target, true, 32, 0, 0, -1);
+        int dmg = DamageCalculator.ComputeDamage(Tech(power: 10), user, target, true, 32, new ElementBoost(0, 0), -1);
         Check(dmg == 50, "an enemy's hit is scaled once more by strength/16");
     }
 
@@ -339,7 +339,7 @@ public sealed class LegacyBattleConsoleTests
     {
         var user = Stats(spirit: 50);
         var target = Stats(spirit: 50); target.Resist[0] = 200;
-        int dmg = DamageCalculator.ComputeMagicDamage(Tech(power: 100, element: 2), user, target, false, 0, 0, 0, -1);
+        int dmg = DamageCalculator.ComputeMagicDamage(Tech(power: 100, element: 2), user, target, false, 0, new ElementBoost(0, 0), -1);
         Check(dmg == 75, "magic resist 200 lands in the 100..299 branch (125 - resist/4)%");
     }
 
@@ -352,10 +352,10 @@ public sealed class LegacyBattleConsoleTests
 
     private static void TestRunAwayBlockAndChance()
     {
-        Check(!DamageCalculator.TestRunAway(0, Stats(), Stats(), true, 0, 0), "run-away block always fails");
-        Check(!DamageCalculator.TestRunAway(0, Stats(), Stats(), false, FighterFlags.Asleep, 0), "asleep can't run away");
-        Check(DamageCalculator.TestRunAway(0, Stats(), Stats(), false, 0, 0), "roll 0 is under the base chance 8");
-        Check(!DamageCalculator.TestRunAway(0, Stats(), Stats(), false, 0, 8), "roll 8 is not under the base chance 8");
+        Check(!RunAwayRules.TestRunAway(0, Stats(), Stats(), true, 0, 0), "run-away block always fails");
+        Check(!RunAwayRules.TestRunAway(0, Stats(), Stats(), false, FighterFlags.Asleep, 0), "asleep can't run away");
+        Check(RunAwayRules.TestRunAway(0, Stats(), Stats(), false, 0, 0), "roll 0 is under the base chance 8");
+        Check(!RunAwayRules.TestRunAway(0, Stats(), Stats(), false, 0, 8), "roll 8 is not under the base chance 8");
     }
 
     // ---- InitFighters ----
@@ -811,19 +811,19 @@ public sealed class LegacyBattleConsoleTests
         };
     }
 
-    private sealed class NoRng : BattleRng
+    private sealed class NoRng : IBattleRng
     {
-        public int Next() => 0;
+        public int NextValue() => 0;
     }
 
-    private sealed class SeqRng : BattleRng
+    private sealed class SeqRng : IBattleRng
     {
         private readonly int[] _values;
         private int _index;
 
         public SeqRng(params int[] values) => _values = values;
 
-        public int Next() => _values[_index++ % _values.Length];
+        public int NextValue() => _values[_index++ % _values.Length];
     }
 
     private sealed class SeqShotRng : IShotCameraRng

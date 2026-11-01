@@ -84,7 +84,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
     private BattleSetup? _activeBattle;
     private BattleFlowController? _battleFlow;
     private readonly BattleMenuController _battleMenu = new();
-    private readonly BattleRng _battleRng = new SystemRandomBattleRng();
+    private readonly IBattleRng _battleRng = new SystemRandomBattleRng();
     private BattleRenderer? _battleRenderer;
     private FightReportRenderer? _fightReportRenderer;
     private FightReportController? _fightReportController;
@@ -601,7 +601,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
 
         var state = BattleState.InitFighters(setup, digimon: party[0]);
         var flow = BattleSetupFactory.BuildFlow(fighters, techs, encounters, encounterIndex, party, _battleNameIds,
-            new BattleTextCatalog(_battleTextData ?? throw new CacheResourceException("CACHE_RESOURCE_UNAVAILABLE", "battle text manifest unavailable")), TestTeamLevel);
+            new BattleTextCatalog(_battleTextData ?? throw new CacheResourceException("CACHE_RESOURCE_UNAVAILABLE", "battle text manifest unavailable")));
         WireBattleCatalogs(flow);
         flow.Start(state);
         return flow;
@@ -915,8 +915,8 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
             if (gained > 0 && _partyGrowth is not null && i < _partyGrowth.Count && _growthTables is not null)
             {
                 var digimon = DigimonFor(i);
-                leveled = GrowthCalculator.AddExp(_growthTables, _partyGrowth[i], digimon.ExpRate,
-                    digimon.HpGrowth, digimon.MpGrowth, digimon.StatGrowth, digimon.ResistGrowth, gained, _battleRng);
+                var curve = new PartnerGrowthCurve(digimon.ExpRate, digimon.HpGrowth, digimon.MpGrowth, digimon.StatGrowth, digimon.ResistGrowth);
+                leveled = GrowthCalculator.AddExp(_growthTables, _partyGrowth[i], curve, gained, _battleRng);
             }
             var level = _partyGrowth is not null && i < _partyGrowth.Count ? _partyGrowth[i].Level : TestTeamLevel;
             partners.Add(new BattlePartnerReportView(fighter.Id, NameLine(fighter.Id), gained, level, leveled));
@@ -1311,7 +1311,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
     }
 
     /// <summary>The battle's RNG, mirroring SystemRandomEncounterRng (same DW3_RNG_SEED seed).</summary>
-    private sealed class SystemRandomBattleRng : BattleRng
+    private sealed class SystemRandomBattleRng : IBattleRng
     {
         private readonly System.Random _random;
 
@@ -1324,7 +1324,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         }
 
         /// <summary>Returns the next battle random value in the controller's 0..4095 domain.</summary>
-        public int Next() => _random.Next(0, 4096);
+        public int NextValue() => _random.Next(0, 4096);
     }
 
     #endregion

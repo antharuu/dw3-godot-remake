@@ -21,20 +21,20 @@ public sealed class BattleGrowthVectorTests
 
     // ------------------------------------------------------------------ helpers
 
-    private sealed class SeqRng : BattleRng
+    private sealed class SeqRng : IBattleRng
     {
         private readonly int[] _v;
         private int _i;
         public SeqRng(params int[] v) => _v = v;
         // Returns 0 if the sequence is empty (safe fallback).
-        public int Next() => _v.Length == 0 ? 0 : _v[_i++ % _v.Length];
+        public int NextValue() => _v.Length == 0 ? 0 : _v[_i++ % _v.Length];
     }
 
-    private sealed class ConstRng : BattleRng
+    private sealed class ConstRng : IBattleRng
     {
         private readonly int _v;
         public ConstRng(int v) => _v = v;
-        public int Next() => _v;
+        public int NextValue() => _v;
     }
 
     private static int[] ToIntArray(JsonNode? node)
@@ -165,9 +165,9 @@ public sealed class BattleGrowthVectorTests
         int[] resistGrowth = ToIntArray(c["resistGrowth"]);
         int level = c["level"]!.GetValue<int>();
         int[] rngSeq = ToIntArray(c["rngSequence"]);
-        BattleRng rng = rngSeq.Length > 0 ? new SeqRng(rngSeq) : new ConstRng(0);
+        IBattleRng rng = rngSeq.Length > 0 ? new SeqRng(rngSeq) : new ConstRng(0);
 
-        GrowthCalculator.RaiseStats(tables, state, hpGrowth, mpGrowth, statGrowth, resistGrowth, level, rng);
+        GrowthCalculator.RaiseStats(tables, state, new PartnerGrowthCurve(0, hpGrowth, mpGrowth, statGrowth, resistGrowth), level, rng);
 
         int expMaxHp = c["outMaxHp"]!.GetValue<int>();
         int expMaxMp = c["outMaxMp"]!.GetValue<int>();
@@ -208,10 +208,9 @@ public sealed class BattleGrowthVectorTests
         int[] resistGrowth = ToIntArray(c["resistGrowth"]);
         int exp = c["exp"]!.GetValue<int>();
         int[] rngSeq = ToIntArray(c["rngSequence"]);
-        BattleRng rng = rngSeq.Length > 0 ? new SeqRng(rngSeq) : new ConstRng(0);
+        IBattleRng rng = rngSeq.Length > 0 ? new SeqRng(rngSeq) : new ConstRng(0);
 
-        bool leveled = GrowthCalculator.AddExp(tables, state, expRate, hpGrowth, mpGrowth,
-            statGrowth, resistGrowth, exp, rng);
+        bool leveled = GrowthCalculator.AddExp(tables, state, new PartnerGrowthCurve(expRate, hpGrowth, mpGrowth, statGrowth, resistGrowth), exp, rng);
 
         bool expLeveled = c["outLeveled"]!.GetValue<bool>();
         int expLevel = c["outLevel"]!.GetValue<int>();
