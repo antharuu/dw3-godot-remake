@@ -29,7 +29,10 @@ public static class RenderOrderingTable
     public static bool FacesCamera(Vector2 a, Vector2 b, Vector2 c, Vector2? d = null)
     {
         if (a == b || a == c || b == c || (d is { } fourth && (a == fourth || b == fourth || c == fourth)))
+        {
             return false;
+        }
+
         var signedArea = (b.X - a.X) * (c.Y - a.Y) - (c.X - a.X) * (b.Y - a.Y);
         return signedArea > 0;
     }

@@ -2015,12 +2015,6 @@
     },
     {
       "rule": "SA1503",
-      "project": "Dw3.Game",
-      "folder": "Presentation",
-      "count": 1
-    },
-    {
-      "rule": "SA1503",
       "project": "Dw3.Game.Tests",
       "folder": ".",
       "count": 237
