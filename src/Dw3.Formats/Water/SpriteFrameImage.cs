@@ -25,6 +25,9 @@ public sealed record SpriteFrameImage(int Width, int Height, int OffsetX, int Of
     /// <returns>RGBA bytes with all omitted texels fully transparent.</returns>
     public byte[] ToStpRgba() => Select(stp: true);
 
+    /// <summary>Selects either STP-marked or ordinary non-zero words into a transparent RGBA canvas.</summary>
+    /// <param name="stp">Whether to retain only words whose PS1 STP bit is set.</param>
+    /// <returns>RGBA pixels in the frame's stored row-major order.</returns>
     private byte[] Select(bool stp)
     {
         var rgba = new byte[Words.Length * 4];

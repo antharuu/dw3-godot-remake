@@ -21,6 +21,9 @@ public static class SpriteSheetDecoder
     /// own offset and the next one. Reading only those two offsets tolerates archives whose
     /// table carries an empty entry between other entries.
     /// </summary>
+    /// <param name="archive">Full TMPK archive whose leading words form the entry offset table.</param>
+    /// <param name="entryIndex">Zero-based member whose bounded slice is requested.</param>
+    /// <returns>The member bytes between this entry's offset and the next offset-table value.</returns>
     public static ReadOnlyMemory<byte> ReadArchiveEntry(ReadOnlyMemory<byte> archive, int entryIndex)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(entryIndex);
@@ -35,6 +38,8 @@ public static class SpriteSheetDecoder
     }
 
     /// <summary>Decodes the parts and frames of one sheet entry.</summary>
+    /// <param name="entry">Bounded TMPK member beginning with the sheet header at byte zero.</param>
+    /// <returns>Parts and frame bodies keyed by the sheet's terminated frame-id table.</returns>
     /// <exception cref="FormatException">The sheet header, tables, or offsets are inconsistent.</exception>
     public static SpriteSheet Decode(ReadOnlyMemory<byte> entry)
     {

@@ -46,6 +46,9 @@ public sealed class StageTextFileResolver(DiscFileTable files, int languageCopie
         return new StageTextFile(selector, fileId, isoPath, ParseTalkIndex(isoPath));
     }
 
+    /// <summary>Extracts the two-digit talk ordinal from the terminal <c>?STALKNN.BIN</c> member name.</summary>
+    /// <param name="isoPath">Full ISO member path previously selected for the configured country folder.</param>
+    /// <returns>The decimal suffix between the fixed <c>STALK</c> stem and <c>.BIN</c> extension.</returns>
     private static int ParseTalkIndex(string isoPath)
     {
         string name = isoPath[(isoPath.LastIndexOf('/') + 1)..];

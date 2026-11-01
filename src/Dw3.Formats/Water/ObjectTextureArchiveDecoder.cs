@@ -61,6 +61,9 @@ public static class ObjectTextureArchiveDecoder
         return ReadImage(data, cursor);
     }
 
+    /// <summary>Validates the packed TIM magic and minimum header extent for one archive member.</summary>
+    /// <param name="data">Unpacked member bytes beginning with a TIM header.</param>
+    /// <param name="index">Offset-table index included in a malformed-member diagnostic.</param>
     private static void ValidateTim(byte[] data, int index)
     {
         if (data.Length < 20 || BinaryPrimitives.ReadUInt32LittleEndian(data) != TimMagic)
@@ -69,6 +72,11 @@ public static class ObjectTextureArchiveDecoder
         }
     }
 
+    /// <summary>Consumes an optional TIM CLUT block and retains entry zero's 256-word palette rows.</summary>
+    /// <param name="data">Unpacked member bytes containing the TIM blocks.</param>
+    /// <param name="index">Offset-table index used to select the retained palette source.</param>
+    /// <param name="palettes">Destination for the only reusable alternate palette rows.</param>
+    /// <returns>The byte offset of the image block following the optional palette block.</returns>
     private static int ReadPalette(byte[] data, int index, List<ushort[]> palettes)
     {
         if ((BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(4)) & TimHasPalette) == 0)
@@ -91,6 +99,10 @@ public static class ObjectTextureArchiveDecoder
         return cursor + (int)size;
     }
 
+    /// <summary>Reads the fixed 64-word by 256-row image block that forms one object VRAM page.</summary>
+    /// <param name="data">Unpacked member bytes containing the image block.</param>
+    /// <param name="cursor">Byte offset of the image block header.</param>
+    /// <returns>Row-major 16-bit VRAM words for one page.</returns>
     private static ushort[] ReadImage(byte[] data, int cursor)
     {
         (uint imageSize, int words, int rows) = ReadBlockHeader(data, cursor);
@@ -142,6 +154,8 @@ public static class ObjectTextureArchiveDecoder
         return [.. offsets.Select((start, index) => (start, index + 1 < offsets.Count ? offsets[index + 1] : archiveLength))];
     }
 
+    /// <summary>Rejects duplicate or descending offsets because each archive member must own a non-empty range.</summary>
+    /// <param name="offsets">Validated in-file member starts in table order.</param>
     private static void ValidateIncreasingOffsets(List<int> offsets)
     {
         for (int index = 1; index < offsets.Count; index++)

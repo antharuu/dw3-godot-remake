@@ -2598,12 +2598,6 @@
     {
       "rule": "SA1503",
       "project": "Dw3.Formats",
-      "folder": "Text",
-      "count": 8
-    },
-    {
-      "rule": "SA1503",
-      "project": "Dw3.Formats",
       "folder": "Water",
       "count": 16
     },
@@ -2863,7 +2857,7 @@
       "rule": "SA1513",
       "project": "Dw3.Formats",
       "folder": "Text",
-      "count": 5
+      "count": 3
     },
     {
       "rule": "SA1513",
@@ -3276,12 +3270,6 @@
     {
       "rule": "SA1519",
       "project": "Dw3.Formats",
-      "folder": "Text",
-      "count": 10
-    },
-    {
-      "rule": "SA1519",
-      "project": "Dw3.Formats",
       "folder": "Water",
       "count": 3
     },
@@ -3438,12 +3426,6 @@
     {
       "rule": "SA1600",
       "project": "Dw3.Formats",
-      "folder": "Dialogue",
-      "count": 1
-    },
-    {
-      "rule": "SA1600",
-      "project": "Dw3.Formats",
       "folder": "Field",
       "count": 55
     },
@@ -3457,13 +3439,13 @@
       "rule": "SA1600",
       "project": "Dw3.Formats",
       "folder": "Text",
-      "count": 5
+      "count": 1
     },
     {
       "rule": "SA1600",
       "project": "Dw3.Formats",
       "folder": "Water",
-      "count": 9
+      "count": 4
     },
     {
       "rule": "SA1600",
@@ -3619,7 +3601,7 @@
       "rule": "SA1611",
       "project": "Dw3.Formats",
       "folder": "Dialogue",
-      "count": 12
+      "count": 9
     },
     {
       "rule": "SA1611",
@@ -3637,13 +3619,13 @@
       "rule": "SA1611",
       "project": "Dw3.Formats",
       "folder": "Text",
-      "count": 7
+      "count": 3
     },
     {
       "rule": "SA1611",
       "project": "Dw3.Formats",
       "folder": "Water",
-      "count": 7
+      "count": 4
     },
     {
       "rule": "SA1611",
@@ -3727,7 +3709,7 @@
       "rule": "SA1615",
       "project": "Dw3.Formats",
       "folder": "Dialogue",
-      "count": 4
+      "count": 3
     },
     {
       "rule": "SA1615",
@@ -3745,13 +3727,13 @@
       "rule": "SA1615",
       "project": "Dw3.Formats",
       "folder": "Text",
-      "count": 6
+      "count": 3
     },
     {
       "rule": "SA1615",
       "project": "Dw3.Formats",
       "folder": "Water",
-      "count": 3
+      "count": 1
     },
     {
       "rule": "SA1615",
