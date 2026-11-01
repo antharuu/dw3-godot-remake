@@ -117,7 +117,7 @@ public static class TalkBoxFrameDecoder
         ReadOnlySpan<byte> body = sheet.AsSpan(4);
         (int offset, short rate) = ReadFrameMetadata(body, frameOffsets[position], frameId);
 
-        var (rgba, width, height, _, _) = BattleHudDecoder.RenderFieldFrame(parts, body, offset, pages);
+        var (rgba, width, height, _, _) = HudFrameRenderer.RenderFieldFrame(parts, body, offset, pages);
         return new TalkBoxFrameImage(frameId, width, height, clutFrames, rate != -1, rgba);
     }
 
@@ -203,8 +203,8 @@ public static class TalkBoxFrameDecoder
     {
         int clutX = ((PanelClut & 0x3F) * 16) - TextureVramX;
         int clutY = PanelClut >> 6;
-        int clutPage = clutX / BattleHudDecoder.PageWidthWords;
-        int clutWord = clutX % BattleHudDecoder.PageWidthWords;
+        int clutPage = clutX / HudTexturePage.PageWidthWords;
+        int clutWord = clutX % HudTexturePage.PageWidthWords;
         if (pages.Count == 0 || clutPage >= pages.Count || clutY >= pages[clutPage].Height)
         {
             throw new FormatException("Talk-box panel CLUT lies outside the loaded menu texture.");
@@ -226,7 +226,7 @@ public static class TalkBoxFrameDecoder
     private static (byte[] Rgba, List<(byte R, byte G, byte B)> Order, Dictionary<(byte R, byte G, byte B), int> Counts) DecodePanelPixels(HudTexturePage texture, IReadOnlyList<ushort> clutRow)
     {
         int width = PanelU1 - PanelU0 + 1;
-        int clutWord = (((PanelClut & 0x3F) * 16) - TextureVramX) % BattleHudDecoder.PageWidthWords;
+        int clutWord = (((PanelClut & 0x3F) * 16) - TextureVramX) % HudTexturePage.PageWidthWords;
         var rgba = new byte[width * (PanelV1 - PanelV0) * 4];
         var counts = new Dictionary<(byte R, byte G, byte B), int>();
         var order = new List<(byte R, byte G, byte B)>();
@@ -258,9 +258,9 @@ public static class TalkBoxFrameDecoder
                 continue;
             }
 
-            byte r = BattleHudDecoder.Ps1Channel(word & 31);
-            byte g = BattleHudDecoder.Ps1Channel((word >> 5) & 31);
-            byte b = BattleHudDecoder.Ps1Channel((word >> 10) & 31);
+            byte r = HudColor.Ps1Channel(word & 31);
+            byte g = HudColor.Ps1Channel((word >> 5) & 31);
+            byte b = HudColor.Ps1Channel((word >> 10) & 31);
             bool stp = (word & 0x8000) != 0;
             int at = (((v - PanelV0) * width) + (u - PanelU0)) * 4;
             rgba[at] = r;

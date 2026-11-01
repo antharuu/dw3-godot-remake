@@ -53,8 +53,8 @@ internal static class TalkBoxExtractionStep
 
     internal static TalkBoxDomain Decode(PsxExecutable executable, byte[] sheet, byte[] texture)
     {
-        IReadOnlyList<HudTexturePage> pages = BattleHudDecoder.BuildMenuTexturePages(texture);
-        var (parts, ids, offsets) = BattleHudDecoder.ParseSheet(sheet);
+        IReadOnlyList<HudTexturePage> pages = HudTexturePageDecoder.BuildMenuTexturePages(texture);
+        var (parts, ids, offsets) = HudSpriteSheetParser.Parse(sheet);
         var frames = FrameIds
             .Select(frameId => TalkBoxFrameDecoder.RenderFrame(parts, ids, offsets, sheet, pages, frameId, frameId == ArrowFrame ? ArrowClutFrames : 1))
             .ToArray();

@@ -38,8 +38,8 @@ internal static class BattleHudExtractionStep
             var executable = PsxExecutable.Parse(disc.ReadFile(exeEntry));
             var files = new EngineFiles(disc, entries, executable);
 
-            (_, byte[] sheetData) = files.Read(BattleHudDecoder.HudSheetFileId);
-            (_, byte[] imagesData) = files.Read(BattleHudDecoder.HudImagesFileId);
+            (_, byte[] sheetData) = files.Read(BattleHudFiles.HudSheetFileId);
+            (_, byte[] imagesData) = files.Read(BattleHudFiles.HudImagesFileId);
 
             new DataPackWriter(outputDirectory).Write(new DataPackMetadata(
                 typeof(BattleHudExtractionStep).Assembly.GetName().Version?.ToString(3) ?? "0.1.0",
@@ -62,8 +62,8 @@ internal static class BattleHudExtractionStep
 
     private static void WriteHudDomain(DataPackWriteContext context, byte[] sheetData, byte[] imagesData)
     {
-        var (parts, ids, frameOffsets) = BattleHudDecoder.ParseSheet(sheetData);
-        IReadOnlyList<HudTexturePage> pages = BattleHudDecoder.BuildHudTexturePages(imagesData);
+        var (parts, ids, frameOffsets) = HudSpriteSheetParser.Parse(sheetData);
+        IReadOnlyList<HudTexturePage> pages = HudTexturePageDecoder.BuildHudTexturePages(imagesData);
         ReadOnlySpan<byte> sheetBody = sheetData.AsSpan(4);
 
         var idSet = new HashSet<int>(ids);
@@ -92,11 +92,11 @@ internal static class BattleHudExtractionStep
         }
 
         // Cursor bar.
-        var (cw, ch, cursorRgba) = BattleHudDecoder.DecodeCursorBar(imagesData);
+        var (cw, ch, cursorRgba) = HudCursorBarDecoder.Decode(imagesData);
         File.WriteAllBytes(context.GetImagePath($"{OutputSubdir}/cursor.png"), PngEncoder.Encode(cw, ch, cursorRgba));
         context.RegisterImage($"{OutputSubdir}/cursor.png");
-        byte[] offRgba = CropCursorFrame(cursorRgba, cw, BattleHudDecoder.CursorFrames, BattleHudDecoder.CursorW, BattleHudDecoder.CursorH);
-        File.WriteAllBytes(context.GetImagePath($"{OutputSubdir}/cursor-off.png"), PngEncoder.Encode(BattleHudDecoder.CursorW, BattleHudDecoder.CursorH, offRgba));
+        byte[] offRgba = CropCursorFrame(cursorRgba, cw, HudCursorBarDecoder.CursorFrames, HudCursorBarDecoder.CursorW, HudCursorBarDecoder.CursorH);
+        File.WriteAllBytes(context.GetImagePath($"{OutputSubdir}/cursor-off.png"), PngEncoder.Encode(HudCursorBarDecoder.CursorW, HudCursorBarDecoder.CursorH, offRgba));
         context.RegisterImage($"{OutputSubdir}/cursor-off.png");
 
         // Write hud.json using Utf8JsonWriter for exact property names.
@@ -116,12 +116,12 @@ internal static class BattleHudExtractionStep
 
             json.WriteStartObject("source");
             json.WriteStartObject("sheet");
-            json.WriteNumber("file_id", BattleHudDecoder.HudSheetFileId);
+            json.WriteNumber("file_id", BattleHudFiles.HudSheetFileId);
             json.WriteString("sha256", Convert.ToHexStringLower(SHA256.HashData(sheetData)));
             json.WriteNumber("bytes", sheetData.Length);
             json.WriteEndObject();
             json.WriteStartObject("images");
-            json.WriteNumber("file_id", BattleHudDecoder.HudImagesFileId);
+            json.WriteNumber("file_id", BattleHudFiles.HudImagesFileId);
             json.WriteString("sha256", Convert.ToHexStringLower(SHA256.HashData(imagesData)));
             json.WriteNumber("bytes", imagesData.Length);
             json.WriteEndObject();
@@ -162,9 +162,9 @@ internal static class BattleHudExtractionStep
             json.WriteString("path", "cursor.png");
             json.WriteNumber("w", cw);
             json.WriteNumber("h", ch);
-            json.WriteNumber("frames", BattleHudDecoder.CursorFrames);
-            json.WriteNumber("frameW", BattleHudDecoder.CursorW);
-            json.WriteNumber("frameH", BattleHudDecoder.CursorH);
+            json.WriteNumber("frames", HudCursorBarDecoder.CursorFrames);
+            json.WriteNumber("frameW", HudCursorBarDecoder.CursorW);
+            json.WriteNumber("frameH", HudCursorBarDecoder.CursorH);
             json.WriteString("offPath", "cursor-off.png");
             json.WriteEndObject();
 
@@ -178,9 +178,9 @@ internal static class BattleHudExtractionStep
         IReadOnlyList<HudSpritePart> parts, ReadOnlySpan<byte> sheetBody, int frameOffset,
         IReadOnlyList<HudTexturePage> pages, int row)
     {
-        try { return BattleHudDecoder.RenderFrame(parts, sheetBody, frameOffset, pages, row); }
+        try { return HudFrameRenderer.RenderFrame(parts, sheetBody, frameOffset, pages, row); }
         catch (FormatException ex) when (ex.Message.Contains("palette outside loaded texture"))
-        { return BattleHudDecoder.RenderFrame(parts, sheetBody, frameOffset, pages, 0); }
+        { return HudFrameRenderer.RenderFrame(parts, sheetBody, frameOffset, pages, 0); }
     }
 
     private static byte[] CropCursorFrame(byte[] full, int fullW, int frameIdx, int fw, int fh)

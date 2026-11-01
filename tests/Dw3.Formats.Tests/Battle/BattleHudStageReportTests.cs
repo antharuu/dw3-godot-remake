@@ -5,7 +5,7 @@ using Xunit;
 namespace Dw3.Formats.Tests.Battle;
 
 /// <summary>
-/// Tests for BattleStageDecoder, BattleHudDecoder and BattleReportDecoder.
+/// Tests for BattleStageDecoder, the battle HUD decoders and BattleReportDecoder.
 /// All inputs are synthetic — no disc bytes are included.
 /// </summary>
 public sealed class BattleHudStageReportTests
@@ -70,13 +70,13 @@ public sealed class BattleHudStageReportTests
         Assert.Throws<FormatException>(() => BattleStageDecoder.ParseRecord(tiny, 0));
     }
 
-    // ── BattleHudDecoder.ParseSheet ───────────────────────────────────────────
+    // ── HudSpriteSheetParser.Parse ───────────────────────────────────────────
 
     [Fact]
     public void ParseSheet_TruncatedData_Throws()
     {
-        Assert.Throws<FormatException>(() => BattleHudDecoder.ParseSheet([]));
-        Assert.Throws<FormatException>(() => BattleHudDecoder.ParseSheet(new byte[8]));
+        Assert.Throws<FormatException>(() => HudSpriteSheetParser.Parse([]));
+        Assert.Throws<FormatException>(() => HudSpriteSheetParser.Parse(new byte[8]));
     }
 
     [Fact]
@@ -84,7 +84,7 @@ public sealed class BattleHudStageReportTests
     {
         // parts_offset > ids_offset → invalid
         byte[] data = BuildMinimalSheet(partsOffset: 20, idsOffset: 16);
-        Assert.Throws<FormatException>(() => BattleHudDecoder.ParseSheet(data));
+        Assert.Throws<FormatException>(() => HudSpriteSheetParser.Parse(data));
     }
 
     [Fact]
@@ -92,14 +92,14 @@ public sealed class BattleHudStageReportTests
     {
         // No 0xFF terminator
         byte[] data = BuildMinimalSheetNoTerminator();
-        Assert.Throws<FormatException>(() => BattleHudDecoder.ParseSheet(data));
+        Assert.Throws<FormatException>(() => HudSpriteSheetParser.Parse(data));
     }
 
     [Fact]
     public void ParseSheet_ValidSheet_ReturnsExpectedCounts()
     {
         byte[] data = BuildValidSheet([5, 10, 15], numParts: 2);
-        var (parts, ids, offsets) = BattleHudDecoder.ParseSheet(data);
+        var (parts, ids, offsets) = HudSpriteSheetParser.Parse(data);
         Assert.Equal(2, parts.Count);
         Assert.Equal([5, 10, 15], ids);
         Assert.Equal(3, offsets.Count);
@@ -108,7 +108,7 @@ public sealed class BattleHudStageReportTests
     [Fact]
     public void RenderFrame_PreservesNegativePartOffsets()
     {
-        ushort[][] pixels = [.. Enumerable.Range(0, BattleHudDecoder.PageHeight).Select(_ => new ushort[BattleHudDecoder.PageWidthWords])];
+        ushort[][] pixels = [.. Enumerable.Range(0, HudTexturePage.PageHeight).Select(_ => new ushort[HudTexturePage.PageWidthWords])];
         for (int index = 0; index < 16; index++) pixels[0][index] = 0x7FFF;
         pixels[10][0] = 0x1111;
         var pages = new[] { new HudTexturePage([.. pixels.Select(row => (IReadOnlyList<ushort>)row)]) };
@@ -119,17 +119,17 @@ public sealed class BattleHudStageReportTests
         BinaryPrimitives.WriteInt16LittleEndian(frame.AsSpan(8), -40);
         BinaryPrimitives.WriteInt16LittleEndian(frame.AsSpan(10), -3);
 
-        var (_, width, height, offsetX, offsetY, _) = BattleHudDecoder.RenderFrame(parts, frame, 0, pages);
+        var (_, width, height, offsetX, offsetY, _) = HudFrameRenderer.RenderFrame(parts, frame, 0, pages);
 
         Assert.Equal((-40, -3, 4, 2), (offsetX, offsetY, width, height));
     }
 
-    // ── BattleHudDecoder.DecompressRlen ──────────────────────────────────────
+    // ── HudRlenDecoder.Decompress ──────────────────────────────────────
 
     [Fact]
     public void DecompressRlen_BadMagic_Throws()
     {
-        Assert.Throws<FormatException>(() => BattleHudDecoder.DecompressRlen("NOPE"u8));
+        Assert.Throws<FormatException>(() => HudRlenDecoder.Decompress("NOPE"u8));
     }
 
     [Fact]
@@ -137,7 +137,7 @@ public sealed class BattleHudStageReportTests
     {
         // RLEN + target=3 + cmd=0x83 (repeat 3) + val=0xAB + cmd=0x00 (end)
         byte[] data = [82, 76, 69, 78, 3, 0, 0, 0, 0x83, 0xAB, 0x00];
-        byte[] result = BattleHudDecoder.DecompressRlen(data);
+        byte[] result = HudRlenDecoder.Decompress(data);
         Assert.Equal([0xAB, 0xAB, 0xAB], result);
     }
 
@@ -146,7 +146,7 @@ public sealed class BattleHudStageReportTests
     {
         // RLEN + target=3 + cmd=0x03 (literal 3) + 3 bytes + end
         byte[] data = [82, 76, 69, 78, 3, 0, 0, 0, 0x03, 0x11, 0x22, 0x33, 0x00];
-        byte[] result = BattleHudDecoder.DecompressRlen(data);
+        byte[] result = HudRlenDecoder.Decompress(data);
         Assert.Equal([0x11, 0x22, 0x33], result);
     }
 
@@ -155,10 +155,10 @@ public sealed class BattleHudStageReportTests
     {
         // Declared size = 5 but only emits 3.
         byte[] data = [82, 76, 69, 78, 5, 0, 0, 0, 0x03, 0x11, 0x22, 0x33, 0x00];
-        Assert.Throws<FormatException>(() => BattleHudDecoder.DecompressRlen(data));
+        Assert.Throws<FormatException>(() => HudRlenDecoder.Decompress(data));
     }
 
-    // ── BattleHudDecoder.Ps1Channel ──────────────────────────────────────────
+    // ── HudColor.Ps1Channel ──────────────────────────────────────────
 
     [Theory]
     [InlineData(0, 0)]
@@ -168,7 +168,7 @@ public sealed class BattleHudStageReportTests
     public void Ps1Channel_MatchesPythonBattleHudFormula(int value, byte expected)
     {
         // Python: value * 255 // 31  (integer division)
-        Assert.Equal(expected, BattleHudDecoder.Ps1Channel(value));
+        Assert.Equal(expected, HudColor.Ps1Channel(value));
     }
 
     // ── BattleReportDecoder.ReadAnimations ────────────────────────────────────

@@ -82,7 +82,7 @@ public sealed class TalkBoxFrameDecoderTests
     {
         HudTexturePage page = SpritePage();
         byte[] sheet = BuildSheet([5], frameCount: 1, frameRow: 0, abr: 2);
-        var (parts, ids, offsets) = BattleHudDecoder.ParseSheet(sheet);
+        var (parts, ids, offsets) = HudSpriteSheetParser.Parse(sheet);
 
         TalkBoxFrameImage frame = TalkBoxFrameDecoder.RenderFrame(parts, ids, offsets, sheet, [page], 5, clutFrames: 1);
 
@@ -97,7 +97,7 @@ public sealed class TalkBoxFrameDecoderTests
     public void RenderFrame_ReportsOpaqueFrameAsNotSemi()
     {
         byte[] sheet = BuildSheet([7], frameCount: 1, frameRow: 0, abr: -1);
-        var (parts, ids, offsets) = BattleHudDecoder.ParseSheet(sheet);
+        var (parts, ids, offsets) = HudSpriteSheetParser.Parse(sheet);
 
         TalkBoxFrameImage frame = TalkBoxFrameDecoder.RenderFrame(parts, ids, offsets, sheet, [SpritePage()], 7, clutFrames: 4);
 
@@ -109,7 +109,7 @@ public sealed class TalkBoxFrameDecoderTests
     public void RenderFrame_RejectsUnknownFrame()
     {
         byte[] sheet = BuildSheet([5], frameCount: 1, frameRow: 0, abr: 2);
-        var (parts, ids, offsets) = BattleHudDecoder.ParseSheet(sheet);
+        var (parts, ids, offsets) = HudSpriteSheetParser.Parse(sheet);
         Assert.Throws<FormatException>(() => TalkBoxFrameDecoder.RenderFrame(parts, ids, offsets, sheet, [SpritePage()], 6, clutFrames: 1));
     }
 
@@ -117,7 +117,7 @@ public sealed class TalkBoxFrameDecoderTests
     public void RenderFrame_RejectsInvalidSemiTransparencyRate()
     {
         byte[] sheet = BuildSheet([5], frameCount: 1, frameRow: 0, abr: 4);
-        var (parts, ids, offsets) = BattleHudDecoder.ParseSheet(sheet);
+        var (parts, ids, offsets) = HudSpriteSheetParser.Parse(sheet);
         Assert.Throws<FormatException>(() => TalkBoxFrameDecoder.RenderFrame(parts, ids, offsets, sheet, [SpritePage()], 5, clutFrames: 1));
     }
 
@@ -125,7 +125,7 @@ public sealed class TalkBoxFrameDecoderTests
     public void RenderFrame_RejectsTooManyParts()
     {
         byte[] sheet = BuildSheet([5], frameCount: 17, frameRow: 0, abr: 2);
-        var (parts, ids, offsets) = BattleHudDecoder.ParseSheet(sheet);
+        var (parts, ids, offsets) = HudSpriteSheetParser.Parse(sheet);
         Assert.Throws<FormatException>(() => TalkBoxFrameDecoder.RenderFrame(parts, ids, offsets, sheet, [SpritePage()], 5, clutFrames: 1));
     }
 
@@ -159,8 +159,8 @@ public sealed class TalkBoxFrameDecoderTests
 
     private static ushort[][] EmptyRows()
     {
-        var rows = new ushort[BattleHudDecoder.PageHeight][];
-        for (int row = 0; row < rows.Length; row++) rows[row] = new ushort[BattleHudDecoder.PageWidthWords];
+        var rows = new ushort[HudTexturePage.PageHeight][];
+        for (int row = 0; row < rows.Length; row++) rows[row] = new ushort[HudTexturePage.PageWidthWords];
         return rows;
     }
 

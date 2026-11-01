@@ -38,8 +38,8 @@ internal static class BattleReportExtractionStep
             // Read all five source files.
             (_, byte[] sheetArchive) = files.Read(BattleReportDecoder.SheetFileId);
             (_, byte[] textureArchive) = files.Read(BattleReportDecoder.TextureFileId);
-            (_, byte[] menuSheet) = files.Read(BattleHudDecoder.MenuSheetFileId);
-            (_, byte[] menuTexture) = files.Read(BattleHudDecoder.MenuTextureFileId);
+            (_, byte[] menuSheet) = files.Read(BattleHudFiles.MenuSheetFileId);
+            (_, byte[] menuTexture) = files.Read(BattleHudFiles.MenuTextureFileId);
             DiscFileEntry overlayEntry = entries.SingleOrDefault(e => e.IsoPath == ReportOverlayPath)
                 ?? throw new InvalidDataException($"Required disc member missing: {ReportOverlayPath}");
             byte[] overlay = disc.ReadFile(overlayEntry);
@@ -73,7 +73,7 @@ internal static class BattleReportExtractionStep
         if (outerPtr != 4)
             throw new FormatException($"Report sheet archive outer pointer is {outerPtr}, expected 4.");
         // The sheet body starts at byte 0 (including the 4-byte outer pointer as the archive skip).
-        var (reportParts, reportIds, reportOffsets) = BattleHudDecoder.ParseSheet(sheetArchive);
+        var (reportParts, reportIds, reportOffsets) = HudSpriteSheetParser.Parse(sheetArchive);
 
         // Verify all required frame ids are present.
         var idSet = new HashSet<int>(reportIds);
@@ -82,11 +82,11 @@ internal static class BattleReportExtractionStep
                 throw new FormatException($"STFGTREP sheet lacks required frame id {required}.");
 
         // Build report texture pages (file 0x7A0, model-archive format with 4-byte outer skip).
-        IReadOnlyList<HudTexturePage> reportPages = BattleHudDecoder.BuildReportTexturePages(textureArchive);
+        IReadOnlyList<HudTexturePage> reportPages = HudTexturePageDecoder.BuildReportTexturePages(textureArchive);
 
         // Build menu texture pages from CMFONTTM (for the arrow frame).
-        IReadOnlyList<HudTexturePage> menuPages = BattleHudDecoder.BuildMenuTexturePages(menuTexture);
-        var (menuPartsArr, menuIds, menuOffsets) = BattleHudDecoder.ParseSheet(menuSheet);
+        IReadOnlyList<HudTexturePage> menuPages = HudTexturePageDecoder.BuildMenuTexturePages(menuTexture);
+        var (menuPartsArr, menuIds, menuOffsets) = HudSpriteSheetParser.Parse(menuSheet);
         int arrowPos = BattleReportDecoder.FramePosition(menuIds, BattleReportDecoder.ArrowFrameId);
 
         // Read and validate the STFGTREP_animations table from the overlay.
@@ -105,7 +105,7 @@ internal static class BattleReportExtractionStep
             (int Part, int Dx, int Dy)[]? partsMeta = null;
             for (int row = 0; row < rowCount; row++)
             {
-                var (rgba, w, h, ox, oy, _, meta) = BattleHudDecoder.RenderFrameWithMeta(
+                var (rgba, w, h, ox, oy, _, meta) = HudFrameRenderer.RenderFrameWithMeta(
                     reportParts, reportBody, reportOffsets[pos], reportPages, row);
                 if (row == 0) partsMeta = [.. meta];
                 string name = $"frame-{frameId:X2}-clut{row}.png";
@@ -123,7 +123,7 @@ internal static class BattleReportExtractionStep
         IReadOnlyList<FieldFramePartMeta>? arrowPartsMeta = null;
         for (int row = 0; row < BattleReportDecoder.ArrowRows; row++)
         {
-            var (rgba, w, h, meta, _) = BattleHudDecoder.RenderFieldFrame(menuPartsArr, menuBody, menuOffsets[arrowPos], menuPages, row);
+            var (rgba, w, h, meta, _) = HudFrameRenderer.RenderFieldFrame(menuPartsArr, menuBody, menuOffsets[arrowPos], menuPages, row);
             if (row == 0) arrowPartsMeta = meta;
             string name = $"arrow-clut{row}.png";
             string rel = $"{OutputSubdir}/{name}";
@@ -155,7 +155,7 @@ internal static class BattleReportExtractionStep
             int width = 0, height = 0, ox = 0, oy = 0;
             for (int row = 0; row < rowCount; row++)
             {
-                var (rgba, w, h, meta, _) = BattleHudDecoder.RenderFieldFrame(parts, body, offsets[position], pages, row);
+                var (rgba, w, h, meta, _) = HudFrameRenderer.RenderFieldFrame(parts, body, offsets[position], pages, row);
                 width = w; height = h; ox = meta.Min(part => part.Dx); oy = meta.Min(part => part.Dy);
                 string relative = $"{directory}/frame-{id}-clut{row}.png";
                 File.WriteAllBytes(context.GetImagePath(relative), PngEncoder.Encode(w, h, rgba));

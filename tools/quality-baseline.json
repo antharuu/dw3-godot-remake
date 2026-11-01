@@ -397,7 +397,7 @@
       "rule": "DW3001",
       "project": "Dw3.Formats",
       "folder": "Battle",
-      "count": 4
+      "count": 3
     },
     {
       "rule": "DW3001",
@@ -439,12 +439,6 @@
       "rule": "S107",
       "project": "Dw3.Extractor",
       "folder": ".",
-      "count": 1
-    },
-    {
-      "rule": "S107",
-      "project": "Dw3.Formats",
-      "folder": "Battle",
       "count": 1
     },
     {
@@ -607,7 +601,7 @@
       "rule": "S134",
       "project": "Dw3.Formats",
       "folder": "Battle",
-      "count": 8
+      "count": 7
     },
     {
       "rule": "S134",
@@ -973,7 +967,7 @@
       "rule": "S3776",
       "project": "Dw3.Formats",
       "folder": "Battle",
-      "count": 15
+      "count": 9
     },
     {
       "rule": "S3776",
@@ -1141,7 +1135,7 @@
       "rule": "SA1107",
       "project": "Dw3.Formats",
       "folder": "Battle",
-      "count": 79
+      "count": 76
     },
     {
       "rule": "SA1107",
@@ -1339,7 +1333,7 @@
       "rule": "SA1117",
       "project": "Dw3.Formats",
       "folder": "Battle",
-      "count": 19
+      "count": 15
     },
     {
       "rule": "SA1117",
@@ -1681,7 +1675,7 @@
       "rule": "SA1202",
       "project": "Dw3.Formats",
       "folder": "Battle",
-      "count": 3
+      "count": 1
     },
     {
       "rule": "SA1202",
@@ -2083,7 +2077,7 @@
       "rule": "SA1407",
       "project": "Dw3.Formats",
       "folder": "Battle",
-      "count": 65
+      "count": 46
     },
     {
       "rule": "SA1407",
@@ -2407,7 +2401,7 @@
       "rule": "SA1503",
       "project": "Dw3.Formats",
       "folder": "Battle",
-      "count": 170
+      "count": 125
     },
     {
       "rule": "SA1503",
@@ -2647,7 +2641,7 @@
       "rule": "SA1513",
       "project": "Dw3.Formats",
       "folder": "Battle",
-      "count": 63
+      "count": 51
     },
     {
       "rule": "SA1513",
@@ -2743,7 +2737,7 @@
       "rule": "SA1514",
       "project": "Dw3.Formats",
       "folder": "Battle",
-      "count": 2
+      "count": 1
     },
     {
       "rule": "SA1514",
@@ -2810,12 +2804,6 @@
       "project": "Dw3.Extractor.Tests",
       "folder": ".",
       "count": 6
-    },
-    {
-      "rule": "SA1515",
-      "project": "Dw3.Formats",
-      "folder": "Battle",
-      "count": 1
     },
     {
       "rule": "SA1515",
@@ -3151,7 +3139,7 @@
       "rule": "SA1600",
       "project": "Dw3.Formats",
       "folder": "Battle",
-      "count": 107
+      "count": 105
     },
     {
       "rule": "SA1600",

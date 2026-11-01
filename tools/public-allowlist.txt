@@ -86,7 +86,6 @@ src/Dw3.Extractor/ZoneExtractionStep.cs
 src/Dw3.Extractor/ZoneManifestData.cs
 src/Dw3.Extractor/ZoneManifestWriter.cs
 src/Dw3.Formats/Battle/BattleDataDecoder.cs
-src/Dw3.Formats/Battle/BattleHudDecoder.cs
 src/Dw3.Formats/Battle/BattleJsonWriter.cs
 src/Dw3.Formats/Battle/BattleMeshDecoder.cs
 src/Dw3.Formats/Battle/BattleModelDecoder.cs
@@ -140,6 +139,17 @@ src/Dw3.Formats/Battle/MeshTextureState.cs
 src/Dw3.Formats/Battle/MeshUv.cs
 src/Dw3.Formats/Battle/MeshVector.cs
 src/Dw3.Formats/Battle/TechniqueRecord.cs
+src/Dw3.Formats/Battle/BattleHudFiles.cs
+src/Dw3.Formats/Battle/HudAlphaCompositor.cs
+src/Dw3.Formats/Battle/HudColor.cs
+src/Dw3.Formats/Battle/HudCursorBarDecoder.cs
+src/Dw3.Formats/Battle/HudFrameHeader.cs
+src/Dw3.Formats/Battle/HudFrameRenderer.cs
+src/Dw3.Formats/Battle/HudRenderedPart.cs
+src/Dw3.Formats/Battle/HudRgbaImage.cs
+src/Dw3.Formats/Battle/HudRlenDecoder.cs
+src/Dw3.Formats/Battle/HudSpriteSheetParser.cs
+src/Dw3.Formats/Battle/HudTexturePageDecoder.cs
 src/Dw3.Formats/Binary/BinarySpanReader.cs
 src/Dw3.Formats/Binary/Png/PngEncoder.cs
 src/Dw3.Formats/Binary/PsxExecutable.cs
