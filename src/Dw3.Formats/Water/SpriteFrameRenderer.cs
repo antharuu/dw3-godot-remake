@@ -101,23 +101,29 @@ public static class SpriteFrameRenderer
         for (int index = placed.Length - 1; index >= 0; index--)
         {
             var (x, y, partWidth, partHeight, partWords) = placed[index];
-            OverlayPart(words, width, minX, minY, x, y, partWidth, partHeight, partWords);
+            OverlayPart(words, width, (minX, minY), (x, y), (partWidth, partHeight), partWords);
         }
 
         return words;
     }
 
     /// <summary>Writes the opaque texels of one sampled part into its destination rectangle.</summary>
-    private static void OverlayPart(ushort[] destination, int destinationWidth, int minX, int minY, int x, int y, int partWidth, int partHeight, ushort[] source)
+    /// <param name="destination">Output pixels in row-major order.</param>
+    /// <param name="destinationWidth">Output span in pixels.</param>
+    /// <param name="origin">Left and top source coordinates of the output.</param>
+    /// <param name="position">Left and top source coordinates of the part.</param>
+    /// <param name="size">Width and height of the part in pixels.</param>
+    /// <param name="source">Sampled PS1 pixel words for the part.</param>
+    private static void OverlayPart(ushort[] destination, int destinationWidth, (int X, int Y) origin, (int X, int Y) position, (int Width, int Height) size, ushort[] source)
     {
-        for (int row = 0; row < partHeight; row++)
+        for (int row = 0; row < size.Height; row++)
         {
-            for (int column = 0; column < partWidth; column++)
+            for (int column = 0; column < size.Width; column++)
             {
-                ushort word = source[(row * partWidth) + column];
+                ushort word = source[(row * size.Width) + column];
                 if (word != 0)
                 {
-                    destination[((y - minY + row) * destinationWidth) + x - minX + column] = word;
+                    destination[((position.Y - origin.Y + row) * destinationWidth) + position.X - origin.X + column] = word;
                 }
             }
         }

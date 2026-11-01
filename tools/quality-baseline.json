@@ -671,12 +671,6 @@
     },
     {
       "rule": "S134",
-      "project": "Dw3.Formats",
-      "folder": "Water",
-      "count": 1
-    },
-    {
-      "rule": "S134",
       "project": "Dw3.Game",
       "folder": ".",
       "count": 8
@@ -1052,12 +1046,6 @@
       "project": "Dw3.Formats",
       "folder": "Field",
       "count": 12
-    },
-    {
-      "rule": "S3776",
-      "project": "Dw3.Formats",
-      "folder": "Water",
-      "count": 1
     },
     {
       "rule": "S3776",
@@ -2239,7 +2227,7 @@
       "rule": "SA1407",
       "project": "Dw3.Formats",
       "folder": "Water",
-      "count": 17
+      "count": 11
     },
     {
       "rule": "SA1407",
@@ -2575,7 +2563,7 @@
       "rule": "SA1503",
       "project": "Dw3.Formats",
       "folder": "Water",
-      "count": 11
+      "count": 7
     },
     {
       "rule": "SA1503",
@@ -3247,7 +3235,7 @@
       "rule": "SA1519",
       "project": "Dw3.Formats",
       "folder": "Water",
-      "count": 3
+      "count": 2
     },
     {
       "rule": "SA1519",
