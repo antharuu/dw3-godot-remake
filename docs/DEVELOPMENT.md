@@ -17,11 +17,15 @@ Run these commands from the repository root:
 
 ```sh
 dotnet build Dw3.sln --nologo
-dotnet format Dw3.sln         # required before committing; verified by Linux CI
+dotnet format whitespace Dw3.sln   # required before committing; verified by Linux CI
+dotnet format style Dw3.sln
 dotnet test Dw3.sln --nologo
+dotnet run --project tools/Dw3.QualityRatchet -- check
 ```
 
-The build gate is zero warnings and zero errors. The test suite includes format,
+The build gate is zero errors. The only warnings allowed come from the rules still
+tracked by the quality ratchet, whose counts may only go down: see
+[CODE_RULES.md](CODE_RULES.md). The test suite includes format,
 data-pack, extractor, game, and repository-provenance tests.
 
 While the legacy Python parity pipeline remains in the tree, also run:

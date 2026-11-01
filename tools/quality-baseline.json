@@ -1,0 +1,4381 @@
+{
+  "coverage": {
+    "targetPercent": 80,
+    "linePercent": {
+      "Dw3.Data": 89.75,
+      "Dw3.Disc": 44.55,
+      "Dw3.Extractor": 33.11,
+      "Dw3.Formats": 45.54
+    }
+  },
+  "violations": [
+    {
+      "rule": "CA1001",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 6
+    },
+    {
+      "rule": "CA1050",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "CA1051",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 14
+    },
+    {
+      "rule": "CA1051",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 107
+    },
+    {
+      "rule": "CA1305",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 13
+    },
+    {
+      "rule": "CA1305",
+      "project": "Dw3.Extractor.Tests",
+      "folder": ".",
+      "count": 8
+    },
+    {
+      "rule": "CA1305",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "CA1305",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 10
+    },
+    {
+      "rule": "CA1305",
+      "project": "Dw3.Game.Tests",
+      "folder": ".",
+      "count": 7
+    },
+    {
+      "rule": "CA1512",
+      "project": "Dw3.Formats",
+      "folder": "Dialogue",
+      "count": 1
+    },
+    {
+      "rule": "CA1512",
+      "project": "Dw3.Formats",
+      "folder": "Field",
+      "count": 3
+    },
+    {
+      "rule": "CA1512",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 6
+    },
+    {
+      "rule": "CA1512",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 2
+    },
+    {
+      "rule": "CA1707",
+      "project": "Dw3.Disc.Tests",
+      "folder": ".",
+      "count": 11
+    },
+    {
+      "rule": "CA1707",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Battle",
+      "count": 47
+    },
+    {
+      "rule": "CA1707",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Binary",
+      "count": 61
+    },
+    {
+      "rule": "CA1707",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Dialogue",
+      "count": 11
+    },
+    {
+      "rule": "CA1707",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Encounter",
+      "count": 19
+    },
+    {
+      "rule": "CA1707",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Field",
+      "count": 29
+    },
+    {
+      "rule": "CA1707",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Text",
+      "count": 31
+    },
+    {
+      "rule": "CA1707",
+      "project": "Dw3.Game.Tests",
+      "folder": ".",
+      "count": 11
+    },
+    {
+      "rule": "CA1707",
+      "project": "Dw3.Repository.Tests",
+      "folder": ".",
+      "count": 44
+    },
+    {
+      "rule": "CA1715",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 2
+    },
+    {
+      "rule": "CA1716",
+      "project": "Dw3.Game",
+      "folder": "Conversion",
+      "count": 1
+    },
+    {
+      "rule": "CA1716",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 1
+    },
+    {
+      "rule": "CA1716",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 2
+    },
+    {
+      "rule": "CA1720",
+      "project": "Dw3.Formats",
+      "folder": "Encounter",
+      "count": 4
+    },
+    {
+      "rule": "CA1725",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "CA1822",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 5
+    },
+    {
+      "rule": "CA1822",
+      "project": "Dw3.Game",
+      "folder": "Conversion",
+      "count": 3
+    },
+    {
+      "rule": "CA1822",
+      "project": "Dw3.Game",
+      "folder": "Logging",
+      "count": 2
+    },
+    {
+      "rule": "CA1822",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 1
+    },
+    {
+      "rule": "CA1822",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 5
+    },
+    {
+      "rule": "CA1826",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 4
+    },
+    {
+      "rule": "CA1826",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 2
+    },
+    {
+      "rule": "CA1826",
+      "project": "Dw3.Game",
+      "folder": "Diagnostics",
+      "count": 2
+    },
+    {
+      "rule": "CA1832",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Battle",
+      "count": 3
+    },
+    {
+      "rule": "CA1832",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Binary",
+      "count": 4
+    },
+    {
+      "rule": "CA1859",
+      "project": "Dw3.Disc",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "CA1859",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 12
+    },
+    {
+      "rule": "CA1859",
+      "project": "Dw3.Formats",
+      "folder": "Battle",
+      "count": 1
+    },
+    {
+      "rule": "CA1859",
+      "project": "Dw3.Formats",
+      "folder": "Encounter",
+      "count": 2
+    },
+    {
+      "rule": "CA1859",
+      "project": "Dw3.Formats",
+      "folder": "Field",
+      "count": 3
+    },
+    {
+      "rule": "CA1859",
+      "project": "Dw3.Formats",
+      "folder": "Mips",
+      "count": 1
+    },
+    {
+      "rule": "CA1859",
+      "project": "Dw3.Formats",
+      "folder": "Text",
+      "count": 1
+    },
+    {
+      "rule": "CA1859",
+      "project": "Dw3.Formats",
+      "folder": "Water",
+      "count": 1
+    },
+    {
+      "rule": "CA1859",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Field",
+      "count": 1
+    },
+    {
+      "rule": "CA1859",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 6
+    },
+    {
+      "rule": "CA1859",
+      "project": "Dw3.Game",
+      "folder": "Conversion",
+      "count": 9
+    },
+    {
+      "rule": "CA1859",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 1
+    },
+    {
+      "rule": "CA1859",
+      "project": "Dw3.Game.Tests",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "CA1861",
+      "project": "Dw3.Formats",
+      "folder": "Battle",
+      "count": 1
+    },
+    {
+      "rule": "CA1861",
+      "project": "Dw3.Game.Tests",
+      "folder": ".",
+      "count": 7
+    },
+    {
+      "rule": "CA1869",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 2
+    },
+    {
+      "rule": "CA1875",
+      "project": "Dw3.Repository.Tests",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "CA2208",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 3
+    },
+    {
+      "rule": "CS1573",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 3
+    },
+    {
+      "rule": "CS1573",
+      "project": "Dw3.Formats",
+      "folder": "Battle",
+      "count": 8
+    },
+    {
+      "rule": "CS1573",
+      "project": "Dw3.Formats",
+      "folder": "Dialogue",
+      "count": 7
+    },
+    {
+      "rule": "CS1573",
+      "project": "Dw3.Formats",
+      "folder": "Mips",
+      "count": 3
+    },
+    {
+      "rule": "CS1587",
+      "project": "Dw3.Formats",
+      "folder": "Text",
+      "count": 9
+    },
+    {
+      "rule": "CS1591",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 55
+    },
+    {
+      "rule": "CS1591",
+      "project": "Dw3.Formats",
+      "folder": "Battle",
+      "count": 114
+    },
+    {
+      "rule": "CS1591",
+      "project": "Dw3.Formats",
+      "folder": "Dialogue",
+      "count": 2
+    },
+    {
+      "rule": "CS1591",
+      "project": "Dw3.Formats",
+      "folder": "Field",
+      "count": 13
+    },
+    {
+      "rule": "CS1591",
+      "project": "Dw3.Formats",
+      "folder": "Mips",
+      "count": 3
+    },
+    {
+      "rule": "CS1591",
+      "project": "Dw3.Formats",
+      "folder": "Text",
+      "count": 3
+    },
+    {
+      "rule": "CS1591",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 2
+    },
+    {
+      "rule": "CS1591",
+      "project": "Dw3.Game",
+      "folder": ".godot",
+      "count": 1
+    },
+    {
+      "rule": "CS1591",
+      "project": "Dw3.Game",
+      "folder": "Conversion",
+      "count": 97
+    },
+    {
+      "rule": "CS1591",
+      "project": "Dw3.Game",
+      "folder": "Diagnostics",
+      "count": 6
+    },
+    {
+      "rule": "CS1591",
+      "project": "Dw3.Game",
+      "folder": "Input",
+      "count": 6
+    },
+    {
+      "rule": "CS1591",
+      "project": "Dw3.Game",
+      "folder": "Logging",
+      "count": 3
+    },
+    {
+      "rule": "CS1591",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 123
+    },
+    {
+      "rule": "CS1591",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 325
+    },
+    {
+      "rule": "CS1734",
+      "project": "Dw3.Game.Tests",
+      "folder": ".",
+      "count": 3
+    },
+    {
+      "rule": "S101",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 2
+    },
+    {
+      "rule": "S1066",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "S107",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "S107",
+      "project": "Dw3.Formats",
+      "folder": "Battle",
+      "count": 1
+    },
+    {
+      "rule": "S107",
+      "project": "Dw3.Formats",
+      "folder": "Field",
+      "count": 2
+    },
+    {
+      "rule": "S107",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Field",
+      "count": 1
+    },
+    {
+      "rule": "S107",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Water",
+      "count": 1
+    },
+    {
+      "rule": "S107",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 7
+    },
+    {
+      "rule": "S107",
+      "project": "Dw3.Game.Tests",
+      "folder": ".",
+      "count": 8
+    },
+    {
+      "rule": "S1075",
+      "project": "Dw3.Disc",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "S108",
+      "project": "Dw3.Data",
+      "folder": ".",
+      "count": 2
+    },
+    {
+      "rule": "S108",
+      "project": "Dw3.Game.Tests",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "S1104",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 14
+    },
+    {
+      "rule": "S1104",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 107
+    },
+    {
+      "rule": "S1121",
+      "project": "Dw3.Game",
+      "folder": "Conversion",
+      "count": 5
+    },
+    {
+      "rule": "S1144",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 2
+    },
+    {
+      "rule": "S1144",
+      "project": "Dw3.Formats",
+      "folder": "Binary",
+      "count": 1
+    },
+    {
+      "rule": "S1144",
+      "project": "Dw3.Formats",
+      "folder": "Encounter",
+      "count": 1
+    },
+    {
+      "rule": "S1144",
+      "project": "Dw3.Formats",
+      "folder": "Field",
+      "count": 2
+    },
+    {
+      "rule": "S1144",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Encounter",
+      "count": 1
+    },
+    {
+      "rule": "S1144",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Mips",
+      "count": 1
+    },
+    {
+      "rule": "S1144",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "S1144",
+      "project": "Dw3.Game",
+      "folder": "Diagnostics",
+      "count": 2
+    },
+    {
+      "rule": "S1144",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 3
+    },
+    {
+      "rule": "S1144",
+      "project": "Dw3.Repository.Tests",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "S1215",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "S1215",
+      "project": "Dw3.Game",
+      "folder": "Diagnostics",
+      "count": 3
+    },
+    {
+      "rule": "S1244",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "S1244",
+      "project": "Dw3.Game",
+      "folder": "Diagnostics",
+      "count": 6
+    },
+    {
+      "rule": "S1244",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 1
+    },
+    {
+      "rule": "S1244",
+      "project": "Dw3.Game.Tests",
+      "folder": ".",
+      "count": 8
+    },
+    {
+      "rule": "S127",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 2
+    },
+    {
+      "rule": "S134",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 9
+    },
+    {
+      "rule": "S134",
+      "project": "Dw3.Formats",
+      "folder": "Battle",
+      "count": 8
+    },
+    {
+      "rule": "S134",
+      "project": "Dw3.Formats",
+      "folder": "Field",
+      "count": 7
+    },
+    {
+      "rule": "S134",
+      "project": "Dw3.Formats",
+      "folder": "Water",
+      "count": 2
+    },
+    {
+      "rule": "S134",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 8
+    },
+    {
+      "rule": "S134",
+      "project": "Dw3.Game",
+      "folder": "Conversion",
+      "count": 2
+    },
+    {
+      "rule": "S134",
+      "project": "Dw3.Game",
+      "folder": "Diagnostics",
+      "count": 11
+    },
+    {
+      "rule": "S134",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 5
+    },
+    {
+      "rule": "S134",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 1
+    },
+    {
+      "rule": "S134",
+      "project": "Dw3.Game.Tests",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "S134",
+      "project": "Dw3.Repository.Tests",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "S138",
+      "project": "Dw3.Data",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "S138",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 9
+    },
+    {
+      "rule": "S138",
+      "project": "Dw3.Formats",
+      "folder": "Battle",
+      "count": 4
+    },
+    {
+      "rule": "S138",
+      "project": "Dw3.Formats",
+      "folder": "Encounter",
+      "count": 1
+    },
+    {
+      "rule": "S138",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 4
+    },
+    {
+      "rule": "S138",
+      "project": "Dw3.Game",
+      "folder": "Diagnostics",
+      "count": 10
+    },
+    {
+      "rule": "S138",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 3
+    },
+    {
+      "rule": "S138",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 3
+    },
+    {
+      "rule": "S1450",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 1
+    },
+    {
+      "rule": "S1450",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 1
+    },
+    {
+      "rule": "S1481",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Encounter",
+      "count": 1
+    },
+    {
+      "rule": "S1481",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "S1481",
+      "project": "Dw3.Game",
+      "folder": "Diagnostics",
+      "count": 5
+    },
+    {
+      "rule": "S1854",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 2
+    },
+    {
+      "rule": "S1854",
+      "project": "Dw3.Game",
+      "folder": "Diagnostics",
+      "count": 1
+    },
+    {
+      "rule": "S1905",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "S1905",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Encounter",
+      "count": 6
+    },
+    {
+      "rule": "S1905",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Field",
+      "count": 1
+    },
+    {
+      "rule": "S1994",
+      "project": "Dw3.Formats",
+      "folder": "Battle",
+      "count": 1
+    },
+    {
+      "rule": "S2077",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 3
+    },
+    {
+      "rule": "S2077",
+      "project": "Dw3.Game",
+      "folder": "Conversion",
+      "count": 1
+    },
+    {
+      "rule": "S2245",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 4
+    },
+    {
+      "rule": "S2325",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 5
+    },
+    {
+      "rule": "S2325",
+      "project": "Dw3.Game",
+      "folder": "Conversion",
+      "count": 3
+    },
+    {
+      "rule": "S2325",
+      "project": "Dw3.Game",
+      "folder": "Logging",
+      "count": 2
+    },
+    {
+      "rule": "S2325",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 1
+    },
+    {
+      "rule": "S2325",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 5
+    },
+    {
+      "rule": "S2681",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 7
+    },
+    {
+      "rule": "S2681",
+      "project": "Dw3.Formats",
+      "folder": "Battle",
+      "count": 3
+    },
+    {
+      "rule": "S2681",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 4
+    },
+    {
+      "rule": "S2737",
+      "project": "Dw3.Data",
+      "folder": ".",
+      "count": 2
+    },
+    {
+      "rule": "S3011",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 2
+    },
+    {
+      "rule": "S3168",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 5
+    },
+    {
+      "rule": "S3168",
+      "project": "Dw3.Game",
+      "folder": "Diagnostics",
+      "count": 27
+    },
+    {
+      "rule": "S3168",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 1
+    },
+    {
+      "rule": "S3218",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 5
+    },
+    {
+      "rule": "S3267",
+      "project": "Dw3.Disc",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "S3267",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 8
+    },
+    {
+      "rule": "S3267",
+      "project": "Dw3.Formats",
+      "folder": "Encounter",
+      "count": 1
+    },
+    {
+      "rule": "S3267",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 3
+    },
+    {
+      "rule": "S3267",
+      "project": "Dw3.Game",
+      "folder": "Conversion",
+      "count": 1
+    },
+    {
+      "rule": "S3267",
+      "project": "Dw3.Game",
+      "folder": "Diagnostics",
+      "count": 2
+    },
+    {
+      "rule": "S3267",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 4
+    },
+    {
+      "rule": "S3267",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 4
+    },
+    {
+      "rule": "S3358",
+      "project": "Dw3.Formats",
+      "folder": "Battle",
+      "count": 1
+    },
+    {
+      "rule": "S3358",
+      "project": "Dw3.Formats",
+      "folder": "Mips",
+      "count": 1
+    },
+    {
+      "rule": "S3358",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 9
+    },
+    {
+      "rule": "S3358",
+      "project": "Dw3.Game",
+      "folder": "Diagnostics",
+      "count": 1
+    },
+    {
+      "rule": "S3358",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 11
+    },
+    {
+      "rule": "S3358",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 11
+    },
+    {
+      "rule": "S3358",
+      "project": "Dw3.Game.Tests",
+      "folder": ".",
+      "count": 5
+    },
+    {
+      "rule": "S3376",
+      "project": "Dw3.Data",
+      "folder": ".",
+      "count": 4
+    },
+    {
+      "rule": "S3398",
+      "project": "Dw3.Game.Tests",
+      "folder": ".",
+      "count": 2
+    },
+    {
+      "rule": "S3626",
+      "project": "Dw3.Formats",
+      "folder": "Field",
+      "count": 1
+    },
+    {
+      "rule": "S3776",
+      "project": "Dw3.Disc",
+      "folder": ".",
+      "count": 2
+    },
+    {
+      "rule": "S3776",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 12
+    },
+    {
+      "rule": "S3776",
+      "project": "Dw3.Formats",
+      "folder": "Battle",
+      "count": 15
+    },
+    {
+      "rule": "S3776",
+      "project": "Dw3.Formats",
+      "folder": "Binary",
+      "count": 1
+    },
+    {
+      "rule": "S3776",
+      "project": "Dw3.Formats",
+      "folder": "Dialogue",
+      "count": 1
+    },
+    {
+      "rule": "S3776",
+      "project": "Dw3.Formats",
+      "folder": "Encounter",
+      "count": 1
+    },
+    {
+      "rule": "S3776",
+      "project": "Dw3.Formats",
+      "folder": "Field",
+      "count": 12
+    },
+    {
+      "rule": "S3776",
+      "project": "Dw3.Formats",
+      "folder": "Mips",
+      "count": 1
+    },
+    {
+      "rule": "S3776",
+      "project": "Dw3.Formats",
+      "folder": "Text",
+      "count": 2
+    },
+    {
+      "rule": "S3776",
+      "project": "Dw3.Formats",
+      "folder": "Water",
+      "count": 5
+    },
+    {
+      "rule": "S3776",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 16
+    },
+    {
+      "rule": "S3776",
+      "project": "Dw3.Game",
+      "folder": "Conversion",
+      "count": 6
+    },
+    {
+      "rule": "S3776",
+      "project": "Dw3.Game",
+      "folder": "Diagnostics",
+      "count": 13
+    },
+    {
+      "rule": "S3776",
+      "project": "Dw3.Game",
+      "folder": "Input",
+      "count": 1
+    },
+    {
+      "rule": "S3776",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 14
+    },
+    {
+      "rule": "S3776",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 9
+    },
+    {
+      "rule": "S3776",
+      "project": "Dw3.Game.Tests",
+      "folder": ".",
+      "count": 14
+    },
+    {
+      "rule": "S3776",
+      "project": "Dw3.Repository.Tests",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "S3871",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "S3903",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "S3928",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 3
+    },
+    {
+      "rule": "S3973",
+      "project": "Dw3.Game",
+      "folder": "Diagnostics",
+      "count": 1
+    },
+    {
+      "rule": "S3973",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 1
+    },
+    {
+      "rule": "S4036",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "S4136",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "S4487",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "S4487",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 2
+    },
+    {
+      "rule": "S6444",
+      "project": "Dw3.Disc",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "S6580",
+      "project": "Dw3.Extractor.Tests",
+      "folder": ".",
+      "count": 8
+    },
+    {
+      "rule": "S6608",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 4
+    },
+    {
+      "rule": "S8969",
+      "project": "Dw3.Game",
+      "folder": "Diagnostics",
+      "count": 3
+    },
+    {
+      "rule": "S8969",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 5
+    },
+    {
+      "rule": "S8969",
+      "project": "Dw3.Game.Tests",
+      "folder": ".",
+      "count": 15
+    },
+    {
+      "rule": "S927",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "SA1001",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Binary",
+      "count": 1
+    },
+    {
+      "rule": "SA1001",
+      "project": "Dw3.Game",
+      "folder": "Conversion",
+      "count": 51
+    },
+    {
+      "rule": "SA1001",
+      "project": "Dw3.Game.Tests",
+      "folder": ".",
+      "count": 45
+    },
+    {
+      "rule": "SA1002",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Field",
+      "count": 2
+    },
+    {
+      "rule": "SA1008",
+      "project": "Dw3.Disc.Tests",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "SA1009",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 2
+    },
+    {
+      "rule": "SA1009",
+      "project": "Dw3.Extractor.Tests",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "SA1009",
+      "project": "Dw3.Formats",
+      "folder": "Text",
+      "count": 1
+    },
+    {
+      "rule": "SA1010",
+      "project": "Dw3.Game.Tests",
+      "folder": ".",
+      "count": 2
+    },
+    {
+      "rule": "SA1011",
+      "project": "Dw3.Game.Tests",
+      "folder": ".",
+      "count": 2
+    },
+    {
+      "rule": "SA1021",
+      "project": "Dw3.Game.Tests",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "SA1025",
+      "project": "Dw3.Disc",
+      "folder": ".",
+      "count": 2
+    },
+    {
+      "rule": "SA1025",
+      "project": "Dw3.Disc.Tests",
+      "folder": ".",
+      "count": 3
+    },
+    {
+      "rule": "SA1025",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Battle",
+      "count": 1
+    },
+    {
+      "rule": "SA1025",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Binary",
+      "count": 2
+    },
+    {
+      "rule": "SA1025",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Text",
+      "count": 1
+    },
+    {
+      "rule": "SA1107",
+      "project": "Dw3.Disc.Tests",
+      "folder": ".",
+      "count": 4
+    },
+    {
+      "rule": "SA1107",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 140
+    },
+    {
+      "rule": "SA1107",
+      "project": "Dw3.Extractor.Tests",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "SA1107",
+      "project": "Dw3.Formats",
+      "folder": "Battle",
+      "count": 79
+    },
+    {
+      "rule": "SA1107",
+      "project": "Dw3.Formats",
+      "folder": "Dialogue",
+      "count": 5
+    },
+    {
+      "rule": "SA1107",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Battle",
+      "count": 23
+    },
+    {
+      "rule": "SA1107",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Binary",
+      "count": 27
+    },
+    {
+      "rule": "SA1107",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Dialogue",
+      "count": 19
+    },
+    {
+      "rule": "SA1107",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Field",
+      "count": 23
+    },
+    {
+      "rule": "SA1107",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Text",
+      "count": 6
+    },
+    {
+      "rule": "SA1107",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 8
+    },
+    {
+      "rule": "SA1107",
+      "project": "Dw3.Game",
+      "folder": "Conversion",
+      "count": 8
+    },
+    {
+      "rule": "SA1107",
+      "project": "Dw3.Game",
+      "folder": "Diagnostics",
+      "count": 54
+    },
+    {
+      "rule": "SA1107",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 30
+    },
+    {
+      "rule": "SA1107",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 11
+    },
+    {
+      "rule": "SA1107",
+      "project": "Dw3.Game.Tests",
+      "folder": ".",
+      "count": 35
+    },
+    {
+      "rule": "SA1111",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "SA1111",
+      "project": "Dw3.Extractor.Tests",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "SA1111",
+      "project": "Dw3.Formats",
+      "folder": "Text",
+      "count": 1
+    },
+    {
+      "rule": "SA1116",
+      "project": "Dw3.Disc",
+      "folder": ".",
+      "count": 22
+    },
+    {
+      "rule": "SA1116",
+      "project": "Dw3.Disc.Tests",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "SA1116",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 32
+    },
+    {
+      "rule": "SA1116",
+      "project": "Dw3.Extractor.Tests",
+      "folder": ".",
+      "count": 15
+    },
+    {
+      "rule": "SA1116",
+      "project": "Dw3.Formats",
+      "folder": "Battle",
+      "count": 4
+    },
+    {
+      "rule": "SA1116",
+      "project": "Dw3.Formats",
+      "folder": "Dialogue",
+      "count": 1
+    },
+    {
+      "rule": "SA1116",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Dialogue",
+      "count": 1
+    },
+    {
+      "rule": "SA1116",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Encounter",
+      "count": 1
+    },
+    {
+      "rule": "SA1116",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Field",
+      "count": 4
+    },
+    {
+      "rule": "SA1116",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Water",
+      "count": 9
+    },
+    {
+      "rule": "SA1116",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 16
+    },
+    {
+      "rule": "SA1116",
+      "project": "Dw3.Game",
+      "folder": "Conversion",
+      "count": 5
+    },
+    {
+      "rule": "SA1116",
+      "project": "Dw3.Game",
+      "folder": "Diagnostics",
+      "count": 82
+    },
+    {
+      "rule": "SA1116",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 7
+    },
+    {
+      "rule": "SA1116",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 1
+    },
+    {
+      "rule": "SA1116",
+      "project": "Dw3.Game.Tests",
+      "folder": ".",
+      "count": 101
+    },
+    {
+      "rule": "SA1116",
+      "project": "Dw3.Repository.Tests",
+      "folder": ".",
+      "count": 12
+    },
+    {
+      "rule": "SA1117",
+      "project": "Dw3.Disc",
+      "folder": ".",
+      "count": 3
+    },
+    {
+      "rule": "SA1117",
+      "project": "Dw3.Disc.Tests",
+      "folder": ".",
+      "count": 3
+    },
+    {
+      "rule": "SA1117",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 64
+    },
+    {
+      "rule": "SA1117",
+      "project": "Dw3.Extractor.Tests",
+      "folder": ".",
+      "count": 14
+    },
+    {
+      "rule": "SA1117",
+      "project": "Dw3.Formats",
+      "folder": "Battle",
+      "count": 19
+    },
+    {
+      "rule": "SA1117",
+      "project": "Dw3.Formats",
+      "folder": "Dialogue",
+      "count": 1
+    },
+    {
+      "rule": "SA1117",
+      "project": "Dw3.Formats",
+      "folder": "Encounter",
+      "count": 1
+    },
+    {
+      "rule": "SA1117",
+      "project": "Dw3.Formats",
+      "folder": "Water",
+      "count": 1
+    },
+    {
+      "rule": "SA1117",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Battle",
+      "count": 2
+    },
+    {
+      "rule": "SA1117",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Binary",
+      "count": 3
+    },
+    {
+      "rule": "SA1117",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Dialogue",
+      "count": 2
+    },
+    {
+      "rule": "SA1117",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Field",
+      "count": 1
+    },
+    {
+      "rule": "SA1117",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Mips",
+      "count": 7
+    },
+    {
+      "rule": "SA1117",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Water",
+      "count": 2
+    },
+    {
+      "rule": "SA1117",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 15
+    },
+    {
+      "rule": "SA1117",
+      "project": "Dw3.Game",
+      "folder": "Conversion",
+      "count": 21
+    },
+    {
+      "rule": "SA1117",
+      "project": "Dw3.Game",
+      "folder": "Diagnostics",
+      "count": 5
+    },
+    {
+      "rule": "SA1117",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 16
+    },
+    {
+      "rule": "SA1117",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 13
+    },
+    {
+      "rule": "SA1117",
+      "project": "Dw3.Game.Tests",
+      "folder": ".",
+      "count": 109
+    },
+    {
+      "rule": "SA1117",
+      "project": "Dw3.Repository.Tests",
+      "folder": ".",
+      "count": 9
+    },
+    {
+      "rule": "SA1118",
+      "project": "Dw3.Disc",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "SA1118",
+      "project": "Dw3.Disc.Tests",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "SA1118",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 6
+    },
+    {
+      "rule": "SA1118",
+      "project": "Dw3.Extractor.Tests",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "SA1118",
+      "project": "Dw3.Formats",
+      "folder": "Mips",
+      "count": 2
+    },
+    {
+      "rule": "SA1118",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 2
+    },
+    {
+      "rule": "SA1118",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 1
+    },
+    {
+      "rule": "SA1118",
+      "project": "Dw3.Game.Tests",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "SA1119",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Text",
+      "count": 1
+    },
+    {
+      "rule": "SA1122",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "SA1122",
+      "project": "Dw3.Game",
+      "folder": "Diagnostics",
+      "count": 1
+    },
+    {
+      "rule": "SA1122",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 17
+    },
+    {
+      "rule": "SA1122",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 2
+    },
+    {
+      "rule": "SA1124",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 7
+    },
+    {
+      "rule": "SA1124",
+      "project": "Dw3.Game",
+      "folder": "Diagnostics",
+      "count": 2
+    },
+    {
+      "rule": "SA1127",
+      "project": "Dw3.Game",
+      "folder": "Conversion",
+      "count": 1
+    },
+    {
+      "rule": "SA1127",
+      "project": "Dw3.Game.Tests",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "SA1128",
+      "project": "Dw3.Game",
+      "folder": "Conversion",
+      "count": 1
+    },
+    {
+      "rule": "SA1131",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "SA1132",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Field",
+      "count": 1
+    },
+    {
+      "rule": "SA1132",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Mips",
+      "count": 1
+    },
+    {
+      "rule": "SA1136",
+      "project": "Dw3.Formats",
+      "folder": "Text",
+      "count": 2
+    },
+    {
+      "rule": "SA1136",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 2
+    },
+    {
+      "rule": "SA1136",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 28
+    },
+    {
+      "rule": "SA1139",
+      "project": "Dw3.Formats",
+      "folder": "Binary",
+      "count": 2
+    },
+    {
+      "rule": "SA1139",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Encounter",
+      "count": 5
+    },
+    {
+      "rule": "SA1200",
+      "project": "Dw3.Game.Tests",
+      "folder": ".",
+      "count": 33
+    },
+    {
+      "rule": "SA1201",
+      "project": "Dw3.Data",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "SA1201",
+      "project": "Dw3.Disc",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "SA1201",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 3
+    },
+    {
+      "rule": "SA1201",
+      "project": "Dw3.Formats",
+      "folder": "Battle",
+      "count": 1
+    },
+    {
+      "rule": "SA1201",
+      "project": "Dw3.Formats",
+      "folder": "Binary",
+      "count": 3
+    },
+    {
+      "rule": "SA1201",
+      "project": "Dw3.Formats",
+      "folder": "Field",
+      "count": 6
+    },
+    {
+      "rule": "SA1201",
+      "project": "Dw3.Formats",
+      "folder": "Mips",
+      "count": 3
+    },
+    {
+      "rule": "SA1201",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Battle",
+      "count": 3
+    },
+    {
+      "rule": "SA1201",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Mips",
+      "count": 1
+    },
+    {
+      "rule": "SA1201",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Text",
+      "count": 2
+    },
+    {
+      "rule": "SA1201",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 8
+    },
+    {
+      "rule": "SA1201",
+      "project": "Dw3.Game",
+      "folder": "Conversion",
+      "count": 1
+    },
+    {
+      "rule": "SA1201",
+      "project": "Dw3.Game",
+      "folder": "Diagnostics",
+      "count": 6
+    },
+    {
+      "rule": "SA1201",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 27
+    },
+    {
+      "rule": "SA1201",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 9
+    },
+    {
+      "rule": "SA1201",
+      "project": "Dw3.Game.Tests",
+      "folder": ".",
+      "count": 15
+    },
+    {
+      "rule": "SA1202",
+      "project": "Dw3.Data",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "SA1202",
+      "project": "Dw3.Disc.Tests",
+      "folder": ".",
+      "count": 2
+    },
+    {
+      "rule": "SA1202",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 4
+    },
+    {
+      "rule": "SA1202",
+      "project": "Dw3.Formats",
+      "folder": "Battle",
+      "count": 3
+    },
+    {
+      "rule": "SA1202",
+      "project": "Dw3.Formats",
+      "folder": "Text",
+      "count": 1
+    },
+    {
+      "rule": "SA1202",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Battle",
+      "count": 2
+    },
+    {
+      "rule": "SA1202",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Binary",
+      "count": 2
+    },
+    {
+      "rule": "SA1202",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Dialogue",
+      "count": 3
+    },
+    {
+      "rule": "SA1202",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Encounter",
+      "count": 1
+    },
+    {
+      "rule": "SA1202",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Field",
+      "count": 3
+    },
+    {
+      "rule": "SA1202",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Mips",
+      "count": 1
+    },
+    {
+      "rule": "SA1202",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Text",
+      "count": 3
+    },
+    {
+      "rule": "SA1202",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "SA1202",
+      "project": "Dw3.Game",
+      "folder": "Conversion",
+      "count": 2
+    },
+    {
+      "rule": "SA1202",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 12
+    },
+    {
+      "rule": "SA1202",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 7
+    },
+    {
+      "rule": "SA1202",
+      "project": "Dw3.Game.Tests",
+      "folder": ".",
+      "count": 19
+    },
+    {
+      "rule": "SA1202",
+      "project": "Dw3.Repository.Tests",
+      "folder": ".",
+      "count": 2
+    },
+    {
+      "rule": "SA1203",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "SA1203",
+      "project": "Dw3.Formats",
+      "folder": "Text",
+      "count": 1
+    },
+    {
+      "rule": "SA1203",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 2
+    },
+    {
+      "rule": "SA1203",
+      "project": "Dw3.Game",
+      "folder": "Conversion",
+      "count": 3
+    },
+    {
+      "rule": "SA1203",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 5
+    },
+    {
+      "rule": "SA1203",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 1
+    },
+    {
+      "rule": "SA1204",
+      "project": "Dw3.Data",
+      "folder": ".",
+      "count": 2
+    },
+    {
+      "rule": "SA1204",
+      "project": "Dw3.Formats",
+      "folder": "Battle",
+      "count": 2
+    },
+    {
+      "rule": "SA1204",
+      "project": "Dw3.Formats",
+      "folder": "Field",
+      "count": 1
+    },
+    {
+      "rule": "SA1204",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 9
+    },
+    {
+      "rule": "SA1204",
+      "project": "Dw3.Game",
+      "folder": "Conversion",
+      "count": 9
+    },
+    {
+      "rule": "SA1204",
+      "project": "Dw3.Game",
+      "folder": "Diagnostics",
+      "count": 6
+    },
+    {
+      "rule": "SA1204",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 11
+    },
+    {
+      "rule": "SA1204",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 7
+    },
+    {
+      "rule": "SA1204",
+      "project": "Dw3.Game.Tests",
+      "folder": ".",
+      "count": 6
+    },
+    {
+      "rule": "SA1204",
+      "project": "Dw3.Repository.Tests",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "SA1208",
+      "project": "Dw3.Extractor.Tests",
+      "folder": ".",
+      "count": 3
+    },
+    {
+      "rule": "SA1208",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 2
+    },
+    {
+      "rule": "SA1208",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 1
+    },
+    {
+      "rule": "SA1210",
+      "project": "Dw3.Extractor.Tests",
+      "folder": ".",
+      "count": 3
+    },
+    {
+      "rule": "SA1210",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Field",
+      "count": 2
+    },
+    {
+      "rule": "SA1210",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 3
+    },
+    {
+      "rule": "SA1210",
+      "project": "Dw3.Game",
+      "folder": "Diagnostics",
+      "count": 2
+    },
+    {
+      "rule": "SA1210",
+      "project": "Dw3.Game",
+      "folder": "Input",
+      "count": 1
+    },
+    {
+      "rule": "SA1210",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 8
+    },
+    {
+      "rule": "SA1210",
+      "project": "Dw3.Game.Tests",
+      "folder": ".",
+      "count": 3
+    },
+    {
+      "rule": "SA1211",
+      "project": "Dw3.Game.Tests",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "SA1214",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 6
+    },
+    {
+      "rule": "SA1214",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 11
+    },
+    {
+      "rule": "SA1214",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 1
+    },
+    {
+      "rule": "SA1302",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 2
+    },
+    {
+      "rule": "SA1313",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 2
+    },
+    {
+      "rule": "SA1313",
+      "project": "Dw3.Game.Tests",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "SA1316",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 2
+    },
+    {
+      "rule": "SA1316",
+      "project": "Dw3.Extractor.Tests",
+      "folder": ".",
+      "count": 3
+    },
+    {
+      "rule": "SA1316",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Field",
+      "count": 2
+    },
+    {
+      "rule": "SA1316",
+      "project": "Dw3.Game.Tests",
+      "folder": ".",
+      "count": 6
+    },
+    {
+      "rule": "SA1316",
+      "project": "Dw3.Repository.Tests",
+      "folder": ".",
+      "count": 2
+    },
+    {
+      "rule": "SA1401",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 25
+    },
+    {
+      "rule": "SA1401",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 107
+    },
+    {
+      "rule": "SA1402",
+      "project": "Dw3.Data",
+      "folder": ".",
+      "count": 7
+    },
+    {
+      "rule": "SA1402",
+      "project": "Dw3.Disc",
+      "folder": ".",
+      "count": 2
+    },
+    {
+      "rule": "SA1402",
+      "project": "Dw3.Disc.Tests",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "SA1402",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 23
+    },
+    {
+      "rule": "SA1402",
+      "project": "Dw3.Formats",
+      "folder": "Battle",
+      "count": 39
+    },
+    {
+      "rule": "SA1402",
+      "project": "Dw3.Formats",
+      "folder": "Dialogue",
+      "count": 11
+    },
+    {
+      "rule": "SA1402",
+      "project": "Dw3.Formats",
+      "folder": "Encounter",
+      "count": 7
+    },
+    {
+      "rule": "SA1402",
+      "project": "Dw3.Formats",
+      "folder": "Field",
+      "count": 35
+    },
+    {
+      "rule": "SA1402",
+      "project": "Dw3.Formats",
+      "folder": "Text",
+      "count": 3
+    },
+    {
+      "rule": "SA1402",
+      "project": "Dw3.Formats",
+      "folder": "Water",
+      "count": 8
+    },
+    {
+      "rule": "SA1402",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Dialogue",
+      "count": 6
+    },
+    {
+      "rule": "SA1402",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Water",
+      "count": 1
+    },
+    {
+      "rule": "SA1402",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "SA1402",
+      "project": "Dw3.Game",
+      "folder": "Conversion",
+      "count": 69
+    },
+    {
+      "rule": "SA1402",
+      "project": "Dw3.Game",
+      "folder": "Diagnostics",
+      "count": 2
+    },
+    {
+      "rule": "SA1402",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 3
+    },
+    {
+      "rule": "SA1402",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 30
+    },
+    {
+      "rule": "SA1402",
+      "project": "Dw3.Game.Tests",
+      "folder": ".",
+      "count": 4
+    },
+    {
+      "rule": "SA1402",
+      "project": "Dw3.Repository.Tests",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "SA1407",
+      "project": "Dw3.Disc",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "SA1407",
+      "project": "Dw3.Disc.Tests",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "SA1407",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 18
+    },
+    {
+      "rule": "SA1407",
+      "project": "Dw3.Formats",
+      "folder": "Battle",
+      "count": 65
+    },
+    {
+      "rule": "SA1407",
+      "project": "Dw3.Formats",
+      "folder": "Binary",
+      "count": 6
+    },
+    {
+      "rule": "SA1407",
+      "project": "Dw3.Formats",
+      "folder": "Dialogue",
+      "count": 3
+    },
+    {
+      "rule": "SA1407",
+      "project": "Dw3.Formats",
+      "folder": "Encounter",
+      "count": 8
+    },
+    {
+      "rule": "SA1407",
+      "project": "Dw3.Formats",
+      "folder": "Field",
+      "count": 47
+    },
+    {
+      "rule": "SA1407",
+      "project": "Dw3.Formats",
+      "folder": "Mips",
+      "count": 2
+    },
+    {
+      "rule": "SA1407",
+      "project": "Dw3.Formats",
+      "folder": "Text",
+      "count": 7
+    },
+    {
+      "rule": "SA1407",
+      "project": "Dw3.Formats",
+      "folder": "Water",
+      "count": 20
+    },
+    {
+      "rule": "SA1407",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Battle",
+      "count": 20
+    },
+    {
+      "rule": "SA1407",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Binary",
+      "count": 2
+    },
+    {
+      "rule": "SA1407",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Dialogue",
+      "count": 10
+    },
+    {
+      "rule": "SA1407",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Encounter",
+      "count": 20
+    },
+    {
+      "rule": "SA1407",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Field",
+      "count": 23
+    },
+    {
+      "rule": "SA1407",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Text",
+      "count": 14
+    },
+    {
+      "rule": "SA1407",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Water",
+      "count": 12
+    },
+    {
+      "rule": "SA1407",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 42
+    },
+    {
+      "rule": "SA1407",
+      "project": "Dw3.Game",
+      "folder": "Diagnostics",
+      "count": 81
+    },
+    {
+      "rule": "SA1407",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 71
+    },
+    {
+      "rule": "SA1407",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 30
+    },
+    {
+      "rule": "SA1407",
+      "project": "Dw3.Game.Tests",
+      "folder": ".",
+      "count": 25
+    },
+    {
+      "rule": "SA1408",
+      "project": "Dw3.Formats",
+      "folder": "Battle",
+      "count": 2
+    },
+    {
+      "rule": "SA1408",
+      "project": "Dw3.Formats",
+      "folder": "Field",
+      "count": 1
+    },
+    {
+      "rule": "SA1408",
+      "project": "Dw3.Game.Tests",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "SA1413",
+      "project": "Dw3.Disc.Tests",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "SA1413",
+      "project": "Dw3.Formats",
+      "folder": "Binary",
+      "count": 1
+    },
+    {
+      "rule": "SA1413",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Binary",
+      "count": 2
+    },
+    {
+      "rule": "SA1413",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Text",
+      "count": 1
+    },
+    {
+      "rule": "SA1413",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 2
+    },
+    {
+      "rule": "SA1414",
+      "project": "Dw3.Formats",
+      "folder": "Battle",
+      "count": 4
+    },
+    {
+      "rule": "SA1414",
+      "project": "Dw3.Formats",
+      "folder": "Field",
+      "count": 2
+    },
+    {
+      "rule": "SA1414",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 4
+    },
+    {
+      "rule": "SA1500",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Binary",
+      "count": 1
+    },
+    {
+      "rule": "SA1501",
+      "project": "Dw3.Data",
+      "folder": ".",
+      "count": 2
+    },
+    {
+      "rule": "SA1501",
+      "project": "Dw3.Disc",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "SA1501",
+      "project": "Dw3.Disc.Tests",
+      "folder": ".",
+      "count": 3
+    },
+    {
+      "rule": "SA1501",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 10
+    },
+    {
+      "rule": "SA1501",
+      "project": "Dw3.Formats",
+      "folder": "Battle",
+      "count": 9
+    },
+    {
+      "rule": "SA1501",
+      "project": "Dw3.Formats",
+      "folder": "Dialogue",
+      "count": 2
+    },
+    {
+      "rule": "SA1501",
+      "project": "Dw3.Formats",
+      "folder": "Field",
+      "count": 2
+    },
+    {
+      "rule": "SA1501",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Battle",
+      "count": 2
+    },
+    {
+      "rule": "SA1501",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Binary",
+      "count": 2
+    },
+    {
+      "rule": "SA1501",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Field",
+      "count": 1
+    },
+    {
+      "rule": "SA1501",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Text",
+      "count": 2
+    },
+    {
+      "rule": "SA1501",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 8
+    },
+    {
+      "rule": "SA1501",
+      "project": "Dw3.Game",
+      "folder": "Conversion",
+      "count": 25
+    },
+    {
+      "rule": "SA1501",
+      "project": "Dw3.Game",
+      "folder": "Diagnostics",
+      "count": 2
+    },
+    {
+      "rule": "SA1501",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 16
+    },
+    {
+      "rule": "SA1501",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 6
+    },
+    {
+      "rule": "SA1501",
+      "project": "Dw3.Game.Tests",
+      "folder": ".",
+      "count": 5
+    },
+    {
+      "rule": "SA1501",
+      "project": "Dw3.Repository.Tests",
+      "folder": ".",
+      "count": 4
+    },
+    {
+      "rule": "SA1502",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 4
+    },
+    {
+      "rule": "SA1502",
+      "project": "Dw3.Formats",
+      "folder": "Text",
+      "count": 1
+    },
+    {
+      "rule": "SA1502",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Battle",
+      "count": 2
+    },
+    {
+      "rule": "SA1502",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Binary",
+      "count": 2
+    },
+    {
+      "rule": "SA1502",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Text",
+      "count": 2
+    },
+    {
+      "rule": "SA1502",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "SA1502",
+      "project": "Dw3.Game",
+      "folder": "Conversion",
+      "count": 1
+    },
+    {
+      "rule": "SA1502",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 4
+    },
+    {
+      "rule": "SA1502",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 5
+    },
+    {
+      "rule": "SA1502",
+      "project": "Dw3.Game.Tests",
+      "folder": ".",
+      "count": 3
+    },
+    {
+      "rule": "SA1503",
+      "project": "Dw3.Data",
+      "folder": ".",
+      "count": 19
+    },
+    {
+      "rule": "SA1503",
+      "project": "Dw3.Data.Tests",
+      "folder": ".",
+      "count": 2
+    },
+    {
+      "rule": "SA1503",
+      "project": "Dw3.Disc",
+      "folder": ".",
+      "count": 5
+    },
+    {
+      "rule": "SA1503",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 168
+    },
+    {
+      "rule": "SA1503",
+      "project": "Dw3.Extractor.Tests",
+      "folder": ".",
+      "count": 8
+    },
+    {
+      "rule": "SA1503",
+      "project": "Dw3.Formats",
+      "folder": "Battle",
+      "count": 191
+    },
+    {
+      "rule": "SA1503",
+      "project": "Dw3.Formats",
+      "folder": "Binary",
+      "count": 20
+    },
+    {
+      "rule": "SA1503",
+      "project": "Dw3.Formats",
+      "folder": "Dialogue",
+      "count": 30
+    },
+    {
+      "rule": "SA1503",
+      "project": "Dw3.Formats",
+      "folder": "Encounter",
+      "count": 29
+    },
+    {
+      "rule": "SA1503",
+      "project": "Dw3.Formats",
+      "folder": "Field",
+      "count": 169
+    },
+    {
+      "rule": "SA1503",
+      "project": "Dw3.Formats",
+      "folder": "Mips",
+      "count": 11
+    },
+    {
+      "rule": "SA1503",
+      "project": "Dw3.Formats",
+      "folder": "Text",
+      "count": 22
+    },
+    {
+      "rule": "SA1503",
+      "project": "Dw3.Formats",
+      "folder": "Water",
+      "count": 40
+    },
+    {
+      "rule": "SA1503",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Battle",
+      "count": 9
+    },
+    {
+      "rule": "SA1503",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Binary",
+      "count": 6
+    },
+    {
+      "rule": "SA1503",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Dialogue",
+      "count": 5
+    },
+    {
+      "rule": "SA1503",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Encounter",
+      "count": 17
+    },
+    {
+      "rule": "SA1503",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Field",
+      "count": 16
+    },
+    {
+      "rule": "SA1503",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Mips",
+      "count": 1
+    },
+    {
+      "rule": "SA1503",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Text",
+      "count": 2
+    },
+    {
+      "rule": "SA1503",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Water",
+      "count": 8
+    },
+    {
+      "rule": "SA1503",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 187
+    },
+    {
+      "rule": "SA1503",
+      "project": "Dw3.Game",
+      "folder": "Conversion",
+      "count": 84
+    },
+    {
+      "rule": "SA1503",
+      "project": "Dw3.Game",
+      "folder": "Diagnostics",
+      "count": 146
+    },
+    {
+      "rule": "SA1503",
+      "project": "Dw3.Game",
+      "folder": "Input",
+      "count": 14
+    },
+    {
+      "rule": "SA1503",
+      "project": "Dw3.Game",
+      "folder": "Logging",
+      "count": 2
+    },
+    {
+      "rule": "SA1503",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 251
+    },
+    {
+      "rule": "SA1503",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 230
+    },
+    {
+      "rule": "SA1503",
+      "project": "Dw3.Game.Tests",
+      "folder": ".",
+      "count": 238
+    },
+    {
+      "rule": "SA1503",
+      "project": "Dw3.Repository.Tests",
+      "folder": ".",
+      "count": 6
+    },
+    {
+      "rule": "SA1505",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "SA1505",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 1
+    },
+    {
+      "rule": "SA1505",
+      "project": "Dw3.Game.Tests",
+      "folder": ".",
+      "count": 11
+    },
+    {
+      "rule": "SA1507",
+      "project": "Dw3.Formats",
+      "folder": "Encounter",
+      "count": 1
+    },
+    {
+      "rule": "SA1507",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 2
+    },
+    {
+      "rule": "SA1507",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 4
+    },
+    {
+      "rule": "SA1507",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 1
+    },
+    {
+      "rule": "SA1507",
+      "project": "Dw3.Game.Tests",
+      "folder": ".",
+      "count": 2
+    },
+    {
+      "rule": "SA1508",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 1
+    },
+    {
+      "rule": "SA1508",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 1
+    },
+    {
+      "rule": "SA1512",
+      "project": "Dw3.Disc.Tests",
+      "folder": ".",
+      "count": 8
+    },
+    {
+      "rule": "SA1512",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 9
+    },
+    {
+      "rule": "SA1512",
+      "project": "Dw3.Formats",
+      "folder": "Binary",
+      "count": 9
+    },
+    {
+      "rule": "SA1512",
+      "project": "Dw3.Formats",
+      "folder": "Encounter",
+      "count": 2
+    },
+    {
+      "rule": "SA1512",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Battle",
+      "count": 10
+    },
+    {
+      "rule": "SA1512",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Binary",
+      "count": 26
+    },
+    {
+      "rule": "SA1512",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Field",
+      "count": 9
+    },
+    {
+      "rule": "SA1512",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Text",
+      "count": 1
+    },
+    {
+      "rule": "SA1512",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 3
+    },
+    {
+      "rule": "SA1512",
+      "project": "Dw3.Game.Tests",
+      "folder": ".",
+      "count": 55
+    },
+    {
+      "rule": "SA1512",
+      "project": "Dw3.Repository.Tests",
+      "folder": ".",
+      "count": 21
+    },
+    {
+      "rule": "SA1513",
+      "project": "Dw3.Disc",
+      "folder": ".",
+      "count": 8
+    },
+    {
+      "rule": "SA1513",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 104
+    },
+    {
+      "rule": "SA1513",
+      "project": "Dw3.Extractor.Tests",
+      "folder": ".",
+      "count": 2
+    },
+    {
+      "rule": "SA1513",
+      "project": "Dw3.Formats",
+      "folder": "Battle",
+      "count": 64
+    },
+    {
+      "rule": "SA1513",
+      "project": "Dw3.Formats",
+      "folder": "Binary",
+      "count": 5
+    },
+    {
+      "rule": "SA1513",
+      "project": "Dw3.Formats",
+      "folder": "Dialogue",
+      "count": 6
+    },
+    {
+      "rule": "SA1513",
+      "project": "Dw3.Formats",
+      "folder": "Encounter",
+      "count": 14
+    },
+    {
+      "rule": "SA1513",
+      "project": "Dw3.Formats",
+      "folder": "Field",
+      "count": 42
+    },
+    {
+      "rule": "SA1513",
+      "project": "Dw3.Formats",
+      "folder": "Mips",
+      "count": 2
+    },
+    {
+      "rule": "SA1513",
+      "project": "Dw3.Formats",
+      "folder": "Text",
+      "count": 7
+    },
+    {
+      "rule": "SA1513",
+      "project": "Dw3.Formats",
+      "folder": "Water",
+      "count": 10
+    },
+    {
+      "rule": "SA1513",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Battle",
+      "count": 3
+    },
+    {
+      "rule": "SA1513",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Binary",
+      "count": 2
+    },
+    {
+      "rule": "SA1513",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Dialogue",
+      "count": 3
+    },
+    {
+      "rule": "SA1513",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Field",
+      "count": 8
+    },
+    {
+      "rule": "SA1513",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Text",
+      "count": 3
+    },
+    {
+      "rule": "SA1513",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Water",
+      "count": 4
+    },
+    {
+      "rule": "SA1513",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 55
+    },
+    {
+      "rule": "SA1513",
+      "project": "Dw3.Game",
+      "folder": "Conversion",
+      "count": 34
+    },
+    {
+      "rule": "SA1513",
+      "project": "Dw3.Game",
+      "folder": "Diagnostics",
+      "count": 61
+    },
+    {
+      "rule": "SA1513",
+      "project": "Dw3.Game",
+      "folder": "Input",
+      "count": 3
+    },
+    {
+      "rule": "SA1513",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 80
+    },
+    {
+      "rule": "SA1513",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 58
+    },
+    {
+      "rule": "SA1513",
+      "project": "Dw3.Game.Tests",
+      "folder": ".",
+      "count": 54
+    },
+    {
+      "rule": "SA1513",
+      "project": "Dw3.Repository.Tests",
+      "folder": ".",
+      "count": 2
+    },
+    {
+      "rule": "SA1514",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "SA1514",
+      "project": "Dw3.Formats",
+      "folder": "Battle",
+      "count": 2
+    },
+    {
+      "rule": "SA1514",
+      "project": "Dw3.Formats",
+      "folder": "Encounter",
+      "count": 3
+    },
+    {
+      "rule": "SA1514",
+      "project": "Dw3.Formats",
+      "folder": "Field",
+      "count": 1
+    },
+    {
+      "rule": "SA1514",
+      "project": "Dw3.Formats",
+      "folder": "Mips",
+      "count": 17
+    },
+    {
+      "rule": "SA1514",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Mips",
+      "count": 1
+    },
+    {
+      "rule": "SA1514",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 3
+    },
+    {
+      "rule": "SA1514",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 24
+    },
+    {
+      "rule": "SA1514",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 22
+    },
+    {
+      "rule": "SA1515",
+      "project": "Dw3.Data",
+      "folder": ".",
+      "count": 5
+    },
+    {
+      "rule": "SA1515",
+      "project": "Dw3.Disc",
+      "folder": ".",
+      "count": 3
+    },
+    {
+      "rule": "SA1515",
+      "project": "Dw3.Disc.Tests",
+      "folder": ".",
+      "count": 9
+    },
+    {
+      "rule": "SA1515",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 19
+    },
+    {
+      "rule": "SA1515",
+      "project": "Dw3.Extractor.Tests",
+      "folder": ".",
+      "count": 6
+    },
+    {
+      "rule": "SA1515",
+      "project": "Dw3.Formats",
+      "folder": "Battle",
+      "count": 1
+    },
+    {
+      "rule": "SA1515",
+      "project": "Dw3.Formats",
+      "folder": "Dialogue",
+      "count": 4
+    },
+    {
+      "rule": "SA1515",
+      "project": "Dw3.Formats",
+      "folder": "Encounter",
+      "count": 4
+    },
+    {
+      "rule": "SA1515",
+      "project": "Dw3.Formats",
+      "folder": "Field",
+      "count": 5
+    },
+    {
+      "rule": "SA1515",
+      "project": "Dw3.Formats",
+      "folder": "Mips",
+      "count": 5
+    },
+    {
+      "rule": "SA1515",
+      "project": "Dw3.Formats",
+      "folder": "Text",
+      "count": 3
+    },
+    {
+      "rule": "SA1515",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Battle",
+      "count": 15
+    },
+    {
+      "rule": "SA1515",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Binary",
+      "count": 11
+    },
+    {
+      "rule": "SA1515",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Encounter",
+      "count": 5
+    },
+    {
+      "rule": "SA1515",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Field",
+      "count": 34
+    },
+    {
+      "rule": "SA1515",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Text",
+      "count": 14
+    },
+    {
+      "rule": "SA1515",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Water",
+      "count": 3
+    },
+    {
+      "rule": "SA1515",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 35
+    },
+    {
+      "rule": "SA1515",
+      "project": "Dw3.Game",
+      "folder": "Conversion",
+      "count": 1
+    },
+    {
+      "rule": "SA1515",
+      "project": "Dw3.Game",
+      "folder": "Diagnostics",
+      "count": 30
+    },
+    {
+      "rule": "SA1515",
+      "project": "Dw3.Game",
+      "folder": "Input",
+      "count": 1
+    },
+    {
+      "rule": "SA1515",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 44
+    },
+    {
+      "rule": "SA1515",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 15
+    },
+    {
+      "rule": "SA1515",
+      "project": "Dw3.Game.Tests",
+      "folder": ".",
+      "count": 43
+    },
+    {
+      "rule": "SA1515",
+      "project": "Dw3.Repository.Tests",
+      "folder": ".",
+      "count": 14
+    },
+    {
+      "rule": "SA1516",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 36
+    },
+    {
+      "rule": "SA1516",
+      "project": "Dw3.Formats",
+      "folder": "Battle",
+      "count": 20
+    },
+    {
+      "rule": "SA1516",
+      "project": "Dw3.Formats",
+      "folder": "Dialogue",
+      "count": 1
+    },
+    {
+      "rule": "SA1516",
+      "project": "Dw3.Formats",
+      "folder": "Field",
+      "count": 9
+    },
+    {
+      "rule": "SA1516",
+      "project": "Dw3.Formats",
+      "folder": "Mips",
+      "count": 1
+    },
+    {
+      "rule": "SA1516",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Battle",
+      "count": 5
+    },
+    {
+      "rule": "SA1516",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Dialogue",
+      "count": 2
+    },
+    {
+      "rule": "SA1516",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Field",
+      "count": 15
+    },
+    {
+      "rule": "SA1516",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Mips",
+      "count": 15
+    },
+    {
+      "rule": "SA1516",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Text",
+      "count": 3
+    },
+    {
+      "rule": "SA1516",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 13
+    },
+    {
+      "rule": "SA1516",
+      "project": "Dw3.Game",
+      "folder": "Conversion",
+      "count": 16
+    },
+    {
+      "rule": "SA1516",
+      "project": "Dw3.Game",
+      "folder": "Diagnostics",
+      "count": 3
+    },
+    {
+      "rule": "SA1516",
+      "project": "Dw3.Game",
+      "folder": "Input",
+      "count": 2
+    },
+    {
+      "rule": "SA1516",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 63
+    },
+    {
+      "rule": "SA1516",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 81
+    },
+    {
+      "rule": "SA1516",
+      "project": "Dw3.Game.Tests",
+      "folder": ".",
+      "count": 40
+    },
+    {
+      "rule": "SA1517",
+      "project": "Dw3.Game",
+      "folder": "Conversion",
+      "count": 1
+    },
+    {
+      "rule": "SA1519",
+      "project": "Dw3.Disc",
+      "folder": ".",
+      "count": 18
+    },
+    {
+      "rule": "SA1519",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 15
+    },
+    {
+      "rule": "SA1519",
+      "project": "Dw3.Formats",
+      "folder": "Battle",
+      "count": 7
+    },
+    {
+      "rule": "SA1519",
+      "project": "Dw3.Formats",
+      "folder": "Binary",
+      "count": 30
+    },
+    {
+      "rule": "SA1519",
+      "project": "Dw3.Formats",
+      "folder": "Encounter",
+      "count": 1
+    },
+    {
+      "rule": "SA1519",
+      "project": "Dw3.Formats",
+      "folder": "Field",
+      "count": 27
+    },
+    {
+      "rule": "SA1519",
+      "project": "Dw3.Formats",
+      "folder": "Mips",
+      "count": 2
+    },
+    {
+      "rule": "SA1519",
+      "project": "Dw3.Formats",
+      "folder": "Text",
+      "count": 12
+    },
+    {
+      "rule": "SA1519",
+      "project": "Dw3.Formats",
+      "folder": "Water",
+      "count": 5
+    },
+    {
+      "rule": "SA1519",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Battle",
+      "count": 2
+    },
+    {
+      "rule": "SA1519",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Field",
+      "count": 5
+    },
+    {
+      "rule": "SA1519",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Water",
+      "count": 1
+    },
+    {
+      "rule": "SA1519",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 27
+    },
+    {
+      "rule": "SA1519",
+      "project": "Dw3.Game",
+      "folder": "Conversion",
+      "count": 18
+    },
+    {
+      "rule": "SA1519",
+      "project": "Dw3.Game",
+      "folder": "Diagnostics",
+      "count": 38
+    },
+    {
+      "rule": "SA1519",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 20
+    },
+    {
+      "rule": "SA1519",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 4
+    },
+    {
+      "rule": "SA1519",
+      "project": "Dw3.Game.Tests",
+      "folder": ".",
+      "count": 28
+    },
+    {
+      "rule": "SA1519",
+      "project": "Dw3.Repository.Tests",
+      "folder": ".",
+      "count": 8
+    },
+    {
+      "rule": "SA1520",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 2
+    },
+    {
+      "rule": "SA1520",
+      "project": "Dw3.Formats",
+      "folder": "Battle",
+      "count": 1
+    },
+    {
+      "rule": "SA1520",
+      "project": "Dw3.Formats",
+      "folder": "Dialogue",
+      "count": 1
+    },
+    {
+      "rule": "SA1520",
+      "project": "Dw3.Formats",
+      "folder": "Field",
+      "count": 5
+    },
+    {
+      "rule": "SA1520",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 4
+    },
+    {
+      "rule": "SA1520",
+      "project": "Dw3.Game",
+      "folder": "Diagnostics",
+      "count": 1
+    },
+    {
+      "rule": "SA1520",
+      "project": "Dw3.Game",
+      "folder": "Input",
+      "count": 2
+    },
+    {
+      "rule": "SA1520",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 4
+    },
+    {
+      "rule": "SA1520",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 3
+    },
+    {
+      "rule": "SA1520",
+      "project": "Dw3.Game.Tests",
+      "folder": ".",
+      "count": 2
+    },
+    {
+      "rule": "SA1600",
+      "project": "Dw3.Data",
+      "folder": ".",
+      "count": 12
+    },
+    {
+      "rule": "SA1600",
+      "project": "Dw3.Disc",
+      "folder": ".",
+      "count": 3
+    },
+    {
+      "rule": "SA1600",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 204
+    },
+    {
+      "rule": "SA1600",
+      "project": "Dw3.Formats",
+      "folder": "Battle",
+      "count": 107
+    },
+    {
+      "rule": "SA1600",
+      "project": "Dw3.Formats",
+      "folder": "Binary",
+      "count": 15
+    },
+    {
+      "rule": "SA1600",
+      "project": "Dw3.Formats",
+      "folder": "Dialogue",
+      "count": 5
+    },
+    {
+      "rule": "SA1600",
+      "project": "Dw3.Formats",
+      "folder": "Encounter",
+      "count": 3
+    },
+    {
+      "rule": "SA1600",
+      "project": "Dw3.Formats",
+      "folder": "Field",
+      "count": 55
+    },
+    {
+      "rule": "SA1600",
+      "project": "Dw3.Formats",
+      "folder": "Mips",
+      "count": 8
+    },
+    {
+      "rule": "SA1600",
+      "project": "Dw3.Formats",
+      "folder": "Text",
+      "count": 6
+    },
+    {
+      "rule": "SA1600",
+      "project": "Dw3.Formats",
+      "folder": "Water",
+      "count": 12
+    },
+    {
+      "rule": "SA1600",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 87
+    },
+    {
+      "rule": "SA1600",
+      "project": "Dw3.Game",
+      "folder": "Conversion",
+      "count": 94
+    },
+    {
+      "rule": "SA1600",
+      "project": "Dw3.Game",
+      "folder": "Diagnostics",
+      "count": 91
+    },
+    {
+      "rule": "SA1600",
+      "project": "Dw3.Game",
+      "folder": "Input",
+      "count": 10
+    },
+    {
+      "rule": "SA1600",
+      "project": "Dw3.Game",
+      "folder": "Logging",
+      "count": 3
+    },
+    {
+      "rule": "SA1600",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 273
+    },
+    {
+      "rule": "SA1600",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 348
+    },
+    {
+      "rule": "SA1601",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "SA1601",
+      "project": "Dw3.Game",
+      "folder": "Diagnostics",
+      "count": 2
+    },
+    {
+      "rule": "SA1601",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 3
+    },
+    {
+      "rule": "SA1602",
+      "project": "Dw3.Formats",
+      "folder": "Field",
+      "count": 3
+    },
+    {
+      "rule": "SA1602",
+      "project": "Dw3.Formats",
+      "folder": "Text",
+      "count": 3
+    },
+    {
+      "rule": "SA1602",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 7
+    },
+    {
+      "rule": "SA1602",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 85
+    },
+    {
+      "rule": "SA1604",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 2
+    },
+    {
+      "rule": "SA1604",
+      "project": "Dw3.Formats",
+      "folder": "Binary",
+      "count": 1
+    },
+    {
+      "rule": "SA1604",
+      "project": "Dw3.Formats",
+      "folder": "Dialogue",
+      "count": 3
+    },
+    {
+      "rule": "SA1604",
+      "project": "Dw3.Formats",
+      "folder": "Field",
+      "count": 6
+    },
+    {
+      "rule": "SA1604",
+      "project": "Dw3.Formats",
+      "folder": "Mips",
+      "count": 1
+    },
+    {
+      "rule": "SA1604",
+      "project": "Dw3.Game",
+      "folder": "Conversion",
+      "count": 1
+    },
+    {
+      "rule": "SA1604",
+      "project": "Dw3.Game.Tests",
+      "folder": ".",
+      "count": 15
+    },
+    {
+      "rule": "SA1611",
+      "project": "Dw3.Data",
+      "folder": ".",
+      "count": 4
+    },
+    {
+      "rule": "SA1611",
+      "project": "Dw3.Disc",
+      "folder": ".",
+      "count": 20
+    },
+    {
+      "rule": "SA1611",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 40
+    },
+    {
+      "rule": "SA1611",
+      "project": "Dw3.Formats",
+      "folder": "Battle",
+      "count": 52
+    },
+    {
+      "rule": "SA1611",
+      "project": "Dw3.Formats",
+      "folder": "Binary",
+      "count": 24
+    },
+    {
+      "rule": "SA1611",
+      "project": "Dw3.Formats",
+      "folder": "Dialogue",
+      "count": 24
+    },
+    {
+      "rule": "SA1611",
+      "project": "Dw3.Formats",
+      "folder": "Encounter",
+      "count": 26
+    },
+    {
+      "rule": "SA1611",
+      "project": "Dw3.Formats",
+      "folder": "Field",
+      "count": 50
+    },
+    {
+      "rule": "SA1611",
+      "project": "Dw3.Formats",
+      "folder": "Mips",
+      "count": 11
+    },
+    {
+      "rule": "SA1611",
+      "project": "Dw3.Formats",
+      "folder": "Text",
+      "count": 7
+    },
+    {
+      "rule": "SA1611",
+      "project": "Dw3.Formats",
+      "folder": "Water",
+      "count": 14
+    },
+    {
+      "rule": "SA1611",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 82
+    },
+    {
+      "rule": "SA1611",
+      "project": "Dw3.Game",
+      "folder": "Conversion",
+      "count": 5
+    },
+    {
+      "rule": "SA1611",
+      "project": "Dw3.Game",
+      "folder": "Diagnostics",
+      "count": 11
+    },
+    {
+      "rule": "SA1611",
+      "project": "Dw3.Game",
+      "folder": "Logging",
+      "count": 2
+    },
+    {
+      "rule": "SA1611",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 155
+    },
+    {
+      "rule": "SA1611",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 230
+    },
+    {
+      "rule": "SA1612",
+      "project": "Dw3.Formats",
+      "folder": "Battle",
+      "count": 1
+    },
+    {
+      "rule": "SA1612",
+      "project": "Dw3.Formats",
+      "folder": "Dialogue",
+      "count": 1
+    },
+    {
+      "rule": "SA1612",
+      "project": "Dw3.Formats",
+      "folder": "Mips",
+      "count": 1
+    },
+    {
+      "rule": "SA1615",
+      "project": "Dw3.Data",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "SA1615",
+      "project": "Dw3.Disc",
+      "folder": ".",
+      "count": 16
+    },
+    {
+      "rule": "SA1615",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 5
+    },
+    {
+      "rule": "SA1615",
+      "project": "Dw3.Formats",
+      "folder": "Battle",
+      "count": 29
+    },
+    {
+      "rule": "SA1615",
+      "project": "Dw3.Formats",
+      "folder": "Binary",
+      "count": 16
+    },
+    {
+      "rule": "SA1615",
+      "project": "Dw3.Formats",
+      "folder": "Dialogue",
+      "count": 11
+    },
+    {
+      "rule": "SA1615",
+      "project": "Dw3.Formats",
+      "folder": "Encounter",
+      "count": 14
+    },
+    {
+      "rule": "SA1615",
+      "project": "Dw3.Formats",
+      "folder": "Field",
+      "count": 36
+    },
+    {
+      "rule": "SA1615",
+      "project": "Dw3.Formats",
+      "folder": "Mips",
+      "count": 6
+    },
+    {
+      "rule": "SA1615",
+      "project": "Dw3.Formats",
+      "folder": "Text",
+      "count": 6
+    },
+    {
+      "rule": "SA1615",
+      "project": "Dw3.Formats",
+      "folder": "Water",
+      "count": 8
+    },
+    {
+      "rule": "SA1615",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 45
+    },
+    {
+      "rule": "SA1615",
+      "project": "Dw3.Game",
+      "folder": "Conversion",
+      "count": 3
+    },
+    {
+      "rule": "SA1615",
+      "project": "Dw3.Game",
+      "folder": "Diagnostics",
+      "count": 5
+    },
+    {
+      "rule": "SA1615",
+      "project": "Dw3.Game",
+      "folder": "Logging",
+      "count": 1
+    },
+    {
+      "rule": "SA1615",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 46
+    },
+    {
+      "rule": "SA1615",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 66
+    },
+    {
+      "rule": "SA1623",
+      "project": "Dw3.Data",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "SA1623",
+      "project": "Dw3.Disc",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "SA1623",
+      "project": "Dw3.Formats",
+      "folder": "Battle",
+      "count": 6
+    },
+    {
+      "rule": "SA1623",
+      "project": "Dw3.Formats",
+      "folder": "Binary",
+      "count": 9
+    },
+    {
+      "rule": "SA1623",
+      "project": "Dw3.Formats",
+      "folder": "Dialogue",
+      "count": 15
+    },
+    {
+      "rule": "SA1623",
+      "project": "Dw3.Formats",
+      "folder": "Field",
+      "count": 10
+    },
+    {
+      "rule": "SA1623",
+      "project": "Dw3.Formats",
+      "folder": "Mips",
+      "count": 14
+    },
+    {
+      "rule": "SA1623",
+      "project": "Dw3.Formats",
+      "folder": "Text",
+      "count": 1
+    },
+    {
+      "rule": "SA1623",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 53
+    },
+    {
+      "rule": "SA1623",
+      "project": "Dw3.Game",
+      "folder": "Conversion",
+      "count": 2
+    },
+    {
+      "rule": "SA1623",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 25
+    },
+    {
+      "rule": "SA1623",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 31
+    },
+    {
+      "rule": "SA1626",
+      "project": "Dw3.Game.Tests",
+      "folder": ".",
+      "count": 15
+    },
+    {
+      "rule": "SA1627",
+      "project": "Dw3.Formats",
+      "folder": "Binary",
+      "count": 1
+    },
+    {
+      "rule": "SA1629",
+      "project": "Dw3.Disc.Tests",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "SA1629",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 4
+    },
+    {
+      "rule": "SA1629",
+      "project": "Dw3.Formats",
+      "folder": "Field",
+      "count": 3
+    },
+    {
+      "rule": "SA1642",
+      "project": "Dw3.Data",
+      "folder": ".",
+      "count": 7
+    },
+    {
+      "rule": "SA1642",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 3
+    },
+    {
+      "rule": "SA1642",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 3
+    },
+    {
+      "rule": "SA1642",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 1
+    },
+    {
+      "rule": "SA1648",
+      "project": "Dw3.Disc",
+      "folder": ".",
+      "count": 2
+    },
+    {
+      "rule": "SA1649",
+      "project": "Dw3.Data",
+      "folder": ".",
+      "count": 1
+    },
+    {
+      "rule": "SA1649",
+      "project": "Dw3.Disc",
+      "folder": ".",
+      "count": 3
+    },
+    {
+      "rule": "SA1649",
+      "project": "Dw3.Extractor",
+      "folder": ".",
+      "count": 7
+    },
+    {
+      "rule": "SA1649",
+      "project": "Dw3.Formats",
+      "folder": "Battle",
+      "count": 9
+    },
+    {
+      "rule": "SA1649",
+      "project": "Dw3.Formats",
+      "folder": "Dialogue",
+      "count": 5
+    },
+    {
+      "rule": "SA1649",
+      "project": "Dw3.Formats",
+      "folder": "Encounter",
+      "count": 1
+    },
+    {
+      "rule": "SA1649",
+      "project": "Dw3.Formats",
+      "folder": "Field",
+      "count": 8
+    },
+    {
+      "rule": "SA1649",
+      "project": "Dw3.Formats",
+      "folder": "Text",
+      "count": 2
+    },
+    {
+      "rule": "SA1649",
+      "project": "Dw3.Formats",
+      "folder": "Water",
+      "count": 5
+    },
+    {
+      "rule": "SA1649",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Dialogue",
+      "count": 1
+    },
+    {
+      "rule": "SA1649",
+      "project": "Dw3.Formats.Tests",
+      "folder": "Water",
+      "count": 1
+    },
+    {
+      "rule": "SA1649",
+      "project": "Dw3.Game",
+      "folder": ".",
+      "count": 2
+    },
+    {
+      "rule": "SA1649",
+      "project": "Dw3.Game",
+      "folder": "Conversion",
+      "count": 4
+    },
+    {
+      "rule": "SA1649",
+      "project": "Dw3.Game",
+      "folder": "Diagnostics",
+      "count": 2
+    },
+    {
+      "rule": "SA1649",
+      "project": "Dw3.Game",
+      "folder": "Presentation",
+      "count": 6
+    },
+    {
+      "rule": "SA1649",
+      "project": "Dw3.Game",
+      "folder": "Simulation",
+      "count": 15
+    },
+    {
+      "rule": "SA1649",
+      "project": "Dw3.Repository.Tests",
+      "folder": ".",
+      "count": 1
+    }
+  ]
+}

@@ -23,8 +23,9 @@ Before opening a PR, verify each item:
 - [ ] No code copied or line-by-line translated from a decompilation
 - [ ] Disc structures are described by file path and byte offset, not by symbol or function name from a decompilation
 - [ ] Tests use only fabricated data and pass without a disc present
-- [ ] `dotnet format Dw3.sln` has been run before committing
+- [ ] `dotnet format whitespace Dw3.sln` and `dotnet format style Dw3.sln` have been run before committing
 - [ ] `dotnet test Dw3.sln` passes locally
+- [ ] The quality ratchet passes and, if you fixed violations, `tools/quality-baseline.json` is lowered
 
 ## Setup
 
@@ -34,9 +35,14 @@ See the Quick start in [README.md](README.md). Local overrides go in `.env.local
 
 ```sh
 dotnet build Dw3.sln
-dotnet format Dw3.sln         # the CI verifies this is clean on Linux
-dotnet test Dw3.sln          # all synthetic tests, including the provenance guard
+dotnet format whitespace Dw3.sln   # the CI verifies both format passes on Linux
+dotnet format style Dw3.sln
+dotnet test Dw3.sln                # all synthetic tests, including the provenance guard
+dotnet run --project tools/Dw3.QualityRatchet -- check
 ```
+
+The code rules (complexity, length, documentation, analyzers, coverage), the quality ratchet
+and the ban on suppressions are described in [docs/CODE_RULES.md](docs/CODE_RULES.md).
 
 ### Optional pre-push guard
 
