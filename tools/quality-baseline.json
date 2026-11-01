@@ -245,12 +245,6 @@
     },
     {
       "rule": "CA1859",
-      "project": "Dw3.Disc",
-      "folder": ".",
-      "count": 1
-    },
-    {
-      "rule": "CA1859",
       "project": "Dw3.Extractor",
       "folder": ".",
       "count": 12
@@ -779,12 +773,6 @@
     },
     {
       "rule": "S138",
-      "project": "Dw3.Data",
-      "folder": ".",
-      "count": 1
-    },
-    {
-      "rule": "S138",
       "project": "Dw3.Extractor",
       "folder": ".",
       "count": 9
@@ -1104,12 +1092,6 @@
     {
       "rule": "S3776",
       "project": "Dw3.Analyzers.Tests",
-      "folder": ".",
-      "count": 2
-    },
-    {
-      "rule": "S3776",
-      "project": "Dw3.Disc",
       "folder": ".",
       "count": 2
     },
@@ -2249,18 +2231,6 @@
     },
     {
       "rule": "SA1402",
-      "project": "Dw3.Data",
-      "folder": ".",
-      "count": 7
-    },
-    {
-      "rule": "SA1402",
-      "project": "Dw3.Disc",
-      "folder": ".",
-      "count": 2
-    },
-    {
-      "rule": "SA1402",
       "project": "Dw3.Disc.Tests",
       "folder": ".",
       "count": 1
@@ -2579,12 +2549,6 @@
     },
     {
       "rule": "SA1501",
-      "project": "Dw3.Disc",
-      "folder": ".",
-      "count": 1
-    },
-    {
-      "rule": "SA1501",
       "project": "Dw3.Disc.Tests",
       "folder": ".",
       "count": 3
@@ -2741,21 +2705,9 @@
     },
     {
       "rule": "SA1503",
-      "project": "Dw3.Data",
-      "folder": ".",
-      "count": 19
-    },
-    {
-      "rule": "SA1503",
       "project": "Dw3.Data.Tests",
       "folder": ".",
       "count": 2
-    },
-    {
-      "rule": "SA1503",
-      "project": "Dw3.Disc",
-      "folder": ".",
-      "count": 5
     },
     {
       "rule": "SA1503",
@@ -3053,12 +3005,6 @@
     },
     {
       "rule": "SA1513",
-      "project": "Dw3.Disc",
-      "folder": ".",
-      "count": 8
-    },
-    {
-      "rule": "SA1513",
       "project": "Dw3.Extractor",
       "folder": ".",
       "count": 104
@@ -3265,7 +3211,7 @@
       "rule": "SA1515",
       "project": "Dw3.Data",
       "folder": ".",
-      "count": 5
+      "count": 3
     },
     {
       "rule": "SA1515",
@@ -3518,12 +3464,6 @@
       "project": "Dw3.Game",
       "folder": "Conversion",
       "count": 1
-    },
-    {
-      "rule": "SA1519",
-      "project": "Dw3.Disc",
-      "folder": ".",
-      "count": 18
     },
     {
       "rule": "SA1519",
@@ -4256,18 +4196,6 @@
       "project": "Dw3.Disc",
       "folder": ".",
       "count": 2
-    },
-    {
-      "rule": "SA1649",
-      "project": "Dw3.Data",
-      "folder": ".",
-      "count": 1
-    },
-    {
-      "rule": "SA1649",
-      "project": "Dw3.Disc",
-      "folder": ".",
-      "count": 3
     },
     {
       "rule": "SA1649",
