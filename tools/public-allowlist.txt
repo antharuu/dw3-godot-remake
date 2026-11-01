@@ -113,6 +113,8 @@ src/Dw3.Extractor/WaterZoneSources.cs
 src/Dw3.Extractor/ZoneExtractionStep.cs
 src/Dw3.Extractor/ZoneManifestData.cs
 src/Dw3.Extractor/ZoneManifestWriter.cs
+src/Dw3.Extractor/ZoneStageResult.cs
+src/Dw3.Extractor/ZoneWriteJob.cs
 src/Dw3.Formats/Battle/BattleDataDecoder.cs
 src/Dw3.Formats/Battle/BattleJsonWriter.cs
 src/Dw3.Formats/Battle/BattleMeshDecoder.cs

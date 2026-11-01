@@ -380,9 +380,9 @@ internal static class PlayerExtractionStep
 
     // ── Private record types ──────────────────────────────────────────────────
 
-    private sealed record PlayerArchiveRef(string IsoPath, string Sha256, int Bytes);
-
     private readonly record struct FrameInfo(int Width, int Height, PlayerFrameBbox Bbox);
+
+    private sealed record PlayerArchiveRef(string IsoPath, string Sha256, int Bytes);
 
     private sealed record DecodedSet(int SetId, string Name, List<DecodedSequence> Sequences);
 
