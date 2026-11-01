@@ -4,18 +4,57 @@
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <ImplicitUsings>enable</ImplicitUsings>
-    <!-- Treat the selected .editorconfig style diagnostics as build errors. -->
+    <!-- Every analyzer diagnostic is a build error, except the ratcheted rules listed below. -->
     <AnalysisLevel>10.0</AnalysisLevel>
+    <AnalysisMode>Recommended</AnalysisMode>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <!-- The generated XML file enables IDE0005 during builds; documentation completeness remains outside this style gate. -->
-    <NoWarn>$(NoWarn);1570;1573;1587;1591;1734</NoWarn>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <Version>0.1.0</Version>
   </PropertyGroup>
+
+  <!--
+    Quality ratchet (docs/CODE_RULES.md).
+    Each compilation writes its diagnostics to a SARIF log that tools/Dw3.QualityRatchet compares
+    with tools/quality-baseline.json: a count may go down, never up.
+    QualityRatchetedRules is the exact list of rules that still had violations when the analyzers
+    were introduced. They stay warnings only until their count reaches zero, then the identifier is
+    removed from this list and the rule becomes a build error like every other diagnostic.
+    The list is temporary: it shrinks and is never extended.
+  -->
+  <PropertyGroup>
+    <QualityArtifactsDir>$(MSBuildThisFileDirectory)artifacts/quality/</QualityArtifactsDir>
+    <QualitySarifFile>$(QualityArtifactsDir)sarif/$(MSBuildProjectName).sarif</QualitySarifFile>
+    <ErrorLog>$(QualitySarifFile),version=2.1</ErrorLog>
+    <!-- .NET analyzers (Recommended mode). -->
+    <QualityRatchetedRules>CA1001;CA1050;CA1051;CA1305;CA1512;CA1707;CA1715;CA1716;CA1720;CA1725;CA1822;CA1826;CA1832;CA1859;CA1861;CA1869;CA1875;CA2208</QualityRatchetedRules>
+    <!-- Compiler documentation diagnostics. -->
+    <QualityRatchetedRules>$(QualityRatchetedRules);CS1573;CS1587;CS1591;CS1734</QualityRatchetedRules>
+    <!-- Sonar rules. -->
+    <QualityRatchetedRules>$(QualityRatchetedRules);S101;S107;S108;S127;S134;S138;S927;S1066;S1075;S1104;S1121;S1144;S1215;S1244;S1450;S1481;S1854;S1905;S1994</QualityRatchetedRules>
+    <QualityRatchetedRules>$(QualityRatchetedRules);S2077;S2245;S2325;S2681;S2737;S3011;S3168;S3218;S3267;S3358;S3376;S3398;S3626;S3776;S3871;S3903;S3928;S3973</QualityRatchetedRules>
+    <QualityRatchetedRules>$(QualityRatchetedRules);S4036;S4136;S4487;S6444;S6580;S6608;S8969</QualityRatchetedRules>
+    <!-- StyleCop spacing, readability and ordering rules. -->
+    <QualityRatchetedRules>$(QualityRatchetedRules);SA1001;SA1002;SA1008;SA1009;SA1010;SA1011;SA1021;SA1025;SA1107;SA1111;SA1116;SA1117;SA1118;SA1119;SA1122;SA1124;SA1127;SA1128;SA1131;SA1132;SA1136;SA1139</QualityRatchetedRules>
+    <QualityRatchetedRules>$(QualityRatchetedRules);SA1200;SA1201;SA1202;SA1203;SA1204;SA1208;SA1210;SA1211;SA1214;SA1302;SA1313;SA1316</QualityRatchetedRules>
+    <!-- StyleCop maintainability and layout rules. -->
+    <QualityRatchetedRules>$(QualityRatchetedRules);SA1401;SA1402;SA1407;SA1408;SA1413;SA1414;SA1500;SA1501;SA1502;SA1503;SA1505;SA1507;SA1508;SA1512;SA1513;SA1514;SA1515;SA1516;SA1517;SA1519;SA1520</QualityRatchetedRules>
+    <!-- StyleCop documentation rules. -->
+    <QualityRatchetedRules>$(QualityRatchetedRules);SA1600;SA1601;SA1602;SA1604;SA1611;SA1612;SA1615;SA1623;SA1626;SA1627;SA1629;SA1642;SA1648;SA1649</QualityRatchetedRules>
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);$(QualityRatchetedRules)</WarningsNotAsErrors>
+  </PropertyGroup>
+
   <!-- Pin SQLitePCLRaw native lib to a non-vulnerable version across all projects.
        SQLitePCLRaw.lib.e_sqlite3 2.1.10 (pulled by Microsoft.Data.Sqlite) has GHSA-2m69-gcr7-jv3q;
        2.1.14 includes the fix.  Applying globally so the audit check passes everywhere. -->
   <ItemGroup>
     <PackageReference Include="SQLitePCLRaw.lib.e_sqlite3" Version="2.1.14" />
+  </ItemGroup>
+
+  <!-- Analyzers and their settings (thresholds in SonarLint.xml, documentation scope in stylecop.json). -->
+  <ItemGroup>
+    <PackageReference Include="SonarAnalyzer.CSharp" Version="10.35.0.4138" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
+    <PackageReference Include="StyleCop.Analyzers" Version="1.2.0-beta.556" PrivateAssets="all" IncludeAssets="runtime; build; native; contentfiles; analyzers; buildtransitive" />
+    <AdditionalFiles Include="$(MSBuildThisFileDirectory)SonarLint.xml" Link="SonarLint.xml" />
+    <AdditionalFiles Include="$(MSBuildThisFileDirectory)stylecop.json" Link="stylecop.json" />
   </ItemGroup>
 </Project>

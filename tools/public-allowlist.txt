@@ -354,3 +354,6 @@ docs/formats/battle-models.md
 docs/formats/hud-and-report.md
 tools/hooks/pre-push
 tools/pre-push
+Directory.Build.targets
+SonarLint.xml
+stylecop.json

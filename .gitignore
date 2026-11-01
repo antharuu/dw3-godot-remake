@@ -54,3 +54,7 @@ _reference/
 # Override local de variables d'environnement
 .env.local
 tools/detect_duplicates.py
+
+# Quality ratchet and coverage outputs
+artifacts/
+TestResults/

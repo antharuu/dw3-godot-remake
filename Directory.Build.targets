@@ -1,0 +1,10 @@
+<Project>
+  <!-- The compiler writes the SARIF log named by ErrorLog but does not create its folder. -->
+  <Target Name="CreateQualityLogDirectory" BeforeTargets="CoreCompile">
+    <MakeDir Directories="$([System.IO.Path]::GetDirectoryName($(QualitySarifFile)))" />
+  </Target>
+  <!-- Declaring the SARIF log as a compile output makes an incremental build recompile when the log is missing. -->
+  <ItemGroup>
+    <CustomAdditionalCompileOutputs Include="$(QualitySarifFile)" />
+  </ItemGroup>
+</Project>

@@ -39,3 +39,42 @@ dotnet_diagnostic.IDE0079.severity = warning
 dotnet_diagnostic.IDE0007.severity = none
 # Keep explicit types in public and engine-facing code for readability at integration boundaries.
 dotnet_diagnostic.IDE0008.severity = none
+
+# Code rules (docs/CODE_RULES.md). Thresholds live in SonarLint.xml and stylecop.json.
+# Existing violations of these rules are tracked by the quality ratchet, new ones fail CI.
+# Limit the cognitive complexity of a method so each one can be understood in one reading.
+dotnet_diagnostic.S3776.severity = warning
+# Limit the length of a method so each one does a single job.
+dotnet_diagnostic.S138.severity = warning
+# Limit the parameter count of a method so call sites stay legible.
+dotnet_diagnostic.S107.severity = warning
+# Limit the nesting depth of control flow so the happy path stays visible.
+dotnet_diagnostic.S134.severity = warning
+# One type per file, named after the type, so a type is found from its name.
+dotnet_diagnostic.SA1402.severity = warning
+dotnet_diagnostic.SA1649.severity = warning
+# Document every element except private fields, so contributors read intent rather than reverse it.
+dotnet_diagnostic.CS1591.severity = warning
+dotnet_diagnostic.SA1600.severity = warning
+dotnet_diagnostic.SA1611.severity = warning
+dotnet_diagnostic.SA1615.severity = warning
+dotnet_diagnostic.SA1623.severity = warning
+
+# Conventions that differ from the StyleCop defaults (configuration, not suppression).
+# Members are not prefixed with this., the compiler already resolves them and fields carry an underscore.
+dotnet_diagnostic.SA1101.severity = none
+# Private fields use the _camelCase convention of the .NET runtime repository.
+dotnet_diagnostic.SA1309.severity = none
+# No per-file copyright header, LICENSE.md covers the whole repository.
+dotnet_diagnostic.SA1633.severity = none
+
+# Tests document intent through their names, so the documentation completeness rules stop at tests/.
+# Comments that are written in tests must still be well formed.
+[tests/**.cs]
+dotnet_diagnostic.CS1591.severity = none
+dotnet_diagnostic.SA1600.severity = none
+dotnet_diagnostic.SA1601.severity = none
+dotnet_diagnostic.SA1602.severity = none
+dotnet_diagnostic.SA1611.severity = none
+dotnet_diagnostic.SA1615.severity = none
+dotnet_diagnostic.SA1618.severity = none
