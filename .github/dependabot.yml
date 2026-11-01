@@ -4,7 +4,30 @@ updates:
     directory: /
     schedule:
       interval: monthly
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+    open-pull-requests-limit: 5
+
   - package-ecosystem: nuget
     directory: /
     schedule:
       interval: monthly
+    groups:
+      test-tooling:
+        patterns:
+          - "xunit*"
+          - "Microsoft.NET.Test.Sdk"
+          - "coverlet*"
+      sqlite:
+        patterns:
+          - "Microsoft.Data.Sqlite*"
+          - "SQLitePCLRaw*"
+    ignore:
+      # SQLitePCLRaw.lib.e_sqlite3 3.x uses SQLite-version numbering (3.y.z = SQLite 3.y.z).
+      # Microsoft.Data.Sqlite 10.x still depends on the 2.1.x family; upgrading the native
+      # lib to 3.x breaks the provider chain.  Revisit when MS.Data.Sqlite migrates.
+      - dependency-name: "SQLitePCLRaw.lib.e_sqlite3"
+        versions: [">= 3"]
+    open-pull-requests-limit: 5
