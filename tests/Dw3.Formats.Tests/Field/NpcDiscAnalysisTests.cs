@@ -60,8 +60,7 @@ public sealed class NpcDiscAnalysisTests
 
         NpcDiscTables tables = NpcDiscTableDecoder.Decode(
             field, fileEntriesOffset: 0, fileEntryCount: 2, widthsOffset: 40, widthCount: 2,
-            exe, progressRangesOffset: 8, progressRangeCount: 2, specialConditionsOffset: 30,
-            specialConditionsLimit: 40);
+            exe, new NpcProgressTableLocator(8, 2, 30, 40));
 
         Assert.Null(tables.FileEntries[0]);
         Assert.Equal(new NpcFileEntry(12, 7), tables.FileEntries[1]);

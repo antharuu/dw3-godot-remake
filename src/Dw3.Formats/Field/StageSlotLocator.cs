@@ -57,7 +57,7 @@ public static class StageSlotLocator
         {
             0 => null,
             1 => new StageSlotTable(candidates.Single().Key, candidates.Single().Value),
-            _ => throw new FormatException($"MIPS overlay has multiple conflicting StageSlot table pointers: {string.Join(", ", candidates.Keys.Select(offset => $"0x{offset:X}"))}.")
+            _ => throw new FormatException($"MIPS overlay has multiple conflicting StageSlot table pointers: {string.Join(", ", candidates.Keys.Select(offset => $"0x{offset:X}"))}."),
         };
     }
 

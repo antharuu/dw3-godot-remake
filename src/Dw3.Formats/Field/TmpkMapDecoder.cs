@@ -38,6 +38,9 @@ public static class TmpkMapDecoder
         return BuildMap(entry, offsets, ends);
     }
 
+    /// <summary>Reads all six component offsets from the entry header and verifies their bounds.</summary>
+    /// <param name="entry">Raw entry bytes starting at the six-offset header.</param>
+    /// <returns>Array of six valid byte offsets into the entry.</returns>
     private static int[] ReadComponentOffsets(ReadOnlySpan<byte> entry)
     {
         int[] offsets = new int[ComponentCount];
@@ -58,6 +61,10 @@ public static class TmpkMapDecoder
         return offsets;
     }
 
+    /// <summary>Computes the exclusive end boundary for each component by finding the nearest following offset.</summary>
+    /// <param name="entry">Raw entry bytes.</param>
+    /// <param name="offsets">Array of component start offsets.</param>
+    /// <returns>Array of exclusive end offsets corresponding to each component.</returns>
     private static int[] ComputeComponentEnds(ReadOnlySpan<byte> entry, int[] offsets)
     {
         int[] ends = new int[ComponentCount];
@@ -76,6 +83,11 @@ public static class TmpkMapDecoder
         return ends;
     }
 
+    /// <summary>Builds the full cell map from entry components and grid dimensions.</summary>
+    /// <param name="entry">Raw entry bytes.</param>
+    /// <param name="offsets">Component start offsets within the entry.</param>
+    /// <param name="ends">Exclusive component end offsets.</param>
+    /// <returns>A TmpkMap with one byte per pixel at the full tile resolution.</returns>
     private static TmpkMap BuildMap(ReadOnlySpan<byte> entry, int[] offsets, int[] ends)
     {
         ReadOnlySpan<byte> grid = Component(entry, offsets, ends, 0);
@@ -120,9 +132,20 @@ public static class TmpkMapDecoder
         return new TmpkMap(width, height, cells);
     }
 
+    /// <summary>Returns the component span at the given index using precomputed offset and end arrays.</summary>
+    /// <param name="entry">Raw entry bytes.</param>
+    /// <param name="offsets">Component start offsets.</param>
+    /// <param name="ends">Exclusive component end offsets.</param>
+    /// <param name="index">Zero-based component index (0 = grid, 1–4 = indirection tables, 5 = pixels).</param>
+    /// <returns>A slice of the entry covering exactly that component's bytes.</returns>
     private static ReadOnlySpan<byte> Component(ReadOnlySpan<byte> entry, int[] offsets, int[] ends, int index) =>
         entry[offsets[index]..ends[index]];
 
+    /// <summary>Resolves the cell value at pixel coordinates (x, y) using the five-level indirection tables.</summary>
+    /// <param name="t">Bundled component spans and tile-grid width.</param>
+    /// <param name="x">Pixel x coordinate (0-based, left-to-right).</param>
+    /// <param name="y">Pixel y coordinate (0-based, top-to-bottom).</param>
+    /// <returns>The one-byte cell value at (x, y).</returns>
     private static byte ResolveCell(TmpkResolveTables t, int x, int y)
     {
         int index = t.Grid[y / 128 * t.TilesWide + x / 128] * 4;
@@ -154,6 +177,11 @@ public static class TmpkMapDecoder
         return ReadByte(t.Pixels, pixelOffset, "cell pixel blocks");
     }
 
+    /// <summary>Reads a u32 little-endian offset from bytes and validates it fits within int range.</summary>
+    /// <param name="bytes">Byte span to read from.</param>
+    /// <param name="offset">Byte position of the u32 offset word.</param>
+    /// <param name="label">Name used in format exceptions for this offset field.</param>
+    /// <returns>The u32 value cast to a non-negative int.</returns>
     private static int ReadOffset(ReadOnlySpan<byte> bytes, int offset, string label)
     {
         if (offset < 0 || offset + sizeof(uint) > bytes.Length)
@@ -170,6 +198,11 @@ public static class TmpkMapDecoder
         return (int)value;
     }
 
+    /// <summary>Reads a u16 little-endian value from a byte-indexed element in the table.</summary>
+    /// <param name="bytes">Byte span containing the table.</param>
+    /// <param name="index">Zero-based element index (byte offset = index × 2).</param>
+    /// <param name="label">Name used in format exceptions for this table.</param>
+    /// <returns>The u16 value at the given element index.</returns>
     private static ushort ReadUInt16(ReadOnlySpan<byte> bytes, int index, string label)
     {
         int offset = checked(index * sizeof(ushort));
@@ -181,6 +214,11 @@ public static class TmpkMapDecoder
         return BinaryPrimitives.ReadUInt16LittleEndian(bytes.Slice(offset, sizeof(ushort)));
     }
 
+    /// <summary>Reads a single byte at the given offset, throwing on out-of-range access.</summary>
+    /// <param name="bytes">Byte span to read from.</param>
+    /// <param name="offset">Byte offset within the span.</param>
+    /// <param name="label">Name used in format exceptions for this byte location.</param>
+    /// <returns>The byte at the given offset.</returns>
     private static byte ReadByte(ReadOnlySpan<byte> bytes, int offset, string label)
     {
         if (offset < 0 || offset >= bytes.Length)

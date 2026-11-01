@@ -66,6 +66,11 @@ public static class FieldcomBehaviorDecoder
         return animations;
     }
 
+    /// <summary>Returns true when the byte sequence at start matches a valid two-step cue record.</summary>
+    /// <param name="overlay">Raw overlay bytes.</param>
+    /// <param name="start">Start offset of the candidate nine-byte record.</param>
+    /// <param name="sequence">Receives the decoded frame sequence on success.</param>
+    /// <returns>True when the record matches and sequence is populated.</returns>
     private static bool TryParseCueRecord(ReadOnlySpan<byte> overlay, int start, out FieldcomFrameSequence sequence)
     {
         sequence = null!;
@@ -86,12 +91,26 @@ public static class FieldcomBehaviorDecoder
         return true;
     }
 
+    /// <summary>Returns true when frame is within the valid cue animation range.</summary>
+    /// <param name="frame">Animation frame index to test.</param>
+    /// <returns>True when frame is in [0x0C, 0x13] or [0x45, 0x46].</returns>
     private static bool IsValidCueFrame(int frame) =>
         frame is (>= 0x0C and <= 0x13 or >= 0x45 and <= 0x46);
 
+    /// <summary>Returns true when start is immediately preceded by a frame that blocks a new animation start.</summary>
+    /// <param name="overlay">Raw overlay bytes.</param>
+    /// <param name="start">Candidate start offset to test.</param>
+    /// <param name="frameIds">Valid frame identifier set.</param>
+    /// <returns>True when the two bytes before start form a valid (frame, duration) step that prevents a new start.</returns>
     private static bool IsBlockedByPrecedingFrame(ReadOnlySpan<byte> overlay, int start, IReadOnlySet<int> frameIds) =>
         start >= 2 && frameIds.Contains(overlay[start - 2]) && overlay[start - 1] != 0;
 
+    /// <summary>Attempts to build an icon animation starting at the given byte offset.</summary>
+    /// <param name="overlay">Raw overlay bytes.</param>
+    /// <param name="start">Candidate byte offset for the first step of the animation.</param>
+    /// <param name="frameIds">Valid frame identifier set for step validation.</param>
+    /// <param name="animation">Receives the completed animation on success.</param>
+    /// <returns>True when a valid terminated animation was built; false otherwise.</returns>
     private static bool TryBuildAnimation(ReadOnlySpan<byte> overlay, int start, IReadOnlySet<int> frameIds, out FieldcomAnimation animation)
     {
         animation = null!;
@@ -118,6 +137,14 @@ public static class FieldcomBehaviorDecoder
         return false;
     }
 
+    /// <summary>Validates the terminator and builds a complete animation when the loop target is valid.</summary>
+    /// <param name="overlay">Raw overlay bytes (used to check trailing padding).</param>
+    /// <param name="cursor">Byte offset of the terminator byte.</param>
+    /// <param name="steps">Collected frame steps before the terminator.</param>
+    /// <param name="loopTarget">Loop-back target step index from the terminator byte.</param>
+    /// <param name="frameIds">Valid frame identifier set.</param>
+    /// <param name="animation">Receives the completed animation on success.</param>
+    /// <returns>True when the loop target is valid and the animation was built.</returns>
     private static bool TryCompleteAnimation(ReadOnlySpan<byte> overlay, int cursor, List<FieldcomFrameStep> steps, int loopTarget, IReadOnlySet<int> frameIds, out FieldcomAnimation animation)
     {
         animation = null!;
@@ -131,6 +158,9 @@ public static class FieldcomBehaviorDecoder
         return true;
     }
 
+    /// <summary>Returns the overlay offset of the last valid cue record, or -1 when none found.</summary>
+    /// <param name="overlay">Raw overlay bytes to scan.</param>
+    /// <returns>Byte offset of the last matching nine-byte cue record, or -1.</returns>
     private static int FindLastCueRecord(ReadOnlySpan<byte> overlay)
     {
         int last = -1;
@@ -145,6 +175,10 @@ public static class FieldcomBehaviorDecoder
         return last;
     }
 
+    /// <summary>Returns true when the nine bytes starting at start form a complete cue record.</summary>
+    /// <param name="overlay">Raw overlay bytes.</param>
+    /// <param name="start">Start offset of the nine-byte candidate.</param>
+    /// <returns>True when frame, duration and padding bytes match the cue record layout.</returns>
     private static bool IsValidCueRecord(ReadOnlySpan<byte> overlay, int start) =>
         IsValidCueFrame(overlay[start]) && IsValidCueFrame(overlay[start + 2]) &&
         overlay[start + 1] == CueDuration && overlay[start + 3] == CueDuration && overlay[start + 4] == Terminator &&

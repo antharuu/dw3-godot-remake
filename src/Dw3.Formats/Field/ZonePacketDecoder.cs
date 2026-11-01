@@ -110,6 +110,14 @@ public static class ZonePacketDecoder
         return (result, record);
     }
 
+    /// <summary>Decodes the sprite list at cursor for one depth layer and advances the cursor.</summary>
+    /// <param name="packet">Decoded (decompressed) packet bytes.</param>
+    /// <param name="texture">Indexed TIM texture used for cropping.</param>
+    /// <param name="cursor">Current byte position within the packet sprite section.</param>
+    /// <param name="depth">Depth layer index (0 = back, 1 = mid, 2 = front).</param>
+    /// <param name="result">Accumulates (depth, image) pairs for this layer.</param>
+    /// <param name="sprites">Accumulates sprite records for the tile metadata.</param>
+    /// <returns>Updated cursor position after consuming all sprites for this depth.</returns>
     private static int DecodeSpriteLayer(byte[] packet, TimImage texture, int cursor, int depth, List<(int Depth, RgbaImage Image)> result, List<ZoneSpriteRecord> sprites)
     {
         if (cursor + 4 > packet.Length)

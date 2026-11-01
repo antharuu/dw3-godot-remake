@@ -179,6 +179,7 @@ src/Dw3.Formats/Field/NpcCondition.cs
 src/Dw3.Formats/Field/NpcDiscTables.cs
 src/Dw3.Formats/Field/NpcFileEntry.cs
 src/Dw3.Formats/Field/NpcProgressRange.cs
+src/Dw3.Formats/Field/NpcProgressTableLocator.cs
 src/Dw3.Formats/Field/NpcSnapshotEvaluator.cs
 src/Dw3.Formats/Field/NpcStageActorList.cs
 src/Dw3.Formats/Field/NpcStageSlot.cs

@@ -51,7 +51,7 @@ public static class FieldcomVramDecoder
         var page = new ushort[PageWords * PageRows];
         for (int index = 0; index < page.Length; index++)
         {
-            page[index] = BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(20 + index * sizeof(ushort)));
+            page[index] = BinaryPrimitives.ReadUInt16LittleEndian(data.AsSpan(20 + (index * sizeof(ushort))));
         }
 
         return page;

@@ -45,6 +45,10 @@ public static class TmpkMapSelectionReader
         return recovered ?? throw new FormatException("MIPS overlay has no supported TMPK setup sequence.");
     }
 
+    /// <summary>Matches the three candidate setup patterns and returns the one that applies, or null.</summary>
+    /// <param name="words">Decoded overlay instruction words.</param>
+    /// <param name="start">Word index to test as the first instruction of a setup sequence.</param>
+    /// <returns>A TmpkMapSelection when any pattern matches; null when none applies.</returns>
     private static TmpkMapSelection? TryMatchCandidate(uint[] words, int start)
     {
         if (TmpkMipsOps.IsZeroA0(words[start]) &&
@@ -95,6 +99,13 @@ public static class TmpkMapSelectionReader
         return false;
     }
 
+    /// <summary>Returns true when the A1-descriptor jalr pattern matches and builds the selection.</summary>
+    /// <param name="words">Decoded overlay instruction words.</param>
+    /// <param name="index">Index of the control-flow instruction that ended the A1 sequence scan.</param>
+    /// <param name="storedFileIdentifier">True when a file-identifier store was seen before this instruction.</param>
+    /// <param name="oneBasedEntry">One-based entry number read from the A1 register load.</param>
+    /// <param name="selection">Receives the completed selection when the pattern matches.</param>
+    /// <returns>True when the instruction is jalr on register 2 and the file identifier was stored.</returns>
     private static bool TryCompleteA1Descriptor(uint[] words, int index, bool storedFileIdentifier, ushort oneBasedEntry, out TmpkMapSelection selection)
     {
         selection = null!;
@@ -107,6 +118,12 @@ public static class TmpkMapSelectionReader
         return false;
     }
 
+    /// <summary>Classifies one A1-descriptor instruction, updating the state flags.</summary>
+    /// <param name="words">Decoded overlay instruction words.</param>
+    /// <param name="index">Index of the instruction to classify.</param>
+    /// <param name="limit">Exclusive upper bound of the sequence window.</param>
+    /// <param name="initializedDescriptor">Set to true when a lui+addiu descriptor pointer is found.</param>
+    /// <param name="storedFileIdentifier">Set to true when a sw file-identifier store is found.</param>
     private static void ClassifyA1Instruction(uint[] words, int index, int limit, ref bool initializedDescriptor, ref bool storedFileIdentifier)
     {
         if (!initializedDescriptor && TmpkMipsOps.IsLui(words[index], 3, out ushort descriptorUpper) && descriptorUpper >= 0x8000 &&
@@ -122,6 +139,11 @@ public static class TmpkMapSelectionReader
         }
     }
 
+    /// <summary>Reads the A0-loader two-instruction form and produces a one-based entry selection.</summary>
+    /// <param name="words">Decoded overlay instruction words.</param>
+    /// <param name="start">Start index to match from.</param>
+    /// <param name="selection">Receives the floor selection when the pattern is found.</param>
+    /// <returns>True when the six-instruction A0-loader pattern is matched.</returns>
     private static bool TryReadOneBasedA0Loader(uint[] words, int start, out TmpkMapSelection selection)
     {
         selection = null!;
@@ -140,6 +162,13 @@ public static class TmpkMapSelectionReader
         return true;
     }
 
+    /// <summary>Reads the lui+call pattern that identifies the archive and floor entry numbers.</summary>
+    /// <param name="words">Decoded overlay instruction words.</param>
+    /// <param name="start">Index of the lui instruction that loads the archive upper half.</param>
+    /// <param name="end">Receives the index of the first word after the matched pattern.</param>
+    /// <param name="archive">Receives the archive upper-half constant.</param>
+    /// <param name="entry">Receives the one-based floor entry number when present; 0 otherwise.</param>
+    /// <returns>True when a lui instruction is found at start; false if words runs out.</returns>
     private static bool TryReadFileIdentifier(uint[] words, int start, out int end, out ushort archive, out int entry)
     {
         end = start;

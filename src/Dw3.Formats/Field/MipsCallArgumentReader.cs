@@ -38,17 +38,7 @@ public static class MipsCallArgumentReader
 
             if (opcode == 3)
             {
-                int destination = (int)(instruction & 0x03FFFFFF);
-                if (destination == targetWordAddress)
-                {
-                    if (recovered is not null)
-                    {
-                        throw new FormatException("MIPS overlay has multiple matching direct calls.");
-                    }
-
-                    recovered = new MipsCallArguments(registers[4], registers[5], registers[6], registers[7]);
-                }
-
+                recovered = MatchDirectCall(instruction, targetWordAddress, recovered, registers);
                 continue;
             }
 
@@ -62,6 +52,22 @@ public static class MipsCallArgumentReader
         }
 
         return recovered ?? throw new FormatException("MIPS overlay does not contain the requested direct call.");
+    }
+
+    private static MipsCallArguments? MatchDirectCall(uint instruction, int targetWordAddress, MipsCallArguments? recovered, uint?[] registers)
+    {
+        int destination = (int)(instruction & 0x03FFFFFF);
+        if (destination != targetWordAddress)
+        {
+            return recovered;
+        }
+
+        if (recovered is not null)
+        {
+            throw new FormatException("MIPS overlay has multiple matching direct calls.");
+        }
+
+        return new MipsCallArguments(registers[4], registers[5], registers[6], registers[7]);
     }
 
     private static void ApplyInstruction(int opcode, int source, int target, ushort immediate, uint instruction, uint?[] registers)

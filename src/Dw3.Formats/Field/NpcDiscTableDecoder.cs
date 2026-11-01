@@ -6,6 +6,14 @@ namespace Dw3.Formats.Field;
 public static class NpcDiscTableDecoder
 {
     /// <summary>Decodes the NPC tables from the given disc members and offsets.</summary>
+    /// <param name="fieldStg">Raw FIELDSTG.PRO bytes containing the file-entry and width tables.</param>
+    /// <param name="fileEntriesOffset">File offset of the NPC file-entry table within fieldStg.</param>
+    /// <param name="fileEntryCount">Number of file-entry records to decode.</param>
+    /// <param name="widthsOffset">File offset of the NPC width table within fieldStg.</param>
+    /// <param name="widthCount">Number of width entries to decode.</param>
+    /// <param name="executable">Raw disc executable bytes containing the progress tables.</param>
+    /// <param name="progressLocator">Offsets and counts for the progress-range and special-condition tables.</param>
+    /// <returns>Decoded NPC lookup and condition tables ready for the field extractor.</returns>
     public static NpcDiscTables Decode(
         ReadOnlySpan<byte> fieldStg,
         int fileEntriesOffset,
@@ -13,15 +21,17 @@ public static class NpcDiscTableDecoder
         int widthsOffset,
         int widthCount,
         ReadOnlySpan<byte> executable,
-        int progressRangesOffset,
-        int progressRangeCount,
-        int specialConditionsOffset,
-        int specialConditionsLimit)
+        NpcProgressTableLocator progressLocator)
     {
+        ArgumentNullException.ThrowIfNull(progressLocator);
         RequireRange(fieldStg.Length, fileEntriesOffset, checked(fileEntryCount * 4), "NPC file-entry table");
         RequireRange(fieldStg.Length, widthsOffset, widthCount, "NPC width table");
         ProgressConditionTables progress = ProgressConditionDecoder.Decode(
-            executable, progressRangesOffset, progressRangeCount, specialConditionsOffset, specialConditionsLimit);
+            executable,
+            progressLocator.ProgressRangesOffset,
+            progressLocator.ProgressRangeCount,
+            progressLocator.SpecialConditionsOffset,
+            progressLocator.SpecialConditionsLimit);
 
         var entries = new NpcFileEntry?[fileEntryCount];
         for (int index = 0; index < entries.Length; index++)

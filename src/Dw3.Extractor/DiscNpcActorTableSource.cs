@@ -46,8 +46,7 @@ internal sealed class DiscNpcActorTableSource : INpcActorTableSource
         byte[] fieldStg = disc.ReadFile(Require(entries, FieldStgPath));
         NpcDiscTables tables = NpcDiscTableDecoder.Decode(
             fieldStg, FileEntriesOffset, FileEntryCount, WidthsOffset, WidthCount,
-            executable, ProgressRangesOffset, ProgressRangeCount,
-            SpecialConditionsOffset, SpecialConditionsLimit);
+            executable, new NpcProgressTableLocator(ProgressRangesOffset, ProgressRangeCount, SpecialConditionsOffset, SpecialConditionsLimit));
 
         var lbaToPath = entries
             .GroupBy(entry => entry.Lba)

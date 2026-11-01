@@ -122,6 +122,14 @@ public static class ActionArchiveDecoder
         throw new FormatException("action sequence lacks terminator");
     }
 
+    /// <summary>Returns true when the frame is not a terminator; sets record on success.</summary>
+    /// <param name="data">Raw archive bytes.</param>
+    /// <param name="start">Byte offset of the first word in the sequence.</param>
+    /// <param name="cursor">Current word index within the sequence.</param>
+    /// <param name="words">Total word count of the sequence payload.</param>
+    /// <param name="frameCount">Valid TIM frame count; frame indices must be below this value.</param>
+    /// <param name="record">Receives the decoded frame record on success.</param>
+    /// <returns>True when the word at cursor is a positive-duration frame; false on a terminator.</returns>
     private static bool TryReadFrame(ReadOnlySpan<byte> data, int start, int cursor, int words, int frameCount, out ActionAnimationRecord record)
     {
         record = default!;
@@ -148,6 +156,13 @@ public static class ActionArchiveDecoder
         return true;
     }
 
+    /// <summary>Builds the terminator sequence from the final word at cursor.</summary>
+    /// <param name="data">Raw archive bytes.</param>
+    /// <param name="start">Byte offset of the first word in the sequence.</param>
+    /// <param name="cursor">Index of the terminator word.</param>
+    /// <param name="words">Total word count of the payload.</param>
+    /// <param name="records">Collected frame records to include in the sequence.</param>
+    /// <returns>The completed sequence with its loop or end terminator.</returns>
     private static ActionAnimationSequence BuildTerminator(ReadOnlySpan<byte> data, int start, int cursor, int words, List<ActionAnimationRecord> records)
     {
         int duration = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(start + cursor * sizeof(int), sizeof(int)));

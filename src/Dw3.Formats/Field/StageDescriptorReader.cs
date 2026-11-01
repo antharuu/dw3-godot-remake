@@ -113,6 +113,12 @@ public static class StageDescriptorReader
         }
     }
 
+    /// <summary>Applies a store instruction to the descriptor member map when the base address matches.</summary>
+    /// <param name="instruction">Raw MIPS sw instruction word.</param>
+    /// <param name="source">Source register index (base address register from the instruction).</param>
+    /// <param name="immediate">Signed displacement from the sw instruction.</param>
+    /// <param name="registers">Current register constant-propagation state.</param>
+    /// <param name="stores">Tracked descriptor member store sets, keyed by member offset.</param>
     private static void ApplyStore(uint instruction, int source, ushort immediate, uint?[] registers, Dictionary<uint, HashSet<uint?>> stores)
     {
         int target = (int)((instruction >> 16) & 31);

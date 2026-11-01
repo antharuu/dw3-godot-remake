@@ -246,6 +246,9 @@ public static class PlayerArchiveDecoder
             $"Sequence {index}: payload ended without a terminator word (0 or -1).");
     }
 
+    /// <summary>Scans all pixels and returns the minimum and maximum visible coordinates.</summary>
+    /// <param name="image">Decoded TIM frame with RGBA pixel data.</param>
+    /// <returns>Tuple of minimum and maximum visible x and y coordinates.</returns>
     private static (int MinX, int MinY, int MaxX, int MaxY) ScanVisiblePixels(TimImage image)
     {
         int width = image.Width;
@@ -270,6 +273,13 @@ public static class PlayerArchiveDecoder
         return (minX, minY, maxX, maxY);
     }
 
+    /// <summary>Expands the bounding box to include the given pixel position.</summary>
+    /// <param name="x">Pixel x coordinate.</param>
+    /// <param name="y">Pixel y coordinate.</param>
+    /// <param name="minX">Current minimum x, updated when x is smaller.</param>
+    /// <param name="maxX">Current maximum x, updated when x is larger.</param>
+    /// <param name="minY">Current minimum y, updated when y is smaller.</param>
+    /// <param name="maxY">Current maximum y, updated when y is larger.</param>
     private static void UpdateBounds(int x, int y, ref int minX, ref int maxX, ref int minY, ref int maxY)
     {
         if (x < minX)
@@ -293,6 +303,10 @@ public static class PlayerArchiveDecoder
         }
     }
 
+    /// <summary>Validates that each offset is inside the payload range and strictly ascending.</summary>
+    /// <param name="offsets">Array of decoded offsets to validate.</param>
+    /// <param name="tableBytes">Number of bytes occupied by the offset table (minimum valid payload start).</param>
+    /// <param name="dataLength">Total byte length of the archive data.</param>
     private static void ValidateOffsets(int[] offsets, int tableBytes, int dataLength)
     {
         for (int i = 0; i < offsets.Length; i++)
@@ -314,6 +328,14 @@ public static class PlayerArchiveDecoder
         }
     }
 
+    /// <summary>Returns true when the word at cursor is a loop or end terminator; builds the completed sequence.</summary>
+    /// <param name="duration">Value of the word at cursor.</param>
+    /// <param name="cursor">Current word offset within the sequence.</param>
+    /// <param name="wordCount">Total word count of the sequence payload.</param>
+    /// <param name="records">Collected animation records.</param>
+    /// <param name="seqIndex">Archive sequence index used in error messages.</param>
+    /// <param name="sequence">Receives the completed sequence when the word is a terminator.</param>
+    /// <returns>True when duration is 0 or -1 (terminator); false for a frame record.</returns>
     private static bool TryReadTerminator(int duration, int cursor, int wordCount, List<PlayerAnimRecord> records, int seqIndex, out PlayerAnimSequence sequence)
     {
         sequence = null!;
@@ -344,6 +366,14 @@ public static class PlayerArchiveDecoder
         return false;
     }
 
+    /// <summary>Reads one animation frame record from the sequence payload.</summary>
+    /// <param name="data">Raw file bytes.</param>
+    /// <param name="start">Byte offset of the first word in the sequence.</param>
+    /// <param name="cursor">Current word index within the sequence.</param>
+    /// <param name="wordCount">Total word count of the sequence payload.</param>
+    /// <param name="frameCount">Valid frame count; frame indices must be below this value.</param>
+    /// <param name="seqIndex">Archive sequence index used in error messages.</param>
+    /// <returns>A decoded PlayerAnimRecord with duration, frame, and draw offsets.</returns>
     private static PlayerAnimRecord ReadFrameRecord(ReadOnlySpan<byte> data, int start, int cursor, int wordCount, int frameCount, int seqIndex)
     {
         int duration = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(start + cursor * 4, 4));
