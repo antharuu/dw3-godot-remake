@@ -21,10 +21,12 @@ jobs:
           dotnet-version: "10.0.x"
       # Windows Defender real-time scanning holds file handles on newly created SQLite
       # databases in TEMP, causing Directory.Move (staging -> active) to fail with
-      # "Access to the path is denied". Excluding TEMP removes the interference.
-      - name: Exclude TEMP from Windows Defender scanning
+      # "Access to the path is denied" even after exhausting retries. Disabling real-time
+      # monitoring for the duration of the test run is the standard workaround on GitHub
+      # Actions Windows runners.
+      - name: Disable Windows Defender real-time monitoring
         if: runner.os == 'Windows'
         shell: pwsh
-        run: Add-MpPreference -ExclusionPath "$env:TEMP"
+        run: Set-MpPreference -DisableRealtimeMonitoring $true
       - run: dotnet build Dw3.sln --nologo
       - run: dotnet test Dw3.sln --nologo
