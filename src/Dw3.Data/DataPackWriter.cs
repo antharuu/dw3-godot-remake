@@ -19,7 +19,7 @@ public sealed class DataPackWriter
         ArgumentException.ThrowIfNullOrWhiteSpace(rootDirectory);
         _rootDirectory = Path.GetFullPath(rootDirectory);
         Directory.CreateDirectory(_rootDirectory);
-        RemoveOrphanedStagingDirectories();
+        RemoveOrphanedDirectories();
     }
 
     /// <summary>
@@ -38,7 +38,10 @@ public sealed class DataPackWriter
         {
             Directory.CreateDirectory(stagingDirectory);
             string databasePath = Path.Combine(stagingDirectory, "dw3.sqlite");
-            using (var connection = new SqliteConnection($"Data Source={databasePath}"))
+            // Pooling=False ensures the write connection truly closes its native file handle on
+            // Dispose() rather than returning it to the connection pool.  Without this flag the
+            // pool can keep the handle open past Dispose(), preventing Directory.Move on Windows.
+            using (var connection = new SqliteConnection($"Data Source={databasePath};Pooling=False"))
             {
                 connection.Open();
                 using SqliteTransaction transaction = connection.BeginTransaction();
@@ -90,15 +93,20 @@ public sealed class DataPackWriter
         }
 
         if (previousDirectory is not null && Directory.Exists(previousDirectory))
-            Directory.Delete(previousDirectory, recursive: true);
+            // Best-effort: if an open reader holds a native handle on a file inside the previous
+            // directory, Directory.Delete throws IOException or UnauthorizedAccessException on
+            // Windows.  The pack has already been promoted successfully at this point, so a
+            // cleanup failure is non-critical.  Orphaned data.previous-* directories are removed
+            // on the next DataPackWriter construction via RemoveOrphanedDirectories().
+            TryDeleteDirectory(previousDirectory);
     }
 
     /// <summary>
-    /// Moves a directory, retrying on transient <see cref="IOException"/> failures.
+    /// Moves a directory, retrying on transient <see cref="IOException"/> or
+    /// <see cref="UnauthorizedAccessException"/> failures.
     /// On Windows, antivirus or file-system indexers may briefly hold a handle on a
-    /// file inside the source directory, causing <c>Directory.Move</c> to throw
-    /// <c>IOException</c> ("Access to the path is denied"). An exponential back-off
-    /// gives the external process time to release the handle.
+    /// file inside the source directory, causing <c>Directory.Move</c> to throw.
+    /// An exponential back-off gives the external process time to release the handle.
     /// </summary>
     private static void MoveWithRetry(string source, string destination)
     {
@@ -115,13 +123,37 @@ public sealed class DataPackWriter
             {
                 System.Threading.Thread.Sleep(InitialDelayMs << attempt);
             }
+            catch (UnauthorizedAccessException) when (attempt < MaxAttempts - 1)
+            {
+                System.Threading.Thread.Sleep(InitialDelayMs << attempt);
+            }
         }
     }
 
-    private void RemoveOrphanedStagingDirectories()
+    private void RemoveOrphanedDirectories()
     {
+        // Remove incomplete staging directories left by interrupted extractions.
         foreach (string directory in Directory.EnumerateDirectories(_rootDirectory, "data.staging-*", SearchOption.TopDirectoryOnly))
+            TryDeleteDirectory(directory);
+        // Remove superseded previous-pack directories whose cleanup was deferred because
+        // an open reader held a file handle at promotion time (Windows only).
+        foreach (string directory in Directory.EnumerateDirectories(_rootDirectory, "data.previous-*", SearchOption.TopDirectoryOnly))
+            TryDeleteDirectory(directory);
+    }
+
+    /// <summary>
+    /// Attempts to recursively delete a directory, silently swallowing transient failures.
+    /// A failed deletion is not a correctness issue: the directory will be retried on the
+    /// next <see cref="DataPackWriter"/> construction via <see cref="RemoveOrphanedDirectories"/>.
+    /// </summary>
+    private static void TryDeleteDirectory(string directory)
+    {
+        try
+        {
             Directory.Delete(directory, recursive: true);
+        }
+        catch (IOException) { }
+        catch (UnauthorizedAccessException) { }
     }
 
     private static void InsertMetadata(SqliteConnection connection, SqliteTransaction transaction, DataPackMetadata metadata)
