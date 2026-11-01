@@ -168,6 +168,9 @@ public sealed class FieldAnimationDataPackLoaderTests : IDisposable
 
     public void Dispose()
     {
+        // Release pooled connections before deletion; on Windows, the pool keeps
+        // the file handle open past Dispose(), preventing Directory.Delete.
+        SqliteConnection.ClearAllPools();
         if (Directory.Exists(_root)) Directory.Delete(_root, true);
     }
 }

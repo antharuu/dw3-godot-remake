@@ -35,6 +35,9 @@ public sealed class LegacyBattleDataConsoleTests
         }
         finally
         {
+            // Release pooled connections before deletion; on Windows, the pool keeps
+            // the file handle open past Dispose(), preventing Directory.Delete.
+            SqliteConnection.ClearAllPools();
             if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
         }
     }

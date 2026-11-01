@@ -54,6 +54,9 @@ public sealed class WaterDomainWriterTests : IDisposable
     public void Dispose()
     {
         if (Directory.Exists(_root))
+        // Release pooled connections before deletion; on Windows, the pool keeps
+        // the file handle open past Dispose(), preventing Directory.Delete.
+        SqliteConnection.ClearAllPools();
             Directory.Delete(_root, recursive: true);
     }
 

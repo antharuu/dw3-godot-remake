@@ -1,9 +1,9 @@
+using Microsoft.Data.Sqlite;
 using System.Buffers.Binary;
 using System.Text.Json;
 using Dw3.Data;
 using Dw3.Extractor;
 using Dw3.Formats.Battle;
-using Microsoft.Data.Sqlite;
 using Xunit;
 
 namespace Dw3.Extractor.Tests;
@@ -43,6 +43,9 @@ public sealed class BattleModelDomainWriterTests : IDisposable
     public void Dispose()
     {
         if (Directory.Exists(_root))
+        // Release pooled connections before deletion; on Windows, the pool keeps
+        // the file handle open past Dispose(), preventing Directory.Delete.
+        SqliteConnection.ClearAllPools();
             Directory.Delete(_root, recursive: true);
     }
 

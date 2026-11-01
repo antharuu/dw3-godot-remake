@@ -1,9 +1,9 @@
+using Microsoft.Data.Sqlite;
 using System.Text.Json;
 using Dw3.Data;
 using Dw3.Extractor;
 using Dw3.Formats.Dialogue;
 using Dw3.Formats.Field;
-using Microsoft.Data.Sqlite;
 using Xunit;
 
 namespace Dw3.Extractor.Tests;
@@ -61,6 +61,9 @@ public sealed class DialogueDomainWriterTests : IDisposable
 
     public void Dispose()
     {
+        // Release pooled connections before deletion; on Windows, the pool keeps
+        // the file handle open past Dispose(), preventing Directory.Delete.
+        SqliteConnection.ClearAllPools();
         if (Directory.Exists(_root)) Directory.Delete(_root, recursive: true);
     }
 

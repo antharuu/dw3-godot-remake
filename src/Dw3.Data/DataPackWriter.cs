@@ -54,6 +54,9 @@ public sealed class DataPackWriter
         }
         catch
         {
+            // On Windows, Microsoft.Data.Sqlite connection pooling may keep the file handle
+            // open even after Dispose(), preventing Directory.Delete from succeeding.
+            SqliteConnection.ClearAllPools();
             if (Directory.Exists(stagingDirectory))
                 Directory.Delete(stagingDirectory, recursive: true);
             throw;

@@ -51,6 +51,9 @@ public sealed class SqliteRoundtripTests : IDisposable
 
     public void Dispose()
     {
+        // Release pooled connections before deletion; on Windows, the pool keeps
+        // the file handle open past Dispose(), preventing File.Delete.
+        SqliteConnection.ClearAllPools();
         if (File.Exists(_dbPath))
             File.Delete(_dbPath);
     }
