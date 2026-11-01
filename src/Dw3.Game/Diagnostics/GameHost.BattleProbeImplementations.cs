@@ -49,7 +49,7 @@ public partial class GameHost
             // the player-turn presentation flow starts ShotCamera for the command menu. Its first shot is the main
             // enemy view, not the separate camera-6 partner thumbnail.
             TickTestSimulation();
-            BattleRenderer.SetCommandMenuCamera(snap: true);
+            BattleRenderer.SetCommandMenuCamera();
             var geometry = BattleRenderer.AssertOpeningGeometry(focusedFighterId: _battleRenderedPlayerId);
             _log.Info($"battle-play geometry PASS {geometry}");
             _log.Info($"battle-play combat player={_battleRenderedPlayerId} encounter={_lastBattleEncounter} enemies=[{string.Join(",", _lastBattleEnemyIds)}] menu={_battleMenu.View.Menu} cursor={_battleMenu.View.Cursor}");
@@ -167,7 +167,7 @@ public partial class GameHost
                 renderer.Present(BuildBattleView());
                 await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
             }
-            renderer.SetCommandMenuCamera(snap: true);
+            renderer.SetCommandMenuCamera();
             renderer.SetProbePose(0);
             async System.Threading.Tasks.Task<Image> CaptureAt(int frame, string name)
             {
@@ -186,7 +186,7 @@ public partial class GameHost
             Require(renderer.ShotCameraSummary().Contains("enemy=False", StringComparison.Ordinal), "substate 5 did not hide the enemy model");
             for (var i = 121; i < 200; i++) renderer.Present(BuildBattleView());
             await CaptureAt(200, "shot-t200.png");
-            renderer.SetCommandMenuCamera(snap: true);
+            renderer.SetCommandMenuCamera();
             renderer.Present(BuildBattleView());
             renderer.SetModelVisibleForProbe(383, false);
             await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
@@ -237,7 +237,7 @@ public partial class GameHost
             Require(_battleFlow is not null && _activeBattle is not null && _battleMenu.Menu == BattleMenuKind.Root,
                 "F8 did not reach the root command menu");
             TickTestSimulation();
-            BattleRenderer.SetCommandMenuCamera(snap: true);
+            BattleRenderer.SetCommandMenuCamera();
             var line0 = await CaptureBattle(captureRoot, "command-menu-line0.png");
             await CaptureBattle(captureRoot, "hud-full.png");
             Require(_battleMenu.Cursor == 0 && _battleMenu.Lines.Count == 6, $"root menu cursor={_battleMenu.Cursor} lines={_battleMenu.Lines.Count}");
@@ -890,7 +890,7 @@ public partial class GameHost
             var renderer = BattleRenderer;
             renderer.SetProbePose(10);
             renderer.SetNeutralLightsForProbe(false);
-            renderer.SetCommandMenuCamera(snap: true);
+            renderer.SetCommandMenuCamera();
             renderer.SetHudVisibleForProbe(false);
             var remake = ToSource320(await CaptureBattle(captureRoot, "kotemon-command-menu.png"));
             renderer.SetModelVisibleForProbe(383, false);
@@ -992,7 +992,7 @@ public partial class GameHost
             renderer.SetNeutralLightsForProbe(false);
             // the player-turn presentation flow starts the main ShotCamera for the command menu. Its first source
             // shot is getEnemyView, distinct from the small partner-view camera 6/7.
-            renderer.SetCommandMenuCamera(snap: true);
+            renderer.SetCommandMenuCamera();
             var lit = await CaptureBattle(captureRoot, "kotemon-lit.png");
             Require(renderer.LightFade >= 1f, $"settled light capture fade={renderer.LightFade:0.###}");
             var kuwagamon = await CaptureBattle(captureRoot, "kuwagamon-lit.png");
@@ -1116,7 +1116,7 @@ public partial class GameHost
             var renderer = _battleRenderer ?? throw new InvalidOperationException("battle renderer unavailable after F8");
             Require(_battleRenderedPlayerId == 383, $"F8 player fighter={_battleRenderedPlayerId}, expected Kotemon 383");
             Require(renderer.ModelCount == 2, "F8 did not build both real models");
-            renderer.SetCommandMenuCamera(snap: true);
+            renderer.SetCommandMenuCamera();
             var rotationDiff = renderer.RotationOracleMaxDiff();
             Require(rotationDiff < 1e-4f, $"battle rotation oracle maxdiff={rotationDiff:R}");
             _log.Info($"battle-rotation-oracle maxdiff={rotationDiff:R} order=Rz*Ry*Rx*S");

@@ -1,0 +1,69 @@
+using Godot;
+
+namespace Dw3Production.Presentation;
+
+/// <summary>
+/// The battle camera's interpolation between source views: position, look-at target and
+/// projection distance move linearly from the view held when a new one is requested, at a step per
+/// 60 Hz frame.
+/// </summary>
+internal sealed class BattleCameraFade
+{
+    private Vector3 _positionFrom = new(0, 6.5f, 22f);
+    private Vector3 _targetFrom = new(0, -0.4f, 0);
+    private float _projectionFrom = 280f;
+    private Vector3 _positionTo = new(0, 6.5f, 22f);
+    private Vector3 _targetTo = new(0, -0.4f, 0);
+    private float _projectionTo = 280f;
+    private float _fade = 1f;
+    private float _fadeStep = 1f;
+
+    /// <summary>Gets the current camera position in Godot world units.</summary>
+    public Vector3 Position { get; private set; } = new(0, 6.5f, 22f);
+
+    /// <summary>Gets the current look-at target in Godot world units.</summary>
+    public Vector3 Target { get; private set; } = new(0, -0.4f, 0);
+
+    /// <summary>Gets the current PS1 projection distance (screen-space focal length in pixels).</summary>
+    public float Projection { get; private set; } = 280f;
+
+    /// <summary>Starts moving toward a new view from the current one.</summary>
+    /// <param name="position">Destination position.</param>
+    /// <param name="target">Destination look-at target.</param>
+    /// <param name="projection">Destination projection distance.</param>
+    /// <param name="fadeStep">Fraction of the move covered per 60 Hz frame.</param>
+    /// <param name="snap">True to jump to the destination at once.</param>
+    public void Begin(Vector3 position, Vector3 target, float projection, float fadeStep, bool snap)
+    {
+        _positionFrom = Position;
+        _targetFrom = Target;
+        _projectionFrom = Projection;
+        _positionTo = position;
+        _targetTo = target;
+        _projectionTo = projection;
+        _fade = snap ? 1f : 0f;
+        _fadeStep = fadeStep;
+        if (snap)
+        {
+            Position = _positionTo;
+            Target = _targetTo;
+            Projection = _projectionTo;
+        }
+    }
+
+    /// <summary>Advances the move by presented time; a finished move holds its destination.</summary>
+    /// <param name="delta">Presented time in seconds.</param>
+    public void Step(float delta)
+    {
+        if (_fade >= 1f)
+        {
+            return;
+        }
+
+        _fade = Mathf.Min(1f, _fade + (_fadeStep * delta * 60f));
+        var t = _fade;
+        Position = _positionFrom.Lerp(_positionTo, t);
+        Target = _targetFrom.Lerp(_targetTo, t);
+        Projection = Mathf.Lerp(_projectionFrom, _projectionTo, t);
+    }
+}

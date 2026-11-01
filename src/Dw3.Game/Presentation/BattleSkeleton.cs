@@ -1,0 +1,190 @@
+using System.Text.Json;
+using Godot;
+
+namespace Dw3Production.Presentation;
+
+/// <summary>
+/// The bone hierarchy of a battle model and its key tracks. It poses each bone as the PS1 does:
+/// ZYX Euler rotation (4096 units per turn), fixed-point scale (/4096) and translation, composed
+/// through the Godot node hierarchy, then converted from PS1 axes (Y down, Z forward) by
+/// C = diag(1, -1, -1) on both sides of the source basis.
+/// </summary>
+internal sealed class BattleSkeleton
+{
+    /// <summary>A bone whose largest fixed-point scale component is at most this value is hidden.</summary>
+    private const int HiddenScaleThreshold = 48;
+
+    private static readonly Basis Ps1ToGodot = new(Vector3.Right, Vector3.Down, Vector3.Back);
+    private static readonly Vector3 IdentityScale = new(4096, 4096, 4096);
+
+    private readonly Dictionary<int, Node3D> _bones;
+    private readonly Dictionary<int, List<Vector4>[]> _tracks;
+    private readonly Dictionary<int, (Vector3 Position, Vector3 Rotation, Vector3 Scale)> _blendPose = [];
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="BattleSkeleton"/> class.
+    /// </summary>
+    /// <param name="bones">Bone nodes by source index, already parented.</param>
+    /// <param name="tracks">Position, rotation and scale channels by bone index.</param>
+    public BattleSkeleton(Dictionary<int, Node3D> bones, Dictionary<int, List<Vector4>[]> tracks)
+    {
+        _bones = bones;
+        _tracks = tracks;
+    }
+
+    /// <summary>Gets the number of bones.</summary>
+    public int Count => _bones.Count;
+
+    /// <summary>Gets the indices of bones the scale threshold currently hides, in ascending order.</summary>
+    public IReadOnlyList<int> HiddenBones => [.. _bones.Where(pair => !pair.Value.Visible).Select(pair => pair.Key).Order()];
+
+    /// <summary>Creates one node per bone record under <paramref name="root"/>.</summary>
+    /// <param name="root">Model root that receives the parentless bones.</param>
+    /// <param name="bones">The model JSON <c>bones</c> array; a parent always precedes its children.</param>
+    /// <returns>The bone nodes by source index.</returns>
+    public static Dictionary<int, Node3D> BuildBones(Node3D root, JsonElement bones)
+    {
+        var result = new Dictionary<int, Node3D>();
+        foreach (var bone in bones.EnumerateArray())
+        {
+            var index = bone.GetProperty("index").GetInt32();
+            var node = new Node3D { Name = $"Bone{index}" };
+            result[index] = node;
+            var parent = bone.GetProperty("parent");
+            var parentNode = parent.ValueKind == JsonValueKind.Null ? root : result[parent.GetInt32()];
+            parentNode.AddChild(node);
+        }
+
+        return result;
+    }
+
+    /// <summary>Gets a bone node.</summary>
+    /// <param name="index">Source bone index.</param>
+    /// <returns>The node.</returns>
+    public Node3D Bone(int index) => _bones[index];
+
+    /// <summary>Tells whether a bone survived the scale threshold on the latest pose.</summary>
+    /// <param name="index">Source bone index.</param>
+    /// <returns>False for an unknown or hidden bone.</returns>
+    public bool IsVisible(int index) => _bones.TryGetValue(index, out var bone) && bone.Visible;
+
+    /// <summary>Transforms a bone-local point to world space through the live hierarchy.</summary>
+    /// <param name="bone">Source bone index.</param>
+    /// <param name="local">Point in the bone's local Godot units.</param>
+    /// <returns>The world-space point.</returns>
+    public Vector3 WorldPosition(int bone, Vector3 local) => _bones[bone].GlobalTransform * local;
+
+    /// <summary>Poses every tracked bone at one source frame.</summary>
+    /// <param name="frame">Source animation frame.</param>
+    public void Pose(int frame)
+    {
+        foreach (var pair in _tracks)
+        {
+            ApplyPose(pair.Key, BattleKeyTrack.Sample(pair.Value[0], frame), BattleKeyTrack.Sample(pair.Value[1], frame), BattleKeyTrack.Sample(pair.Value[2], frame));
+        }
+    }
+
+    /// <summary>Poses every tracked bone on a blend step of the motion machine.</summary>
+    /// <param name="state">Motion machine on a blending entry.</param>
+    /// <param name="targetChanged">True when the blend target changed this step, which re-captures
+    /// the blend start pose: the live pose for source 0xFFFF, otherwise the source frame.</param>
+    public void Blend(BattleMotionMachine state, bool targetChanged)
+    {
+        if (targetChanged)
+        {
+            CaptureBlendSource(state.BlendSource);
+        }
+
+        foreach (var pair in _tracks)
+        {
+            var from = _blendPose[pair.Key];
+            var position = BattleKeyTrack.FirstKeyAtOrAfter(pair.Value[0], state.Frame);
+            var rotation = BattleKeyTrack.FirstKeyAtOrAfter(pair.Value[1], state.Frame);
+            var scale = BattleKeyTrack.FirstKeyAtOrAfter(pair.Value[2], state.Frame);
+            var blendedScale = BattleKeyTrack.HasZero(from.Scale) || BattleKeyTrack.HasZero(scale) ? scale : BattleKeyTrack.FixedBlend(from.Scale, scale, state.Blend);
+            ApplyPose(pair.Key, BattleKeyTrack.FixedBlend(from.Position, position, state.Blend), BattleKeyTrack.FixedBlend(from.Rotation, rotation, state.Blend), blendedScale);
+        }
+    }
+
+    /// <summary>Restores every bone to identity scale and visible, for a legacy probe comparison.</summary>
+    public void ShowAll()
+    {
+        foreach (var bone in _bones.Values)
+        {
+            bone.Scale = Vector3.One;
+            bone.Visible = true;
+        }
+    }
+
+    /// <summary>
+    /// Compares the posed basis and scale with an explicit PS1 matrix product mZ*mY*mX, scaled and
+    /// converted by C = diag(1, -1, -1), over the three principal axes and one mixed rotation.
+    /// </summary>
+    /// <returns>The largest column or scale difference.</returns>
+    public float RotationOracleMaxDiff()
+    {
+        var bone = _bones.Keys.Where(index => index != 0).DefaultIfEmpty(_bones.Keys.First()).First();
+        var samples = new[]
+        {
+            (new Vector3(0x200, 0, 0), IdentityScale),
+            (new Vector3(0, 0x200, 0), IdentityScale),
+            (new Vector3(0, 0, 0x200), IdentityScale),
+            (new Vector3(0x123, 0x345, 0x567), new Vector3(4096, 2048, 8192)),
+        };
+        var max = 0f;
+        foreach (var (rotation, scale) in samples)
+        {
+            ApplyPose(bone, Vector3.Zero, rotation, scale);
+            var expected = Ps1ToGodot * ExplicitZyx(rotation * (Mathf.Tau / 4096f)) * Ps1ToGodot;
+            max = Math.Max(max, BasisMaxDelta(_bones[bone].Basis.Orthonormalized(), expected));
+            max = Math.Max(max, (_bones[bone].Scale - (scale / 4096f)).Length());
+        }
+
+        return max;
+    }
+
+    private static Basis ExplicitZyx(Vector3 radians)
+    {
+        var sx = Mathf.Sin(radians.X);
+        var cx = Mathf.Cos(radians.X);
+        var sy = Mathf.Sin(radians.Y);
+        var cy = Mathf.Cos(radians.Y);
+        var sz = Mathf.Sin(radians.Z);
+        var cz = Mathf.Cos(radians.Z);
+
+        // Explicit columns of mZ*mY*mX, independently of Basis.FromEuler.
+        return new Basis(
+            new Vector3(cz * cy, sz * cy, -sy),
+            new Vector3((cz * sy * sx) - (sz * cx), (sz * sy * sx) + (cz * cx), cy * sx),
+            new Vector3((cz * sy * cx) + (sz * sx), (sz * sy * cx) - (cz * sx), cy * cx));
+    }
+
+    private static float BasisMaxDelta(Basis a, Basis b) => Math.Max((a.X - b.X).Length(), Math.Max((a.Y - b.Y).Length(), (a.Z - b.Z).Length()));
+
+    private void CaptureBlendSource(int blendSource)
+    {
+        foreach (var pair in _tracks)
+        {
+            _blendPose[pair.Key] = blendSource == 0xffff
+                ? ReadCurrentPose(pair.Key)
+                : (BattleKeyTrack.Sample(pair.Value[0], blendSource), BattleKeyTrack.Sample(pair.Value[1], blendSource), BattleKeyTrack.Sample(pair.Value[2], blendSource));
+        }
+    }
+
+    private (Vector3 Position, Vector3 Rotation, Vector3 Scale) ReadCurrentPose(int bone) =>
+        _blendPose.TryGetValue(bone, out var pose) ? pose : (Vector3.Zero, Vector3.Zero, IdentityScale);
+
+    private void ApplyPose(int bone, Vector3 positionFixed, Vector3 rotationFixed, Vector3 scaleFixed)
+    {
+        var sx = (int)scaleFixed.X;
+        var sy = (int)scaleFixed.Y;
+        var sz = (int)scaleFixed.Z;
+        var node = _bones[bone];
+        node.Position = BattleModel.Ps1Position(positionFixed);
+        var sourceBasis = Basis.FromEuler(rotationFixed * (Mathf.Pi / 2048f), EulerOrder.Zyx);
+        node.Basis = Ps1ToGodot * sourceBasis * Ps1ToGodot;
+        node.Scale = new Vector3(sx, sy, sz) / 4096f;
+        node.Visible = (sx | sy | sz) > HiddenScaleThreshold;
+        _blendPose[bone] = (positionFixed, rotationFixed, scaleFixed);
+    }
+}

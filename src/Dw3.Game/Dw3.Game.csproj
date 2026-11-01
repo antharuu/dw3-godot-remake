@@ -7,4 +7,7 @@
   <ItemGroup>
     <ProjectReference Include="../Dw3.Data/Dw3.Data.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Dw3.Game.Tests" />
+  </ItemGroup>
 </Project>

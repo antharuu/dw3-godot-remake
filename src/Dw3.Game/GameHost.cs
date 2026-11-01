@@ -638,7 +638,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
             _battleRenderer.SetHud(BattleLoader.LoadBattleHud());
             _battleRenderer.SetMenuIcons(BattleLoader.LoadBattleMenuIcons());
             var font = _dialogueData?.Font ?? throw new InvalidOperationException("battle font unavailable");
-            _battleRenderer.SetFont(font, LoadTexture(font.Page0Path), LoadTexture(font.Page1Path));
+            _battleRenderer.SetFont(font);
             _fightReportRenderer = new FightReportRenderer(this);
             _fightReportRenderer.Configure(BattleLoader.LoadBattleReportSprites(), font);
         }
