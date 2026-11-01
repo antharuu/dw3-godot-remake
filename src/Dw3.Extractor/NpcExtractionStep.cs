@@ -18,6 +18,7 @@ internal static class NpcExtractionStep
 {
     private const string Domain = "npc";
     private const string ManifestSchema = "m7a-npc-v1";
+
     // Stage overlay load base (EU disc, constant across all WSTAG*.PRO overlays).
     private const uint StageVram = 0x800A5DE0u;
 
@@ -52,51 +53,14 @@ internal static class NpcExtractionStep
                 {
                     foreach (int stageId in stageIds)
                     {
-                        string proPath = $"AAA/PRO/WSTAG{stageId}.PRO";
-                        DiscFileEntry? proEntry = entries.SingleOrDefault(e =>
-                            string.Equals(e.IsoPath, proPath, StringComparison.Ordinal)) ?? throw new InvalidDataException($"Required NPC stage overlay is absent: {proPath}");
-                        byte[] overlay = disc.ReadFile(proEntry);
-
-                        int zoneCharacters = 0;
-                        var extractedActors = new List<NpcExtractedActor>();
-                        IReadOnlyList<NpcActorReference> actors = tableSource.GetStageActors(stageId);
-                        foreach (NpcActorReference actorReference in actors)
-                        {
-                            NpcActorEntry actor = NpcOverlayReader.ReadActorEntry(overlay, actorReference.Address, StageVram);
-                            IReadOnlyList<NpcCondition> conditions = NpcOverlayReader.ReadConditionList(
-                                overlay, actor.ConditionsPtr, StageVram);
-                            bool visible = tableSource.IsVisible(conditions);
-                            bool isPlayerLead = tableSource.IsPlayerLead(actor.ActorId);
-                            int? width = tableSource.GetActorWidth(actor.ActorId);
-                            (int fileNumber, int archiveEntry)? packedEntry = tableSource.GetActorSpriteEntry(actor.ActorId);
-                            string? archivePath = packedEntry is null ? null : tableSource.GetDiscFilePath(packedEntry.Value.fileNumber);
-                            extractedActors.Add(new NpcExtractedActor(
-                                actorReference.Index, actor.ActorId, actor.Image, actor.X, actor.Y, actor.Direction,
-                                width, isPlayerLead, visible, conditions,
-                                packedEntry is null ? null : new NpcFileEntry(packedEntry.Value.fileNumber, packedEntry.Value.archiveEntry),
-                                archivePath));
-
-                            if (!visible || isPlayerLead)
-                                continue;
-                            totalVisible++;
-                            if (packedEntry is null || archivePath is null)
-                                continue;
-                            DiscFileEntry? archiveEntry2 = entries.SingleOrDefault(e =>
-                                string.Equals(e.IsoPath, archivePath, StringComparison.Ordinal)) ?? throw new InvalidDataException($"NPC archive is absent from disc: {archivePath}");
-                            byte[] archiveBytes = disc.ReadFile(archiveEntry2);
-                            NpcExtractedCharacter character = DecodeCharacter(
-                                archiveBytes, archivePath, packedEntry.Value.archiveEntry,
-                                actor.ActorId, stageId, actorReference.Index);
-                            NpcDomainWriter.Write(context, character);
-                            zoneCharacters++;
-                        }
-                        extractedZones.Add(new NpcExtractedZone(
-                            stageId, proPath,
-                            Convert.ToHexStringLower(SHA256.HashData(overlay)),
-                            extractedActors));
-                        totalCharacters += zoneCharacters;
+                        (NpcExtractedZone zone, int chars, int vis) =
+                            ExtractStage(disc, entries, stageId, tableSource, context);
+                        extractedZones.Add(zone);
+                        totalCharacters += chars;
+                        totalVisible += vis;
                         totalZones++;
                     }
+
                     NpcDomainWriter.WritePlacements(context, extractedZones, snapshotProgress: 4);
                 });
 
@@ -110,6 +74,95 @@ internal static class NpcExtractionStep
         }
     }
 
+    internal static int Extract(string cuePath, string outputDirectory, TextWriter output, TextWriter error)
+    {
+        try
+        {
+            using var disc = DiscSource.Open(cuePath);
+            disc.IdentifyEdition();
+            IReadOnlyList<DiscFileEntry> entries = disc.ListFiles();
+            DiscNpcActorTableSource source = DiscNpcActorTableSource.Create(disc, entries);
+            return Extract(cuePath, outputDirectory, source, output, error);
+        }
+        catch (Exception exception) when (exception is DiscSourceException or InvalidDataException or FormatException or IOException or ArgumentException)
+        {
+            error.WriteLine($"Extraction error: {exception.Message}");
+            return 1;
+        }
+    }
+
+    private static (NpcExtractedZone Zone, int Characters, int Visible) ExtractStage(
+        DiscSource disc,
+        IReadOnlyList<DiscFileEntry> entries,
+        int stageId,
+        INpcActorTableSource tableSource,
+        DataPackWriteContext context)
+    {
+        string proPath = $"AAA/PRO/WSTAG{stageId}.PRO";
+        DiscFileEntry? proEntry = entries.SingleOrDefault(e =>
+            string.Equals(e.IsoPath, proPath, StringComparison.Ordinal));
+        if (proEntry is null)
+        {
+            throw new InvalidDataException($"Required NPC stage overlay is absent: {proPath}");
+        }
+
+        byte[] overlay = disc.ReadFile(proEntry);
+        int characters = 0;
+        int visible = 0;
+        var extractedActors = new List<NpcExtractedActor>();
+
+        foreach (NpcActorReference actorReference in tableSource.GetStageActors(stageId))
+        {
+            NpcActorEntry actor = NpcOverlayReader.ReadActorEntry(overlay, actorReference.Address, StageVram);
+            IReadOnlyList<NpcCondition> conditions = NpcOverlayReader.ReadConditionList(
+                overlay, actor.ConditionsPtr, StageVram);
+            bool actorVisible = tableSource.IsVisible(conditions);
+            bool isPlayerLead = tableSource.IsPlayerLead(actor.ActorId);
+            int? width = tableSource.GetActorWidth(actor.ActorId);
+            (int fileNumber, int archiveEntry)? packedEntry = tableSource.GetActorSpriteEntry(actor.ActorId);
+            string? archivePath = packedEntry is null ? null : tableSource.GetDiscFilePath(packedEntry.Value.fileNumber);
+            extractedActors.Add(new NpcExtractedActor(
+                actorReference.Index, actor.ActorId, actor.Image, actor.X, actor.Y, actor.Direction,
+                width, isPlayerLead, actorVisible, conditions,
+                packedEntry is null ? null : new NpcFileEntry(packedEntry.Value.fileNumber, packedEntry.Value.archiveEntry),
+                archivePath));
+
+            if (!actorVisible || isPlayerLead)
+            {
+                continue;
+            }
+
+            visible++;
+            if (packedEntry is null || archivePath is null)
+            {
+                continue;
+            }
+
+            DiscFileEntry? archiveFile = entries.SingleOrDefault(e =>
+                string.Equals(e.IsoPath, archivePath, StringComparison.Ordinal));
+            if (archiveFile is null)
+            {
+                throw new InvalidDataException($"NPC archive is absent from disc: {archivePath}");
+            }
+
+            byte[] archiveBytes = disc.ReadFile(archiveFile);
+            NpcExtractedCharacter character = DecodeCharacter(
+                archiveBytes, archivePath, packedEntry.Value.archiveEntry,
+                actor.ActorId, stageId, actorReference.Index);
+            NpcDomainWriter.Write(context, character);
+            characters++;
+        }
+
+        return (
+            new NpcExtractedZone(
+                stageId,
+                proPath,
+                Convert.ToHexStringLower(SHA256.HashData(overlay)),
+                extractedActors),
+            characters,
+            visible);
+    }
+
     private static NpcExtractedCharacter DecodeCharacter(
         byte[] archiveBytes, string discPath, int archiveEntry, int actorId, int stageId, int actorIndex)
     {
@@ -121,8 +174,12 @@ internal static class NpcExtractionStep
         // Collect all unique sequence indices and decode each sequence.
         var sequenceIndices = new SortedSet<int>();
         foreach (ActionAnimationSet set in rawSets)
+        {
             foreach (int seqIndex in set.SequenceIndices)
+            {
                 sequenceIndices.Add(seqIndex);
+            }
+        }
 
         var sequences = new List<NpcAnimSequence>();
         int maxFrame = -1;
@@ -130,8 +187,13 @@ internal static class NpcExtractionStep
         {
             ActionAnimationSequence raw = ActionArchiveDecoder.DecodeSequence(archiveBytes, offsets, seqIndex, archiveEntry);
             foreach (ActionAnimationRecord record in raw.Records)
+            {
                 if (record.Frame > maxFrame)
+                {
                     maxFrame = record.Frame;
+                }
+            }
+
             sequences.Add(new NpcAnimSequence(
                 seqIndex,
                 raw.Terminator == ActionSequenceTerminator.Loop ? NpcSequenceTerminator.Loop : NpcSequenceTerminator.End,
@@ -156,22 +218,5 @@ internal static class NpcExtractionStep
             actorId, stageId, actorIndex,
             ManifestSchema, discPath, sha256, archiveBytes.Length, archiveEntry,
             frames, sets, sequences);
-    }
-
-    internal static int Extract(string cuePath, string outputDirectory, TextWriter output, TextWriter error)
-    {
-        try
-        {
-            using var disc = DiscSource.Open(cuePath);
-            disc.IdentifyEdition();
-            IReadOnlyList<DiscFileEntry> entries = disc.ListFiles();
-            DiscNpcActorTableSource source = DiscNpcActorTableSource.Create(disc, entries);
-            return Extract(cuePath, outputDirectory, source, output, error);
-        }
-        catch (Exception exception) when (exception is DiscSourceException or InvalidDataException or FormatException or IOException or ArgumentException)
-        {
-            error.WriteLine($"Extraction error: {exception.Message}");
-            return 1;
-        }
     }
 }

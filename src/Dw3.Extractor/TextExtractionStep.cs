@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text.Json;
 using Dw3.Data;
@@ -59,9 +60,13 @@ internal static class TextExtractionStep
                 context =>
                 {
                     if (string.Equals(domain, FontDomain, StringComparison.Ordinal))
+                    {
                         ExtractFont(disc, entries, context, output);
+                    }
                     else
+                    {
                         ExtractText(disc, entries, context, output);
+                    }
                 });
             return 0;
         }
@@ -89,7 +94,19 @@ internal static class TextExtractionStep
         string cmfonttmSha256 = Convert.ToHexStringLower(SHA256.HashData(cmfonttm));
         FontAtlas atlas = FontAtlasDecoder.Decode(cmfonttm, cmfonttmSha256);
 
-        // Write font_styles, font_glyphs, font_icons to SQLite.
+        InsertFontStylesToDb(context, styles);
+        WriteAtlasPngPages(context, styles, atlas);
+        WriteLegacyAtlasPngPages(context, atlas);
+        WriteFontMetricsJson(context, styles);
+        WriteFontClutJson(context, atlas, cmfonttmSha256);
+
+        int totalGlyphs = styles.Sum(s => s.Glyphs.Count);
+        int totalIcons = styles.Sum(s => s.Icons.Count);
+        output.WriteLine($"{{\"event\":\"domain-complete\",\"domain\":\"font\",\"styles\":{styles.Count},\"glyphs\":{totalGlyphs},\"icons\":{totalIcons}}}");
+    }
+
+    private static void InsertFontStylesToDb(DataPackWriteContext context, IReadOnlyList<FontStyleMetrics> styles)
+    {
         for (int i = 0; i < styles.Count; i++)
         {
             int styleId = i + 1;
@@ -102,6 +119,7 @@ internal static class TextExtractionStep
                 Insert(context, "INSERT INTO font_glyphs (style_id,code,page,u,v,clut_x,clut_y,width,height,dx,dy,advance) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)",
                     styleId, j + GlyphCodeBase, g.Page, g.U, g.V, g.ClutX, g.ClutY, g.Width, g.Height, (int)g.Dx, (int)g.Dy, g.Advance);
             }
+
             for (int j = 0; j < style.Icons.Count; j++)
             {
                 GlyphMetric ic = style.Icons[j];
@@ -109,7 +127,10 @@ internal static class TextExtractionStep
                     styleId, j + IconCodeBase, ic.Page, ic.U, ic.V, ic.ClutX, ic.ClutY, ic.Width, ic.Height, (int)ic.Dx, (int)ic.Dy, ic.Advance);
             }
         }
+    }
 
+    private static void WriteAtlasPngPages(DataPackWriteContext context, IReadOnlyList<FontStyleMetrics> styles, FontAtlas atlas)
+    {
         // Write per-style per-palette PNG atlas pages.
         for (int styleIdx = 0; styleIdx < styles.Count; styleIdx++)
         {
@@ -129,7 +150,10 @@ internal static class TextExtractionStep
                 }
             }
         }
+    }
 
+    private static void WriteLegacyAtlasPngPages(DataPackWriteContext context, FontAtlas atlas)
+    {
         // Legacy dark-blue pages for the existing dialogue renderer (style 1 only).
         for (int pageIdx = 0; pageIdx < PageCount && pageIdx < atlas.Pages.Count; pageIdx++)
         {
@@ -141,7 +165,10 @@ internal static class TextExtractionStep
             File.WriteAllBytes(fullPath, png);
             context.RegisterImage(pngPath);
         }
+    }
 
+    private static void WriteFontMetricsJson(DataPackWriteContext context, IReadOnlyList<FontStyleMetrics> styles)
+    {
         // Build the font-metrics.json payload (mirrors the Python decoder's schema).
         string metricsPath = context.GetImagePath("font/font-metrics.json");
         using var metricsWriter = new Utf8JsonWriter(File.Create(metricsPath), new JsonWriterOptions { Indented = true });
@@ -153,19 +180,23 @@ internal static class TextExtractionStep
         {
             int styleId = i + 1;
             FontStyleMetrics style = styles[i];
-            metricsWriter.WriteStartObject(styleId.ToString());
+            metricsWriter.WriteStartObject(styleId.ToString(CultureInfo.InvariantCulture));
             metricsWriter.WriteNumber("lineHeight", style.LineHeight);
             WriteGlyphTable(metricsWriter, "glyphs", style.Glyphs, GlyphCodeBase);
             WriteGlyphTable(metricsWriter, "icons", style.Icons, IconCodeBase);
             metricsWriter.WriteEndObject();
         }
+
         metricsWriter.WriteEndObject();
         // Legacy top-level glyphs/icons for the existing dialogue renderer (style 1).
         WriteGlyphTable(metricsWriter, "glyphs", styles[0].Glyphs, GlyphCodeBase);
         WriteGlyphTable(metricsWriter, "icons", styles[0].Icons, IconCodeBase);
         metricsWriter.WriteEndObject();
         metricsWriter.Flush();
+    }
 
+    private static void WriteFontClutJson(DataPackWriteContext context, FontAtlas atlas, string cmfonttmSha256)
+    {
         // Build the font-clut.json payload.
         string clutPath = context.GetImagePath("font/font-clut.json");
         using var clutWriter = new Utf8JsonWriter(File.Create(clutPath), new JsonWriterOptions { Indented = true });
@@ -187,18 +218,16 @@ internal static class TextExtractionStep
                 clutWriter.WriteNumberValue(a);
                 clutWriter.WriteEndArray();
             }
+
             clutWriter.WriteEndArray();
         }
+
         clutWriter.WriteEndArray();
         clutWriter.WriteString("schema", "m8a-font-clut-v1");
         clutWriter.WriteString("source", CmfonttmDiscPath);
         clutWriter.WriteString("source_sha256", cmfonttmSha256);
         clutWriter.WriteEndObject();
         clutWriter.Flush();
-
-        int totalGlyphs = styles.Sum(s => s.Glyphs.Count);
-        int totalIcons = styles.Sum(s => s.Icons.Count);
-        output.WriteLine($"{{\"event\":\"domain-complete\",\"domain\":\"font\",\"styles\":{styles.Count},\"glyphs\":{totalGlyphs},\"icons\":{totalIcons}}}");
     }
 
     private static void WriteGlyphTable(Utf8JsonWriter writer, string propertyName, IReadOnlyList<GlyphMetric> metrics, int codeBase)
@@ -207,7 +236,7 @@ internal static class TextExtractionStep
         for (int i = 0; i < metrics.Count; i++)
         {
             GlyphMetric m = metrics[i];
-            writer.WriteStartArray((i + codeBase).ToString());
+            writer.WriteStartArray((i + codeBase).ToString(CultureInfo.InvariantCulture));
             writer.WriteNumberValue(m.Page);
             writer.WriteNumberValue(m.U);
             writer.WriteNumberValue(m.V);
@@ -220,6 +249,7 @@ internal static class TextExtractionStep
             writer.WriteNumberValue(m.Advance);
             writer.WriteEndArray();
         }
+
         writer.WriteEndObject();
     }
 
@@ -251,42 +281,61 @@ internal static class TextExtractionStep
             jsonWriter.WriteStartObject();
             jsonWriter.WriteNumber("count", tableEntries.Count);
             jsonWriter.WriteStartArray("entries");
-            foreach (var entryTokens in tableEntries)
-            {
-                jsonWriter.WriteStartArray();
-                foreach (TextToken token in entryTokens)
-                {
-                    jsonWriter.WriteStartObject();
-                    switch (token.Kind)
-                    {
-                        case TextTokenKind.Glyph:
-                            jsonWriter.WriteString("t", "g");
-                            jsonWriter.WriteNumber("c", token.Code);
-                            break;
-                        case TextTokenKind.Icon:
-                            jsonWriter.WriteString("t", "i");
-                            jsonWriter.WriteNumber("c", token.Code);
-                            break;
-                        case TextTokenKind.Control:
-                            jsonWriter.WriteString("t", "c");
-                            jsonWriter.WriteNumber("cmd", token.Code);
-                            jsonWriter.WriteStartArray("args");
-                            foreach (int arg in token.Args)
-                                jsonWriter.WriteNumberValue(arg);
-                            jsonWriter.WriteEndArray();
-                            break;
-                    }
-                    jsonWriter.WriteEndObject();
-                }
-                jsonWriter.WriteEndArray();
-            }
+            WriteTokensJson(jsonWriter, tableEntries);
             jsonWriter.WriteEndArray();
             jsonWriter.WriteEndObject();
             jsonWriter.Flush();
 
             totalEntries += tableEntries.Count;
         }
+
         output.WriteLine($"{{\"event\":\"domain-complete\",\"domain\":\"text\",\"files\":{TalkFileCount},\"total_entries\":{totalEntries}}}");
+    }
+
+    private static void WriteTokensJson(Utf8JsonWriter jsonWriter, IReadOnlyList<IReadOnlyList<TextToken>> tableEntries)
+    {
+        foreach (var entryTokens in tableEntries)
+        {
+            jsonWriter.WriteStartArray();
+            WriteEntryTokens(jsonWriter, entryTokens);
+            jsonWriter.WriteEndArray();
+        }
+    }
+
+    private static void WriteEntryTokens(Utf8JsonWriter jsonWriter, IReadOnlyList<TextToken> tokens)
+    {
+        foreach (TextToken token in tokens)
+        {
+            jsonWriter.WriteStartObject();
+            WriteTokenObject(jsonWriter, token);
+            jsonWriter.WriteEndObject();
+        }
+    }
+
+    private static void WriteTokenObject(Utf8JsonWriter jsonWriter, TextToken token)
+    {
+        switch (token.Kind)
+        {
+            case TextTokenKind.Glyph:
+                jsonWriter.WriteString("t", "g");
+                jsonWriter.WriteNumber("c", token.Code);
+                break;
+            case TextTokenKind.Icon:
+                jsonWriter.WriteString("t", "i");
+                jsonWriter.WriteNumber("c", token.Code);
+                break;
+            case TextTokenKind.Control:
+                jsonWriter.WriteString("t", "c");
+                jsonWriter.WriteNumber("cmd", token.Code);
+                jsonWriter.WriteStartArray("args");
+                foreach (int arg in token.Args)
+                {
+                    jsonWriter.WriteNumberValue(arg);
+                }
+
+                jsonWriter.WriteEndArray();
+                break;
+        }
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────
@@ -301,7 +350,10 @@ internal static class TextExtractionStep
         cmd.Transaction = context.Transaction;
         cmd.CommandText = sql;
         for (int i = 0; i < values.Length; i++)
+        {
             cmd.Parameters.AddWithValue($"${i + 1}", values[i]);
+        }
+
         cmd.ExecuteNonQuery();
     }
 }

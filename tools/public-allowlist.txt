@@ -88,8 +88,17 @@ src/Dw3.Extractor/FieldcomNamedSequence.cs
 src/Dw3.Extractor/FieldcomExtractionStep.cs
 src/Dw3.Extractor/FieldRegistryWriter.cs
 src/Dw3.Extractor/FullExtractionStep.cs
+src/Dw3.Extractor/NpcAnimRecord.cs
+src/Dw3.Extractor/NpcAnimSequence.cs
+src/Dw3.Extractor/NpcAnimSet.cs
 src/Dw3.Extractor/NpcDomainWriter.cs
 src/Dw3.Extractor/NpcExtractionStep.cs
+src/Dw3.Extractor/NpcExtractedActor.cs
+src/Dw3.Extractor/NpcExtractedCharacter.cs
+src/Dw3.Extractor/NpcExtractedFrame.cs
+src/Dw3.Extractor/NpcExtractedZone.cs
+src/Dw3.Extractor/NpcSequenceTerminator.cs
+src/Dw3.Extractor/Cli.cs
 src/Dw3.Extractor/PlayerExtractionStep.cs
 src/Dw3.Extractor/Program.cs
 src/Dw3.Extractor/TalkBoxDomainWriter.cs

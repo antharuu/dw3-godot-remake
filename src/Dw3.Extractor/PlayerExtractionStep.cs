@@ -89,7 +89,41 @@ internal static class PlayerExtractionStep
             archiveBytes, PlayerArchiveDecoder.PlayerAnimSetTableEntry);
 
         // ── Decode 87 TIM frames ─────────────────────────────────────────────
-        string framesDir = "player/frames";
+        FrameInfo[] frameInfos = DecodeAndWriteFrames(context, archiveBytes, offsets);
+
+        // ── Decode animation-set table ───────────────────────────────────────
+        IReadOnlyList<PlayerAnimSetGroup> setGroups = PlayerArchiveDecoder.DecodeAnimSetTable(
+            archiveBytes, offsets, PlayerArchiveDecoder.PlayerAnimSetTableEntry);
+
+        // ── Decode sequences and build derived collections ───────────────────
+        (List<DecodedSet> decodedSets,
+            List<(int OffsetX, int OffsetY, int Width, int Height)> footAnchors,
+            HashSet<(double X, double Y)> groundContacts) =
+            DecodeAnimationSets(archiveBytes, offsets, frameInfos, setGroups);
+
+        var anchorVariants = BuildAnchorVariants(footAnchors);
+        var sortedContacts = groundContacts.OrderBy(c => c.X).ThenBy(c => c.Y).ToList();
+
+        // ── Write manifest.json ───────────────────────────────────────────────
+        string manifestPath = context.GetImagePath("player/manifest.json");
+        Directory.CreateDirectory(Path.GetDirectoryName(manifestPath)!);
+        using var manifestStream = new FileStream(manifestPath, FileMode.Create, FileAccess.Write);
+        using var jsonWriter = new Utf8JsonWriter(manifestStream, new JsonWriterOptions { Indented = true });
+
+        WriteManifest(
+            jsonWriter,
+            archiveIsoPath,
+            archiveSha256,
+            archiveBytes.Length,
+            frameInfos,
+            decodedSets,
+            sortedContacts,
+            anchorVariants);
+    }
+
+    private static FrameInfo[] DecodeAndWriteFrames(DataPackWriteContext context, byte[] archiveBytes, int[] offsets)
+    {
+        const string framesDir = "player/frames";
         var frameInfos = new FrameInfo[PlayerArchiveDecoder.PlayerFrameCount];
 
         for (int frameIndex = 0; frameIndex < PlayerArchiveDecoder.PlayerFrameCount; frameIndex++)
@@ -108,11 +142,19 @@ internal static class PlayerExtractionStep
             frameInfos[frameIndex] = new FrameInfo(timImage.Width, timImage.Height, bbox);
         }
 
-        // ── Decode animation-set table ───────────────────────────────────────
-        IReadOnlyList<PlayerAnimSetGroup> setGroups = PlayerArchiveDecoder.DecodeAnimSetTable(
-            archiveBytes, offsets, PlayerArchiveDecoder.PlayerAnimSetTableEntry);
+        return frameInfos;
+    }
 
-        // ── Decode all sequences + compute per-record derived fields ─────────
+    private static (
+        List<DecodedSet> Sets,
+        List<(int OffsetX, int OffsetY, int Width, int Height)> FootAnchors,
+        HashSet<(double X, double Y)> GroundContacts)
+        DecodeAnimationSets(
+            byte[] archiveBytes,
+            int[] offsets,
+            FrameInfo[] frameInfos,
+            IReadOnlyList<PlayerAnimSetGroup> setGroups)
+    {
         var decodedSets = new List<DecodedSet>();
         var footAnchors = new List<(int OffsetX, int OffsetY, int Width, int Height)>();
         var groundContacts = new HashSet<(double X, double Y)>();
@@ -133,18 +175,25 @@ internal static class PlayerExtractionStep
                     // Compute foot_ground_contact using the Python formula (includes off-by-one):
                     //   contact_x = offset_x + (left + right_excl + 1) / 2.0
                     //   contact_y = offset_y + lower_excl + 1
-                    double contactX = record.OffsetX + (fi.Bbox.Left + fi.Bbox.RightExclusive + 1) / 2.0;
+                    double contactX = record.OffsetX + ((fi.Bbox.Left + fi.Bbox.RightExclusive + 1) / 2.0);
                     double contactY = record.OffsetY + fi.Bbox.LowerExclusive + 1;
                     groundContacts.Add((contactX, contactY));
                     footAnchors.Add((record.OffsetX, record.OffsetY, fi.Width, fi.Height));
                     decodedRecords.Add(new DecodedRecord(record, fi, contactX, contactY));
                 }
+
                 decodedSequences.Add(new DecodedSequence(direction, seqIndex, seq.Terminator, decodedRecords));
             }
+
             decodedSets.Add(new DecodedSet(group.SetId, PlayerArchiveDecoder.GetSetName(group.SetId), decodedSequences));
         }
 
-        // ── Build anchor_variants ────────────────────────────────────────────
+        return (decodedSets, footAnchors, groundContacts);
+    }
+
+    private static List<KeyValuePair<(int Ox, int Oy, int W, int H), int>> BuildAnchorVariants(
+        List<(int OffsetX, int OffsetY, int Width, int Height)> footAnchors)
+    {
         var anchorCounts = new Dictionary<(int Ox, int Oy, int W, int H), int>();
         foreach (var a in footAnchors)
         {
@@ -152,31 +201,10 @@ internal static class PlayerExtractionStep
             anchorCounts.TryGetValue(key, out int count);
             anchorCounts[key] = count + 1;
         }
-        var anchorVariants = anchorCounts
+
+        return [.. anchorCounts
             .OrderBy(kv => kv.Key.Ox).ThenBy(kv => kv.Key.Oy)
-            .ThenBy(kv => kv.Key.W).ThenBy(kv => kv.Key.H)
-            .ToList();
-
-        // ── Build ground_contact_variants ────────────────────────────────────
-        var sortedContacts = groundContacts
-            .OrderBy(c => c.X).ThenBy(c => c.Y)
-            .ToList();
-
-        // ── Write manifest.json ───────────────────────────────────────────────
-        string manifestPath = context.GetImagePath("player/manifest.json");
-        Directory.CreateDirectory(Path.GetDirectoryName(manifestPath)!);
-        using var manifestStream = new FileStream(manifestPath, FileMode.Create, FileAccess.Write);
-        using var jsonWriter = new Utf8JsonWriter(manifestStream, new JsonWriterOptions { Indented = true });
-
-        WriteManifest(
-            jsonWriter,
-            archiveIsoPath,
-            archiveSha256,
-            archiveBytes.Length,
-            frameInfos,
-            decodedSets,
-            sortedContacts,
-            anchorVariants);
+            .ThenBy(kv => kv.Key.W).ThenBy(kv => kv.Key.H)];
     }
 
     private static void WriteManifest(
