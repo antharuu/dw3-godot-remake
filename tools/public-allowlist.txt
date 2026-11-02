@@ -375,10 +375,12 @@ src/Dw3.Game/Diagnostics/Battle/BattleProbe.cs
 src/Dw3.Game/Diagnostics/Battle/BattleProbeCapture.cs
 src/Dw3.Game/Diagnostics/Battle/BattleProbeCatalog.cs
 src/Dw3.Game/Diagnostics/Battle/BattleReportProbe.cs
+src/Dw3.Game/Diagnostics/Battle/FighterSheetBounds.cs
 src/Dw3.Game/Diagnostics/Battle/IBattleProbeHost.cs
 src/Dw3.Game/Diagnostics/Battle/BattleLightProbe.cs
 src/Dw3.Game/Diagnostics/Battle/BattleModelProbe.cs
 src/Dw3.Game/Diagnostics/Battle/FighterSheetProbe.cs
+src/Dw3.Game/Diagnostics/Battle/PsxReferenceImages.cs
 src/Dw3.Game/Diagnostics/Battle/PsxReferenceUnavailableException.cs
 src/Dw3.Game/Diagnostics/Field/CityLoopRoute.cs
 src/Dw3.Game/Diagnostics/Field/ClimbDriver.cs
@@ -426,8 +428,7 @@ src/Dw3.Game/Diagnostics/Field/WarpRouteDriver.cs
 src/Dw3.Game/Diagnostics/Field/WaterProbe.cs
 src/Dw3.Game/Diagnostics/DiagnosticProbeFamilyRunners.cs
 src/Dw3.Game/Diagnostics/FieldDiagnosticProbeRunner.cs
-src/Dw3.Game/Diagnostics/GameHost.BattleProbeHost.cs
-src/Dw3.Game/Diagnostics/GameHost.BattleProbeImplementations.cs
+src/Dw3.Game/Diagnostics/GameHost.BattleProbeContext.cs
 src/Dw3.Game/Diagnostics/GameHost.FieldProbeHost.cs
 src/Dw3.Game/Dw3.Game.csproj
 src/Dw3.Game/Dw3.Game.sln
