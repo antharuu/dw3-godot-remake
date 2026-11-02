@@ -4,6 +4,7 @@ using Dw3.Data;
 using Microsoft.Data.Sqlite;
 using Dw3Production.Conversion;
 using Dw3Production.Diagnostics;
+using Dw3Production.Diagnostics.Field;
 using Dw3Production.Input;
 using Dw3Production.Logging;
 using Dw3Production.Presentation;
@@ -349,13 +350,19 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
 
     void IDiagnosticProbeHost.RunInputProbeAndQuit()
     {
-        RunInputProbe();
+        InputMappingProbe.Run();
         GetTree().Quit(0);
     }
 
     void IDiagnosticProbeHost.ScheduleProbe(string methodName, bool ownsInput)
     {
         _testDriverActive = ownsInput;
+        if (FieldProbeCatalog.Create(methodName, this) is { } fieldProbe)
+        {
+            Callable.From(() => _ = fieldProbe.RunAsync()).CallDeferred();
+            return;
+        }
+
         CallDeferred(methodName);
     }
 
@@ -1573,7 +1580,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         var maxY = Math.Min(after.GetHeight() - 1, (int)MathF.Ceiling(region.End.Y));
         for (var y = minY; y <= maxY; y++)
             for (var x = minX; x <= maxX; x++)
-                if (DifferentRgb(before.GetPixel(x, y), after.GetPixel(x, y))) count++;
+                if (ProbePixels.DifferentRgb(before.GetPixel(x, y), after.GetPixel(x, y))) count++;
         return count;
     }
 
@@ -1592,7 +1599,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
                 var sx = (int)viewportTopLeft.X + x * 3 + 1;
                 var sy = (int)viewportTopLeft.Y + y * 3 + 1;
                 if (sx < 0 || sy < 0 || sx >= after.GetWidth() || sy >= after.GetHeight()) continue;
-                if (DifferentRgb(before.GetPixel(sx, sy), after.GetPixel(sx, sy))) count++;
+                if (ProbePixels.DifferentRgb(before.GetPixel(sx, sy), after.GetPixel(sx, sy))) count++;
             }
         return count;
     }
@@ -1730,9 +1737,9 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         // the decoded 12x62 texture's top line and bottom STP rows differ from the light-blue body.
         var panelImage = PanelTexture.GetImage() ?? throw new InvalidOperationException("panel texture image unavailable");
         Require(!panelImage.IsEmpty(), "panel texture image unavailable");
-        Require(DifferentRgb(panelImage.GetPixel(0, 30), panelImage.GetPixel(0, 13)),
+        Require(ProbePixels.DifferentRgb(panelImage.GetPixel(0, 30), panelImage.GetPixel(0, 13)),
             $"panel texture flattened at the top line body={panelImage.GetPixel(0, 30)} top={panelImage.GetPixel(0, 13)}");
-        Require(DifferentRgb(panelImage.GetPixel(0, 30), panelImage.GetPixel(0, 60)),
+        Require(ProbePixels.DifferentRgb(panelImage.GetPixel(0, 30), panelImage.GetPixel(0, 60)),
             $"panel texture flattened at the bottom line body={panelImage.GetPixel(0, 30)} bottom={panelImage.GetPixel(0, 60)}");
 
         // The two edge sprites are drawn opaque: setSemiTrans on a textured primitive blends only
@@ -1985,63 +1992,6 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         return new ClimbData(merged);
     }
 
-    private static int FindTriggerDirection(FieldZone zone, int slot)
-    {
-        for (var y = 0; y < zone.Triggers.Height; y++)
-            for (var x = 0; x < zone.Triggers.Width; x++)
-            {
-                var raw = zone.Triggers.CellAt(new NumericsVector2(x, y));
-                if (raw != 0 && (raw & 0x1F) == slot) return raw >> 5;
-            }
-        throw new InvalidOperationException($"trigger slot={slot} missing in zone={zone.Zone.Id}");
-    }
-
-    private static NumericsVector2 FindTriggerApproachCell(FieldZone zone, int slot, NumericsVector2 start, SemanticDirection input)
-    {
-        _ = input;
-        var cells = new List<NumericsVector2>();
-        for (var y = 0; y < zone.Triggers.Height; y++)
-            for (var x = 0; x < zone.Triggers.Width; x++)
-            {
-                var raw = zone.Triggers.CellAt(new NumericsVector2(x, y));
-                if (raw != 0 && (raw & 0x1F) == slot) cells.Add(new NumericsVector2(x, y));
-            }
-        if (cells.Count == 0) throw new InvalidOperationException($"trigger slot={slot} missing in zone={zone.Zone.Id}");
-
-        var minX = cells.Min(c => c.X);
-        var maxX = cells.Max(c => c.X);
-        var minY = cells.Min(c => c.Y);
-        var maxY = cells.Max(c => c.Y);
-
-        // Pick the corner of the trigger cluster that is nearest to the player's
-        // current position, then offset 1 unit outside the cluster in the
-        // player's approach direction so the target is just outside the boundary.
-        // NearTriggerSlot (2-unit offer radius) fires once the player reaches it.
-        // When the player is north-east of the trigger (most common: spawn case),
-        // target the NW corner offset 1 unit north-west so the straight path
-        // stays above any diagonal walls along the trigger's east boundary.
-        var nearestByY = cells.Where(c => c.X == maxX).OrderBy(c => c.Y);
-        var seCorner = nearestByY.LastOrDefault(cells[0]); // (maxX, maxY at maxX)
-        bool fromNorth = start.Y < minY;
-        bool fromEast = start.X > maxX;
-        // For NE approach: use the NW corner of the cluster so the path goes
-        // north-west, well above the east-wall blocking zone.
-        var nwCorner = cells.OrderBy(c => c.Y).ThenBy(c => c.X).First();
-        // For NE approach: use the cell with the highest Y (southernmost) to guide
-        // the player along the east boundary and reach the trigger from the south.
-        var seMaxY = cells.OrderByDescending(c => c.Y).ThenByDescending(c => c.X).First();
-        var cornerCell = (fromNorth && fromEast) ? seMaxY :
-                          fromEast ? seCorner :
-                          cells.OrderBy(c => NumericsVector2.DistanceSquared(start, c)).First();
-        // Offset one unit SOUTH (outside trigger south edge) for NE approach so the
-        // path tracks along the east wall south of any blocking zone.
-        var dx = (fromNorth && fromEast) ? 0 : fromEast ? 1 : start.X < minX ? -1 : 0;
-        var dy = (fromNorth && fromEast) ? 1 : fromNorth ? 1 : start.Y > maxY ? -1 : 0;
-        if (dx != 0 || dy != 0)
-            return new NumericsVector2(cornerCell.X + dx, cornerCell.Y + dy);
-        return cornerCell;
-    }
-
     private static SemanticDirection DirectionToward(NumericsVector2 from, NumericsVector2 to)
     {
         var horizontal = to.X - from.X;
@@ -2080,78 +2030,10 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         Require(GetViewport().GetTexture().GetImage().SavePng(capturePath) == Error.Ok, $"capture write failed={capturePath}");
     }
 
-    private async System.Threading.Tasks.Task CaptureAcceptanceFrame(string frameRoot, int frame)
-    {
-        _renderer?.Present(_state, CurrentZone, _input.F3On);
-        await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
-        var framePath = Path.Combine(frameRoot, $"frame-{frame:D4}.png");
-        Require(GetViewport().GetTexture().GetImage().SavePng(framePath) == Error.Ok, $"video frame write failed={framePath}");
-    }
-
-    private static void AssembleAcceptanceVideo(string frameRoot, string videoPath) => AssembleVideo(frameRoot, videoPath, 12);
-
-    private static void AssembleVideo(string frameRoot, string videoPath, int framerate)
-    {
-        var startInfo = new ProcessStartInfo("ffmpeg") { UseShellExecute = false };
-        startInfo.ArgumentList.Add("-y");
-        startInfo.ArgumentList.Add("-framerate");
-        startInfo.ArgumentList.Add(framerate.ToString());
-        startInfo.ArgumentList.Add("-i");
-        startInfo.ArgumentList.Add(Path.Combine(frameRoot, "frame-%04d.png"));
-        startInfo.ArgumentList.Add("-c:v");
-        startInfo.ArgumentList.Add("libx264");
-        startInfo.ArgumentList.Add("-pix_fmt");
-        startInfo.ArgumentList.Add("yuv420p");
-        startInfo.ArgumentList.Add(videoPath);
-        using var process = Process.Start(startInfo) ?? throw new InvalidOperationException("ffmpeg did not start");
-        process.WaitForExit();
-        if (process.ExitCode != 0) throw new InvalidOperationException($"ffmpeg exit={process.ExitCode}");
-    }
-
-    private (string Zone, NumericsVector2 Position, int Facing, int Progress, int Commits) Snapshot() =>
-        (_state.ZoneId, _state.Position, _state.Facing, _state.Progress, _warp.CommitCount);
-
     private void ToggleF3()
     {
         _input.Handle(new InputEventKey { PhysicalKeycode = Key.F3, Pressed = true });
         _input.Handle(new InputEventKey { PhysicalKeycode = Key.F3, Pressed = false });
-    }
-
-    private async System.Threading.Tasks.Task CaptureF3(string fileName)
-    {
-        _renderer?.Present(_state, CurrentZone, _input.F3On);
-        await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
-        var generatedRoot = _options.ReferenceDir ?? _dataRoot;
-        var captureRoot = ProbeOutputRoot(generatedRoot);
-        var capturePath = Path.Combine(captureRoot, fileName);
-        Require(GetViewport().GetTexture().GetImage().SavePng(capturePath) == Error.Ok, $"F3 capture failed={capturePath}");
-        QuietLog.Info($"f3 capture={capturePath} enabled={_input.F3On} zone={_state.ZoneId}");
-    }
-
-    /// <summary>
-    /// Counts pixels of the F3 player collision shape (the yellow circle outline) in a
-    /// box around the actor's screen position. The overlay draws the circle at the exact
-    /// simulation radius, so a count above the threshold proves the rounded collision
-    /// shape is visible in the diagnostic overlay.
-    /// </summary>
-    private async System.Threading.Tasks.Task<int> CountPlayerCollisionShapePixels()
-    {
-        Renderer.Present(_state, CurrentZone, _input.F3On);
-        await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
-        var capture = GetViewport().GetTexture().GetImage();
-        var camera = CameraController.PositionFor(CurrentZone.Zone.Width, CurrentZone.Zone.Height, new Vector2(_state.Position.X, _state.Position.Y));
-        var centerX = Mathf.RoundToInt((_state.Position.X - camera.X) * 3f + 640f);
-        var centerY = Mathf.RoundToInt((_state.Position.Y - camera.Y) * 3f + 360f);
-        var radiusPx = Mathf.RoundToInt(Locomotion.PlayerCollisionRadius * 3f);
-        var matches = 0;
-        for (var y = centerY - radiusPx - 3; y <= centerY + radiusPx + 3; y++)
-            for (var x = centerX - radiusPx - 3; x <= centerX + radiusPx + 3; x++)
-            {
-                if (x < 0 || y < 0 || x >= capture.GetWidth() || y >= capture.GetHeight()) continue;
-                var pixel = capture.GetPixel(x, y);
-                if (pixel.R8 > 240 && pixel.G8 > 240 && pixel.B8 < 40) matches++;
-            }
-        return matches;
     }
 
     #endregion
@@ -2179,7 +2061,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
             {
                 if (NumericsVector2.Distance(_state.Position, target) < 2f) break;
                 var moved = false;
-                foreach (var direction in DirectionsToward(_state.Position, target))
+                foreach (var direction in ProbeSteering.DirectionsToward(_state.Position, target))
                 {
                     if (TryTestMove(direction)) { moved = true; break; }
                 }
@@ -2282,7 +2164,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
     {
         var current = _currentZone ?? throw new InvalidOperationException("probe has no current zone");
         Require(current.Zone.Id == sourceZone, $"probe expected source={sourceZone}");
-        _state.Position = FindTriggerCell(current, slot);
+        _state.Position = TriggerSlotLocator.FindCell(current, slot);
         _state.SetFacing(facing);
         _input.State.ReleaseAction();
         _warp.Tick(_state, _input.State, _currentZone, new WarpCallbacks(ResolveTarget, ApplyScene, QuietLog.Info, _log.Warn, StartClimb, StartDrop));
@@ -2294,18 +2176,6 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         _input.State.ReleaseAction();
         _warp.Tick(_state, _input.State, CurrentZone, new WarpCallbacks(ResolveTarget, ApplyScene, QuietLog.Info, _log.Warn, StartClimb, StartDrop));
         Require(_warp.State == WarpState.Idle, $"{label} did not rearm after release");
-    }
-
-    private static NumericsVector2 FindTriggerCell(FieldZone zone, int slot)
-    {
-        for (var y = 0; y < zone.Triggers.Height; y++)
-            for (var x = 0; x < zone.Triggers.Width; x++)
-            {
-                var raw = zone.Triggers.CellAt(new NumericsVector2(x, y));
-                if (raw != 0 && (raw & 0x1F) == slot)
-                    return new NumericsVector2(x, y);
-            }
-        throw new InvalidOperationException($"trigger slot={slot} missing in zone={zone.Zone.Id}");
     }
 
     private async System.Threading.Tasks.Task CaptureWarp(string fileName)
@@ -2498,10 +2368,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         return root;
     }
 
-    private static void Require(bool condition, string message)
-    {
-        if (!condition) throw new InvalidOperationException($"INPUT_PROBE_FAIL: {message}");
-    }
+    private static void Require(bool condition, string message) => ProbeRequirement.Require(condition, message);
 
     #endregion
 
@@ -2609,7 +2476,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
                 var screenY = top + y * 3 + 1;
                 if (screenX < 0 || screenY < 0 || screenX >= capture.GetWidth() || screenY >= capture.GetHeight()) continue;
                 var actual = capture.GetPixel(screenX, screenY);
-                if (!SameRgb(actual, expected)) continue;
+                if (!ProbePixels.SameRgb(actual, expected)) continue;
                 matched++;
                 if (expected.R8 > 150 && expected.G8 < 120 && expected.B8 < 120) red++;
                 else if (expected.B8 > 150 && expected.R8 < 120) blue++;

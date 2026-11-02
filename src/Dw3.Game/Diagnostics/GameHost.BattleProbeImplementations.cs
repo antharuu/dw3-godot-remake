@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using Godot;
 using Dw3Production.Conversion;
+using Dw3Production.Diagnostics.Field;
 using Dw3Production.Logging;
 using Dw3Production.Presentation;
 using Dw3Production.Simulation;
@@ -372,7 +373,7 @@ public partial class GameHost
         var fromX = Math.Max(0, (int)rect.Position.X); var toX = Math.Min(a.GetWidth(), (int)rect.End.X);
         var fromY = Math.Max(0, (int)rect.Position.Y); var toY = Math.Min(a.GetHeight(), (int)rect.End.Y);
         for (var y = fromY; y < toY; y++) for (var x = fromX; x < toX; x++)
-                if (DifferentRgb(a.GetPixel(x, y), b.GetPixel(x, y))) count++;
+                if (ProbePixels.DifferentRgb(a.GetPixel(x, y), b.GetPixel(x, y))) count++;
         return count;
     }
 
@@ -1504,7 +1505,7 @@ public partial class GameHost
         var minX = image.GetWidth(); var minY = image.GetHeight(); var maxX = -1; var maxY = -1;
         for (var y = 0; y < image.GetHeight(); y++) for (var x = 0; x < image.GetWidth(); x++)
             {
-                if (!DifferentRgb(image.GetPixel(x, y), panel)) continue;
+                if (!ProbePixels.DifferentRgb(image.GetPixel(x, y), panel)) continue;
                 minX = Math.Min(minX, x); minY = Math.Min(minY, y); maxX = Math.Max(maxX, x); maxY = Math.Max(maxY, y);
             }
         return maxX < minX ? null : new Rect2(minX, minY, maxX - minX + 1, maxY - minY + 1);
@@ -1515,7 +1516,7 @@ public partial class GameHost
         var minX = a.GetWidth(); var minY = a.GetHeight(); var maxX = -1; var maxY = -1;
         for (var y = 0; y < a.GetHeight(); y++) for (var x = 0; x < a.GetWidth(); x++)
             {
-                if (!DifferentRgb(a.GetPixel(x, y), b.GetPixel(x, y))) continue;
+                if (!ProbePixels.DifferentRgb(a.GetPixel(x, y), b.GetPixel(x, y))) continue;
                 minX = Math.Min(minX, x); minY = Math.Min(minY, y); maxX = Math.Max(maxX, x); maxY = Math.Max(maxY, y);
             }
         return maxX < minX ? null : new Rect2(minX, minY, maxX - minX + 1, maxY - minY + 1);
