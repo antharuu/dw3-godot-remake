@@ -108,21 +108,20 @@ public sealed class BattleGrowthVectorGenerator
     /// RaiseStats: rngValues is the full materialized sequence (stored in JSON for replay).
     private static JsonObject RaiseStatsCase(
         int id, GrowthTables tables, PartnerGrowthState stateIn,
-        int hpGrowth, int mpGrowth, int[] statGrowth, int[] resistGrowth,
-        int level, int[] rngValues)
+        PartnerGrowthCurve curve, int level, int[] rngValues)
     {
         var state = CloneState(stateIn);
-        GrowthCalculator.RaiseStats(tables, state, new PartnerGrowthCurve(0, hpGrowth, mpGrowth, statGrowth, resistGrowth), level, new SeqRng(rngValues));
+        GrowthCalculator.RaiseStats(tables, state, curve, level, new SeqRng(rngValues));
 
         return new JsonObject
         {
             ["id"] = id,
             ["fn"] = "RaiseStats",
             ["level"] = level,
-            ["hpGrowth"] = hpGrowth,
-            ["mpGrowth"] = mpGrowth,
-            ["statGrowth"] = ToJsonArray(statGrowth),
-            ["resistGrowth"] = ToJsonArray(resistGrowth),
+            ["hpGrowth"] = curve.HpGrowth,
+            ["mpGrowth"] = curve.MpGrowth,
+            ["statGrowth"] = ToJsonArray([.. curve.StatGrowth]),
+            ["resistGrowth"] = ToJsonArray([.. curve.ResistGrowth]),
             ["rngSequence"] = ToJsonArray(rngValues),
             ["inMaxHp"] = stateIn.MaxHp,
             ["inMaxMp"] = stateIn.MaxMp,
@@ -258,22 +257,19 @@ public sealed class BattleGrowthVectorGenerator
             // RNG all-zero
             cases.Add(RaiseStatsCase(id++, def,
                 MakeState(level: lv),
-                hpGrowth: 30, mpGrowth: 20,
-                statGrowth: statGrowthBase, resistGrowth: resistGrowthBase,
+                curve: new PartnerGrowthCurve(0, 30, 20, statGrowthBase, resistGrowthBase),
                 level: lv, rngValues: ConstSeq(0, 15)));
 
             // RNG all max for % 9
             cases.Add(RaiseStatsCase(id++, def,
                 MakeState(level: lv),
-                hpGrowth: 30, mpGrowth: 20,
-                statGrowth: statGrowthBase, resistGrowth: resistGrowthBase,
+                curve: new PartnerGrowthCurve(0, 30, 20, statGrowthBase, resistGrowthBase),
                 level: lv, rngValues: ConstSeq(8, 15)));
 
             // Mixed RNG sequence
             cases.Add(RaiseStatsCase(id++, def,
                 MakeState(level: lv),
-                hpGrowth: 25, mpGrowth: 15,
-                statGrowth: [1, 2, 3, 2, 1, 0], resistGrowth: [1, 2, 1, 0, 2, 1, 0],
+                curve: new PartnerGrowthCurve(0, 25, 15, [1, 2, 3, 2, 1, 0], [1, 2, 1, 0, 2, 1, 0]),
                 level: lv, rngValues: [3, 6, 1, 2, 3, 4, 0, 1, 2, 0, 1, 2, 3, 1, 0]));
         }
 
@@ -282,15 +278,13 @@ public sealed class BattleGrowthVectorGenerator
             MakeState(maxHp: 9990, maxMp: 9990,
                 battleStats: [995, 996, 997, 998, 999, 999],
                 resistances: [998, 999, 999, 995, 996, 997, 998]),
-            hpGrowth: 50, mpGrowth: 50,
-            statGrowth: [4, 4, 4, 4, 4, 4], resistGrowth: [4, 4, 4, 4, 4, 4, 4],
+            curve: new PartnerGrowthCurve(0, 50, 50, [4, 4, 4, 4, 4, 4], [4, 4, 4, 4, 4, 4, 4]),
             level: 1, rngValues: ConstSeq(8, 15)));
 
         // RaiseStats: negative gain (vitalCut > hpGrowth + swing)
         cases.Add(RaiseStatsCase(id++, def,
             MakeState(maxHp: 50, maxMp: 50),
-            hpGrowth: 3, mpGrowth: 3,
-            statGrowth: statGrowthBase, resistGrowth: resistGrowthBase,
+            curve: new PartnerGrowthCurve(0, 3, 3, statGrowthBase, resistGrowthBase),
             level: 20, rngValues: ConstSeq(0, 15)));
 
         // RaiseStats: varied hpGrowth / mpGrowth
@@ -298,8 +292,7 @@ public sealed class BattleGrowthVectorGenerator
         {
             cases.Add(RaiseStatsCase(id++, def,
                 MakeState(),
-                hpGrowth: hg, mpGrowth: hg / 2 + 1,
-                statGrowth: statGrowthBase, resistGrowth: resistGrowthBase,
+                curve: new PartnerGrowthCurve(0, hg, hg / 2 + 1, statGrowthBase, resistGrowthBase),
                 level: 10, rngValues: ConstSeq(4, 15)));
         }
 
@@ -308,8 +301,7 @@ public sealed class BattleGrowthVectorGenerator
         {
             cases.Add(RaiseStatsCase(id++, def,
                 MakeState(level: lv, maxHp: lv * 50, maxMp: lv * 30),
-                hpGrowth: 20 + lv / 10, mpGrowth: 15 + lv / 10,
-                statGrowth: [2, 2, 2, 2, 2, 2], resistGrowth: [1, 1, 1, 1, 1, 1, 1],
+                curve: new PartnerGrowthCurve(0, 20 + lv / 10, 15 + lv / 10, [2, 2, 2, 2, 2, 2], [1, 1, 1, 1, 1, 1, 1]),
                 level: lv, rngValues: ConstSeq(3, 15)));
         }
 
