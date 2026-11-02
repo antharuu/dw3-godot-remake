@@ -343,7 +343,7 @@
       "rule": "S134",
       "project": "Dw3.Game",
       "folder": "Diagnostics",
-      "count": 6
+      "count": 5
     },
     {
       "rule": "S134",
@@ -451,7 +451,7 @@
       "rule": "S3168",
       "project": "Dw3.Game",
       "folder": "Diagnostics",
-      "count": 6
+      "count": 5
     },
     {
       "rule": "S3168",
@@ -691,7 +691,7 @@
       "rule": "SA1107",
       "project": "Dw3.Game",
       "folder": "Diagnostics",
-      "count": 45
+      "count": 39
     },
     {
       "rule": "SA1107",
@@ -1093,7 +1093,7 @@
       "rule": "SA1201",
       "project": "Dw3.Game",
       "folder": "Diagnostics",
-      "count": 3
+      "count": 2
     },
     {
       "rule": "SA1201",
@@ -1813,7 +1813,7 @@
       "rule": "SA1503",
       "project": "Dw3.Game",
       "folder": "Diagnostics",
-      "count": 55
+      "count": 54
     },
     {
       "rule": "SA1503",
@@ -1975,7 +1975,7 @@
       "rule": "SA1513",
       "project": "Dw3.Game",
       "folder": "Diagnostics",
-      "count": 25
+      "count": 22
     },
     {
       "rule": "SA1513",
@@ -2197,7 +2197,7 @@
       "rule": "SA1516",
       "project": "Dw3.Game",
       "folder": "Diagnostics",
-      "count": 3
+      "count": 1
     },
     {
       "rule": "SA1516",
@@ -2251,7 +2251,7 @@
       "rule": "SA1519",
       "project": "Dw3.Game",
       "folder": "Diagnostics",
-      "count": 21
+      "count": 19
     },
     {
       "rule": "SA1519",
@@ -2335,7 +2335,7 @@
       "rule": "SA1600",
       "project": "Dw3.Game",
       "folder": "Diagnostics",
-      "count": 46
+      "count": 39
     },
     {
       "rule": "SA1600",

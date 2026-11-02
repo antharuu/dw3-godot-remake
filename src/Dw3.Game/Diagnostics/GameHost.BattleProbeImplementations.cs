@@ -418,103 +418,6 @@ public partial class GameHost
         TickTestSimulation();
     }
 
-    private async void RunBattleKotemonLightProbe()
-    {
-        try
-        {
-            var generatedRoot = _options.ReferenceDir ?? _dataRoot;
-            var captureRoot = _options.CaptureDir
-                ?? Path.Combine(generatedRoot, "probe/battle-kotemon-light");
-            Directory.CreateDirectory(captureRoot);
-            StartDebugBattle();
-            Require(_battleRenderer is not null && _activeBattle is not null && _battleRenderedPlayerId == 383,
-                "Kotemon light oracle requires F8 fighter 383");
-            var renderer = BattleRenderer;
-            renderer.SetProbePose(10);
-            renderer.SetNeutralLightsForProbe(false);
-            renderer.SetCommandMenuCamera();
-            renderer.SetHudVisibleForProbe(false);
-            var remake = ToSource320(await CaptureBattle(captureRoot, "kotemon-command-menu.png"));
-            renderer.SetModelVisibleForProbe(383, false);
-            var withoutKotemon = ToSource320(await CaptureBattle(captureRoot, "command-menu-without-kotemon.png"));
-            var silhouette = DifferenceMask(remake, withoutKotemon);
-            var psx = LoadPsxReference("battle/kotemon-383-command-menu-0.png");
-            var source = ToSource320(psx);
-            var psxMasks = PsxKotemonRegionMasks(source);
-            var remakeMasks = RemakeKotemonRegionMasks(remake, silhouette);
-            var psxGlobal = UnionMasks(psxMasks.Values);
-            var remakeGlobal = UnionMasks(remakeMasks.Values);
-            Require(psxGlobal.SavePng(Path.Combine(captureRoot, "mask-psx.png")) == Error.Ok, "PSX global mask save failed");
-            Require(remakeGlobal.SavePng(Path.Combine(captureRoot, "mask-remake.png")) == Error.Ok, "remake global mask save failed");
-            foreach (var region in KotemonRegions)
-            {
-                Require(psxMasks[region].SavePng(Path.Combine(captureRoot, $"mask-psx-{region}.png")) == Error.Ok, $"PSX {region} mask save failed");
-                Require(remakeMasks[region].SavePng(Path.Combine(captureRoot, $"mask-remake-{region}.png")) == Error.Ok, $"remake {region} mask save failed");
-                var psxStats = MaskedLuminance(source, psxMasks[region], minimumPixels: 8);
-                var remakeStats = MaskedLuminance(remake, remakeMasks[region], minimumPixels: 8);
-                QuietLog.Info($"battle-light oracle fighter=383 phase=command-menu region={region} psx pixels={psxStats.Count} mean={psxStats.Mean:0.##} q10={psxStats.Q10:0.##} q50={psxStats.Q50:0.##} q90={psxStats.Q90:0.##} hist={psxStats.Histogram} remake pixels={remakeStats.Count} mean={remakeStats.Mean:0.##} q10={remakeStats.Q10:0.##} q50={remakeStats.Q50:0.##} q90={remakeStats.Q90:0.##} hist={remakeStats.Histogram} delta={RelativeDelta(psxStats.Mean, remakeStats.Mean) * 100f:0.##}%");
-            }
-            var psxGlobalStats = MaskedLuminance(source, psxGlobal, minimumPixels: 24);
-            var remakeGlobalStats = MaskedLuminance(remake, remakeGlobal, minimumPixels: 24);
-            var delta = RelativeDelta(psxGlobalStats.Mean, remakeGlobalStats.Mean);
-            var compare = SideBySide(remake, source, "REMAKE", "PSX");
-            Require(compare.SavePng(Path.Combine(captureRoot, "compare-kotemon-luminance.png")) == Error.Ok, "Kotemon comparison save failed");
-            QuietLog.Info($"battle-light oracle fighter=383 phase=command-menu region=global psx pixels={psxGlobalStats.Count} mean={psxGlobalStats.Mean:0.##} q10={psxGlobalStats.Q10:0.##} q50={psxGlobalStats.Q50:0.##} q90={psxGlobalStats.Q90:0.##} hist={psxGlobalStats.Histogram} remake pixels={remakeGlobalStats.Count} mean={remakeGlobalStats.Mean:0.##} q10={remakeGlobalStats.Q10:0.##} q50={remakeGlobalStats.Q50:0.##} q90={remakeGlobalStats.Q90:0.##} hist={remakeGlobalStats.Histogram} delta={delta * 100f:0.##}% vertex={renderer.LightingVertexSummary(383)}");
-            Require(delta < .25f, $"Kotemon global luminance delta={delta * 100f:0.##}% must be <25%");
-            QuietLog.Info($"battle-light probe PASS captures={captureRoot}/compare-kotemon-luminance.png masks=published");
-            GetTree().Quit(0);
-        }
-        catch (PsxReferenceUnavailableException ex)
-        {
-            QuietLog.Info(ex.Message);
-            GetTree().Quit(5);
-        }
-        catch (Exception error)
-        {
-            GD.PushError($"BATTLE_KOTEMON_LIGHT_PROBE_FAIL: {error.Message}");
-            GetTree().Quit(3);
-        }
-    }
-
-    private static readonly string[] KotemonRegions = ["helmet", "body", "fur"];
-
-    private static Dictionary<string, Image> PsxKotemonRegionMasks(Image image) => new()
-    {
-        ["helmet"] = RegionMask(image, new Rect2I(263, 151, 37, 38), p => p.B > p.R * 1.15f && p.B > p.G * 1.08f && p.B > .18f),
-        ["body"] = RegionMask(image, new Rect2I(250, 164, 40, 44), p => p.R > p.G * 1.22f && p.R > p.B * 1.12f && p.R > .22f),
-        ["fur"] = RegionMask(image, new Rect2I(244, 180, 32, 37), p => p.R > .42f && p.G > .42f && p.B > .42f && Mathf.Max(p.R, Mathf.Max(p.G, p.B)) - Mathf.Min(p.R, Mathf.Min(p.G, p.B)) < .38f),
-    };
-
-    private static Dictionary<string, Image> RemakeKotemonRegionMasks(Image image, Image silhouette)
-    {
-        var box = MaskBoundingBox(silhouette) ?? throw new InvalidOperationException("Kotemon remake silhouette absent");
-        Rect2I Relative(float x, float y, float width, float height) => new(Mathf.FloorToInt(box.Position.X + box.Size.X * x), Mathf.FloorToInt(box.Position.Y + box.Size.Y * y), Mathf.Max(1, Mathf.CeilToInt(box.Size.X * width)), Mathf.Max(1, Mathf.CeilToInt(box.Size.Y * height)));
-        return new()
-        {
-            ["helmet"] = RegionMask(image, silhouette, Relative(.42f, .00f, .42f, .38f), p => p.B > p.R * 1.12f && p.B > p.G * 1.04f && p.B > .15f),
-            ["body"] = RegionMask(image, silhouette, Relative(.28f, .25f, .55f, .48f), p => p.R > p.G * 1.18f && p.R > p.B * 1.08f && p.R > .18f),
-            ["fur"] = RegionMask(image, silhouette, Relative(.00f, .42f, .58f, .58f), p => p.R > .38f && p.G > .38f && p.B > .38f && Mathf.Max(p.R, Mathf.Max(p.G, p.B)) - Mathf.Min(p.R, Mathf.Min(p.G, p.B)) < .42f),
-        };
-    }
-
-    private static Image RegionMask(Image image, Rect2I region, Func<Color, bool> select) => RegionMask(image, null, region, select);
-    private static Image RegionMask(Image image, Image? silhouette, Rect2I region, Func<Color, bool> select)
-    {
-        var mask = Image.CreateEmpty(320, 240, false, Image.Format.Rgba8);
-        mask.Fill(Colors.Black);
-        for (var y = Math.Max(0, region.Position.Y); y < Math.Min(240, region.End.Y); y++)
-            for (var x = Math.Max(0, region.Position.X); x < Math.Min(320, region.End.X); x++)
-                if ((silhouette is null || silhouette.GetPixel(x, y).R >= .5f) && select(image.GetPixel(x, y))) mask.SetPixel(x, y, Colors.White);
-        return mask;
-    }
-    private static Image UnionMasks(IEnumerable<Image> masks)
-    {
-        var output = Image.CreateEmpty(320, 240, false, Image.Format.Rgba8);
-        output.Fill(Colors.Black);
-        foreach (var mask in masks) for (var y = 0; y < 240; y++) for (var x = 0; x < 320; x++) if (mask.GetPixel(x, y).R >= .5f) output.SetPixel(x, y, Colors.White);
-        return output;
-    }
-
     /// <summary>Framebuffer proof. The source comparison is a command-menu phase
     /// indicator, while the modulation and non-black fighter checks remain hard assertions.</summary>
     private async void RunBattleLightProbe()
@@ -960,17 +863,6 @@ public partial class GameHost
         for (var y = 0; y < a.GetHeight(); y++) for (var x = 0; x < a.GetWidth(); x++)
             {
                 if (!ProbePixels.DifferentRgb(a.GetPixel(x, y), b.GetPixel(x, y))) continue;
-                minX = Math.Min(minX, x); minY = Math.Min(minY, y); maxX = Math.Max(maxX, x); maxY = Math.Max(maxY, y);
-            }
-        return maxX < minX ? null : new Rect2(minX, minY, maxX - minX + 1, maxY - minY + 1);
-    }
-
-    private static Rect2? MaskBoundingBox(Image mask)
-    {
-        var minX = mask.GetWidth(); var minY = mask.GetHeight(); var maxX = -1; var maxY = -1;
-        for (var y = 0; y < mask.GetHeight(); y++) for (var x = 0; x < mask.GetWidth(); x++)
-            {
-                if (mask.GetPixel(x, y).R < .5f) continue;
                 minX = Math.Min(minX, x); minY = Math.Min(minY, y); maxX = Math.Max(maxX, x); maxY = Math.Max(maxY, y);
             }
         return maxX < minX ? null : new Rect2(minX, minY, maxX - minX + 1, maxY - minY + 1);
