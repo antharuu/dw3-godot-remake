@@ -149,12 +149,6 @@
     },
     {
       "rule": "S107",
-      "project": "Dw3.Formats.Tests",
-      "folder": "Water",
-      "count": 1
-    },
-    {
-      "rule": "S107",
       "project": "Dw3.Game.Tests",
       "folder": ".",
       "count": 8
@@ -637,7 +631,7 @@
       "rule": "SA1117",
       "project": "Dw3.Formats.Tests",
       "folder": "Water",
-      "count": 2
+      "count": 1
     },
     {
       "rule": "SA1117",

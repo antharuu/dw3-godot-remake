@@ -65,8 +65,9 @@ public sealed class StageObjectDecoderTests
         for (int index = 0; index < tiles.Length; index++)
         {
             var tile = tiles[index];
-            StageTileDecoderTests.WriteTile(overlay, TableOffset + 18 * index, tile.Visible, tile.Anim, 1, 0, tile.Frame,
-                tile.Cycle, tile.First, tile.Last, 0, 0, 0, 0, 0, 0);
+            StageTileDecoderTests.WriteTile(overlay, TableOffset + 18 * index,
+                [tile.Visible, tile.Anim, 1, 0, tile.Frame, tile.Cycle, tile.First, tile.Last, 0, 0],
+                [0, 0, 0, 0]);
         }
         return overlay;
     }
