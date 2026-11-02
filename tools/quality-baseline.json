@@ -136,12 +136,6 @@
       "count": 1
     },
     {
-      "rule": "S1144",
-      "project": "Dw3.Extractor",
-      "folder": ".",
-      "count": 2
-    },
-    {
       "rule": "S1215",
       "project": "Dw3.Game",
       "folder": "Diagnostics",

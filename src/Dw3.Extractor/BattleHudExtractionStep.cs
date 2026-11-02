@@ -202,6 +202,7 @@ internal static class BattleHudExtractionStep
     }
 
     // Falls back to row 0 when the computed CLUT row is outside the page (Python behaviour).
+
     /// <summary>
     /// Renders one HUD frame using the given CLUT row, falling back to row 0 when the palette
     /// falls outside the loaded texture pages (matches Python fallback behaviour).
@@ -250,7 +251,8 @@ internal static class BattleHudExtractionStep
         private readonly Dictionary<string, DiscFileEntry> _byPath;
 
         /// <summary>
-        /// Initialises the file-sector table and ISO path index from the executable and disc entries.
+        /// Initializes a new instance of the <see cref="EngineFiles"/> class from the given disc,
+        /// entries, and PS1 executable. Builds the LBA-to-path map from non-empty entries only.
         /// </summary>
         /// <param name="disc">The open disc source for subsequent file reads.</param>
         /// <param name="entries">All disc file entries; zero-length entries are excluded from the LBA map.</param>

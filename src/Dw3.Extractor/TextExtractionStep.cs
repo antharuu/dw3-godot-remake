@@ -22,7 +22,6 @@ namespace Dw3.Extractor;
 internal static class TextExtractionStep
 {
     private const string FontDomain = "font";
-    private const string TextDomain = "text";
 
     // SLES_039.36 disc path (EU disc, constant).
     private const string SlesDiscPath = "SLES_039.36";

@@ -610,26 +610,6 @@ internal static class ZoneExtractionStep
         return Convert.ToHexStringLower(hash);
     }
 
-    /// <summary>
-    /// Extracts the three-digit numeric stage identifier from an ISO path of the form
-    /// <c>AAA/PRO/WSTAG###.PRO</c>. Returns <see langword="null"/> for paths that do not
-    /// match the prefix or suffix pattern, or whose numeric segment cannot be parsed.
-    /// </summary>
-    /// <param name="isoPath">The ISO path to examine.</param>
-    /// <returns>The stage number, or <see langword="null"/> when the path does not match.</returns>
-    private static int? ParseProStage(string isoPath)
-    {
-        const string prefix = "AAA/PRO/WSTAG";
-        const string suffix = ".PRO";
-        if (!isoPath.StartsWith(prefix, StringComparison.Ordinal) || !isoPath.EndsWith(suffix, StringComparison.Ordinal))
-        {
-            return null;
-        }
-
-        ReadOnlySpan<char> number = isoPath.AsSpan(prefix.Length, isoPath.Length - prefix.Length - suffix.Length);
-        return number.Length == 3 && int.TryParse(number, NumberStyles.None, CultureInfo.InvariantCulture, out int stage) ? stage : null;
-    }
-
     /// <summary>Parses the stage ID from a Z_STAGE terrain packet ISO path, or returns null for non-matching paths.</summary>
     /// <param name="isoPath">ISO-9660 path to check.</param>
     /// <returns>Stage ID when the path matches the pattern, otherwise null.</returns>

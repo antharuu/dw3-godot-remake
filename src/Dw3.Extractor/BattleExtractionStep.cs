@@ -203,6 +203,7 @@ internal static class BattleExtractionStep
         for (int row = 0; row < growth.StatGains.Count; row++) WriteGrowthRow(context, "statGains", row, growth.StatGains[row]);
         WriteGrowthRow(context, "resistanceGains", 0, growth.ResistanceGains);
     }
+
     /// <summary>
     /// Inserts one value per ordinal for a single growth curve row into <c>battle_growth</c>.
     /// </summary>
