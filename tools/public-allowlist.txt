@@ -365,6 +365,8 @@ src/Dw3.Game/Diagnostics/Battle/BattleEntranceProbe.cs
 src/Dw3.Game/Diagnostics/Battle/BattleFaceProbe.cs
 src/Dw3.Game/Diagnostics/Battle/BattleFontPixels.cs
 src/Dw3.Game/Diagnostics/Battle/BattleFontProbe.cs
+src/Dw3.Game/Diagnostics/Battle/BattleHudProbe.cs
+src/Dw3.Game/Diagnostics/Battle/BattleInputProbe.cs
 src/Dw3.Game/Diagnostics/Battle/BattleMotionProbe.cs
 src/Dw3.Game/Diagnostics/Battle/BattleKotemonLightProbe.cs
 src/Dw3.Game/Diagnostics/Battle/BattlePixelMetrics.cs
