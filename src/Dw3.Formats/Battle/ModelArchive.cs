@@ -15,6 +15,8 @@ namespace Dw3.Formats.Battle;
 public static class ModelArchive
 {
     /// <summary>Reads the entry ranges of a top-level archive.</summary>
+    /// <param name="data">Raw bytes of the model archive.</param>
+    /// <returns>One <see cref="ArchiveRange"/> per entry; absent entries have Start == End == 0.</returns>
     /// <exception cref="FormatException">The offset table is malformed.</exception>
     public static IReadOnlyList<ArchiveRange> ReadBounds(ReadOnlySpan<byte> data)
     {
@@ -53,6 +55,11 @@ public static class ModelArchive
     /// <paramref name="start"/>; zero means absent, any other value must lie after the
     /// table and before <paramref name="end"/>.
     /// </summary>
+    /// <param name="data">Full model file bytes.</param>
+    /// <param name="start">File offset of the nested archive start (= offset table start).</param>
+    /// <param name="end">File offset of the end of the nested archive.</param>
+    /// <param name="entryCount">Number of offset table slots to read.</param>
+    /// <returns>Array of <paramref name="entryCount"/> decoded offsets (relative to <paramref name="start"/>); 0 = absent.</returns>
     /// <exception cref="FormatException">The range or an offset is invalid.</exception>
     public static int[] ReadNestedOffsets(ReadOnlySpan<byte> data, int start, int end, int entryCount)
     {

@@ -12,6 +12,10 @@ public static class TmpkMapDecoder
     private const int EntryHeaderBytes = ComponentCount * sizeof(uint);
 
     /// <summary>Decodes one archive entry into its expanded one-byte cell map.</summary>
+    /// <param name="archive">Raw bytes of the TMPK archive file.</param>
+    /// <param name="entryIndex">Zero-based entry index within the archive offset table.</param>
+    /// <returns>The decoded TMPK map with its grid dimensions and one-byte cell values.</returns>
+    /// <exception cref="FormatException">The entry index is out of range, an offset is malformed, or a component span is truncated.</exception>
     public static TmpkMap DecodeEntry(ReadOnlySpan<byte> archive, int entryIndex)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(entryIndex);
@@ -232,14 +236,29 @@ public static class TmpkMapDecoder
     /// <summary>The six read-only component spans needed to resolve a cell, bundled to avoid a wide parameter list.</summary>
     private readonly ref struct TmpkResolveTables
     {
+        /// <summary>Grid component: one byte per tile giving the 64×64 cell index for each tile position.</summary>
         public readonly ReadOnlySpan<byte> Grid;
+        /// <summary>Number of tiles per row, used to convert a 2D tile position to a grid index.</summary>
         public readonly int TilesWide;
+        /// <summary>64×64-cell component: each byte indexes into Cells32.</summary>
         public readonly ReadOnlySpan<byte> Cells64;
+        /// <summary>32×32-cell component: each byte indexes into Cells16.</summary>
         public readonly ReadOnlySpan<byte> Cells32;
+        /// <summary>16×16-cell component: each byte indexes into Cells8.</summary>
         public readonly ReadOnlySpan<byte> Cells16;
+        /// <summary>8×8-cell component: each byte indexes into Pixels.</summary>
         public readonly ReadOnlySpan<byte> Cells8;
+        /// <summary>Pixel component: each byte is the final 1×1 cell value written to the output map.</summary>
         public readonly ReadOnlySpan<byte> Pixels;
 
+        /// <summary>Initializes a new instance of the <see cref="TmpkResolveTables"/> struct with all six components.</summary>
+        /// <param name="grid">Grid component bytes.</param>
+        /// <param name="tilesWide">Number of tiles per row.</param>
+        /// <param name="cells64">64×64-cell component bytes.</param>
+        /// <param name="cells32">32×32-cell component bytes.</param>
+        /// <param name="cells16">16×16-cell component bytes.</param>
+        /// <param name="cells8">8×8-cell component bytes.</param>
+        /// <param name="pixels">Pixel component bytes.</param>
         public TmpkResolveTables(
             ReadOnlySpan<byte> grid,
             int tilesWide,

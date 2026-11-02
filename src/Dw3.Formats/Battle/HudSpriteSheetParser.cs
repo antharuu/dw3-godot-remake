@@ -29,6 +29,9 @@ public static class HudSpriteSheetParser
     /// The part table may include a 2-byte pad when the part count is odd.
     /// </summary>
     /// <param name="data">Full file bytes (the first 4 bytes are a skip word).</param>
+    /// <returns>Tuple of the parts table, frame id list and frame body offsets within the sheet body.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="data"/> is null.</exception>
+    /// <exception cref="FormatException">The sprite sheet is truncated or its internal offsets are invalid.</exception>
     public static (IReadOnlyList<HudSpritePart> Parts, IReadOnlyList<int> Ids, IReadOnlyList<int> FrameOffsets)
         Parse(byte[] data)
     {

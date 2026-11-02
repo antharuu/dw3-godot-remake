@@ -14,11 +14,17 @@ public static class ProgressConditionDecoder
     private const byte SpecialTerminator = 0xFF;
     private const int RangeCheckFamily = 0x30;
 
+    /// <summary>
+    /// Decodes the progress condition tables from the disc executable: the range-check table
+    /// (pairs of u8 lo/hi progress values) and the special-condition records (3-byte each,
+    /// terminated by 0xFF) that reference ranges by index.
+    /// </summary>
     /// <param name="executable">Raw executable bytes.</param>
     /// <param name="progressRangesOffset">File offset of the first range pair.</param>
     /// <param name="progressRangeCount">Number of range pairs.</param>
     /// <param name="specialConditionsOffset">File offset of the first special-condition record.</param>
     /// <param name="specialConditionsLimit">File offset the special records must terminate before.</param>
+    /// <returns>The decoded progress condition tables with range pairs and special-condition entries.</returns>
     /// <exception cref="FormatException">A table is outside the executable, unterminated or references a missing range.</exception>
     public static ProgressConditionTables Decode(
         ReadOnlySpan<byte> executable,

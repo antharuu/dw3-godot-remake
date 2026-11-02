@@ -20,6 +20,11 @@ public static class BattleModelJsonWriter
     private static readonly string[] UnsupportedFeatures = ["exact PS1 ABR blend equations", "lighting normals", "motion blends", "root motion"];
 
     /// <summary>Serialises the structural manifest of one fighter's model.</summary>
+    /// <param name="reference">Fighter model reference (id, archive entry, kind).</param>
+    /// <param name="model">Decoded model structure (bones and meshes only; no textures or motions).</param>
+    /// <param name="edition">Edition identifier string (e.g. "SLES-03936").</param>
+    /// <returns>Indented JSON string conforming to the <c>dw3-battle-model-v8</c> schema.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="reference"/> or <paramref name="model"/> is null.</exception>
     public static string WriteModel(FighterModelReference reference, BattleModelStructure model, string edition)
     {
         ArgumentNullException.ThrowIfNull(reference);
@@ -35,6 +40,11 @@ public static class BattleModelJsonWriter
     }
 
     /// <summary>Serialises one complete fighter model including texture, motion and source metadata.</summary>
+    /// <param name="reference">Fighter model reference (id, archive entry, kind).</param>
+    /// <param name="payload">Fully decoded model payload (structure, textures, tracks and motions).</param>
+    /// <param name="edition">Edition identifier string (e.g. "SLES-03936").</param>
+    /// <returns>Indented JSON string conforming to the <c>dw3-battle-model-v8</c> schema.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="reference"/> or <paramref name="payload"/> is null.</exception>
     public static string WriteModel(FighterModelReference reference, BattleModelPayload payload, string edition)
     {
         BattleModelStructure model = payload.Structure;
@@ -59,6 +69,10 @@ public static class BattleModelJsonWriter
     }
 
     /// <summary>Serialises the decode report: one record per fighter-table entry plus totals.</summary>
+    /// <param name="outcomes">Decode results for every fighter-table entry, in fighter-id order.</param>
+    /// <param name="withFace">Number of fighters that had face animation data decoded (default 0).</param>
+    /// <returns>Indented JSON string conforming to the <c>battle-model-decode-report-v1</c> schema.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="outcomes"/> is null.</exception>
     public static string WriteReport(IReadOnlyList<BattleModelOutcome> outcomes, int withFace = 0)
     {
         ArgumentNullException.ThrowIfNull(outcomes);

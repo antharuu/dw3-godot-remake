@@ -16,6 +16,9 @@ public static class ZonePacketDecoder
     private const int TileSize = 128;
 
     /// <summary>Decodes a stage terrain packet file into three RGBA layer images and a composite.</summary>
+    /// <param name="packetFile">Raw bytes of the stage terrain packet file from the disc.</param>
+    /// <returns>The decoded terrain with layer images, composite image and tile metadata.</returns>
+    /// <exception cref="FormatException">The packet file is shorter than one sector, or a tile or layer is malformed.</exception>
     public static ZoneTerrain Decode(ReadOnlySpan<byte> packetFile)
     {
         if (packetFile.Length < SectorSize)
@@ -83,6 +86,14 @@ public static class ZonePacketDecoder
         return new ZoneTerrain(columns, rows, [.. layers.Select(layer => layer.Pixels)], composite.Pixels, tileRecords);
     }
 
+    /// <summary>
+    /// Decodes one raw tile packet (RLEN-decompressed if needed) into its RGBA depth layers and tile record.
+    /// Each tile has up to 3 depth layers decoded from consecutive 8-bit TIM layer records within the packet.
+    /// </summary>
+    /// <param name="rawPacket">Raw (possibly RLEN-compressed) bytes of one tile sector.</param>
+    /// <param name="tileIndex">Zero-based tile index, used in tile record and error messages.</param>
+    /// <returns>Ordered list of (depth, RGBA image) pairs for this tile, and the tile's metadata record.</returns>
+    /// <exception cref="FormatException">The packet is truncated, the TIM is not an 8-bit indexed image, or a layer record is malformed.</exception>
     private static (IReadOnlyList<(int Depth, RgbaImage Image)>, ZoneTileRecord) DecodeTileWithMetadata(ReadOnlySpan<byte> rawPacket, int tileIndex)
     {
         var (packet, wasCompressed) = RlenDecoder.DecompressIfNeeded(rawPacket);
@@ -156,6 +167,15 @@ public static class ZonePacketDecoder
         return cursor;
     }
 
+    /// <summary>
+    /// Crops a rectangular region from <paramref name="texture"/> and returns it as a new RGBA byte array.
+    /// </summary>
+    /// <param name="texture">Source TIM image to crop from.</param>
+    /// <param name="x">Left pixel coordinate of the crop region.</param>
+    /// <param name="y">Top pixel coordinate of the crop region.</param>
+    /// <param name="width">Width of the crop region in pixels.</param>
+    /// <param name="height">Height of the crop region in pixels.</param>
+    /// <returns>RGBA pixel data (4 bytes per pixel, row-major) for the requested region.</returns>
     private static byte[] Crop(TimImage texture, int x, int y, int width, int height)
     {
         var pixels = new byte[checked(width * height * 4)];
@@ -167,6 +187,12 @@ public static class ZonePacketDecoder
         return pixels;
     }
 
+    /// <summary>Reads a non-negative s32 offset from <paramref name="data"/> at <paramref name="offset"/> and validates it lies within the packet.</summary>
+    /// <param name="data">Packet byte array.</param>
+    /// <param name="offset">Byte offset; the read covers 4 bytes.</param>
+    /// <param name="field">Field name for error messages.</param>
+    /// <returns>The decoded offset value, already validated to lie within the packet.</returns>
+    /// <exception cref="FormatException">The offset value is out of packet bounds.</exception>
     private static int ReadOffset(byte[] data, int offset, string field)
     {
         int value = ReadNonNegativeInt32(data, offset, field);
@@ -178,6 +204,12 @@ public static class ZonePacketDecoder
         return value;
     }
 
+    /// <summary>Reads a strictly positive s32 from <paramref name="data"/> at <paramref name="offset"/>; throws when zero or negative.</summary>
+    /// <param name="data">Source data span.</param>
+    /// <param name="offset">Byte offset; the read covers 4 bytes.</param>
+    /// <param name="field">Field name for error messages.</param>
+    /// <returns>The decoded positive integer value.</returns>
+    /// <exception cref="FormatException">The value is zero, negative, or the read overruns the span.</exception>
     private static int ReadPositiveInt32(ReadOnlySpan<byte> data, int offset, string field)
     {
         int value = ReadNonNegativeInt32(data, offset, field);
@@ -189,6 +221,12 @@ public static class ZonePacketDecoder
         return value;
     }
 
+    /// <summary>Reads a non-negative s32 from <paramref name="data"/> at <paramref name="offset"/>; throws when negative or the read overruns the span.</summary>
+    /// <param name="data">Source data span.</param>
+    /// <param name="offset">Byte offset; the read covers 4 bytes.</param>
+    /// <param name="field">Field name for error messages.</param>
+    /// <returns>The decoded non-negative integer value.</returns>
+    /// <exception cref="FormatException">The read overruns the span or the value is negative.</exception>
     private static int ReadNonNegativeInt32(ReadOnlySpan<byte> data, int offset, string field)
     {
         if (offset < 0 || offset + 4 > data.Length)

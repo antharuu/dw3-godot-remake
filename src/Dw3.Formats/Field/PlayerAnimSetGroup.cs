@@ -12,6 +12,9 @@ public sealed class PlayerAnimSetGroup
     /// </summary>
     public IReadOnlyList<int> SequenceIndices { get; }
 
+    /// <summary>Initializes a new instance of the <see cref="PlayerAnimSetGroup"/> class.</summary>
+    /// <param name="setId">Animation set identifier that groups these sequences.</param>
+    /// <param name="sequenceIndices">Ordered sequence indices within the parent archive.</param>
     internal PlayerAnimSetGroup(int setId, IReadOnlyList<int> sequenceIndices)
     {
         SetId = setId;

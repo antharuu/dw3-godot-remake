@@ -12,6 +12,12 @@ public static class FieldcomBehaviorDecoder
     private const int ExpectedCueSequences = 5;
     private const int ExpectedIconAnimations = 4;
 
+    /// <summary>
+    /// Scans <paramref name="overlay"/> for the five cue animation sequences encoded as terminated
+    /// records, sorts them by their first frame index and returns them in ascending order.
+    /// </summary>
+    /// <param name="overlay">Raw bytes of the FIELDCOM overlay that contains the cue data.</param>
+    /// <returns>Exactly five <see cref="FieldcomFrameSequence"/> entries sorted by starting frame.</returns>
     /// <exception cref="FormatException">The overlay lacks exactly the five terminated cue sequences.</exception>
     public static IReadOnlyList<FieldcomFrameSequence> DecodeCueInnerSequences(ReadOnlySpan<byte> overlay)
     {
@@ -32,6 +38,13 @@ public static class FieldcomBehaviorDecoder
         return [.. sequences.OrderBy(sequence => sequence.Steps[0].Frame)];
     }
 
+    /// <summary>
+    /// Scans <paramref name="overlay"/> for icon loop animations, filters to exactly four valid loops
+    /// whose frame ids appear in <paramref name="frameIds"/>, and returns them in discovery order.
+    /// </summary>
+    /// <param name="overlay">Raw bytes of the FIELDCOM overlay that contains the icon data.</param>
+    /// <param name="frameIds">Set of valid sprite-sheet frame ids; loops referencing unknown ids are skipped.</param>
+    /// <returns>Exactly four <see cref="FieldcomAnimation"/> entries for the icon animations.</returns>
     /// <exception cref="FormatException">The overlay lacks exactly four valid icon loops.</exception>
     public static IReadOnlyList<FieldcomAnimation> DecodeIconAnimations(ReadOnlySpan<byte> overlay, IReadOnlySet<int> frameIds)
     {

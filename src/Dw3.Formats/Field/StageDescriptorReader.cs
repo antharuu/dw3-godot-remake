@@ -31,6 +31,8 @@ public static class StageDescriptorReader
     private static readonly int[] CallerSavedRegisters = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 24, 25, 31];
 
     /// <summary>Reads the object-table address and sprite-sheet entry from raw overlay bytes.</summary>
+    /// <param name="overlay">Raw bytes of the WSTAG stage overlay.</param>
+    /// <returns>The decoded stage descriptor with object-table address and sprite-sheet archive entry.</returns>
     /// <exception cref="FormatException">The overlay does not assign both members exactly once in constant form.</exception>
     public static StageDescriptor Read(ReadOnlySpan<byte> overlay)
     {
@@ -75,6 +77,13 @@ public static class StageDescriptorReader
         return new StageDescriptor(objects, (int)(sheet & 0xFFFF));
     }
 
+    /// <summary>
+    /// Simulates one MIPS instruction: updates <paramref name="registers"/> for constant-tracking
+    /// instructions (lui, addiu, ori) and records store values for tracked member addresses.
+    /// </summary>
+    /// <param name="instruction">Raw 32-bit MIPS instruction word.</param>
+    /// <param name="registers">Register state array; null = unknown, 0 = $zero fixed.</param>
+    /// <param name="stores">Map from field member offset to the set of values stored there.</param>
     private static void Execute(uint instruction, uint?[] registers, Dictionary<uint, HashSet<uint?>> stores)
     {
         int opcode = (int)(instruction >> 26);
@@ -132,6 +141,12 @@ public static class StageDescriptorReader
         }
     }
 
+    /// <summary>
+    /// Clears the destination register of a SPECIAL (opcode 0) instruction when it writes <c>rd</c>.
+    /// Only applies to shifts, ALU ops and mfhi/mflo.
+    /// </summary>
+    /// <param name="instruction">Full 32-bit MIPS instruction word.</param>
+    /// <param name="registers">Register state array; the destination entry is set to null when the instruction is matched.</param>
     private static void InvalidateSpecialDestination(uint instruction, uint?[] registers)
     {
         int function = (int)(instruction & 0x3F);
@@ -143,6 +158,12 @@ public static class StageDescriptorReader
         }
     }
 
+    /// <summary>
+    /// Classifies a MIPS instruction by its effect on control flow, for use in the delay-slot
+    /// tracking logic that invalidates caller-saved registers after calls.
+    /// </summary>
+    /// <param name="instruction">Raw 32-bit MIPS instruction word.</param>
+    /// <returns><see cref="PendingJump.Call"/> for <c>jal</c>/<c>jalr</c>, <see cref="PendingJump.Other"/> for any other branch/jump, or <see cref="PendingJump.None"/> for non-control-flow instructions.</returns>
     private static PendingJump Classify(uint instruction)
     {
         int opcode = (int)(instruction >> 26);
@@ -160,6 +181,11 @@ public static class StageDescriptorReader
         return PendingJump.None;
     }
 
+    /// <summary>Extracts the unique constant value from <paramref name="values"/>; throws a descriptive error if absent or ambiguous.</summary>
+    /// <param name="values">Set of values seen for one stage descriptor member during simulation.</param>
+    /// <param name="member">Member name used in error messages.</param>
+    /// <returns>The single unique constant value assigned to this member.</returns>
+    /// <exception cref="FormatException">The member was never assigned, assigned a non-constant, or assigned conflicting values.</exception>
     private static uint Single(HashSet<uint?> values, string member)
     {
         if (values.Count == 0)
@@ -180,10 +206,14 @@ public static class StageDescriptorReader
         return values.Single()!.Value;
     }
 
+    /// <summary>Classifies whether the instruction in the delay slot of a pending branch or jump should invalidate caller-saved registers.</summary>
     private enum PendingJump
     {
+        /// <summary>No pending jump; the current instruction is not a delay slot.</summary>
         None,
+        /// <summary>A <c>jal</c> or <c>jalr</c> instruction was seen; the next instruction is its delay slot.</summary>
         Call,
+        /// <summary>A branch or jump (other than call) was seen; the next instruction is its delay slot.</summary>
         Other,
     }
 }

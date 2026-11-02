@@ -1,6 +1,7 @@
 namespace Dw3.Formats.Battle;
 
 /// <summary>One bone of a model hierarchy. The root bone (index 0) has no parent, mesh or key track.</summary>
+/// <param name="Index">Zero-based index of this bone in the hierarchy; bone 0 is the root.</param>
 /// <param name="Parent">Index of an earlier bone.</param>
 /// <param name="MeshEntry">Archive entry of the bone's mesh.</param>
 /// <param name="KeyEntry">Archive entry of the bone's key tracks.</param>

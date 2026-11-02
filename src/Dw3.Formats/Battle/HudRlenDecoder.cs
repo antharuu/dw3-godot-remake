@@ -19,6 +19,9 @@ public static class HudRlenDecoder
     /// Decompresses an RLEN block following the battle_hud.py _rlen semantics exactly:
     /// only 0x00 is end-of-stream; 0x80 is a 0-count repeat (reads and discards value byte).
     /// </summary>
+    /// <param name="data">RLEN-compressed bytes starting with the 'RLEN' magic and 4-byte target size.</param>
+    /// <returns>The decompressed output, exactly target-size bytes.</returns>
+    /// <exception cref="FormatException">The header is missing the RLEN magic or the decompressed data is truncated.</exception>
     public static byte[] Decompress(ReadOnlySpan<byte> data)
     {
         if (data.Length < 9 || data[0] != 'R' || data[1] != 'L' || data[2] != 'E' || data[3] != 'N')

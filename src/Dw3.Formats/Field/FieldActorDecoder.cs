@@ -21,7 +21,7 @@ namespace Dw3.Formats.Field;
 /// three entries verified from the S200 and S235 overlays):
 ///   0x14 → 32 pixels
 ///   0x15 → 48 pixels
-///   0x2E → 32 pixels
+///   0x2E → 32 pixels.
 /// </summary>
 public static class FieldActorDecoder
 {

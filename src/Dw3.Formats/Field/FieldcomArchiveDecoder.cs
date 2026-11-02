@@ -11,6 +11,12 @@ public static class FieldcomArchiveDecoder
     private const int EntryCount = 4;
     private const int HeaderBytes = EntryCount * sizeof(uint);
 
+    /// <summary>
+    /// Decodes a FIELDCOM archive: reads the fixed 5-entry offset table and wraps each entry
+    /// as a read-only memory slice for lazy processing.
+    /// </summary>
+    /// <param name="archive">Raw bytes of the FIELDCOM disc member.</param>
+    /// <returns>The decoded archive with five entries (some may be empty if their offset is zero).</returns>
     /// <exception cref="FormatException">The fixed archive header or an entry boundary is invalid.</exception>
     public static FieldcomArchive Decode(ReadOnlyMemory<byte> archive)
     {

@@ -18,6 +18,10 @@ public static class HudTexturePageDecoder
     /// Decodes FILE_BATTLE_IMAGES (file 0x456) entry 1 into one 4-bit texture page.
     /// Entry 0 is the cursor bar; entry 1 is an inner archive containing one RLEN TIM.
     /// </summary>
+    /// <param name="imagesData">Raw bytes of FILE_BATTLE_IMAGES (file 0x456).</param>
+    /// <returns>Single-element list containing the decoded 4-bit HUD texture page.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="imagesData"/> is null.</exception>
+    /// <exception cref="FormatException">The archive structure or the TIM is malformed.</exception>
     public static IReadOnlyList<HudTexturePage> BuildHudTexturePages(byte[] imagesData)
     {
         ArgumentNullException.ThrowIfNull(imagesData);
@@ -56,6 +60,10 @@ public static class HudTexturePageDecoder
     /// The archive uses the same ModelArchive offset-table format as fighter model files.
     /// The input starts with a 4-byte pointer that must equal 4 (one-entry outer wrapper).
     /// </summary>
+    /// <param name="archiveWithSkip">Raw bytes of the report texture archive (file 0x7A0), starting with the 4-byte skip pointer.</param>
+    /// <returns>List of decoded 4-bit texture pages in archive order.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="archiveWithSkip"/> is null.</exception>
+    /// <exception cref="FormatException">The archive is too short, the skip pointer is wrong, or no texture pages are present.</exception>
     public static IReadOnlyList<HudTexturePage> BuildReportTexturePages(byte[] archiveWithSkip)
     {
         ArgumentNullException.ThrowIfNull(archiveWithSkip);
@@ -94,6 +102,10 @@ public static class HudTexturePageDecoder
     /// Format: 4-byte skip, then an offset table (u32 values relative to byte 4, terminated by 0),
     /// each pointing to an RLEN-compressed 4-bit TIM page.
     /// </summary>
+    /// <param name="data">Raw bytes of the CMFONTTM.BIN menu texture archive (file 0x287).</param>
+    /// <returns>List of decoded 4-bit texture pages in archive entry order.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="data"/> is null.</exception>
+    /// <exception cref="FormatException">The archive is truncated or a TIM entry is malformed.</exception>
     public static IReadOnlyList<HudTexturePage> BuildMenuTexturePages(byte[] data)
     {
         ArgumentNullException.ThrowIfNull(data);
@@ -116,6 +128,10 @@ public static class HudTexturePageDecoder
     /// Decodes an RLEN-compressed or raw 4-bit TIM (with or without CLUT block) into a texture page.
     /// The image block must be 64 halfwords × 256 rows.
     /// </summary>
+    /// <param name="raw">Decompressed or raw TIM bytes starting with magic 0x10.</param>
+    /// <returns>The decoded 256-row × 64-halfword texture page.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="raw"/> is null.</exception>
+    /// <exception cref="FormatException">The TIM magic is wrong, the image block is truncated, or the dimensions do not match the expected page size.</exception>
     public static HudTexturePage DecodeFourBitTim(byte[] raw)
     {
         ArgumentNullException.ThrowIfNull(raw);

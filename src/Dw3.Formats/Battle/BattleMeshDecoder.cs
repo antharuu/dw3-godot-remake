@@ -44,7 +44,11 @@ public static class BattleMeshDecoder
     private const int MaximumVertices = 255;
 
     /// <summary>Decodes the mesh entry spanning [<paramref name="start"/>, <paramref name="end"/>) of <paramref name="data"/>.</summary>
-    /// <param name="bone">Owning bone, used in the result and in error messages.</param>
+    /// <param name="data">Full model file bytes.</param>
+    /// <param name="start">File offset of the mesh archive entry.</param>
+    /// <param name="end">File offset of the end of the mesh archive entry.</param>
+    /// <param name="bone">Owning bone index, used in the result and in error messages.</param>
+    /// <returns>The fully decoded mesh with vertices, normals and polygons.</returns>
     /// <exception cref="FormatException">The entry violates the grammar above.</exception>
     public static BattleMesh Decode(ReadOnlySpan<byte> data, int start, int end, int bone)
     {
@@ -68,6 +72,16 @@ public static class BattleMeshDecoder
     /// <returns>The exception to throw.</returns>
     internal static FormatException Fail(int bone, string message) => new($"bone {bone}: {message}");
 
+    /// <summary>
+    /// Reads the vertex stream starting at <paramref name="at"/>: a header s16 vertex count (followed by
+    /// 4 padding bytes), then count × 6-byte vectors (s16 x, y, z).
+    /// </summary>
+    /// <param name="data">Full model file bytes.</param>
+    /// <param name="at">File offset of the vertex stream header.</param>
+    /// <param name="end">File offset of the end of the mesh entry; used for bounds checks.</param>
+    /// <param name="bone">Owning bone index, used in error messages.</param>
+    /// <returns>Decoded vertex array in stream order.</returns>
+    /// <exception cref="FormatException">The count is out of range or the stream overruns the entry.</exception>
     private static MeshVector[] ReadVertices(ReadOnlySpan<byte> data, int at, int end, int bone)
     {
         int count = ReadI16(data, at, bone, "vertex count");
@@ -84,6 +98,16 @@ public static class BattleMeshDecoder
         return ReadVectors(data, at + StreamHeaderBytes, count);
     }
 
+    /// <summary>
+    /// Reads the normal stream starting at <paramref name="at"/>: same layout as the vertex stream
+    /// (s16 count + 4 padding bytes + count × 6-byte vectors). Returns an empty array if the count is 0.
+    /// </summary>
+    /// <param name="data">Full model file bytes.</param>
+    /// <param name="at">File offset of the normal stream header.</param>
+    /// <param name="end">File offset of the end of the mesh entry; used for bounds checks.</param>
+    /// <param name="bone">Owning bone index, used in error messages.</param>
+    /// <returns>Decoded normal array in stream order; may be empty.</returns>
+    /// <exception cref="FormatException">The header overruns the entry or the count is negative.</exception>
     private static MeshVector[] ReadNormals(ReadOnlySpan<byte> data, int at, int end, int bone)
     {
         if (at + StreamHeaderBytes > end)
@@ -100,6 +124,13 @@ public static class BattleMeshDecoder
         return ReadVectors(data, at + StreamHeaderBytes, count);
     }
 
+    /// <summary>
+    /// Reads <paramref name="count"/> 6-byte vectors (s16 x, y, z each) starting at <paramref name="at"/>.
+    /// </summary>
+    /// <param name="data">Full model file bytes.</param>
+    /// <param name="at">File offset of the first vector.</param>
+    /// <param name="count">Number of vectors to read; each occupies 6 bytes.</param>
+    /// <returns>Array of decoded vectors in source order.</returns>
     private static MeshVector[] ReadVectors(ReadOnlySpan<byte> data, int at, int count)
     {
         var vectors = new MeshVector[count];
@@ -115,6 +146,13 @@ public static class BattleMeshDecoder
         return vectors;
     }
 
+    /// <summary>Reads a little-endian s16 from <paramref name="data"/> at <paramref name="at"/>; throws a bone-prefixed error on out-of-bounds.</summary>
+    /// <param name="data">Source data.</param>
+    /// <param name="at">Byte offset; the read covers 2 bytes.</param>
+    /// <param name="bone">Owning bone index, used in the error message.</param>
+    /// <param name="what">Field name, used in the error message.</param>
+    /// <returns>The decoded s16 value.</returns>
+    /// <exception cref="FormatException">The read overruns <paramref name="data"/>.</exception>
     private static short ReadI16(ReadOnlySpan<byte> data, int at, int bone, string what)
     {
         if (at < 0 || at + 2 > data.Length)

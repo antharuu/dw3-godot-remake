@@ -30,7 +30,7 @@ namespace Dw3.Formats.Field;
 ///   +0x10  u16     direction
 ///   +0x12  u16     hide_anim (ignored)
 ///   +0x14  u16     place (ignored)
-///   +0x16  u16     place_arg (ignored)
+///   +0x16  u16     place_arg (ignored).
 /// </summary>
 public static class NpcOverlayReader
 {
@@ -46,6 +46,8 @@ public static class NpcOverlayReader
     /// <param name="overlay">Raw overlay bytes (the .PRO file contents).</param>
     /// <param name="actorAddress">RAM address of the entry (must be >= overlayLoadBase).</param>
     /// <param name="overlayLoadBase">RAM address at which the overlay is loaded.</param>
+    /// <returns>The decoded actor entry with actor id, coordinates and visibility state.</returns>
+    /// <exception cref="FormatException">The address falls below the load base or overruns the overlay.</exception>
     public static NpcActorEntry ReadActorEntry(ReadOnlySpan<byte> overlay, uint actorAddress, uint overlayLoadBase)
     {
         if (actorAddress < overlayLoadBase)
@@ -84,6 +86,8 @@ public static class NpcOverlayReader
     /// <param name="overlay">Raw overlay bytes.</param>
     /// <param name="conditionsPtr">RAM pointer to the condition list (0 = unconditional).</param>
     /// <param name="overlayLoadBase">RAM address at which the overlay is loaded.</param>
+    /// <returns>The decoded condition list; empty when <paramref name="conditionsPtr"/> is 0.</returns>
+    /// <exception cref="FormatException">The pointer falls below the load base, overruns the overlay, or a condition id is invalid.</exception>
     public static IReadOnlyList<NpcCondition> ReadConditionList(
         ReadOnlySpan<byte> overlay, uint conditionsPtr, uint overlayLoadBase)
     {
@@ -142,6 +146,8 @@ public static class NpcOverlayReader
     /// <param name="overlay">Raw overlay bytes.</param>
     /// <param name="slotsAddress">RAM address of the first StageSlot record.</param>
     /// <param name="overlayLoadBase">RAM address at which the overlay is loaded.</param>
+    /// <returns>The decoded stage slots; empty when the first record is a zero-type terminator.</returns>
+    /// <exception cref="FormatException">The address falls below the load base or overruns the overlay.</exception>
     public static IReadOnlyList<NpcStageSlot> ReadStageSlots(
         ReadOnlySpan<byte> overlay, uint slotsAddress, uint overlayLoadBase)
     {

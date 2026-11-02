@@ -12,6 +12,10 @@ namespace Dw3.Formats.Field;
 public static class ActionArchiveDecoder
 {
     /// <summary>Reads the prefix of an archive offset table through <paramref name="lastEntry"/>.</summary>
+    /// <param name="data">Full archive bytes; the offset table starts at byte 0.</param>
+    /// <param name="lastEntry">Inclusive last entry index; the table has lastEntry + 1 u32 slots.</param>
+    /// <returns>Array of entry offsets (relative to the archive start), each validated to lie within the archive.</returns>
+    /// <exception cref="FormatException">The table is truncated, an offset is out of range, or offsets are not strictly ascending.</exception>
     public static int[] DecodeOffsetTable(ReadOnlySpan<byte> data, int lastEntry)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(lastEntry);
@@ -47,6 +51,12 @@ public static class ActionArchiveDecoder
     }
 
     /// <summary>Decodes action-set records at the specified archive entry.</summary>
+    /// <param name="data">Full archive bytes.</param>
+    /// <param name="offsets">Archive offset table as returned by <see cref="DecodeOffsetTable"/>.</param>
+    /// <param name="tableEntry">Index into <paramref name="offsets"/> that locates the set table.</param>
+    /// <returns>List of decoded action animation sets; empty when the table holds only the zero terminator.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="offsets"/> is null.</exception>
+    /// <exception cref="FormatException">The entry is out of range, the data is misaligned, or the terminator is missing.</exception>
     public static IReadOnlyList<ActionAnimationSet> DecodeSetTable(ReadOnlySpan<byte> data, IReadOnlyList<int> offsets, int tableEntry)
     {
         ArgumentNullException.ThrowIfNull(offsets);
@@ -90,6 +100,13 @@ public static class ActionArchiveDecoder
     }
 
     /// <summary>Decodes one action animation sequence and validates every frame index.</summary>
+    /// <param name="data">Full archive bytes.</param>
+    /// <param name="offsets">Archive offset table as returned by <see cref="DecodeOffsetTable"/>.</param>
+    /// <param name="index">Sequence index within the offset table; the sequence occupies offsets[index]..offsets[index+1].</param>
+    /// <param name="frameCount">Total frame count in the target archive, used to validate frame indices.</param>
+    /// <returns>The decoded sequence including its terminator record.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="offsets"/> is null.</exception>
+    /// <exception cref="FormatException">The index is out of range, the payload is misaligned, or a frame index is invalid.</exception>
     public static ActionAnimationSequence DecodeSequence(ReadOnlySpan<byte> data, IReadOnlyList<int> offsets, int index, int frameCount)
     {
         ArgumentNullException.ThrowIfNull(offsets);

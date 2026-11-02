@@ -13,8 +13,11 @@ namespace Dw3.Formats.Battle;
 public static class HudCursorBarDecoder
 {
     // Cursor bar (entry 0 of FILE_BATTLE_IMAGES): 12 frames of 12×12, strip 156×12.
+    /// <summary>Number of cursor animation frames in the strip, including the off-cursor at index 12.</summary>
     public const int CursorFrames = 12;
+    /// <summary>Width of one cursor frame in pixels (12 pixels, matching the 12×12 grid).</summary>
     public const int CursorW = 12;
+    /// <summary>Height of one cursor frame in pixels (12 pixels, matching the 12×12 grid).</summary>
     public const int CursorH = 12;
 
     /// <summary>
@@ -22,6 +25,10 @@ public static class HudCursorBarDecoder
     /// Returns (width, height, rgbaPixels). The strip is 156×12 with 12 frames of 12×12.
     /// The last frame (index 12) is the "off" cursor.
     /// </summary>
+    /// <param name="imagesData">Raw bytes of FILE_BATTLE_IMAGES (file 0x456).</param>
+    /// <returns>Tuple of the decoded strip width in pixels, height in pixels, and RGBA pixel data (4 bytes per pixel).</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="imagesData"/> is null.</exception>
+    /// <exception cref="FormatException">The archive offsets are invalid or the TIM is malformed.</exception>
     public static (int Width, int Height, byte[] Rgba) Decode(byte[] imagesData)
     {
         ArgumentNullException.ThrowIfNull(imagesData);

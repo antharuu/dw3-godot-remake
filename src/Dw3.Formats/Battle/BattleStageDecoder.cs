@@ -30,6 +30,7 @@ public static class BattleStageDecoder
     /// </summary>
     /// <param name="data">Raw bytes of the complete FILE_FIGHT_STAGES file.</param>
     /// <param name="stageId">Stage index, 0..26.</param>
+    /// <returns>The decoded <see cref="BattleStageInfo"/> for the requested stage.</returns>
     /// <exception cref="FormatException">Record out of bounds or id out of range.</exception>
     public static BattleStageInfo ParseRecord(byte[] data, int stageId)
     {

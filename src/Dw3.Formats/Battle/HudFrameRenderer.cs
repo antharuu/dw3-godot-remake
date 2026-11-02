@@ -28,6 +28,7 @@ public static class HudFrameRenderer
     /// <param name="clutRowOverride">If not null, overrides the per-frame CLUT row for palette animation.</param>
     /// <exception cref="FormatException">With message containing "palette outside loaded texture"
     /// when the computed CLUT row falls outside the page — caller should retry with row 0.</exception>
+    /// <returns>Tuple: RGBA pixel data, width and height in pixels, top-left offsets (dx/dy) in the source sheet, and the ABR blend mode.</returns>
     public static (byte[] Rgba, int Width, int Height, int OffsetX, int OffsetY, int Abr)
         RenderFrame(
             IReadOnlyList<HudSpritePart> parts,
@@ -54,6 +55,14 @@ public static class HudFrameRenderer
     /// Renders one sprite frame and also collects per-part metadata (part index, dx, dy).
     /// Used by the report decoder which needs both the image and the metadata.
     /// </summary>
+    /// <param name="parts">Parsed parts table from the sprite sheet.</param>
+    /// <param name="sheetBody">Sheet body bytes (starting 4 bytes into the raw file).</param>
+    /// <param name="frameOffset">Offset into sheetBody of the frame record.</param>
+    /// <param name="pages">4-bit texture pages (one or more).</param>
+    /// <param name="clutRowOverride">If not null, overrides the per-frame CLUT row for all parts.</param>
+    /// <returns>Tuple: RGBA pixel data, width, height, offsets, ABR blend mode, and per-part (partIndex, dx, dy) metadata.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="parts"/> or <paramref name="pages"/> is null.</exception>
+    /// <exception cref="FormatException">A palette or part record lies outside the texture pages.</exception>
     public static (byte[] Rgba, int Width, int Height, int OffsetX, int OffsetY, int Abr,
         IReadOnlyList<(int Part, int Dx, int Dy)> PartMeta)
         RenderFrameWithMeta(
@@ -83,6 +92,14 @@ public static class HudFrameRenderer
     /// Renders one sprite frame using field_frame semantics (metadata includes u/v/w/h/dx/dy/semi/clutRow).
     /// Used by the report decoder for the arrow frame from CMFONTCS.
     /// </summary>
+    /// <param name="parts">Parsed parts table from the CMFONTCS sprite sheet.</param>
+    /// <param name="sheetBody">Sheet body bytes (starting 4 bytes into the raw file).</param>
+    /// <param name="frameOffset">Offset into sheetBody of the frame record.</param>
+    /// <param name="pages">4-bit texture pages that supply the palette and pixel data.</param>
+    /// <param name="clutRow">CLUT row override to use for all parts (default 0).</param>
+    /// <returns>Tuple: RGBA pixel data, width, height, per-part field metadata, and the ABR blend mode.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="parts"/> or <paramref name="pages"/> is null.</exception>
+    /// <exception cref="FormatException">A palette or part record lies outside the texture pages.</exception>
     public static (byte[] Rgba, int Width, int Height, IReadOnlyList<FieldFramePartMeta> PartMeta, int Abr)
         RenderFieldFrame(
             IReadOnlyList<HudSpritePart> parts,
@@ -111,6 +128,12 @@ public static class HudFrameRenderer
     /// page = clutX / PageWidthWords, word = clutX % PageWidthWords within the page row.
     /// Throws with message containing "palette outside loaded texture" when clutY is out of range.
     /// </summary>
+    /// <param name="pages">List of decoded 4-bit texture pages.</param>
+    /// <param name="clutX">Horizontal CLUT position in halfwords within the texture page grid.</param>
+    /// <param name="clutY">Vertical CLUT row within the texture page.</param>
+    /// <param name="abr">ABR blend-mode flag (currently unused; reserved for future blending logic).</param>
+    /// <returns>Array of 16 packed PS1 15-bit colour entries.</returns>
+    /// <exception cref="FormatException">The CLUT location falls outside the loaded texture pages.</exception>
     public static ushort[] ReadPalette(IReadOnlyList<HudTexturePage> pages, int clutX, int clutY, bool abr)
     {
         _ = abr;

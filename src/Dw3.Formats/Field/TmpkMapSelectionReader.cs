@@ -12,6 +12,9 @@ public static class TmpkMapSelectionReader
     private const int MaximumSequenceWords = 96;
 
     /// <summary>Recovers the two required map archive entries from raw overlay bytes.</summary>
+    /// <param name="overlay">Raw bytes of the stage overlay that loads the TMPK maps.</param>
+    /// <returns>The recovered pair of TMPK archive entry indices referenced by the overlay.</returns>
+    /// <exception cref="FormatException">The overlay is not a valid MIPS instruction stream, or the expected two-map selection sequence is not found.</exception>
     public static TmpkMapSelection Recover(ReadOnlySpan<byte> overlay)
     {
         if (overlay.Length == 0 || overlay.Length % sizeof(uint) != 0)
@@ -73,6 +76,15 @@ public static class TmpkMapSelectionReader
         return null;
     }
 
+    /// <summary>
+    /// Attempts to match a one-based map-selection sequence starting at <paramref name="start"/>
+    /// using the $a1 register (map-index direct form): lui+ori load of the archive address,
+    /// followed by addiu for the one-based entry, stored into the overlay's data section.
+    /// </summary>
+    /// <param name="words">Overlay instruction stream as u32 words.</param>
+    /// <param name="start">Word index of the first instruction to test.</param>
+    /// <param name="selection">Output selection when the method returns true.</param>
+    /// <returns><see langword="true"/> when the sequence matches the expected pattern; otherwise false.</returns>
     private static bool TryReadOneBasedA1Descriptor(uint[] words, int start, out TmpkMapSelection selection)
     {
         selection = null!;

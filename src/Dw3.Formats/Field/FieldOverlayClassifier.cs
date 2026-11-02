@@ -8,5 +8,7 @@ namespace Dw3.Formats.Field;
 public static class FieldOverlayClassifier
 {
     /// <summary>Returns whether the disc member has a whole-word MIPS instruction stream.</summary>
+    /// <param name="overlay">Raw bytes of the disc member to classify.</param>
+    /// <returns><see langword="true"/> when the member is non-empty and its length is a multiple of 4 bytes.</returns>
     public static bool IsLoadable(ReadOnlySpan<byte> overlay) => overlay.Length > 0 && overlay.Length % sizeof(uint) == 0;
 }

@@ -3,6 +3,17 @@ namespace Dw3.Formats.Battle;
 /// <summary>Rebuilds a model texture archive's local VRAM and decodes consumer-selected PS1 pages.</summary>
 public static class BattleTextureDecoder
 {
+    /// <summary>
+    /// Builds the local VRAM from <paramref name="archive"/>, then decodes one texture page per
+    /// distinct tpage/CLUT combination used by <paramref name="consumers"/>.
+    /// </summary>
+    /// <param name="archive">Raw bytes of the model's texture archive (multi-entry TIM table).</param>
+    /// <param name="consumers">Texture state of every textured polygon that references this archive.</param>
+    /// <returns>
+    /// A <see cref="BattleTextureSet"/> with one entry per distinct combination, keyed in first-use order.
+    /// </returns>
+    /// <exception cref="ArgumentNullException"><paramref name="archive"/> or <paramref name="consumers"/> is null.</exception>
+    /// <exception cref="FormatException">The archive is malformed, a polygon uses an unsupported tpage mode, or no textured polygon is present.</exception>
     public static BattleTextureSet Decode(byte[] archive, IEnumerable<MeshTextureState> consumers)
     {
         ArgumentNullException.ThrowIfNull(archive);

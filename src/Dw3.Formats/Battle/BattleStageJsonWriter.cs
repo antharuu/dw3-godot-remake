@@ -19,6 +19,8 @@ public static class BattleStageJsonWriter
     /// <param name="edition">Edition identifier string (e.g. "SLES-03936").</param>
     /// <param name="stagePrefix">File-naming prefix for texture images, e.g. "stage-0".</param>
     /// <param name="modelSha256">SHA-256 hex digest of the raw model file bytes.</param>
+    /// <returns>Indented JSON string conforming to the <c>dw3-battle-model-v8</c> schema for a fight stage.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="info"/> or <paramref name="payload"/> is null.</exception>
     public static string WriteStageModel(BattleStageInfo info, BattleModelPayload payload,
         string edition, string stagePrefix, string modelSha256)
     {

@@ -2,7 +2,10 @@ namespace Dw3.Formats.Battle;
 
 /// <summary>A decoded mesh: geometry streams, polygons and the file offsets they came from.</summary>
 /// <param name="Bone">Bone that owns the mesh.</param>
+/// <param name="Vertices">Vertex positions in model space, decoded from the geometry command stream.</param>
+/// <param name="Normals">Vertex normals used for per-vertex lighting, decoded alongside vertices.</param>
 /// <param name="Triangles">Triangle list; each quad (i0, i1, i2, i3) yields (i0, i1, i2) and (i2, i1, i3).</param>
+/// <param name="Polygons">Raw polygon records (quads or tris) before triangle-fan expansion into <see cref="Triangles"/>.</param>
 /// <param name="EntryOffset">File offset of the mesh archive entry.</param>
 /// <param name="CommandOffset">File offset of the command stream.</param>
 /// <param name="BoundsOffset">File offset of the bounds entry.</param>

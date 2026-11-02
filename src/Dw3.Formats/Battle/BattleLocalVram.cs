@@ -19,6 +19,9 @@ internal sealed class BattleLocalVram
     private const int UploadColumnStride = 0x40;
     private const int PageRows = 256;
 
+    /// <summary>Initialises a fully-built local VRAM with its word buffer and decoded layout.</summary>
+    /// <param name="words">Row-major halfword array of size widthWords × height.</param>
+    /// <param name="layout">Upload positions and VRAM dimensions.</param>
     private BattleLocalVram(ushort[] words, BattleTextureVram layout)
     {
         Words = words;

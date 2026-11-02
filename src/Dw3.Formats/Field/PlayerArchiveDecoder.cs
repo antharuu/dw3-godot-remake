@@ -42,6 +42,8 @@ public static class PlayerArchiveDecoder
         };
 
     /// <summary>Returns the name of an animation set by ID, or "set_N" if unknown.</summary>
+    /// <param name="setId">Animation set identifier (0–7 have disc-verified names).</param>
+    /// <returns>Human-readable name for the set, or "set_N" when the id is not in the known table.</returns>
     public static string GetSetName(int setId) =>
         SetNames.TryGetValue(setId, out string? name) ? name : $"set_{setId}";
 

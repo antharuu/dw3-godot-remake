@@ -14,6 +14,10 @@ public static class StageSlotDecoder
     private const ushort MaximumSupportedType = 14;
 
     /// <summary>Decodes a StageSlot table starting at a byte offset in an overlay.</summary>
+    /// <param name="overlay">Raw bytes of the stage overlay.</param>
+    /// <param name="tableOffset">Byte offset within <paramref name="overlay"/> of the first StageSlot record.</param>
+    /// <returns>All decoded stage slots before the zero-type terminator, in table order.</returns>
+    /// <exception cref="FormatException">The offset is out of range, the data is malformed, or no terminator is found.</exception>
     public static IReadOnlyList<StageSlot> Decode(ReadOnlySpan<byte> overlay, int tableOffset)
     {
         if (tableOffset < 0 || tableOffset >= overlay.Length)
@@ -53,6 +57,10 @@ public static class StageSlotDecoder
         throw new FormatException("StageSlot table has no type-zero terminator.");
     }
 
+    /// <summary>Reads a little-endian u16 from <paramref name="bytes"/> at <paramref name="offset"/>.</summary>
+    /// <param name="bytes">Source byte span.</param>
+    /// <param name="offset">Byte offset; the read covers exactly 2 bytes.</param>
+    /// <returns>The decoded u16 value.</returns>
     private static ushort ReadUInt16(ReadOnlySpan<byte> bytes, int offset) =>
         BinaryPrimitives.ReadUInt16LittleEndian(bytes.Slice(offset, sizeof(ushort)));
 }

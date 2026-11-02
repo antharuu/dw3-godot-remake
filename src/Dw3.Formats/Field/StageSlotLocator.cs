@@ -15,15 +15,23 @@ public static class StageSlotLocator
     private const uint OverlayLoadAddress = 0x800A5DE0;
 
     /// <summary>Locates and decodes the unique referenced slot table.</summary>
-    /// <exception cref="FormatException">Thrown when more than one stageSlots assignment is present.</exception>
+    /// <param name="overlay">Raw bytes of the WSTAG stage overlay.</param>
+    /// <returns>The decoded slot list from the unique stageSlots pointer found in the overlay.</returns>
+    /// <exception cref="FormatException">Thrown when more than one stageSlots assignment is present or none is found.</exception>
     public static IReadOnlyList<StageSlot> LocateAndDecode(ReadOnlySpan<byte> overlay) =>
         TryLocate(overlay)?.Slots ?? throw new FormatException("MIPS overlay has no supported StageSlot table pointer.");
 
     /// <summary>Locates the optional stageSlots table, returning an empty list when this overlay does not assign it.</summary>
+    /// <param name="overlay">Raw bytes of the WSTAG stage overlay.</param>
+    /// <returns>The decoded slot list, or an empty list when the overlay has no stageSlots assignment.</returns>
+    /// <exception cref="FormatException">The overlay is not a valid whole-word MIPS instruction stream, or multiple conflicting pointers exist.</exception>
     public static IReadOnlyList<StageSlot> TryLocateAndDecode(ReadOnlySpan<byte> overlay) =>
         TryLocate(overlay)?.Slots ?? [];
 
     /// <summary>Returns the raw table coordinate with the decoded slots, when the optional member is assigned.</summary>
+    /// <param name="overlay">Raw bytes of the WSTAG stage overlay.</param>
+    /// <returns>The stageSlots table location and decoded slots, or null when no assignment is found.</returns>
+    /// <exception cref="FormatException">The overlay is not a valid whole-word MIPS instruction stream, or multiple conflicting pointers exist.</exception>
     public static StageSlotTable? TryLocate(ReadOnlySpan<byte> overlay)
     {
         if (overlay.Length == 0 || overlay.Length % sizeof(uint) != 0)
@@ -61,6 +69,17 @@ public static class StageSlotLocator
         };
     }
 
+    /// <summary>
+    /// Attempts to decode a 3-instruction <c>lui</c> + <c>addiu/ori</c> + <c>sw</c> sequence that
+    /// stores a pointer to the stageSlots field of the stage descriptor. Returns the file offset of
+    /// the slot table, or false when the sequence does not match the expected form.
+    /// </summary>
+    /// <param name="first">First instruction word (expected to be <c>lui</c>).</param>
+    /// <param name="second">Second instruction word (expected to be <c>addiu</c> or <c>ori</c>).</param>
+    /// <param name="third">Third instruction word (expected to be <c>sw</c> to field offset 0x14).</param>
+    /// <param name="overlayLength">Byte length of the overlay, used to validate the decoded offset.</param>
+    /// <param name="tableOffset">Output file offset of the slot table when the method returns true.</param>
+    /// <returns><see langword="true"/> when a valid stageSlots store sequence is recognized; otherwise false.</returns>
     private static bool TryReadOverlayPointer(uint first, uint second, uint third, int overlayLength, out int tableOffset)
     {
         tableOffset = 0;

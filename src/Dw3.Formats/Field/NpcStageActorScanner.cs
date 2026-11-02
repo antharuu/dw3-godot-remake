@@ -12,6 +12,11 @@ public static class NpcStageActorScanner
     private const int MaximumActors = 256;
 
     /// <summary>Returns the validated actor-entry addresses of the stage, or an empty list when setup stores none.</summary>
+    /// <param name="overlay">Raw overlay bytes of the stage.</param>
+    /// <param name="overlayLoadBase">RAM address at which the overlay is loaded.</param>
+    /// <param name="fieldStateAddress">RAM address of the field state struct that the setup code stores into.</param>
+    /// <returns>List of RAM addresses of valid FieldActorEntry instances, or empty when the setup stores no actor list.</returns>
+    /// <exception cref="FormatException">Multiple structurally valid actor lists are found.</exception>
     public static IReadOnlyList<uint> FindActorAddresses(
         ReadOnlySpan<byte> overlay,
         uint overlayLoadBase,
@@ -22,6 +27,11 @@ public static class NpcStageActorScanner
     /// Finds the unique structurally valid actor pointer list stored by the stage setup code into the
     /// field state record. Returns null when the setup never stores an actor list.
     /// </summary>
+    /// <param name="overlay">Raw overlay bytes of the stage.</param>
+    /// <param name="overlayLoadBase">RAM address at which the overlay is loaded.</param>
+    /// <param name="fieldStateAddress">RAM address of the field state struct.</param>
+    /// <param name="actorListFieldOffset">Byte offset of the actor-list pointer field within the field state (default 0x4C).</param>
+    /// <returns>The unique valid actor list, or null when setup stores no actor-list pointer.</returns>
     /// <exception cref="FormatException">Stores exist but none, or several, point to a valid list.</exception>
     public static NpcStageActorList? FindActorList(
         ReadOnlySpan<byte> overlay,
@@ -50,6 +60,15 @@ public static class NpcStageActorScanner
         };
     }
 
+    /// <summary>
+    /// Attempts to read a null-terminated actor pointer list at <paramref name="pointer"/> within the overlay.
+    /// Returns false when the pointer is out of range or the list length exceeds the maximum.
+    /// </summary>
+    /// <param name="overlay">Raw overlay bytes.</param>
+    /// <param name="pointer">RAM address of the first pointer in the actor list.</param>
+    /// <param name="overlayLoadBase">RAM address at which the overlay is loaded.</param>
+    /// <param name="actors">Output list of RAM addresses of actor entries when the method returns true.</param>
+    /// <returns><see langword="true"/> when a structurally valid actor list is found at the pointer; otherwise false.</returns>
     private static bool TryReadActorList(
         ReadOnlySpan<byte> overlay,
         uint pointer,

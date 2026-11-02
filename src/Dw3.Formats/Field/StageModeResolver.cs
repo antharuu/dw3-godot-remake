@@ -8,6 +8,9 @@ public static class StageModeResolver
     private const int ModeBeforeSlotTableBytes = 24;
 
     /// <summary>Maps every overlay's source mode to its stage identifier.</summary>
+    /// <param name="overlays">Sequence of (stageId, overlayBytes) pairs from the disc.</param>
+    /// <returns>Dictionary mapping source mode (u16) to stage identifier for every overlay that contains a valid slot table.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="overlays"/> is null.</exception>
     public static IReadOnlyDictionary<ushort, int> Build(IEnumerable<(int Stage, byte[] Overlay)> overlays)
     {
         ArgumentNullException.ThrowIfNull(overlays);

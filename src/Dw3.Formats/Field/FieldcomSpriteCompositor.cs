@@ -10,6 +10,14 @@ public static class FieldcomSpriteCompositor
     private const int PageTexels = 256;
     private const int MaximumParts = 16;
 
+    /// <summary>
+    /// Composites one FIELDCOM sprite frame from its part list and the decoded VRAM pages,
+    /// producing a single RGBA image with its source UV origin.
+    /// </summary>
+    /// <param name="parts">Sprite part table decoded from the FIELDCOM sprite sheet.</param>
+    /// <param name="frame">Raw 6-byte frame record (u16 count, u16 dx, u16 dy + one 6-byte slot per part).</param>
+    /// <param name="vram">Decoded FIELDCOM VRAM containing the 15-bit pixel data.</param>
+    /// <returns>The composited sprite frame as an RGBA image with its UV offset origin.</returns>
     /// <exception cref="FormatException">The frame or part references unavailable FIELDCOM data.</exception>
     public static FieldcomSpriteImage Compose(IReadOnlyList<SpritePart> parts, ReadOnlySpan<byte> frame, FieldcomVram vram)
     {

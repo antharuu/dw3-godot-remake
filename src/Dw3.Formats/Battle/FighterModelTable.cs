@@ -38,6 +38,11 @@ public sealed class FighterModelTable
     private readonly int _partners;
     private readonly int _enemies;
 
+    /// <summary>Initializes a new instance of the <see cref="FighterModelTable"/> class; called only by <see cref="Parse"/>.</summary>
+    /// <param name="data">Raw file bytes retained for record reads.</param>
+    /// <param name="entries">Parsed entry list (id, index, kind), without the zero-id terminator.</param>
+    /// <param name="partners">File offset of the partner record table.</param>
+    /// <param name="enemies">File offset of the enemy record table.</param>
     private FighterModelTable(byte[] data, IReadOnlyList<FighterModelEntry> entries, int partners, int enemies)
     {
         _data = data;
@@ -50,6 +55,8 @@ public sealed class FighterModelTable
     public IReadOnlyList<FighterModelEntry> Entries { get; }
 
     /// <summary>Parses the header and entry list of a fighter table file.</summary>
+    /// <param name="data">Raw bytes of the fighter model table file.</param>
+    /// <returns>The parsed fighter table ready for resolution and metadata reads.</returns>
     /// <exception cref="FormatException">The file is shorter than its header or its offsets are invalid.</exception>
     public static FighterModelTable Parse(byte[] data)
     {
@@ -78,6 +85,8 @@ public sealed class FighterModelTable
     }
 
     /// <summary>Resolves the first entry carrying <paramref name="fighterId"/> to its model and motion files.</summary>
+    /// <param name="fighterId">Fighter id to look up in the entry list.</param>
+    /// <returns>The model and motion archive references for the fighter.</returns>
     /// <exception cref="FormatException">The fighter is absent or its record lies outside the file.</exception>
     public FighterModelReference Resolve(int fighterId)
     {
@@ -90,6 +99,9 @@ public sealed class FighterModelTable
     }
 
     /// <summary>Reads placement, source cameras and face rectangles from the fighter record.</summary>
+    /// <param name="fighterId">Fighter id whose metadata to read.</param>
+    /// <returns>The decoded fighter metadata: cameras, geometry and face animation data.</returns>
+    /// <exception cref="FormatException">The fighter is absent or the record data is malformed.</exception>
     public BattleFighterMetadata ReadMetadata(int fighterId)
     {
         (_, int record, bool isEnemy) = Locate(fighterId);
@@ -150,6 +162,10 @@ public sealed class FighterModelTable
             new BattleFace(new BattleFaceSource(record, record + 0x0C, faceOffset, 10, "x==0xff"), parts));
     }
 
+    /// <summary>Locates the record of <paramref name="fighterId"/>, determining partner vs enemy and computing the file offset.</summary>
+    /// <param name="fighterId">Fighter id to locate.</param>
+    /// <returns>Tuple of the matching entry, the file offset of its record and whether it is an enemy.</returns>
+    /// <exception cref="FormatException">The fighter is absent or its record overruns the file.</exception>
     private (FighterModelEntry Entry, int Record, bool IsEnemy) Locate(int fighterId)
     {
         FighterModelEntry entry = Entries.FirstOrDefault(candidate => candidate.FighterId == fighterId)
@@ -164,8 +180,17 @@ public sealed class FighterModelTable
         return (entry, (int)record, isEnemy);
     }
 
+    /// <summary>Reads a little-endian s16 from the retained file data at byte offset <paramref name="at"/>.</summary>
+    /// <param name="at">Byte offset within the retained file bytes.</param>
+    /// <returns>The decoded s16 value.</returns>
     private short ReadI16(int at) => BinaryPrimitives.ReadInt16LittleEndian(_data.AsSpan(at, 2));
 
+    /// <summary>Reads a u32 file offset from <paramref name="data"/> at <paramref name="at"/> and validates it fits a signed int.</summary>
+    /// <param name="data">Raw file bytes.</param>
+    /// <param name="at">Byte offset of the u32 offset value; the read covers 4 bytes.</param>
+    /// <param name="name">Field name for use in the error message.</param>
+    /// <returns>The decoded offset as a signed integer.</returns>
+    /// <exception cref="FormatException">The value exceeds <see cref="int.MaxValue"/>.</exception>
     private static int ReadOffset(byte[] data, int at, string name)
     {
         uint value = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(at, 4));

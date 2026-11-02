@@ -11,6 +11,17 @@ public static class BattleAnimationDecoder
     private const int MaximumSteps = 256;
     private const short StepTerminator = 0x7FFF;
 
+    /// <summary>
+    /// Decodes the three keyframe tracks (translation, rotation, scale) for one bone from the
+    /// model's key archive. Each track is an offset into the archive that points to a list of
+    /// 8-byte keys (s16 x, y, z, frame), terminated when the frame number goes backwards.
+    /// </summary>
+    /// <param name="data">Full model file bytes.</param>
+    /// <param name="start">File offset of the bone's track offset table (3 × u32).</param>
+    /// <param name="end">File offset of the end of the bone's key region.</param>
+    /// <param name="bone">Zero-based bone index, used only in error messages.</param>
+    /// <returns>The decoded translation, rotation and scale tracks for this bone.</returns>
+    /// <exception cref="FormatException">An offset is invalid, a track is empty, or the archive bounds are wrong.</exception>
     public static BattleBoneTracks DecodeTracks(byte[] data, int start, int end, int bone)
     {
         int[] offsets = ReadOffsets(data, start, end, 3, $"bone {bone}: key track");
@@ -36,6 +47,16 @@ public static class BattleAnimationDecoder
         return new BattleBoneTracks(tracks[0], tracks[1], tracks[2]);
     }
 
+    /// <summary>
+    /// Decodes all motion sequences from a motion archive. The archive starts with a table of up to
+    /// 64 u32 offsets; each non-zero offset points to a sequence of 8-byte steps (s16 index, count,
+    /// frame, endFrame) terminated by a step whose index is 0x7FFF.
+    /// </summary>
+    /// <param name="data">Full motion file bytes.</param>
+    /// <param name="start">File offset of the motion archive's offset table.</param>
+    /// <param name="end">File offset of the end of the motion archive.</param>
+    /// <returns>One entry per recovered motion, each a list of steps including the 0x7FFF terminator.</returns>
+    /// <exception cref="FormatException">The archive bounds are invalid, no offsets are found, or a motion is truncated or unterminated.</exception>
     public static IReadOnlyList<IReadOnlyList<BattleMotionStep>> DecodeMotions(byte[] data, int start, int end)
     {
         if (start < 0 || end > data.Length || start >= end)
@@ -149,6 +170,17 @@ public static class BattleAnimationDecoder
         throw new FormatException($"motion {number} missing terminator");
     }
 
+    /// <summary>
+    /// Reads a fixed-count table of u32 offsets relative to <paramref name="start"/>; validates
+    /// bounds and range before returning, so callers can dereference offsets safely.
+    /// </summary>
+    /// <param name="data">Full file bytes.</param>
+    /// <param name="start">File offset of the offset table.</param>
+    /// <param name="end">File offset of the end of the covered archive.</param>
+    /// <param name="count">Number of u32 slots to read.</param>
+    /// <param name="label">Human-readable label used in error messages.</param>
+    /// <returns>The decoded offsets as signed integers, already validated against the archive bounds.</returns>
+    /// <exception cref="FormatException">The archive bounds are invalid or an offset is out of range.</exception>
     private static int[] ReadOffsets(byte[] data, int start, int end, int count, string label)
     {
         if (start < 0 || end > data.Length || start >= end || start + (count * 4) > end)
@@ -171,7 +203,15 @@ public static class BattleAnimationDecoder
         return result;
     }
 
+    /// <summary>Reads a little-endian signed 16-bit integer from <paramref name="data"/> at byte offset <paramref name="at"/>.</summary>
+    /// <param name="data">Source byte array.</param>
+    /// <param name="at">Byte offset of the first byte; the read covers exactly 2 bytes.</param>
+    /// <returns>The decoded s16 value.</returns>
     private static short ReadI16(byte[] data, int at) => BinaryPrimitives.ReadInt16LittleEndian(data.AsSpan(at, 2));
 
+    /// <summary>Reads a little-endian unsigned 32-bit integer from <paramref name="data"/> at byte offset <paramref name="at"/>.</summary>
+    /// <param name="data">Source byte array.</param>
+    /// <param name="at">Byte offset of the first byte; the read covers exactly 4 bytes.</param>
+    /// <returns>The decoded u32 value.</returns>
     private static uint ReadU32(byte[] data, int at) => BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(at, 4));
 }

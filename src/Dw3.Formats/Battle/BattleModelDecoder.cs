@@ -23,6 +23,9 @@ public static class BattleModelDecoder
     private const int BoneRecordBytes = 12;
 
     /// <summary>Decodes the model whose descriptor is archive entry <paramref name="modelEntry"/>.</summary>
+    /// <param name="data">Raw bytes of the model archive file.</param>
+    /// <param name="modelEntry">Zero-based archive entry index of the model descriptor.</param>
+    /// <returns>The decoded model structure: bones, meshes and texture archive entry reference.</returns>
     /// <exception cref="FormatException">The archive, descriptor or a mesh is malformed.</exception>
     public static BattleModelStructure Decode(byte[] data, int modelEntry)
     {
@@ -69,6 +72,13 @@ public static class BattleModelDecoder
     }
 
     /// <summary>Decodes all model assets. Both archive references may point into the same disc file.</summary>
+    /// <param name="modelData">Raw bytes of the model archive (contains descriptor, meshes, key and texture archives).</param>
+    /// <param name="modelEntry">Archive entry of the model descriptor.</param>
+    /// <param name="motionData">Raw bytes of the motion archive; may be the same object as <paramref name="modelData"/>.</param>
+    /// <param name="motionEntry">Archive entry of the motion data.</param>
+    /// <param name="metadata">Pre-decoded fighter metadata (cameras, geometry, face animation).</param>
+    /// <returns>The fully decoded model payload with structure, tracks, textures, motions and metadata.</returns>
+    /// <exception cref="FormatException">Any archive entry is absent or its data is malformed.</exception>
     public static BattleModelPayload DecodeComplete(
         byte[] modelData, int modelEntry, byte[] motionData, int motionEntry, BattleFighterMetadata metadata)
     {
@@ -101,6 +111,8 @@ public static class BattleModelDecoder
     /// <param name="modelData">Raw bytes of the model/motion archive file.</param>
     /// <param name="modelEntry">Archive entry of the model mesh data.</param>
     /// <param name="motionEntry">Archive entry of the animation data (from FightStageInfo).</param>
+    /// <returns>The decoded model payload with empty fighter metadata placeholder.</returns>
+    /// <exception cref="FormatException">Any archive entry is absent or malformed.</exception>
     public static BattleModelPayload DecodeStage(byte[] modelData, int modelEntry, int motionEntry)
     {
         BattleModelStructure structure = Decode(modelData, modelEntry);
@@ -191,5 +203,9 @@ public static class BattleModelDecoder
         return BattleTextureDecoder.Decode(textureArchive, consumers);
     }
 
+    /// <summary>Reads a little-endian u32 from <paramref name="data"/> at byte offset <paramref name="at"/>.</summary>
+    /// <param name="data">Source byte array.</param>
+    /// <param name="at">Byte offset; the read covers exactly 4 bytes.</param>
+    /// <returns>The decoded u32 value.</returns>
     private static uint ReadU32(byte[] data, int at) => BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(at, 4));
 }

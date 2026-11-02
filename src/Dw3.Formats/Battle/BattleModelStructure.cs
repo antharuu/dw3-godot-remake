@@ -3,6 +3,7 @@ namespace Dw3.Formats.Battle;
 /// <summary>The structural half of a battle model: hierarchy and meshes.</summary>
 /// <param name="ModelEntry">Archive entry of the model descriptor.</param>
 /// <param name="TextureEntry">Archive entry of the model's texture archive.</param>
+/// <param name="Bones">All bones in hierarchy order; index 0 is the root (no parent, no mesh).</param>
 /// <param name="Meshes">One mesh per non-root bone, in bone order.</param>
 public sealed record BattleModelStructure(
     int ModelEntry,

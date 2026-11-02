@@ -17,21 +17,34 @@ namespace Dw3.Formats.Battle;
 public static class BattleReportDecoder
 {
     // Engine file ids (EU disc).
+    /// <summary>Disc file id of the STFGTREP result-screen sprite sheet (file 0x79F); entry 0 is the frame records.</summary>
     public const int SheetFileId = 0x79F;
+
+    /// <summary>Disc file id of the STFGTREP result-screen texture archive (file 0x7A0).</summary>
     public const int TextureFileId = 0x7A0;
+
     /// <summary>Disc path of the STFGTREP overlay, for documentation purposes.</summary>
     public const string OverlayDiscPath = "AAA/PRO/STFGTREP.PRO";
 
     // Overlay load base and animation table address (EU).
+    /// <summary>PS1 load base address of the STFGTREP.PRO overlay in RAM (EU disc).</summary>
     public const uint OverlayBase = 0x80082CB0;
+
+    /// <summary>PS1 RAM address of the STFGTREP_animations table (EU disc); byte offset = AnimationsAddr − OverlayBase.</summary>
     public const uint AnimationsAddr = 0x8008905C;
 
     // 8 partners × 7 frame slots (s32 each), terminated with -1.
+    /// <summary>Number of partner rows in the STFGTREP_animations table (one row per playable partner slot).</summary>
     public const int AnimationPartners = 8;
+
+    /// <summary>Number of frame slots per partner row in STFGTREP_animations; the row ends at the first -1 value.</summary>
     public const int AnimationFrames = 7;
 
     // Arrow frame from CMFONTCS: MESSAGE_ARROW_FRAME = 10, 5 CLUT rows.
+    /// <summary>Frame id 10 from the CMFONTCS menu sprite sheet, borrowed as the report-screen arrow sprite.</summary>
     public const int ArrowFrameId = 10;
+
+    /// <summary>Number of CLUT rows consumed by the arrow frame (5 rows at the bottom of the CLUT page).</summary>
     public const int ArrowRows = 5;
 
     /// <summary>
@@ -41,6 +54,10 @@ public static class BattleReportDecoder
     public static readonly IReadOnlyDictionary<int, int> RequiredFrameRows = BuildRequiredRows();
 
     // Pinned animation sequences from STFGTREP_animations (EU disc).
+    /// <summary>
+    /// Known-good STFGTREP_animations values for the EU disc, used to verify the overlay hasn't changed.
+    /// Each row is one partner's 7-slot sequence, terminated by -1.
+    /// </summary>
     private static readonly int[,] PinnedAnimations =
     {
         { 7, 8, 9, 10, 9, 8, -1 },
@@ -58,6 +75,10 @@ public static class BattleReportDecoder
     /// The table is 8 rows × 7 s32 values at address 0x8008905C (EU overlay base 0x80082CB0).
     /// Throws <see cref="FormatException"/> if the table is absent or differs from the pinned EU values.
     /// </summary>
+    /// <param name="overlay">Raw bytes of the STFGTREP.PRO overlay file.</param>
+    /// <returns>The 8 × 7 animation table as a two-dimensional s32 array (partner × frame slot).</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="overlay"/> is null.</exception>
+    /// <exception cref="FormatException">The table address falls outside the overlay, or a value differs from the pinned EU sequence.</exception>
     public static int[,] ReadAnimations(byte[] overlay)
     {
         ArgumentNullException.ThrowIfNull(overlay);
@@ -75,6 +96,10 @@ public static class BattleReportDecoder
     }
 
     /// <summary>Returns the index of <paramref name="frameId"/> in <paramref name="ids"/>.</summary>
+    /// <param name="ids">Ordered list of frame ids from a sprite sheet.</param>
+    /// <param name="frameId">Frame id to locate within <paramref name="ids"/>.</param>
+    /// <returns>Zero-based index of the first occurrence of <paramref name="frameId"/>.</returns>
+    /// <exception cref="FormatException">The frame id is not present in the list.</exception>
     public static int FramePosition(IReadOnlyList<int> ids, int frameId)
     {
         for (int i = 0; i < ids.Count; i++)
@@ -88,6 +113,11 @@ public static class BattleReportDecoder
         throw new FormatException($"Sprite sheet lacks required frame id {frameId}.");
     }
 
+    /// <summary>
+    /// Builds the per-frame CLUT row count map used when decoding the STFGTREP texture pages.
+    /// Frames 0x00..0x1C need 1 row, 0x1D..0x23 need 11 rows, 0x24 and 0x25 need 4 rows.
+    /// </summary>
+    /// <returns>Immutable dictionary mapping frame id to its required CLUT row count.</returns>
     private static Dictionary<int, int> BuildRequiredRows()
     {
         var d = new Dictionary<int, int>();

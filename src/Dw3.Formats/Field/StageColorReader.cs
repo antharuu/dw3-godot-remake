@@ -27,7 +27,7 @@ namespace Dw3.Formats.Field;
 /// EU disc confirmed patterns (SLES_039.36, all stage overlays):
 ///   {0x54, 0x67, 0x96, 0x00} = [84, 103, 150, cd=0]
 ///   {0x54, 0x67, 0x96, 0x01} = [84, 103, 150, cd=1]  (high-depth stages)
-///   {0x80, 0x80, 0x80, 0x00} = [128, 128, 128, cd=0]
+///   {0x80, 0x80, 0x80, 0x00} = [128, 128, 128, cd=0].
 /// </summary>
 public static class StageColorReader
 {
@@ -48,6 +48,8 @@ public static class StageColorReader
     /// Returns the [r, g, b] depth-11 modulate from the overlay, or null
     /// when the overlay contains no recognized stageColor CVECTOR.
     /// </summary>
+    /// <param name="overlay">Raw bytes of the stage overlay.</param>
+    /// <returns>3-byte array [r, g, b] of the recognized stageColor CVECTOR, or null when not found.</returns>
     public static byte[]? TryRead(ReadOnlySpan<byte> overlay)
     {
         if (overlay.Length < 4)

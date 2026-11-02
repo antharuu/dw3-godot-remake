@@ -47,6 +47,12 @@ public static class NpcDiscTableDecoder
         return new NpcDiscTables(entries, widths, progress.Ranges, progress.SpecialProgressRanges);
     }
 
+    /// <summary>Validates that <paramref name="offset"/> + <paramref name="count"/> bytes lie within <paramref name="length"/>.</summary>
+    /// <param name="length">Total byte length of the containing buffer.</param>
+    /// <param name="offset">Starting byte offset of the region to validate.</param>
+    /// <param name="count">Byte count of the region to validate.</param>
+    /// <param name="name">Human-readable name of the field, used in the error message.</param>
+    /// <exception cref="FormatException">The region lies outside the buffer.</exception>
     private static void RequireRange(int length, int offset, int count, string name)
     {
         if (offset < 0 || count < 0 || (long)offset + count > length)

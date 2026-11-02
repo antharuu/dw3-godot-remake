@@ -7,6 +7,12 @@ namespace Dw3.Formats.Battle;
 public static class HudColor
 {
     // PS1 5-bit channel expansion matching battle_hud.py: value * 255 // 31 (integer division).
+    /// <summary>
+    /// Expands one PS1 5-bit colour channel (0..31) to the nearest 8-bit equivalent (0..255),
+    /// using the formula <c>value × 255 / 31</c> (integer division, matching the Python reference).
+    /// </summary>
+    /// <param name="value">5-bit channel value in the range 0..31.</param>
+    /// <returns>Expanded 8-bit value in the range 0..255.</returns>
     public static byte Ps1Channel(int value) => (byte)(value * 255 / 31);
 
     /// <summary>Writes the expanded red, green and blue channels of <paramref name="color"/> at <paramref name="at"/>.</summary>
