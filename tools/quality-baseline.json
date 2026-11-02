@@ -16,18 +16,6 @@
       "count": 1
     },
     {
-      "rule": "CA1305",
-      "project": "Dw3.Extractor.Tests",
-      "folder": ".",
-      "count": 8
-    },
-    {
-      "rule": "CA1305",
-      "project": "Dw3.Game.Tests",
-      "folder": ".",
-      "count": 7
-    },
-    {
       "rule": "CA1707",
       "project": "Dw3.Analyzers.Tests",
       "folder": ".",
@@ -86,30 +74,6 @@
       "project": "Dw3.Repository.Tests",
       "folder": ".",
       "count": 44
-    },
-    {
-      "rule": "CA1859",
-      "project": "Dw3.Formats.Tests",
-      "folder": "Field",
-      "count": 1
-    },
-    {
-      "rule": "CA1859",
-      "project": "Dw3.Game.Tests",
-      "folder": ".",
-      "count": 1
-    },
-    {
-      "rule": "CA1861",
-      "project": "Dw3.Game.Tests",
-      "folder": ".",
-      "count": 7
-    },
-    {
-      "rule": "CA1875",
-      "project": "Dw3.Repository.Tests",
-      "folder": ".",
-      "count": 1
     },
     {
       "rule": "CS1573",
@@ -186,12 +150,6 @@
     {
       "rule": "S107",
       "project": "Dw3.Formats.Tests",
-      "folder": "Field",
-      "count": 1
-    },
-    {
-      "rule": "S107",
-      "project": "Dw3.Formats.Tests",
       "folder": "Water",
       "count": 1
     },
@@ -224,24 +182,6 @@
       "project": "Dw3.Extractor",
       "folder": ".",
       "count": 2
-    },
-    {
-      "rule": "S1144",
-      "project": "Dw3.Formats.Tests",
-      "folder": "Encounter",
-      "count": 1
-    },
-    {
-      "rule": "S1144",
-      "project": "Dw3.Formats.Tests",
-      "folder": "Mips",
-      "count": 1
-    },
-    {
-      "rule": "S1144",
-      "project": "Dw3.Repository.Tests",
-      "folder": ".",
-      "count": 1
     },
     {
       "rule": "S1215",
@@ -476,12 +416,6 @@
       "project": "Dw3.Disc",
       "folder": ".",
       "count": 1
-    },
-    {
-      "rule": "S6580",
-      "project": "Dw3.Extractor.Tests",
-      "folder": ".",
-      "count": 8
     },
     {
       "rule": "SA1107",
@@ -1370,12 +1304,6 @@
       "project": "Dw3.Formats",
       "folder": "Field",
       "count": 2
-    },
-    {
-      "rule": "SA1500",
-      "project": "Dw3.Formats.Tests",
-      "folder": "Binary",
-      "count": 1
     },
     {
       "rule": "SA1501",

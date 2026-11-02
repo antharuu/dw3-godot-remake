@@ -10,9 +10,9 @@ public sealed class StageSlotDecoderTests
     public void DecodesTypeZeroTerminatedRecordsFromOverlayDataOffset()
     {
         byte[] overlay = new byte[72];
-        WriteRecord(overlay, 0, condition: 0xffff, type: 1, arg: 0x202, x: 776, y: 224, direction: 1);
-        WriteRecord(overlay, 24, condition: 0x7007, type: 4, arg: 9, x: 32, y: 48, direction: 2);
-        WriteRecord(overlay, 48, condition: 0xffff, type: 0, arg: 0, x: 0, y: 0, direction: 0);
+        WriteRecord(overlay, 0, new StageSlot(0xffff, 1, 0x202, 776, 224, 1));
+        WriteRecord(overlay, 24, new StageSlot(0x7007, 4, 9, 32, 48, 2));
+        WriteRecord(overlay, 48, new StageSlot(0xffff, 0, 0, 0, 0, 0));
 
         IReadOnlyList<StageSlot> slots = StageSlotDecoder.Decode(overlay, 0);
 
@@ -45,10 +45,10 @@ public sealed class StageSlotDecoderTests
         // member assignment and must not be selected.
         BinaryPrimitives.WriteUInt32LittleEndian(overlay.AsSpan(12), 0x3C02800Au);
         BinaryPrimitives.WriteUInt32LittleEndian(overlay.AsSpan(16), 0x24425E50u);
-        WriteRecord(overlay, tableOffset, condition: 0xffff, type: 1, arg: 0x202, x: 776, y: 224, direction: 1);
-        WriteRecord(overlay, tableOffset + 24, condition: 0xffff, type: 0, arg: 0, x: 0, y: 0, direction: 0);
-        WriteRecord(overlay, 0x70, condition: 1, type: 6, arg: 99, x: 0, y: 0, direction: 0);
-        WriteRecord(overlay, 0x70 + 24, condition: 0xffff, type: 0, arg: 0, x: 0, y: 0, direction: 0);
+        WriteRecord(overlay, tableOffset, new StageSlot(0xffff, 1, 0x202, 776, 224, 1));
+        WriteRecord(overlay, tableOffset + 24, new StageSlot(0xffff, 0, 0, 0, 0, 0));
+        WriteRecord(overlay, 0x70, new StageSlot(1, 6, 99, 0, 0, 0));
+        WriteRecord(overlay, 0x70 + 24, new StageSlot(0xffff, 0, 0, 0, 0, 0));
 
         IReadOnlyList<StageSlot> slots = StageSlotLocator.LocateAndDecode(overlay);
 
@@ -57,13 +57,13 @@ public sealed class StageSlotDecoderTests
             slot => Assert.Equal(new StageSlot(0xffff, 0, 0, 0, 0, 0), slot));
     }
 
-    private static void WriteRecord(byte[] bytes, int offset, ushort condition, ushort type, ushort arg, ushort x, ushort y, ushort direction)
+    private static void WriteRecord(byte[] bytes, int offset, StageSlot slot)
     {
-        BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(offset), condition);
-        BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(offset + 8), type);
-        BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(offset + 10), arg);
-        BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(offset + 12), x);
-        BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(offset + 14), y);
-        BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(offset + 16), direction);
+        BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(offset), slot.Condition);
+        BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(offset + 8), slot.Type);
+        BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(offset + 10), slot.Argument);
+        BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(offset + 12), slot.X);
+        BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(offset + 14), slot.Y);
+        BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(offset + 16), slot.Direction);
     }
 }

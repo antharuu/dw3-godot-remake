@@ -74,7 +74,9 @@ public sealed class RlenDecoderTests
         // Command 0x7F = literal run of 127 bytes
         var payload = new byte[127];
         for (int i = 0; i < 127; i++) payload[i] = (byte)i;
-        var stream = new List<byte> { (byte)'R', (byte)'L', (byte)'E', (byte)'N',
+        var stream = new List<byte>
+        {
+            (byte)'R', (byte)'L', (byte)'E', (byte)'N',
             127, 0, 0, 0,  // target = 127
             0x7F // literal 127
         };
