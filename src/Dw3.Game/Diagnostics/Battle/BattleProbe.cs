@@ -18,6 +18,9 @@ internal abstract class BattleProbe
     /// <summary>Gets the stable error prefix consumed by headless probe scripts.</summary>
     protected abstract string FailureCode { get; }
 
+    /// <summary>Gets the exit code requested when <see cref="ExecuteAsync"/> completes without throwing.</summary>
+    protected virtual int CompletedExitCode => 0;
+
     /// <summary>Runs the probe and terminates the engine with its verdict.</summary>
     /// <returns>A task that completes once termination is requested.</returns>
     public async Task RunAsync()
@@ -25,7 +28,7 @@ internal abstract class BattleProbe
         try
         {
             await ExecuteAsync();
-            Host.Quit(0);
+            Host.Quit(CompletedExitCode);
         }
         catch (PsxReferenceUnavailableException error)
         {

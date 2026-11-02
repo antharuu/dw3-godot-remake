@@ -38,6 +38,9 @@ internal interface IBattleProbeHost
     /// <summary>Gets the decoded fighter manifest, or null before startup completes.</summary>
     FighterData? FighterData { get; }
 
+    /// <summary>Gets the data-pack directory holding the decoded fighter battle models.</summary>
+    string BattleModelsDirectory { get; }
+
     /// <summary>Gets the decoded technique manifest, or null before startup completes.</summary>
     TechniqueData? TechData { get; }
 
@@ -116,8 +119,14 @@ internal interface IBattleProbeHost
     /// <returns>The model JSON path in the data pack.</returns>
     string ResolveBattleModelPath(int fighterId);
 
-    /// <summary>Renders the fighter diagnostic sheet and requests engine termination with its result.</summary>
-    void RunFighterSheet();
+    /// <summary>Resolves the decoded battle stage file of a stage id.</summary>
+    /// <param name="stageId">Source battle stage id.</param>
+    /// <returns>The stage JSON path in the data pack.</returns>
+    string ResolveBattleStagePath(int stageId);
+
+    /// <summary>Records a fighter built outside the battle flow as the rendered player and releases the command camera.</summary>
+    /// <param name="fighterId">Source fighter id rendered by the sheet.</param>
+    void AdoptSheetFighter(int fighterId);
 
     /// <summary>Runs one fixed battle simulation step.</summary>
     void TickTestSimulation();

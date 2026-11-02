@@ -35,6 +35,9 @@ public partial class GameHost : IBattleProbeHost
     FighterData? IBattleProbeHost.FighterData => _fighterData;
 
     /// <inheritdoc/>
+    string IBattleProbeHost.BattleModelsDirectory => Path.Combine(_dataRoot, "data", "battle", "models");
+
+    /// <inheritdoc/>
     TechniqueData? IBattleProbeHost.TechData => _techData;
 
     /// <inheritdoc/>
@@ -114,7 +117,14 @@ public partial class GameHost : IBattleProbeHost
     string IBattleProbeHost.ResolveBattleModelPath(int fighterId) => ResolveBattleModelPath(fighterId);
 
     /// <inheritdoc/>
-    void IBattleProbeHost.RunFighterSheet() => RunFighterSheet();
+    string IBattleProbeHost.ResolveBattleStagePath(int stageId) => ResolveBattleStagePath(stageId);
+
+    /// <inheritdoc/>
+    void IBattleProbeHost.AdoptSheetFighter(int fighterId)
+    {
+        _battlePlayerCameraActive = false;
+        _battleRenderedPlayerId = fighterId;
+    }
 
     /// <inheritdoc/>
     void IBattleProbeHost.TickTestSimulation() => TickTestSimulation();
@@ -165,7 +175,7 @@ public partial class GameHost : IBattleProbeHost
     Image IBattleProbeHost.CaptureViewport() => GetViewport().GetTexture().GetImage();
 
     /// <inheritdoc/>
-    Image IBattleProbeHost.LoadPsxReference(string subPath) => LoadPsxReference(subPath);
+    Image IBattleProbeHost.LoadPsxReference(string subPath) => PsxReferenceImages.Load(subPath);
 
     /// <inheritdoc/>
     void IBattleProbeHost.Quit(int exitCode) => GetTree().Quit(exitCode);
