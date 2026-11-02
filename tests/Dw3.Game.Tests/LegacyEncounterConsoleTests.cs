@@ -141,7 +141,7 @@ public sealed class LegacyEncounterConsoleTests
         Check(controller.StartEventBattle(0) is null, "event battle without a battles table is skipped");
     }
 
-    private static IReadOnlyList<BattleList> FourAreas(int encounterBase, int count)
+    private static BattleList[] FourAreas(int encounterBase, int count)
     {
         var areas = new BattleList[4];
         for (var area = 0; area < 4; area++)

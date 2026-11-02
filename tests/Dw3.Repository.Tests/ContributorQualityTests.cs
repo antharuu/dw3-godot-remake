@@ -45,7 +45,7 @@ public sealed class ContributorQualityTests
     private static int CountPostfixNullForgivingOperators(string path)
     {
         string source = File.ReadAllText(path);
-        return Regex.Matches(source, @"(?:(?<=\w)|(?<=[\)\]\}]))!(?=\s*(?:[.\[;,\)\]\}:]))").Count;
+        return Regex.Count(source, @"(?:(?<=\w)|(?<=[\)\]\}]))!(?=\s*(?:[.\[;,\)\]\}:]))");
     }
 
     private static string FindRepoRoot()

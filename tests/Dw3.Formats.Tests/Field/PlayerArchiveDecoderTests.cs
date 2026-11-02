@@ -369,7 +369,7 @@ public sealed class PlayerArchiveDecoderTests
     /// </summary>
     private static byte[] BuildArchiveWithSequence(
         int seqIndex,
-        IReadOnlyList<(int Duration, int Frame, int OffsetX, int OffsetY)> records,
+        (int Duration, int Frame, int OffsetX, int OffsetY)[] records,
         int terminator)
     {
         // Entries 0..(seqIndex-1) are 4-byte dummies.
@@ -378,7 +378,7 @@ public sealed class PlayerArchiveDecoderTests
         int priorPayloadBytes = seqIndex * 4;
         int seqOffset = offsetTableBytes + priorPayloadBytes;
         // Sequence payload: N records (each 4 i32) + 1 terminator (1 i32) = (4N+1)*4 bytes
-        int seqBytes = (records.Count * 4 + 1) * 4;
+        int seqBytes = (records.Length * 4 + 1) * 4;
         // Next entry padding: 4 bytes
         int nextOffset = seqOffset + seqBytes;
         int totalSize = nextOffset + 4;
