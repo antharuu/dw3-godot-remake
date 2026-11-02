@@ -6,8 +6,32 @@ using Dw3.Formats.Water;
 
 namespace Dw3.Extractor;
 
+/// <summary>
+/// Extracts the field connection cue and icon domains from the supported disc.
+///
+/// Sources: <c>AAA/DAT/FIELD/FIELDCOM.BIN</c> (sprite archive with four entries) and
+/// <c>AAA/PRO/FIELDSTG.PRO</c> (animation behaviour table).
+///
+/// Domain <c>"cue"</c>: emits the connection-cue animation frames used when the player
+/// approaches a warp exit, built from archive entries 0, 2 and 3 plus the inner sequences
+/// decoded from FIELDSTG.PRO.
+///
+/// Domain <c>"icon"</c>: emits the above-head connection indicator frames and their
+/// icon animation sequences.
+/// </summary>
 internal static class FieldcomExtractionStep
 {
+    /// <summary>
+    /// Opens the disc at <paramref name="cuePath"/>, reads FIELDCOM.BIN and FIELDSTG.PRO,
+    /// decodes the requested domain's frames and sequences, and writes a data pack to
+    /// <paramref name="outputDirectory"/>.
+    /// </summary>
+    /// <param name="cuePath">Path to the disc CUE file.</param>
+    /// <param name="outputDirectory">Root directory for the written data pack.</param>
+    /// <param name="domain">Either <c>"cue"</c> (warp-exit connection animation) or <c>"icon"</c> (above-head indicator).</param>
+    /// <param name="output">Receives one JSON progress line on success.</param>
+    /// <param name="error">Receives a plain-text error message on failure.</param>
+    /// <returns>0 on success, 1 on any disc or decoding error.</returns>
     internal static int Extract(string cuePath, string outputDirectory, string domain, TextWriter output, TextWriter error)
     {
         try
@@ -61,9 +85,26 @@ internal static class FieldcomExtractionStep
         }
     }
 
+    /// <summary>
+    /// Returns the first entry in <paramref name="entries"/> whose ISO path equals <paramref name="path"/>.
+    /// </summary>
+    /// <param name="entries">Flat list of disc file entries from <see cref="Dw3.Disc.DiscSource.ListFiles"/>.</param>
+    /// <param name="path">ISO 9660 path to match, case-sensitive (e.g. <c>AAA/DAT/FIELD/FIELDCOM.BIN</c>).</param>
+    /// <returns>The matching entry.</returns>
+    /// <exception cref="InvalidDataException">No entry with the given path was found.</exception>
     private static DiscFileEntry Require(IReadOnlyList<DiscFileEntry> entries, string path) =>
         entries.SingleOrDefault(x => x.IsoPath == path) ?? throw new InvalidDataException($"Required disc file missing: {path}");
 
+    /// <summary>
+    /// Decodes one sprite frame from the FIELDCOM sheet and VRAM: looks up frame <paramref name="id"/>
+    /// in the sprite sheet, composites its parts against the CLUT data in <paramref name="vram"/>,
+    /// and converts the resulting RGB15 words to 32-bit RGBA, treating colour zero as fully transparent.
+    /// </summary>
+    /// <param name="id">Frame index within the sprite sheet (0-based, from FIELDCOM.BIN archive entry 0).</param>
+    /// <param name="sheet">Decoded FIELDCOM sprite sheet providing part descriptors and per-frame part lists.</param>
+    /// <param name="vram">Decoded FIELDCOM VRAM providing the CLUT data for colour lookup.</param>
+    /// <returns>The composited frame with its pixel dimensions, draw offsets, ABR flag, and RGBA data.</returns>
+    /// <exception cref="FormatException">The sheet does not contain a frame with the given id.</exception>
     private static FieldcomExtractedFrame DecodeFrame(int id, SpriteSheet sheet, FieldcomVram vram)
     {
         if (!sheet.Frames.TryGetValue(id, out var raw))

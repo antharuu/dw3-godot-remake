@@ -127,6 +127,7 @@ public static class FieldcomDomainWriter
     }
 
     // Inner sequences carry the field row the cue selects them by; pop sequences have none.
+
     /// <summary>
     /// Inserts one row per animation step into <c>cue_sequences</c> for all named cue sequences.
     /// Inner sequences carry the field row derived from their first frame; pop sequences use NULL.

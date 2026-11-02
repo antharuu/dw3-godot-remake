@@ -12,6 +12,14 @@ namespace Dw3.Extractor;
 /// </summary>
 internal static class DialogueAnalysisCommand
 {
+    /// <summary>
+    /// Parses <c>--disc</c> and <c>--details</c> command-line arguments, reads the disc,
+    /// runs the ROM-wide dialogue analysis, and calls <see cref="Report"/> to write the output.
+    /// </summary>
+    /// <param name="arguments">Command-line arguments; element 0 is the subcommand name.</param>
+    /// <param name="output">Receives the summary line and optional per-stage JSON lines.</param>
+    /// <param name="error">Receives usage or error messages on failure.</param>
+    /// <returns>0 on success, 1 on disc or analysis error, 2 on invalid arguments.</returns>
     public static int Run(IReadOnlyList<string> arguments, TextWriter output, TextWriter error)
     {
         string? cuePath = null;
@@ -84,6 +92,12 @@ internal static class DialogueAnalysisCommand
                 output.WriteLine(StageJson(stage));
     }
 
+    /// <summary>
+    /// Serializes <paramref name="stage"/> to a JSON string: stage id, mode, text-file selector,
+    /// actor-list RAM address, and the per-actor actor/talk-table data.
+    /// </summary>
+    /// <param name="stage">The stage dialogue analysis result to serialize.</param>
+    /// <returns>A compact JSON string (no indentation) describing the stage analysis.</returns>
     private static string StageJson(StageDialogueAnalysis stage)
     {
         using var buffer = new MemoryStream();
@@ -130,6 +144,13 @@ internal static class DialogueAnalysisCommand
         return System.Text.Encoding.UTF8.GetString(buffer.ToArray());
     }
 
+    /// <summary>
+    /// Writes a JSON array named <paramref name="name"/> containing <c>[code, value]</c> pairs
+    /// for each <see cref="NpcCondition"/> in <paramref name="pairs"/>.
+    /// </summary>
+    /// <param name="json">JSON writer positioned inside the actor object.</param>
+    /// <param name="name">Array property name (e.g. <c>"conditions"</c> or <c>"actions"</c>).</param>
+    /// <param name="pairs">NPC condition/action pairs to serialize as two-element arrays.</param>
     private static void WritePairs(Utf8JsonWriter json, string name, IReadOnlyList<NpcCondition> pairs)
     {
         json.WriteStartArray(name);

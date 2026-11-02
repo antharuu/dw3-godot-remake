@@ -29,8 +29,13 @@ internal sealed class DiscNpcActorTableSource : INpcActorTableSource
     private readonly IReadOnlyList<int> _stageIds;
 
     /// <summary>
-    /// Initialises all table fields; use <see cref="Create"/> to build an instance from a disc.
+    /// Initializes a new instance of the <see cref="DiscNpcActorTableSource"/> class.
+    /// All four table fields are assigned directly; use <see cref="Create"/> to build an instance from a live disc.
     /// </summary>
+    /// <param name="tables">Decoded NPC disc tables (actor widths, progress conditions, file-sector map).</param>
+    /// <param name="actors">Per-stage list of actor references decoded from the stage overlays.</param>
+    /// <param name="filePaths">Per-file-number ISO paths used to locate actor sprite archives on the disc.</param>
+    /// <param name="stageIds">Ordered list of stage ids whose overlays were successfully decoded.</param>
     private DiscNpcActorTableSource(
         NpcDiscTables tables,
         IReadOnlyDictionary<int, IReadOnlyList<NpcActorReference>> actors,
@@ -109,6 +114,7 @@ internal sealed class DiscNpcActorTableSource : INpcActorTableSource
 
     // Player-lead classification is not required to decode placement or visibility. It is left false
     // rather than embedding character identifiers that are game content rather than format knowledge.
+
     /// <summary>
     /// Always returns <see langword="false"/>: player-lead classification is not required to decode
     /// placement or visibility and is deferred to avoid embedding game-content character identifiers.

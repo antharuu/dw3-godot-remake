@@ -42,8 +42,24 @@ internal static class TextExtractionStep
     private const int GlyphCodeBase = 4;
     private const int IconCodeBase = 1;
 
+    /// <summary>
+    /// Returns the disc path for the French field text file at <paramref name="index"/>:
+    /// <c>AAA/DAT/COUNTRY/FRA/FSTALKnn.BIN</c> where <c>nn</c> is the zero-padded index.
+    /// </summary>
+    /// <param name="index">File index in the range 0..9.</param>
+    /// <returns>ISO 9660 disc path for the corresponding FSTALK file.</returns>
     private static string TalkDiscPath(int index) => $"AAA/DAT/COUNTRY/FRA/FSTALK{index:D2}.BIN";
 
+    /// <summary>
+    /// Opens the disc at <paramref name="cuePath"/> and dispatches to either
+    /// <c>ExtractFont</c> or <c>ExtractText</c> depending on <paramref name="domain"/>.
+    /// </summary>
+    /// <param name="cuePath">Path to the disc CUE file.</param>
+    /// <param name="outputDirectory">Root directory for the written data pack.</param>
+    /// <param name="domain">Either <c>"font"</c> or <c>"text"</c>; determines which extraction path to take.</param>
+    /// <param name="output">Receives JSON progress lines on success.</param>
+    /// <param name="error">Receives a plain-text error message on failure.</param>
+    /// <returns>0 on success, 1 on any disc or decoding error.</returns>
     internal static int Extract(string cuePath, string outputDirectory, string domain, TextWriter output, TextWriter error)
     {
         try
@@ -80,6 +96,15 @@ internal static class TextExtractionStep
 
     // ── Font ─────────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Reads SLES_039.36 for font style descriptors and CMFONTTM.BIN for the atlas, then writes
+    /// per-style per-palette PNG pages, legacy dark-blue pages for the dialogue renderer,
+    /// <c>font/font-metrics.json</c>, and <c>font/font-clut.json</c> to the data pack.
+    /// </summary>
+    /// <param name="disc">Open disc source for reading raw files.</param>
+    /// <param name="entries">Flat list of disc file entries from <see cref="Dw3.Disc.DiscSource.ListFiles"/>.</param>
+    /// <param name="context">Write context for the destination data pack.</param>
+    /// <param name="output">Receives one JSON progress line on completion.</param>
     private static void ExtractFont(
         DiscSource disc,
         IReadOnlyList<DiscFileEntry> entries,
@@ -106,6 +131,13 @@ internal static class TextExtractionStep
         output.WriteLine($"{{\"event\":\"domain-complete\",\"domain\":\"font\",\"styles\":{styles.Count},\"glyphs\":{totalGlyphs},\"icons\":{totalIcons}}}");
     }
 
+    /// <summary>
+    /// Inserts one row per style into <c>font_styles</c>, one per glyph into <c>font_glyphs</c>,
+    /// and one per icon into <c>font_icons</c>. Glyph codes start at <see cref="GlyphCodeBase"/> (4),
+    /// icon codes at <see cref="IconCodeBase"/> (1).
+    /// </summary>
+    /// <param name="context">Write context for the destination data pack.</param>
+    /// <param name="styles">Decoded font style metrics in style-index order (style id = index + 1).</param>
     private static void InsertFontStylesToDb(DataPackWriteContext context, IReadOnlyList<FontStyleMetrics> styles)
     {
         for (int i = 0; i < styles.Count; i++)
@@ -130,6 +162,13 @@ internal static class TextExtractionStep
         }
     }
 
+    /// <summary>
+    /// Writes per-style per-palette atlas PNG pages to <c>font/font-style-S-palette-P-page-G.png</c>
+    /// in the data pack image tree, covering all styles, all eight CLUT palettes, and both atlas pages.
+    /// </summary>
+    /// <param name="context">Write context for the destination data pack.</param>
+    /// <param name="styles">Decoded font style metrics (determines the outer style loop count).</param>
+    /// <param name="atlas">Decoded font atlas providing page pixel data and CLUT palettes.</param>
     private static void WriteAtlasPngPages(DataPackWriteContext context, IReadOnlyList<FontStyleMetrics> styles, FontAtlas atlas)
     {
         // Write per-style per-palette PNG atlas pages.
@@ -153,6 +192,13 @@ internal static class TextExtractionStep
         }
     }
 
+    /// <summary>
+    /// Writes the two legacy dark-blue atlas pages used by the existing dialogue renderer
+    /// (style 1 only, CLUT palette index 2) to <c>font/font-style-1-page-N.png</c>.
+    /// These pages are preserved for backward compatibility with the dialogue renderer's fixed palette.
+    /// </summary>
+    /// <param name="context">Write context for the destination data pack.</param>
+    /// <param name="atlas">Decoded font atlas providing the page pixel data and CLUT palettes.</param>
     private static void WriteLegacyAtlasPngPages(DataPackWriteContext context, FontAtlas atlas)
     {
         // Legacy dark-blue pages for the existing dialogue renderer (style 1 only).
@@ -168,6 +214,13 @@ internal static class TextExtractionStep
         }
     }
 
+    /// <summary>
+    /// Writes <c>font/font-metrics.json</c> to the data pack: a nested JSON object with a
+    /// <c>styles</c> map keyed by style id, each containing <c>lineHeight</c>, <c>glyphs</c>, and <c>icons</c>,
+    /// plus legacy top-level <c>glyphs</c> and <c>icons</c> for the dialogue renderer (style 1 only).
+    /// </summary>
+    /// <param name="context">Write context for the destination data pack.</param>
+    /// <param name="styles">Decoded font style metrics in style-index order.</param>
     private static void WriteFontMetricsJson(DataPackWriteContext context, IReadOnlyList<FontStyleMetrics> styles)
     {
         // Build the font-metrics.json payload (mirrors the Python decoder's schema).
@@ -196,6 +249,13 @@ internal static class TextExtractionStep
         metricsWriter.Flush();
     }
 
+    /// <summary>
+    /// Writes <c>font/font-clut.json</c> to the data pack: applied palette index, CLUT coordinates,
+    /// palette page filename template, and all eight palette rows as RGBA arrays.
+    /// </summary>
+    /// <param name="context">Write context for the destination data pack.</param>
+    /// <param name="atlas">Decoded font atlas providing the CLUT palette rows.</param>
+    /// <param name="cmfonttmSha256">Lowercase hex SHA-256 of CMFONTTM.BIN, recorded for parity verification.</param>
     private static void WriteFontClutJson(DataPackWriteContext context, FontAtlas atlas, string cmfonttmSha256)
     {
         // Build the font-clut.json payload.
@@ -231,6 +291,15 @@ internal static class TextExtractionStep
         clutWriter.Flush();
     }
 
+    /// <summary>
+    /// Writes one JSON object property named <paramref name="propertyName"/> containing a map of
+    /// code (as string) to a 10-element array <c>[page, u, v, clutX, clutY, w, h, dx, dy, advance]</c>
+    /// for each metric in <paramref name="metrics"/>. Codes start at <paramref name="codeBase"/>.
+    /// </summary>
+    /// <param name="writer">JSON writer positioned inside an enclosing object.</param>
+    /// <param name="propertyName">Key for the glyph map property (e.g. <c>"glyphs"</c> or <c>"icons"</c>).</param>
+    /// <param name="metrics">Glyph metrics in code order; index 0 maps to code <paramref name="codeBase"/>.</param>
+    /// <param name="codeBase">Token code of the first metric (e.g. 4 for glyphs, 1 for icons).</param>
     private static void WriteGlyphTable(Utf8JsonWriter writer, string propertyName, IReadOnlyList<GlyphMetric> metrics, int codeBase)
     {
         writer.WriteStartObject(propertyName);
@@ -256,6 +325,15 @@ internal static class TextExtractionStep
 
     // ── Text ─────────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Reads the ten French field text files (FSTALK00.BIN..FSTALK09.BIN), decodes each as a token
+    /// table, inserts a metadata row into <c>text_files</c>, and writes its token JSON to
+    /// <c>text/talkNN.json</c> in the data pack image tree.
+    /// </summary>
+    /// <param name="disc">Open disc source for reading raw files.</param>
+    /// <param name="entries">Flat list of disc file entries.</param>
+    /// <param name="context">Write context for the destination data pack.</param>
+    /// <param name="output">Receives one JSON progress line on completion.</param>
     private static void ExtractText(
         DiscSource disc,
         IReadOnlyList<DiscFileEntry> entries,
@@ -293,6 +371,12 @@ internal static class TextExtractionStep
         output.WriteLine($"{{\"event\":\"domain-complete\",\"domain\":\"text\",\"files\":{TalkFileCount},\"total_entries\":{totalEntries}}}");
     }
 
+    /// <summary>
+    /// Writes a JSON array of arrays, one per table entry, to <paramref name="jsonWriter"/>.
+    /// Each inner array contains the token objects for that entry, serialized by <see cref="WriteEntryTokens"/>.
+    /// </summary>
+    /// <param name="jsonWriter">JSON writer positioned inside an enclosing <c>entries</c> array.</param>
+    /// <param name="tableEntries">All decoded token sequences from one text file.</param>
     private static void WriteTokensJson(Utf8JsonWriter jsonWriter, IReadOnlyList<IReadOnlyList<TextToken>> tableEntries)
     {
         foreach (var entryTokens in tableEntries)
@@ -303,6 +387,12 @@ internal static class TextExtractionStep
         }
     }
 
+    /// <summary>
+    /// Writes each token in <paramref name="tokens"/> as a JSON object inside the current array.
+    /// Each object is serialized by <see cref="WriteTokenObject"/>.
+    /// </summary>
+    /// <param name="jsonWriter">JSON writer positioned inside an entry token array.</param>
+    /// <param name="tokens">Ordered list of tokens for one text entry.</param>
     private static void WriteEntryTokens(Utf8JsonWriter jsonWriter, IReadOnlyList<TextToken> tokens)
     {
         foreach (TextToken token in tokens)
@@ -313,6 +403,13 @@ internal static class TextExtractionStep
         }
     }
 
+    /// <summary>
+    /// Writes the JSON properties of one <paramref name="token"/> to <paramref name="jsonWriter"/>.
+    /// Glyph tokens emit <c>{"t":"g","c":N}</c>, icon tokens <c>{"t":"i","c":N}</c>, and control
+    /// tokens <c>{"t":"c","cmd":N,"args":[…]}</c>.
+    /// </summary>
+    /// <param name="jsonWriter">JSON writer positioned inside the token object (start/end written by the caller).</param>
+    /// <param name="token">The decoded text token to serialize.</param>
     private static void WriteTokenObject(Utf8JsonWriter jsonWriter, TextToken token)
     {
         switch (token.Kind)
@@ -341,10 +438,24 @@ internal static class TextExtractionStep
 
     // ── Helpers ──────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Returns the first entry in <paramref name="entries"/> whose ISO path equals <paramref name="path"/>.
+    /// </summary>
+    /// <param name="entries">Flat list of disc file entries from <see cref="Dw3.Disc.DiscSource.ListFiles"/>.</param>
+    /// <param name="path">ISO 9660 path to match (e.g. <c>AAA/DAT/COUNTRY/CMFONTTM.BIN</c>).</param>
+    /// <returns>The matching entry.</returns>
+    /// <exception cref="InvalidDataException">No entry with the given path was found.</exception>
     private static DiscFileEntry Require(IReadOnlyList<DiscFileEntry> entries, string path) =>
         entries.SingleOrDefault(e => string.Equals(e.IsoPath, path, StringComparison.Ordinal))
             ?? throw new InvalidDataException($"Required disc file is absent: {path}");
 
+    /// <summary>
+    /// Executes <paramref name="sql"/> against the destination database within the current transaction,
+    /// binding <paramref name="values"/> to positional parameters <c>$1</c>, <c>$2</c>, and so on.
+    /// </summary>
+    /// <param name="context">Write context providing the database connection and active transaction.</param>
+    /// <param name="sql">SQL command text with positional parameters <c>$1</c>, <c>$2</c>, and so on.</param>
+    /// <param name="values">Values bound to parameters in order.</param>
     private static void Insert(DataPackWriteContext context, string sql, params object[] values)
     {
         using SqliteCommand cmd = context.Database.CreateCommand();

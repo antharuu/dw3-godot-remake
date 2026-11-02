@@ -25,6 +25,15 @@ internal static class TalkBoxExtractionStep
     private const int ArrowFrame = 7;
     private const int ArrowClutFrames = 4;
 
+    /// <summary>
+    /// Opens the disc at <paramref name="cuePath"/>, reads SLES_039.36, CMFONTCS.BIN and CMFONTTM.BIN,
+    /// decodes the talk-box domain, and writes its data pack to <paramref name="outputDirectory"/>.
+    /// </summary>
+    /// <param name="cuePath">Path to the disc CUE file.</param>
+    /// <param name="outputDirectory">Root directory for the written data pack.</param>
+    /// <param name="output">Receives one JSON progress line on success.</param>
+    /// <param name="error">Receives a plain-text error message on failure.</param>
+    /// <returns>0 on success, 1 on any disc or decoding error.</returns>
     internal static int Extract(string cuePath, string outputDirectory, TextWriter output, TextWriter error)
     {
         try
@@ -51,6 +60,15 @@ internal static class TalkBoxExtractionStep
         }
     }
 
+    /// <summary>
+    /// Decodes the talk-box domain from raw disc bytes: builds the VRAM texture pages, parses the
+    /// sprite sheet, renders the seven frame sprites (including the four-CLUT blink arrow at frame 7),
+    /// decodes the panel, and reads the four layout records from the executable.
+    /// </summary>
+    /// <param name="executable">Parsed PSX executable providing the layout table at RAM 0x8004DCF4.</param>
+    /// <param name="sheet">Raw bytes of CMFONTCS.BIN (sprite sheet for the talk-box frame sprites).</param>
+    /// <param name="texture">Raw bytes of CMFONTTM.BIN (4-bit texture also holding the frame CLUTs).</param>
+    /// <returns>A <see cref="TalkBoxDomain"/> with seven frame sprites, one panel, and four layout records.</returns>
     internal static TalkBoxDomain Decode(PsxExecutable executable, byte[] sheet, byte[] texture)
     {
         IReadOnlyList<HudTexturePage> pages = HudTexturePageDecoder.BuildMenuTexturePages(texture);
@@ -64,6 +82,13 @@ internal static class TalkBoxExtractionStep
         return new TalkBoxDomain(frames, panel, layouts);
     }
 
+    /// <summary>
+    /// Returns the first entry in <paramref name="entries"/> whose ISO path equals <paramref name="path"/>.
+    /// </summary>
+    /// <param name="entries">Flat list of disc file entries from <see cref="Dw3.Disc.DiscSource.ListFiles"/>.</param>
+    /// <param name="path">ISO 9660 path to match (e.g. <c>SLES_039.36</c>).</param>
+    /// <returns>The matching entry.</returns>
+    /// <exception cref="InvalidDataException">No entry with the given path was found.</exception>
     private static DiscFileEntry Require(IReadOnlyList<DiscFileEntry> entries, string path) =>
         entries.SingleOrDefault(entry => string.Equals(entry.IsoPath, path, StringComparison.Ordinal))
             ?? throw new InvalidDataException($"Required disc file is absent: {path}");

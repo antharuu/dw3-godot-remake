@@ -77,12 +77,6 @@
     },
     {
       "rule": "CS1591",
-      "project": "Dw3.Extractor",
-      "folder": ".",
-      "count": 1
-    },
-    {
-      "rule": "CS1591",
       "project": "Dw3.Game",
       "folder": ".",
       "count": 2
@@ -1501,7 +1495,7 @@
       "rule": "SA1512",
       "project": "Dw3.Extractor",
       "folder": ".",
-      "count": 7
+      "count": 1
     },
     {
       "rule": "SA1512",
@@ -1549,7 +1543,7 @@
       "rule": "SA1513",
       "project": "Dw3.Extractor",
       "folder": ".",
-      "count": 33
+      "count": 32
     },
     {
       "rule": "SA1513",
@@ -1769,12 +1763,6 @@
     },
     {
       "rule": "SA1516",
-      "project": "Dw3.Extractor",
-      "folder": ".",
-      "count": 3
-    },
-    {
-      "rule": "SA1516",
       "project": "Dw3.Formats.Tests",
       "folder": "Battle",
       "count": 5
@@ -1865,12 +1853,6 @@
     },
     {
       "rule": "SA1600",
-      "project": "Dw3.Extractor",
-      "folder": ".",
-      "count": 193
-    },
-    {
-      "rule": "SA1600",
       "project": "Dw3.Game",
       "folder": ".",
       "count": 51
@@ -1937,12 +1919,6 @@
     },
     {
       "rule": "SA1604",
-      "project": "Dw3.Extractor",
-      "folder": ".",
-      "count": 2
-    },
-    {
-      "rule": "SA1604",
       "project": "Dw3.Game",
       "folder": "Conversion",
       "count": 1
@@ -1958,12 +1934,6 @@
       "project": "Dw3.Analyzers",
       "folder": ".",
       "count": 1
-    },
-    {
-      "rule": "SA1611",
-      "project": "Dw3.Extractor",
-      "folder": ".",
-      "count": 23
     },
     {
       "rule": "SA1611",
@@ -1988,12 +1958,6 @@
       "project": "Dw3.Game",
       "folder": "Simulation",
       "count": 192
-    },
-    {
-      "rule": "SA1615",
-      "project": "Dw3.Extractor",
-      "folder": ".",
-      "count": 3
     },
     {
       "rule": "SA1615",
@@ -2030,12 +1994,6 @@
       "project": "Dw3.Disc.Tests",
       "folder": ".",
       "count": 1
-    },
-    {
-      "rule": "SA1629",
-      "project": "Dw3.Extractor",
-      "folder": ".",
-      "count": 4
     },
     {
       "rule": "SA1642",

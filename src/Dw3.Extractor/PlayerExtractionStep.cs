@@ -22,7 +22,7 @@ namespace Dw3.Extractor;
 ///
 /// Source reference:
 ///   FIELD_CHARACTER_PLAYER = 2 → FIELDSTG_fileEntries[2] = 0x1870070
-///   → file 0x187 → AAA/DAT/FIELD/SPRT/P002PLAY.BIN → archive entry 0x70
+///   → file 0x187 → AAA/DAT/FIELD/SPRT/P002PLAY.BIN → archive entry 0x70.
 /// </summary>
 internal static class PlayerExtractionStep
 {
@@ -36,6 +36,17 @@ internal static class PlayerExtractionStep
     private const int AnchorOffsetX = -16;
     private const int AnchorOffsetY = -28;
 
+    /// <summary>
+    /// Opens the disc, reads P002PLAY.BIN (file 0x187), and writes the player sprite domain
+    /// to <paramref name="outputDirectory"/>. Returns 2 when <paramref name="onlyDomain"/> is set
+    /// to a value other than <c>"player"</c>.
+    /// </summary>
+    /// <param name="cuePath">Path to the disc CUE file.</param>
+    /// <param name="outputDirectory">Root directory for the written data pack.</param>
+    /// <param name="onlyDomain">When non-null, must equal <c>"player"</c>; any other value returns exit code 2.</param>
+    /// <param name="output">Receives one JSON progress line on success.</param>
+    /// <param name="error">Receives a plain-text error message on failure.</param>
+    /// <returns>0 on success, 1 on disc or decoding error, 2 on unsupported domain.</returns>
     internal static int Extract(
         string cuePath,
         string outputDirectory,
@@ -79,6 +90,14 @@ internal static class PlayerExtractionStep
         }
     }
 
+    /// <summary>
+    /// Decodes the offset table and all 87 TIM frames from the archive, builds the animation-set
+    /// table, and writes the manifest JSON and per-frame PNG files to the data pack.
+    /// </summary>
+    /// <param name="context">Write context for the destination data pack.</param>
+    /// <param name="archiveBytes">Raw bytes of P002PLAY.BIN.</param>
+    /// <param name="archiveSha256">Lowercase hex SHA-256 of <paramref name="archiveBytes"/>, for parity verification.</param>
+    /// <param name="archiveIsoPath">ISO path of the archive file recorded in the manifest source section.</param>
     private static void WritePlayerDomain(
         DataPackWriteContext context,
         byte[] archiveBytes,
@@ -115,6 +134,15 @@ internal static class PlayerExtractionStep
         WriteManifest(jsonWriter, archiveRef, frameInfos, decodedSets, sortedContacts, anchorVariants);
     }
 
+    /// <summary>
+    /// Decodes all 87 TIM 4-bit frames from the archive (entries 0x00..0x56), encodes each as a PNG,
+    /// writes it to <c>player/frames/frame-XX.png</c> in the data pack, and returns their pixel dimensions
+    /// and visible bounding boxes for use in the manifest.
+    /// </summary>
+    /// <param name="context">Write context providing the image-path resolver and image registry.</param>
+    /// <param name="archiveBytes">Raw bytes of the P002PLAY.BIN archive.</param>
+    /// <param name="offsets">Per-entry byte offsets decoded from the archive's offset table (entry count + 1 entries).</param>
+    /// <returns>Array of 87 <see cref="FrameInfo"/> values in frame-index order.</returns>
     private static FrameInfo[] DecodeAndWriteFrames(DataPackWriteContext context, byte[] archiveBytes, int[] offsets)
     {
         const string framesDir = "player/frames";
@@ -139,6 +167,16 @@ internal static class PlayerExtractionStep
         return frameInfos;
     }
 
+    /// <summary>
+    /// Decodes every animation set from the archive's set table, computing per-record foot ground
+    /// contacts using the same formula as the Python parity decoder
+    /// (<c>contact_x = offset_x + (left + right_excl + 1) / 2.0</c>).
+    /// </summary>
+    /// <param name="archiveBytes">Raw bytes of the P002PLAY.BIN archive.</param>
+    /// <param name="offsets">Per-entry byte offsets decoded from the archive's offset table.</param>
+    /// <param name="frameInfos">Frame dimensions and bounding boxes in frame-index order.</param>
+    /// <param name="setGroups">Animation set groups decoded from the archive's set table (entry 0x70).</param>
+    /// <returns>A tuple of decoded sets, per-record foot anchors (offset + TIM size), and unique ground contact positions.</returns>
     private static (
         List<DecodedSet> Sets,
         List<(int OffsetX, int OffsetY, int Width, int Height)> FootAnchors,
@@ -185,6 +223,13 @@ internal static class PlayerExtractionStep
         return (decodedSets, footAnchors, groundContacts);
     }
 
+    /// <summary>
+    /// Groups each distinct foot-anchor combination <c>(OffsetX, OffsetY, Width, Height)</c> by occurrence
+    /// count, producing the <c>anchor_variants</c> list used in the manifest's render-anchor section.
+    /// Entries are sorted by offset X, then Y, then width, then height, to match the Python baseline.
+    /// </summary>
+    /// <param name="footAnchors">Flat list of per-record foot anchors collected during animation decoding.</param>
+    /// <returns>Distinct anchor tuples paired with their frequency, sorted for deterministic manifest output.</returns>
     private static List<KeyValuePair<(int Ox, int Oy, int W, int H), int>> BuildAnchorVariants(
         List<(int OffsetX, int OffsetY, int Width, int Height)> footAnchors)
     {
@@ -201,6 +246,16 @@ internal static class PlayerExtractionStep
             .ThenBy(kv => kv.Key.W).ThenBy(kv => kv.Key.H)];
     }
 
+    /// <summary>
+    /// Writes the complete player manifest JSON to <paramref name="w"/>: anchor variants, frame table,
+    /// render anchor, animation sets, and source section, all nested under a root <c>player</c> object.
+    /// </summary>
+    /// <param name="w">JSON writer for the manifest file.</param>
+    /// <param name="archive">Archive path, SHA-256, and byte length for the source section.</param>
+    /// <param name="frames">Frame info array in frame-index order, used for the frame table section.</param>
+    /// <param name="sets">Decoded animation sets, used for the sets section.</param>
+    /// <param name="groundContacts">Sorted unique ground-contact positions, used for the render-anchor section.</param>
+    /// <param name="anchorVariants">Distinct foot-anchor variants with occurrence counts, used for the anchor-variants section.</param>
     private static void WriteManifest(
         Utf8JsonWriter w,
         PlayerArchiveRef archive,
@@ -220,6 +275,12 @@ internal static class PlayerExtractionStep
         w.WriteEndObject(); // root
     }
 
+    /// <summary>
+    /// Writes the <c>anchor_variants</c> JSON array to <paramref name="w"/>.
+    /// Each entry is a two-element array: the anchor tuple <c>[ox, oy, w, h]</c> and its occurrence count.
+    /// </summary>
+    /// <param name="w">JSON writer positioned inside the <c>player</c> object.</param>
+    /// <param name="anchorVariants">Distinct foot-anchor tuples paired with their frequency.</param>
     private static void WriteAnchorVariants(
         Utf8JsonWriter w,
         List<KeyValuePair<(int Ox, int Oy, int W, int H), int>> anchorVariants)
@@ -242,6 +303,12 @@ internal static class PlayerExtractionStep
         w.WriteEndArray();
     }
 
+    /// <summary>
+    /// Writes the <c>frames</c> JSON object to <paramref name="w"/>: keys are decimal frame indices (as strings),
+    /// each entry holds <c>size</c>, <c>visible_bbox</c>, and <c>visible_size</c>.
+    /// </summary>
+    /// <param name="w">JSON writer positioned inside the <c>player</c> object.</param>
+    /// <param name="frames">Frame info array in frame-index order.</param>
     private static void WriteFrameEntries(Utf8JsonWriter w, FrameInfo[] frames)
     {
         // frames  (keys are decimal integers as strings, ascending)
@@ -270,6 +337,12 @@ internal static class PlayerExtractionStep
         w.WriteEndObject();
     }
 
+    /// <summary>
+    /// Writes the <c>render_anchor</c> JSON object to <paramref name="w"/>: unique ground-contact positions,
+    /// the FIELDSTG_drawActor draw offset, the TIM size, and an explanatory note about what ground contact means.
+    /// </summary>
+    /// <param name="w">JSON writer positioned inside the <c>player</c> object.</param>
+    /// <param name="groundContacts">Sorted unique ground-contact positions (X as float, Y cast to int).</param>
     private static void WriteRenderAnchor(Utf8JsonWriter w, List<(double X, double Y)> groundContacts)
     {
         w.WriteStartObject("render_anchor");
@@ -297,6 +370,12 @@ internal static class PlayerExtractionStep
         w.WriteEndObject();
     }
 
+    /// <summary>
+    /// Writes the <c>sets</c> JSON array to <paramref name="w"/>: each element has a name, set id,
+    /// and a sequences array with per-direction records (frame, duration, offset, size, ground contact).
+    /// </summary>
+    /// <param name="w">JSON writer positioned inside the <c>player</c> object.</param>
+    /// <param name="sets">Decoded animation sets in order of the archive set table.</param>
     private static void WriteSetEntries(Utf8JsonWriter w, List<DecodedSet> sets)
     {
         w.WriteStartArray("sets");
@@ -348,6 +427,13 @@ internal static class PlayerExtractionStep
         w.WriteEndArray();
     }
 
+    /// <summary>
+    /// Writes the <c>source</c> JSON object to <paramref name="w"/>: archive ISO path, SHA-256,
+    /// byte length, character and file-entry labels, file number, and pixel-size constants, matching
+    /// the Python parity baseline layout.
+    /// </summary>
+    /// <param name="w">JSON writer positioned inside the <c>player</c> object.</param>
+    /// <param name="archive">Archive reference holding the ISO path, SHA-256 hex, and byte length.</param>
     private static void WriteSourceSection(Utf8JsonWriter w, PlayerArchiveRef archive)
     {
         // source — archive metadata written for parity verification
@@ -366,12 +452,24 @@ internal static class PlayerExtractionStep
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Returns the lowercase hex SHA-256 digest of <paramref name="data"/>.
+    /// </summary>
+    /// <param name="data">Byte buffer to hash.</param>
+    /// <returns>64-character lowercase hex string.</returns>
     private static string ComputeSha256Hex(byte[] data)
     {
         byte[] hash = SHA256.HashData(data);
         return Convert.ToHexStringLower(hash);
     }
 
+    /// <summary>
+    /// Returns the disc file entry whose ISO path matches <paramref name="isoPath"/>.
+    /// </summary>
+    /// <param name="entries">Flat list of entries from <see cref="Dw3.Disc.DiscSource.ListFiles"/>.</param>
+    /// <param name="isoPath">ISO 9660 path to locate (e.g. <c>AAA/DAT/FIELD/SPRT/P002PLAY.BIN</c>).</param>
+    /// <returns>The matching entry.</returns>
+    /// <exception cref="InvalidDataException">No entry with the given path was found.</exception>
     private static DiscFileEntry RequireFile(IReadOnlyList<DiscFileEntry> entries, string isoPath)
     {
         return entries.SingleOrDefault(e => string.Equals(e.IsoPath, isoPath, StringComparison.Ordinal))
@@ -380,18 +478,36 @@ internal static class PlayerExtractionStep
 
     // ── Private record types ──────────────────────────────────────────────────
 
+    /// <summary>
+    /// Pixel dimensions and visible bounding box for one decoded TIM frame.
+    /// </summary>
     private readonly record struct FrameInfo(int Width, int Height, PlayerFrameBbox Bbox);
 
+    /// <summary>
+    /// Disc path, SHA-256 hex digest, and byte length of the P002PLAY.BIN archive,
+    /// recorded in the manifest source section for parity verification.
+    /// </summary>
     private sealed record PlayerArchiveRef(string IsoPath, string Sha256, int Bytes);
 
+    /// <summary>
+    /// One decoded animation set: its numeric id, name, and all direction-indexed sequences.
+    /// </summary>
     private sealed record DecodedSet(int SetId, string Name, List<DecodedSequence> Sequences);
 
+    /// <summary>
+    /// One decoded animation sequence: its direction index (0..N-1), sequence table index, loop/end
+    /// terminator, and the list of animation records.
+    /// </summary>
     private sealed record DecodedSequence(
         int Direction,
         int Index,
         PlayerAnimSequenceTerminator Terminator,
         List<DecodedRecord> Records);
 
+    /// <summary>
+    /// One decoded animation record: the raw source animation record (frame id, duration, draw offset),
+    /// the frame's pixel dimensions and bbox, and the computed foot ground-contact position.
+    /// </summary>
     private sealed record DecodedRecord(
         PlayerAnimRecord Source,
         FrameInfo Frame,

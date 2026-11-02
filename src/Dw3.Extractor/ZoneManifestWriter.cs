@@ -12,6 +12,8 @@ namespace Dw3.Extractor;
 public static class ZoneManifestWriter
 {
     /// <summary>Writes a complete zone manifest from a <see cref="ZoneManifestData"/> instance.</summary>
+    /// <param name="output">Text writer that receives the indented JSON manifest.</param>
+    /// <param name="data">Zone manifest data containing all map, slot, exit, and render sections.</param>
     public static void Write(TextWriter output, ZoneManifestData data)
     {
         ArgumentNullException.ThrowIfNull(output);
@@ -36,9 +38,23 @@ public static class ZoneManifestWriter
         writer.Flush();
     }
 
+    /// <summary>
+    /// Returns an all-zero <see cref="TmpkMap"/> with the given dimensions.
+    /// Used as a fallback when the areas or trigger map entry is absent.
+    /// </summary>
+    /// <param name="width">Map width in tiles.</param>
+    /// <param name="height">Map height in tiles.</param>
+    /// <returns>A zero-filled <see cref="TmpkMap"/> of <paramref name="width"/> × <paramref name="height"/> cells.</returns>
     private static TmpkMap ZeroMap(int width, int height) =>
         new(width, height, new byte[checked(width * height)]);
 
+    /// <summary>
+    /// Writes a named map section JSON object with a <c>histogram</c> of cell-value frequencies
+    /// and a two-element <c>size</c> array <c>[width, height]</c>.
+    /// </summary>
+    /// <param name="writer">JSON writer positioned inside the root manifest object.</param>
+    /// <param name="key">Property name for the section (e.g. <c>"floor"</c>, <c>"areas"</c>, <c>"triggers"</c>).</param>
+    /// <param name="map">The TMPK map whose cells are counted into the histogram.</param>
     private static void WriteMapSection(Utf8JsonWriter writer, string key, TmpkMap map)
     {
         Dictionary<byte, int> histogram = BuildHistogram(map.Cells);
@@ -57,6 +73,12 @@ public static class ZoneManifestWriter
         writer.WriteEndObject();
     }
 
+    /// <summary>
+    /// Counts the frequency of each byte value in <paramref name="cells"/> and returns a dictionary
+    /// mapping each distinct value to its count.
+    /// </summary>
+    /// <param name="cells">Flat array of TMPK map cell values, row-major.</param>
+    /// <returns>Dictionary from cell value to occurrence count; only values that appear are included.</returns>
     private static Dictionary<byte, int> BuildHistogram(byte[] cells)
     {
         var result = new Dictionary<byte, int>();
@@ -73,6 +95,13 @@ public static class ZoneManifestWriter
         return result;
     }
 
+    /// <summary>
+    /// Writes the <c>exits</c> JSON array: each slot with <c>type == 1</c> is emitted as an exit object
+    /// with condition, destination (resolved from <paramref name="stageModes"/>), facing direction, slot index, and tile coordinates.
+    /// </summary>
+    /// <param name="writer">JSON writer positioned inside the root manifest object.</param>
+    /// <param name="slots">All stage slots from the TMPK file; only type-1 (warp) slots are written as exits.</param>
+    /// <param name="stageModes">Optional map from disc stage-mode id to three-digit stage number used to resolve destinations; null emits null destinations.</param>
     private static void WriteExits(Utf8JsonWriter writer, IReadOnlyList<StageSlot> slots, IReadOnlyDictionary<ushort, int>? stageModes)
     {
         writer.WriteStartArray("exits");
@@ -111,6 +140,12 @@ public static class ZoneManifestWriter
         writer.WriteEndArray();
     }
 
+    /// <summary>
+    /// Writes the <c>map_entries_source</c> JSON object: TMPK disc path, SHA-256, byte count,
+    /// floor entry index, optional areas and trigger entry indices, and required byte offsets.
+    /// </summary>
+    /// <param name="writer">JSON writer positioned inside the root manifest object.</param>
+    /// <param name="data">Zone manifest data providing all TMPK source metadata.</param>
     private static void WriteMapEntriesSource(Utf8JsonWriter writer, ZoneManifestData data)
     {
         writer.WriteStartObject("map_entries_source");
@@ -146,6 +181,14 @@ public static class ZoneManifestWriter
         writer.WriteEndObject();
     }
 
+    /// <summary>
+    /// Writes the <c>map_source</c> JSON object: stage pack disc path, SHA-256, byte count,
+    /// and a <c>header</c> sub-object with tile dimensions and packet metadata.
+    /// When areas or trigger entries are absent, floor-map pixel dimensions are used for height/width
+    /// to preserve the established cache contract.
+    /// </summary>
+    /// <param name="writer">JSON writer positioned inside the root manifest object.</param>
+    /// <param name="data">Zone manifest data providing all stage-pack source metadata.</param>
     private static void WriteMapSource(Utf8JsonWriter writer, ZoneManifestData data)
     {
         writer.WriteStartObject("map_source");
@@ -165,6 +208,12 @@ public static class ZoneManifestWriter
         writer.WriteEndObject();
     }
 
+    /// <summary>
+    /// Writes the <c>render</c> JSON object: composite and depth-layer PNG filenames,
+    /// an optional stream-depth-11 modulate byte array, and the per-tile record array.
+    /// </summary>
+    /// <param name="writer">JSON writer positioned inside the root manifest object.</param>
+    /// <param name="data">Zone manifest data providing the tile records and optional modulate bytes.</param>
     private static void WriteRender(Utf8JsonWriter writer, ZoneManifestData data)
     {
         writer.WriteStartObject("render");
@@ -199,6 +248,13 @@ public static class ZoneManifestWriter
         writer.WriteEndObject();
     }
 
+    /// <summary>
+    /// Writes one tile record to the <c>tile_records</c> JSON array.
+    /// Present tiles emit decoded-bytes, rlen flag, sprites array, tile index, and TIM source metadata.
+    /// Absent tiles emit only <c>present: false</c> and the tile index.
+    /// </summary>
+    /// <param name="writer">JSON writer positioned inside the <c>tile_records</c> array.</param>
+    /// <param name="rec">The zone tile record to serialize.</param>
     private static void WriteTileRecord(Utf8JsonWriter writer, ZoneTileRecord rec)
     {
         writer.WriteStartObject();
@@ -241,6 +297,12 @@ public static class ZoneManifestWriter
         writer.WriteEndObject();
     }
 
+    /// <summary>
+    /// Writes the <c>slots</c> JSON array: all stage slots in index order, each with
+    /// arg, condition, condition_status, dir, type, x, and y.
+    /// </summary>
+    /// <param name="writer">JSON writer positioned inside the root manifest object.</param>
+    /// <param name="slots">All stage slots from the TMPK file, in index order.</param>
     private static void WriteSlots(Utf8JsonWriter writer, IReadOnlyList<StageSlot> slots)
     {
         writer.WriteStartArray("slots");
@@ -260,9 +322,20 @@ public static class ZoneManifestWriter
         writer.WriteEndArray();
     }
 
+    /// <summary>
+    /// Writes a <c>condition_status</c> string property: <c>"unconditional"</c> when
+    /// <paramref name="condition"/> equals <see cref="ushort.MaxValue"/>, <c>"unevaluated"</c> otherwise.
+    /// </summary>
+    /// <param name="writer">JSON writer positioned inside an exit or slot object.</param>
+    /// <param name="condition">The raw condition value from the slot record (0xFFFF = no condition).</param>
     private static void WriteCondition(Utf8JsonWriter writer, ushort condition) =>
         writer.WriteString("condition_status", condition == ushort.MaxValue ? "unconditional" : "unevaluated");
 
+    /// <summary>
+    /// Write-only <see cref="Stream"/> adapter that forwards UTF-8 bytes to a <see cref="TextWriter"/>.
+    /// Used to bridge <see cref="System.Text.Json.Utf8JsonWriter"/> (which writes to a <see cref="Stream"/>)
+    /// with the <see cref="TextWriter"/> passed to <see cref="ZoneManifestWriter.Write(TextWriter, ZoneManifestData)"/>.
+    /// </summary>
     private sealed class StreamWriterAdapter(TextWriter writer) : Stream
     {
         /// <inheritdoc/>

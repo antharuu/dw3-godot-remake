@@ -19,6 +19,9 @@ public static class WaterDomainWriter
     private const string Domain = "water";
 
     /// <summary>Persists decoded and skipped stages in stage order.</summary>
+    /// <param name="context">Write context providing the database, transaction, and image-path resolver.</param>
+    /// <param name="zones">Decoded water zones in stage-id order; each produces images and database rows.</param>
+    /// <param name="skipped">Stages that could not be decoded; recorded in <c>water_skipped_zones</c> and the manifest.</param>
     public static void Write(DataPackWriteContext context, IReadOnlyList<ExtractedWaterZone> zones, IReadOnlyList<SkippedWaterZone> skipped)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -49,6 +52,13 @@ public static class WaterDomainWriter
         json.WriteEndObject();
     }
 
+    /// <summary>
+    /// Inserts zone-level source hashes and object rows into the SQLite tables, then writes each
+    /// object frame as opaque and STP PNG images and records them in the manifest JSON.
+    /// </summary>
+    /// <param name="context">Write context for the destination data pack.</param>
+    /// <param name="json">JSON writer positioned inside the <c>zones</c> object.</param>
+    /// <param name="zone">The decoded water zone to persist.</param>
     private static void WriteZone(DataPackWriteContext context, Utf8JsonWriter json, ExtractedWaterZone zone)
     {
         string name = ZoneName(zone.StageId);
@@ -113,6 +123,13 @@ public static class WaterDomainWriter
         json.WriteEndObject();
     }
 
+    /// <summary>
+    /// Writes all numeric properties of <paramref name="tile"/> as individual JSON number fields
+    /// to <paramref name="json"/> (anim, clut_row, cycle, cycle_delay, cycle_first, cycle_last,
+    /// cycle_time, depth, frame, margin, sort_y, source_address, visible, x, y).
+    /// </summary>
+    /// <param name="json">JSON writer positioned inside the object that will receive the tile fields.</param>
+    /// <param name="tile">The stage tile whose properties are written.</param>
     private static void WriteTile(Utf8JsonWriter json, StageTile tile)
     {
         json.WriteNumber("anim", tile.Anim);
@@ -132,6 +149,15 @@ public static class WaterDomainWriter
         json.WriteNumber("y", tile.Y);
     }
 
+    /// <summary>
+    /// Encodes <paramref name="rgba"/> as a PNG and writes it to <paramref name="relativePath"/>
+    /// in the data pack image tree, creating parent directories as needed.
+    /// </summary>
+    /// <param name="context">Write context providing the image-path resolver and image registry.</param>
+    /// <param name="relativePath">Pack-relative path (e.g. <c>water/S001/object-000-frame-00-clut-0-opaque.png</c>).</param>
+    /// <param name="width">Image width in pixels.</param>
+    /// <param name="height">Image height in pixels.</param>
+    /// <param name="rgba">Raw 32-bit RGBA pixel data, row-major, <c>width × height × 4</c> bytes.</param>
     private static void WriteImage(DataPackWriteContext context, string relativePath, int width, int height, byte[] rgba)
     {
         string path = context.GetImagePath(relativePath);
@@ -140,6 +166,13 @@ public static class WaterDomainWriter
         context.RegisterImage(relativePath);
     }
 
+    /// <summary>
+    /// Executes <paramref name="sql"/> against the destination database within the current transaction,
+    /// binding <paramref name="values"/> to positional parameters <c>$1</c>, <c>$2</c>, and so on.
+    /// </summary>
+    /// <param name="context">Write context providing the database connection and active transaction.</param>
+    /// <param name="sql">SQL command text with positional parameters <c>$1</c>, <c>$2</c>, and so on.</param>
+    /// <param name="values">Values bound to parameters in order.</param>
     private static void Insert(DataPackWriteContext context, string sql, params object[] values)
     {
         using SqliteCommand command = context.Database.CreateCommand();
@@ -153,5 +186,11 @@ public static class WaterDomainWriter
         command.ExecuteNonQuery();
     }
 
+    /// <summary>
+    /// Returns the stage directory name for <paramref name="stageId"/>: <c>S</c> followed by the
+    /// zero-padded three-digit stage id (e.g. stage 1 → <c>S001</c>).
+    /// </summary>
+    /// <param name="stageId">Three-digit stage number.</param>
+    /// <returns>Stage directory name string.</returns>
     private static string ZoneName(int stageId) => $"S{stageId:D3}";
 }
