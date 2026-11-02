@@ -659,6 +659,7 @@ tests/Dw3.Data.Tests/SqliteRoundtripTests.cs
 tests/Dw3.Disc.Tests/AssemblyVersionTests.cs
 tests/Dw3.Disc.Tests/DiscFormatErrorTests.cs
 tests/Dw3.Disc.Tests/DiscReaderTests.cs
+tests/Dw3.Disc.Tests/SyntheticDiscBuilder.cs
 tests/Dw3.Disc.Tests/Dw3.Disc.Tests.csproj
 tests/Dw3.Extractor.Tests/ActionDomainWriterTests.cs
 tests/Dw3.Extractor.Tests/BattleReportJsonWriterTests.cs
@@ -685,7 +686,13 @@ tests/Dw3.Formats.Tests/Binary/BinarySpanReaderTests.cs
 tests/Dw3.Formats.Tests/Binary/Png/PngEncoderTests.cs
 tests/Dw3.Formats.Tests/Binary/RlenDecoderTests.cs
 tests/Dw3.Formats.Tests/Binary/Tim/TimDecoderTests.cs
-tests/Dw3.Formats.Tests/Dialogue/DialogueAnalysisTests.cs
+tests/Dw3.Formats.Tests/Dialogue/DialogueFixtures.cs
+tests/Dw3.Formats.Tests/Dialogue/FieldTalkReaderTests.cs
+tests/Dw3.Formats.Tests/Dialogue/ProgressConditionDecoderTests.cs
+tests/Dw3.Formats.Tests/Dialogue/PsxExecutableTests.cs
+tests/Dw3.Formats.Tests/Dialogue/RomAnalysisTests.cs
+tests/Dw3.Formats.Tests/Dialogue/StageDialogueScannerTests.cs
+tests/Dw3.Formats.Tests/Dialogue/StageTextFileResolverTests.cs
 tests/Dw3.Formats.Tests/Dialogue/TalkBoxFrameDecoderTests.cs
 tests/Dw3.Formats.Tests/Dw3.Formats.Tests.csproj
 tests/Dw3.Formats.Tests/Encounter/FieldEncounterDecoderTests.cs
@@ -713,7 +720,8 @@ tests/Dw3.Formats.Tests/Mips/MipsStoreScannerTests.cs
 tests/Dw3.Formats.Tests/Text/FontAtlasDecoderTests.cs
 tests/Dw3.Formats.Tests/Text/FontStyleDecoderTests.cs
 tests/Dw3.Formats.Tests/Text/TextTableDecoderTests.cs
-tests/Dw3.Formats.Tests/Water/ObjectTextureTests.cs
+tests/Dw3.Formats.Tests/Water/ObjectTextureArchiveDecoderTests.cs
+tests/Dw3.Formats.Tests/Water/SpriteFrameRendererTests.cs
 tests/Dw3.Formats.Tests/Water/SpriteSheetDecoderTests.cs
 tests/Dw3.Formats.Tests/Water/StageObjectDecoderTests.cs
 tests/Dw3.Formats.Tests/Water/StageTileDecoderTests.cs
@@ -741,6 +749,8 @@ tests/Dw3.Game.Tests/DialogueDataPackLoaderTests.cs
 tests/Dw3.Game.Tests/DuplicationFactorizationTests.cs
 tests/Dw3.Game.Tests/Dw3.Game.Tests.csproj
 tests/Dw3.Game.Tests/ExtractionControllerTests.cs
+tests/Dw3.Game.Tests/FakeLauncher.cs
+tests/Dw3.Game.Tests/FakeProcess.cs
 tests/Dw3.Game.Tests/FieldCollisionRecoveryTests.cs
 tests/Dw3.Game.Tests/FieldAnimationDataPackLoaderTests.cs
 tests/Dw3.Game.Tests/FieldDataPackLoaderTests.cs
@@ -750,6 +760,8 @@ tests/Dw3.Game.Tests/FightReportControllerVectorGenerator.cs
 tests/Dw3.Game.Tests/FightReportControllerVectorTests.cs
 tests/Dw3.Game.Tests/GrowthTablesBuilderTests.cs
 tests/Dw3.Game.Tests/HostStartupOptionsTests.cs
+tests/Dw3.Game.Tests/LatchedFakeLauncher.cs
+tests/Dw3.Game.Tests/LatchedProcess.cs
 tests/Dw3.Game.Tests/LegacyBattleConsoleTests.cs
 tests/Dw3.Game.Tests/LegacyBattleDataConsoleTests.cs
 tests/Dw3.Game.Tests/LegacyBattleFlowConsoleTests.cs
@@ -783,6 +795,7 @@ tests/Dw3.Repository.Tests/Dw3.Repository.Tests.csproj
 tests/Dw3.Repository.Tests/RealRepositoryTests.cs
 tests/Dw3.Repository.Tests/RepositoryGuard.cs
 tests/Dw3.Repository.Tests/RepositoryGuardTests.cs
+tests/Dw3.Repository.Tests/Violation.cs
 tools/Dw3.Analyzers/AnalyzerReleases.Shipped.md
 tools/Dw3.Analyzers/AnalyzerReleases.Unshipped.md
 tools/Dw3.Analyzers/ClassCognitiveComplexityAnalyzer.cs

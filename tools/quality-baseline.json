@@ -175,7 +175,7 @@
       "rule": "CS1734",
       "project": "Dw3.Game.Tests",
       "folder": ".",
-      "count": 3
+      "count": 2
     },
     {
       "rule": "DW3001",
@@ -224,12 +224,6 @@
       "project": "Dw3.Extractor",
       "folder": ".",
       "count": 2
-    },
-    {
-      "rule": "S1144",
-      "project": "Dw3.Formats",
-      "folder": "Binary",
-      "count": 1
     },
     {
       "rule": "S1144",
@@ -282,12 +276,6 @@
     {
       "rule": "S134",
       "project": "Dw3.Game.Tests",
-      "folder": ".",
-      "count": 1
-    },
-    {
-      "rule": "S134",
-      "project": "Dw3.Repository.Tests",
       "folder": ".",
       "count": 1
     },
@@ -472,12 +460,6 @@
       "count": 14
     },
     {
-      "rule": "S3776",
-      "project": "Dw3.Repository.Tests",
-      "folder": ".",
-      "count": 1
-    },
-    {
       "rule": "S3903",
       "project": "Dw3.Game",
       "folder": ".",
@@ -500,12 +482,6 @@
       "project": "Dw3.Extractor.Tests",
       "folder": ".",
       "count": 8
-    },
-    {
-      "rule": "SA1107",
-      "project": "Dw3.Disc.Tests",
-      "folder": ".",
-      "count": 4
     },
     {
       "rule": "SA1107",
@@ -571,7 +547,7 @@
       "rule": "SA1107",
       "project": "Dw3.Game.Tests",
       "folder": ".",
-      "count": 35
+      "count": 33
     },
     {
       "rule": "SA1116",
@@ -997,7 +973,7 @@
       "rule": "SA1202",
       "project": "Dw3.Formats.Tests",
       "folder": "Dialogue",
-      "count": 3
+      "count": 2
     },
     {
       "rule": "SA1202",
@@ -1252,36 +1228,6 @@
       "count": 11
     },
     {
-      "rule": "SA1402",
-      "project": "Dw3.Disc.Tests",
-      "folder": ".",
-      "count": 1
-    },
-    {
-      "rule": "SA1402",
-      "project": "Dw3.Formats.Tests",
-      "folder": "Dialogue",
-      "count": 6
-    },
-    {
-      "rule": "SA1402",
-      "project": "Dw3.Formats.Tests",
-      "folder": "Water",
-      "count": 1
-    },
-    {
-      "rule": "SA1402",
-      "project": "Dw3.Game.Tests",
-      "folder": ".",
-      "count": 4
-    },
-    {
-      "rule": "SA1402",
-      "project": "Dw3.Repository.Tests",
-      "folder": ".",
-      "count": 1
-    },
-    {
       "rule": "SA1407",
       "project": "Dw3.Disc",
       "folder": ".",
@@ -1403,12 +1349,6 @@
     },
     {
       "rule": "SA1413",
-      "project": "Dw3.Disc.Tests",
-      "folder": ".",
-      "count": 1
-    },
-    {
-      "rule": "SA1413",
       "project": "Dw3.Formats",
       "folder": "Binary",
       "count": 1
@@ -1447,7 +1387,7 @@
       "rule": "SA1501",
       "project": "Dw3.Disc.Tests",
       "folder": ".",
-      "count": 3
+      "count": 2
     },
     {
       "rule": "SA1501",
@@ -1501,7 +1441,7 @@
       "rule": "SA1501",
       "project": "Dw3.Repository.Tests",
       "folder": ".",
-      "count": 4
+      "count": 2
     },
     {
       "rule": "SA1502",
@@ -1543,7 +1483,7 @@
       "rule": "SA1502",
       "project": "Dw3.Game.Tests",
       "folder": ".",
-      "count": 3
+      "count": 1
     },
     {
       "rule": "SA1503",
@@ -1579,7 +1519,7 @@
       "rule": "SA1503",
       "project": "Dw3.Formats.Tests",
       "folder": "Dialogue",
-      "count": 5
+      "count": 4
     },
     {
       "rule": "SA1503",
@@ -1633,7 +1573,7 @@
       "rule": "SA1503",
       "project": "Dw3.Repository.Tests",
       "folder": ".",
-      "count": 6
+      "count": 2
     },
     {
       "rule": "SA1505",
@@ -1789,7 +1729,7 @@
       "rule": "SA1513",
       "project": "Dw3.Game.Tests",
       "folder": ".",
-      "count": 54
+      "count": 50
     },
     {
       "rule": "SA1513",
@@ -1974,12 +1914,6 @@
     {
       "rule": "SA1516",
       "project": "Dw3.Formats.Tests",
-      "folder": "Dialogue",
-      "count": 2
-    },
-    {
-      "rule": "SA1516",
-      "project": "Dw3.Formats.Tests",
       "folder": "Field",
       "count": 15
     },
@@ -2005,7 +1939,7 @@
       "rule": "SA1516",
       "project": "Dw3.Game.Tests",
       "folder": ".",
-      "count": 40
+      "count": 28
     },
     {
       "rule": "SA1519",
@@ -2054,12 +1988,6 @@
       "project": "Dw3.Game.Tests",
       "folder": ".",
       "count": 28
-    },
-    {
-      "rule": "SA1519",
-      "project": "Dw3.Repository.Tests",
-      "folder": ".",
-      "count": 8
     },
     {
       "rule": "SA1520",
@@ -2432,24 +2360,6 @@
       "project": "Dw3.Disc",
       "folder": ".",
       "count": 2
-    },
-    {
-      "rule": "SA1649",
-      "project": "Dw3.Formats.Tests",
-      "folder": "Dialogue",
-      "count": 1
-    },
-    {
-      "rule": "SA1649",
-      "project": "Dw3.Formats.Tests",
-      "folder": "Water",
-      "count": 1
-    },
-    {
-      "rule": "SA1649",
-      "project": "Dw3.Repository.Tests",
-      "folder": ".",
-      "count": 1
     }
   ]
 }

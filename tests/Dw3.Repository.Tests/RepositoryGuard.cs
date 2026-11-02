@@ -8,9 +8,6 @@ using System.Text.RegularExpressions;
 
 namespace Dw3.Repository.Tests;
 
-/// <summary>A single guard violation: the tracked file and the rule that failed.</summary>
-public sealed record Violation(string Path, string Rule, string Note);
-
 /// <summary>
 /// Checks a Git repository against provenance and architecture rules required
 /// for public release. Reads tracked files via <c>git ls-files</c> and scans
@@ -205,43 +202,15 @@ public static class RepositoryGuard
 
             if (isInPublicScope)
             {
-                // P1: forbidden disc/PSX format extension.
-                var ext = Path.GetExtension(file);
-                if (!string.IsNullOrEmpty(ext) && ForbiddenExtensions.Contains(ext))
-                    violations.Add(new Violation(file, "forbidden-extension",
-                        $"Extension '{ext}' identifies a disc or PSX proprietary format"));
-
-                // P1: Python files must not be tracked in the public repository.
-                if (ext.Equals(".py", StringComparison.OrdinalIgnoreCase))
-                    violations.Add(new Violation(file, "no-python",
-                        "Python file must not be tracked in the public repository"));
-
-                // P1: forbidden path patterns (AGENTS.md, research/, etc.).
-                foreach (var pattern in ForbiddenPathPatterns)
-                {
-                    if (pattern.IsMatch(file))
-                    {
-                        violations.Add(new Violation(file, "forbidden-path",
-                            $"Path matches internal-only pattern '{pattern}'"));
-                        break; // one violation per file per path check is enough
-                    }
-                }
-
-                // provenance.md: media or image file must not be tracked.
-                if (MediaPathPattern.IsMatch(file))
-                    violations.Add(new Violation(file, "media-or-capture",
-                        "Media or image file must not be tracked"));
-
-                // provenance.md: suspicious generated-payload path.
-                if (SuspiciousPayloadPathPattern.IsMatch(file))
-                    violations.Add(new Violation(file, "suspicious-generated-payload",
-                        "Generated-payload path requires explicit allowlisting"));
+                CheckPathRules(file, violations);
             }
 
             // provenance.md: every tracked public file must be reviewed and listed.
             if (publicAllowlist != null && !publicAllowlist.Contains(file))
+            {
                 violations.Add(new Violation(file, "unreviewed-source",
                     "File is tracked but absent from the public allowlist"));
+            }
         }
 
         // Content-rule scan: only files in the public allowlist when in public mode.
@@ -249,23 +218,7 @@ public static class RepositoryGuard
             ? tracked.Where(f => publicAllowlist.Contains(f))
             : tracked;
 
-        foreach (var file in filesToScan)
-        {
-            var fullPath = Path.Combine(repoRoot,
-                file.Replace('/', Path.DirectorySeparatorChar));
-            if (!File.Exists(fullPath)) continue;
-
-            string content;
-            try { content = File.ReadAllText(fullPath); }
-            catch { continue; }
-
-            foreach (var (name, pattern, note) in ContentRules)
-            {
-                if (IsExempt(file, name)) continue;
-                if (pattern.IsMatch(content))
-                    violations.Add(new Violation(file, name, note));
-            }
-        }
+        ScanContentRules(repoRoot, filesToScan, violations);
 
         // Architecture check: Dw3.Game must not reference Dw3.Disc or Dw3.Formats.
         violations.AddRange(CheckGameArchitecture(repoRoot));
@@ -281,18 +234,26 @@ public static class RepositoryGuard
     {
         var violations = new List<Violation>();
         var gameDir = Path.Combine(repoRoot, "src", "Dw3.Game");
-        if (!Directory.Exists(gameDir)) return violations;
+        if (!Directory.Exists(gameDir))
+        {
+            return violations;
+        }
 
         foreach (var csproj in Directory.EnumerateFiles(gameDir, "*.csproj", SearchOption.AllDirectories))
         {
             var content = File.ReadAllText(csproj);
             var rel = Rel(repoRoot, csproj);
             if (Regex.IsMatch(content, @"Dw3\.Disc", RegexOptions.IgnoreCase))
+            {
                 violations.Add(new Violation(rel, "architecture",
                     "Dw3.Game project must not reference Dw3.Disc"));
+            }
+
             if (Regex.IsMatch(content, @"Dw3\.Formats", RegexOptions.IgnoreCase))
+            {
                 violations.Add(new Violation(rel, "architecture",
                     "Dw3.Game project must not reference Dw3.Formats"));
+            }
         }
 
         // C# files: no disc-file string literals.
@@ -302,8 +263,10 @@ public static class RepositoryGuard
             var content = File.ReadAllText(cs);
             var rel = Rel(repoRoot, cs);
             if (discExtInString.IsMatch(content))
+            {
                 violations.Add(new Violation(rel, "architecture",
                     "Dw3.Game source contains a .cue/.bin disc file extension reference"));
+            }
         }
 
         return violations;
@@ -341,6 +304,85 @@ public static class RepositoryGuard
             .Where(l => !string.IsNullOrWhiteSpace(l) && !l.TrimStart().StartsWith('#'))
             .Select(l => l.Trim())
             .ToHashSet(StringComparer.Ordinal);
+
+    // Applies path-level rules (extension, forbidden path, media, generated payload) to one file.
+    private static void CheckPathRules(string file, List<Violation> violations)
+    {
+        // P1: forbidden disc/PSX format extension.
+        var ext = Path.GetExtension(file);
+        if (!string.IsNullOrEmpty(ext) && ForbiddenExtensions.Contains(ext))
+        {
+            violations.Add(new Violation(file, "forbidden-extension",
+                $"Extension '{ext}' identifies a disc or PSX proprietary format"));
+        }
+
+        // P1: Python files must not be tracked in the public repository.
+        if (ext.Equals(".py", StringComparison.OrdinalIgnoreCase))
+        {
+            violations.Add(new Violation(file, "no-python",
+                "Python file must not be tracked in the public repository"));
+        }
+
+        // P1: forbidden path patterns (AGENTS.md, research/, etc.).
+        foreach (var pattern in ForbiddenPathPatterns)
+        {
+            if (pattern.IsMatch(file))
+            {
+                violations.Add(new Violation(file, "forbidden-path",
+                    $"Path matches internal-only pattern '{pattern}'"));
+                break; // one violation per file per path check is enough
+            }
+        }
+
+        // provenance.md: media or image file must not be tracked.
+        if (MediaPathPattern.IsMatch(file))
+        {
+            violations.Add(new Violation(file, "media-or-capture",
+                "Media or image file must not be tracked"));
+        }
+
+        // provenance.md: suspicious generated-payload path.
+        if (SuspiciousPayloadPathPattern.IsMatch(file))
+        {
+            violations.Add(new Violation(file, "suspicious-generated-payload",
+                "Generated-payload path requires explicit allowlisting"));
+        }
+    }
+
+    // Scans file content against all content rules for the given file collection.
+    private static void ScanContentRules(
+        string repoRoot,
+        IEnumerable<string> files,
+        List<Violation> violations)
+    {
+        foreach (var file in files)
+        {
+            var fullPath = Path.Combine(repoRoot,
+                file.Replace('/', Path.DirectorySeparatorChar));
+            if (!File.Exists(fullPath))
+            {
+                continue;
+            }
+
+            string content;
+            try
+            {
+                content = File.ReadAllText(fullPath);
+            }
+            catch
+            {
+                continue;
+            }
+
+            foreach (var (name, pattern, note) in ContentRules)
+            {
+                if (!IsExempt(file, name) && pattern.IsMatch(content))
+                {
+                    violations.Add(new Violation(file, name, note));
+                }
+            }
+        }
+    }
 
     private static bool IsExempt(string filePath, string ruleName)
     {
