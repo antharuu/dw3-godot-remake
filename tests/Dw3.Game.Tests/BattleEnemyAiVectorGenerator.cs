@@ -38,16 +38,17 @@ public sealed class BattleEnemyAiVectorGenerator
         new() { Id = id, Hp = hp, MaxHp = maxHp, Flags = flags };
 
     private static EnemyAiContext Ctx(BattleFighter? enemy = null, BattleFighter? player = null,
-        BattleFighter?[]? enemies = null, int activeEnemy = 0, int boostElement = 0,
-        int battleId = 0, int encounterKind = 0, int[]? starters = null) => new()
+        BattleFighter?[]? enemies = null, int activeEnemy = 0,
+        (int BoostElement, int BattleId, int EncounterKind) encounter = default,
+        int[]? starters = null) => new()
         {
             Enemy = enemy ?? Enemy(),
             ActivePlayer = player,
             Enemies = enemies ?? [],
             ActiveEnemy = activeEnemy,
-            BoostElement = boostElement,
-            BattleId = battleId,
-            EncounterKind = encounterKind,
+            BoostElement = encounter.BoostElement,
+            BattleId = encounter.BattleId,
+            EncounterKind = encounter.EncounterKind,
             StarterDigimonIds = starters ?? [],
         };
 
@@ -159,9 +160,9 @@ public sealed class BattleEnemyAiVectorGenerator
         // 11/12/13: equality with the battle's element boost, battle id and encounter kind.
         foreach (int value in new[] { 0, 3, 4 })
         {
-            Condition(11, 3, Ctx(boostElement: value), [], $"boost element {value} vs 3");
-            Condition(12, 3, Ctx(battleId: value), [], $"battle id {value} vs 3");
-            Condition(13, 3, Ctx(encounterKind: value), [], $"encounter kind {value} vs 3");
+            Condition(11, 3, Ctx(encounter: (value, 0, 0)), [], $"boost element {value} vs 3");
+            Condition(12, 3, Ctx(encounter: (0, value, 0)), [], $"battle id {value} vs 3");
+            Condition(13, 3, Ctx(encounter: (0, 0, value)), [], $"encounter kind {value} vs 3");
         }
 
         // 14: the enemy holds a charge.
@@ -319,9 +320,7 @@ public sealed class BattleEnemyAiVectorGenerator
                 _random.Next(2) == 0 ? FighterFlags.Asleep : 0),
             enemies: roster,
             activeEnemy: _random.Next(0, 3),
-            boostElement: _random.Next(0, 4),
-            battleId: _random.Next(0, 4),
-            encounterKind: _random.Next(0, 4),
+            encounter: (_random.Next(0, 4), _random.Next(0, 4), _random.Next(0, 4)),
             starters: [1, 3, 5]);
     }
 
