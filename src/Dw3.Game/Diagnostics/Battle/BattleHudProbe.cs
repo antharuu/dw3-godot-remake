@@ -48,10 +48,10 @@ internal sealed class BattleHudProbe : BattleProbe
         for (var i = 0; i < 6; i++)
         {
             var slot = ToViewport(new Vector2(16, 106 + i * 19));
-            if (CountBrightPixelsInRect(line3, new Rect2(slot, new Vector2(36, 36))) > 12) spriteSlots++;
+            if (BattlePixelMetrics.CountBright(line3, new Rect2(slot, new Vector2(36, 36))) > 12) spriteSlots++;
         }
         ProbeRequirement.Require(spriteSlots == 6, $"source sprite 0x22 slots visible={spriteSlots}/6");
-        ProbeRequirement.Require(CountBrightPixelsInRect(line3, new Rect2(ToViewport(new Vector2(11, 15)), new Vector2(450, 129))) > 500,
+        ProbeRequirement.Require(BattlePixelMetrics.CountBright(line3, new Rect2(ToViewport(new Vector2(11, 15)), new Vector2(450, 129))) > 500,
             "HUD names/icons/HP gauge area has insufficient rendered pixels");
         Host.Renderer.SetHudVisibleForProbe(false);
         var noHud = await BattleProbeCapture.CaptureAsync(Host, captureRoot, "command-menu-no-hud.png");
@@ -81,14 +81,14 @@ internal sealed class BattleHudProbe : BattleProbe
         var partnerPsxBounds = partnerPsxBox.GetValueOrDefault();
         var partnerHeightDelta = MathF.Abs(partnerRemakeBounds.Size.Y - partnerPsxBounds.Size.Y) / partnerPsxBounds.Size.Y;
         ProbeRequirement.Require(partnerHeightDelta <= .25f,
-            $"partner view model height delta={partnerHeightDelta:P1} exceeds 25% remake={FormatBox(partnerRemakeBounds)} psx={FormatBox(partnerPsxBounds)}");
-        var partnerSheet = SideBySide(partnerTarget!, partnerPsx, "REMAKE", "PSX");
+            $"partner view model height delta={partnerHeightDelta:P1} exceeds 25% remake={BattleComparisonImage.FormatBounds(partnerRemakeBounds)} psx={BattleComparisonImage.FormatBounds(partnerPsxBounds)}");
+        var partnerSheet = BattleComparisonImage.SideBySide(partnerTarget!, partnerPsx, "REMAKE", "PSX");
         partnerSheet.Resize(partnerSheet.GetWidth() * 4, partnerSheet.GetHeight() * 4, Image.Interpolation.Nearest);
         ProbeRequirement.Require(partnerSheet.SavePng(Path.Combine(captureRoot, "partner-view-side-by-side-x4.png")) == Error.Ok,
             "partner view side-by-side write failed");
-        QuietLog.Info($"battle-partner-view bbox remake={FormatBox(partnerRemakeBounds)} psx={FormatBox(partnerPsxBounds)} height-delta={partnerHeightDelta:P1}");
+        QuietLog.Info($"battle-partner-view bbox remake={BattleComparisonImage.FormatBounds(partnerRemakeBounds)} psx={BattleComparisonImage.FormatBounds(partnerPsxBounds)} height-delta={partnerHeightDelta:P1}");
         ProbeRequirement.Require(partnerPixels > 300, $"partner view target has insufficient opaque pixels={partnerPixels}");
-        ProbeRequirement.Require(CountBrightPixelsInRect(partner, frameRect) > 30, "partner-view frame 10 absent");
+        ProbeRequirement.Require(BattlePixelMetrics.CountBright(partner, frameRect) > 30, "partner-view frame 10 absent");
         Host.Renderer.SetPartnerModelVisibleForProbe(false);
         var withoutPartner = await BattleProbeCapture.CaptureAsync(Host, captureRoot, "command-menu-without-partner-view.png");
         Host.Renderer.SetPartnerModelVisibleForProbe(true);
@@ -108,19 +108,19 @@ internal sealed class BattleHudProbe : BattleProbe
         var withoutPlayer = await BattleProbeCapture.CaptureAsync(Host, captureRoot, "command-menu-without-kotemon.png");
         Host.Renderer.SetModelVisibleForProbe(383, true);
         var command = await BattleProbeCapture.CaptureAsync(Host, captureRoot, "command-menu-kotemon.png");
-        var remakeBox = DifferenceBoundingBox(ToSource320(command), ToSource320(withoutPlayer));
+        var remakeBox = BattlePixelMetrics.DifferenceBounds(BattleComparisonImage.ToSourceSize(command), BattleComparisonImage.ToSourceSize(withoutPlayer));
         var psx = Host.LoadPsxReference("battle/kotemon-383-command-menu-0.png");
-        var psx320 = ToSource320(psx);
-        var psxBox = WarmKotemonBoundingBox(psx320);
+        var psx320 = BattleComparisonImage.ToSourceSize(psx);
+        var psxBox = BattlePixelMetrics.WarmKotemonBounds(psx320);
         ProbeRequirement.Require(remakeBox is not null && psxBox is not null, $"camera bbox unavailable remake={remakeBox} psx={psxBox}");
         var remakeBounds = remakeBox.GetValueOrDefault();
         var psxBounds = psxBox.GetValueOrDefault();
         var delta = Math.Max(Math.Max(Math.Abs(remakeBounds.Position.X - psxBounds.Position.X), Math.Abs(remakeBounds.Position.Y - psxBounds.Position.Y)),
             Math.Max(Math.Abs(remakeBounds.Size.X - psxBounds.Size.X), Math.Abs(remakeBounds.Size.Y - psxBounds.Size.Y)));
-        var compare = SideBySide(ToSource320(command), psx320, "REMAKE COMMAND", "PSX COMMAND");
+        var compare = BattleComparisonImage.SideBySide(BattleComparisonImage.ToSourceSize(command), psx320, "REMAKE COMMAND", "PSX COMMAND");
         ProbeRequirement.Require(compare.SavePng(Path.Combine(captureRoot, "compare-command-menu-partnerview.png")) == Error.Ok, "partner-view comparison write failed");
         var suffix = delta <= 8 ? "PASS" : "CAUSE=Host.Renderer.cs:SetCommandMenuCamera uses source shot view 2 while projection/GTE rasterization remains unimplemented";
-        QuietLog.Info($"battle-camera phase=command-menu psx_bbox={FormatBox(psxBounds)} remake_bbox={FormatBox(remakeBounds)} delta={delta:0} {suffix}");
+        QuietLog.Info($"battle-camera phase=command-menu psx_bbox={BattleComparisonImage.FormatBounds(psxBounds)} remake_bbox={BattleComparisonImage.FormatBounds(remakeBounds)} delta={delta:0} {suffix}");
         QuietLog.Info($"battle-hud partner-frame spill={spill} thumbnail={partnerPixels} composed={partnerCompositePixels}");
         QuietLog.Info($"battle-hud partner_view=100x60 source=(208,76) viewport=({partnerRect.Position.X:0},{partnerRect.Position.Y:0}) pixels={partnerPixels} frame10=(206,74) captures={Path.Combine(captureRoot, "partner-view.png")}");
         QuietLog.Info($"battle-hud probe PASS cursor0=(17,110)->({cursor0.X:0},{cursor0.Y:0}) cursor3=(17,167)->({cursor3.X:0},{cursor3.Y:0}) sprites={spriteSlots}/6 captures={captureRoot}");
@@ -136,121 +136,44 @@ internal sealed class BattleHudProbe : BattleProbe
         return count;
     }
 
-    private static int CountBrightPixelsInRect(Image image, Rect2 rect)
-    {
-        var count = 0;
-        var fromX = Math.Max(0, (int)rect.Position.X); var toX = Math.Min(image.GetWidth(), (int)rect.End.X);
-        var fromY = Math.Max(0, (int)rect.Position.Y); var toY = Math.Min(image.GetHeight(), (int)rect.End.Y);
-        for (var y = fromY; y < toY; y++) for (var x = fromX; x < toX; x++)
-            {
-                var pixel = image.GetPixel(x, y);
-                if (pixel.R + pixel.G + pixel.B > 0.45f) count++;
-            }
-        return count;
-    }
+    /// <summary>Bounds the opaque texels of the offscreen partner-view target.</summary>
+    /// <param name="image">Partner-view target cleared to alpha 0.</param>
+    /// <returns>The opaque bounds, or null when the target is empty.</returns>
+    private static Rect2? PartnerTargetBoundingBox(Image image) =>
+        Bounds(image, (x, y) => image.GetPixel(x, y).A8 != 0);
 
-    private static Rect2? PartnerTargetBoundingBox(Image image)
-    {
-        var minX = image.GetWidth(); var minY = image.GetHeight(); var maxX = -1; var maxY = -1;
-        for (var y = 0; y < image.GetHeight(); y++) for (var x = 0; x < image.GetWidth(); x++)
-            {
-                if (image.GetPixel(x, y).A8 == 0) continue;
-                minX = Math.Min(minX, x); minY = Math.Min(minY, y); maxX = Math.Max(maxX, x); maxY = Math.Max(maxY, y);
-            }
-        return maxX < minX ? null : new Rect2(minX, minY, maxX - minX + 1, maxY - minY + 1);
-    }
-
+    /// <summary>Bounds the PSX partner-view texels that differ from the night-blue panel key.</summary>
+    /// <param name="image">PSX partner-view region.</param>
+    /// <returns>The model bounds, or null when only the panel is visible.</returns>
     private static Rect2? PartnerPsxBoundingBox(Image image)
     {
         var panel = new Color(8 / 255f, 8 / 255f, 65 / 255f);
-        var minX = image.GetWidth(); var minY = image.GetHeight(); var maxX = -1; var maxY = -1;
-        for (var y = 0; y < image.GetHeight(); y++) for (var x = 0; x < image.GetWidth(); x++)
-            {
-                if (!ProbePixels.DifferentRgb(image.GetPixel(x, y), panel)) continue;
-                minX = Math.Min(minX, x); minY = Math.Min(minY, y); maxX = Math.Max(maxX, x); maxY = Math.Max(maxY, y);
-            }
-        return maxX < minX ? null : new Rect2(minX, minY, maxX - minX + 1, maxY - minY + 1);
+        return Bounds(image, (x, y) => ProbePixels.DifferentRgb(image.GetPixel(x, y), panel));
     }
 
-    private static Rect2? DifferenceBoundingBox(Image a, Image b)
+    /// <summary>Bounds every pixel accepted by a selector.</summary>
+    /// <param name="image">Scanned image.</param>
+    /// <param name="selected">Pixel selector.</param>
+    /// <returns>The selected bounds, or null when no pixel is selected.</returns>
+    private static Rect2? Bounds(Image image, Func<int, int, bool> selected)
     {
-        var minX = a.GetWidth(); var minY = a.GetHeight(); var maxX = -1; var maxY = -1;
-        for (var y = 0; y < a.GetHeight(); y++) for (var x = 0; x < a.GetWidth(); x++)
-            {
-                if (!ProbePixels.DifferentRgb(a.GetPixel(x, y), b.GetPixel(x, y))) continue;
-                minX = Math.Min(minX, x); minY = Math.Min(minY, y); maxX = Math.Max(maxX, x); maxY = Math.Max(maxY, y);
-            }
-        return maxX < minX ? null : new Rect2(minX, minY, maxX - minX + 1, maxY - minY + 1);
-    }
-
-    private static Rect2? WarmKotemonBoundingBox(Image image)
-    {
-        // The paired Kotemon capture is the source menu frame. Its red/orange armour is distinct
-        // from stage 18 and cyan HUD. Bound only that verified warm range, rather than its UI.
-        var minX = image.GetWidth(); var minY = image.GetHeight(); var maxX = -1; var maxY = -1;
-        for (var y = 55; y < 230; y++) for (var x = 80; x < 245; x++)
-            {
-                var p = image.GetPixel(x, y);
-                if (!(p.R8 > 70 && p.R8 > p.G8 * 1.2f && p.R8 > p.B8 * 1.15f)) continue;
-                minX = Math.Min(minX, x); minY = Math.Min(minY, y); maxX = Math.Max(maxX, x); maxY = Math.Max(maxY, y);
-            }
-        return maxX < minX ? null : new Rect2(minX, minY, maxX - minX + 1, maxY - minY + 1);
-    }
-
-    private static string FormatBox(Rect2 rect) => $"({rect.Position.X:0},{rect.Position.Y:0},{rect.Size.X:0},{rect.Size.Y:0})";
-
-    private static Image ToSource320(Image image)
-    {
-        var copy = (Image)image.Duplicate();
-        copy.Convert(Image.Format.Rgba8);
-        if (copy.GetSize() == new Vector2I(1280, 720))
+        var minX = image.GetWidth();
+        var minY = image.GetHeight();
+        var maxX = -1;
+        var maxY = -1;
+        for (var y = 0; y < image.GetHeight(); y++)
         {
-            copy = copy.GetRegion(new Rect2I(160, 0, 960, 720));
-            copy.Resize(320, 240, Image.Interpolation.Nearest);
+            for (var x = 0; x < image.GetWidth(); x++)
+            {
+                if (!selected(x, y)) continue;
+                minX = Math.Min(minX, x);
+                minY = Math.Min(minY, y);
+                maxX = Math.Max(maxX, x);
+                maxY = Math.Max(maxY, y);
+            }
         }
-        ProbeRequirement.Require(copy.GetSize() == new Vector2I(320, 240), $"expected source-size image, got {copy.GetWidth()}x{copy.GetHeight()}");
-        return copy;
-    }
 
-    private static Image SideBySide(Image remake, Image psx, string leftLabel, string rightLabel)
-    {
-        var left = (Image)remake.Duplicate();
-        var right = (Image)psx.Duplicate();
-        left.Convert(Image.Format.Rgba8);
-        right.Convert(Image.Format.Rgba8);
-        var output = Image.CreateEmpty(left.GetWidth() + right.GetWidth(), Math.Max(left.GetHeight(), right.GetHeight()), false, Image.Format.Rgba8);
-        output.Fill(Colors.Black);
-        output.BlitRect(left, new Rect2I(Vector2I.Zero, left.GetSize()), Vector2I.Zero);
-        output.BlitRect(right, new Rect2I(Vector2I.Zero, right.GetSize()), new Vector2I(left.GetWidth(), 0));
-        DrawImageLabel(output, leftLabel, new Vector2I(8, 7));
-        DrawImageLabel(output, rightLabel, new Vector2I(left.GetWidth() + 8, 7));
-        return output;
-    }
-
-    private static void DrawImageLabel(Image image, string label, Vector2I origin)
-    {
-        var glyphs = new Dictionary<char, string[]>
-        {
-            ['A'] = ["01110", "10001", "10001", "11111", "10001", "10001", "10001"],
-            ['E'] = ["11111", "10000", "10000", "11110", "10000", "10000", "11111"],
-            ['K'] = ["10001", "10010", "10100", "11000", "10100", "10010", "10001"],
-            ['M'] = ["10001", "11011", "10101", "10101", "10001", "10001", "10001"],
-            ['P'] = ["11110", "10001", "10001", "11110", "10000", "10000", "10000"],
-            ['R'] = ["11110", "10001", "10001", "11110", "10100", "10010", "10001"],
-            ['S'] = ["01111", "10000", "10000", "01110", "00001", "00001", "11110"],
-            ['X'] = ["10001", "01010", "00100", "00100", "00100", "01010", "10001"],
-        };
-        var x = origin.X;
-        foreach (var c in label)
-        {
-            if (!glyphs.TryGetValue(c, out var glyph)) continue;
-            for (var gy = 0; gy < glyph.Length; gy++)
-                for (var gx = 0; gx < glyph[gy].Length; gx++)
-                    if (glyph[gy][gx] == '1')
-                        for (var dy = 0; dy < 2; dy++)
-                            for (var dx = 0; dx < 2; dx++) image.SetPixel(x + gx * 2 + dx, origin.Y + gy * 2 + dy, Colors.White);
-            x += 12;
-        }
+        return maxX < minX ? null : new Rect2(minX, minY, maxX - minX + 1, maxY - minY + 1);
     }
 
     /// <summary>Injects a complete native press edge through battle simulation.</summary>

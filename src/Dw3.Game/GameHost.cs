@@ -364,7 +364,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
             return;
         }
 
-        if (BattleProbeCatalog.Create(methodName, this) is { } battleProbe)
+        if (BattleProbeCatalog.Create(methodName, new BattleProbeContext(this)) is { } battleProbe)
         {
             Callable.From(() => _ = battleProbe.RunAsync()).CallDeferred();
             return;
