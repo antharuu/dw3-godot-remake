@@ -2,6 +2,7 @@ using System.Diagnostics;
 using Godot;
 using Dw3Production.Conversion;
 using Dw3Production.Input;
+using Dw3Production.Logging;
 using Dw3Production.Presentation;
 using Dw3Production.Simulation;
 using NumericsVector2 = System.Numerics.Vector2;
@@ -12,7 +13,7 @@ public partial class GameHost
 {
     #region Field diagnostic probes
 
-    private void RunInputProbe()
+    private static void RunInputProbe()
     {
         var probe = new InputAdapter();
         probe.Handle(new InputEventKey { Keycode = Key.Z, Pressed = true });
@@ -61,7 +62,7 @@ public partial class GameHost
         Require(!probe.State.HeldUp, "unfocused input was admitted");
         probe.SetFocused(true);
         Require(!probe.State.HeldLeft, "focus return manufactured input");
-        _log.Info($"input probe PASS direction={probe.State.Direction} f3_on={probe.F3On} focused={probe.HasFocus}");
+        QuietLog.Info($"input probe PASS direction={probe.State.Direction} f3_on={probe.F3On} focused={probe.HasFocus}");
     }
 
     private async void RunLocomotionProbe()
@@ -83,7 +84,7 @@ public partial class GameHost
                 var result = Locomotion.Tick(_state, _input.State.Direction, probeMap, []);
                 Require(result.Moved, $"locomotion probe rejected tick={tick} reason={result.Rejection}");
                 var sample = PlayerAnimation.Sample(_playerData, _state);
-                _log.Info($"locomotion probe tick={tick} position=({_state.Position.X:0.###},{_state.Position.Y:0.###}) frame={sample.Frame:X2} offset=({sample.OffsetX},{sample.OffsetY}) foot=({sample.FootGroundX},{sample.FootGroundY})");
+                QuietLog.Info($"locomotion probe tick={tick} position=({_state.Position.X:0.###},{_state.Position.Y:0.###}) frame={sample.Frame:X2} offset=({sample.OffsetX},{sample.OffsetY}) foot=({sample.FootGroundX},{sample.FootGroundY})");
                 _state.AnimationTicks++;
             }
             _input.State.SetDirections(left: false, right: false, up: false, down: false);
@@ -97,7 +98,7 @@ public partial class GameHost
             var capturePath = Path.Combine(captureRoot, "locomotion-probe.png");
             var status = GetViewport().GetTexture().GetImage().SavePng(capturePath);
             Require(status == Error.Ok, $"locomotion capture failed={status}");
-            _log.Info($"locomotion probe PASS capture={capturePath}");
+            QuietLog.Info($"locomotion probe PASS capture={capturePath}");
             GetTree().Quit(0);
         }
         catch (Exception error)
@@ -127,7 +128,7 @@ public partial class GameHost
             await CaptureDepthOverlap("S200", terrainLayer: 1, captureRoot, "depth-s200-foreground-overlap.png");
             await CaptureDepthOverlap("S235", terrainLayer: 0, captureRoot, "depth-s235-background-overlap.png");
             await CaptureDepthOverlap("S235", terrainLayer: 1, captureRoot, "depth-s235-foreground-overlap.png");
-            _log.Info($"depth probe PASS captures={captureRoot}/depth-s[200|235]-[background|foreground]-overlap.png source=11<7<3 godot=-11<-7<-3 player=-4");
+            QuietLog.Info($"depth probe PASS captures={captureRoot}/depth-s[200|235]-[background|foreground]-overlap.png source=11<7<3 godot=-11<-7<-3 player=-4");
             GetTree().Quit(0);
         }
         catch (Exception error)
@@ -160,7 +161,7 @@ public partial class GameHost
             $"depth probe foreground mismatch zone={zoneId} pixel=({sampleX},{sampleY}) expected={overlap.ExpectedForeground} actual={rendered}");
         var capturePath = Path.Combine(captureRoot, fileName);
         Require(image.SavePng(capturePath) == Error.Ok, $"depth probe capture write failed={capturePath}");
-        _log.Info($"depth overlap zone={zoneId} world=({overlap.WorldPixel.X:0},{overlap.WorldPixel.Y:0}) screen=({sampleX},{sampleY}) foreground={overlap.ExpectedForeground} rendered={rendered} capture={capturePath}");
+        QuietLog.Info($"depth overlap zone={zoneId} world=({overlap.WorldPixel.X:0},{overlap.WorldPixel.Y:0}) screen=({sampleX},{sampleY}) foreground={overlap.ExpectedForeground} rendered={rendered} capture={capturePath}");
     }
 
     private DepthOverlap FindDepthOverlap(FieldZone zone, PlayerData player, int terrainLayer)
@@ -202,7 +203,7 @@ public partial class GameHost
             Require(on.GeometryBuilds <= 1 && on.HudRefreshes < on.Frames / 2, "F3 rebuilt map geometry or refreshed HUD text per frame");
             Require(on.Position == off.Position && on.SimulationTicks == off.SimulationTicks && on.Rejections == 0 && off.Rejections == 0,
                 "F3 changed matched held-input simulation displacement or rejected movement");
-            _log.Info($"f3 perf PASS off_ms_median={off.MedianMs:0.###} off_ms_p95={off.P95Ms:0.###} on_ms_median={on.MedianMs:0.###} on_ms_p95={on.P95Ms:0.###} off_fps={off.Fps:0.0} on_fps={on.Fps:0.0} displacement=({off.Position.X:0.###},{off.Position.Y:0.###}) sim_ticks={on.SimulationTicks} rejections={on.Rejections} frames={on.Frames} on_decodes={on.ImageDecodes} on_uploads={on.TextureUploads} on_geometry_builds={on.GeometryBuilds} on_hud_refreshes={on.HudRefreshes}");
+            QuietLog.Info($"f3 perf PASS off_ms_median={off.MedianMs:0.###} off_ms_p95={off.P95Ms:0.###} on_ms_median={on.MedianMs:0.###} on_ms_p95={on.P95Ms:0.###} off_fps={off.Fps:0.0} on_fps={on.Fps:0.0} displacement=({off.Position.X:0.###},{off.Position.Y:0.###}) sim_ticks={on.SimulationTicks} rejections={on.Rejections} frames={on.Frames} on_decodes={on.ImageDecodes} on_uploads={on.TextureUploads} on_geometry_builds={on.GeometryBuilds} on_hud_refreshes={on.HudRefreshes}");
             GetTree().Quit(0);
         }
         catch (Exception error)
@@ -300,7 +301,7 @@ public partial class GameHost
             Require(!_input.F3On, "F3 did not disable through InputAdapter");
             Require(Snapshot() == onTrigger, "F3 changed simulation after warp");
             await CaptureF3("f3-s235-off.png");
-            _log.Info($"f3 probe PASS off_start={offStart} off_arrival={offArrival} on_arrival={onArrival} overlay_gameplay_delta=false");
+            QuietLog.Info($"f3 probe PASS off_start={offStart} off_arrival={offArrival} on_arrival={onArrival} overlay_gameplay_delta=false");
             GetTree().Quit(0);
         }
         catch (Exception error)
@@ -329,7 +330,7 @@ public partial class GameHost
             var after = await CaptureWaterImage(captureRoot, "water-s200-after.png");
             var changed = CountChangedWaterPixels(before, after, animatedObject);
             Require(changed > 10, $"source water object={animatedObject.Index} did not change after source-cycle ticks changed={changed}");
-            _log.Info($"water probe PASS zone=S200 static_object={staticObject.Index} opaque_source_matches={sourceMatches} animated_object={animatedObject.Index} source_ticks=7 changed_pixels={changed} captures={captureRoot}/water-s200-[before|after].png");
+            QuietLog.Info($"water probe PASS zone=S200 static_object={staticObject.Index} opaque_source_matches={sourceMatches} animated_object={animatedObject.Index} source_ticks=7 changed_pixels={changed} captures={captureRoot}/water-s200-[before|after].png");
             GetTree().Quit(0);
         }
         catch (Exception error)
@@ -425,7 +426,7 @@ public partial class GameHost
             // the bank line at Y<246, which is physically blocked by the floor geometry —
             // the walkable area only extends to X=1039 at Y=236, leaving a 12-pixel gap
             // before object 124's left edge at X=1051. Document this as source-inaccessible.
-            _log.Info($"sorty probe PASS zone=S200 object={sortedObj.Index} sortY={sortedObj.SortY} " +
+            QuietLog.Info($"sorty probe PASS zone=S200 object={sortedObj.Index} sortY={sortedObj.SortY} " +
                 $"playerY={playerY} correct_order_visible={correctOrderCount} " +
                 $"wrong_order_visible={wrongOrderCount} regression_delta={wrongOrderCount - correctOrderCount} " +
                 $"object_front_side=source_inaccessible_floor_blocked captures={captureRoot}/sorty-*.png");
@@ -629,7 +630,7 @@ public partial class GameHost
             await ActivateOfferedWarp("S235", new NumericsVector2(278, 218), 3, captureRoot, 5);
             Require(_warp.CommitCount == 3 && _state.ZoneId == "S235", "cue route did not retain exactly three commits");
             Require(!_input.F3On, "cue probe enabled F3");
-            _log.Info($"cue probe PASS commits={_warp.CommitCount} f3={_input.F3On} captures={captureRoot}/cue-[absent-before-offer|present-s200-offer|removed-after-commit|reoffered-s200].png");
+            QuietLog.Info($"cue probe PASS commits={_warp.CommitCount} f3={_input.F3On} captures={captureRoot}/cue-[absent-before-offer|present-s200-offer|removed-after-commit|reoffered-s200].png");
             GetTree().Quit(0);
         }
         catch (Exception error)
@@ -706,7 +707,7 @@ public partial class GameHost
             var expectedRunDistance = speedProbeTicks * Locomotion.SourceRunWorldUnitsPerSimulationTick;
             Require(MathF.Abs(runDistance - expectedRunDistance) < 0.01f,
                 $"held native run distance={runDistance:0.###} expected={expectedRunDistance:0.###}");
-            _log.Info($"run probe PASS held_input=right ticks={speedProbeTicks} distance={runDistance:0.###} world_units_per_second={runDistance * 60 / speedProbeTicks:0.###} expected_source_rate={Locomotion.SourceRunWorldUnitsPerSecond:0.###}");
+            QuietLog.Info($"run probe PASS held_input=right ticks={speedProbeTicks} distance={runDistance:0.###} world_units_per_second={runDistance * 60 / speedProbeTicks:0.###} expected_source_rate={Locomotion.SourceRunWorldUnitsPerSecond:0.###}");
 
             _state.Position = new NumericsVector2(1000, 236);
             _input.Handle(new InputEventKey { Keycode = Key.Shift, Pressed = true });
@@ -726,7 +727,7 @@ public partial class GameHost
             TickTestSimulation();
             Require(_state.Position == focusLostAt && _input.State.Direction == SemanticDirection.None && !_input.State.WalkHeld, "focus loss did not clear held run/walk input");
             _Notification((int)NotificationWMWindowFocusIn);
-            _log.Info($"walk probe PASS held_input=shift+right ticks={speedProbeTicks} distance={walkDistance:0.###} ratio=0.25 focus_loss_stops=true");
+            QuietLog.Info($"walk probe PASS held_input=shift+right ticks={speedProbeTicks} distance={walkDistance:0.###} ratio=0.25 focus_loss_stops=true");
 
             _state.Position = new NumericsVector2(1000, 236);
             _state.SetFacing(1);
@@ -759,7 +760,7 @@ public partial class GameHost
             var videoPath = Path.Combine(videoRoot, "m1-loop.mp4");
             AssembleAcceptanceVideo(frameRoot, videoPath);
             Require(File.Exists(videoPath) && new FileInfo(videoPath).Length > 0, "ffmpeg produced no m1-loop.mp4");
-            _log.Info($"m1 acceptance PASS frames={frame} commits={_warp.CommitCount} zone={_state.ZoneId} video={videoPath}");
+            QuietLog.Info($"m1 acceptance PASS frames={frame} commits={_warp.CommitCount} zone={_state.ZoneId} video={videoPath}");
             GetTree().Quit(0);
         }
         catch (Exception error)
@@ -819,7 +820,7 @@ public partial class GameHost
             Require(!_input.F3On, "M2 navigation enabled F3");
             Require(_zoneDecodeCount == 3, $"M2 navigation decoded {_zoneDecodeCount} zones instead of three (S200/S210/S235): a re-entry must not re-decode");
 
-            _log.Info($"m2 nav PASS commits={_warp.CommitCount} zones=S200,S210,S235 decodes={_zoneDecodeCount} route=S200->S210->S200->S235->S200 final_zone={_state.ZoneId} final_position=({_state.Position.X:0},{_state.Position.Y:0}) facing={_state.Facing}");
+            QuietLog.Info($"m2 nav PASS commits={_warp.CommitCount} zones=S200,S210,S235 decodes={_zoneDecodeCount} route=S200->S210->S200->S235->S200 final_zone={_state.ZoneId} final_position=({_state.Position.X:0},{_state.Position.Y:0}) facing={_state.Facing}");
             GetTree().Quit(0);
         }
         catch (Exception error)
@@ -878,7 +879,7 @@ public partial class GameHost
             AssembleVideo(frameRoot, videoPath, 60);
             Require(File.Exists(videoPath) && new FileInfo(videoPath).Length > 0, "ffmpeg produced no m2-traversal.mp4");
 
-            _log.Info($"m2 video PASS frames={frame} commits={_warp.CommitCount} route=S200->S210->S200->S235->S200 video={videoPath}");
+            QuietLog.Info($"m2 video PASS frames={frame} commits={_warp.CommitCount} route=S200->S210->S200->S235->S200 video={videoPath}");
             GC.Collect(); GC.WaitForPendingFinalizers();
             GetTree().Quit(0);
         }
@@ -903,7 +904,7 @@ public partial class GameHost
         {
             AssertGatedExitCrossableAndSignaled("S315", 0);
             AssertGatedExitCrossableAndSignaled("S320", 1);
-            _log.Info("conditional probe PASS S315.slot0->S320 S320.slot1->S315 crossable-signaled");
+            QuietLog.Info("conditional probe PASS S315.slot0->S320 S320.slot1->S315 crossable-signaled");
             GetTree().Quit(0);
         }
         catch (Exception error)
@@ -924,7 +925,7 @@ public partial class GameHost
         _state.SetFacing(FindTriggerDirection(zone, slot));
         _input.State.ReleaseAction();
         var warnings = new List<string>();
-        _warp.Tick(_state, _input.State, zone, new WarpCallbacks(ResolveTarget, ApplyScene, _log.Info, (key, message) => warnings.Add($"{key}:{message}"), StartClimb, StartDrop));
+        _warp.Tick(_state, _input.State, zone, new WarpCallbacks(ResolveTarget, ApplyScene, QuietLog.Info, (key, message) => warnings.Add($"{key}:{message}"), StartClimb, StartDrop));
         Require(_warp.State == WarpState.Offer && _state.Offer, $"gated {zoneId} slot{slot} must offer");
         Require(warnings.Any(warning => warning.StartsWith("exit-condition-not-enforced:", StringComparison.Ordinal)),
             $"{zoneId} slot{slot} did not log exit-condition-not-enforced (got: {string.Join("; ", warnings)})");
@@ -958,7 +959,7 @@ public partial class GameHost
                 "gated bridge did not return to S200 via S205 slot0");
             Require(!_input.F3On, "gated bridge left F3 enabled");
 
-            _log.Info($"gated bridge PASS commits={_warp.CommitCount} route=S200->S205->S200 final_zone={_state.ZoneId} final_position=({_state.Position.X:0},{_state.Position.Y:0}) facing={_state.Facing}");
+            QuietLog.Info($"gated bridge PASS commits={_warp.CommitCount} route=S200->S205->S200 final_zone={_state.ZoneId} final_position=({_state.Position.X:0},{_state.Position.Y:0}) facing={_state.Facing}");
             GetTree().Quit(0);
         }
         catch (Exception error)
@@ -978,7 +979,7 @@ public partial class GameHost
         _state.Position = FindTriggerCell(current, slot);
         _state.SetFacing(FindTriggerDirection(current, slot));
         _input.State.ReleaseAction();
-        _warp.Tick(_state, _input.State, current, new WarpCallbacks(ResolveTarget, ApplyScene, _log.Info, _log.Warn, StartClimb, StartDrop));
+        _warp.Tick(_state, _input.State, current, new WarpCallbacks(ResolveTarget, ApplyScene, QuietLog.Info, _log.Warn, StartClimb, StartDrop));
         Require(_warp.State == WarpState.Offer && _state.Offer, $"{label} did not offer");
         Require(_log.Warned($"exit-condition-not-enforced:{sourceZone}:{slot}"), $"{label} did not log exit-condition-not-enforced");
 
@@ -992,10 +993,10 @@ public partial class GameHost
 
         _input.State.PressAction();
         for (var tick = 0; tick < 12 && _warp.State != WarpState.Rearm; tick++)
-            _warp.Tick(_state, _input.State, CurrentZone, new WarpCallbacks(ResolveTarget, ApplyScene, _log.Info, _log.Warn, StartClimb, StartDrop));
+            _warp.Tick(_state, _input.State, CurrentZone, new WarpCallbacks(ResolveTarget, ApplyScene, QuietLog.Info, _log.Warn, StartClimb, StartDrop));
         Require(_warp.State == WarpState.Rearm, $"{label} did not reach rearm");
         _input.State.ReleaseAction();
-        _warp.Tick(_state, _input.State, CurrentZone, new WarpCallbacks(ResolveTarget, ApplyScene, _log.Info, _log.Warn, StartClimb, StartDrop));
+        _warp.Tick(_state, _input.State, CurrentZone, new WarpCallbacks(ResolveTarget, ApplyScene, QuietLog.Info, _log.Warn, StartClimb, StartDrop));
         Require(_warp.State == WarpState.Idle, $"{label} did not rearm after release");
     }
 
@@ -1074,7 +1075,7 @@ public partial class GameHost
             Require(firstCount == reenteredCount && reenteredCount == present["S200"],
                 $"re-entry duplicated NPC sprites first={firstCount} reentered={reenteredCount} expected={present["S200"]}");
 
-            _log.Info($"npc probe PASS zones=S200,S210,S235 npcs={string.Join(",", present.Select(kv => $"{kv.Key}={kv.Value}"))} pixels={string.Join(",", pixelMatches.Select(kv => $"{kv.Key}={kv.Value}"))} occlusion_front={frontMatches} occlusion_back={backMatches} reentry={reenteredCount}");
+            QuietLog.Info($"npc probe PASS zones=S200,S210,S235 npcs={string.Join(",", present.Select(kv => $"{kv.Key}={kv.Value}"))} pixels={string.Join(",", pixelMatches.Select(kv => $"{kv.Key}={kv.Value}"))} occlusion_front={frontMatches} occlusion_back={backMatches} reentry={reenteredCount}");
             GC.Collect(); GC.WaitForPendingFinalizers();
             GetTree().Quit(0);
         }
@@ -1117,7 +1118,7 @@ public partial class GameHost
                 Require(capture.SavePng(path) == Error.Ok, $"object capture write failed={path}");
                 var matches = CountOpaqueSourceMatches(capture, target);
                 Require(matches > 40, $"{zoneId} object={target.Index} rendered too few opaque source pixels matches={matches}");
-                _log.Info($"objects PASS zone={zoneId} objects={water.Count} object={target.Index} matches={matches} capture={path}");
+                QuietLog.Info($"objects PASS zone={zoneId} objects={water.Count} object={target.Index} matches={matches} capture={path}");
             }
             GC.Collect(); GC.WaitForPendingFinalizers();
             GetTree().Quit(0);
@@ -1159,26 +1160,26 @@ public partial class GameHost
             Require(up.MaxClimbHeight == upSlot.Height << 8, $"climb up reached {up.MaxClimbHeight} instead of wall height {upSlot.Height << 8}");
             Require(Math.Abs(up.Final.X - upSlot.X) == 16 && up.Final.Y == upSlot.Y - 24 - upSlot.Height,
                 $"climb up landed off-ledge actual=({up.Final.X},{up.Final.Y}) expected=({upSlot.X}±16,{upSlot.Y - 24 - upSlot.Height})");
-            _log.Info($"climb up PASS slot={upSlot.Slot} height={upSlot.Height} max_climb={up.MaxClimbHeight} final=({up.Final.X},{up.Final.Y}) dir={up.Direction}");
+            QuietLog.Info($"climb up PASS slot={upSlot.Slot} height={upSlot.Height} max_climb={up.MaxClimbHeight} final=({up.Final.X},{up.Final.Y}) dir={up.Direction}");
 
             var down = await DriveClimb(captureRoot, zone, downSlot, climbUp: false);
             Require(down.MinClimbHeight == 0, $"climb down reached min {down.MinClimbHeight} instead of 0");
             Require(Math.Abs(down.Final.X - downSlot.X) == 16 && down.Final.Y == downSlot.Y + 24 + downSlot.Height && down.FinalFacing == 0,
                 $"climb down landed at the foot actual=({down.Final.X},{down.Final.Y}) facing={down.FinalFacing} expected=({downSlot.X}±16,{downSlot.Y + 24 + downSlot.Height}) facing=0");
-            _log.Info($"climb down PASS slot={downSlot.Slot} height={downSlot.Height} min_climb={down.MinClimbHeight} final=({down.Final.X},{down.Final.Y}) dir={down.Direction}");
+            QuietLog.Info($"climb down PASS slot={downSlot.Slot} height={downSlot.Height} min_climb={down.MinClimbHeight} final=({down.Final.X},{down.Final.Y}) dir={down.Direction}");
 
             // Reversal regression: reproducing the stuck-on-reversal report must land on
             // a free cell (the depenetration nudges the foot off the wall).
             var upReverse = await DriveClimbReversal(captureRoot, zone, upSlot, climbUp: true);
             Require(CircleFreeAt(upReverse.Final), $"climb reverse-up landed stuck at ({upReverse.Final.X},{upReverse.Final.Y})");
-            _log.Info($"climb reverse-up slot={upSlot.Slot} final=({upReverse.Final.X},{upReverse.Final.Y}) facing={upReverse.FinalFacing}");
+            QuietLog.Info($"climb reverse-up slot={upSlot.Slot} final=({upReverse.Final.X},{upReverse.Final.Y}) facing={upReverse.FinalFacing}");
 
             var downReverse = await DriveClimbReversal(captureRoot, zone, downSlot, climbUp: false);
             Require(CircleFreeAt(downReverse.Final), $"climb reverse-down landed stuck at ({downReverse.Final.X},{downReverse.Final.Y})");
-            _log.Info($"climb reverse-down slot={downSlot.Slot} final=({downReverse.Final.X},{downReverse.Final.Y}) facing={downReverse.FinalFacing}");
+            QuietLog.Info($"climb reverse-down slot={downSlot.Slot} final=({downReverse.Final.X},{downReverse.Final.Y}) facing={downReverse.FinalFacing}");
 
             Require(!_input.F3On, "climb probe enabled F3");
-            _log.Info($"climb probe PASS zone=S330 up_slot={upSlot.Slot} down_slot={downSlot.Slot} captures={captureRoot}/climb-*.png");
+            QuietLog.Info($"climb probe PASS zone=S330 up_slot={upSlot.Slot} down_slot={downSlot.Slot} captures={captureRoot}/climb-*.png");
             GetTree().Quit(0);
         }
         catch (Exception error)
@@ -1219,7 +1220,7 @@ public partial class GameHost
             Require(_state.Position != start, "drop landing did not leave its source position");
             var movedDirections = ProbeLandingMovement(drop.Slot);
             Require(movedDirections > 0, $"drop landing stuck at {_state.Position}");
-            _log.Info($"drop probe PASS zone=S345 slot={drop.Slot} height={drop.Height} dir={direction} final=({_state.Position.X},{_state.Position.Y})");
+            QuietLog.Info($"drop probe PASS zone=S345 slot={drop.Slot} height={drop.Height} dir={direction} final=({_state.Position.X},{_state.Position.Y})");
             GetTree().Quit(0);
         }
         catch (Exception error)
@@ -1267,7 +1268,7 @@ public partial class GameHost
         SetTestHeldDirection(SemanticDirection.None);
         Require(!_state.ClimbActive, $"climb slot={climb.Slot} did not finish after 400 ticks");
         await CaptureStill(captureRoot, climbUp ? "climb-up-after.png" : "climb-down-after.png");
-        _log.Info($"climb drive slot={climb.Slot} type={(climbUp ? "up" : "down")} max={maxClimbHeight} min={minClimbHeight} final=({_state.Position.X},{_state.Position.Y}) facing={_state.Facing}");
+        QuietLog.Info($"climb drive slot={climb.Slot} type={(climbUp ? "up" : "down")} max={maxClimbHeight} min={minClimbHeight} final=({_state.Position.X},{_state.Position.Y}) facing={_state.Facing}");
         ProbeLandingMovement(climb.Slot);
         return new ClimbProbeResult(maxClimbHeight, minClimbHeight, _state.Position, _state.Facing, dir);
     }
@@ -1316,7 +1317,7 @@ public partial class GameHost
         SetTestHeldDirection(SemanticDirection.None);
         Require(!_state.ClimbActive, $"climb reversal slot={climb.Slot} did not finish after reverse");
         await CaptureStill(captureRoot, climbUp ? "climb-reverse-up.png" : "climb-reverse-down.png");
-        _log.Info($"climb reversal slot={climb.Slot} type={(climbUp ? "up" : "down")} max={maxClimbHeight} min={minClimbHeight} final=({_state.Position.X},{_state.Position.Y}) facing={_state.Facing}");
+        QuietLog.Info($"climb reversal slot={climb.Slot} type={(climbUp ? "up" : "down")} max={maxClimbHeight} min={minClimbHeight} final=({_state.Position.X},{_state.Position.Y}) facing={_state.Facing}");
         ProbeLandingMovement(climb.Slot);
         return new ClimbProbeResult(maxClimbHeight, minClimbHeight, _state.Position, _state.Facing, dir);
     }
@@ -1338,7 +1339,7 @@ public partial class GameHost
                 down: probeDir is SemanticDirection.Down or SemanticDirection.DownLeft or SemanticDirection.DownRight);
             var move = Locomotion.Tick(_state, _input.State.Direction, _floor!, _occupants);
             if (move.Moved) movedDirections++;
-            _log.Info($"climb-after-move slot={slot} dir={probeDir} moved={move.Moved} rejection={move.Rejection ?? "none"} step=({move.Step.X},{move.Step.Y}) pos=({_state.Position.X},{_state.Position.Y})");
+            QuietLog.Info($"climb-after-move slot={slot} dir={probeDir} moved={move.Moved} rejection={move.Rejection ?? "none"} step=({move.Step.X},{move.Step.Y}) pos=({_state.Position.X},{_state.Position.Y})");
             _state.Position = savePos;
             _input.State.SetDirections(left: false, right: false, up: false, down: false);
         }
@@ -1474,10 +1475,10 @@ public partial class GameHost
             MovementResult result = default;
             SimulateStep(movement => result = movement);
             SetTestHeldDirection(SemanticDirection.None);
-            _log.Info($"npc collision attempt zone={zoneId} npc={npcActorId} approach=({approach.X:0},{approach.Y:0}) direction={direction} rejection={result.Rejection}");
+            QuietLog.Info($"npc collision attempt zone={zoneId} npc={npcActorId} approach=({approach.X:0},{approach.Y:0}) direction={direction} rejection={result.Rejection}");
             if (result.Rejection == $"actor:{npcActorId}")
             {
-                _log.Info($"npc collision PASS zone={zoneId} npc={npcActorId} approach=({approach.X:0},{approach.Y:0}) direction={direction} rejection={result.Rejection}");
+                QuietLog.Info($"npc collision PASS zone={zoneId} npc={npcActorId} approach=({approach.X:0},{approach.Y:0}) direction={direction} rejection={result.Rejection}");
                 return;
             }
         }
@@ -1519,7 +1520,7 @@ public partial class GameHost
         SetTestHeldDirection(SemanticDirection.None);
         Require(result.Rejection == "void-footprint" && _state.Position == blockedFrom,
             $"source map obstacle did not hold native input zone={zoneId} position={blockedFrom} rejection={result.Rejection}");
-        _log.Info($"collision probe PASS zone={zoneId} held_input=right from={blockedFrom} rejection={result.Rejection}");
+        QuietLog.Info($"collision probe PASS zone={zoneId} held_input=right from={blockedFrom} rejection={result.Rejection}");
     }
 
     private async System.Threading.Tasks.Task<int> WalkToExitThroughInput(string zoneId, int slot, string frameRoot, int frame, bool captureEveryTick = false)
@@ -1531,7 +1532,7 @@ public partial class GameHost
         if (sourceFacing == 8) sourceFacing = 0;
         var admissionInput = (SemanticDirection)((sourceFacing + 4) % 8);
         var target = FindTriggerApproachCell(_currentZone, slot, _state.Position, admissionInput);
-        _log.Info($"route start zone={zoneId} slot={slot} start=({_state.Position.X:0.#},{_state.Position.Y:0.#}) target={target} trigdir={triggerDirection} admissionInput={admissionInput}");
+        QuietLog.Info($"route start zone={zoneId} slot={slot} start=({_state.Position.X:0.#},{_state.Position.Y:0.#}) target={target} trigdir={triggerDirection} admissionInput={admissionInput}");
         var movementTicks = 0;
         // Snapshot stagnation: fail if position hasn't advanced by >=0.5 world unit in
         // 150 ticks. This handles detours (distance to target may temporarily increase)
@@ -1592,7 +1593,7 @@ public partial class GameHost
         }
         SetTestHeldDirection(SemanticDirection.None);
         Require(_warp.State == WarpState.Offer, $"route did not offer slot={slot} after {movementTicks} walk ticks and {admissionTicks} admission ticks");
-        _log.Info($"route offer PASS zone={zoneId} slot={slot} movement_ticks={movementTicks} admission_ticks={admissionTicks} position=({_state.Position.X:0.###},{_state.Position.Y:0.###}) facing={_state.Facing}");
+        QuietLog.Info($"route offer PASS zone={zoneId} slot={slot} movement_ticks={movementTicks} admission_ticks={admissionTicks} position=({_state.Position.X:0.###},{_state.Position.Y:0.###}) facing={_state.Facing}");
         return frame;
     }
 

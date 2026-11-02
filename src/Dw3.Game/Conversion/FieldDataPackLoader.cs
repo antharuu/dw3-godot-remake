@@ -11,17 +11,26 @@ namespace Dw3Production.Conversion;
 /// </summary>
 public sealed class FieldDataPackLoader : IDisposable
 {
+    // Validated column names for the NPC anim-set direction query; spriteDirection is 0-4.
+    private static readonly string[] NpcSeqColumns = ["seq0", "seq1", "seq2", "seq3", "seq4"];
+
     private readonly DataPackReader _pack;
     private readonly SqliteConnection _database;
-    private readonly IReadOnlyList<string> _zoneIds;
+    private readonly List<string> _zoneIds;
 
+    /// <summary>Initializes a new instance of the <see cref="FieldDataPackLoader"/> class bound to the given data pack.</summary>
+    /// <param name="pack">The validated data pack reader.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="pack"/> is null.</exception>
+    /// <exception cref="CacheResourceException">The data pack contains no loadable field zones.</exception>
     public FieldDataPackLoader(DataPackReader pack)
     {
         _pack = pack ?? throw new ArgumentNullException(nameof(pack));
         _database = pack.OpenDatabase();
         _zoneIds = ReadZoneIds();
         if (_zoneIds.Count == 0)
+        {
             throw new CacheResourceException("CACHE_INVALID", "data pack contains no loadable field zones");
+        }
     }
 
     /// <summary>Gets all loadable terrain stages in numeric order.</summary>
@@ -32,6 +41,9 @@ public sealed class FieldDataPackLoader : IDisposable
     /// images, collision maps, optional area map, and pack-local paths. Malformed storage is exposed
     /// as <see cref="CacheResourceException"/> rather than being replaced with fallback content.
     /// </summary>
+    /// <param name="zoneId">The zone id string (e.g. "S200").</param>
+    /// <returns>The fully loaded <see cref="Zone"/> contract.</returns>
+    /// <exception cref="CacheResourceException">The zone is absent or its pack contract is violated.</exception>
     public Zone LoadZone(string zoneId)
     {
         int stage = ParseZoneId(zoneId);
@@ -63,9 +75,14 @@ public sealed class FieldDataPackLoader : IDisposable
                 int type = slot.GetProperty("type").GetInt32();
                 int argument = slot.GetProperty("arg").GetInt32();
                 if (type is 2 or 3)
+                {
                     climbs.Add(new Climb(slotIndex, type, slot.GetProperty("x").GetInt32(), slot.GetProperty("y").GetInt32(), (argument - 1) * 16));
+                }
                 else if (type == 4)
+                {
                     drops.Add(new Drop(slotIndex, argument * 16));
+                }
+
                 slotIndex++;
             }
 
@@ -84,6 +101,9 @@ public sealed class FieldDataPackLoader : IDisposable
         }
     }
 
+    /// <summary>Loads the player animation manifest from the data pack.</summary>
+    /// <returns>The fully loaded <see cref="PlayerData"/>.</returns>
+    /// <exception cref="CacheResourceException">The player manifest is absent or its contract is violated.</exception>
     public PlayerData LoadPlayer()
     {
         string path = RequirePackFile("player/manifest.json", "player manifest");
@@ -92,24 +112,12 @@ public sealed class FieldDataPackLoader : IDisposable
             using JsonDocument document = JsonDocument.Parse(File.ReadAllText(path));
             JsonElement player = document.RootElement.GetProperty("player");
             JsonElement anchor = player.GetProperty("render_anchor").GetProperty("offset");
-            var sequences = new List<PlayerSequence>();
-            foreach (JsonElement set in player.GetProperty("sets").EnumerateArray())
-                foreach (JsonElement sequence in set.GetProperty("sequences").EnumerateArray())
-                {
-                    var records = new List<AnimationRecord>();
-                    foreach (JsonElement record in sequence.GetProperty("records").EnumerateArray())
-                    {
-                        JsonElement offset = record.GetProperty("offset");
-                        JsonElement foot = record.GetProperty("foot_ground_contact");
-                        records.Add(new AnimationRecord(
-                            record.GetProperty("frame").GetInt32(),
-                            record.GetProperty("duration").GetInt32(),
-                            offset[0].GetInt32(), offset[1].GetInt32(),
-                            (int)Math.Round(foot[0].GetDouble()), (int)Math.Round(foot[1].GetDouble())));
-                    }
-                    sequences.Add(new PlayerSequence(set.GetProperty("set").GetInt32(), sequence.GetProperty("direction").GetInt32(), records));
-                }
-            if (sequences.Count == 0) throw new JsonException("player manifest has no animation sequences");
+            var sequences = ParsePlayerSequences(player);
+            if (sequences.Count == 0)
+            {
+                throw new JsonException("player manifest has no animation sequences");
+            }
+
             return new PlayerData(sequences, anchor[0].GetInt32(), anchor[1].GetInt32());
         }
         catch (CacheResourceException)
@@ -122,9 +130,16 @@ public sealed class FieldDataPackLoader : IDisposable
         }
     }
 
+    /// <summary>Returns the absolute path to the player frame PNG for the given frame id.</summary>
+    /// <param name="frame">The frame id to look up.</param>
+    /// <returns>The absolute path to the player frame PNG.</returns>
+    /// <exception cref="CacheResourceException">The frame is absent from the data pack.</exception>
     public string PlayerFramePath(int frame) =>
         RequirePackFile($"player/frames/frame-{frame:X2}.png", $"player frame={frame}");
 
+    /// <summary>Loads all visible NPC render records and occupancy actors from the data pack.</summary>
+    /// <returns>The fully loaded <see cref="NpcData"/>.</returns>
+    /// <exception cref="CacheResourceException">The data pack contains no visible NPC records.</exception>
     public NpcData LoadNpcs()
     {
         try
@@ -152,17 +167,26 @@ public sealed class FieldDataPackLoader : IDisposable
                 string runtimeActorId = $"actor{actorIndex}";
                 occupants.Add(new CollisionActor(zoneId, runtimeActorId, x, y, width));
 
-                IReadOnlyList<NpcFrame>? idle = TryReadNpcIdle(stage, actorIndex, actorId, direction, out int spriteDirection, out bool flipH);
-                if (idle is null) continue;
+                List<NpcFrame>? idle = TryReadNpcIdle(stage, actorIndex, actorId, direction, out int spriteDirection, out bool flipH);
+                if (idle is null)
+                {
+                    continue;
+                }
+
                 if (!zones.TryGetValue(zoneId, out List<NpcRecord>? records))
                 {
                     records = [];
                     zones.Add(zoneId, records);
                 }
+
                 records.Add(new NpcRecord(runtimeActorId, x, y, width, spriteDirection, flipH, idle));
             }
+
             if (zones.Count == 0)
+            {
                 throw new CacheResourceException("CACHE_INVALID", "data pack contains no visible NPC render records");
+            }
+
             return new NpcData(zones.ToDictionary(pair => pair.Key, pair => (IReadOnlyList<NpcRecord>)pair.Value), occupants);
         }
         catch (CacheResourceException)
@@ -175,16 +199,59 @@ public sealed class FieldDataPackLoader : IDisposable
         }
     }
 
-    private IReadOnlyList<NpcFrame>? TryReadNpcIdle(int stage, int actorIndex, int actorId, int direction, out int spriteDirection, out bool flipH)
+    /// <summary>Releases the underlying SQLite connection.</summary>
+    public void Dispose() => _database.Dispose();
+
+    private static List<PlayerSequence> ParsePlayerSequences(JsonElement player)
+    {
+        var sequences = new List<PlayerSequence>();
+        foreach (JsonElement set in player.GetProperty("sets").EnumerateArray())
+        {
+            foreach (JsonElement sequence in set.GetProperty("sequences").EnumerateArray())
+            {
+                sequences.Add(ParseOnePlayerSequence(set, sequence));
+            }
+        }
+
+        return sequences;
+    }
+
+    private static PlayerSequence ParseOnePlayerSequence(JsonElement set, JsonElement sequence)
+    {
+        var records = new List<AnimationRecord>();
+        foreach (JsonElement record in sequence.GetProperty("records").EnumerateArray())
+        {
+            JsonElement offset = record.GetProperty("offset");
+            JsonElement foot = record.GetProperty("foot_ground_contact");
+            records.Add(new AnimationRecord(
+                record.GetProperty("frame").GetInt32(),
+                record.GetProperty("duration").GetInt32(),
+                offset[0].GetInt32(),
+                offset[1].GetInt32(),
+                (int)Math.Round(foot[0].GetDouble()),
+                (int)Math.Round(foot[1].GetDouble())));
+        }
+
+        return new PlayerSequence(set.GetProperty("set").GetInt32(), sequence.GetProperty("direction").GetInt32(), records);
+    }
+
+    private List<NpcFrame>? TryReadNpcIdle(int stage, int actorIndex, int actorId, int direction, out int spriteDirection, out bool flipH)
     {
         (spriteDirection, flipH) = ResolveNpcSpriteDirection(direction);
+        string seqColumn = NpcSeqColumns[spriteDirection];
         using SqliteCommand sequence = _database.CreateCommand();
-        sequence.CommandText = $"SELECT seq{spriteDirection} FROM npc_anim_sets WHERE actor_id=$actor AND stage_id=$stage AND actor_index=$index AND set_id=1";
+
+        // Column name is taken from NpcSeqColumns (a fixed whitelist, not user input).
+        sequence.CommandText = $"SELECT {seqColumn} FROM npc_anim_sets WHERE actor_id=$actor AND stage_id=$stage AND actor_index=$index AND set_id=1";
         sequence.Parameters.AddWithValue("$actor", actorId);
         sequence.Parameters.AddWithValue("$stage", stage);
         sequence.Parameters.AddWithValue("$index", actorIndex);
         object? value = sequence.ExecuteScalar();
-        if (value is null or DBNull) return null;
+        if (value is null or DBNull)
+        {
+            return null;
+        }
+
         int sequenceIndex = Convert.ToInt32(value, CultureInfo.InvariantCulture);
 
         using SqliteCommand records = _database.CreateCommand();
@@ -203,13 +270,19 @@ public sealed class FieldDataPackLoader : IDisposable
         var idle = new List<NpcFrame>();
         using SqliteDataReader row = records.ExecuteReader();
         while (row.Read())
+        {
             idle.Add(new NpcFrame(RequirePackFile(row.GetString(4), $"NPC stage={stage} actor={actorIndex} frame={row.GetInt32(1)}"), row.GetInt32(2), row.GetInt32(3), row.GetInt32(0)));
+        }
+
         if (idle.Count == 0)
+        {
             throw new CacheResourceException("CACHE_INVALID", $"NPC stage={stage} actor={actorIndex} has an empty STAND loop");
+        }
+
         return idle;
     }
 
-    private IReadOnlyList<string> ReadZoneIds()
+    private List<string> ReadZoneIds()
     {
         var result = new List<string>();
         using SqliteCommand command = _database.CreateCommand();
@@ -220,7 +293,11 @@ public sealed class FieldDataPackLoader : IDisposable
             ORDER BY z.stage_id
             """;
         using SqliteDataReader rows = command.ExecuteReader();
-        while (rows.Read()) result.Add($"S{rows.GetInt32(0):D3}");
+        while (rows.Read())
+        {
+            result.Add($"S{rows.GetInt32(0):D3}");
+        }
+
         return result;
     }
 
@@ -235,13 +312,16 @@ public sealed class FieldDataPackLoader : IDisposable
         command.Parameters.AddWithValue("$stage", stage);
         using SqliteDataReader row = command.ExecuteReader();
         if (!row.Read())
+        {
             throw new CacheResourceException("CACHE_RESOURCE_UNAVAILABLE", $"zone=S{stage:D3} is not in the data pack");
+        }
+
         return (row.GetInt32(0), row.GetInt32(1), row.GetString(2));
     }
 
-    private IReadOnlyList<Exit> ReadWarps(int stage)
+    private List<FieldExit> ReadWarps(int stage)
     {
-        var exits = new List<Exit>();
+        var exits = new List<FieldExit>();
         using SqliteCommand command = _database.CreateCommand();
         command.CommandText = """
             SELECT slot_index, destination_stage_id, x, y, facing, condition, condition_status
@@ -251,9 +331,14 @@ public sealed class FieldDataPackLoader : IDisposable
         using SqliteDataReader rows = command.ExecuteReader();
         while (rows.Read())
         {
-            if (rows.IsDBNull(1)) continue;
-            exits.Add(new Exit(rows.GetInt32(0), $"S{rows.GetInt32(1):D3}", rows.GetInt32(2), rows.GetInt32(3), rows.GetInt32(4), rows.GetInt32(5), rows.GetString(6)));
+            if (rows.IsDBNull(1))
+            {
+                continue;
+            }
+
+            exits.Add(new FieldExit(rows.GetInt32(0), $"S{rows.GetInt32(1):D3}", rows.GetInt32(2), rows.GetInt32(3), rows.GetInt32(4), rows.GetInt32(5), rows.GetString(6)));
         }
+
         return exits;
     }
 
@@ -261,19 +346,32 @@ public sealed class FieldDataPackLoader : IDisposable
 
     private static StreamModulate? ReadStreamModulate(JsonElement element)
     {
-        if (element.ValueKind == JsonValueKind.Null) return null;
+        if (element.ValueKind == JsonValueKind.Null)
+        {
+            return null;
+        }
+
         if (element.ValueKind != JsonValueKind.Array || element.GetArrayLength() != 3)
+        {
             throw new JsonException("depth-11 stream modulate must be three channels or null");
+        }
+
         int[] channels = [.. element.EnumerateArray().Select(item => item.GetInt32())];
         if (channels.Any(channel => channel is < 0 or > 255))
+        {
             throw new JsonException("depth-11 stream channel outside byte range");
+        }
+
         return new StreamModulate(channels[0] / 128f, channels[1] / 128f, channels[2] / 128f);
     }
 
     private static int ParseZoneId(string zoneId)
     {
         if (zoneId.Length != 4 || zoneId[0] != 'S' || !int.TryParse(zoneId.AsSpan(1), NumberStyles.None, CultureInfo.InvariantCulture, out int stage))
+        {
             throw new CacheResourceException("CACHE_RESOURCE_UNAVAILABLE", $"zone={zoneId} is not a valid stage id");
+        }
+
         return stage;
     }
 
@@ -289,6 +387,4 @@ public sealed class FieldDataPackLoader : IDisposable
         7 => (1, true),
         _ => throw new CacheResourceException("CACHE_INVALID", $"invalid NPC direction {direction}"),
     };
-
-    public void Dispose() => _database.Dispose();
 }

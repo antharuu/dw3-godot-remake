@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using Godot;
 using Dw3Production.Conversion;
+using Dw3Production.Logging;
 using Dw3Production.Presentation;
 using Dw3Production.Simulation;
 using NumericsVector2 = System.Numerics.Vector2;
@@ -30,7 +31,7 @@ public partial class GameHost
             _state.AnimationDirection = 1;
             await CaptureStill(captureRoot, "battle-play-before.png");
             var beforePosition = _state.Position;
-            _log.Info($"battle-play before zone=S200 position=({beforePosition.X:0},{beforePosition.Y:0})");
+            QuietLog.Info($"battle-play before zone=S200 position=({beforePosition.X:0},{beforePosition.Y:0})");
 
             // F8: a real manifest battle, ignoring only the zone restrictions.
             StartDebugBattle();
@@ -41,18 +42,18 @@ public partial class GameHost
             await CaptureBattle(captureRoot, "battle-text.png");
             Require(_battleMenu.View.Lines.All(line => line.Text is not null && line.Text != BattleTextLine.Missing), "root menu has unsourced text");
             var battleTextFlow = _battleFlow ?? throw new InvalidOperationException("battle flow unavailable");
-            _log.Info($"battle-text menu=[{string.Join(",", _battleMenu.View.Lines.Select(line => line.Text!.Debug))}] technique={battleTextFlow.PlayerTechniques.FirstOrDefault()?.Text?.Debug} message={battleTextFlow.MessageText.Debug} report=FGTRPT expLabel capture={Path.Combine(captureRoot, "battle-text.png")}");
+            QuietLog.Info($"battle-text menu=[{string.Join(",", _battleMenu.View.Lines.Select(line => line.Text!.Debug))}] technique={battleTextFlow.PlayerTechniques.FirstOrDefault()?.Text?.Debug} message={battleTextFlow.MessageText.Debug} report=FGTRPT expLabel capture={Path.Combine(captureRoot, "battle-text.png")}");
             var hudLayout = BattleRenderer.AssertHudLayout();
             await CaptureBattle(captureRoot, "battle-hud-scale.png");
-            _log.Info($"battle-hud-scale PASS {hudLayout} capture={Path.Combine(captureRoot, "battle-hud-scale.png")}");
+            QuietLog.Info($"battle-hud-scale PASS {hudLayout} capture={Path.Combine(captureRoot, "battle-hud-scale.png")}");
             Require(_battleRenderedPlayerId == 383, $"F8 rendered fighter {_battleRenderedPlayerId}, expected Kotemon 383");
             // the player-turn presentation flow starts ShotCamera for the command menu. Its first shot is the main
             // enemy view, not the separate camera-6 partner thumbnail.
             TickTestSimulation();
             BattleRenderer.SetCommandMenuCamera();
             var geometry = BattleRenderer.AssertOpeningGeometry(focusedFighterId: _battleRenderedPlayerId);
-            _log.Info($"battle-play geometry PASS {geometry}");
-            _log.Info($"battle-play combat player={_battleRenderedPlayerId} encounter={_lastBattleEncounter} enemies=[{string.Join(",", _lastBattleEnemyIds)}] menu={_battleMenu.View.Menu} cursor={_battleMenu.View.Cursor}");
+            QuietLog.Info($"battle-play geometry PASS {geometry}");
+            QuietLog.Info($"battle-play combat player={_battleRenderedPlayerId} encounter={_lastBattleEncounter} enemies=[{string.Join(",", _lastBattleEnemyIds)}] menu={_battleMenu.View.Menu} cursor={_battleMenu.View.Cursor}");
 
             // Changement: choose the real second party slot, then let its enemy turn settle.
             BattleFlow.Choose(BattleCommand.Switch, 1, _battleRng);
@@ -74,7 +75,7 @@ public partial class GameHost
             var evolution = await CaptureBattle(captureRoot, "battle-play-digivolution.png");
             var evolutionPixels = CountChanged(renamon, evolution, new Rect2(0, 0, renamon.GetWidth() / 2, renamon.GetHeight()));
             Require(evolutionPixels > 500, $"digivolution model pixels did not change enough changed={evolutionPixels}");
-            _log.Info($"battle-play model-transition kotemon=383 renamon=373 digivolution={form} switch_pixels={switchPixels} evolution_pixels={evolutionPixels}");
+            QuietLog.Info($"battle-play model-transition kotemon=383 renamon=373 digivolution={form} switch_pixels={switchPixels} evolution_pixels={evolutionPixels}");
 
             // Execute a command through the menu: move the cursor down then back up, confirm
             // "Attaquer" with Cross. The enemy (fighter 51, 100 HP) falls to the level-25 party.
@@ -91,7 +92,7 @@ public partial class GameHost
             _input.Handle(new InputEventKey { Keycode = Key.Enter, Pressed = true });
             TickTestSimulation();
             _input.Handle(new InputEventKey { Keycode = Key.Enter, Pressed = false });
-            _log.Info($"battle-text action={BattleFlow.MessageText.Debug}");
+            QuietLog.Info($"battle-text action={BattleFlow.MessageText.Debug}");
 
             // Drive until the terminal report shows, capture it, then let EndBattle restore the field.
             var guard = 0;
@@ -99,9 +100,9 @@ public partial class GameHost
                 TickTestSimulation();
             Require(_activeBattle is not null && BattleFlow.Phase == BattleFlowPhase.Ended,
                 $"battle did not reach a terminal outcome phase={_battleFlow?.Phase} outcome={_battleFlow?.Outcome}");
-            _log.Info($"battle-text report=FGTRPT expGained moneyGained partners={_battleReport?.Partners.Count ?? 0}");
+            QuietLog.Info($"battle-text report=FGTRPT expGained moneyGained partners={_battleReport?.Partners.Count ?? 0}");
             await CaptureBattle(captureRoot, "battle-play-victory.png");
-            _log.Info($"battle-play outcome={BattleFlow.Outcome} player_hp={BattleFlow.State.Players[0]!.Hp} enemy_hp={BattleFlow.State.Enemies[0]!.Hp}");
+            QuietLog.Info($"battle-play outcome={BattleFlow.Outcome} player_hp={BattleFlow.State.Players[0]!.Hp} enemy_hp={BattleFlow.State.Enemies[0]!.Hp}");
 
             guard = 0;
             while (_activeBattle is not null && guard++ < 128)
@@ -118,7 +119,7 @@ public partial class GameHost
             Require(_activeBattle is null && !_state.BattleActive, "battle did not return to the field");
             Require(_state.Position == beforePosition, $"field position changed after the battle before={beforePosition} after={_state.Position}");
             await CaptureStill(captureRoot, "battle-play-after.png");
-            _log.Info($"battle-play after zone={_state.ZoneId} position=({_state.Position.X:0},{_state.Position.Y:0})");
+            QuietLog.Info($"battle-play after zone={_state.ZoneId} position=({_state.Position.X:0},{_state.Position.Y:0})");
 
             // Diagnostic: break the fighter manifest and verify the clean, signalled failure.
             var savedFighterData = _fighterData;
@@ -129,14 +130,14 @@ public partial class GameHost
                 Require(_activeBattle is null && !_state.BattleActive, "a broken manifest still started a battle");
                 Require(_battleNoticeText is not null && _battleNoticeLabel is { Visible: true },
                     "the battle-load diagnostic did not set an on-screen notice");
-                _log.Info($"battle-play diagnostic PASS notice={_battleNoticeText}");
+                QuietLog.Info($"battle-play diagnostic PASS notice={_battleNoticeText}");
             }
             finally
             {
                 _fighterData = savedFighterData;
             }
 
-            _log.Info($"battle-play probe PASS encounter={_lastBattleEncounter} captures={captureRoot}/battle-play-*.png");
+            QuietLog.Info($"battle-play probe PASS encounter={_lastBattleEncounter} captures={captureRoot}/battle-play-*.png");
             GetTree().Quit(0);
         }
         catch (Exception error)
@@ -175,7 +176,7 @@ public partial class GameHost
                 await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
                 var image = GetViewport().GetTexture().GetImage();
                 Require(image.SavePng(Path.Combine(captureRoot, name)) == Error.Ok, $"shot capture write failed={name}");
-                _log.Info($"battle-shot-camera t={frame} {renderer.ShotCameraSummary()}");
+                QuietLog.Info($"battle-shot-camera t={frame} {renderer.ShotCameraSummary()}");
                 return image;
             }
             var t0 = await CaptureAt(0, "shot-t0.png");
@@ -204,12 +205,12 @@ public partial class GameHost
             Require(SideBySide(ToSource320(t0), psx320, "REMAKE SHOT t0", "PSX COMMAND").SavePng(Path.Combine(captureRoot, "compare-shot-camera-t0.png")) == Error.Ok,
                 "shot camera comparison write failed");
             Require(delta <= 8, $"shot camera Kotemon bbox delta={delta:0} exceeds 8 source pixels remake={FormatBox(a)} psx={FormatBox(b)}");
-            _log.Info($"battle-shot-camera PASS bbox remake={FormatBox(a)} psx={FormatBox(b)} delta={delta:0} captures={captureRoot}; PSX command-menu-1/2 timing is not journaled by the harness, so only -0 is frame-paired");
+            QuietLog.Info($"battle-shot-camera PASS bbox remake={FormatBox(a)} psx={FormatBox(b)} delta={delta:0} captures={captureRoot}; PSX command-menu-1/2 timing is not journaled by the harness, so only -0 is frame-paired");
             GetTree().Quit(0);
         }
         catch (PsxReferenceUnavailableException ex)
         {
-            _log.Info(ex.Message);
+            QuietLog.Info(ex.Message);
             GetTree().Quit(5);
         }
         catch (Exception error)
@@ -296,7 +297,7 @@ public partial class GameHost
             partnerSheet.Resize(partnerSheet.GetWidth() * 4, partnerSheet.GetHeight() * 4, Image.Interpolation.Nearest);
             Require(partnerSheet.SavePng(Path.Combine(captureRoot, "partner-view-side-by-side-x4.png")) == Error.Ok,
                 "partner view side-by-side write failed");
-            _log.Info($"battle-partner-view bbox remake={FormatBox(partnerRemakeBounds)} psx={FormatBox(partnerPsxBounds)} height-delta={partnerHeightDelta:P1}");
+            QuietLog.Info($"battle-partner-view bbox remake={FormatBox(partnerRemakeBounds)} psx={FormatBox(partnerPsxBounds)} height-delta={partnerHeightDelta:P1}");
             Require(partnerPixels > 300, $"partner view target has insufficient opaque pixels={partnerPixels}");
             Require(CountBrightPixelsInRect(partner, frameRect) > 30, "partner-view frame 10 absent");
             BattleRenderer.SetPartnerModelVisibleForProbe(false);
@@ -330,15 +331,15 @@ public partial class GameHost
             var compare = SideBySide(ToSource320(command), psx320, "REMAKE COMMAND", "PSX COMMAND");
             Require(compare.SavePng(Path.Combine(captureRoot, "compare-command-menu-partnerview.png")) == Error.Ok, "partner-view comparison write failed");
             var suffix = delta <= 8 ? "PASS" : "CAUSE=BattleRenderer.cs:SetCommandMenuCamera uses source shot view 2 while projection/GTE rasterization remains unimplemented";
-            _log.Info($"battle-camera phase=command-menu psx_bbox={FormatBox(psxBounds)} remake_bbox={FormatBox(remakeBounds)} delta={delta:0} {suffix}");
-            _log.Info($"battle-hud partner-frame spill={spill} thumbnail={partnerPixels} composed={partnerCompositePixels}");
-            _log.Info($"battle-hud partner_view=100x60 source=(208,76) viewport=({partnerRect.Position.X:0},{partnerRect.Position.Y:0}) pixels={partnerPixels} frame10=(206,74) captures={Path.Combine(captureRoot, "partner-view.png")}");
-            _log.Info($"battle-hud probe PASS cursor0=(17,110)->({cursor0.X:0},{cursor0.Y:0}) cursor3=(17,167)->({cursor3.X:0},{cursor3.Y:0}) sprites={spriteSlots}/6 captures={captureRoot}");
+            QuietLog.Info($"battle-camera phase=command-menu psx_bbox={FormatBox(psxBounds)} remake_bbox={FormatBox(remakeBounds)} delta={delta:0} {suffix}");
+            QuietLog.Info($"battle-hud partner-frame spill={spill} thumbnail={partnerPixels} composed={partnerCompositePixels}");
+            QuietLog.Info($"battle-hud partner_view=100x60 source=(208,76) viewport=({partnerRect.Position.X:0},{partnerRect.Position.Y:0}) pixels={partnerPixels} frame10=(206,74) captures={Path.Combine(captureRoot, "partner-view.png")}");
+            QuietLog.Info($"battle-hud probe PASS cursor0=(17,110)->({cursor0.X:0},{cursor0.Y:0}) cursor3=(17,167)->({cursor3.X:0},{cursor3.Y:0}) sprites={spriteSlots}/6 captures={captureRoot}");
             GetTree().Quit(0);
         }
         catch (PsxReferenceUnavailableException ex)
         {
-            _log.Info(ex.Message);
+            QuietLog.Info(ex.Message);
             GetTree().Quit(5);
         }
         catch (Exception error)
@@ -422,7 +423,7 @@ public partial class GameHost
             Require(NameLine(51).Tokens.SequenceEqual(BattleText().DigimonByNameId(enemyNameId).Tokens)
                 && NameLine(activePlayer.Id).Tokens.SequenceEqual(BattleText().DigimonByNameId(partnerNameId).Tokens),
                 $"HUD names do not use nameId enemy=51:{enemyNameId} partner={activePlayer.Id}:{partnerNameId}");
-            _log.Info($"battle-input nameId PASS enemy=51:{enemyNameId} partner={activePlayer.Id}:{partnerNameId} messageVisible=false");
+            QuietLog.Info($"battle-input nameId PASS enemy=51:{enemyNameId} partner={activePlayer.Id}:{partnerNameId} messageVisible=false");
             Require(_battleMenu.Menu == BattleMenuKind.Root, $"F8 menu is not root menu={_battleMenu.Menu}");
             var before = await CaptureBattle(captureRoot, "switch-before.png");
 
@@ -456,7 +457,7 @@ public partial class GameHost
                 && _battleMenu.View.Lines[0].CostLabelText?.Debug == "MFIGHT entry=13",
                 "tech status labels use MFIGHT 0x11/0x12/0xD/0x10");
             var selectedTech = inputFlow.PlayerTechniques[_battleMenu.SelectedIndex];
-            _log.Info($"battle-tech-menu tech={selectedTech.Id} name={selectedTech.Text?.Debug} cost={selectedTech.Tech.Mp} power={selectedTech.Tech.Power}");
+            QuietLog.Info($"battle-tech-menu tech={selectedTech.Id} name={selectedTech.Text?.Debug} cost={selectedTech.Tech.Mp} power={selectedTech.Tech.Power}");
             foreach (var digimonId in new[] { 383, 373, 31 })
             {
                 var decoded = fighterData.Digimon[digimonId];
@@ -469,7 +470,7 @@ public partial class GameHost
                 {
                     Require(technique.Text is { } name && name != BattleTextLine.Missing && name.Tokens.Count > 1,
                         $"team {digimonId} technique {technique.Id} has sourced non-single-glyph SKLNAM");
-                    _log.Info($"battle-tech-menu tech={technique.Id} name={technique.Text!.Debug} cost={technique.Tech.Mp} power={technique.Tech.Power} team={digimonId}");
+                    QuietLog.Info($"battle-tech-menu tech={technique.Id} name={technique.Text!.Debug} cost={technique.Tech.Mp} power={technique.Tech.Power} team={digimonId}");
                 }
             }
             InjectBattleKey(Key.X);
@@ -506,7 +507,7 @@ public partial class GameHost
             InjectBattleKey(Key.Pagedown);
             Require(_battleMenu.Cursor == 0 && _battleMenu.First == 7 && _battleMenu.View.Lines.Count == 7,
                 $"item PAD_R1 page did not advance source first={_battleMenu.First} cursor={_battleMenu.Cursor}");
-            _log.Info($"battle-menu scroll first={_battleMenu.First} cursor={_battleMenu.Cursor} source=PAD_R1-page");
+            QuietLog.Info($"battle-menu scroll first={_battleMenu.First} cursor={_battleMenu.Cursor} source=PAD_R1-page");
             var itemMenu = await CaptureBattle(captureRoot, "submenu-item-scrolled.png");
             RequireBattleFramePixels(itemMenu, "0x27", 8, 0x3E, 154, 113);
             RequireBattleFramePixels(itemMenu, "0x28", 0xA6, 0xA0, 44, 24);
@@ -574,7 +575,7 @@ public partial class GameHost
             var after = await CaptureBattle(captureRoot, "switch-after-renamon.png");
             var changed = CountChanged(before, after, new Rect2(0, 0, before.GetWidth() / 2, before.GetHeight()));
             Require(changed > 500, $"switch capture did not change enough pixels={changed}");
-            _log.Info($"battle-input probe PASS battle-menu open=Switch lines=2 active=373 rendered=373 pixels={changed} captures={captureRoot}");
+            QuietLog.Info($"battle-input probe PASS battle-menu open=Switch lines=2 active=373 rendered=373 pixels={changed} captures={captureRoot}");
             GetTree().Quit(0);
         }
         catch (Exception error)
@@ -649,7 +650,7 @@ public partial class GameHost
             while (_fightReportController!.View.Message?.Entry != 2 && guard++ < 128) TickTestSimulation();
             Require(_fightReportController.View.Message?.Entry == 2, "report did not reach the EXP message");
             await CaptureBattle(captureRoot, "report-exp.png");
-            _log.Info($"battle-report victory exp={report.Exp} money={report.Money} digimonExp={report.DigimonExp} partners=[{string.Join(",", report.Partners.Select(partner => $"{partner.Name}:+{partner.ExpGained}"))}]");
+            QuietLog.Info($"battle-report victory exp={report.Exp} money={report.Money} digimonExp={report.DigimonExp} partners=[{string.Join(",", report.Partners.Select(partner => $"{partner.Name}:+{partner.ExpGained}"))}]");
 
             // The report must stay on its current typed page without input, not use the former
             // BattleEndHoldTicks shortcut.
@@ -684,9 +685,9 @@ public partial class GameHost
             Require(_inTitle, "a defeat did not reach the title screen");
             Require(_titleScreen is { Visible: true }, "the title screen is not visible on defeat");
             await CaptureStill(captureRoot, "battle-report-title.png");
-            _log.Info($"battle-report defeat return-to-title inTitle={_inTitle} titleVisible={_titleScreen!.Visible}");
+            QuietLog.Info($"battle-report defeat return-to-title inTitle={_inTitle} titleVisible={_titleScreen!.Visible}");
 
-            _log.Info($"battle-report probe PASS encounter={_lastBattleEncounter} captures={captureRoot}/battle-report-*.png");
+            QuietLog.Info($"battle-report probe PASS encounter={_lastBattleEncounter} captures={captureRoot}/battle-report-*.png");
             GetTree().Quit(0);
         }
         catch (Exception error)
@@ -717,7 +718,7 @@ public partial class GameHost
             var idleDiff30 = CountDifferentPixels(idle0, idle30, 0, idle0.GetWidth());
             var idleDiff60 = CountDifferentPixels(idle0, idle60, 0, idle0.GetWidth());
             Require(idleDiff30 > 50 && idleDiff60 > 50, $"idle frames are frozen d30={idleDiff30} d60={idleDiff60}");
-            _log.Info($"battle-motion fighter=383 motion=1 keyframes=62 loop=true idle-diff30={idleDiff30} idle-diff60={idleDiff60}");
+            QuietLog.Info($"battle-motion fighter=383 motion=1 keyframes=62 loop=true idle-diff30={idleDiff30} idle-diff60={idleDiff60}");
 
             // Kotemon motion 3 has its final 20 blend entries targeting the first idle frame.
             renderer.SetMotionAll(3, restart: true);
@@ -727,8 +728,8 @@ public partial class GameHost
             renderer.StepMotions(0.5f);
             var end = await CaptureBattle(captureRoot, "attack-end.png");
             Require(CountBrightPixels(end, 0, end.GetWidth()) > 1000, "attack end rendered no fighter pixels");
-            _log.Info("battle-motion fighter=383 motion=3 done=true back_to_idle=true");
-            _log.Info($"battle-motion probe PASS captures={captureRoot}/idle-f0.png,{captureRoot}/attack-end.png");
+            QuietLog.Info("battle-motion fighter=383 motion=3 done=true back_to_idle=true");
+            QuietLog.Info($"battle-motion probe PASS captures={captureRoot}/idle-f0.png,{captureRoot}/attack-end.png");
             GetTree().Quit(0);
         }
         catch (Exception error)
@@ -812,8 +813,8 @@ public partial class GameHost
             var change = await CaptureBattle(captureRoot, "switch-ko.png");
             var koGrey = CountFontPalettePixels(change, new Rect2(SourceToViewport(new Vector2(36, 76)), new Vector2(360, 42)), grey);
             Require(koGrey > 8, $"KO switch name lacks GREY CLUT pixels count={koGrey}");
-            _log.Info($"battle-font CLUT white_pixels={rootWhite} grey_disabled={disabledGrey} grey_ko={koGrey} dark_blue_buttons={buttonDarkBlue} white_rgb={string.Join(',', white.First())} grey_rgb={string.Join(',', grey.First())} dark_blue_rgb={string.Join(',', darkBlue.First())}");
-            _log.Info($"battle-font probe PASS captures={captureRoot}/hud-numbers.png,{captureRoot}/command-disabled.png,{captureRoot}/technique-page-buttons.png,{captureRoot}/switch-ko.png");
+            QuietLog.Info($"battle-font CLUT white_pixels={rootWhite} grey_disabled={disabledGrey} grey_ko={koGrey} dark_blue_buttons={buttonDarkBlue} white_rgb={string.Join(',', white.First())} grey_rgb={string.Join(',', grey.First())} dark_blue_rgb={string.Join(',', darkBlue.First())}");
+            QuietLog.Info($"battle-font probe PASS captures={captureRoot}/hud-numbers.png,{captureRoot}/command-disabled.png,{captureRoot}/technique-page-buttons.png,{captureRoot}/switch-ko.png");
             GetTree().Quit(0);
         }
         catch (Exception error)
@@ -854,19 +855,19 @@ public partial class GameHost
                 if (fade == 0f)
                 {
                     var blackMean = MeanLuminance(full);
-                    _log.Info($"battle-entrance fade={fade:0.00} fighter=0.0 stage=0.0 mean={blackMean:0.0}");
+                    QuietLog.Info($"battle-entrance fade={fade:0.00} fighter=0.0 stage=0.0 mean={blackMean:0.0}");
                     Require(blackMean < 3, $"entrance frame 0 is not black mean={blackMean:0.0}");
                     continue;
                 }
                 var (fighterLum, stageLum, meanLum) = MeasureFighterAndStageLuminance(full, stage);
-                _log.Info($"battle-entrance fade={fade:0.00} fighter={fighterLum:0.0} stage={stageLum:0.0} mean={meanLum:0.0}");
+                QuietLog.Info($"battle-entrance fade={fade:0.00} fighter={fighterLum:0.0} stage={stageLum:0.0} mean={meanLum:0.0}");
                 var ratio = fighterLum / Math.Max(1d, stageLum);
                 settledRatio ??= ratio;
                 Require(Math.Abs(ratio - settledRatio.Value) <= .35d * settledRatio.Value,
                     $"fighters fade apart from the stage fade={fade:0.00} ratio={ratio:0.00} settled={settledRatio:0.00}");
             }
             renderer.SetHudVisibleForProbe(true);
-            _log.Info("battle-entrance PASS");
+            QuietLog.Info("battle-entrance PASS");
             GetTree().Quit(0);
         }
         catch (Exception error)
@@ -910,21 +911,21 @@ public partial class GameHost
                 Require(remakeMasks[region].SavePng(Path.Combine(captureRoot, $"mask-remake-{region}.png")) == Error.Ok, $"remake {region} mask save failed");
                 var psxStats = MaskedLuminance(source, psxMasks[region], minimumPixels: 8);
                 var remakeStats = MaskedLuminance(remake, remakeMasks[region], minimumPixels: 8);
-                _log.Info($"battle-light oracle fighter=383 phase=command-menu region={region} psx pixels={psxStats.Count} mean={psxStats.Mean:0.##} q10={psxStats.Q10:0.##} q50={psxStats.Q50:0.##} q90={psxStats.Q90:0.##} hist={psxStats.Histogram} remake pixels={remakeStats.Count} mean={remakeStats.Mean:0.##} q10={remakeStats.Q10:0.##} q50={remakeStats.Q50:0.##} q90={remakeStats.Q90:0.##} hist={remakeStats.Histogram} delta={RelativeDelta(psxStats.Mean, remakeStats.Mean) * 100f:0.##}%");
+                QuietLog.Info($"battle-light oracle fighter=383 phase=command-menu region={region} psx pixels={psxStats.Count} mean={psxStats.Mean:0.##} q10={psxStats.Q10:0.##} q50={psxStats.Q50:0.##} q90={psxStats.Q90:0.##} hist={psxStats.Histogram} remake pixels={remakeStats.Count} mean={remakeStats.Mean:0.##} q10={remakeStats.Q10:0.##} q50={remakeStats.Q50:0.##} q90={remakeStats.Q90:0.##} hist={remakeStats.Histogram} delta={RelativeDelta(psxStats.Mean, remakeStats.Mean) * 100f:0.##}%");
             }
             var psxGlobalStats = MaskedLuminance(source, psxGlobal, minimumPixels: 24);
             var remakeGlobalStats = MaskedLuminance(remake, remakeGlobal, minimumPixels: 24);
             var delta = RelativeDelta(psxGlobalStats.Mean, remakeGlobalStats.Mean);
             var compare = SideBySide(remake, source, "REMAKE", "PSX");
             Require(compare.SavePng(Path.Combine(captureRoot, "compare-kotemon-luminance.png")) == Error.Ok, "Kotemon comparison save failed");
-            _log.Info($"battle-light oracle fighter=383 phase=command-menu region=global psx pixels={psxGlobalStats.Count} mean={psxGlobalStats.Mean:0.##} q10={psxGlobalStats.Q10:0.##} q50={psxGlobalStats.Q50:0.##} q90={psxGlobalStats.Q90:0.##} hist={psxGlobalStats.Histogram} remake pixels={remakeGlobalStats.Count} mean={remakeGlobalStats.Mean:0.##} q10={remakeGlobalStats.Q10:0.##} q50={remakeGlobalStats.Q50:0.##} q90={remakeGlobalStats.Q90:0.##} hist={remakeGlobalStats.Histogram} delta={delta * 100f:0.##}% vertex={renderer.LightingVertexSummary(383)}");
+            QuietLog.Info($"battle-light oracle fighter=383 phase=command-menu region=global psx pixels={psxGlobalStats.Count} mean={psxGlobalStats.Mean:0.##} q10={psxGlobalStats.Q10:0.##} q50={psxGlobalStats.Q50:0.##} q90={psxGlobalStats.Q90:0.##} hist={psxGlobalStats.Histogram} remake pixels={remakeGlobalStats.Count} mean={remakeGlobalStats.Mean:0.##} q10={remakeGlobalStats.Q10:0.##} q50={remakeGlobalStats.Q50:0.##} q90={remakeGlobalStats.Q90:0.##} hist={remakeGlobalStats.Histogram} delta={delta * 100f:0.##}% vertex={renderer.LightingVertexSummary(383)}");
             Require(delta < .25f, $"Kotemon global luminance delta={delta * 100f:0.##}% must be <25%");
-            _log.Info($"battle-light probe PASS captures={captureRoot}/compare-kotemon-luminance.png masks=published");
+            QuietLog.Info($"battle-light probe PASS captures={captureRoot}/compare-kotemon-luminance.png masks=published");
             GetTree().Quit(0);
         }
         catch (PsxReferenceUnavailableException ex)
         {
-            _log.Info(ex.Message);
+            QuietLog.Info(ex.Message);
             GetTree().Quit(5);
         }
         catch (Exception error)
@@ -1028,15 +1029,15 @@ public partial class GameHost
             var compare = SideBySide(remake320, psx320, "REMAKE", "PSX");
             Require(compare.SavePng(Path.Combine(captureRoot, "compare-kuwagamon-psx.png")) == Error.Ok, "PSX comparison capture write failed");
             Require(compare.SavePng(Path.Combine(captureRoot, "compare-command-menu-camera.png")) == Error.Ok, "command camera comparison write failed");
-            _log.Info($"battle-light stage=18 fade={renderer.LightFade:0.###} {stageLighting} vertex={kuwagamonVertex}");
+            QuietLog.Info($"battle-light stage=18 fade={renderer.LightFade:0.###} {stageLighting} vertex={kuwagamonVertex}");
             VerifyPs1ModulationQuad();
             var darkPercent = MaskedDarkPercent(active320, activeMask, threshold: 30f);
             Require(darkPercent < 30f, $"active fighter dark={darkPercent:0.##}% must be <30%");
             Require(activeStats.Mean > 60f, $"active fighter mean={activeStats.Mean:0.##} must be >60");
-            _log.Info($"battle-light hard modulation=tex80x[ff,80,40]=[255,128,64] active_mean={activeStats.Mean:0.##} active_dark={darkPercent:0.##}%");
+            QuietLog.Info($"battle-light hard modulation=tex80x[ff,80,40]=[255,128,64] active_mean={activeStats.Mean:0.##} active_dark={darkPercent:0.##}%");
             if (remakePixels <= 100)
             {
-                _log.Info($"battle-light oracle phase=command-menu psx mean={psxStats.Mean:0.##} q10={psxStats.Q10:0.##} q50={psxStats.Q50:0.##} q90={psxStats.Q90:0.##} remake mean=n/a q10=n/a q50=n/a q90=n/a delta=n/a");
+                QuietLog.Info($"battle-light oracle phase=command-menu psx mean={psxStats.Mean:0.##} q10={psxStats.Q10:0.##} q50={psxStats.Q50:0.##} q90={psxStats.Q90:0.##} remake mean=n/a q10=n/a q50=n/a q90=n/a delta=n/a");
                 GD.PushWarning($"WARN battle-light-oracle-unpaired phase=command-menu reason=remake-kuwagamon-offscreen psx_pixels={psxStats.Count} remake_pixels={remakePixels}");
             }
             else
@@ -1044,18 +1045,18 @@ public partial class GameHost
                 var remakeStats = MaskedLuminance(remake320, remakeMask);
                 var meanDelta = RelativeDelta(psxStats.Mean, remakeStats.Mean);
                 var medianDelta = RelativeDelta(psxStats.Q50, remakeStats.Q50);
-                _log.Info($"battle-light oracle phase=command-menu psx mean={psxStats.Mean:0.##} q10={psxStats.Q10:0.##} q50={psxStats.Q50:0.##} q90={psxStats.Q90:0.##} remake mean={remakeStats.Mean:0.##} q10={remakeStats.Q10:0.##} q50={remakeStats.Q50:0.##} q90={remakeStats.Q90:0.##} delta={meanDelta * 100f:0.##}%");
+                QuietLog.Info($"battle-light oracle phase=command-menu psx mean={psxStats.Mean:0.##} q10={psxStats.Q10:0.##} q50={psxStats.Q50:0.##} q90={psxStats.Q90:0.##} remake mean={remakeStats.Mean:0.##} q10={remakeStats.Q10:0.##} q50={remakeStats.Q50:0.##} q90={remakeStats.Q90:0.##} delta={meanDelta * 100f:0.##}%");
                 if (meanDelta < .25f && medianDelta < .25f)
-                    _log.Info($"battle-light oracle paired mean_delta={meanDelta * 100f:0.##}% median_delta={medianDelta * 100f:0.##}%");
+                    QuietLog.Info($"battle-light oracle paired mean_delta={meanDelta * 100f:0.##}% median_delta={medianDelta * 100f:0.##}%");
                 else
                     GD.PushWarning($"WARN battle-light-oracle-unpaired phase=command-menu mean_delta={meanDelta * 100f:0.##}% median_delta={medianDelta * 100f:0.##}% psx_pixels={psxStats.Count} remake_pixels={remakeStats.Count}");
             }
-            _log.Info($"battle-light probe PASS captures={captureRoot}/kotemon-lit.png,{captureRoot}/kuwagamon-lit.png,{captureRoot}/compare-kuwagamon-psx.png");
+            QuietLog.Info($"battle-light probe PASS captures={captureRoot}/kotemon-lit.png,{captureRoot}/kuwagamon-lit.png,{captureRoot}/compare-kuwagamon-psx.png");
             GetTree().Quit(0);
         }
         catch (PsxReferenceUnavailableException ex)
         {
-            _log.Info(ex.Message);
+            QuietLog.Info(ex.Message);
             GetTree().Quit(5);
         }
         catch (Exception error)
@@ -1088,10 +1089,10 @@ public partial class GameHost
             var closed = await CaptureBattle(captureRoot, "face-closed.png");
             var changed = CountDifferentPixels(open, closed, 0, open.GetWidth() / 2);
             Require(changed > 0, "forced closed eyes did not change Kotemon framebuffer pixels");
-            _log.Info($"battle-face {renderer.FaceSummary(383)} blink=open-to-closed changed_pixels={changed} localized_texels={textureChanged}");
+            QuietLog.Info($"battle-face {renderer.FaceSummary(383)} blink=open-to-closed changed_pixels={changed} localized_texels={textureChanged}");
             // Fighter 0 has no model face in the face-texture update contract. A decoded no-face fighter follows the same no-op path.
-            _log.Info("battle-face fighter=0 parts=0 no_effect=true");
-            _log.Info($"battle-face probe PASS captures={captureRoot}/face-open.png,{captureRoot}/face-closed.png");
+            QuietLog.Info("battle-face fighter=0 parts=0 no_effect=true");
+            QuietLog.Info($"battle-face probe PASS captures={captureRoot}/face-open.png,{captureRoot}/face-closed.png");
             GetTree().Quit(0);
         }
         catch (Exception error)
@@ -1119,7 +1120,7 @@ public partial class GameHost
             renderer.SetCommandMenuCamera();
             var rotationDiff = renderer.RotationOracleMaxDiff();
             Require(rotationDiff < 1e-4f, $"battle rotation oracle maxdiff={rotationDiff:R}");
-            _log.Info($"battle-rotation-oracle maxdiff={rotationDiff:R} order=Rz*Ry*Rx*S");
+            QuietLog.Info($"battle-rotation-oracle maxdiff={rotationDiff:R} order=Rz*Ry*Rx*S");
             renderer.SetProbePose(10);
             foreach (var fighter in new[] { 383, 51 })
             {
@@ -1127,7 +1128,7 @@ public partial class GameHost
                 Require(winding.Total > 0, $"battle winding fighter={fighter} has no triangles");
                 var percent = winding.Agree * 100d / winding.Total;
                 Require(percent >= 90d, $"battle winding fighter={fighter} agree={percent:0.00} below 90");
-                _log.Info($"battle-winding fighter={fighter} agree={percent:0.00} total={winding.Total} agree_count={winding.Agree}");
+                QuietLog.Info($"battle-winding fighter={fighter} agree={percent:0.00} total={winding.Total} agree_count={winding.Agree}");
             }
 
             // Fighters with no ABR primitive must stay in the opaque
@@ -1136,7 +1137,7 @@ public partial class GameHost
             var stagePasses = renderer.SurfacePasses(-1);
             Require(kotemonPasses.Opaque > 0 && kotemonPasses.Translucent == 0,
                 $"Kotemon 383 surfaces must all be opaque opaque={kotemonPasses.Opaque} translucent={kotemonPasses.Translucent}");
-            _log.Info($"battle-model passes fighter=383 opaque={kotemonPasses.Opaque} translucent={kotemonPasses.Translucent} stage-opaque={stagePasses.Opaque} stage-translucent={stagePasses.Translucent}");
+            QuietLog.Info($"battle-model passes fighter=383 opaque={kotemonPasses.Opaque} translucent={kotemonPasses.Translucent} stage-opaque={stagePasses.Opaque} stage-translucent={stagePasses.Translucent}");
 
             const int idleFrame = 10;
             renderer.ShowAllBonesForProbe();
@@ -1154,7 +1155,7 @@ public partial class GameHost
             var saberDifference = CountDifferentPixels(legacy, kotemon, 790, 930);
             Require(kotemonPixels > 1000 && saberDifference > 0,
                 $"Kotemon source mask must retain textured body and change saber region pixels={saberDifference} before={legacyPixels} after={kotemonPixels}");
-            _log.Info($"battle-model bones {renderer.BoneVisibility(383)} visible_sabre=16 frame={idleFrame} saber_region_diff={saberDifference} pixels-before={legacyPixels} pixels-after={kotemonPixels}");
+            QuietLog.Info($"battle-model bones {renderer.BoneVisibility(383)} visible_sabre=16 frame={idleFrame} saber_region_diff={saberDifference} pixels-before={legacyPixels} pixels-after={kotemonPixels}");
 
             renderer.SetCullModeForProbe(BaseMaterial3D.CullModeEnum.Disabled);
             var noCull = await CaptureBattle(captureRoot, "kotemon-nocull.png");
@@ -1164,7 +1165,7 @@ public partial class GameHost
             var culledPixels = CountBrightPixels(culled, 0, culled.GetWidth() / 2);
             Require(culledPixels > 1000 && culledPixels * 4 > noCullPixels,
                 $"back culling removed the visible Kotemon body no-cull={noCullPixels} back={culledPixels}");
-            _log.Info($"battle-model culling fighter=383 mode=Back textured-no-cull={noCullPixels} textured-back={culledPixels} orientation=correct");
+            QuietLog.Info($"battle-model culling fighter=383 mode=Back textured-no-cull={noCullPixels} textured-back={culledPixels} orientation=correct");
 
             var kotemonPath = ResolveBattleModelPath(383);
             var kuwagamonPath = ResolveBattleModelPath(51);
@@ -1172,7 +1173,7 @@ public partial class GameHost
             Require(renderer.ModelCount == 2, "Kuwagamon comparison model did not load");
             renderer.SetProbePose(idleFrame);
             await CaptureBattle(captureRoot, "kuwagamon-idle.png");
-            _log.Info($"battle-model bones {renderer.BoneVisibility(51)} fighter_name=Kuwagamon frame={idleFrame}");
+            QuietLog.Info($"battle-model bones {renderer.BoneVisibility(51)} fighter_name=Kuwagamon frame={idleFrame}");
 
             // DIGNAM entry 36 is WarGreymon. fighter.json resolves that name id to fighter 213.
             const int warGreymon = 213;
@@ -1181,7 +1182,7 @@ public partial class GameHost
             Require(renderer.ModelCount == 2, "WarGreymon comparison model did not load");
             renderer.SetProbePose(idleFrame);
             await CaptureBattle(captureRoot, "wargreymon-idle.png");
-            _log.Info($"battle-model bones {renderer.BoneVisibility(warGreymon)} fighter_name=WarGreymon name_id=36 fighter_id={warGreymon} frame={idleFrame}");
+            QuietLog.Info($"battle-model bones {renderer.BoneVisibility(warGreymon)} fighter_name=WarGreymon name_id=36 fighter_id={warGreymon} frame={idleFrame}");
 
             // the decoded mesh contract:766-795 does not clear POLY_FT/GT UV/tpage state when
             // 0x9 disables new UV bytes. MegaSeadramon 61 exercises that residual
@@ -1195,9 +1196,9 @@ public partial class GameHost
             var mega = await CaptureBattle(captureRoot, "megaseadramon-untextured.png");
             var megaPixels = CountBrightPixels(mega, mega.GetWidth() / 2, mega.GetWidth());
             Require(megaPixels > 0, "MegaSeadramon residual-UV model rendered zero textured pixels");
-            _log.Info($"battle-model untextured polygons={renderer.UntexturedPolygonCount(megaSeadramon)} fighter={megaSeadramon} textured-pixels={megaPixels}");
+            QuietLog.Info($"battle-model untextured polygons={renderer.UntexturedPolygonCount(megaSeadramon)} fighter={megaSeadramon} textured-pixels={megaPixels}");
 
-            _log.Info($"battle-model probe PASS fps={Engine.GetFramesPerSecond():0.0} captures={captureRoot}/kotemon-idle.png,{captureRoot}/kuwagamon-idle.png,{captureRoot}/wargreymon-idle.png");
+            QuietLog.Info($"battle-model probe PASS fps={Engine.GetFramesPerSecond():0.0} captures={captureRoot}/kotemon-idle.png,{captureRoot}/kuwagamon-idle.png,{captureRoot}/wargreymon-idle.png");
             GetTree().Quit(0);
         }
         catch (Exception error)
@@ -1276,7 +1277,7 @@ public partial class GameHost
                         var output = Path.Combine(captureRoot, $"fighter-{fighter}.png");
                         Require(image.SavePng(output) == Error.Ok, $"save failed={output}");
                         var framing = factor == 1f ? $"source-view-{viewIndex}" : $"pulled-back x{factor.ToString("0.0", CultureInfo.InvariantCulture)}";
-                        _log.Info($"FIGHTER_SHEET fighter={fighter} status=ok enemy={source.Enemy} cameras={cameras.Count} framing={framing} image={output}");
+                        QuietLog.Info($"FIGHTER_SHEET fighter={fighter} status=ok enemy={source.Enemy} cameras={cameras.Count} framing={framing} image={output}");
                         accepted = true;
                         break;
                     }
@@ -1285,10 +1286,10 @@ public partial class GameHost
                 catch (Exception error)
                 {
                     failed++;
-                    _log.Info($"FIGHTER_SHEET fighter={fighter} status=error reason={error.Message}");
+                    QuietLog.Info($"FIGHTER_SHEET fighter={fighter} status=error reason={error.Message}");
                 }
             }
-            _log.Info($"FIGHTER_SHEET complete total={paths.Length} failed={failed} root={captureRoot}");
+            QuietLog.Info($"FIGHTER_SHEET complete total={paths.Length} failed={failed} root={captureRoot}");
             GetTree().Quit(failed == 0 ? 0 : 3);
         }
         catch (Exception error)

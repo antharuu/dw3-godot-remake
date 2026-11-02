@@ -21,7 +21,7 @@ public sealed class FieldDataPackLoaderTests : IDisposable
         Zone zone = loader.LoadZone("S200");
         Assert.Equal((32, 24), (zone.Width, zone.Height));
         Assert.Equal([7, 3, 11], zone.Layers.Select(layer => layer.SourceDepth));
-        Exit exit = Assert.Single(zone.Exits);
+        FieldExit exit = Assert.Single(zone.Exits);
         Assert.Equal((4, "S235", 278, 218, 3), (exit.Slot, exit.Destination, exit.X, exit.Y, exit.Facing));
         Assert.True(exit.IsUnevaluated);
         Assert.Single(zone.Climbs);

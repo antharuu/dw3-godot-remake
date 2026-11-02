@@ -32,7 +32,7 @@ public sealed class WarpController
     public const float OfferRadiusWorldUnits = 2f;
 
     private const int FadeTicks = 2;
-    private Exit? _pendingExit;
+    private FieldExit? _pendingExit;
     private Climb? _pendingClimb;
     private Drop? _pendingDrop;
     private int _pendingClimbDirection = -1;
@@ -199,7 +199,7 @@ public sealed class WarpController
         state.Offer = false;
     }
 
-    private void UpdatePending(Exit? exit, Climb? climb, Drop? drop, int climbDirection, GameState state)
+    private void UpdatePending(FieldExit? exit, Climb? climb, Drop? drop, int climbDirection, GameState state)
     {
         _pendingExit = exit;
         _pendingClimb = climb;
@@ -237,7 +237,7 @@ public sealed class WarpController
     /// and the offer is logged once per zone:slot so the non-enforcement is explicit
     /// rather than silent.
     /// </summary>
-    private void ReportUnevaluatedExitCondition(Exit exit, FieldZone current, Action<string, string> warn)
+    private void ReportUnevaluatedExitCondition(FieldExit exit, FieldZone current, Action<string, string> warn)
     {
         if (!exit.IsUnevaluated)
         {
@@ -253,7 +253,7 @@ public sealed class WarpController
         warn($"exit-condition-not-enforced:{key}", $"exit-condition-not-enforced zone={current.Zone.Id} slot={exit.Slot} condition=0x{exit.Condition!.Value:X4}");
     }
 
-    private static bool TryOffer(GameState state, FieldZone current, out Exit? exit, out Climb? climb, out Drop? drop, out int climbDirection)
+    private static bool TryOffer(GameState state, FieldZone current, out FieldExit? exit, out Climb? climb, out Drop? drop, out int climbDirection)
     {
         exit = null;
         climb = null;
@@ -295,7 +295,7 @@ public sealed class WarpController
         return false;
     }
 
-    private static bool MatchExit(FieldZone current, int slot, int triggerDirection, GameState state, ref Exit? exit)
+    private static bool MatchExit(FieldZone current, int slot, int triggerDirection, GameState state, ref FieldExit? exit)
     {
         var matched = current.Zone.Exits.FirstOrDefault(item => item.Slot == slot);
         if (matched is null)

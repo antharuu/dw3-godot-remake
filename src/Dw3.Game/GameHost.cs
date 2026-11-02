@@ -312,7 +312,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
                 _state.AnimationDirection = _state.Facing;
                 _renderer.DiagnosticBadge = $"DIAGNOSTIC zone={diagnosticZone}";
                 ApplyScene(target);
-                _log.Info($"diagnostic zone={_state.ZoneId} position=({_state.Position.X:0},{_state.Position.Y:0}) facing={_state.Facing} progress=0x{_state.Progress:X2} zones={_zones.Count} decoded={_zoneDecodeCount} npcs={npc.Occupants.Count} startup_ms={startupWatch.ElapsedMilliseconds}");
+                QuietLog.Info($"diagnostic zone={_state.ZoneId} position=({_state.Position.X:0},{_state.Position.Y:0}) facing={_state.Facing} progress=0x{_state.Progress:X2} zones={_zones.Count} decoded={_zoneDecodeCount} npcs={npc.Occupants.Count} startup_ms={startupWatch.ElapsedMilliseconds}");
             }
             else
             {
@@ -322,7 +322,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
                 _state.AnimationSet = 1;
                 _state.AnimationDirection = _state.Facing;
                 ApplyScene(GetOrLoadZone("S200"));
-                _log.Info($"host ready zone={_state.ZoneId} position=({_state.Position.X:0},{_state.Position.Y:0}) facing={_state.Facing} progress=0x{_state.Progress:X2} zones={_zones.Count} decoded={_zoneDecodeCount} npcs={npc.Occupants.Count} startup_ms={startupWatch.ElapsedMilliseconds}");
+                QuietLog.Info($"host ready zone={_state.ZoneId} position=({_state.Position.X:0},{_state.Position.Y:0}) facing={_state.Facing} progress=0x{_state.Progress:X2} zones={_zones.Count} decoded={_zoneDecodeCount} npcs={npc.Occupants.Count} startup_ms={startupWatch.ElapsedMilliseconds}");
             }
 
             if (_options.StartF3) ToggleF3();
@@ -384,12 +384,12 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         if (what == NotificationWMWindowFocusOut)
         {
             _input.SetFocused(false);
-            _log.Info("input focus=out cleared=true");
+            QuietLog.Info("input focus=out cleared=true");
         }
         else if (what == NotificationWMWindowFocusIn)
         {
             _input.SetFocused(true);
-            _log.Info("input focus=in awaiting-new-events=true");
+            QuietLog.Info("input focus=in awaiting-new-events=true");
         }
     }
 
@@ -473,7 +473,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
             // climb/drop are all suspended while it runs (the source's acting flag). The
             // dialogue machine consumes its own Cross edges and rearms on release, so the
             // same press that closes it can never immediately reopen it.
-            _dialogue.Tick(_input.State, _log.Info, _log.Warn);
+            _dialogue.Tick(_input.State, QuietLog.Info, _log.Warn);
         }
         else if (_climb.IsActive || _drop.IsActive)
         {
@@ -511,7 +511,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
             }
             // The warp state machine runs every step while not climbing, including its
             // input-locked LockInput→Commit→Rearm transitions (only locomotion is gated).
-            _warp.Tick(_state, _input.State, _currentZone, new WarpCallbacks(ResolveTarget, ApplyScene, _log.Info, _log.Warn, StartClimb, StartDrop));
+            _warp.Tick(_state, _input.State, _currentZone, new WarpCallbacks(ResolveTarget, ApplyScene, QuietLog.Info, _log.Warn, StartClimb, StartDrop));
         }
         _ = _input.State.ConsumeF3Toggled();
         _state.AnimationTicks++;
@@ -653,7 +653,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         _battleRenderer.Show();
         RefreshActivePartnerCatalogs();
         _battleMenu.OpenRoot(flow.RootMenuLines());
-        _log.Info($"battle-start {why} encounter={encounter} enemies=[{string.Join(",", _lastBattleEnemyIds)}] party=[{string.Join(",", flow.State.Players.Where(p => p is not null).Select(p => p!.Id))}] level={TestTeamLevel}");
+        QuietLog.Info($"battle-start {why} encounter={encounter} enemies=[{string.Join(",", _lastBattleEnemyIds)}] party=[{string.Join(",", flow.State.Players.Where(p => p is not null).Select(p => p!.Id))}] level={TestTeamLevel}");
     }
 
     private void BattleLoadFailed(Exception error)
@@ -662,14 +662,14 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         _battleFlow = null;
         _state.BattleActive = false;
         _battleRenderer?.Hide();
-        _log.Error($"battle-load-failed reason={error.Message}");
+        QuietLog.Error($"battle-load-failed reason={error.Message}");
         _battleNoticeText = $"Combat indisponible : {error.Message}";
         if (_battleNoticeLabel is not null)
         {
             _battleNoticeLabel.Text = _battleNoticeText;
             _battleNoticeLabel.Visible = true;
         }
-        _log.Info("battle-load-failed return-to-field");
+        QuietLog.Info("battle-load-failed return-to-field");
     }
 
     private void EndBattle()
@@ -691,11 +691,11 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         {
             _inTitle = true;
             _titleScreen?.Visible = true;
-            _log.Info($"battle-end outcome={outcome} return-to-title zone={_state.ZoneId}");
+            QuietLog.Info($"battle-end outcome={outcome} return-to-title zone={_state.ZoneId}");
         }
         else
         {
-            _log.Info($"battle-end outcome={outcome} return-to-field zone={_state.ZoneId} position=({_state.Position.X:0},{_state.Position.Y:0})");
+            QuietLog.Info($"battle-end outcome={outcome} return-to-field zone={_state.ZoneId} position=({_state.Position.X:0},{_state.Position.Y:0})");
         }
     }
 
@@ -888,7 +888,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         }
         _battleRenderedPlayerId = playerId;
         _battleRenderedEnemyId = enemyId;
-        _log.Info($"battle-model-replaced player={playerId} enemy={enemyId}");
+        QuietLog.Info($"battle-model-replaced player={playerId} enemy={enemyId}");
     }
 
     /// <summary>On a victory, resolves the encounter's real reward, shares its exp by the partners
@@ -924,7 +924,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         }
         _battleReport = new BattleReportView(BattleOutcome.Won, expShare, reward.Money, reward.DigimonExp, partners, BattleText());
         _fightReportInput = new FightReportInput(reportPartners, reward.Money, Item: 0);
-        _log.Info($"battle-reward encounter={_lastBattleEncounter} exp={reward.Exp} money={reward.Money} digimonExp={reward.DigimonExp} fought={fought} share={expShare} applied=[{string.Join(",", partners.Select(partner => $"fighter={partner.Id}:+{partner.ExpGained}"))}]");
+        QuietLog.Info($"battle-reward encounter={_lastBattleEncounter} exp={reward.Exp} money={reward.Money} digimonExp={reward.DigimonExp} fought={fought} share={expShare} applied=[{string.Join(",", partners.Select(partner => $"fighter={partner.Id}:+{partner.ExpGained}"))}]");
     }
 
     private FightReportController BuildFightReportController(BattleFlowController flow)
@@ -980,9 +980,9 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         if (upEdge) _battleMenu.MoveUp();
         if (downEdge) _battleMenu.MoveDown();
         if (_input.State.ConsumePreviousPagePressed() && _battleMenu.PreviousPage())
-            _log.Info($"battle-menu page first={_battleMenu.First} cursor={_battleMenu.Cursor}");
+            QuietLog.Info($"battle-menu page first={_battleMenu.First} cursor={_battleMenu.Cursor}");
         if (_input.State.ConsumeNextPagePressed() && _battleMenu.NextPage())
-            _log.Info($"battle-menu page first={_battleMenu.First} cursor={_battleMenu.Cursor}");
+            QuietLog.Info($"battle-menu page first={_battleMenu.First} cursor={_battleMenu.Cursor}");
 
         if (_input.State.ConsumeCancelPressed())
         {
@@ -1016,7 +1016,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
                     {
                         _battlePendingChangeMotion = 13;
                         _battleSwitchForced = false;
-                        _log.Info($"battle-menu switch player={_battleSwitchPartner} action=5 consumes_turn=true");
+                        QuietLog.Info($"battle-menu switch player={_battleSwitchPartner} action=5 consumes_turn=true");
                     }
                     else
                     {
@@ -1084,7 +1084,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         var textCatalog = BattleText();
         _battleMenu.Open(kind, lines, previousPageText: kind is BattleMenuKind.Technique or BattleMenuKind.Item ? textCatalog.MenuEntry(0x11) : null,
             nextPageText: kind is BattleMenuKind.Technique or BattleMenuKind.Item ? textCatalog.MenuEntry(0x12) : null, statusText: statusText);
-        _log.Info($"battle-menu open={kind} lines={lines.Count}");
+        QuietLog.Info($"battle-menu open={kind} lines={lines.Count}");
     }
 
     private void OpenSwitchInMenu(BattleFlowController flow, int partner)
@@ -1118,17 +1118,17 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
             case BattleMenuKind.Switch:
                 if (_battleSwitchForced)
                 {
-                    _log.Info("battle-menu cancel=refused forced-switch");
+                    QuietLog.Info("battle-menu cancel=refused forced-switch");
                     break;
                 }
                 _battleMenu.OpenRoot(flow.RootMenuLines());
-                _log.Info("battle-menu cancel=root");
+                QuietLog.Info("battle-menu cancel=root");
                 break;
             case BattleMenuKind.Technique:
             case BattleMenuKind.Digivolve:
             case BattleMenuKind.Item:
                 _battleMenu.OpenRoot(flow.RootMenuLines());
-                _log.Info("battle-menu cancel=root");
+                QuietLog.Info("battle-menu cancel=root");
                 break;
         }
     }
@@ -1198,7 +1198,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
                 var battleItem = BattleSetupFactory.ToItem(item);
                 items[battleItem.Id] = battleItem;
                 stock[battleItem.Id] = 3;
-                itemText[battleItem.Id] = BattleText().Tokens(item.Name, $"FSITMNAM id={item.NameId}");
+                itemText[battleItem.Id] = BattleTextCatalog.Tokens(item.Name, $"FSITMNAM id={item.NameId}");
             }
         }
         flow.Items = items;
@@ -1377,20 +1377,20 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         if (climb.Type == 2)
         {
             _climb.StartClimbUp(_state, triggerDirection, climb.X, climb.Y, climb.Height);
-            _log.Info($"climb start type=up slot={climb.Slot} dir={triggerDirection} pos=({climb.X},{climb.Y}) height={climb.Height}");
+            QuietLog.Info($"climb start type=up slot={climb.Slot} dir={triggerDirection} pos=({climb.X},{climb.Y}) height={climb.Height}");
         }
         else
         {
             var dir = triggerDirection == 1 ? 5 : 3;
             _climb.StartClimbDown(_state, dir, climb.X, climb.Y, climb.Height);
-            _log.Info($"climb start type=down slot={climb.Slot} dir={dir} pos=({climb.X},{climb.Y}) height={climb.Height}");
+            QuietLog.Info($"climb start type=down slot={climb.Slot} dir={dir} pos=({climb.X},{climb.Y}) height={climb.Height}");
         }
     }
 
     private void StartDrop(Drop drop, int triggerDirection)
     {
         _drop.StartDrop(_state, triggerDirection, drop.Height);
-        _log.Info($"drop start slot={drop.Slot} dir={triggerDirection} pos=({_state.Position.X},{_state.Position.Y}) height={drop.Height}");
+        QuietLog.Info($"drop start slot={drop.Slot} dir={triggerDirection} pos=({_state.Position.X},{_state.Position.Y}) height={drop.Height}");
     }
 
     // FIELDSTG_dirSteps (the actor movement contract): the source pixel step in front of the actor for each source
@@ -1714,7 +1714,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         // dominate the rect while the dark-blue glyph ink (blue but dark) is excluded.
         var panelBlue = CountLightBluePixels(after, DialogueRenderer.BoxScreenRect);
         Require(panelBlue > 400, $"panel rendered too few light-blue pixels panel_blue={panelBlue} rect={DialogueRenderer.BoxScreenRect}");
-        _log.Info($"dialogue panel PASS light_blue={panelBlue} rect={DialogueRenderer.BoxScreenRect}");
+        QuietLog.Info($"dialogue panel PASS light_blue={panelBlue} rect={DialogueRenderer.BoxScreenRect}");
 
         // The panel body must be opaque light blue across the middle of the box (the 12-wide
         // texture stretched to w), not a half-blended flat colour: only an opaque body reaches
@@ -1745,7 +1745,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         var leftSemi = CountSpriteSemiBlended(before, after, textures[0], leftTopLeft);
         Require(leftPure > 400, $"left edge rendered too few opaque texels left_pure={leftPure} left_semi={leftSemi}");
         Require(leftSemi < leftPure, $"left edge rendered semi-transparent left_semi={leftSemi} >= left_pure={leftPure}");
-        _log.Info($"dialogue 9-patch PASS body_blue={bodyBlue} left_pure={leftPure} left_semi={leftSemi} rect={panelRect}");
+        QuietLog.Info($"dialogue 9-patch PASS body_blue={bodyBlue} left_pure={leftPure} left_semi={leftSemi} rect={panelRect}");
 
         var cornerTopLeft = SourceToViewport(boxOrigin + layout.SpritePos);
         var cornerChanged = CountSpriteOpaqueChanged(before, after, textures[layout.Sprite], cornerTopLeft);
@@ -1841,7 +1841,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
             Require(DialogueRenderer.HasArrowPixels, "bubble laid out no arrow");
             Require(DialogueRenderer.HasGlyphPixels, "bubble laid out no text glyphs");
             AssertDialogueBubble(before, openCapture, simpleActor);
-            _log.Info($"dialogue render PASS zone=S200 actor={simpleActor.Id} type={DialogueRenderer.BoxType} glyphs={DialogueRenderer.GlyphCount} icons={DialogueRenderer.IconCount} name={DialogueRenderer.NameGlyphCount} rect={DialogueRenderer.BoxScreenRect}");
+            QuietLog.Info($"dialogue render PASS zone=S200 actor={simpleActor.Id} type={DialogueRenderer.BoxType} glyphs={DialogueRenderer.GlyphCount} icons={DialogueRenderer.IconCount} name={DialogueRenderer.NameGlyphCount} rect={DialogueRenderer.BoxScreenRect}");
 
             // Advance page by page (reveal each, then Cross) until the last page closes.
             var pages = 0;
@@ -1852,7 +1852,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
             }
             Require(!_dialogue.IsActive && _dialogue.State == DialogueState.Idle, "dialogue did not close to Idle after the last page");
             Require(pages == pageCount - 1, $"dialogue advanced {pages} pages instead of {pageCount - 1}");
-            _log.Info($"dialogue advance PASS zone=S200 actor={simpleActor.Id} pages={pageCount} advances={pages}");
+            QuietLog.Info($"dialogue advance PASS zone=S200 actor={simpleActor.Id} pages={pageCount} advances={pages}");
 
             // Resume: reposition to the known-walkable spawn and drive held input, proving the
             // conversation released locomotion (the source spawn right-step is the M1 route).
@@ -1869,7 +1869,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
             }
             SetTestHeldDirection(SemanticDirection.None);
             Require(moved, "locomotion did not resume after the conversation");
-            _log.Info($"dialogue resume PASS zone=S200 actor={simpleActor.Id} moved={moved}");
+            QuietLog.Info($"dialogue resume PASS zone=S200 actor={simpleActor.Id} moved={moved}");
 
             // --- anti-reopen: a held Cross through the close rearms, never reopens ---
             var (againPos, againFacing) = FaceActor(simpleActor);
@@ -1899,7 +1899,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
             _input.State.ReleaseAction();
             TickTestSimulation(); // Rearm -> Idle
             Require(_dialogue.State == DialogueState.Idle, "dialogue did not rearm after the action release");
-            _log.Info($"dialogue rearm PASS zone=S200 actor={simpleActor.Id} held-cross-rearmed=true");
+            QuietLog.Info($"dialogue rearm PASS zone=S200 actor={simpleActor.Id} held-cross-rearmed=true");
 
             // --- effect: closing an effect talk signals it once and applies nothing ---
             var (effectPos, effectFacing) = FaceActor(effectActor);
@@ -1920,10 +1920,10 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
                 "effect conversation did not signal dialogue-effect-not-applied");
             Require(_state.Progress == progressBefore, "effect conversation changed story progress");
             var talk = _dialogue.Talk ?? throw new InvalidOperationException("effect conversation did not retain its talk data");
-            _log.Info($"dialogue effect PASS zone=S200 actor={effectActor.Id} families=[{string.Join(",", talk.Families)}] progress_unchanged=true");
+            QuietLog.Info($"dialogue effect PASS zone=S200 actor={effectActor.Id} families=[{string.Join(",", talk.Families)}] progress_unchanged=true");
 
             Require(!_input.F3On, "dialogue probe enabled F3");
-            _log.Info($"dialogue probe PASS zone=S200 simple_actor={simpleActor.Id} effect_actor={effectActor.Id} pages={pageCount} capture={captureRoot}/dialogue-open.png");
+            QuietLog.Info($"dialogue probe PASS zone=S200 simple_actor={simpleActor.Id} effect_actor={effectActor.Id} pages={pageCount} capture={captureRoot}/dialogue-open.png");
             GetTree().Quit(0);
         }
         catch (Exception error)
@@ -2125,7 +2125,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         var captureRoot = ProbeOutputRoot(generatedRoot);
         var capturePath = Path.Combine(captureRoot, fileName);
         Require(GetViewport().GetTexture().GetImage().SavePng(capturePath) == Error.Ok, $"F3 capture failed={capturePath}");
-        _log.Info($"f3 capture={capturePath} enabled={_input.F3On} zone={_state.ZoneId}");
+        QuietLog.Info($"f3 capture={capturePath} enabled={_input.F3On} zone={_state.ZoneId}");
     }
 
     /// <summary>
@@ -2238,7 +2238,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
             var capture2 = GetViewport().GetTexture().GetImage();
             Require(capture2.SavePng(Path.Combine(captureRoot, "canal-water-s200-after.png")) == Error.Ok, "canal water after-capture write failed");
 
-            _log.Info($"canal water PASS zone=S200 named_region=canal_north_bank " +
+            QuietLog.Info($"canal water PASS zone=S200 named_region=canal_north_bank " +
                 $"world=({CanalWorldX},{CanalWorldY}) screen=({screenX},{screenY}) " +
                 $"blue_dominant={blueCount}/{sampleCount} " +
                 $"player=({_state.Position.X:0},{_state.Position.Y:0}) " +
@@ -2268,7 +2268,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
             RunWarpEdge("S200", 4, 3, "s200-to-s235-reentry");
             Require(_state.ZoneId == "S235" && _warp.CommitCount == 3, "re-entry did not commit exactly once per edge");
             await CaptureWarp("warp-s235-reentry.png");
-            _log.Info($"warp probe PASS commits={_warp.CommitCount} zone={_state.ZoneId} state={_warp.State}");
+            QuietLog.Info($"warp probe PASS commits={_warp.CommitCount} zone={_state.ZoneId} state={_warp.State}");
             GetTree().Quit(0);
         }
         catch (Exception error)
@@ -2285,14 +2285,14 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         _state.Position = FindTriggerCell(current, slot);
         _state.SetFacing(facing);
         _input.State.ReleaseAction();
-        _warp.Tick(_state, _input.State, _currentZone, new WarpCallbacks(ResolveTarget, ApplyScene, _log.Info, _log.Warn, StartClimb, StartDrop));
+        _warp.Tick(_state, _input.State, _currentZone, new WarpCallbacks(ResolveTarget, ApplyScene, QuietLog.Info, _log.Warn, StartClimb, StartDrop));
         Require(_warp.State == WarpState.Offer, $"{label} did not offer");
         _input.State.PressAction();
         for (var tick = 0; tick < 12 && _warp.State != WarpState.Rearm; tick++)
-            _warp.Tick(_state, _input.State, CurrentZone, new WarpCallbacks(ResolveTarget, ApplyScene, _log.Info, _log.Warn, StartClimb, StartDrop));
+            _warp.Tick(_state, _input.State, CurrentZone, new WarpCallbacks(ResolveTarget, ApplyScene, QuietLog.Info, _log.Warn, StartClimb, StartDrop));
         Require(_warp.State == WarpState.Rearm, $"{label} did not reach rearm");
         _input.State.ReleaseAction();
-        _warp.Tick(_state, _input.State, CurrentZone, new WarpCallbacks(ResolveTarget, ApplyScene, _log.Info, _log.Warn, StartClimb, StartDrop));
+        _warp.Tick(_state, _input.State, CurrentZone, new WarpCallbacks(ResolveTarget, ApplyScene, QuietLog.Info, _log.Warn, StartClimb, StartDrop));
         Require(_warp.State == WarpState.Idle, $"{label} did not rearm after release");
     }
 
@@ -2314,7 +2314,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         var captureRoot = ProbeOutputRoot(_dataRoot);
         var capturePath = Path.Combine(captureRoot, fileName);
         Require(GetViewport().GetTexture().GetImage().SavePng(capturePath) == Error.Ok, $"warp capture failed={capturePath}");
-        _log.Info($"warp capture={capturePath}");
+        QuietLog.Info($"warp capture={capturePath}");
     }
 
     private FieldZone BuildFieldZone(Zone zone, IReadOnlyList<CollisionActor> collision)
@@ -2570,7 +2570,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
             Require(countB.Red > 0 && countB.Blue > 0,
                 $"settled icon frame 0x{_icon.View.Frame:X} did not render red+blue pixels red={countB.Red} blue={countB.Blue}");
 
-            _log.Info($"icon probe PASS frame_a=0x{startFrame.Frame:X} red={countA.Red} blue={countA.Blue} player_dx={playerDx:0.###} icon_dx={iconDx:0.###} settled={settled} frames={string.Join(",", observed.OrderBy(frame => frame).Select(frame => $"0x{frame:X}"))} captures={captureRoot}/icon-[a|b].png");
+            QuietLog.Info($"icon probe PASS frame_a=0x{startFrame.Frame:X} red={countA.Red} blue={countA.Blue} player_dx={playerDx:0.###} icon_dx={iconDx:0.###} settled={settled} frames={string.Join(",", observed.OrderBy(frame => frame).Select(frame => $"0x{frame:X}"))} captures={captureRoot}/icon-[a|b].png");
             GetTree().Quit(0);
         }
         catch (Exception error)
@@ -2655,7 +2655,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
             if (readBack != probeValue)
                 throw new InvalidOperationException($"sqlite probe mismatch: expected={probeValue} actual={readBack}");
 
-            _log.Info($"sqlite probe PASS value={readBack}");
+            QuietLog.Info($"sqlite probe PASS value={readBack}");
             GetTree().Quit(0);
         }
         catch (Exception ex)
@@ -2716,7 +2716,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
             GetTree().Quit(3);
             return;
         }
-        _log.Info($"capture={capturePath}");
+        QuietLog.Info($"capture={capturePath}");
         if (_options.CaptureAndQuit) GetTree().Quit(0);
     }
 

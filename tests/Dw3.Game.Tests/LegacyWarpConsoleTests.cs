@@ -87,7 +87,7 @@ public sealed class LegacyWarpConsoleTests
 
     private static void OffersNearbyReachableExitButRejectsSeparatedCell()
     {
-        var zone = new Zone("M1", 1, 5, [], "floor", "trigger", [new Exit(4, "Target", 1, 1, 3)], [], "synthetic");
+        var zone = new Zone("M1", 1, 5, [], "floor", "trigger", [new FieldExit(4, "Target", 1, 1, 3)], [], "synthetic");
         var floor = new FloorMap(5, 1, [1, 1, 1, 1, 1]);
         var triggers = new TriggerMap(5, 1, [0, 0, 0, 0x64, 0]);
         var state = new GameState { ZoneId = "M1", Position = new Vector2(1, 0), Facing = 3 };
@@ -168,7 +168,7 @@ public sealed class LegacyWarpConsoleTests
         // 5-cell floor; trigger slot=4, direction=3 at cell x=3.  Player at x=1:
         // distance = 2.0 exactly — within OfferRadiusWorldUnits.  Facing=3 is
         // admitted for triggerDirection=3 per SourceNearDirections[3,3]=true.
-        var zone = new Zone("M1", 5, 1, [], "floor", "trigger", [new Exit(4, "T", 1, 1, 3)], [], "synthetic");
+        var zone = new Zone("M1", 5, 1, [], "floor", "trigger", [new FieldExit(4, "T", 1, 1, 3)], [], "synthetic");
         var floor = new FloorMap(5, 1, [1, 1, 1, 1, 1]);
         var triggers = new TriggerMap(5, 1, [0, 0, 0, 0x64, 0]);
         var state = new GameState { ZoneId = "M1", Position = new Vector2(1, 0), Facing = 3 };
@@ -189,7 +189,7 @@ public sealed class LegacyWarpConsoleTests
         // A gated SLOT_EXIT is now a live, crossable edge marked unevaluated. Walking
         // onto its trigger cell offers normally and logs exit-condition-not-enforced
         // once, carrying the raw condition, instead of suppressing the dispatch.
-        var exit = new Exit(1, "T", 1, 1, 3, 0x7007, "unevaluated");
+        var exit = new FieldExit(1, "T", 1, 1, 3, 0x7007, "unevaluated");
         var zone = new Zone("M1", 3, 1, [], "floor", "trigger", [exit], [], "synthetic");
         var floor = new FloorMap(3, 1, [1, 1, 1]);
         var triggers = new TriggerMap(3, 1, [0, (byte)((3 << 5) | 1), 0]);
@@ -255,7 +255,7 @@ public sealed class LegacyWarpConsoleTests
 
     private static FieldZone Zone(string id, int slot, string destination, int x, int y, int facing, int triggerFacing)
     {
-        var zone = new Zone(id, 1, 1, [], "floor", "trigger", [new Exit(slot, destination, x, y, facing)], [], "synthetic");
+        var zone = new Zone(id, 1, 1, [], "floor", "trigger", [new FieldExit(slot, destination, x, y, facing)], [], "synthetic");
         return new FieldZone(zone, new FloorMap(1, 1, [1]), new TriggerMap(1, 1, [(byte)((triggerFacing << 5) | slot)]), []);
     }
 
