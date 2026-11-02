@@ -3,7 +3,6 @@ using Godot;
 using Dw3.Data;
 using Dw3Production.Conversion;
 using Dw3Production.Diagnostics;
-using Dw3Production.Diagnostics.Battle;
 using Dw3Production.Diagnostics.Field;
 using Dw3Production.Input;
 using Dw3Production.Logging;
@@ -31,13 +30,26 @@ namespace Dw3Production;
 /// lives behind <see cref="IDiagnosticProbeHost"/> in the Diagnostics folder, and the large probe
 /// implementations are split into diagnostic partial files so the normal runtime loop stays legible.
 /// </remarks>
-public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverHost, IFieldTickHost, IBattleTickHost
+public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverHost, IFieldTickHost, IBattleTickHost, IInteractiveFrameHost
 {
+
+    /// <summary>Initializes the host-owned frame coordinator around its session clock.</summary>
+    public GameHost()
+    {
+        _frameCoordinator = new InteractiveFrameCoordinator(_clock);
+        _battleMenuCoordinator = new BattleMenuCoordinator(this);
+        _battleSetupCoordinator = new BattleSetupCoordinator(this);
+        _fieldRuntimeCoordinator = new FieldRuntimeCoordinator(this);
+        _battlePresentationCoordinator = new BattlePresentationCoordinator(this);
+        _firstLaunchCompletionCoordinator = new FirstLaunchCompletionCoordinator(this);
+        _diagnosticProbeResolver = new DiagnosticProbeResolver(this);
+    }
 
     #region Composition state
 
     private readonly GameState _state = new();
     private readonly SimClock _clock = new();
+    private readonly InteractiveFrameCoordinator _frameCoordinator;
 
     private readonly ClimbController _climb = new();
     private readonly DropController _drop = new();
@@ -84,6 +96,12 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     private BattleSetup? _activeBattle;
     private BattleFlowController? _battleFlow;
     private readonly BattleMenuController _battleMenu = new();
+    private readonly BattleMenuCoordinator _battleMenuCoordinator;
+    private readonly BattleSetupCoordinator _battleSetupCoordinator;
+    private readonly FieldRuntimeCoordinator _fieldRuntimeCoordinator;
+    private readonly BattlePresentationCoordinator _battlePresentationCoordinator;
+    private readonly FirstLaunchCompletionCoordinator _firstLaunchCompletionCoordinator;
+    private readonly DiagnosticProbeResolver _diagnosticProbeResolver;
     private readonly IBattleRng _battleRng = new SystemRandomBattleRng();
     private BattleRenderer? _battleRenderer;
     private FightReportRenderer? _fightReportRenderer;
@@ -93,7 +111,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     private readonly FieldEncounterStepper _encounterStepper = new();
     private int _lastBattleEncounter = -1;
     private int[] _lastBattleEnemyIds = [];
-    private IReadOnlyDictionary<int, int> _battleNameIds = new Dictionary<int, int>();
+    private Dictionary<int, int> _battleNameIds = [];
     // The battle menu's press-edge state, so the cursor advances once per key press, not
     // once per frame while a key is held. Reset on battle start.
     private bool _battlePrevUp;
@@ -200,37 +218,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
         AddChild(screen);
     }
 
-    private async void OnFirstLaunchComplete(string dataRoot)
-    {
-        // Remove the first-launch screen, then initialize the game normally.
-        foreach (Node child in GetChildren())
-        {
-            if (child is FirstLaunchScreen)
-            {
-                child.QueueFree();
-                break;
-            }
-        }
-        StartupWithDataPack(dataRoot);
-
-        // Probe: after the first-launch extraction flow, capture S200 to prove the game
-        // reached the field.  Guarded by DW3_FIRST_LAUNCH_PROBE; no effect on nominal play.
-        if (_options.FirstLaunchProbe)
-        {
-            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
-            await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
-            await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
-            var captureDir = ProbeOutputRoot(dataRoot);
-            string capturePath = Path.Combine(captureDir, "first-launch-s200.png");
-            var image = GetViewport().GetTexture().GetImage();
-            Error saveErr = image.SavePng(capturePath);
-            GD.Print(saveErr == Error.Ok
-                ? $"FIRST_LAUNCH_PROBE capture OK: {capturePath}"
-                : $"FIRST_LAUNCH_PROBE capture FAIL ({saveErr}): {capturePath}");
-            GD.Print("FIRST_LAUNCH_PROBE PASS");
-            GetTree().Quit(0);
-        }
-    }
+    private void OnFirstLaunchComplete(string dataRoot) => _ = _firstLaunchCompletionCoordinator.CompleteAsync(dataRoot);
 
     private void StartupWithDataPack(string dataRoot)
     {
@@ -419,68 +407,41 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     /// Advances an interactive session. It consumes fixed simulation ticks first, then presents one
     /// final field or battle state per rendered frame so rendering does not multiply after a stall.
     /// </summary>
-    public override void _Process(double delta)
+    public override void _Process(double delta) => _frameCoordinator.Advance(this, delta);
+
+    bool IInteractiveFrameHost.IsTestDriverActive => _testDriverActive;
+
+    bool IInteractiveFrameHost.HasInputFocus => _input.HasFocus;
+
+    bool IInteractiveFrameHost.IsInTitle => _inTitle;
+
+    bool IInteractiveFrameHost.HasField => _currentZone is not null;
+
+    bool IInteractiveFrameHost.HasActiveBattle => _activeBattle is not null;
+
+    void IInteractiveFrameHost.ShowTitle() => _titleScreen?.Show();
+
+    void IInteractiveFrameHost.StartDebugBattleIfRequested() => DebugBattleTrigger.TryStart(_input.State, StartDebugBattle);
+
+    void IInteractiveFrameHost.LogSimulationStall(int droppedTicks, int cap) =>
+        _log.Warn("sim-stall", $"simulation stall dropped_ticks={droppedTicks} cap={cap}");
+
+    void IInteractiveFrameHost.SimulateStep() =>
+        SimulateStep(movement => _log.Warn($"move:{movement.Rejection}", $"move reject={movement.Rejection} zone={_state.ZoneId} position=({_state.Position.X:0.##},{_state.Position.Y:0.##})"));
+
+    void IInteractiveFrameHost.PresentBattle() => _battleRenderer?.Present(BuildBattleView());
+
+    void IInteractiveFrameHost.PresentField(double delta)
     {
-        if (_testDriverActive || !_input.HasFocus) return;
-
-        // On defeat the game is on the title screen (MODE_TITLE), not the field: keep the
-        // overlay visible and skip the field frame.
-        if (_inTitle)
-        {
-            _titleScreen?.Visible = true;
-            return;
-        }
-
-        // F8 (debug battle test) works from any map, even before the first SimulateStep.
-        if (_input.State.ConsumeF8Pressed()) StartDebugBattle();
-
-        // A failed early init (e.g. a refused diagnostic zone) leaves no active field;
-        // skip the frame instead of driving SimulateStep against a null scene.
-        if (_currentZone is null) return;
-
-        var steps = _clock.Tick(delta);
-        if (_clock.LastDroppedTicks > 0) _log.Warn("sim-stall", $"simulation stall dropped_ticks={_clock.LastDroppedTicks} cap={SimClock.MaxTicksPerFrame}");
-        for (var step = 0; step < steps; step++)
-            SimulateStep(movement => _log.Warn($"move:{movement.Rejection}", $"move reject={movement.Rejection} zone={_state.ZoneId} position=({_state.Position.X:0.##},{_state.Position.Y:0.##})"));
-        // Rendering is cadence-driven, not catch-up-tick-driven. A stall may simulate up to
-        // four fixed steps but presents one final state, so F3 cannot multiply render work.
-        if (_activeBattle is not null)
-            _battleRenderer?.Present(BuildBattleView());
-        else
-        {
-            _renderer?.Present(_state, CurrentZone, _input.F3On, delta, _icon.View);
-            _dialogueRenderer?.Present(_dialogue.IsActive ? BuildDialogueView() : (DialogueView?)null);
-        }
+        _renderer?.Present(_state, CurrentZone, _input.F3On, delta, _icon.View);
+        _dialogueRenderer?.Present(_dialogue.IsActive ? BuildDialogueView() : (DialogueView?)null);
     }
 
     /// <summary>Finds the probe registered under an entry name in the field, dialogue, battle and storage families.</summary>
     /// <param name="entryName">Entry name chosen by a diagnostic runner, such as <c>RunWarpProbe</c>.</param>
     /// <returns>The probe body, to be started after the current frame.</returns>
     /// <exception cref="InvalidOperationException">No family registers the name.</exception>
-    private Func<Task> ResolveProbe(string entryName)
-    {
-        var fieldProbe = FieldProbeCatalog.Create(entryName, this) ?? DialogueProbeCatalog.Create(entryName, this);
-        if (fieldProbe is not null)
-        {
-            return fieldProbe.RunAsync;
-        }
-
-        if (BattleProbeCatalog.Create(entryName, new BattleProbeContext(this)) is { } battleProbe)
-        {
-            return battleProbe.RunAsync;
-        }
-
-        if (entryName == "RunSqliteProbe")
-        {
-            return () =>
-            {
-                SqliteProbe.Run(code => GetTree().Quit(code));
-                return Task.CompletedTask;
-            };
-        }
-
-        throw new InvalidOperationException($"no diagnostic probe is registered as {entryName}");
-    }
+    private Func<Task> ResolveProbe(string entryName) => _diagnosticProbeResolver.Resolve(entryName);
 
     #endregion
 
@@ -504,68 +465,17 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
 
     bool IFieldTickHost.HasActiveTraversal => _climb.IsActive || _drop.IsActive;
 
-    void IFieldTickHost.TickBattleMode()
-    {
-        TickBattle();
-        _ = _input.State.ConsumeF3Toggled();
-    }
+    void IFieldTickHost.TickBattleMode() => _fieldRuntimeCoordinator.TickBattleMode();
 
-    void IFieldTickHost.TickDialogueMode() => _dialogue.Tick(_input.State, QuietLog.Info, _log.Warn);
+    void IFieldTickHost.TickDialogueMode() => _fieldRuntimeCoordinator.TickDialogueMode();
 
-    void IFieldTickHost.TickTraversalMode()
-    {
-        if (_climb.IsActive)
-        {
-            _climb.Tick(_state, _input.State);
-        }
-        else
-        {
-            _drop.Tick(_state, _input.State);
-        }
+    void IFieldTickHost.TickTraversalMode() => _fieldRuntimeCoordinator.TickTraversalMode();
 
-        if (!_climb.IsActive && !_drop.IsActive)
-        {
-            DepenetrateFromWall();
-        }
-    }
+    void IFieldTickHost.TickLocomotionMode(Action<MovementResult> onMovementRejection) => _fieldRuntimeCoordinator.TickLocomotionMode(onMovementRejection);
 
-    void IFieldTickHost.TickLocomotionMode(Action<MovementResult> onMovementRejection)
-    {
-        if (_warp.InputLocked)
-        {
-            return;
-        }
+    void IFieldTickHost.TickWarp() => _fieldRuntimeCoordinator.TickWarp();
 
-        if (_warp.State == WarpState.Idle && _input.State.ConsumeActionPressed() && TryStartDialogue())
-        {
-            return;
-        }
-
-        _state.IsRunning = !_input.State.WalkHeld;
-        MovementResult movement = Locomotion.Tick(_state, _input.State.Direction, Floor, _occupants);
-        if (movement.Rejection is not null)
-        {
-            onMovementRejection(movement);
-        }
-        else if (movement.Moved)
-        {
-            CountEncounterStep();
-        }
-    }
-
-    void IFieldTickHost.TickWarp() => _warp.Tick(
-        _state,
-        _input.State,
-        CurrentZone,
-        new WarpCallbacks(ResolveTarget, ApplyScene, QuietLog.Info, _log.Warn, StartClimb, StartDrop));
-
-    void IFieldTickHost.AdvanceFieldPresentation()
-    {
-        _ = _input.State.ConsumeF3Toggled();
-        _state.AnimationTicks++;
-        _icon.Advance(_state.Position);
-        _renderer?.AdvanceSimulation(_state, CurrentZone);
-    }
+    void IFieldTickHost.AdvanceFieldPresentation() => _fieldRuntimeCoordinator.AdvancePresentation();
 
     // The debug F8 battle mirrors the original battle test (debug battle setup
     // WFIGHTTS): a real manifest encounter, only the zone restrictions are ignored.
@@ -611,42 +521,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
 
     /// <summary>Builds the real 1v1 battle for a manifest encounter: the debug-only test team
     /// (balanced starter pack at level 25) against the encounter's enemies, then starts the flow.</summary>
-    private BattleFlowController BuildEncounterBattle(int encounterIndex)
-    {
-        if (_fighterData is null) throw new CacheResourceException("CACHE_RESOURCE_UNAVAILABLE", "fighter manifest unavailable");
-        if (_techData is null) throw new CacheResourceException("CACHE_RESOURCE_UNAVAILABLE", "tech manifest unavailable");
-        if (_encounterData is null) throw new CacheResourceException("CACHE_RESOURCE_UNAVAILABLE", "encounter manifest unavailable");
-        if (_digivolutionData is null) throw new CacheResourceException("CACHE_RESOURCE_UNAVAILABLE", "digivolution manifest unavailable");
-        if (_battleItemsData is null) throw new CacheResourceException("CACHE_RESOURCE_UNAVAILABLE", "battle items manifest unavailable");
-        var party = BattleSetupFactory.StarterPartnerDigimonIds(_fighterData);
-        if (party.Count != 3) throw new CacheResourceException("CACHE_INVALID", "the balanced starter party could not be resolved");
-
-        var fighters = _fighterData;
-        var techs = _techData;
-        var encounters = _encounterData;
-        _battleNameIds = BuildBattleNameIds(party, fighters, encounters, encounterIndex);
-
-        var entry = encounters.Encounters.FirstOrDefault(candidate => candidate.Index == encounterIndex)
-            ?? throw new InvalidOperationException($"encounter {encounterIndex} not in the manifest");
-        var setup = new BattleSetup
-        {
-            Battle = encounterIndex,
-            Stage = ResolveBattleStage(encounterIndex),
-            EncounterKind = entry.Kind,
-            Partners = BattleSetupFactory.BuildParty(fighters, TestTeamGrowth.Level, party),
-            Enemies = BattleSetupFactory.BuildEnemies(encounters, encounterIndex, fighters),
-            Blocks = new int[12],
-        };
-        for (var i = 0; i < Math.Min(entry.Blocks.Count, setup.Blocks.Length); i++)
-            setup.Blocks[i] = entry.Blocks[i];
-
-        var state = BattleState.InitFighters(setup, digimon: party[0]);
-        var flow = BattleSetupFactory.BuildFlow(fighters, techs, encounters, encounterIndex, party, _battleNameIds,
-            new BattleTextCatalog(_battleTextData ?? throw new CacheResourceException("CACHE_RESOURCE_UNAVAILABLE", "battle text manifest unavailable")));
-        WireBattleCatalogs(flow);
-        flow.Start(state);
-        return flow;
-    }
+    private BattleFlowController BuildEncounterBattle(int encounterIndex) => _battleSetupCoordinator.Build(encounterIndex);
 
     private void EnterBattle(BattleFlowController flow, int encounter, string why)
     {
@@ -856,29 +731,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     /// fighter metadata resolves the requested BattleFighter.Id directly via FighterEntry.id and
     /// fighter replacement flow swaps the new model into slot 0. ClearModels queues all old roots, so
     /// changing presentation cannot leak old player or enemy nodes.</summary>
-    private void RefreshBattlePresentationModels()
-    {
-        var flow = _battleFlow;
-        if (flow is null || _battleRenderer is null) return;
-        var playerId = flow.State.ActivePlayerFighter?.Id ?? 0;
-        var enemyId = flow.State.ActiveEnemyFighter?.Id ?? 0;
-        if (playerId == 0 || enemyId == 0 || (playerId == _battleRenderedPlayerId && enemyId == _battleRenderedEnemyId)) return;
-        _battleRenderer.BuildModels(ResolveBattleModelPath(playerId), ResolveBattleModelPath(enemyId),
-            NameOf(playerId), NameOf(enemyId), enemyId);
-        if (_battlePendingChangeMotion != 0)
-        {
-            // fighter replacement flow:76-80 / 308-315 uses source motion 13 for a normal switch-in.
-            // Its wireframe, clipping and sprite-effect stages are not decoded yet, but this
-            // recovered motion runs through the motion machine rather than being invented.
-            var motion = _battlePendingChangeMotion;
-            _battlePendingChangeMotion = 0;
-            if (!_battleRenderer.TrySetPlayerMotion(motion, restart: true))
-                _log.Warn("battle-change-motion-unwired", $"fighter={playerId} motion={motion}");
-        }
-        _battleRenderedPlayerId = playerId;
-        _battleRenderedEnemyId = enemyId;
-        QuietLog.Info($"battle-model-replaced player={playerId} enemy={enemyId}");
-    }
+    private void RefreshBattlePresentationModels() => _battlePresentationCoordinator.RefreshModels();
 
     /// <summary>On a victory, resolves the encounter's real reward, shares its exp by the partners
     /// who fought, applies the growth (exp + level-up via GrowthCalculator.AddExp) and builds the
@@ -956,25 +809,21 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
 
     IReadOnlyList<int> IBattleMenuDriverHost.SubmenuArguments => _battleSubmenuArgs;
 
-    void IBattleMenuDriverHost.RefreshActivePartnerCatalogs() => RefreshActivePartnerCatalogs();
+    void IBattleMenuDriverHost.RefreshActivePartnerCatalogs() => _battleMenuCoordinator.RefreshActivePartnerCatalogs();
 
-    void IBattleMenuDriverHost.OpenForcedSwitchMenu()
-    {
-        _battleSwitchForced = true;
-        OpenSubmenu(BattleMenuKind.Switch, SwitchLines(BattleFlow), slot => !BattleFlow.State.Players[slot]!.IsKnockedOut);
-    }
+    void IBattleMenuDriverHost.OpenForcedSwitchMenu() => _battleMenuCoordinator.OpenForcedSwitchMenu();
 
-    void IBattleMenuDriverHost.CancelMenu() => CancelBattleMenu(BattleFlow);
+    void IBattleMenuDriverHost.CancelMenu() => _battleMenuCoordinator.Cancel(BattleFlow);
 
-    void IBattleMenuDriverHost.ConfirmRoot() => ConfirmRoot(BattleFlow);
+    void IBattleMenuDriverHost.ConfirmRoot() => _battleMenuCoordinator.ConfirmRoot(BattleFlow);
 
     void IBattleMenuDriverHost.ChooseTechnique(int argument) => BattleFlow.Choose(BattleCommand.Technique, argument, _battleRng);
 
     void IBattleMenuDriverHost.ChooseDigivolution(int argument) => BattleFlow.Choose(BattleCommand.Digivolve, argument, _battleRng);
 
-    void IBattleMenuDriverHost.OpenSwitchIn(int argument) => OpenSwitchInMenu(BattleFlow, argument);
+    void IBattleMenuDriverHost.OpenSwitchIn(int argument) => _battleMenuCoordinator.OpenSwitchInMenu(BattleFlow, argument);
 
-    void IBattleMenuDriverHost.OpenPairSwitch(int argument) => OpenPairSwitchMenu(BattleFlow, argument);
+    void IBattleMenuDriverHost.OpenPairSwitch(int argument) => _battleMenuCoordinator.OpenPairSwitchMenu(BattleFlow, argument);
 
     void IBattleMenuDriverHost.ChooseItem(int argument) => BattleFlow.Choose(BattleCommand.Item, argument, _battleRng);
 
@@ -999,184 +848,31 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
             $"slot={_battleSwitchPartner} active={BattleFlow.State.ActivePlayer} target={target?.Id} hp={target?.Hp}");
     }
 
-    private void ConfirmRoot(BattleFlowController flow)
-    {
-        switch (_battleMenu.Cursor)
-        {
-            case 0:
-                flow.Choose(BattleCommand.Attack, 0, _battleRng);
-                // Source attack action drives the fighter control motion. Motion 3 is Kotemon's
-                // decoded basic action and its terminal blend returns every idling model to motion 1.
-                _battleRenderer?.SetPlayerMotion(3, restart: true);
-                break;
-            case 1:
-                OpenSubmenu(BattleMenuKind.Technique, flow.PlayerTechniques.Select(technique => (technique.Id, technique.Text ?? BattleTextLine.Missing)).ToList(),
-                    line: (id, text) =>
-                    {
-                        var technique = flow.PlayerTechniques.First(candidate => candidate.Id == id);
-                        var fighter = flow.State.ActivePlayerFighter!;
-                        var enabled = fighter.Temporary || fighter.Mp >= technique.Tech.Mp;
-                        var catalog = BattleText();
-                        return new BattleMenuLine(text.Debug, enabled, text, Icon: technique.Tech.Icon + 0x37, Cost: technique.Tech.Mp,
-                            DescriptionText: enabled ? catalog.SkillInfo(id) : catalog.MenuEntry(0x54),
-                            CostLabelText: catalog.MenuEntry(0xD));
-                    }, statusText: TechniqueStatusText(flow.State.ActivePlayerFighter!));
-                break;
-            case 2:
-                OpenSubmenu(BattleMenuKind.Digivolve, flow.PlayerDigivolutions.Select(id => (id, NameLine(id))).ToList(),
-                    line: (id, text) => new BattleMenuLine(text.Debug, id != flow.State.ActivePlayerFighter!.Id, text));
-                break;
-            case 3: OpenSubmenu(BattleMenuKind.Switch, SwitchLines(flow), slot => !flow.State.Players[slot]!.IsKnockedOut); break;
-            case 4:
-                OpenSubmenu(BattleMenuKind.Item, ItemLines(flow),
-                    line: (id, text) => new BattleMenuLine(text.Debug, flow.ItemStock.TryGetValue(id, out var quantity) && quantity > 0, text,
-                        Icon: BattleItemsData.Items.First(item => item.Id == id).Category,
-                        Quantity: flow.ItemStock.TryGetValue(id, out quantity) ? quantity : 0,
-                        DescriptionText: BattleText().ItemInfo(id)), statusText: new BattleMenuStatusText(BattleText().MenuEntry(0xC)));
-                break;
-            case 5: flow.Choose(BattleCommand.Flee, 0, _battleRng); break;
-        }
-    }
+    private void ConfirmRoot(BattleFlowController flow) => _battleMenuCoordinator.ConfirmRoot(flow);
+
+    private void OpenSwitchInMenu(BattleFlowController flow, int partner) => _battleMenuCoordinator.OpenSwitchInMenu(flow, partner);
+
+    private void OpenPairSwitchMenu(BattleFlowController flow, int incomingId) => _battleMenuCoordinator.OpenPairSwitchMenu(flow, incomingId);
+
+    private void CancelBattleMenu(BattleFlowController flow) => _battleMenuCoordinator.Cancel(flow);
 
     private void OpenSubmenu(BattleMenuKind kind, IReadOnlyList<(int Arg, BattleTextLine Text)> entries, Func<int, bool>? enabled = null,
-        Func<int, BattleTextLine, BattleMenuLine>? line = null, BattleMenuStatusText? statusText = null)
-    {
-        if (entries.Count == 0) return;  // nothing to pick: stay on the root menu
-        _battleSubmenuArgs.Clear();
-        var lines = new List<BattleMenuLine>(entries.Count);
-        foreach (var (arg, text) in entries)
-        {
-            _battleSubmenuArgs.Add(arg);
-            lines.Add(line?.Invoke(arg, text) ?? new BattleMenuLine(text.Debug, enabled?.Invoke(arg) ?? true, text));
-        }
-        var textCatalog = BattleText();
-        _battleMenu.Open(kind, lines, previousPageText: kind is BattleMenuKind.Technique or BattleMenuKind.Item ? textCatalog.MenuEntry(0x11) : null,
-            nextPageText: kind is BattleMenuKind.Technique or BattleMenuKind.Item ? textCatalog.MenuEntry(0x12) : null, statusText: statusText);
-        QuietLog.Info($"battle-menu open={kind} lines={lines.Count}");
-    }
+        Func<int, BattleTextLine, BattleMenuLine>? line = null, BattleMenuStatusText? statusText = null) =>
+        _battleMenuCoordinator.OpenSubmenu(kind, entries, enabled, line, statusText);
 
-    private void OpenSwitchInMenu(BattleFlowController flow, int partner)
-    {
-        var fighter = flow.State.Players[partner];
-        if (fighter is null || fighter.Id == 0 || fighter.IsKnockedOut) return;
-        _battleSwitchPartner = partner;
-        // The remake has one recovered form per party member. It still passes through the
-        // switch_in_the battle presentation flow first page rather than shortcutting into BattleFlow.Choose.
-        OpenSubmenu(BattleMenuKind.SwitchIn, [(fighter.Id, NameLine(fighter.Id))]);
-    }
-
-    private void OpenPairSwitchMenu(BattleFlowController flow, int incomingId)
-    {
-        if (_battleSwitchPartner < 0 || flow.State.Players[_battleSwitchPartner]?.Id != incomingId) return;
-        // FIGHTSTG_pairCursors[1] has one Changement line unless findPairTech found a pair
-        // technique. Pair-tech data is deliberately not fabricated in this card.
-        OpenSubmenu(BattleMenuKind.PairSwitch, [(0, BattleText().Command(3))]);
-    }
-
-    private void CancelBattleMenu(BattleFlowController flow)
-    {
-        switch (_battleMenu.Menu)
-        {
-            case BattleMenuKind.PairSwitch:
-                OpenSwitchInMenu(flow, _battleSwitchPartner);
-                break;
-            case BattleMenuKind.SwitchIn:
-                OpenSubmenu(BattleMenuKind.Switch, SwitchLines(flow), slot => !flow.State.Players[slot]!.IsKnockedOut);
-                break;
-            case BattleMenuKind.Switch:
-                if (_battleSwitchForced)
-                {
-                    QuietLog.Info("battle-menu cancel=refused forced-switch");
-                    break;
-                }
-                _battleMenu.OpenRoot(flow.RootMenuLines());
-                QuietLog.Info("battle-menu cancel=root");
-                break;
-            case BattleMenuKind.Technique:
-            case BattleMenuKind.Digivolve:
-            case BattleMenuKind.Item:
-                _battleMenu.OpenRoot(flow.RootMenuLines());
-                QuietLog.Info("battle-menu cancel=root");
-                break;
-        }
-    }
-
-    private IReadOnlyList<(int, BattleTextLine)> SwitchLines(BattleFlowController flow)
-    {
-        var result = new List<(int, BattleTextLine)>();
-        for (var i = 0; i < flow.State.Players.Length; i++)
-        {
-            var partner = flow.State.Players[i];
-            if (partner is null || partner.Id == 0) continue;
-            if (i == flow.State.ActivePlayer) continue;
-            result.Add((i, NameLine(partner.Id)));
-        }
-        return result;
-    }
-
-    private IReadOnlyList<(int, BattleTextLine)> ItemLines(BattleFlowController flow)
-    {
-        var result = new List<(int, BattleTextLine)>();
-        foreach (var (id, count) in flow.ItemStock)
-            if (count > 0) result.Add((id, flow.ItemText.TryGetValue(id, out var text) ? text : BattleTextLine.Missing));
-        return result;
-    }
+    private List<(int Slot, BattleTextLine Name)> SwitchLines(BattleFlowController flow) => _battleMenuCoordinator.SwitchLines(flow);
 
     private BattleTextCatalog BattleText() => new(_battleTextData ?? throw new InvalidOperationException("battle text unavailable"));
 
-    private BattleMenuStatusText TechniqueStatusText(BattleFighter fighter)
-    {
-        var text = BattleText();
-        var currentOverride = fighter.Temporary
-            ? text.MenuEntry(fighter.Mp < 100 ? 0x1A : fighter.Mp < 1000 ? 0xF : 0x24)
-            : null;
-        return new BattleMenuStatusText(text.MenuEntry(0xD), currentOverride, text.MenuEntry(0x10));
-    }
+    private static string NameOf(int id) => $"fighter-{id}";
 
-    private string NameOf(int id) => $"fighter-{id}";
+    private void RefreshActivePartnerCatalogs() => _battleMenuCoordinator.RefreshActivePartnerCatalogs();
 
-    /// <summary>Refreshes the active partner's basic attack, technique menu and digivolution
-    /// forms when the active fighter changes (start, a manual Switch, a Digivolve).</summary>
-    private void RefreshActivePartnerCatalogs()
-    {
-        var flow = BattleFlow;
-        var active = flow.State.ActivePlayerFighter;
-        if (active is null) return;
-        if (active.Id == _battleCatalogForId) return;
-        _battleCatalogForId = active.Id;
-        flow.PlayerBasicTech = BattleSetupFactory.PlayerBasicTech(FighterData, TechniqueData, active.Id);
-        flow.PlayerTechniques = BattleSetupFactory.PlayerTechniques(FighterData, TechniqueData, active.Id, flow.Text ?? throw new InvalidOperationException("battle text unavailable"));
-        var partnerIndex = BattleSetupFactory.DigimonIndexFor(FighterData, active.Id);
-        flow.PlayerDigivolutions = partnerIndex >= 0
-            ? BattleSetupFactory.DigivolutionForms(DigivolutionData, partnerIndex, TestTeamGrowth.Level)
-            : [];
-    }
-
-    /// <summary>Injects the battle-item catalogue and a debug-only stock (three of each item,
-    /// never a real save's bag) into the flow.</summary>
-    private void WireBattleCatalogs(BattleFlowController flow)
-    {
-        var items = new Dictionary<int, BattleItem>();
-        var stock = new Dictionary<int, int>();
-        var itemText = new Dictionary<int, BattleTextLine>();
-        if (_battleItemsData is not null)
-        {
-            foreach (var item in _battleItemsData.Items)
-            {
-                var battleItem = BattleSetupFactory.ToItem(item);
-                items[battleItem.Id] = battleItem;
-                stock[battleItem.Id] = 3;
-                itemText[battleItem.Id] = BattleTextCatalog.Tokens(item.Name, $"FSITMNAM id={item.NameId}");
-            }
-        }
-        flow.Items = items;
-        flow.ItemStock = stock;
-        flow.ItemText = itemText;
-    }
+    private void WireBattleCatalogs(BattleFlowController flow) => _battleMenuCoordinator.WireCatalogs(flow);
 
     /// <summary>Builds source-backed DIGNAM display records for every party/enemy fighter.
     /// The renderer draws their token streams and the debug names remain provenance labels only.</summary>
-    private Dictionary<int, int> BuildBattleNameIds(
+    private static Dictionary<int, int> BuildBattleNameIds(
         IReadOnlyList<int> party,
         FighterData fighters,
         EncounterData encounters,
@@ -1271,20 +967,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
 
     /// <summary>FIELDSTG_setOffTrigger's climb branch: SLOT_CLIMB_UP climbs with the raw
     /// trigger direction, SLOT_CLIMB_DOWN with dir==1 ? 5 : 3 (the trigger-slot contract).</summary>
-    private void StartClimb(Climb climb, int triggerDirection)
-    {
-        if (climb.Type == 2)
-        {
-            _climb.StartClimbUp(_state, triggerDirection, climb.X, climb.Y, climb.Height);
-            QuietLog.Info($"climb start type=up slot={climb.Slot} dir={triggerDirection} pos=({climb.X},{climb.Y}) height={climb.Height}");
-        }
-        else
-        {
-            var dir = triggerDirection == 1 ? 5 : 3;
-            _climb.StartClimbDown(_state, dir, climb.X, climb.Y, climb.Height);
-            QuietLog.Info($"climb start type=down slot={climb.Slot} dir={dir} pos=({climb.X},{climb.Y}) height={climb.Height}");
-        }
-    }
+    private void StartClimb(Climb climb, int triggerDirection) => _fieldRuntimeCoordinator.StartClimb(climb, triggerDirection);
 
     private void StartDrop(Drop drop, int triggerDirection)
     {
@@ -1388,20 +1071,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     /// occupant state before rebuilding renderer nodes, resets the player icon at the current actor
     /// position, and presents the completed scene once before the next simulation tick.
     /// </summary>
-    private void ApplyScene(FieldZone zone)
-    {
-        if (_playerData is null || _renderer is null) throw new InvalidOperationException("renderer resources unavailable");
-        _currentZone = zone;
-        _floor = zone.Floor;
-        _areas = zone.Areas;
-        _occupants = zone.Occupants;
-        _encounter.SetBattles(ZoneBattleTable.For(_encounterData, zone.Zone));
-        IReadOnlyList<NpcRecord>? npcRecords = null;
-        if (_npc is not null && _npc.Zones.TryGetValue(zone.Zone.Id, out var records)) npcRecords = records;
-        _renderer.LoadZone(zone.Zone, _playerData, ActionData, frame => ResolvePlayerFrame(frame), (set, frame) => ResolveActionFrame(set, frame), npcRecords);
-        _icon.Reset(_state.Position);
-        _renderer.Present(_state, zone, _input.F3On);
-    }
+    private void ApplyScene(FieldZone zone) => _fieldRuntimeCoordinator.ApplyScene(zone);
 
     private string ResolvePlayerFrame(int frame)
     {

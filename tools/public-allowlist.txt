@@ -902,3 +902,13 @@ src/Dw3.Game/Conversion/Zone.cs
 src/Dw3.Game/Conversion/ZoneDialogue.cs
 src/Dw3.Game/Diagnostics/Battle/BattleLuminanceStats.cs
 src/Dw3.Game/Diagnostics/Battle/BattleMaskMetrics.cs
+src/Dw3.Game/GameHost.BattleMenuCoordinator.cs
+src/Dw3.Game/GameHost.BattlePresentationCoordinator.cs
+src/Dw3.Game/GameHost.BattleSetupCoordinator.cs
+src/Dw3.Game/GameHost.DiagnosticProbeResolver.cs
+src/Dw3.Game/GameHost.FieldRuntimeCoordinator.cs
+src/Dw3.Game/GameHost.FirstLaunchCompletionCoordinator.cs
+src/Dw3.Game/Simulation/DebugBattleTrigger.cs
+src/Dw3.Game/Simulation/IInteractiveFrameHost.cs
+src/Dw3.Game/Simulation/InteractiveFrameCoordinator.cs
+tests/Dw3.Game.Tests/InteractiveFrameCoordinatorTests.cs
