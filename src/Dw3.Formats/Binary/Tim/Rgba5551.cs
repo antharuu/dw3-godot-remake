@@ -25,6 +25,7 @@ public static class Rgba5551
     /// <summary>
     /// Converts a single PSX 15-bit BGR colour word to RGBA.
     /// </summary>
+    /// <param name="word">15-bit BGR colour word (bits 4..0 = R, 9..5 = G, 14..10 = B, 15 = STP flag).</param>
     /// <returns>
     /// <c>(R, G, B, A)</c> where A is 0 for the transparent sentinel
     /// (<paramref name="word"/> == 0) and 255 for all other values.
@@ -48,12 +49,16 @@ public static class Rgba5551
     /// Returns true when bit 15 of <paramref name="word"/> is set (STP flag).
     /// Only meaningful when the word is non-zero (zero is transparent, not STP).
     /// </summary>
+    /// <param name="word">15-bit BGR colour word to test.</param>
+    /// <returns><see langword="true"/> when the STP bit (bit 15) is set and the word is non-zero.</returns>
     public static bool IsStp(ushort word) => word != 0 && (word >> 15) != 0;
 
     /// <summary>
     /// Converts an array of PSX 15-bit BGR colour words to packed RGBA bytes
     /// (4 bytes per pixel: R, G, B, A).
     /// </summary>
+    /// <param name="words">Span of 15-bit BGR colour words to convert.</param>
+    /// <returns>A byte array of length <c>words.Length * 4</c> in R, G, B, A order.</returns>
     public static byte[] PaletteToRgba(ReadOnlySpan<ushort> words)
     {
         var rgba = new byte[words.Length * 4];

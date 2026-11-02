@@ -112,6 +112,8 @@ public readonly record struct MipsInstruction(int Offset, uint Word)
     /// Absolute target of a <c>j</c>/<c>jal</c>: the 26-bit word index inside the 256 MiB segment
     /// containing <paramref name="segmentAddress"/> (any address of the code being decoded).
     /// </summary>
+    /// <param name="segmentAddress">Any known RAM address within the same 256 MiB region as the target (upper 4 bits select the region).</param>
+    /// <returns>The 32-bit absolute RAM address the jump transfers control to.</returns>
     public uint JumpTarget(uint segmentAddress)
     {
         if (Operation is not (MipsOperation.J or MipsOperation.Jal))
@@ -126,6 +128,10 @@ public readonly record struct MipsInstruction(int Offset, uint Word)
     /// Decodes every word of <paramref name="code"/> in the byte window [<paramref name="start"/>,
     /// <paramref name="end"/>). Both bounds must be word aligned and inside the buffer.
     /// </summary>
+    /// <param name="code">Byte buffer containing the R3000 instruction stream.</param>
+    /// <param name="start">Inclusive start byte offset; must be word-aligned (divisible by 4) and ≥ 0.</param>
+    /// <param name="end">Exclusive end byte offset; must be word-aligned and ≤ <c>code.Length</c>.</param>
+    /// <returns>An array of decoded instructions in order; length equals <c>(end-start)/4</c>.</returns>
     public static MipsInstruction[] DecodeRange(ReadOnlySpan<byte> code, int start, int end)
     {
         if (start < 0 || end > code.Length || start > end)
@@ -152,6 +158,8 @@ public readonly record struct MipsInstruction(int Offset, uint Word)
     /// End of the last whole word of a buffer. Disc overlays are code followed by data, so a
     /// trailing partial word is data and is never decoded.
     /// </summary>
+    /// <param name="length">Total byte length of the buffer.</param>
+    /// <returns>The largest multiple of 4 that is ≤ <paramref name="length"/>.</returns>
     public static int WholeWordEnd(int length) => length - length % sizeof(uint);
 }
 

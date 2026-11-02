@@ -82,12 +82,6 @@
       "count": 8
     },
     {
-      "rule": "CS1573",
-      "project": "Dw3.Formats",
-      "folder": "Mips",
-      "count": 3
-    },
-    {
       "rule": "CS1591",
       "project": "Dw3.Extractor",
       "folder": ".",
@@ -98,12 +92,6 @@
       "project": "Dw3.Formats",
       "folder": "Battle",
       "count": 114
-    },
-    {
-      "rule": "CS1591",
-      "project": "Dw3.Formats",
-      "folder": "Mips",
-      "count": 3
     },
     {
       "rule": "CS1591",
@@ -1529,12 +1517,6 @@
     },
     {
       "rule": "SA1512",
-      "project": "Dw3.Formats",
-      "folder": "Binary",
-      "count": 9
-    },
-    {
-      "rule": "SA1512",
       "project": "Dw3.Formats.Tests",
       "folder": "Battle",
       "count": 10
@@ -1817,12 +1799,6 @@
     },
     {
       "rule": "SA1516",
-      "project": "Dw3.Formats",
-      "folder": "Mips",
-      "count": 1
-    },
-    {
-      "rule": "SA1516",
       "project": "Dw3.Formats.Tests",
       "folder": "Battle",
       "count": 5
@@ -1926,20 +1902,8 @@
     {
       "rule": "SA1600",
       "project": "Dw3.Formats",
-      "folder": "Binary",
-      "count": 15
-    },
-    {
-      "rule": "SA1600",
-      "project": "Dw3.Formats",
       "folder": "Field",
       "count": 38
-    },
-    {
-      "rule": "SA1600",
-      "project": "Dw3.Formats",
-      "folder": "Mips",
-      "count": 8
     },
     {
       "rule": "SA1600",
@@ -2022,20 +1986,8 @@
     {
       "rule": "SA1604",
       "project": "Dw3.Formats",
-      "folder": "Binary",
-      "count": 1
-    },
-    {
-      "rule": "SA1604",
-      "project": "Dw3.Formats",
       "folder": "Field",
       "count": 6
-    },
-    {
-      "rule": "SA1604",
-      "project": "Dw3.Formats",
-      "folder": "Mips",
-      "count": 1
     },
     {
       "rule": "SA1604",
@@ -2070,20 +2022,8 @@
     {
       "rule": "SA1611",
       "project": "Dw3.Formats",
-      "folder": "Binary",
-      "count": 24
-    },
-    {
-      "rule": "SA1611",
-      "project": "Dw3.Formats",
       "folder": "Field",
       "count": 50
-    },
-    {
-      "rule": "SA1611",
-      "project": "Dw3.Formats",
-      "folder": "Mips",
-      "count": 11
     },
     {
       "rule": "SA1611",
@@ -2116,12 +2056,6 @@
       "count": 1
     },
     {
-      "rule": "SA1612",
-      "project": "Dw3.Formats",
-      "folder": "Mips",
-      "count": 1
-    },
-    {
       "rule": "SA1615",
       "project": "Dw3.Extractor",
       "folder": ".",
@@ -2136,20 +2070,8 @@
     {
       "rule": "SA1615",
       "project": "Dw3.Formats",
-      "folder": "Binary",
-      "count": 16
-    },
-    {
-      "rule": "SA1615",
-      "project": "Dw3.Formats",
       "folder": "Field",
       "count": 36
-    },
-    {
-      "rule": "SA1615",
-      "project": "Dw3.Formats",
-      "folder": "Mips",
-      "count": 6
     },
     {
       "rule": "SA1615",
@@ -2180,12 +2102,6 @@
       "project": "Dw3.Game.Tests",
       "folder": ".",
       "count": 15
-    },
-    {
-      "rule": "SA1627",
-      "project": "Dw3.Formats",
-      "folder": "Binary",
-      "count": 1
     },
     {
       "rule": "SA1629",

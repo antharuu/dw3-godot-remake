@@ -11,7 +11,11 @@ public static class MipsStoreScanner
     /// returns, in code order, each store to <paramref name="structureAddress"/> +
     /// <paramref name="fieldOffset"/> whose value is known.
     /// </summary>
+    /// <param name="code">Raw R3000 byte buffer to scan (trailing non-word bytes are skipped).</param>
+    /// <param name="structureAddress">Base RAM address of the structure whose field is being watched.</param>
+    /// <param name="fieldOffset">Signed displacement from <paramref name="structureAddress"/> to the target field.</param>
     /// <param name="watchedLoads">Word addresses whose loads are kept symbolic (see <see cref="MipsValue.LoadedWord"/>).</param>
+    /// <returns>All resolved stores to the target field, in the order they appear in <paramref name="code"/>.</returns>
     public static IReadOnlyList<MipsStoreMatch> FindStores(
         ReadOnlySpan<byte> code,
         uint structureAddress,

@@ -20,9 +20,12 @@ namespace Dw3.Formats.Binary;
 /// </summary>
 public static class RlenDecoder
 {
+    /// <summary>Gets the ASCII bytes <c>RLEN</c>: the 4-byte stream header that identifies this encoding.</summary>
     private static ReadOnlySpan<byte> Magic => "RLEN"u8;
 
     /// <summary>Returns true when the first four bytes of <paramref name="data"/> are the RLEN magic.</summary>
+    /// <param name="data">Buffer to inspect; may be shorter than 4 bytes.</param>
+    /// <returns><see langword="true"/> when <paramref name="data"/> starts with the 4-byte RLEN signature.</returns>
     public static bool IsRlen(ReadOnlySpan<byte> data) =>
         data.Length >= 4 && data[..4].SequenceEqual(Magic);
 
@@ -32,6 +35,8 @@ public static class RlenDecoder
     /// bad magic, truncated header, overflowing run, missing terminator, or
     /// decompressed size mismatch.
     /// </summary>
+    /// <param name="data">Raw RLEN-encoded bytes; must start with the 4-byte magic and an 8-byte header.</param>
+    /// <returns>The decompressed payload; length equals the declared size at bytes 4–7 of the stream.</returns>
     public static byte[] Decompress(ReadOnlySpan<byte> data)
     {
         if (!IsRlen(data))
@@ -76,6 +81,7 @@ public static class RlenDecoder
     /// Decompresses <paramref name="data"/> if it starts with the RLEN magic;
     /// otherwise returns the original data unchanged.
     /// </summary>
+    /// <param name="data">Buffer that may or may not be RLEN-encoded.</param>
     /// <returns>
     /// <c>(decompressed, true)</c> when the input was RLEN-encoded;
     /// <c>(original copy, false)</c> otherwise.

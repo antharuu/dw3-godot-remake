@@ -49,7 +49,6 @@ namespace Dw3.Formats.Binary.Tim;
 public static class TimDecoder
 {
     private const uint TimMagic = 0x00000010u;
-    private const uint FlagsClutPresent = 0x08u;
 
     // Supported flags values
     private const uint Flags4BitClut = 0x08u;   // 4-bit indexed + CLUT
@@ -97,6 +96,10 @@ public static class TimDecoder
 
     // ── 4-bit indexed ──────────────────────────────────────────────────────
 
+    /// <summary>Decodes a 4-bit indexed TIM: reads the CLUT at offset 8, expands nibble-packed pixels using row <paramref name="clutRow"/>.</summary>
+    /// <param name="data">Full TIM byte buffer (flags already verified as 0x08).</param>
+    /// <param name="clutRow">Zero-based CLUT row index (0 to numRows-1).</param>
+    /// <returns>Decoded RGBA image with mode <see cref="TimPixelMode.Indexed4Bit"/>.</returns>
     private static TimImage Decode4Bit(ReadOnlySpan<byte> data, int clutRow)
     {
         // CLUT block at offset 8
@@ -166,6 +169,10 @@ public static class TimDecoder
 
     // ── 8-bit indexed ──────────────────────────────────────────────────────
 
+    /// <summary>Decodes an 8-bit indexed TIM: reads the CLUT at offset 8, maps each byte to an RGBA palette entry using row <paramref name="clutRow"/>.</summary>
+    /// <param name="data">Full TIM byte buffer (flags already verified as 0x09).</param>
+    /// <param name="clutRow">Zero-based CLUT row index (0 to numRows-1).</param>
+    /// <returns>Decoded RGBA image with mode <see cref="TimPixelMode.Indexed8Bit"/>.</returns>
     private static TimImage Decode8Bit(ReadOnlySpan<byte> data, int clutRow)
     {
         if (data.Length < 12)
@@ -230,6 +237,9 @@ public static class TimDecoder
 
     // ── 16-bit direct ──────────────────────────────────────────────────────
 
+    /// <summary>Decodes a 15-bit direct-colour TIM: no CLUT; image block starts at offset 8; each 16-bit word is converted via <see cref="Rgba5551.ToRgba"/>.</summary>
+    /// <param name="data">Full TIM byte buffer (flags already verified as 0x02).</param>
+    /// <returns>Decoded RGBA image with mode <see cref="TimPixelMode.Direct15Bit"/> and zero CLUT rows.</returns>
     private static TimImage Decode16Bit(ReadOnlySpan<byte> data)
     {
         // No CLUT block; image block starts immediately at offset 8
@@ -257,6 +267,10 @@ public static class TimDecoder
     /// Reads the image block at <paramref name="imgBase"/> and returns
     /// (pixel_width, height, raw_pixel_bytes).
     /// </summary>
+    /// <param name="data">Full TIM byte buffer.</param>
+    /// <param name="imgBase">Byte offset at which the image block starts (immediately after the CLUT block, or 8 for 16-bit TIMs).</param>
+    /// <param name="widthMultiplier">Factor applied to <c>words_per_line</c> to derive pixel width: 4 for 4-bit, 2 for 8-bit, 1 for 16-bit.</param>
+    /// <returns>A tuple of (pixel width, height in lines, raw pixel bytes copied from the block).</returns>
     private static (int Width, int Height, byte[] PixelData) ReadImageBlock(
         ReadOnlySpan<byte> data, int imgBase, int widthMultiplier)
     {
@@ -287,6 +301,10 @@ public static class TimDecoder
     }
 
     /// <summary>Reads <paramref name="count"/> 15-bit BGR colour words as RGBA tuples.</summary>
+    /// <param name="data">Full TIM byte buffer containing the palette entries.</param>
+    /// <param name="offset">Byte offset of the first colour word within <paramref name="data"/>.</param>
+    /// <param name="count">Number of colour words to read (16 for 4-bit CLUTs, 256 for 8-bit CLUTs).</param>
+    /// <returns>An array of <paramref name="count"/> RGBA tuples in palette index order.</returns>
     private static (byte R, byte G, byte B, byte A)[] ReadPalette(
         ReadOnlySpan<byte> data, int offset, int count)
     {
@@ -300,6 +318,10 @@ public static class TimDecoder
         return palette;
     }
 
+    /// <summary>Writes the four RGBA bytes of <paramref name="color"/> at <paramref name="offset"/> in <paramref name="dest"/>.</summary>
+    /// <param name="dest">RGBA output array allocated to hold all pixels.</param>
+    /// <param name="offset">Byte position of the first channel (R); must leave room for 4 bytes.</param>
+    /// <param name="color">RGBA tuple to write.</param>
     private static void WriteRgba(byte[] dest, int offset, (byte R, byte G, byte B, byte A) color)
     {
         dest[offset] = color.R;

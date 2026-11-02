@@ -29,6 +29,12 @@ public sealed class TimImage
     /// </summary>
     public int ClutRowCount { get; }
 
+    /// <summary>Initializes a new instance of the <see cref="TimImage"/> class; called only by <see cref="TimDecoder"/>.</summary>
+    /// <param name="width">Image width in pixels; must be positive.</param>
+    /// <param name="height">Image height in pixels; must be positive.</param>
+    /// <param name="pixels">RGBA pixel data; must have exactly <c>width * height * 4</c> bytes.</param>
+    /// <param name="mode">TIM pixel mode that produced this image.</param>
+    /// <param name="clutRowCount">Number of CLUT rows in the source TIM; 0 for 16-bit direct images.</param>
     internal TimImage(int width, int height, byte[] pixels, TimPixelMode mode, int clutRowCount)
     {
         Width = width;

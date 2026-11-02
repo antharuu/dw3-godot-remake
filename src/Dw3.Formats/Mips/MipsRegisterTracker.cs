@@ -21,6 +21,7 @@ public sealed class MipsRegisterTracker
     private readonly HashSet<uint> _watchedLoads;
     private MipsOperation _pendingAfterDelaySlot = MipsOperation.Other;
 
+    /// <summary>Initializes a new instance of the <see cref="MipsRegisterTracker"/> class with <c>$zero</c> pre-set to 0 and the optional set of watched load addresses.</summary>
     /// <param name="watchedLoads">Word addresses whose loads stay symbolic instead of unknown.</param>
     public MipsRegisterTracker(IEnumerable<uint>? watchedLoads = null)
     {
@@ -29,12 +30,15 @@ public sealed class MipsRegisterTracker
     }
 
     /// <summary>The known value of a register, or null.</summary>
+    /// <param name="register">General-purpose register index (0–31); register 0 always returns 0.</param>
     public MipsValue? this[int register] => _registers[register];
 
     /// <summary>
     /// Applies one instruction. Returns the store it performs when its base address and stored value
     /// are both known, otherwise null.
     /// </summary>
+    /// <param name="instruction">Decoded R3000 word to apply to the register state.</param>
+    /// <returns>The resolved store if the instruction is <c>sw</c> with both operands known; otherwise null.</returns>
     public MipsStore? Execute(in MipsInstruction instruction)
     {
         MipsOperation pending = _pendingAfterDelaySlot;
@@ -141,6 +145,9 @@ public sealed class MipsRegisterTracker
         }
     }
 
+    /// <summary>Sets <paramref name="register"/> to <paramref name="value"/>; ignores writes to <c>$zero</c> (register 0).</summary>
+    /// <param name="register">General-purpose register index (0–31).</param>
+    /// <param name="value">New tracked value, or null to mark the register unknown.</param>
     private void Write(int register, MipsValue? value)
     {
         if (register != 0)
@@ -149,13 +156,25 @@ public sealed class MipsRegisterTracker
         }
     }
 
+    /// <summary>Returns the constant backing value of <paramref name="register"/> when it holds a plain constant; otherwise null.</summary>
+    /// <param name="register">General-purpose register index (0–31).</param>
+    /// <returns>The 32-bit constant value, or null if the register holds a symbolic loaded word or is unknown.</returns>
     private uint? ConstantOf(int register) =>
         _registers[register] is MipsValue { IsLoadedWord: false } value ? value.ConstantValue : null;
 
+    /// <summary>Computes the effective address of a load or store: base register constant plus the sign-extended displacement.</summary>
+    /// <param name="instruction">Decoded load or store instruction whose Rs and SignedImmediate fields are used.</param>
+    /// <returns>The resolved target address, or null when the base register is unknown.</returns>
     private uint? AddressOf(in MipsInstruction instruction) =>
         ConstantOf(instruction.Rs) is uint baseAddress ? unchecked(baseAddress + (uint)instruction.SignedImmediate) : null;
 
     // A copy through $zero keeps a symbolic value. Two constants combine. Anything else is unknown.
+
+    /// <summary>Combines two register values via <paramref name="operation"/>; propagates a copy through <c>$zero</c> and produces null when either operand is unknown.</summary>
+    /// <param name="left">Source register index for the left operand.</param>
+    /// <param name="right">Source register index for the right operand.</param>
+    /// <param name="operation">Arithmetic or bitwise function applied when both operands are known constants.</param>
+    /// <returns>The combined constant value, a propagated symbolic value when one operand is <c>$zero</c>, or null when the result cannot be determined.</returns>
     private MipsValue? Combine(int left, int right, Func<uint, uint, uint> operation)
     {
         MipsValue? a = _registers[left];

@@ -20,6 +20,10 @@ public sealed class PsxExecutable
     private static readonly byte[] Magic = Encoding.ASCII.GetBytes("PS-X EXE");
     private readonly byte[] _data;
 
+    /// <summary>Initializes a new instance of the <see cref="PsxExecutable"/> class with its parsed header fields; use <see cref="Parse"/> to construct.</summary>
+    /// <param name="data">Raw PS-X EXE file bytes, including the 0x800-byte header.</param>
+    /// <param name="loadAddress">R3000 RAM address of the first image byte, read from header offset 0x18.</param>
+    /// <param name="imageBytes">Number of image bytes declared in the header at offset 0x1C.</param>
     private PsxExecutable(byte[] data, uint loadAddress, int imageBytes)
     {
         _data = data;
@@ -37,6 +41,8 @@ public sealed class PsxExecutable
     public ReadOnlySpan<byte> Bytes => _data;
 
     /// <summary>Validates the header and wraps the executable bytes without copying them.</summary>
+    /// <param name="data">Raw PS-X EXE file bytes, including the 0x800-byte header.</param>
+    /// <returns>A validated <see cref="PsxExecutable"/> wrapping <paramref name="data"/>.</returns>
     /// <exception cref="FormatException">The magic is wrong or the declared image does not fit the file.</exception>
     public static PsxExecutable Parse(byte[] data)
     {
@@ -62,6 +68,9 @@ public sealed class PsxExecutable
     }
 
     /// <summary>File offset of <paramref name="size"/> bytes at RAM <paramref name="address"/>.</summary>
+    /// <param name="address">R3000 RAM address inside the loaded image; must be within [LoadAddress, LoadAddress+ImageBytes).</param>
+    /// <param name="size">Number of bytes to access; must be non-negative.</param>
+    /// <returns>File byte offset of the requested range (header included, so always ≥ <see cref="HeaderBytes"/>).</returns>
     /// <exception cref="FormatException">The range is not entirely inside the loaded image.</exception>
     public int OffsetOf(uint address, int size)
     {
@@ -76,5 +85,8 @@ public sealed class PsxExecutable
     }
 
     /// <summary>The bytes at RAM <paramref name="address"/>.</summary>
+    /// <param name="address">R3000 RAM address inside the loaded image.</param>
+    /// <param name="size">Number of bytes to read; must be non-negative.</param>
+    /// <returns>A span of <paramref name="size"/> bytes from the underlying file buffer starting at <paramref name="address"/>.</returns>
     public ReadOnlySpan<byte> Slice(uint address, int size) => _data.AsSpan(OffsetOf(address, size), size);
 }

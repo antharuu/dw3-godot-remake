@@ -6,6 +6,10 @@ namespace Dw3.Formats.Mips;
 /// </summary>
 public readonly record struct MipsValue
 {
+    /// <summary>Initializes a new instance of the <see cref="MipsValue"/> struct with its discriminant, backing word, and addend; use <see cref="Constant"/> or <see cref="LoadedWord"/> to construct.</summary>
+    /// <param name="isLoadedWord">True for a symbolic loaded word; false for a plain constant.</param>
+    /// <param name="constantOrAddress">The constant value when <paramref name="isLoadedWord"/> is false; the watched load address when true.</param>
+    /// <param name="addend">Addend accumulated by subsequent <c>addiu</c> instructions; always 0 for plain constants.</param>
     private MipsValue(bool isLoadedWord, uint constantOrAddress, int addend)
     {
         IsLoadedWord = isLoadedWord;
@@ -31,14 +35,26 @@ public readonly record struct MipsValue
         ? _constantOrAddress
         : throw new InvalidOperationException("A constant value has no load address.");
 
+    /// <summary>Creates a plain compile-time or materialized constant value.</summary>
+    /// <param name="value">The 32-bit constant to store.</param>
+    /// <returns>A new <see cref="MipsValue"/> with <see cref="IsLoadedWord"/> false and no addend.</returns>
     public static MipsValue Constant(uint value) => new(false, value, 0);
+
+    /// <summary>Creates a symbolic value representing the word loaded from a watched RAM address plus an addend.</summary>
+    /// <param name="address">Watched RAM address from which the word was loaded.</param>
+    /// <param name="addend">Constant offset accumulated since the load (may be negative).</param>
+    /// <returns>A new <see cref="MipsValue"/> with <see cref="IsLoadedWord"/> true.</returns>
     public static MipsValue LoadedWord(uint address, int addend) => new(true, address, addend);
 
     /// <summary>The value plus a sign-extended immediate, as computed by <c>addiu</c>.</summary>
+    /// <param name="immediate">Sign-extended 16-bit addend from the instruction.</param>
+    /// <returns>A new value with the immediate added; preserves the loaded-word discriminant and shifts the addend for symbolic values.</returns>
     public MipsValue Add(int immediate) => IsLoadedWord
         ? LoadedWord(_constantOrAddress, unchecked(Addend + immediate))
         : Constant(unchecked(_constantOrAddress + (uint)immediate));
 
+    /// <summary>Returns a diagnostic string: <c>0xADDR±0xADDEND</c> for loaded words and <c>0xVALUE</c> for constants.</summary>
+    /// <returns>A hex-formatted string suitable for logging and diagnostics.</returns>
     public override string ToString() => IsLoadedWord
         ? $"[0x{_constantOrAddress:X8}]{(Addend < 0 ? "-" : "+")}0x{Math.Abs((long)Addend):X}"
         : $"0x{_constantOrAddress:X8}";

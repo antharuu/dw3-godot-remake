@@ -20,6 +20,7 @@ namespace Dw3.Formats.Binary.Png;
 /// </summary>
 public static class PngEncoder
 {
+    /// <summary>Gets the PNG file signature: 8 fixed bytes that identify every valid PNG file (RFC 2083 §12.12).</summary>
     private static ReadOnlySpan<byte> Signature => [137, 80, 78, 71, 13, 10, 26, 10];
 
     // Pre-computed CRC-32 table (IEEE polynomial 0xEDB88320).
@@ -64,6 +65,10 @@ public static class PngEncoder
 
     // ── IHDR ───────────────────────────────────────────────────────────────
 
+    /// <summary>Writes the IHDR chunk: 13-byte big-endian header declaring dimensions, 8-bit RGBA colour type, no interlacing.</summary>
+    /// <param name="out_">Destination stream; the chunk is appended at the current position.</param>
+    /// <param name="width">Image width in pixels.</param>
+    /// <param name="height">Image height in pixels.</param>
     private static void WriteIhdr(Stream out_, int width, int height)
     {
         // IHDR is exactly 13 bytes
@@ -80,6 +85,11 @@ public static class PngEncoder
 
     // ── IDAT ───────────────────────────────────────────────────────────────
 
+    /// <summary>Prepends a filter-byte-0 (None) to each scan line, compresses with zlib, and writes a single IDAT chunk.</summary>
+    /// <param name="out_">Destination stream; the chunk is appended at the current position.</param>
+    /// <param name="width">Image width in pixels.</param>
+    /// <param name="height">Image height in pixels.</param>
+    /// <param name="rgba">Raw RGBA pixel data: 4 bytes per pixel, row-major, length must equal <c>width * height * 4</c>.</param>
     private static void WriteIdat(Stream out_, int width, int height, ReadOnlySpan<byte> rgba)
     {
         // Build filtered image data: prepend filter byte 0 (None) to each row
@@ -105,6 +115,8 @@ public static class PngEncoder
 
     // ── IEND ───────────────────────────────────────────────────────────────
 
+    /// <summary>Writes the IEND chunk: a zero-byte body that marks the end of the PNG data stream.</summary>
+    /// <param name="out_">Destination stream; the chunk is appended at the current position.</param>
     private static void WriteIend(Stream out_)
     {
         WriteChunk(out_, "IEND"u8, []);
@@ -112,6 +124,10 @@ public static class PngEncoder
 
     // ── Chunk helper ───────────────────────────────────────────────────────
 
+    /// <summary>Writes a complete PNG chunk: big-endian length, 4-byte type, data, and IEEE CRC-32 of type+data.</summary>
+    /// <param name="out_">Destination stream; the chunk is appended at the current position.</param>
+    /// <param name="type">4-byte ASCII chunk type tag (e.g. <c>"IHDR"u8</c>).</param>
+    /// <param name="data">Chunk payload; may be empty for chunks like IEND.</param>
     private static void WriteChunk(Stream out_, ReadOnlySpan<byte> type, ReadOnlySpan<byte> data)
     {
         // Length (4 bytes, big-endian) — counts data only, not type or CRC
@@ -137,6 +153,10 @@ public static class PngEncoder
 
     // ── CRC-32 (IEEE polynomial) ───────────────────────────────────────────
 
+    /// <summary>Computes the IEEE CRC-32 over the concatenation of <paramref name="type"/> and <paramref name="data"/>.</summary>
+    /// <param name="type">4-byte chunk type field included in the checksum.</param>
+    /// <param name="data">Chunk payload included in the checksum.</param>
+    /// <returns>The finalized 32-bit CRC (XOR-inverted result of the table-based accumulation).</returns>
     private static uint ComputeCrc(ReadOnlySpan<byte> type, ReadOnlySpan<byte> data)
     {
         uint crc = 0xFFFFFFFF;
@@ -153,6 +173,8 @@ public static class PngEncoder
         return crc ^ 0xFFFFFFFF;
     }
 
+    /// <summary>Builds the 256-entry lookup table for the IEEE CRC-32 polynomial (0xEDB88320, bit-reversed form).</summary>
+    /// <returns>A 256-element array where entry <c>i</c> holds the CRC contribution of byte value <c>i</c>.</returns>
     private static uint[] BuildCrc32Table()
     {
         var table = new uint[256];
@@ -172,6 +194,10 @@ public static class PngEncoder
 
     // ── Big-endian uint32 write ────────────────────────────────────────────
 
+    /// <summary>Writes a 32-bit unsigned value in big-endian byte order at <paramref name="offset"/> within <paramref name="dest"/>.</summary>
+    /// <param name="dest">Destination span; must have at least <paramref name="offset"/> + 4 bytes.</param>
+    /// <param name="offset">Zero-based byte position at which to write the 4-byte big-endian word.</param>
+    /// <param name="value">Value to encode.</param>
     private static void WriteU32Be(Span<byte> dest, int offset, uint value)
     {
         System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(dest[offset..], value);
