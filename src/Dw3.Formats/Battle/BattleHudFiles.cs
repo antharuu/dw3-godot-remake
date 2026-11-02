@@ -13,6 +13,7 @@ namespace Dw3.Formats.Battle;
 public static class BattleHudFiles
 {
     // Engine file ids (EU disc).
+
     /// <summary>Disc file id of the main battle HUD sprite sheet (WFIGHTMN); contains SpriteDrawer frame records and the cursor bar.</summary>
     public const int HudSheetFileId = 0x455;   // FILE_BATTLE_MENU (WFIGHTMN)
 

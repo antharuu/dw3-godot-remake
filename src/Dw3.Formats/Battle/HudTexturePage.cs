@@ -7,8 +7,10 @@ namespace Dw3.Formats.Battle;
 public sealed record HudTexturePage(IReadOnlyList<IReadOnlyList<ushort>> Rows)
 {
     // 4-bit page dimensions: 64 halfwords × 256 rows = 256×256 texels.
+
     /// <summary>Width of one PS1 4-bit texture page in 16-bit halfwords (= 256 texels).</summary>
     public const int PageWidthWords = 64;
+
     /// <summary>Height of one PS1 texture page in rows (= 256 texels).</summary>
     public const int PageHeight = 256;
 

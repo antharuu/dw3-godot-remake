@@ -238,16 +238,22 @@ public static class TmpkMapDecoder
     {
         /// <summary>Grid component: one byte per tile giving the 64×64 cell index for each tile position.</summary>
         public readonly ReadOnlySpan<byte> Grid;
+
         /// <summary>Number of tiles per row, used to convert a 2D tile position to a grid index.</summary>
         public readonly int TilesWide;
+
         /// <summary>64×64-cell component: each byte indexes into Cells32.</summary>
         public readonly ReadOnlySpan<byte> Cells64;
+
         /// <summary>32×32-cell component: each byte indexes into Cells16.</summary>
         public readonly ReadOnlySpan<byte> Cells32;
+
         /// <summary>16×16-cell component: each byte indexes into Cells8.</summary>
         public readonly ReadOnlySpan<byte> Cells16;
+
         /// <summary>8×8-cell component: each byte indexes into Pixels.</summary>
         public readonly ReadOnlySpan<byte> Cells8;
+
         /// <summary>Pixel component: each byte is the final 1×1 cell value written to the output map.</summary>
         public readonly ReadOnlySpan<byte> Pixels;
 

@@ -17,6 +17,7 @@ namespace Dw3.Formats.Battle;
 public static class BattleReportDecoder
 {
     // Engine file ids (EU disc).
+
     /// <summary>Disc file id of the STFGTREP result-screen sprite sheet (file 0x79F); entry 0 is the frame records.</summary>
     public const int SheetFileId = 0x79F;
 
@@ -27,6 +28,7 @@ public static class BattleReportDecoder
     public const string OverlayDiscPath = "AAA/PRO/STFGTREP.PRO";
 
     // Overlay load base and animation table address (EU).
+
     /// <summary>PS1 load base address of the STFGTREP.PRO overlay in RAM (EU disc).</summary>
     public const uint OverlayBase = 0x80082CB0;
 
@@ -34,6 +36,7 @@ public static class BattleReportDecoder
     public const uint AnimationsAddr = 0x8008905C;
 
     // 8 partners × 7 frame slots (s32 each), terminated with -1.
+
     /// <summary>Number of partner rows in the STFGTREP_animations table (one row per playable partner slot).</summary>
     public const int AnimationPartners = 8;
 
@@ -41,6 +44,7 @@ public static class BattleReportDecoder
     public const int AnimationFrames = 7;
 
     // Arrow frame from CMFONTCS: MESSAGE_ARROW_FRAME = 10, 5 CLUT rows.
+
     /// <summary>Frame id 10 from the CMFONTCS menu sprite sheet, borrowed as the report-screen arrow sprite.</summary>
     public const int ArrowFrameId = 10;
 
@@ -54,6 +58,7 @@ public static class BattleReportDecoder
     public static readonly IReadOnlyDictionary<int, int> RequiredFrameRows = BuildRequiredRows();
 
     // Pinned animation sequences from STFGTREP_animations (EU disc).
+
     /// <summary>
     /// Known-good STFGTREP_animations values for the EU disc, used to verify the overlay hasn't changed.
     /// Each row is one partner's 7-slot sequence, terminated by -1.

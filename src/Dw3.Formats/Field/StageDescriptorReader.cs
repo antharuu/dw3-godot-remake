@@ -211,8 +211,10 @@ public static class StageDescriptorReader
     {
         /// <summary>No pending jump; the current instruction is not a delay slot.</summary>
         None,
+
         /// <summary>A <c>jal</c> or <c>jalr</c> instruction was seen; the next instruction is its delay slot.</summary>
         Call,
+
         /// <summary>A branch or jump (other than call) was seen; the next instruction is its delay slot.</summary>
         Other,
     }

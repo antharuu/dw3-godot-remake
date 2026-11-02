@@ -76,22 +76,10 @@
       "count": 44
     },
     {
-      "rule": "CS1573",
-      "project": "Dw3.Formats",
-      "folder": "Battle",
-      "count": 8
-    },
-    {
       "rule": "CS1591",
       "project": "Dw3.Extractor",
       "folder": ".",
       "count": 1
-    },
-    {
-      "rule": "CS1591",
-      "project": "Dw3.Formats",
-      "folder": "Battle",
-      "count": 114
     },
     {
       "rule": "CS1591",
@@ -1638,12 +1626,6 @@
     {
       "rule": "SA1514",
       "project": "Dw3.Formats",
-      "folder": "Battle",
-      "count": 1
-    },
-    {
-      "rule": "SA1514",
-      "project": "Dw3.Formats",
       "folder": "Mips",
       "count": 17
     },
@@ -1793,12 +1775,6 @@
     },
     {
       "rule": "SA1516",
-      "project": "Dw3.Formats",
-      "folder": "Battle",
-      "count": 2
-    },
-    {
-      "rule": "SA1516",
       "project": "Dw3.Formats.Tests",
       "folder": "Battle",
       "count": 5
@@ -1895,18 +1871,6 @@
     },
     {
       "rule": "SA1600",
-      "project": "Dw3.Formats",
-      "folder": "Battle",
-      "count": 82
-    },
-    {
-      "rule": "SA1600",
-      "project": "Dw3.Formats",
-      "folder": "Field",
-      "count": 38
-    },
-    {
-      "rule": "SA1600",
       "project": "Dw3.Game",
       "folder": ".",
       "count": 51
@@ -1961,12 +1925,6 @@
     },
     {
       "rule": "SA1602",
-      "project": "Dw3.Formats",
-      "folder": "Field",
-      "count": 3
-    },
-    {
-      "rule": "SA1602",
       "project": "Dw3.Game",
       "folder": "Presentation",
       "count": 3
@@ -1982,12 +1940,6 @@
       "project": "Dw3.Extractor",
       "folder": ".",
       "count": 2
-    },
-    {
-      "rule": "SA1604",
-      "project": "Dw3.Formats",
-      "folder": "Field",
-      "count": 6
     },
     {
       "rule": "SA1604",
@@ -2015,18 +1967,6 @@
     },
     {
       "rule": "SA1611",
-      "project": "Dw3.Formats",
-      "folder": "Battle",
-      "count": 52
-    },
-    {
-      "rule": "SA1611",
-      "project": "Dw3.Formats",
-      "folder": "Field",
-      "count": 50
-    },
-    {
-      "rule": "SA1611",
       "project": "Dw3.Game",
       "folder": ".",
       "count": 23
@@ -2050,28 +1990,10 @@
       "count": 192
     },
     {
-      "rule": "SA1612",
-      "project": "Dw3.Formats",
-      "folder": "Battle",
-      "count": 1
-    },
-    {
       "rule": "SA1615",
       "project": "Dw3.Extractor",
       "folder": ".",
       "count": 3
-    },
-    {
-      "rule": "SA1615",
-      "project": "Dw3.Formats",
-      "folder": "Battle",
-      "count": 29
-    },
-    {
-      "rule": "SA1615",
-      "project": "Dw3.Formats",
-      "folder": "Field",
-      "count": 36
     },
     {
       "rule": "SA1615",
@@ -2114,12 +2036,6 @@
       "project": "Dw3.Extractor",
       "folder": ".",
       "count": 4
-    },
-    {
-      "rule": "SA1629",
-      "project": "Dw3.Formats",
-      "folder": "Field",
-      "count": 3
     },
     {
       "rule": "SA1642",
