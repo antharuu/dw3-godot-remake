@@ -93,9 +93,9 @@ internal static class BattleMotionMachineVectorHarness
         var p = op.Split(':');
         switch (p[0])
         {
-            case "s": m.Step(int.Parse(p[1])); break;
-            case "m": m.SetMotion(int.Parse(p[1]), p[2] == "1"); break;
-            case "i": m.SetIdleMotion(int.Parse(p[1])); break;
+            case "s": m.Step(int.Parse(p[1], System.Globalization.CultureInfo.InvariantCulture)); break;
+            case "m": m.SetMotion(int.Parse(p[1], System.Globalization.CultureInfo.InvariantCulture), p[2] == "1"); break;
+            case "i": m.SetIdleMotion(int.Parse(p[1], System.Globalization.CultureInfo.InvariantCulture)); break;
             default: throw new FormatException($"unknown vector op '{op}'");
         }
     }

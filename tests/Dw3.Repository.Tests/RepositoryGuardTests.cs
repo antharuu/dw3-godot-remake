@@ -61,9 +61,6 @@ public sealed class RepositoryGuardTests : IDisposable
     private static void AssertNoViolation(IReadOnlyList<Violation> v, string rule) =>
         Assert.DoesNotContain(v, x => x.Rule == rule);
 
-    private static void AssertClean(IReadOnlyList<Violation> v) =>
-        Assert.Empty(v);
-
     // ─────────────────────────────────────────────────────────────────────
     // P1: forbidden-extension
     // ─────────────────────────────────────────────────────────────────────

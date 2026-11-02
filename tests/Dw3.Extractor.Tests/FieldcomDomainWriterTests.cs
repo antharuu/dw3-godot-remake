@@ -62,5 +62,5 @@ public sealed class FieldcomDomainWriterTests : IDisposable
         return (long)command.ExecuteScalar()!;
     }
 
-    private static DataPackMetadata Metadata() => new("test", "0123456789012345678901234567890123456789", "synthetic", DateTimeOffset.Parse("2026-01-01T00:00:00Z"));
+    private static DataPackMetadata Metadata() => new("test", "0123456789012345678901234567890123456789", "synthetic", DateTimeOffset.Parse("2026-01-01T00:00:00Z", System.Globalization.CultureInfo.InvariantCulture));
 }

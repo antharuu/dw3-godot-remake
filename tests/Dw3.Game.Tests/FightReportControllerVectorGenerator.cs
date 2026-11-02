@@ -156,7 +156,7 @@ public sealed class FightReportControllerVectorGenerator
         if (input.MessageTokenCounts is not null)
         {
             tokenCounts = [];
-            foreach (var kv in input.MessageTokenCounts) tokenCounts[kv.Key.ToString()] = kv.Value;
+            foreach (var kv in input.MessageTokenCounts) tokenCounts[kv.Key.ToString(System.Globalization.CultureInfo.InvariantCulture)] = kv.Value;
         }
 
         var o = new JsonObject

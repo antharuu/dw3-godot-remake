@@ -10,7 +10,6 @@ public sealed class FieldEncounterDecoderTests
     // ── Layout constants (EU disc, FIELDSTG.PRO loads at 0x80082CB0) ─────────
     private const uint FieldOverlayBase = 0x80082CB0u;
     private const uint EnemiesAddr = 0x80092DFCu; // FIELDSTG_enemies
-    private const uint EncountersAddr = 0x80094680u; // FIELDSTG_encounters
     private const uint BattleRatesAddr = 0x8009B6ACu; // FIELDSTG_battleRates
 
     // ── Enemy record layout ────────────────────────────────────────────────────

@@ -78,5 +78,5 @@ public sealed class DialogueDomainWriterTests : IDisposable
 
     private static DataPackMetadata Metadata() =>
         new("test", "0123456789012345678901234567890123456789", "synthetic",
-            DateTimeOffset.Parse("2026-01-01T00:00:00Z"));
+            DateTimeOffset.Parse("2026-01-01T00:00:00Z", System.Globalization.CultureInfo.InvariantCulture));
 }

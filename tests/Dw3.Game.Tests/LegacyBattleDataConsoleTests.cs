@@ -191,7 +191,7 @@ public sealed class LegacyBattleDataConsoleTests
         {
             string path = $"frame-{id}.png";
             WriteFile(context, $"battle/menu-icons/{path}", "x");
-            frames[id.ToString()] = new { w = 1, h = 1, offset = new[] { 0, 0 }, paths = new[] { path } };
+            frames[id.ToString(System.Globalization.CultureInfo.InvariantCulture)] = new { w = 1, h = 1, offset = new[] { 0, 0 }, paths = new[] { path } };
         }
         WriteJson(context, "battle/menu-icons/manifest.json", new { schema = SyntheticDataPackFixture.BattleMenuIconSchema, frames, messageArrow = new { frame = 10, position = new[] { 0, 0 }, timeStep = 4 } });
     }

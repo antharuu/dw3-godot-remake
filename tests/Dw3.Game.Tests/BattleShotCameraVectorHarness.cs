@@ -143,7 +143,7 @@ internal static class BattleShotCameraVectorHarness
     {
         if (op == "1") camera.Step();
         else if (op == "x") camera.Stop();
-        else if (op.StartsWith("s:", StringComparison.Ordinal)) camera.StepFrames(int.Parse(op[2..]));
+        else if (op.StartsWith("s:", StringComparison.Ordinal)) camera.StepFrames(int.Parse(op[2..], System.Globalization.CultureInfo.InvariantCulture));
         else throw new InvalidOperationException($"unknown vector op '{op}'");
     }
 

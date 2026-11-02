@@ -50,7 +50,7 @@ public sealed class FightReportControllerVectorTests
         if (tcNode is JsonObject tcObj)
         {
             tokenCounts = [];
-            foreach (var kv in tcObj) tokenCounts[int.Parse(kv.Key)] = kv.Value!.GetValue<int>();
+            foreach (var kv in tcObj) tokenCounts[int.Parse(kv.Key, System.Globalization.CultureInfo.InvariantCulture)] = kv.Value!.GetValue<int>();
         }
 
         return new FightReportInput(

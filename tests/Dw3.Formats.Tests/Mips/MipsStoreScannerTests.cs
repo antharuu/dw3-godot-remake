@@ -8,7 +8,6 @@ public sealed class MipsStoreScannerTests
 {
     private const uint State = 0x80091230u;
     private const uint Global = 0x80054560u;
-    private const uint Pointer = 0x800A6E40u;
 
     private static IReadOnlyList<MipsStoreMatch> Scan(byte[] code, short field, params uint[] watched) =>
         MipsStoreScanner.FindStores(code, State, field, watched);
