@@ -1,20 +1,13 @@
 namespace Dw3Production.Diagnostics;
 
-/// <summary>
-/// Narrow boundary used by diagnostic dispatchers. Probe runners choose one diagnostic mode while
-/// the Godot host remains responsible only for invoking its already-initialized probe entry point.
-/// </summary>
-public interface IDiagnosticProbeHost
-{
-    void RunInputProbeAndQuit();
-    void ScheduleProbe(string methodName, bool ownsInput);
-}
-
 /// <summary>Selects field diagnostics in their established startup precedence.</summary>
 public sealed class FieldDiagnosticProbeRunner(IDiagnosticProbeHost host)
 {
     private readonly IDiagnosticProbeHost _host = host;
 
+    /// <summary>Starts the first field probe enabled in the options, in the fixed precedence order.</summary>
+    /// <param name="options">Startup options read from the environment.</param>
+    /// <returns><see langword="true"/> when a probe was started; at most one runs per session.</returns>
     public bool TryDispatch(HostStartupOptions options)
     {
         if (options.InputProbe)

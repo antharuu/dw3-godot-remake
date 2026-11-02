@@ -5,6 +5,9 @@ public sealed class BattleDiagnosticProbeRunner(IDiagnosticProbeHost host)
 {
     private readonly IDiagnosticProbeHost _host = host;
 
+    /// <summary>Starts the first battle probe enabled in the options; every battle probe owns the input.</summary>
+    /// <param name="options">Startup options read from the environment.</param>
+    /// <returns><see langword="true"/> when a probe was started.</returns>
     public bool TryDispatch(HostStartupOptions options) =>
         TrySchedule(options.BattleCameraProbe, "RunBattleCameraProbe")
         || TrySchedule(options.BattleHudProbe, "RunBattleHudProbe")
@@ -24,35 +27,6 @@ public sealed class BattleDiagnosticProbeRunner(IDiagnosticProbeHost host)
     {
         if (!enabled) return false;
         _host.ScheduleProbe(methodName, ownsInput: true);
-        return true;
-    }
-}
-
-/// <summary>Selects dialogue and field-overlay presentation diagnostics.</summary>
-public sealed class DialogueDiagnosticProbeRunner(IDiagnosticProbeHost host)
-{
-    private readonly IDiagnosticProbeHost _host = host;
-
-    public bool TryDispatch(HostStartupOptions options)
-    {
-        string? methodName = options.DialogueProbe ? "RunDialogueProbe"
-            : options.IconProbe ? "RunIconProbe"
-            : null;
-        if (methodName is null) return false;
-        _host.ScheduleProbe(methodName, ownsInput: true);
-        return true;
-    }
-}
-
-/// <summary>Selects diagnostics for runtime storage integration.</summary>
-public sealed class StorageDiagnosticProbeRunner(IDiagnosticProbeHost host)
-{
-    private readonly IDiagnosticProbeHost _host = host;
-
-    public bool TryDispatch(HostStartupOptions options)
-    {
-        if (!options.SqliteProbe) return false;
-        _host.ScheduleProbe("RunSqliteProbe", ownsInput: true);
         return true;
     }
 }

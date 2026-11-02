@@ -59,6 +59,12 @@ internal interface IFieldProbeHost
     /// <summary>Gets how many zones were decoded from the data pack since startup; a revisit must not add one.</summary>
     int ZoneDecodeCount { get; }
 
+    /// <summary>Gets the decoded connection-icon frames, or <see langword="null"/> before startup loaded them.</summary>
+    PlayerIconData? IconData { get; }
+
+    /// <summary>Gets the controller that animates the connection icon and makes it follow the player.</summary>
+    PlayerIconController Icon { get; }
+
     /// <summary>Returns the cached zone, decoding it from the data pack on first use.</summary>
     /// <param name="zoneId">Stage identifier such as <c>S200</c>.</param>
     /// <returns>The zone with its floor, trigger and occupant maps.</returns>
@@ -91,13 +97,6 @@ internal interface IFieldProbeHost
     /// <summary>Delivers a window focus notification as the window manager would.</summary>
     /// <param name="focused"><see langword="true"/> for focus in, <see langword="false"/> for focus out.</param>
     void SimulateWindowFocus(bool focused);
-
-    /// <summary>Places the player on a trigger slot and crosses the exit through Offer, Rearm and Idle.</summary>
-    /// <param name="sourceZone">Zone that must be applied when the edge starts.</param>
-    /// <param name="slot">Trigger slot number, the low five bits of the trigger cell.</param>
-    /// <param name="facing">Source facing (0-7) that the exit admits.</param>
-    /// <param name="label">Edge name used in failure messages.</param>
-    void RunWarpEdge(string sourceZone, int slot, int facing, string label);
 
     /// <summary>Resolves the PNG of a decoded player sprite frame.</summary>
     /// <param name="frame">Player frame index from the animation table.</param>

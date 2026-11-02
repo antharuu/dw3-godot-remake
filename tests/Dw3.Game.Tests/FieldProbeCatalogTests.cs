@@ -22,6 +22,9 @@ public sealed class FieldProbeCatalogTests
     [InlineData("RunObjectProbe", typeof(ObjectProbe))]
     [InlineData("RunClimbProbe", typeof(ClimbProbe))]
     [InlineData("RunDropProbe", typeof(DropProbe))]
+    [InlineData("RunWarpProbe", typeof(WarpProbe))]
+    [InlineData("RunCanalWaterProbe", typeof(CanalWaterProbe))]
+    [InlineData("RunIconProbe", typeof(IconProbe))]
     public void FieldEntryNamesCreateTheirProbe(string entryName, Type expected)
     {
         var probe = FieldProbeCatalog.Create(entryName, null!);
@@ -30,12 +33,18 @@ public sealed class FieldProbeCatalogTests
     }
 
     [Theory]
-    [InlineData("RunWarpProbe")]
-    [InlineData("RunCanalWaterProbe")]
     [InlineData("RunDialogueProbe")]
     [InlineData("RunBattlePlayProbe")]
-    public void HostResidentProbesAreLeftToTheHost(string entryName)
+    [InlineData("RunSqliteProbe")]
+    public void OtherFamiliesAreNotFieldProbes(string entryName)
     {
         Assert.Null(FieldProbeCatalog.Create(entryName, null!));
+    }
+
+    [Fact]
+    public void TheDialogueEntryNameCreatesTheDialogueProbe()
+    {
+        Assert.IsType<DialogueProbe>(DialogueProbeCatalog.Create("RunDialogueProbe", null!));
+        Assert.Null(DialogueProbeCatalog.Create("RunIconProbe", null!));
     }
 }

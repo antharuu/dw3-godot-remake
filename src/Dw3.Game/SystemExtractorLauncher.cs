@@ -61,26 +61,3 @@ public sealed class SystemExtractorLauncher : IExtractorLauncher
         return Path.Combine(repoRoot, "src", "Dw3.Extractor", "bin", "Debug", "net10.0", "Dw3.Extractor");
     }
 }
-
-/// <summary>
-/// Wraps a live <see cref="Process"/> stdout as an <see cref="IExtractorProcess"/>.
-/// </summary>
-internal sealed class SystemExtractorProcess : IExtractorProcess
-{
-    private readonly Process _process;
-
-    internal SystemExtractorProcess(Process process) => _process = process;
-
-    /// <inheritdoc/>
-    public string? ReadLine() => _process.StandardOutput.ReadLine();
-
-    /// <inheritdoc/>
-    public int WaitForExit()
-    {
-        _process.WaitForExit();
-        return _process.ExitCode;
-    }
-
-    /// <inheritdoc/>
-    public void Dispose() => _process.Dispose();
-}

@@ -30,7 +30,7 @@ internal sealed class F3Probe : FieldProbe
         await overlay.CaptureAsync("f3-s200-off.png");
         PlaceOnTrigger(4, 3);
         var offTrigger = Snapshot();
-        Host.RunWarpEdge("S200", 4, 3, "f3-off-s200-to-s235");
+        WarpEdgeDriver.Run(Host, "S200", 4, 3, "f3-off-s200-to-s235");
         var offArrival = Snapshot();
         Require(offArrival.Zone == "S235" && offArrival.Position == new NumericsVector2(278, 218) && offArrival.Facing == 3, "F3-off route did not reach manifest S235 arrival");
 
@@ -44,7 +44,7 @@ internal sealed class F3Probe : FieldProbe
         await overlay.CaptureAsync("f3-s200-on.png");
         var circlePixels = await overlay.CountPlayerCollisionShapePixelsAsync();
         Require(circlePixels > 40, $"F3 collision shape not rendered (circle_pixels={circlePixels})");
-        Host.RunWarpEdge("S200", 4, 3, "f3-on-s200-to-s235");
+        WarpEdgeDriver.Run(Host, "S200", 4, 3, "f3-on-s200-to-s235");
         var onArrival = Snapshot();
         Require(
             onArrival.Zone == offArrival.Zone && onArrival.Position == offArrival.Position && onArrival.Facing == offArrival.Facing && onArrival.Progress == offArrival.Progress,

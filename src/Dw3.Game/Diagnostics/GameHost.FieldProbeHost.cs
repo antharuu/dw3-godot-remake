@@ -59,6 +59,12 @@ public partial class GameHost : IFieldProbeHost
     int IFieldProbeHost.ZoneDecodeCount => ZoneCache.DecodeCount;
 
     /// <inheritdoc/>
+    PlayerIconData? IFieldProbeHost.IconData => _iconData;
+
+    /// <inheritdoc/>
+    PlayerIconController IFieldProbeHost.Icon => _icon;
+
+    /// <inheritdoc/>
     FieldZone IFieldProbeHost.GetOrLoadZone(string zoneId) => GetOrLoadZone(zoneId);
 
     /// <inheritdoc/>
@@ -82,9 +88,6 @@ public partial class GameHost : IFieldProbeHost
     /// <inheritdoc/>
     void IFieldProbeHost.SimulateWindowFocus(bool focused) =>
         _Notification((int)(focused ? NotificationWMWindowFocusIn : NotificationWMWindowFocusOut));
-
-    /// <inheritdoc/>
-    void IFieldProbeHost.RunWarpEdge(string sourceZone, int slot, int facing, string label) => RunWarpEdge(sourceZone, slot, facing, label);
 
     /// <inheritdoc/>
     string IFieldProbeHost.ResolvePlayerFrame(int frame) => ResolvePlayerFrame(frame);

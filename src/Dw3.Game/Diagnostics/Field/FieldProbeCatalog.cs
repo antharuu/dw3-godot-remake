@@ -2,7 +2,7 @@ namespace Dw3Production.Diagnostics.Field;
 
 /// <summary>
 /// Maps the probe entry names chosen by <see cref="FieldDiagnosticProbeRunner"/> to the scripted
-/// field probes. Names not listed here are probes the host still runs itself.
+/// field probes. Names not listed here belong to the dialogue, battle or storage families.
 /// </summary>
 internal static class FieldProbeCatalog
 {
@@ -28,6 +28,9 @@ internal static class FieldProbeCatalog
         "RunObjectProbe" => new ObjectProbe(host),
         "RunClimbProbe" => new ClimbProbe(host),
         "RunDropProbe" => new DropProbe(host),
+        "RunWarpProbe" => new WarpProbe(host),
+        "RunCanalWaterProbe" => new CanalWaterProbe(host),
+        "RunIconProbe" => new IconProbe(host),
         _ => null,
     };
 }

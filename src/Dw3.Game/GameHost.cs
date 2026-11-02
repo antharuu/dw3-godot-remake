@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using Godot;
 using Dw3.Data;
-using Microsoft.Data.Sqlite;
 using Dw3Production.Conversion;
 using Dw3Production.Diagnostics;
 using Dw3Production.Diagnostics.Battle;
@@ -257,7 +256,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
 
             if (!DispatchDiagnosticProbe())
             {
-                CallDeferred(MethodName.CaptureSpawn);
+                Callable.From(() => _ = SpawnCapture.RunAsync(this, _options.CaptureAndQuit)).CallDeferred();
             }
         }
         catch (CacheResourceException error)
@@ -365,19 +364,8 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
     void IDiagnosticProbeHost.ScheduleProbe(string methodName, bool ownsInput)
     {
         _testDriverActive = ownsInput;
-        if (FieldProbeCatalog.Create(methodName, this) is { } fieldProbe)
-        {
-            Callable.From(() => _ = fieldProbe.RunAsync()).CallDeferred();
-            return;
-        }
-
-        if (BattleProbeCatalog.Create(methodName, new BattleProbeContext(this)) is { } battleProbe)
-        {
-            Callable.From(() => _ = battleProbe.RunAsync()).CallDeferred();
-            return;
-        }
-
-        CallDeferred(methodName);
+        var run = ResolveProbe(methodName);
+        Callable.From(() => _ = run()).CallDeferred();
     }
 
     /// <summary>
@@ -463,6 +451,35 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
             _renderer?.Present(_state, CurrentZone, _input.F3On, delta, _icon.View);
             _dialogueRenderer?.Present(_dialogue.IsActive ? BuildDialogueView() : (DialogueView?)null);
         }
+    }
+
+    /// <summary>Finds the probe registered under an entry name in the field, dialogue, battle and storage families.</summary>
+    /// <param name="entryName">Entry name chosen by a diagnostic runner, such as <c>RunWarpProbe</c>.</param>
+    /// <returns>The probe body, to be started after the current frame.</returns>
+    /// <exception cref="InvalidOperationException">No family registers the name.</exception>
+    private Func<Task> ResolveProbe(string entryName)
+    {
+        var fieldProbe = FieldProbeCatalog.Create(entryName, this) ?? DialogueProbeCatalog.Create(entryName, this);
+        if (fieldProbe is not null)
+        {
+            return fieldProbe.RunAsync;
+        }
+
+        if (BattleProbeCatalog.Create(entryName, new BattleProbeContext(this)) is { } battleProbe)
+        {
+            return battleProbe.RunAsync;
+        }
+
+        if (entryName == "RunSqliteProbe")
+        {
+            return () =>
+            {
+                SqliteProbe.Run(code => GetTree().Quit(code));
+                return Task.CompletedTask;
+            };
+        }
+
+        throw new InvalidOperationException($"no diagnostic probe is registered as {entryName}");
     }
 
     #endregion
@@ -1337,39 +1354,6 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         QuietLog.Info($"drop start slot={drop.Slot} dir={triggerDirection} pos=({_state.Position.X},{_state.Position.Y}) height={drop.Height}");
     }
 
-    // FIELDSTG_dirSteps (the actor movement contract): the source pixel step in front of the actor for each source
-    // direction (0=down, counter-clockwise). getFacingTile adds this to the actor's tile.
-    private static readonly NumericsVector2[] SourceDirSteps =
-    [
-        new(0, 16), new(-11, 11), new(-16, 0), new(-11, -11),
-        new(0, -16), new(11, -11), new(16, 0), new(11, 11),
-    ];
-
-    /// <summary>The source tile the player faces: tile + FIELDSTG_dirSteps[facing] (the actor movement contract:33-38).</summary>
-    private static NumericsVector2 FacingTile(GameState state)
-    {
-        var tile = new NumericsVector2((int)MathF.Floor(state.Position.X), (int)MathF.Floor(state.Position.Y));
-        return tile + SourceDirSteps[state.Facing];
-    }
-
-    /// <summary>FIELDSTG_findActorAt (the actor interaction contract:142-158): the first dialogue actor whose
-    /// box holds the tile — halfWidth each side of x, half that above and below y.</summary>
-    private static DialogueActor? FindDialogueActorAt(ZoneDialogue zone, NumericsVector2 pos)
-    {
-        foreach (var actor in zone.Actors)
-        {
-            if (actor.Width is not { } width) continue; // no source half-width: cannot match
-            var size = width >> 1;
-            if (pos.X >= actor.X - size && actor.X + size >= pos.X)
-            {
-                size >>= 1;
-                if (pos.Y >= actor.Y - size && actor.Y + size >= pos.Y)
-                    return actor;
-            }
-        }
-        return null;
-    }
-
     /// <summary>Starts the selected talk of the actor facing the player, when one is present.
     /// Returns true when a conversation began. Unsupported controls (5 buffer insert, 8 player
     /// name) are signalled once per command and never rendered. The player stands and faces the
@@ -1378,7 +1362,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
     {
         if (_dialogueData is null || _currentZone is null) return false;
         if (!_dialogueData.Zones.TryGetValue(CurrentZone.Zone.Id, out var zoneDialogue)) return false;
-        var actor = FindDialogueActorAt(zoneDialogue, FacingTile(_state));
+        var actor = DialogueActorLocator.FindAt(zoneDialogue, DialogueActorLocator.FacingTile(_state));
         if (actor is null) return false;
         var talk = actor.Talks.FirstOrDefault(candidate => candidate.Selected);
         if (talk is null) return false;
@@ -1394,7 +1378,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
             _log.Warn($"dialogue-control-unsupported:{command}",
                 $"dialogue-control-unsupported cmd={command} zone={CurrentZone.Zone.Id} actor={actor.Id}");
         _dialogue.Start(CurrentZone.Zone.Id, actor, talk, entry);
-        _dialogueBoxWidth = MeasureDialogueWidth(_dialogue.FullText, _dialogueData.Font);
+        _dialogueBoxWidth = DialogueBubbleLayout.MeasureWidth(_dialogue.FullText, _dialogueData.Font);
         if (_dialogue.SpeakerIsPlayer)
             _log.Warn($"dialogue-player-name-unrendered:{CurrentZone.Zone.Id}:{actor.Id}",
                 $"dialogue-player-name-unrendered zone={CurrentZone.Zone.Id} actor={actor.Id} (name entry not decoded, M4 scope)");
@@ -1409,7 +1393,8 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
     private DialogueView BuildDialogueView()
     {
         var actor = _dialogue.Actor ?? throw new InvalidOperationException("dialogue view without actor");
-        var (boxOrigin, type) = ComputeSpeechPosition(actor);
+        var camera = CameraController.PositionFor(CurrentZone.Zone.Width, CurrentZone.Zone.Height, new Vector2(_state.Position.X, _state.Position.Y));
+        var (boxOrigin, type) = DialogueBubbleLayout.Place(actor, camera);
         return new DialogueView(
             boxOrigin,
             type,
@@ -1419,510 +1404,6 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
             _dialogue.CurrentPage,
             _dialogue.RevealCount,
             _dialogue.WaitingForAdvance);
-    }
-
-    /// <summary>FIELDSTG_toScreenPos + FIELDSTG_createTalk + FIELDSTG_getSpeechPos: the talk box
-    /// origin in source PSX screen pixels and its type (0..3). The scroll is the camera centre
-    /// minus half the 320x240 source screen.</summary>
-    private (Vector2 BoxOrigin, int Type) ComputeSpeechPosition(DialogueActor actor)
-    {
-        var camera = CameraController.PositionFor(CurrentZone.Zone.Width, CurrentZone.Zone.Height, new Vector2(_state.Position.X, _state.Position.Y));
-        var srcX = actor.X - camera.X + 160f;
-        var srcY = actor.Y - camera.Y + 120f;
-        // FIELDSTG_createTalk: the side depends on the facing and the source screen column.
-        int type;
-        switch (actor.Dir)
-        {
-            case 3 or 4 or 5:
-                type = srcX >= 0xA0 ? 1 : 3;
-                break;
-            default: // 0,1,2,6,7
-                type = srcX >= 0xA0 ? 0 : 2;
-                break;
-        }
-        // FIELDSTG_createTalk edge adjustments: flip to the other vertical side near a screen edge.
-        switch (type)
-        {
-            case 0: if (srcY < 0x79) type = 1; break;
-            case 2: if (srcY < 0x79) type = 3; break;
-            case 1: if (srcY >= 0xAC) type = 0; break;
-            case 3: if (srcY >= 0xAC) type = 2; break;
-        }
-        // FIELDSTG_getSpeechPos: the box origin is the actor's screen position plus the type offset.
-        var boxX = srcX + (type is 2 or 3 ? -0xB : 0xB);
-        var boxY = srcY + (type is 0 or 2 ? -0x13 : -7);
-        return (new Vector2(boxX, boxY), type);
-    }
-
-    /// <summary>createTalkBox's measure: the widest line of the full text (explicit newlines only),
-    /// clamped to [0x5F, 0x8B] source pixels. The box width is fixed for the whole conversation.</summary>
-    private static int MeasureDialogueWidth(IReadOnlyList<TextToken> tokens, FontData font)
-    {
-        var maxWidth = 0;
-        var cursor = 0;
-        foreach (var token in tokens)
-        {
-            if (token.IsControl)
-            {
-                if (token.Command == 1) cursor = 0;
-                continue;
-            }
-            GlyphMetric? metric = token.IsGlyph
-                ? (font.Glyphs.TryGetValue(token.Code, out var glyphMetric) ? glyphMetric : null)
-                : (font.Icons.TryGetValue(token.Code, out var iconMetric) ? iconMetric : null);
-            if (metric is not { } m) continue;
-            cursor += m.Advance + m.Dx;
-            if (cursor > maxWidth) maxWidth = cursor;
-        }
-        return Math.Clamp(maxWidth, 0x5F, 0x8B);
-    }
-
-    /// <summary>True when <paramref name="actor"/> has a selected talk whose entry splits into at
-    /// least two pages (so a conversation can actually advance).</summary>
-    private static bool HasMultiPageTalk(DialogueData dialogue, ZoneDialogue zone, DialogueActor actor)
-    {
-        var talk = actor.Talks.FirstOrDefault(candidate => candidate.Selected);
-        if (talk is null) return false;
-        if (!dialogue.Texts.TryGetValue(zone.TalkFile, out var entries)) return false;
-        if (talk.Entry < 0 || talk.Entry >= entries.Count) return false;
-        return DialogueController.SplitPages(entries[talk.Entry]).Count >= 2;
-    }
-
-    /// <summary>Places the player one source step behind an actor, facing it, so its facing tile
-    /// is exactly the actor's tile.</summary>
-    private static (NumericsVector2 Position, int Facing) FaceActor(DialogueActor actor)
-    {
-        const int facing = 6; // source right: dirSteps[6] = (16, 0)
-        return (new NumericsVector2(actor.X - 16, actor.Y), facing);
-    }
-
-    /// <summary>The source PSX screen (320x240) to viewport (1280x720) mapping: S = 3*s + (160, 0).</summary>
-    private static Vector2 SourceToViewport(Vector2 source) => new(source.X * 3f + 160f, source.Y * 3f);
-
-    /// <summary>Counts pixels inside <paramref name="region"/> whose colour changed between the
-    /// no-dialogue capture and the bubble capture.</summary>
-    private static int CountChanged(Image before, Image after, Rect2 region)
-    {
-        var count = 0;
-        var minX = Math.Max(0, (int)MathF.Floor(region.Position.X));
-        var maxX = Math.Min(after.GetWidth() - 1, (int)MathF.Ceiling(region.End.X));
-        var minY = Math.Max(0, (int)MathF.Floor(region.Position.Y));
-        var maxY = Math.Min(after.GetHeight() - 1, (int)MathF.Ceiling(region.End.Y));
-        for (var y = minY; y <= maxY; y++)
-            for (var x = minX; x <= maxX; x++)
-                if (ProbePixels.DifferentRgb(before.GetPixel(x, y), after.GetPixel(x, y))) count++;
-        return count;
-    }
-
-    /// <summary>Counts the frame's opaque source texels whose viewport pixel changed between the
-    /// two captures. Only opaque texels prove a real sprite: a flat DrawRect would light up every
-    /// pixel including the frame's transparent gaps, which this deliberately does not count.</summary>
-    private static int CountSpriteOpaqueChanged(Image before, Image after, Texture2D frame, Vector2 viewportTopLeft)
-    {
-        var image = frame.GetImage();
-        if (image is null || image.IsEmpty()) return 0;
-        var count = 0;
-        for (var y = 0; y < image.GetHeight(); y++)
-            for (var x = 0; x < image.GetWidth(); x++)
-            {
-                if (image.GetPixel(x, y).A < 0.99f) continue;
-                var sx = (int)viewportTopLeft.X + x * 3 + 1;
-                var sy = (int)viewportTopLeft.Y + y * 3 + 1;
-                if (sx < 0 || sy < 0 || sx >= after.GetWidth() || sy >= after.GetHeight()) continue;
-                if (ProbePixels.DifferentRgb(before.GetPixel(sx, sy), after.GetPixel(sx, sy))) count++;
-            }
-        return count;
-    }
-
-    /// <summary>Counts pixels inside <paramref name="region"/> that satisfy
-    /// <paramref name="predicate"/>. Bounds are clamped to the image dimensions.
-    /// Shared by CountDarkBluePixels, CountLightBluePixels, and CountBodyBluePixels
-    /// to avoid repeating the identical clamp-and-iterate structure.</summary>
-    private static int CountRegionPixels(Image image, Rect2 region, Func<Color, bool> predicate)
-    {
-        var count = 0;
-        var minX = Math.Max(0, (int)MathF.Floor(region.Position.X));
-        var maxX = Math.Min(image.GetWidth() - 1, (int)MathF.Ceiling(region.End.X));
-        var minY = Math.Max(0, (int)MathF.Floor(region.Position.Y));
-        var maxY = Math.Min(image.GetHeight() - 1, (int)MathF.Ceiling(region.End.Y));
-        for (var y = minY; y <= maxY; y++)
-            for (var x = minX; x <= maxX; x++)
-            {
-                if (predicate(image.GetPixel(x, y))) count++;
-            }
-        return count;
-    }
-
-    /// <summary>Counts viewport pixels inside <paramref name="region"/> that are dark blue
-    /// (B above both R and G), i.e. the talk box's PALETTE_DARK_BLUE glyph ink. White or grey
-    /// pixels (R==G==B) never qualify, so this proves the text renders dark blue, not white.</summary>
-    private static int CountDarkBluePixels(Image image, Rect2 region) =>
-        CountRegionPixels(image, region, c => c.B > c.R + 0.12f && c.B > c.G + 0.12f);
-
-    /// <summary>Counts viewport pixels inside <paramref name="region"/> that are light blue: the
-    /// blue channel above both others AND bright enough to exclude the dark-blue glyph ink (the
-    /// panel is (222,238,255) half-blended over the scene, so its blend stays blue-dominant and
-    /// bright; the dark-blue text is blue-dominant but dark). Grey (R==G==B) never qualifies.</summary>
-    private static int CountLightBluePixels(Image image, Rect2 region) =>
-        CountRegionPixels(image, region, c => c.B > c.R && c.B > c.G && c.R + c.G + c.B > 1.35f);
-
-    /// <summary>Counts viewport pixels close to the panel's opaque light-blue body (222,238,255):
-    /// bright and blue-dominant. A 50% blend over the scene stays too dark to qualify, so this
-    /// proves the panel body is opaque (covering the decor), not half-blended.</summary>
-    private static int CountBodyBluePixels(Image image, Rect2 region) =>
-        CountRegionPixels(image, region, c => c.R > 0.8f && c.G > 0.85f && c.B > 0.9f && c.B > c.R);
-
-    /// <summary>Counts a frame's opaque source texels whose rendered pixel is closer to the
-    /// half-blend of the texel colour with the pre-dialogue scene than to the pure texel colour.
-    /// A semi-transparent draw (setSemiTrans) produces the blend; an opaque draw reproduces the
-    /// texel exactly, so this distinguishes the two.</summary>
-    private static int CountSpriteSemiBlended(Image before, Image after, Texture2D frame, Vector2 viewportTopLeft)
-    {
-        var image = frame.GetImage();
-        if (image is null || image.IsEmpty()) return 0;
-        var count = 0;
-        for (var y = 0; y < image.GetHeight(); y++)
-            for (var x = 0; x < image.GetWidth(); x++)
-            {
-                var texel = image.GetPixel(x, y);
-                if (texel.A < 0.99f) continue;
-                var sx = (int)viewportTopLeft.X + x * 3 + 1;
-                var sy = (int)viewportTopLeft.Y + y * 3 + 1;
-                if (sx < 0 || sy < 0 || sx >= after.GetWidth() || sy >= after.GetHeight()) continue;
-                var rendered = after.GetPixel(sx, sy);
-                var back = before.GetPixel(sx, sy);
-                var blended = new Color(
-                    texel.R * 0.5f + back.R * 0.5f,
-                    texel.G * 0.5f + back.G * 0.5f,
-                    texel.B * 0.5f + back.B * 0.5f);
-                if (ColorDistance(rendered, blended) < ColorDistance(rendered, texel)) count++;
-            }
-        return count;
-    }
-
-    /// <summary>Counts a frame's opaque source texels whose rendered pixel is closer to the pure
-    /// texel colour than to the half-blend with the pre-dialogue scene. An opaque draw (only the
-    /// STP texels blend) reproduces the texel exactly, so this is the complement of
-    /// <see cref="CountSpriteSemiBlended"/> and proves the edge is opaque, not semi.</summary>
-    private static int CountSpriteOpaquePure(Image before, Image after, Texture2D frame, Vector2 viewportTopLeft)
-    {
-        var image = frame.GetImage();
-        if (image is null || image.IsEmpty()) return 0;
-        var count = 0;
-        for (var y = 0; y < image.GetHeight(); y++)
-            for (var x = 0; x < image.GetWidth(); x++)
-            {
-                var texel = image.GetPixel(x, y);
-                if (texel.A < 0.99f) continue;
-                var sx = (int)viewportTopLeft.X + x * 3 + 1;
-                var sy = (int)viewportTopLeft.Y + y * 3 + 1;
-                if (sx < 0 || sy < 0 || sx >= after.GetWidth() || sy >= after.GetHeight()) continue;
-                var rendered = after.GetPixel(sx, sy);
-                var back = before.GetPixel(sx, sy);
-                var blended = new Color(
-                    texel.R * 0.5f + back.R * 0.5f,
-                    texel.G * 0.5f + back.G * 0.5f,
-                    texel.B * 0.5f + back.B * 0.5f);
-                if (ColorDistance(rendered, texel) < ColorDistance(rendered, blended)) count++;
-            }
-        return count;
-    }
-
-    private static float ColorDistance(Color left, Color right) =>
-        MathF.Abs(left.R - right.R) + MathF.Abs(left.G - right.G) + MathF.Abs(left.B - right.B);
-
-    /// <summary>Verifies the bubble's corner sprite, panel, arrow and name window all produced real
-    /// framebuffer pixels, and that the bubble is anchored above the actor's head rather than at
-    /// the bottom of the screen.</summary>
-    private void AssertDialogueBubble(Image before, Image after, DialogueActor actor)
-    {
-        var frames = _dialogueFrames ?? throw new InvalidOperationException("frame data unavailable");
-        var textures = _frameTextures ?? throw new InvalidOperationException("frame textures unavailable");
-        var (boxOrigin, type) = ComputeSpeechPosition(actor);
-        var layout = frames.Layouts[type];
-        var width = _dialogueBoxWidth;
-        var widthOffset = type < 2 ? width : 0;
-
-        var panelChanged = CountChanged(before, after, DialogueRenderer.BoxScreenRect);
-        Require(panelChanged > 400, $"panel rendered too few changed pixels panel_changed={panelChanged}");
-
-        // The panel must be the original light blue (B > R, bright), not the old grey: the
-        // body colour is the disc's (222,238,255) half-blended, so blue-dominant bright pixels
-        // dominate the rect while the dark-blue glyph ink (blue but dark) is excluded.
-        var panelBlue = CountLightBluePixels(after, DialogueRenderer.BoxScreenRect);
-        Require(panelBlue > 400, $"panel rendered too few light-blue pixels panel_blue={panelBlue} rect={DialogueRenderer.BoxScreenRect}");
-        QuietLog.Info($"dialogue panel PASS light_blue={panelBlue} rect={DialogueRenderer.BoxScreenRect}");
-
-        // The panel body must be opaque light blue across the middle of the box (the 12-wide
-        // texture stretched to w), not a half-blended flat colour: only an opaque body reaches
-        // the source body's brightness, a 50% blend over the scene does not.
-        var panelRect = DialogueRenderer.BoxScreenRect;
-        var middleRect = new Rect2(
-            new Vector2(panelRect.Position.X + panelRect.Size.X * 0.25f, panelRect.Position.Y + panelRect.Size.Y * 0.15f),
-            new Vector2(panelRect.Size.X * 0.5f, panelRect.Size.Y * 0.7f));
-        var bodyBlue = CountBodyBluePixels(after, middleRect);
-        Require(bodyBlue > 4000, $"panel middle not covered by the opaque body body_blue={bodyBlue} rect={middleRect}");
-
-        // The panel texture keeps its vertical gradient and the two border bands (not flattened):
-        // the decoded 12x62 texture's top line and bottom STP rows differ from the light-blue body.
-        var panelImage = PanelTexture.GetImage() ?? throw new InvalidOperationException("panel texture image unavailable");
-        Require(!panelImage.IsEmpty(), "panel texture image unavailable");
-        Require(ProbePixels.DifferentRgb(panelImage.GetPixel(0, 30), panelImage.GetPixel(0, 13)),
-            $"panel texture flattened at the top line body={panelImage.GetPixel(0, 30)} top={panelImage.GetPixel(0, 13)}");
-        Require(ProbePixels.DifferentRgb(panelImage.GetPixel(0, 30), panelImage.GetPixel(0, 60)),
-            $"panel texture flattened at the bottom line body={panelImage.GetPixel(0, 30)} bottom={panelImage.GetPixel(0, 60)}");
-
-        // The two edge sprites are drawn opaque: setSemiTrans on a textured primitive blends only
-        // the STP-marked texels (already baked into the decoded PNG alpha-128), so the edge's
-        // opaque texels render as the pure frame colour, never a half-blend with the scene. The
-        // left edge sits over the scene, so it is the clean probe: almost all its opaque texels
-        // must render pure.
-        var leftTopLeft = SourceToViewport(boxOrigin + layout.Sprite0Pos - new Vector2(widthOffset, 0));
-        var leftPure = CountSpriteOpaquePure(before, after, textures[0], leftTopLeft);
-        var leftSemi = CountSpriteSemiBlended(before, after, textures[0], leftTopLeft);
-        Require(leftPure > 400, $"left edge rendered too few opaque texels left_pure={leftPure} left_semi={leftSemi}");
-        Require(leftSemi < leftPure, $"left edge rendered semi-transparent left_semi={leftSemi} >= left_pure={leftPure}");
-        QuietLog.Info($"dialogue 9-patch PASS body_blue={bodyBlue} left_pure={leftPure} left_semi={leftSemi} rect={panelRect}");
-
-        var cornerTopLeft = SourceToViewport(boxOrigin + layout.SpritePos);
-        var cornerChanged = CountSpriteOpaqueChanged(before, after, textures[layout.Sprite], cornerTopLeft);
-        Require(cornerChanged > 15, $"corner sprite rendered too few opaque pixels corner_changed={cornerChanged}");
-
-        var arrowX = type is 2 or 3 ? width - 14 : layout.Arrow.X;
-        var arrowTopLeft = SourceToViewport(boxOrigin + new Vector2(arrowX, layout.Arrow.Y));
-        var arrowChanged = CountSpriteOpaqueChanged(before, after, textures[7], arrowTopLeft);
-        Require(arrowChanged > 6, $"arrow rendered too few opaque pixels arrow_changed={arrowChanged}");
-
-        var nameOrigin = SourceToViewport(new Vector2(boxOrigin.X + layout.NameX - widthOffset, boxOrigin.Y + layout.NameY));
-        var nameChanged = CountChanged(before, after, new Rect2(nameOrigin, new Vector2(width * 3f, 13f * 3f)));
-        Require(nameChanged > 6, $"name window rendered too few pixels name_changed={nameChanged}");
-
-        // The text (and name) ink must be the original dark blue (PALETTE_DARK_BLUE),
-        // never white: count blue-dominant glyph pixels over the panel the renderer
-        // laid out (both windows receive setPalette(PALETTE_DARK_BLUE), and the panel
-        // is grey, so blue-dominant pixels inside it are the glyph ink, not the scene).
-        var textBlue = CountDarkBluePixels(after, DialogueRenderer.BoxScreenRect);
-        Require(textBlue > 40, $"dialogue text rendered too few dark-blue glyph pixels text_blue={textBlue} rect={DialogueRenderer.BoxScreenRect}");
-
-        var camera = CameraController.PositionFor(CurrentZone.Zone.Width, CurrentZone.Zone.Height, new Vector2(_state.Position.X, _state.Position.Y));
-        var actorScreenY = (actor.Y - camera.Y) * 3f + 360f;
-        var rect = DialogueRenderer.BoxScreenRect;
-        // The bubble is anchored just above the actor's head (types 0/2) or just below its feet
-        // (types 1/3, the source's edge flip). A distance far above ~150 px would mean the old
-        // fixed bottom panel, not a bubble that follows the speaker.
-        var distanceToActor = type is 0 or 2 ? actorScreenY - rect.End.Y : rect.Position.Y - actorScreenY;
-        Require(distanceToActor >= 0f && distanceToActor < 150f,
-            $"bubble is not anchored to the actor distance={distanceToActor:0} actor_y={actorScreenY:0} type={type} rect={rect}");
-    }
-
-    /// <summary>
-    /// M4 dialogue acceptance: on S200, face a real dialogue actor and start a conversation with
-    /// Cross, reveal the page (source showPage), verify the PSX bubble's corner sprite, panel,
-    /// arrow and name window with real framebuffer pixels and its position at the actor, advance
-    /// page by page, close, resume locomotion, verify the held-Cross anti-reopen, and verify the
-    /// effect-not-applied signal on an effect actor. Uses the test driver's direct reposition.
-    /// </summary>
-    private async void RunDialogueProbe()
-    {
-        try
-        {
-            var dialogue = _dialogueData ?? throw new InvalidOperationException("dialogue data unavailable");
-            if (!dialogue.Zones.TryGetValue("S200", out var zone))
-                throw new InvalidOperationException("S200 has no dialogue zone");
-            var simpleActor = zone.Actors.FirstOrDefault(actor =>
-                HasMultiPageTalk(dialogue, zone, actor)
-                && HasNonPlayerSpeakerName(dialogue, zone, actor)
-                && FindDialogueActorAt(zone, new NumericsVector2(actor.X, actor.Y))?.Id == actor.Id)
-                ?? throw new InvalidOperationException("S200 has no reachable named multi-page selected talk");
-            var effectActor = zone.Actors.FirstOrDefault(actor => actor.Talks.Any(talk => talk.Selected && talk.Kind == "effect"))
-                ?? throw new InvalidOperationException("S200 has no effect actor");
-            var generatedRoot = _options.ReferenceDir ?? _dataRoot;
-            var captureRoot = ProbeOutputRoot(generatedRoot);
-
-            // --- simple conversation: open, reveal, render the bubble, advance, close, resume ---
-            var (startPos, startFacing) = FaceActor(simpleActor);
-            _state.Position = startPos;
-            _state.SetFacing(startFacing);
-            _input.State.ReleaseAction();
-            Renderer.Present(_state, CurrentZone, f3On: false);
-            DialogueRenderer.Present(null);
-            await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
-            var before = GetViewport().GetTexture().GetImage();
-            Require(before.SavePng(Path.Combine(captureRoot, "dialogue-before.png")) == Error.Ok, "dialogue before capture failed");
-
-            _input.State.PressAction();
-            TickTestSimulation(); // Cross edge -> TryStartDialogue -> Start
-            Require(_dialogue.IsActive, "Cross did not start the simple conversation");
-            _input.State.ReleaseAction();
-            TickTestSimulation(); // Opening -> Open (typewriter starts, reveal=0)
-            Require(_dialogue.State == DialogueState.Open, $"dialogue did not reach Open state={_dialogue.State}");
-            Require(_dialogue.PageCount >= 2, $"simple talk has too few pages to advance pages={_dialogue.PageCount}");
-            Require(_dialogue.SpeakerName.Count > 0 && !_dialogue.SpeakerIsPlayer, "named talk lost its speaker name");
-
-            // Reveal the page fully (source showPage) so the whole bubble is verifiable.
-            _input.State.PressAction();
-            TickTestSimulation();
-            _input.State.ReleaseAction();
-            TickTestSimulation();
-            Require(_dialogue.RevealComplete, "Cross did not reveal the page (showPage)");
-
-            DialogueRenderer.SetProbeArrowBrightness(0);
-            Renderer.Present(_state, CurrentZone, f3On: false);
-            DialogueRenderer.Present(BuildDialogueView());
-            await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
-            var openCapture = GetViewport().GetTexture().GetImage();
-            Require(openCapture.SavePng(Path.Combine(captureRoot, "dialogue-open.png")) == Error.Ok, "dialogue open capture failed");
-
-            Require(DialogueRenderer.HasFramePixels, "bubble laid out no frame sprites");
-            Require(DialogueRenderer.HasNamePixels, "bubble laid out no name glyphs");
-            Require(DialogueRenderer.HasArrowPixels, "bubble laid out no arrow");
-            Require(DialogueRenderer.HasGlyphPixels, "bubble laid out no text glyphs");
-            AssertDialogueBubble(before, openCapture, simpleActor);
-            QuietLog.Info($"dialogue render PASS zone=S200 actor={simpleActor.Id} type={DialogueRenderer.BoxType} glyphs={DialogueRenderer.GlyphCount} icons={DialogueRenderer.IconCount} name={DialogueRenderer.NameGlyphCount} rect={DialogueRenderer.BoxScreenRect}");
-
-            // Advance page by page (reveal each, then Cross) until the last page closes.
-            var pages = 0;
-            var pageCount = _dialogue.PageCount;
-            while (_dialogue.IsActive)
-            {
-                if (AdvanceDialogueOnePage()) pages++;
-            }
-            Require(!_dialogue.IsActive && _dialogue.State == DialogueState.Idle, "dialogue did not close to Idle after the last page");
-            Require(pages == pageCount - 1, $"dialogue advanced {pages} pages instead of {pageCount - 1}");
-            QuietLog.Info($"dialogue advance PASS zone=S200 actor={simpleActor.Id} pages={pageCount} advances={pages}");
-
-            // Resume: reposition to the known-walkable spawn and drive held input, proving the
-            // conversation released locomotion (the source spawn right-step is the M1 route).
-            _state.Position = new NumericsVector2(1000, 236);
-            _state.SetFacing(1);
-            ApplyScene(GetOrLoadZone("S200"));
-            var resumeStart = _state.Position;
-            SetTestHeldDirection(SemanticDirection.Right);
-            var moved = false;
-            for (var tick = 0; tick < 12 && !moved; tick++)
-            {
-                SimulateStep(_ => { });
-                if (_state.Position != resumeStart) moved = true;
-            }
-            SetTestHeldDirection(SemanticDirection.None);
-            Require(moved, "locomotion did not resume after the conversation");
-            QuietLog.Info($"dialogue resume PASS zone=S200 actor={simpleActor.Id} moved={moved}");
-
-            // --- anti-reopen: a held Cross through the close rearms, never reopens ---
-            var (againPos, againFacing) = FaceActor(simpleActor);
-            _state.Position = againPos;
-            _state.SetFacing(againFacing);
-            _input.State.ReleaseAction();
-            _input.State.PressAction();
-            TickTestSimulation();
-            _input.State.ReleaseAction();
-            TickTestSimulation(); // Opening -> Open
-            for (var p = 0; p < _dialogue.PageCount - 1; p++)
-                AdvanceDialogueOnePage();
-            if (!_dialogue.RevealComplete)
-            {
-                _input.State.PressAction();
-                TickTestSimulation();
-                _input.State.ReleaseAction();
-                TickTestSimulation();
-            }
-            Require(_dialogue.State == DialogueState.Open && _dialogue.RevealComplete && _dialogue.PageIndex == _dialogue.PageCount - 1,
-                "anti-reopen setup did not reach the revealed last page");
-            _input.State.PressAction(); // hold Cross through the close
-            TickTestSimulation();       // Open -> Closing
-            TickTestSimulation();       // Closing -> Rearm
-            TickTestSimulation();       // Rearm, ActionHeld -> stays Rearm (no reopen)
-            Require(_dialogue.State == DialogueState.Rearm, "held Cross reopened the dialogue instead of rearming");
-            _input.State.ReleaseAction();
-            TickTestSimulation(); // Rearm -> Idle
-            Require(_dialogue.State == DialogueState.Idle, "dialogue did not rearm after the action release");
-            QuietLog.Info($"dialogue rearm PASS zone=S200 actor={simpleActor.Id} held-cross-rearmed=true");
-
-            // --- effect: closing an effect talk signals it once and applies nothing ---
-            var (effectPos, effectFacing) = FaceActor(effectActor);
-            _state.Position = effectPos;
-            _state.SetFacing(effectFacing);
-            _input.State.ReleaseAction();
-            _input.State.PressAction();
-            TickTestSimulation();
-            Require(_dialogue.IsActive, "Cross did not start the effect conversation");
-            _input.State.ReleaseAction();
-            TickTestSimulation(); // Opening -> Open
-            var progressBefore = _state.Progress;
-            var guard = 0;
-            while (_dialogue.IsActive && guard++ < 64)
-                AdvanceDialogueOnePage();
-            Require(!_dialogue.IsActive, "effect conversation did not close");
-            Require(_log.Warned($"dialogue-effect-not-applied:{CurrentZone.Zone.Id}:{effectActor.Id}"),
-                "effect conversation did not signal dialogue-effect-not-applied");
-            Require(_state.Progress == progressBefore, "effect conversation changed story progress");
-            var talk = _dialogue.Talk ?? throw new InvalidOperationException("effect conversation did not retain its talk data");
-            QuietLog.Info($"dialogue effect PASS zone=S200 actor={effectActor.Id} families=[{string.Join(",", talk.Families)}] progress_unchanged=true");
-
-            Require(!_input.F3On, "dialogue probe enabled F3");
-            QuietLog.Info($"dialogue probe PASS zone=S200 simple_actor={simpleActor.Id} effect_actor={effectActor.Id} pages={pageCount} capture={captureRoot}/dialogue-open.png");
-            GetTree().Quit(0);
-        }
-        catch (Exception error)
-        {
-            GD.PushError($"DIALOGUE_PROBE_FAIL: {error.Message}");
-            GetTree().Quit(3);
-        }
-    }
-
-    /// <summary>Reveals the current page (source showPage) if needed, then presses Cross to advance
-    /// to the next page (or close on the last). Returns true when a page was advanced past.</summary>
-    private bool AdvanceDialogueOnePage()
-    {
-        if (!_dialogue.RevealComplete)
-        {
-            _input.State.PressAction();
-            TickTestSimulation();
-            _input.State.ReleaseAction();
-            TickTestSimulation();
-        }
-        _input.State.PressAction();
-        TickTestSimulation(); // Open -> Advance or Closing
-        var advanced = _dialogue.State == DialogueState.Advance;
-        _input.State.ReleaseAction();
-        TickTestSimulation(); // Advance -> Open, or Closing -> Rearm
-        if (_dialogue.State == DialogueState.Rearm) TickTestSimulation(); // Rearm -> Idle
-        return advanced;
-    }
-
-    /// <summary>True when the actor's selected talk starts with a real speaker name (control 7
-    /// pair), not the player's own name (a lone control 9).</summary>
-    private static bool HasNonPlayerSpeakerName(DialogueData dialogue, ZoneDialogue zone, DialogueActor actor)
-    {
-        var talk = actor.Talks.FirstOrDefault(candidate => candidate.Selected);
-        if (talk is null || !dialogue.Texts.TryGetValue(zone.TalkFile, out var entries)) return false;
-        if (talk.Entry < 0 || talk.Entry >= entries.Count) return false;
-        var entry = entries[talk.Entry];
-        var first = -1;
-        var second = -1;
-        for (var index = 0; index < entry.Count; index++)
-        {
-            if (entry[index].IsControl && entry[index].Command == 7)
-            {
-                if (first < 0) first = index;
-                else { second = index; break; }
-            }
-        }
-        if (first < 0 || second < 0) return false;
-        var nameCount = second - first - 1;
-        if (nameCount == 0) return false;
-        return !(nameCount == 1 && entry[first + 1].IsControl && entry[first + 1].Command == 9);
-    }
-
-    private static SemanticDirection DirectionToward(NumericsVector2 from, NumericsVector2 to)
-    {
-        var horizontal = to.X - from.X;
-        var vertical = to.Y - from.Y;
-        var left = horizontal < -0.5f;
-        var right = horizontal > 0.5f;
-        var up = vertical < -0.5f;
-        var down = vertical > 0.5f;
-        return InputState.DirectionFrom(up, down, left, right);
     }
 
     private void SetTestHeldDirection(SemanticDirection direction)
@@ -1961,153 +1442,6 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
     #endregion
 
     #region Scene transitions and cache contracts
-
-    private async void RunCanalWaterProbe()
-    {
-        try
-        {
-            // Named water region: S200 canal north bank near StageTile object 37.
-            // Source binding: depth-11 (background) stream tile of S200PACK.BIN at world (1117,352).
-            // PS1 the field-layer record contract i==2 applies FIELDSTG_state.spriteColor (stageColor 0x54,0x67,0x96)
-            // to the depth-11 layer unconditionally.  Grey tile ~(106,106,106) after modulation:
-            //   R=106*(84/128)≈70  G=106*(103/128)≈85  B=106*(150/128)≈124  → blue-dominant.
-            // StageTile object 37 (cycle=1 depth=6 abr=3, STP≈(230,238,246)) adds ~(57,59,61)
-            // via quarter-additive → composite ~(127,144,185).  Clearly blue, not grey/black.
-            const int CanalWorldX = 1117, CanalWorldY = 352;
-
-            // Walk from spawn (1000,236) south to (1000,280): walkable, positions camera so
-            // canal world (1117,352) is in the lower-right quadrant of the viewport.
-            var target = new NumericsVector2(1000, 280);
-            _input.Handle(new InputEventKey { Keycode = Key.Shift, Pressed = true });
-            for (var tick = 0; tick < 600; tick++)
-            {
-                if (NumericsVector2.Distance(_state.Position, target) < 2f) break;
-                var moved = false;
-                foreach (var direction in ProbeSteering.DirectionsToward(_state.Position, target))
-                {
-                    if (TryTestMove(direction)) { moved = true; break; }
-                }
-                if (!moved) break;
-            }
-            _input.Handle(new InputEventKey { Keycode = Key.Shift, Pressed = false });
-            SetTestHeldDirection(SemanticDirection.None);
-
-            Require(_state.ZoneId == "S200", $"canal probe left S200 at {_state.Position}");
-
-            // Advance 7 source ticks so the water shimmer animation is running.
-            for (var tick = 0; tick < 9; tick++) SimulateStep(_ => { });
-
-            Renderer.Present(_state, CurrentZone, f3On: false);
-            await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
-
-            var generatedRoot = _options.ReferenceDir ?? _dataRoot;
-            var captureRoot = ProbeOutputRoot(generatedRoot);
-            var capture = GetViewport().GetTexture().GetImage();
-            Require(capture.SavePng(Path.Combine(captureRoot, "canal-water-s200.png")) == Error.Ok, "canal water capture write failed");
-
-            // Map known canal world coord to screen pixel using the source camera formula.
-            var camera = CameraController.PositionFor(CurrentZone.Zone.Width, CurrentZone.Zone.Height,
-                new Vector2(_state.Position.X, _state.Position.Y));
-            var screenX = Mathf.RoundToInt((CanalWorldX - camera.X) * 3f + 640f);
-            var screenY = Mathf.RoundToInt((CanalWorldY - camera.Y) * 3f + 360f);
-
-            Require(screenX >= 0 && screenX < 1280 && screenY >= 0 && screenY < 720,
-                $"canal coord ({CanalWorldX},{CanalWorldY}) maps to screen ({screenX},{screenY}) outside viewport — " +
-                $"player=({_state.Position.X:0},{_state.Position.Y:0}) camera=({camera.X:0},{camera.Y:0})");
-
-            // Sample a 3×3 area of source pixels (each 3× on screen) around the canal coord.
-            // Assertion: majority of sampled pixels are blue-dominant (B > R+25 AND B > G+15).
-            // This fails before the stageColor fix (grey≈106,106,106) and passes after (≈70,85,124).
-            var blueCount = 0;
-            var sampleCount = 0;
-            for (var dy = -1; dy <= 1; dy++)
-                for (var dx = -1; dx <= 1; dx++)
-                {
-                    var px = screenX + dx * 3;
-                    var py = screenY + dy * 3;
-                    if (px < 0 || px >= 1280 || py < 0 || py >= 720) continue;
-                    var pixel = capture.GetPixel(px, py);
-                    sampleCount++;
-                    if (pixel.B8 > pixel.R8 + 25 && pixel.B8 > pixel.G8 + 15) blueCount++;
-                }
-            Require(sampleCount > 0, $"canal region at screen ({screenX},{screenY}) yielded no valid pixels");
-            Require(blueCount * 2 >= sampleCount,
-                $"canal water not blue: blueCount={blueCount}/{sampleCount} at screen ({screenX},{screenY}) — " +
-                $"player=({_state.Position.X:0},{_state.Position.Y:0}) camera=({camera.X:0},{camera.Y:0})");
-
-            // Second capture after shimmer advance: time-separated animation evidence.
-            for (var tick = 0; tick < 9; tick++) SimulateStep(_ => { });
-            Renderer.Present(_state, CurrentZone, f3On: false);
-            await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
-            var capture2 = GetViewport().GetTexture().GetImage();
-            Require(capture2.SavePng(Path.Combine(captureRoot, "canal-water-s200-after.png")) == Error.Ok, "canal water after-capture write failed");
-
-            QuietLog.Info($"canal water PASS zone=S200 named_region=canal_north_bank " +
-                $"world=({CanalWorldX},{CanalWorldY}) screen=({screenX},{screenY}) " +
-                $"blue_dominant={blueCount}/{sampleCount} " +
-                $"player=({_state.Position.X:0},{_state.Position.Y:0}) " +
-                $"source=S200PACK-depth11-stageColor-0x54_0x67_0x96 " +
-                $"captures={captureRoot}/canal-water-s200[-after].png");
-            // Force GC before quit to avoid Mono finalization racing the engine shutdown.
-            capture = null!; capture2 = null!;
-            GC.Collect(); GC.WaitForPendingFinalizers();
-            GetTree().Quit(0);
-        }
-        catch (Exception error)
-        {
-            GD.PushError($"CANAL_WATER_PROBE_FAIL: {error.Message}");
-            GetTree().Quit(3);
-        }
-    }
-
-    private async void RunWarpProbe()
-    {
-        try
-        {
-            RunWarpEdge("S200", 4, 3, "s200-to-s235");
-            Require(_state.ZoneId == "S235" && _state.Position == new NumericsVector2(278, 218) && _state.Facing == 3, "S200 manifest arrival mismatch");
-            await CaptureWarp("warp-s235-entry.png");
-            RunWarpEdge("S235", 1, 7, "s235-to-s200");
-            Require(_state.ZoneId == "S200" && _state.Position == new NumericsVector2(672, 378) && _state.Facing == 7, "S235 manifest arrival mismatch");
-            RunWarpEdge("S200", 4, 3, "s200-to-s235-reentry");
-            Require(_state.ZoneId == "S235" && _warp.CommitCount == 3, "re-entry did not commit exactly once per edge");
-            await CaptureWarp("warp-s235-reentry.png");
-            QuietLog.Info($"warp probe PASS commits={_warp.CommitCount} zone={_state.ZoneId} state={_warp.State}");
-            GetTree().Quit(0);
-        }
-        catch (Exception error)
-        {
-            GD.PushError($"WARP_PROBE_FAIL: {error.Message}");
-            GetTree().Quit(3);
-        }
-    }
-
-    private void RunWarpEdge(string sourceZone, int slot, int facing, string label)
-    {
-        var current = _currentZone ?? throw new InvalidOperationException("probe has no current zone");
-        Require(current.Zone.Id == sourceZone, $"probe expected source={sourceZone}");
-        _state.Position = TriggerSlotLocator.FindCell(current, slot);
-        _state.SetFacing(facing);
-        _input.State.ReleaseAction();
-        _warp.Tick(_state, _input.State, _currentZone, new WarpCallbacks(ResolveTarget, ApplyScene, QuietLog.Info, _log.Warn, StartClimb, StartDrop));
-        Require(_warp.State == WarpState.Offer, $"{label} did not offer");
-        _input.State.PressAction();
-        for (var tick = 0; tick < 12 && _warp.State != WarpState.Rearm; tick++)
-            _warp.Tick(_state, _input.State, CurrentZone, new WarpCallbacks(ResolveTarget, ApplyScene, QuietLog.Info, _log.Warn, StartClimb, StartDrop));
-        Require(_warp.State == WarpState.Rearm, $"{label} did not reach rearm");
-        _input.State.ReleaseAction();
-        _warp.Tick(_state, _input.State, CurrentZone, new WarpCallbacks(ResolveTarget, ApplyScene, QuietLog.Info, _log.Warn, StartClimb, StartDrop));
-        Require(_warp.State == WarpState.Idle, $"{label} did not rearm after release");
-    }
-
-    private async System.Threading.Tasks.Task CaptureWarp(string fileName)
-    {
-        await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
-        var captureRoot = ProbeOutputRoot(_dataRoot);
-        var capturePath = Path.Combine(captureRoot, fileName);
-        Require(GetViewport().GetTexture().GetImage().SavePng(capturePath) == Error.Ok, $"warp capture failed={capturePath}");
-        QuietLog.Info($"warp capture={capturePath}");
-    }
 
     /// <summary>Returns a zone from the session cache, building it on first use.</summary>
     /// <param name="zoneId">Normalized zone id (<c>Snnn</c>).</param>
@@ -2165,189 +1499,6 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
     }
 
     private static void Require(bool condition, string message) => ProbeRequirement.Require(condition, message);
-
-    #endregion
-
-    #region Icon and storage diagnostic probes
-
-    private sealed record IconPixelCount(int Matched, int Red, int Blue);
-
-    /// <summary>
-    /// M5 connection-indicator probe: the decoded red+blue icon renders above the player
-    /// (never a fabricated frame), glides after the player instead of teleporting, settles
-    /// back onto the player once movement stops, and its substate-0 animation advances
-    /// (two distinct decoded frames observed). Uses the shared SimulateStep path.
-    /// </summary>
-    private async void RunIconProbe()
-    {
-        try
-        {
-            if (_iconData is null) throw new InvalidOperationException("icon data unavailable");
-            var generatedRoot = _options.ReferenceDir ?? _dataRoot;
-            var captureRoot = ProbeOutputRoot(generatedRoot);
-
-            Require(_state.ZoneId == "S200" && _state.Position == new NumericsVector2(1000, 236),
-                "icon probe must begin at the source S200 spawn");
-            var startFrame = _icon.View;
-            Require(_iconData.Frames.ContainsKey(startFrame.Frame), $"icon view frame 0x{startFrame.Frame:X} is not a decoded frame");
-
-            var imageA = await CaptureIconFrame(captureRoot, "icon-a.png");
-            var countA = CountIconPixels(imageA, _iconData.Frames[startFrame.Frame], startFrame.Position);
-            Require(countA.Matched > 0, "no decoded icon pixel rendered above the player");
-            Require(countA.Red > 0 && countA.Blue > 0,
-                $"icon frame 0x{startFrame.Frame:X} did not render red+blue pixels above the player red={countA.Red} blue={countA.Blue}");
-
-            // Move right several fixed steps: the icon glides toward the player (exponential
-            // follow) rather than teleporting, so it trails behind while the player is in motion.
-            var origin = _state.Position;
-            SetTestHeldDirection(SemanticDirection.Right);
-            for (var tick = 0; tick < 6; tick++) TickTestSimulation();
-            SetTestHeldDirection(SemanticDirection.None);
-            var playerDx = _state.Position.X - origin.X;
-            var iconDx = _icon.View.Position.X - origin.X;
-            Require(playerDx > 0, "player did not move right");
-            Require(iconDx > 0 && iconDx < playerDx,
-                $"icon did not trail the player smoothly icon_dx={iconDx:0.###} player_dx={playerDx:0.###}");
-
-            // Once movement stops the icon settles back onto the player (exponential catch-up).
-            var settled = false;
-            for (var tick = 0; tick < 120 && !settled; tick++)
-            {
-                TickTestSimulation();
-                settled = NumericsVector2.Distance(_icon.View.Position, _state.Position) < 0.5f;
-            }
-            Require(settled, "icon did not settle onto the player after movement stopped");
-
-            // The substate-0 animation advances: at least two distinct decoded frames observed.
-            var observed = new HashSet<int> { startFrame.Frame };
-            for (var tick = 0; tick < 60 && observed.Count < 2; tick++)
-            {
-                TickTestSimulation();
-                observed.Add(_icon.View.Frame);
-            }
-            Require(observed.Count >= 2,
-                $"icon animation did not advance observed_frames={string.Join(",", observed.OrderBy(frame => frame).Select(frame => $"0x{frame:X}"))}");
-
-            var imageB = await CaptureIconFrame(captureRoot, "icon-b.png");
-            var countB = CountIconPixels(imageB, _iconData.Frames[_icon.View.Frame], _icon.View.Position);
-            Require(countB.Red > 0 && countB.Blue > 0,
-                $"settled icon frame 0x{_icon.View.Frame:X} did not render red+blue pixels red={countB.Red} blue={countB.Blue}");
-
-            QuietLog.Info($"icon probe PASS frame_a=0x{startFrame.Frame:X} red={countA.Red} blue={countA.Blue} player_dx={playerDx:0.###} icon_dx={iconDx:0.###} settled={settled} frames={string.Join(",", observed.OrderBy(frame => frame).Select(frame => $"0x{frame:X}"))} captures={captureRoot}/icon-[a|b].png");
-            GetTree().Quit(0);
-        }
-        catch (Exception error)
-        {
-            GD.PushError($"ICON_PROBE_FAIL: {error.Message}");
-            GetTree().Quit(3);
-        }
-    }
-
-    private async System.Threading.Tasks.Task<Image> CaptureIconFrame(string captureRoot, string fileName)
-    {
-        Renderer.Present(_state, CurrentZone, f3On: false, iconView: _icon.View);
-        await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
-        var image = GetViewport().GetTexture().GetImage();
-        var path = Path.Combine(captureRoot, fileName);
-        Require(image.SavePng(path) == Error.Ok, $"icon capture write failed={path}");
-        return image;
-    }
-
-    private IconPixelCount CountIconPixels(Image capture, PlayerIconFrame frame, NumericsVector2 iconAnchor)
-    {
-        var source = Image.LoadFromFile(frame.Path);
-        if (source is null || source.IsEmpty()) throw new InvalidOperationException($"icon frame image unreadable: {frame.Path}");
-        var camera = CameraController.PositionFor(CurrentZone.Zone.Width, CurrentZone.Zone.Height, new Vector2(_state.Position.X, _state.Position.Y));
-        var left = Mathf.RoundToInt((iconAnchor.X + frame.OffsetX - camera.X) * 3f + 640f);
-        var top = Mathf.RoundToInt((iconAnchor.Y + frame.OffsetY - camera.Y) * 3f + 360f);
-        var matched = 0;
-        var red = 0;
-        var blue = 0;
-        for (var y = 0; y < source.GetHeight(); y++)
-            for (var x = 0; x < source.GetWidth(); x++)
-            {
-                var expected = source.GetPixel(x, y);
-                if (expected.A < 0.99f) continue;
-                var screenX = left + x * 3 + 1;
-                var screenY = top + y * 3 + 1;
-                if (screenX < 0 || screenY < 0 || screenX >= capture.GetWidth() || screenY >= capture.GetHeight()) continue;
-                var actual = capture.GetPixel(screenX, screenY);
-                if (!ProbePixels.SameRgb(actual, expected)) continue;
-                matched++;
-                if (expected.R8 > 150 && expected.G8 < 120 && expected.B8 < 120) red++;
-                else if (expected.B8 > 150 && expected.R8 < 120) blue++;
-            }
-        return new IconPixelCount(matched, red, blue);
-    }
-
-    /// <summary>
-    /// Probe activated by <c>DW3_SQLITE_PROBE=1</c>.  Creates a temporary database,
-    /// writes one row, reads it back, logs the result, and exits.  Proves that the
-    /// SQLite native library (e_sqlite3) loads and operates correctly inside the
-    /// exported Godot binary, with no disc or cache data required.
-    /// </summary>
-    private void RunSqliteProbe()
-    {
-        var dbPath = Path.Combine(Path.GetTempPath(), $"dw3_sqlite_probe_{Guid.NewGuid():N}.db");
-        try
-        {
-            const string probeValue = "sqlite-probe-ok";
-
-            using (var conn = new SqliteConnection($"Data Source={dbPath}"))
-            {
-                conn.Open();
-                using var create = conn.CreateCommand();
-                create.CommandText = "CREATE TABLE probe (key TEXT PRIMARY KEY, value TEXT NOT NULL)";
-                create.ExecuteNonQuery();
-
-                using var insert = conn.CreateCommand();
-                insert.CommandText = "INSERT INTO probe (key, value) VALUES ('run', @v)";
-                insert.Parameters.AddWithValue("@v", probeValue);
-                insert.ExecuteNonQuery();
-            }
-
-            string readBack;
-            using (var conn = new SqliteConnection($"Data Source={dbPath}"))
-            {
-                conn.Open();
-                using var select = conn.CreateCommand();
-                select.CommandText = "SELECT value FROM probe WHERE key = 'run'";
-                readBack = (string)(select.ExecuteScalar() ?? throw new InvalidOperationException("probe row not found"));
-            }
-
-            if (readBack != probeValue)
-                throw new InvalidOperationException($"sqlite probe mismatch: expected={probeValue} actual={readBack}");
-
-            QuietLog.Info($"sqlite probe PASS value={readBack}");
-            GetTree().Quit(0);
-        }
-        catch (Exception ex)
-        {
-            GD.PushError($"sqlite probe FAIL: {ex.Message}");
-            GetTree().Quit(3);
-        }
-        finally
-        {
-            try { if (File.Exists(dbPath)) File.Delete(dbPath); } catch { /* best-effort cleanup */ }
-        }
-    }
-
-    private async void CaptureSpawn()
-    {
-        await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
-        var generatedRoot = _options.ReferenceDir ?? _dataRoot;
-        var captureRoot = ProbeOutputRoot(generatedRoot);
-        var capturePath = Path.Combine(captureRoot, "s200-spawn.png");
-        var status = GetViewport().GetTexture().GetImage().SavePng(capturePath);
-        if (status != Error.Ok)
-        {
-            GD.PushError($"CACHE_RESOURCE_UNAVAILABLE: capture write failed: {capturePath} ({status})");
-            GetTree().Quit(3);
-            return;
-        }
-        QuietLog.Info($"capture={capturePath}");
-        if (_options.CaptureAndQuit) GetTree().Quit(0);
-    }
 
     #endregion
 }

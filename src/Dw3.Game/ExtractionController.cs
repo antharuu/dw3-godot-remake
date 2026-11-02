@@ -3,51 +3,6 @@ using System.Text.Json;
 namespace Dw3Production;
 
 /// <summary>
-/// Execution states of the first-launch extraction flow.
-/// </summary>
-public enum ExtractionState
-{
-    /// <summary>Extraction has not been started.</summary>
-    Idle,
-    /// <summary>The extractor child process is running.</summary>
-    Extracting,
-    /// <summary>The extractor reported success and the pack is ready.</summary>
-    Complete,
-    /// <summary>The extractor reported a failure or exited with a non-zero code.</summary>
-    Error,
-}
-
-/// <summary>
-/// Abstracts a running extractor child process for testability.
-/// The game process reads the extractor's stdout but never opens disc files itself.
-/// </summary>
-public interface IExtractorProcess : IDisposable
-{
-    /// <summary>
-    /// Returns the next line from the extractor's standard output, or null at EOF.
-    /// Blocking call — runs on the extraction background thread.
-    /// </summary>
-    string? ReadLine();
-
-    /// <summary>
-    /// Blocks until the process exits and returns its exit code.
-    /// </summary>
-    int WaitForExit();
-}
-
-/// <summary>
-/// Launches an extractor child process given a disc path and output directory.
-/// </summary>
-public interface IExtractorLauncher
-{
-    /// <summary>
-    /// Starts the extractor for <paramref name="discPath"/> writing output to
-    /// <paramref name="outputDirectory"/>. The caller owns and must dispose the returned process.
-    /// </summary>
-    IExtractorProcess Launch(string discPath, string outputDirectory);
-}
-
-/// <summary>
 /// Pure C# state machine that drives the first-launch extraction flow.
 /// Parses JSONL progress lines produced by the extractor and fires events that the
 /// Godot-side <c>FirstLaunchScreen</c> marshals back to the main thread.
