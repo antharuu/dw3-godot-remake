@@ -17,6 +17,8 @@ internal static class BattleProbeCatalog
         "RunBattlePlayProbe" => new BattlePlayProbe(host),
         "RunBattleReportProbe" => new BattleReportProbe(host),
         "RunBattleKotemonLightProbe" => new BattleKotemonLightProbe(host),
+        "RunBattleHudProbe" => new BattleHudProbe(host),
+        "RunBattleInputProbe" => new BattleInputProbe(host),
         _ => null,
     };
 }

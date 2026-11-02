@@ -35,6 +35,18 @@ internal interface IBattleProbeHost
     /// <summary>Gets the decoded dialogue font used by battle text, or null before startup completes.</summary>
     DialogueData? Dialogue { get; }
 
+    /// <summary>Gets the decoded fighter manifest, or null before startup completes.</summary>
+    FighterData? FighterData { get; }
+
+    /// <summary>Gets the decoded technique manifest, or null before startup completes.</summary>
+    TechniqueData? TechData { get; }
+
+    /// <summary>Gets the resolved display name for a fighter.</summary>
+    /// <param name="fighterId">Source fighter id.</param>
+    /// <returns>The decoded display text.</returns>
+    BattleTextLine NameLine(int fighterId);
+
+
     /// <summary>Gets a value indicating whether encounter data was loaded at startup.</summary>
     bool HasEncounterData { get; }
 

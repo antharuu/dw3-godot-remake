@@ -32,6 +32,15 @@ public partial class GameHost : IBattleProbeHost
     DialogueData? IBattleProbeHost.Dialogue => _dialogueData;
 
     /// <inheritdoc/>
+    FighterData? IBattleProbeHost.FighterData => _fighterData;
+
+    /// <inheritdoc/>
+    TechniqueData? IBattleProbeHost.TechData => _techData;
+
+    /// <inheritdoc/>
+    BattleTextLine IBattleProbeHost.NameLine(int fighterId) => NameLine(fighterId);
+
+    /// <inheritdoc/>
     bool IBattleProbeHost.HasEncounterData => _encounterData is not null;
 
     /// <inheritdoc/>
