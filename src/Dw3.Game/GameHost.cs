@@ -31,7 +31,7 @@ namespace Dw3Production;
 /// lives behind <see cref="IDiagnosticProbeHost"/> in the Diagnostics folder, and the large probe
 /// implementations are split into diagnostic partial files so the normal runtime loop stays legible.
 /// </remarks>
-public partial class GameHost : Node2D, IDiagnosticProbeHost
+public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverHost, IFieldTickHost, IBattleTickHost
 {
 
     #region Composition state
@@ -90,7 +90,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
     private FightReportController? _fightReportController;
     private FightReportInput? _fightReportInput;
     private int _battleReportFadeTicks;
-    private int _battleStepCounter;
+    private readonly FieldEncounterStepper _encounterStepper = new();
     private int _lastBattleEncounter = -1;
     private int[] _lastBattleEnemyIds = [];
     private IReadOnlyDictionary<int, int> _battleNameIds = new Dictionary<int, int>();
@@ -491,69 +491,80 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
     /// movement, warp and action processing, diagnostic edges, animation presentation timing, then
     /// encounter selection. Presentation receives the completed state only after this method returns.
     /// </summary>
-    private void SimulateStep(Action<MovementResult> onMovementRejection)
+    private void SimulateStep(Action<MovementResult> onMovementRejection) =>
+        new FieldTickCoordinator(this).Tick(onMovementRejection);
+
+    bool IFieldTickHost.IsInTitle => _inTitle;
+
+    bool IFieldTickHost.HasField => _floor is not null && _currentZone is not null;
+
+    bool IFieldTickHost.HasActiveBattle => _activeBattle is not null;
+
+    bool IFieldTickHost.HasActiveDialogue => _dialogue.IsActive;
+
+    bool IFieldTickHost.HasActiveTraversal => _climb.IsActive || _drop.IsActive;
+
+    void IFieldTickHost.TickBattleMode()
     {
-        if (_inTitle) return;  // the title screen is a terminal modal state: no field simulation
-        if (_floor is null || _currentZone is null) throw new InvalidOperationException("simulation field unavailable");
-        if (_activeBattle is not null)
+        TickBattle();
+        _ = _input.State.ConsumeF3Toggled();
+    }
+
+    void IFieldTickHost.TickDialogueMode() => _dialogue.Tick(_input.State, QuietLog.Info, _log.Warn);
+
+    void IFieldTickHost.TickTraversalMode()
+    {
+        if (_climb.IsActive)
         {
-            // The real battle loop: the menu consumes Up/Down/Cross/Circle, each command
-            // resolves a turn, and a terminal outcome ends the battle and returns to the
-            // field. Locomotion, warps, dialogue and climb/drop are all suspended.
-            TickBattle();
-            _ = _input.State.ConsumeF3Toggled();
-            return;
-        }
-        if (_dialogue.IsActive)
-        {
-            // A conversation is a modal simulation state: locomotion, warp offers and
-            // climb/drop are all suspended while it runs (the source's acting flag). The
-            // dialogue machine consumes its own Cross edges and rearms on release, so the
-            // same press that closes it can never immediately reopen it.
-            _dialogue.Tick(_input.State, QuietLog.Info, _log.Warn);
-        }
-        else if (_climb.IsActive || _drop.IsActive)
-        {
-            // Climb/drop actions are distinct simulation states: locomotion and trigger offers
-            // are suspended until the action restores control.
-            if (_climb.IsActive) _climb.Tick(_state, _input.State);
-            else _drop.Tick(_state, _input.State);
-            // When a reversal lands back on the slot's own foot, the actor can finish
-            // inside the wall's collision circle (the foot cell itself is open, but the
-            // circle overlaps the wall one row above). Nudge it back to the nearest free
-            // cell so the player is never stuck at the climb exit.
-            if (!_climb.IsActive && !_drop.IsActive) DepenetrateFromWall();
+            _climb.Tick(_state, _input.State);
         }
         else
         {
-            if (!_warp.InputLocked)
-            {
-                // Dialogue starts from a fresh Cross edge while the warp is Idle (source:
-                // Cross while walking -> talkToActorAt; the warp's commit is only reached from
-                // Offer). When a talk starts, locomotion is skipped this tick so the same Cross
-                // never both talks and moves the player.
-                if (_warp.State == WarpState.Idle && _input.State.ConsumeActionPressed() && TryStartDialogue())
-                {
-                    // talk started; no locomotion this tick
-                }
-                else
-                {
-                    // Original pad movement defaults to ACTOR_RUN. Shift is only the explicit
-                    // local walk modifier and focus loss clears it through InputAdapter.
-                    _state.IsRunning = !_input.State.WalkHeld;
-                    var movement = Locomotion.Tick(_state, _input.State.Direction, _floor, _occupants);
-                    if (movement.Rejection is not null) onMovementRejection(movement);
-                    else if (movement.Moved) CountEncounterStep();
-                }
-            }
-            // The warp state machine runs every step while not climbing, including its
-            // input-locked LockInput→Commit→Rearm transitions (only locomotion is gated).
-            _warp.Tick(_state, _input.State, _currentZone, new WarpCallbacks(ResolveTarget, ApplyScene, QuietLog.Info, _log.Warn, StartClimb, StartDrop));
+            _drop.Tick(_state, _input.State);
         }
+
+        if (!_climb.IsActive && !_drop.IsActive)
+        {
+            DepenetrateFromWall();
+        }
+    }
+
+    void IFieldTickHost.TickLocomotionMode(Action<MovementResult> onMovementRejection)
+    {
+        if (_warp.InputLocked)
+        {
+            return;
+        }
+
+        if (_warp.State == WarpState.Idle && _input.State.ConsumeActionPressed() && TryStartDialogue())
+        {
+            return;
+        }
+
+        _state.IsRunning = !_input.State.WalkHeld;
+        MovementResult movement = Locomotion.Tick(_state, _input.State.Direction, Floor, _occupants);
+        if (movement.Rejection is not null)
+        {
+            onMovementRejection(movement);
+        }
+        else if (movement.Moved)
+        {
+            CountEncounterStep();
+        }
+    }
+
+    void IFieldTickHost.TickWarp() => _warp.Tick(
+        _state,
+        _input.State,
+        CurrentZone,
+        new WarpCallbacks(ResolveTarget, ApplyScene, QuietLog.Info, _log.Warn, StartClimb, StartDrop));
+
+    void IFieldTickHost.AdvanceFieldPresentation()
+    {
         _ = _input.State.ConsumeF3Toggled();
         _state.AnimationTicks++;
         _icon.Advance(_state.Position);
-        _renderer?.AdvanceSimulation(_state, _currentZone);
+        _renderer?.AdvanceSimulation(_state, CurrentZone);
     }
 
     // The debug F8 battle mirrors the original battle test (debug battle setup
@@ -566,12 +577,11 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
     /// player walks inside a battle area. The controller owns the countdown and the draws.</summary>
     private void CountEncounterStep()
     {
-        if (_areas is null) return;  // safe zone: no FIELD_MAP_AREAS plane
-        _battleStepCounter++;
-        if ((_battleStepCounter & 7) != 0) return;  // source: actor->counter & 7 == 0
-        var areaCell = _areas.CellAt(_state.Position);
-        var record = _encounter.CountBattleSteps(areaCell);
-        if (record is not null) StartBattle(record);
+        EncounterRecord? record = _encounterStepper.Tick(_areas, _state.Position, _encounter);
+        if (record is not null)
+        {
+            StartBattle(record);
+        }
     }
 
     private void StartBattle(EncounterRecord record)
@@ -789,47 +799,58 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
     /// <summary>One fixed tick of the battle: the menu consumes semantic input and resolves a
     /// command on confirm; the enemy turn resolves one basic attack; a terminal outcome ends
     /// the battle and returns to the field.</summary>
-    private void TickBattle()
+    private void TickBattle() => new BattleTickCoordinator(this).Tick();
+
+    BattleFlowController? IBattleTickHost.Flow => _battleFlow;
+
+    bool IBattleTickHost.HasFightReport => _fightReportController is not null;
+
+    bool IBattleTickHost.IsPlayerCameraActive => _battlePlayerCameraActive;
+
+    bool IBattleTickHost.IsBattleResolved => _battleResolved;
+
+    void IBattleTickHost.TickFightReport()
     {
-        var flow = _battleFlow;
-        if (flow is null) { EndBattle(); return; }
-        if (_fightReportController is not null)
+        _fightReportController!.Step(_input.State.ConsumeActionPressed());
+        _fightReportRenderer?.Present(_fightReportController.View, BattleText(), BuildReportNames());
+        if (_fightReportController.View.Done)
         {
-            _fightReportController.Step(_input.State.ConsumeActionPressed());
-            _fightReportRenderer?.Present(_fightReportController.View, BattleText(), BuildReportNames());
-            if (_fightReportController.View.Done) EndBattle();
-            return;
-        }
-        if (flow.Phase == BattleFlowPhase.PlayerCommand && !_battlePlayerCameraActive)
-        {
-            _battleRenderer?.SetCommandMenuCamera();
-            _battlePlayerCameraActive = true;
-        }
-        if (flow.Phase == BattleFlowPhase.PlayerCommand) TickBattleMenu();
-        else if (flow.Phase == BattleFlowPhase.EnemyTurn)
-        {
-            _battlePlayerCameraActive = false;
-            flow.EnemyAct(_battleRng);
-        }
-        RefreshBattlePresentationModels();
-        if (flow.Phase == BattleFlowPhase.Ended)
-        {
-            if (!_battleResolved)
-            {
-                ResolveBattleOutcome(flow);
-                _battleResolved = true;
-            }
-            if (flow.Outcome == BattleOutcome.Won)
-            {
-                if (++_battleReportFadeTicks < BattleReportFadeFrames) return;
-                _battleRenderer?.Hide();
-                _fightReportRenderer?.Show();
-                _fightReportController = BuildFightReportController(flow);
-                foreach (var log in _fightReportController.Logs) _log.Warn(log, log);
-            }
-            else EndBattle();
+            EndBattle();
         }
     }
+
+    void IBattleTickHost.ActivatePlayerCamera()
+    {
+        _battleRenderer?.SetCommandMenuCamera();
+        _battlePlayerCameraActive = true;
+    }
+
+    void IBattleTickHost.DeactivatePlayerCamera() => _battlePlayerCameraActive = false;
+
+    void IBattleTickHost.TickBattleMenu() => TickBattleMenu();
+
+    void IBattleTickHost.EnemyAct() => BattleFlow.EnemyAct(_battleRng);
+
+    void IBattleTickHost.RefreshModels() => RefreshBattlePresentationModels();
+
+    void IBattleTickHost.ResolveOutcome() => ResolveBattleOutcome(BattleFlow);
+
+    void IBattleTickHost.MarkBattleResolved() => _battleResolved = true;
+
+    bool IBattleTickHost.AdvanceVictoryFade() => ++_battleReportFadeTicks >= BattleReportFadeFrames;
+
+    void IBattleTickHost.BeginFightReport()
+    {
+        _battleRenderer?.Hide();
+        _fightReportRenderer?.Show();
+        _fightReportController = BuildFightReportController(BattleFlow);
+        foreach (string log in _fightReportController.Logs)
+        {
+            _log.Warn(log, log);
+        }
+    }
+
+    void IBattleTickHost.EndBattle() => EndBattle();
 
     /// <summary>Replaces the visible models only when combat changes an active fighter.
     /// fighter metadata resolves the requested BattleFighter.Id directly via FighterEntry.id and
@@ -864,35 +885,27 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
     /// report view the HUD draws. Flight and defeat resolve no reward.</summary>
     private void ResolveBattleOutcome(BattleFlowController flow)
     {
-        if (flow.Outcome != BattleOutcome.Won) return;
-        var reward = ResolveReward(_lastBattleEncounter);
-        var fought = flow.State.Fought.Count(foughtFlag => foughtFlag);
-        var expShare = GrowthCalculator.ExpShare(reward.Exp, fought);
-        var partners = new List<BattlePartnerReportView>();
-        var reportPartners = new List<FightReportPartner>();
-        for (var i = 0; i < flow.State.Players.Length; i++)
+        if (flow.Outcome != BattleOutcome.Won)
         {
-            var fighter = flow.State.Players[i];
-            if (fighter is null || fighter.Id == 0) continue;
-            var gained = flow.State.Fought[i] ? expShare : 0;
-            var before = _partyGrowth is not null && i < _partyGrowth.Count ? _partyGrowth[i] : null;
-            var levelBefore = before?.Level ?? TestTeamGrowth.Level;
-            var expBefore = before?.Exp ?? 0;
-            var leveled = false;
-            if (gained > 0 && _partyGrowth is not null && i < _partyGrowth.Count && _growthTables is not null)
-            {
-                var digimon = DigimonFor(i);
-                var curve = new PartnerGrowthCurve(digimon.ExpRate, digimon.HpGrowth, digimon.MpGrowth, digimon.StatGrowth, digimon.ResistGrowth);
-                leveled = GrowthCalculator.AddExp(_growthTables, _partyGrowth[i], curve, gained, _battleRng);
-            }
-            var level = _partyGrowth is not null && i < _partyGrowth.Count ? _partyGrowth[i].Level : TestTeamGrowth.Level;
-            partners.Add(new BattlePartnerReportView(fighter.Id, NameLine(fighter.Id), gained, level, leveled));
-            // The F8 fixture has no equipped Digimon slots. Do not synthesize their report data.
-            reportPartners.Add(new FightReportPartner(i, i, fighter.Id, levelBefore, expBefore, gained, level, []));
+            return;
         }
-        _battleReport = new BattleReportView(BattleOutcome.Won, expShare, reward.Money, reward.DigimonExp, partners, BattleText());
-        _fightReportInput = new FightReportInput(reportPartners, reward.Money, Item: 0);
-        QuietLog.Info($"battle-reward encounter={_lastBattleEncounter} exp={reward.Exp} money={reward.Money} digimonExp={reward.DigimonExp} fought={fought} share={expShare} applied=[{string.Join(",", partners.Select(partner => $"fighter={partner.Id}:+{partner.ExpGained}"))}]");
+
+        BattleOutcomeResolution resolution = BattleOutcomeResolver.ResolveVictory(
+            new BattleOutcomeRequest
+            {
+                Flow = flow,
+                Reward = ResolveReward(_lastBattleEncounter),
+                Encounter = _lastBattleEncounter,
+                PartyGrowth = _partyGrowth,
+                GrowthTables = _growthTables,
+                Random = _battleRng,
+                DigimonFor = DigimonFor,
+                NameFor = NameLine,
+                Text = BattleText(),
+            });
+        _battleReport = resolution.Report;
+        _fightReportInput = resolution.FightReport;
+        QuietLog.Info(resolution.Log);
     }
 
     private FightReportController BuildFightReportController(BattleFlowController flow)
@@ -903,9 +916,8 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         return new FightReportController(_fightReportInput);
     }
 
-    private IReadOnlyDictionary<int, BattleTextLine> BuildReportNames() => _fightReportInput?.Partners
-        .ToDictionary(partner => partner.FighterId, partner => NameLine(partner.FighterId))
-        ?? [];
+    private Dictionary<int, BattleTextLine> BuildReportNames() =>
+        FightReportNameCatalog.Build(_fightReportInput, NameLine);
 
     /// <summary>The encounter's reward, or an explicit zero reward when the id is absent or
     /// out of the manifest (never invented).</summary>
@@ -924,79 +936,67 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         return _fighterData.Digimon[_partyDigimonIds[slot]];
     }
 
-    private void TickBattleMenu()
+    private void TickBattleMenu() => new BattleMenuDriver(this).Tick();
+
+    BattleFlowController IBattleMenuDriverHost.Flow => BattleFlow;
+
+    BattleMenuController IBattleMenuDriverHost.Menu => _battleMenu;
+
+    InputState IBattleMenuDriverHost.Input => _input.State;
+
+    bool IBattleMenuDriverHost.WasUpHeld() => _battlePrevUp;
+
+    bool IBattleMenuDriverHost.WasDownHeld() => _battlePrevDown;
+
+    void IBattleMenuDriverHost.RememberHeldDirections(bool up, bool down)
     {
-        var flow = BattleFlow;
-        if (flow.Phase != BattleFlowPhase.PlayerCommand) return;
-
-        RefreshActivePartnerCatalogs();
-        // the player-turn presentation flow:223-259 routes a KO through createSwitchMenu(canCancel=0), not the
-        // six-command root. Keep that constraint at the host/input boundary.
-        if (flow.State.ActivePlayerFighter?.IsKnockedOut == true && _battleMenu.Menu == BattleMenuKind.Root)
-        {
-            _battleSwitchForced = true;
-            OpenSubmenu(BattleMenuKind.Switch, SwitchLines(flow), slot => !flow.State.Players[slot]!.IsKnockedOut);
-        }
-
-        // Press-edge detection: the cursor advances once per key press, never once per frame.
-        var up = _input.State.HeldUp;
-        var down = _input.State.HeldDown;
-        var upEdge = up && !_battlePrevUp;
-        var downEdge = down && !_battlePrevDown;
         _battlePrevUp = up;
         _battlePrevDown = down;
-        if (upEdge) _battleMenu.MoveUp();
-        if (downEdge) _battleMenu.MoveDown();
-        if (_input.State.ConsumePreviousPagePressed() && _battleMenu.PreviousPage())
-            QuietLog.Info($"battle-menu page first={_battleMenu.First} cursor={_battleMenu.Cursor}");
-        if (_input.State.ConsumeNextPagePressed() && _battleMenu.NextPage())
-            QuietLog.Info($"battle-menu page first={_battleMenu.First} cursor={_battleMenu.Cursor}");
+    }
 
-        if (_input.State.ConsumeCancelPressed())
+    IReadOnlyList<int> IBattleMenuDriverHost.SubmenuArguments => _battleSubmenuArgs;
+
+    void IBattleMenuDriverHost.RefreshActivePartnerCatalogs() => RefreshActivePartnerCatalogs();
+
+    void IBattleMenuDriverHost.OpenForcedSwitchMenu()
+    {
+        _battleSwitchForced = true;
+        OpenSubmenu(BattleMenuKind.Switch, SwitchLines(BattleFlow), slot => !BattleFlow.State.Players[slot]!.IsKnockedOut);
+    }
+
+    void IBattleMenuDriverHost.CancelMenu() => CancelBattleMenu(BattleFlow);
+
+    void IBattleMenuDriverHost.ConfirmRoot() => ConfirmRoot(BattleFlow);
+
+    void IBattleMenuDriverHost.ChooseTechnique(int argument) => BattleFlow.Choose(BattleCommand.Technique, argument, _battleRng);
+
+    void IBattleMenuDriverHost.ChooseDigivolution(int argument) => BattleFlow.Choose(BattleCommand.Digivolve, argument, _battleRng);
+
+    void IBattleMenuDriverHost.OpenSwitchIn(int argument) => OpenSwitchInMenu(BattleFlow, argument);
+
+    void IBattleMenuDriverHost.OpenPairSwitch(int argument) => OpenPairSwitchMenu(BattleFlow, argument);
+
+    void IBattleMenuDriverHost.ChooseItem(int argument) => BattleFlow.Choose(BattleCommand.Item, argument, _battleRng);
+
+    void IBattleMenuDriverHost.ConfirmPairSwitch()
+    {
+        if (_battleMenu.Cursor != 0 || _battleSwitchPartner < 0)
         {
-            CancelBattleMenu(flow);
             return;
         }
-        if (!_input.State.ConsumeActionPressed()) return;
-        if (!_battleMenu.CanConfirm) return;
 
-        switch (_battleMenu.Menu)
+        if (BattleFlow.Choose(BattleCommand.Switch, _battleSwitchPartner, _battleRng))
         {
-            case BattleMenuKind.Root:
-                ConfirmRoot(flow);
-                break;
-            case BattleMenuKind.Technique:
-                if (_battleSubmenuArgs.Count > _battleMenu.SelectedIndex) flow.Choose(BattleCommand.Technique, _battleSubmenuArgs[_battleMenu.SelectedIndex], _battleRng);
-                break;
-            case BattleMenuKind.Digivolve:
-                if (_battleSubmenuArgs.Count > _battleMenu.Cursor) flow.Choose(BattleCommand.Digivolve, _battleSubmenuArgs[_battleMenu.Cursor], _battleRng);
-                break;
-            case BattleMenuKind.Switch:
-                if (_battleSubmenuArgs.Count > _battleMenu.Cursor) OpenSwitchInMenu(flow, _battleSubmenuArgs[_battleMenu.Cursor]);
-                break;
-            case BattleMenuKind.SwitchIn:
-                if (_battleSubmenuArgs.Count > _battleMenu.Cursor) OpenPairSwitchMenu(flow, _battleSubmenuArgs[_battleMenu.Cursor]);
-                break;
-            case BattleMenuKind.PairSwitch:
-                if (_battleMenu.Cursor == 0 && _battleSwitchPartner >= 0)
-                {
-                    if (flow.Choose(BattleCommand.Switch, _battleSwitchPartner, _battleRng))
-                    {
-                        _battlePendingChangeMotion = 13;
-                        _battleSwitchForced = false;
-                        QuietLog.Info($"battle-menu switch player={_battleSwitchPartner} action=5 consumes_turn=true");
-                    }
-                    else
-                    {
-                        var target = flow.State.Players[_battleSwitchPartner];
-                        _log.Warn("battle-menu-switch-refused", $"slot={_battleSwitchPartner} active={flow.State.ActivePlayer} target={target?.Id} hp={target?.Hp}");
-                    }
-                }
-                break;
-            case BattleMenuKind.Item:
-                if (_battleSubmenuArgs.Count > _battleMenu.SelectedIndex) flow.Choose(BattleCommand.Item, _battleSubmenuArgs[_battleMenu.SelectedIndex], _battleRng);
-                break;
+            _battlePendingChangeMotion = 13;
+            _battleSwitchForced = false;
+            QuietLog.Info($"battle-menu switch player={_battleSwitchPartner} action=5 consumes_turn=true");
+            return;
         }
+
+        BattleFighter? target = BattleFlow.State.Players[_battleSwitchPartner];
+        _log.Warn(
+            "battle-menu-switch-refused",
+            $"slot={_battleSwitchPartner} active={BattleFlow.State.ActivePlayer} target={target?.Id} hp={target?.Hp}");
     }
 
     private void ConfirmRoot(BattleFlowController flow)
@@ -1176,18 +1176,11 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
 
     /// <summary>Builds source-backed DIGNAM display records for every party/enemy fighter.
     /// The renderer draws their token streams and the debug names remain provenance labels only.</summary>
-    private Dictionary<int, int> BuildBattleNameIds(IReadOnlyList<int> party, FighterData fighters, EncounterData encounters, int encounterIndex)
-    {
-        var nameIds = new Dictionary<int, int>();
-        foreach (var id in party)
-            if (fighters.Digimon.TryGetValue(id, out var partner)) nameIds[id] = partner.NameId;
-        var table = fighters.BattleTable.ToDictionary(entry => entry.Id);
-        var encounter = encounters.Encounters.FirstOrDefault(candidate => candidate.Index == encounterIndex);
-        if (encounter is not null)
-            foreach (var fighter in encounter.Fighters.Where(fighter => fighter != 0))
-                if (table.TryGetValue(fighter, out var enemy)) nameIds[fighter] = enemy.NameId;
-        return nameIds;
-    }
+    private Dictionary<int, int> BuildBattleNameIds(
+        IReadOnlyList<int> party,
+        FighterData fighters,
+        EncounterData encounters,
+        int encounterIndex) => BattleNameIdCatalog.Build(party, fighters, encounters, encounterIndex);
 
     /// <summary>DIGNAM identity is always the decoded record's nameId. The battle map covers
     /// active fighters, while the Digimon table also covers menu-only digivolution forms.</summary>
@@ -1200,27 +1193,9 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         return enemy is null ? BattleTextLine.Missing : BattleText().DigimonByNameId(enemy.NameId);
     }
 
-    private BattleView? BuildBattleView()
-    {
-        var flow = _battleFlow;
-        if (flow is null) return null;
-        var players = new List<BattleFighterView>();
-        foreach (var fighter in flow.State.Players)
-        {
-            if (fighter is null) { players.Add(new BattleFighterView(0, null, 0, 0, 0, 0, false, false)); continue; }
-            players.Add(new BattleFighterView(fighter.Id, NameLine(fighter.Id), fighter.Hp, fighter.MaxHp, fighter.Mp, fighter.MaxMp,
-                flow.State.ActivePlayer >= 0 && flow.State.Players[flow.State.ActivePlayer] == fighter, fighter.IsKnockedOut));
-        }
-        var enemies = new List<BattleFighterView>();
-        foreach (var fighter in flow.State.Enemies)
-        {
-            if (fighter is null) { enemies.Add(new BattleFighterView(0, null, 0, 0, 0, 0, false, false)); continue; }
-            enemies.Add(new BattleFighterView(fighter.Id, NameLine(fighter.Id), fighter.Hp, fighter.MaxHp, fighter.Mp, fighter.MaxMp,
-                flow.State.ActiveEnemy >= 0 && flow.State.Enemies[flow.State.ActiveEnemy] == fighter, fighter.IsKnockedOut));
-        }
-        var menu = flow.Phase == BattleFlowPhase.PlayerCommand ? _battleMenu.View : null;
-        return new BattleView(flow.Phase, flow.Outcome, players, enemies, flow.Message, menu, _battleReport, flow.MessageText, flow.MessageVisible);
-    }
+    private BattleView? BuildBattleView() => _battleFlow is null
+        ? null
+        : BattleViewBuilder.Build(_battleFlow, _battleMenu.View, _battleReport, NameLine);
 
     /// <summary>The decoded battle-model JSON for a fighter id from the validated data pack.
     /// <c>DW3_BATTLE_MODEL</c> overrides the player path for isolated probes.</summary>
@@ -1237,18 +1212,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
     /// <summary>The fight stage (AreaBattle.stage) of an encounter, resolved from the encounter
     /// manifest: the first AreaBattle whose encounter matches. A field encounter reuses the field
     /// stage's own area battle, so this resolves the same stage the source battle would use.</summary>
-    private int ResolveBattleStage(int encounterIndex)
-    {
-        if (_encounterData is null) return 18; // the F8 test encounter 200's stage, when the manifest is absent
-        foreach (var stage in _encounterData.Stages.Values)
-            foreach (var array in stage.StageBattles)
-                foreach (var place in array.Places)
-                    foreach (var area in place.Areas)
-                        foreach (var battle in area.Battles)
-                            if (battle.Encounter == encounterIndex)
-                                return battle.Stage;
-        return 18;
-    }
+    private int ResolveBattleStage(int encounterIndex) => BattleStageResolver.Resolve(_encounterData, encounterIndex);
 
     #endregion
 
@@ -1297,39 +1261,13 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
     // diamond-only leading-edge probes which let the player walk straight down off it.
     private void DepenetrateFromWall()
     {
-        if (_floor is null) return;
-        var pos = _state.Position;
-        if (CircleFreeAt(pos)) return;
-        var radius = Locomotion.PlayerCollisionRadius;
-        var limit = (int)MathF.Ceiling(radius) + 1;
-        var dirs = new[] { (0, 1), (0, -1), (1, 0), (-1, 0), (1, 1), (1, -1), (-1, 1), (-1, -1) };
-        for (var dist = 1; dist <= limit; dist++)
-            foreach (var (dx, dy) in dirs)
-            {
-                var candidate = new NumericsVector2(pos.X + dx * dist, pos.Y + dy * dist);
-                if (CircleFreeAt(candidate)) { _state.Position = candidate; return; }
-            }
+        if (_floor is not null)
+        {
+            _state.Position = FieldCollisionRecovery.Depenetrate(_floor, _state.Position);
+        }
     }
 
-    private bool CircleFreeAt(NumericsVector2 pos)
-    {
-        var map = Floor;
-        var radius = Locomotion.PlayerCollisionRadius;
-        if (pos.X - radius < 0f || pos.Y - radius < 0f || pos.X + radius > map.Width || pos.Y + radius > map.Height) return false;
-        var minX = Math.Max(0, (int)MathF.Floor(pos.X - radius));
-        var maxX = Math.Min(map.Width - 1, (int)MathF.Ceiling(pos.X + radius));
-        var minY = Math.Max(0, (int)MathF.Floor(pos.Y - radius));
-        var maxY = Math.Min(map.Height - 1, (int)MathF.Ceiling(pos.Y + radius));
-        var radiusSq = radius * radius;
-        for (var cy = minY; cy <= maxY; cy++)
-            for (var cx = minX; cx <= maxX; cx++)
-            {
-                if (map.CellAt(new NumericsVector2(cx, cy)) != 0) continue;
-                var closest = new NumericsVector2(Math.Clamp(pos.X, cx, cx + 1f), Math.Clamp(pos.Y, cy, cy + 1f));
-                if (NumericsVector2.DistanceSquared(pos, closest) <= radiusSq) return false;
-            }
-        return true;
-    }
+    private bool CircleFreeAt(NumericsVector2 pos) => FieldCollisionRecovery.CircleFreeAt(Floor, pos);
 
     /// <summary>FIELDSTG_setOffTrigger's climb branch: SLOT_CLIMB_UP climbs with the raw
     /// trigger direction, SLOT_CLIMB_DOWN with dir==1 ? 5 : 3 (the trigger-slot contract).</summary>
@@ -1360,31 +1298,21 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
     /// actor it talks to.</summary>
     private bool TryStartDialogue()
     {
-        if (_dialogueData is null || _currentZone is null) return false;
-        if (!_dialogueData.Zones.TryGetValue(CurrentZone.Zone.Id, out var zoneDialogue)) return false;
-        var actor = DialogueActorLocator.FindAt(zoneDialogue, DialogueActorLocator.FacingTile(_state));
-        if (actor is null) return false;
-        var talk = actor.Talks.FirstOrDefault(candidate => candidate.Selected);
-        if (talk is null) return false;
-        if (!_dialogueData.Texts.TryGetValue(zoneDialogue.TalkFile, out var entries)) return false;
-        if (talk.Entry < 0 || talk.Entry >= entries.Count)
+        if (_dialogueData is null || _currentZone is null)
         {
-            _log.Warn($"dialogue-entry-out-of-bounds:{CurrentZone.Zone.Id}:{actor.Id}",
-                $"dialogue entry out of bounds zone={CurrentZone.Zone.Id} actor={actor.Id} entry={talk.Entry}");
             return false;
         }
-        var entry = entries[talk.Entry];
-        foreach (var command in entry.Where(DialogueController.IsUnsupported).Select(token => token.Command).Distinct())
-            _log.Warn($"dialogue-control-unsupported:{command}",
-                $"dialogue-control-unsupported cmd={command} zone={CurrentZone.Zone.Id} actor={actor.Id}");
-        _dialogue.Start(CurrentZone.Zone.Id, actor, talk, entry);
-        _dialogueBoxWidth = DialogueBubbleLayout.MeasureWidth(_dialogue.FullText, _dialogueData.Font);
-        if (_dialogue.SpeakerIsPlayer)
-            _log.Warn($"dialogue-player-name-unrendered:{CurrentZone.Zone.Id}:{actor.Id}",
-                $"dialogue-player-name-unrendered zone={CurrentZone.Zone.Id} actor={actor.Id} (name entry not decoded, M4 scope)");
-        _state.AnimationSet = 1;
-        _state.AnimationDirection = _state.Facing;
-        return true;
+
+        return DialogueStarter.TryStart(
+            new DialogueStartRequest
+            {
+                Data = _dialogueData,
+                Zone = _currentZone,
+                Player = _state,
+                Controller = _dialogue,
+                Warn = _log.Warn,
+            },
+            out _dialogueBoxWidth);
     }
 
     /// <summary>Builds the render view for the active conversation: the box origin and type are
