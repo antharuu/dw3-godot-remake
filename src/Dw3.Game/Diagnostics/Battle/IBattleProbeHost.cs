@@ -41,17 +41,14 @@ internal interface IBattleProbeHost
     /// <summary>Gets the decoded technique manifest, or null before startup completes.</summary>
     TechniqueData? TechData { get; }
 
-    /// <summary>Gets the resolved display name for a fighter.</summary>
-    /// <param name="fighterId">Source fighter id.</param>
-    /// <returns>The decoded display text.</returns>
-    BattleTextLine NameLine(int fighterId);
-
-
     /// <summary>Gets a value indicating whether encounter data was loaded at startup.</summary>
     bool HasEncounterData { get; }
 
     /// <summary>Gets a value indicating whether the report data and party growth state are available.</summary>
     bool HasReportData { get; }
+
+    /// <summary>Gets a value indicating whether a battle renderer has been constructed.</summary>
+    bool HasBattleRenderer { get; }
 
     /// <summary>Gets a value indicating whether a battle setup is active.</summary>
     bool HasActiveBattle { get; }
@@ -92,6 +89,11 @@ internal interface IBattleProbeHost
     /// <summary>Gets a value indicating whether the battle-load notice is visible.</summary>
     bool IsBattleNoticeVisible { get; }
 
+    /// <summary>Gets the resolved display name for a fighter.</summary>
+    /// <param name="fighterId">Source fighter id.</param>
+    /// <returns>The decoded display text.</returns>
+    BattleTextLine NameLine(int fighterId);
+
     /// <summary>Returns the probe output directory, honoring the capture override.</summary>
     /// <param name="relativeFallback">Fallback path below the reference or data root.</param>
     /// <returns>An existing absolute directory.</returns>
@@ -108,9 +110,6 @@ internal interface IBattleProbeHost
 
     /// <summary>Starts the same manifest-backed battle as the F8 debug shortcut.</summary>
     void StartDebugBattle();
-
-    /// <summary>Runs the battle-light diagnostic and requests engine termination with its result.</summary>
-    void RunBattleLightProbe();
 
     /// <summary>Runs the battle-model diagnostic and requests engine termination with its result.</summary>
     void RunBattleModelProbe();

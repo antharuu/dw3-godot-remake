@@ -253,7 +253,6 @@ internal sealed class BattleHudProbe : BattleProbe
         }
     }
 
-
     /// <summary>Injects a complete native press edge through battle simulation.</summary>
     /// <param name="key">Godot key to inject.</param>
     private void InjectBattleKey(Key key)

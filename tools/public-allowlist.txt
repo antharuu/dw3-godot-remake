@@ -843,3 +843,5 @@ src/Dw3.Game/Conversion/WaterFrame.cs
 src/Dw3.Game/Conversion/WaterObject.cs
 src/Dw3.Game/Conversion/Zone.cs
 src/Dw3.Game/Conversion/ZoneDialogue.cs
+src/Dw3.Game/Diagnostics/Battle/BattleLuminanceStats.cs
+src/Dw3.Game/Diagnostics/Battle/BattleMaskMetrics.cs

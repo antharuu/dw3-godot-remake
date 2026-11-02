@@ -35,7 +35,7 @@ internal sealed class BattleKotemonLightProbe : BattleProbe
         var remake = BattleComparisonImage.ToSourceSize(await BattleProbeCapture.CaptureAsync(Host, captureRoot, "kotemon-command-menu.png"));
         renderer.SetModelVisibleForProbe(383, false);
         var withoutKotemon = BattleComparisonImage.ToSourceSize(await BattleProbeCapture.CaptureAsync(Host, captureRoot, "command-menu-without-kotemon.png"));
-        var silhouette = DifferenceMask(remake, withoutKotemon);
+        var silhouette = BattleMaskMetrics.Difference(remake, withoutKotemon);
         var source = BattleComparisonImage.ToSourceSize(Host.LoadPsxReference("battle/kotemon-383-command-menu-0.png"));
         var psxMasks = CreatePsxMasks(source);
         var remakeMasks = CreateRemakeMasks(remake, silhouette);
@@ -80,9 +80,9 @@ internal sealed class BattleKotemonLightProbe : BattleProbe
     {
         ProbeRequirement.Require(psxMask.SavePng(Path.Combine(captureRoot, $"mask-psx-{region}.png")) == Error.Ok, $"PSX {region} mask save failed");
         ProbeRequirement.Require(remakeMask.SavePng(Path.Combine(captureRoot, $"mask-remake-{region}.png")) == Error.Ok, $"remake {region} mask save failed");
-        var psxStats = MeasureLuminance(source, psxMask, 8);
-        var remakeStats = MeasureLuminance(remake, remakeMask, 8);
-        QuietLog.Info($"battle-light oracle fighter=383 phase=command-menu region={region} psx pixels={psxStats.Count} mean={psxStats.Mean:0.##} q10={psxStats.Q10:0.##} q50={psxStats.Q50:0.##} q90={psxStats.Q90:0.##} hist={psxStats.Histogram} remake pixels={remakeStats.Count} mean={remakeStats.Mean:0.##} q10={remakeStats.Q10:0.##} q50={remakeStats.Q50:0.##} q90={remakeStats.Q90:0.##} hist={remakeStats.Histogram} delta={RelativeDelta(psxStats.Mean, remakeStats.Mean) * 100f:0.##}%");
+        var psxStats = BattleMaskMetrics.Measure(source, psxMask, 8);
+        var remakeStats = BattleMaskMetrics.Measure(remake, remakeMask, 8);
+        QuietLog.Info($"battle-light oracle fighter=383 phase=command-menu region={region} psx pixels={psxStats.Count} mean={psxStats.Mean:0.##} q10={psxStats.Q10:0.##} q50={psxStats.Q50:0.##} q90={psxStats.Q90:0.##} hist={psxStats.Histogram} remake pixels={remakeStats.Count} mean={remakeStats.Mean:0.##} q10={remakeStats.Q10:0.##} q50={remakeStats.Q50:0.##} q90={remakeStats.Q90:0.##} hist={remakeStats.Histogram} delta={BattleMaskMetrics.RelativeDelta(psxStats.Mean, remakeStats.Mean) * 100f:0.##}%");
     }
 
     /// <summary>Checks and records the aggregate model-luminance contract.</summary>
@@ -96,9 +96,9 @@ internal sealed class BattleKotemonLightProbe : BattleProbe
     {
         var psxGlobal = UnionMasks(psxMasks);
         var remakeGlobal = UnionMasks(remakeMasks);
-        var psxStats = MeasureLuminance(source, psxGlobal, 24);
-        var remakeStats = MeasureLuminance(remake, remakeGlobal, 24);
-        var delta = RelativeDelta(psxStats.Mean, remakeStats.Mean);
+        var psxStats = BattleMaskMetrics.Measure(source, psxGlobal, 24);
+        var remakeStats = BattleMaskMetrics.Measure(remake, remakeGlobal, 24);
+        var delta = BattleMaskMetrics.RelativeDelta(psxStats.Mean, remakeStats.Mean);
         var compare = BattleComparisonImage.SideBySide(remake, source, "REMAKE", "PSX");
         ProbeRequirement.Require(compare.SavePng(Path.Combine(captureRoot, "compare-kotemon-luminance.png")) == Error.Ok, "Kotemon comparison save failed");
         QuietLog.Info($"battle-light oracle fighter=383 phase=command-menu region=global psx pixels={psxStats.Count} mean={psxStats.Mean:0.##} q10={psxStats.Q10:0.##} q50={psxStats.Q50:0.##} q90={psxStats.Q90:0.##} hist={psxStats.Histogram} remake pixels={remakeStats.Count} mean={remakeStats.Mean:0.##} q10={remakeStats.Q10:0.##} q50={remakeStats.Q50:0.##} q90={remakeStats.Q90:0.##} hist={remakeStats.Histogram} delta={delta * 100f:0.##}% vertex={renderer.LightingVertexSummary(383)}");
@@ -164,7 +164,7 @@ internal sealed class BattleKotemonLightProbe : BattleProbe
     /// <returns>Binary white-on-black selection mask.</returns>
     private static Image RegionMask(Image image, Image? silhouette, Rect2I region, Func<Color, bool> select)
     {
-        var mask = CreateEmptyMask();
+        var mask = BattleMaskMetrics.CreateEmpty();
         for (var y = Math.Max(0, region.Position.Y); y < Math.Min(240, region.End.Y); y++)
         {
             for (var x = Math.Max(0, region.Position.X); x < Math.Min(320, region.End.X); x++)
@@ -181,7 +181,7 @@ internal sealed class BattleKotemonLightProbe : BattleProbe
     /// <returns>A white pixel wherever any input mask is white.</returns>
     private static Image UnionMasks(IEnumerable<Image> masks)
     {
-        var output = CreateEmptyMask();
+        var output = BattleMaskMetrics.CreateEmpty();
         foreach (var mask in masks)
         {
             CopyMaskPixels(mask, output);
@@ -204,35 +204,6 @@ internal sealed class BattleKotemonLightProbe : BattleProbe
         }
     }
 
-    /// <summary>Creates a cleared source-sized binary mask.</summary>
-    /// <returns>A 320 by 240 black RGBA mask.</returns>
-    private static Image CreateEmptyMask()
-    {
-        var mask = Image.CreateEmpty(320, 240, false, Image.Format.Rgba8);
-        mask.Fill(Colors.Black);
-        return mask;
-    }
-
-    /// <summary>Builds a white mask where two source-sized images differ visibly.</summary>
-    /// <param name="model">Image with the fighter shown.</param>
-    /// <param name="stage">Image with the fighter hidden.</param>
-    /// <returns>Binary difference mask.</returns>
-    private static Image DifferenceMask(Image model, Image stage)
-    {
-        var mask = CreateEmptyMask();
-        for (var y = 0; y < 240; y++)
-        {
-            for (var x = 0; x < 320; x++)
-            {
-                var first = model.GetPixel(x, y);
-                var second = stage.GetPixel(x, y);
-                if (Mathf.Abs(first.R - second.R) + Mathf.Abs(first.G - second.G) + Mathf.Abs(first.B - second.B) > .08f) mask.SetPixel(x, y, Colors.White);
-            }
-        }
-
-        return mask;
-    }
-
     /// <summary>Finds the tight bounds of white pixels in a binary mask.</summary>
     /// <param name="mask">Mask to inspect.</param>
     /// <returns>Bounds, or null when the mask contains no selected pixel.</returns>
@@ -252,61 +223,4 @@ internal sealed class BattleKotemonLightProbe : BattleProbe
 
         return maximum.X < 0 ? null : new Rect2I(minimum, maximum - minimum + Vector2I.One);
     }
-
-    /// <summary>Measures luminance distribution inside a binary mask.</summary>
-    /// <param name="image">Image to sample.</param>
-    /// <param name="mask">Selection mask.</param>
-    /// <param name="minimumPixels">Minimum accepted selection size.</param>
-    /// <returns>Count, average, quantiles, and eight-bin histogram.</returns>
-    private static LuminanceStats MeasureLuminance(Image image, Image mask, int minimumPixels)
-    {
-        var values = new List<float>();
-        for (var y = 0; y < 240; y++)
-        {
-            for (var x = 0; x < 320; x++)
-            {
-                if (mask.GetPixel(x, y).R >= .5f) values.Add(Luminance(image.GetPixel(x, y)));
-            }
-        }
-
-        ProbeRequirement.Require(values.Count >= minimumPixels, $"luminance mask too small pixels={values.Count} minimum={minimumPixels}");
-        values.Sort();
-        return new LuminanceStats(values.Count, values.Average(), Quantile(values, .1f), Quantile(values, .5f), Quantile(values, .9f), MakeHistogram(values));
-    }
-
-    /// <summary>Computes the source-compatible luminance value.</summary>
-    /// <param name="color">Colour to measure.</param>
-    /// <returns>Weighted luminance in 0 through 255 scale.</returns>
-    private static float Luminance(Color color) => (color.R * 54.213f) + (color.G * 182.376f) + (color.B * 18.411f);
-
-    /// <summary>Gets a rounded quantile from sorted luminance values.</summary>
-    /// <param name="values">Sorted values.</param>
-    /// <param name="fraction">Quantile fraction.</param>
-    /// <returns>The selected value.</returns>
-    private static float Quantile(List<float> values, float fraction) => values[(int)Mathf.Clamp(Mathf.Round((values.Count - 1) * fraction), 0, values.Count - 1)];
-
-    /// <summary>Builds the stable eight-bin luminance histogram string.</summary>
-    /// <param name="values">Measured luminance values.</param>
-    /// <returns>Comma-separated bin counts.</returns>
-    private static string MakeHistogram(IEnumerable<float> values)
-    {
-        var bins = new int[8];
-        foreach (var value in values) bins[Math.Min(7, (int)(value / 32f))]++;
-        return string.Join(',', bins);
-    }
-
-    /// <summary>Computes symmetric relative difference between two nonnegative luminance values.</summary>
-    /// <param name="first">First value.</param>
-    /// <param name="second">Second value.</param>
-    /// <returns>Difference normalized by their average.</returns>
-    private static float RelativeDelta(float first, float second) => MathF.Abs(first - second) / MathF.Max(1f, (first + second) * .5f);
-
-    /// <summary>Stable luminance distribution record.</summary>
-    /// <param name="Count">Number of selected pixels.</param>
-    /// <param name="Mean">Average luminance.</param>
-    /// <param name="Q10">Tenth-percentile luminance.</param>
-    /// <param name="Q50">Median luminance.</param>
-    /// <param name="Q90">Ninetieth-percentile luminance.</param>
-    /// <param name="Histogram">Eight-bin histogram.</param>
-    private sealed record LuminanceStats(int Count, float Mean, float Q10, float Q50, float Q90, string Histogram);
 }

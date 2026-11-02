@@ -47,6 +47,9 @@ public partial class GameHost : IBattleProbeHost
     bool IBattleProbeHost.HasReportData => _rewardsData is not null && _growthTables is not null && _partyGrowth is not null;
 
     /// <inheritdoc/>
+    bool IBattleProbeHost.HasBattleRenderer => _battleRenderer is not null;
+
+    /// <inheritdoc/>
     bool IBattleProbeHost.HasActiveBattle => _activeBattle is not null;
 
     /// <inheritdoc/>
@@ -106,9 +109,6 @@ public partial class GameHost : IBattleProbeHost
 
     /// <inheritdoc/>
     void IBattleProbeHost.StartDebugBattle() => StartDebugBattle();
-
-    /// <inheritdoc/>
-    void IBattleProbeHost.RunBattleLightProbe() => RunBattleLightProbe();
 
     /// <inheritdoc/>
     void IBattleProbeHost.RunBattleModelProbe() => RunBattleModelProbe();
