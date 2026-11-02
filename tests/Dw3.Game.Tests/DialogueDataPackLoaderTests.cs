@@ -8,6 +8,8 @@ namespace Dw3.Game.Tests;
 /// <summary>Dialogue loader tests over a fabricated data pack (no disc bytes).</summary>
 public sealed class DialogueDataPackLoaderTests : IDisposable
 {
+    private static readonly int[] DialogueFrameNumbers = [0, 2, 3, 4, 5, 6, 7];
+
     private readonly string _root = Path.Combine(Path.GetTempPath(), $"dw3-dialogue-pack-{Guid.NewGuid():N}");
 
     [Fact]
@@ -140,7 +142,7 @@ public sealed class DialogueDataPackLoaderTests : IDisposable
                 File(context, "font/font-style-1-page-0.png", "png");
                 File(context, "font/font-style-1-page-1.png", "png");
 
-                foreach (int frame in new[] { 0, 2, 3, 4, 5, 6, 7 })
+                foreach (int frame in DialogueFrameNumbers)
                 {
                     if (frame == skipFrame) continue;
                     string path = File(context, $"dialogue/frame/frame-{frame}.png", "png");

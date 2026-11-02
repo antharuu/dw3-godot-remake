@@ -122,7 +122,7 @@ public sealed class LegacyBattleDataConsoleTests
             techniques = Enumerable.Range(0, 443).Select(Technique).ToArray(),
             items = itemIds.Select(Item).ToArray(),
             rewards = Enumerable.Range(0, 335).Select(Reward).ToArray(),
-            growth = new { levelExperience = new[] { 0 }, vitalCuts = new[] { 0 }, vitalRandom = new[] { 0 }, statGains = Enumerable.Range(0, 6).Select(_ => (object)new[] { 0 }).ToArray(), resistanceGains = new[] { 0 } },
+            growth = new { levelExperience = new List<int> { 0 }, vitalCuts = new List<int> { 0 }, vitalRandom = new List<int> { 0 }, statGains = Enumerable.Range(0, 6).Select(_ => (object)new List<int> { 0 }).ToArray(), resistanceGains = new List<int> { 0 } },
         };
     }
 
@@ -163,7 +163,7 @@ public sealed class LegacyBattleDataConsoleTests
         WriteJson(context, "battle/hud/hud.json", new
         {
             schema = SyntheticDataPackFixture.BattleHudSchema,
-            frameIds = new[] { 1 },
+            frameIds = new List<int> { 1 },
             frames = new Dictionary<string, object> { ["1"] = new { w = 1, h = 1, offsetX = 0, offsetY = 0, clutRows = rows.Select(path => new { path }).ToArray() } },
             cursor = new { path = "cursor.png", offPath = "cursor-off.png", w = 1, h = 1, frames = 1, frameW = 1, frameH = 1 },
         });
@@ -177,7 +177,7 @@ public sealed class LegacyBattleDataConsoleTests
         WriteJson(context, "battle/report/report.json", new
         {
             schema = SyntheticDataPackFixture.BattleReportSchema,
-            frames = new Dictionary<string, object> { ["1"] = new { w = 1, h = 1, offsetX = 0, offsetY = 0, clutRows = new[] { new { path = "frame.png" } } } },
+            frames = new Dictionary<string, object> { ["1"] = new { w = 1, h = 1, offsetX = 0, offsetY = 0, clutRows = new List<object> { new { path = "frame.png" } } } },
             animations = Enumerable.Range(0, 8).Select(_ => new int[7]).ToArray(),
             arrow = new { w = 1, h = 1, offsetX = 0, offsetY = 0, clutRows = rows.Select(path => new { path }).ToArray() },
         });
@@ -193,7 +193,7 @@ public sealed class LegacyBattleDataConsoleTests
             WriteFile(context, $"battle/menu-icons/{path}", "x");
             frames[id.ToString(System.Globalization.CultureInfo.InvariantCulture)] = new { w = 1, h = 1, offset = new[] { 0, 0 }, paths = new[] { path } };
         }
-        WriteJson(context, "battle/menu-icons/manifest.json", new { schema = SyntheticDataPackFixture.BattleMenuIconSchema, frames, messageArrow = new { frame = 10, position = new[] { 0, 0 }, timeStep = 4 } });
+        WriteJson(context, "battle/menu-icons/manifest.json", new { schema = SyntheticDataPackFixture.BattleMenuIconSchema, frames, messageArrow = new { frame = 10, position = new List<int> { 0, 0 }, timeStep = 4 } });
     }
 
     private static void WriteJson(DataPackWriteContext context, string path, object value) =>

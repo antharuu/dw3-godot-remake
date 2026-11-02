@@ -8,6 +8,13 @@ namespace Dw3.Game.Tests;
 
 public sealed class FieldDataPackLoaderTests : IDisposable
 {
+    private static readonly string[] PackImagePaths =
+    [
+        "zones/S200/depth-0.png", "zones/S200/depth-1.png", "zones/S200/depth-2.png",
+        "zones/S200/floor-cells.png", "zones/S200/trigger-cells.png", "zones/S200/areas-cells.png",
+        "player/frames/frame-0C.png", "npc/200/actor-0/frames/frame-09.png",
+    ];
+
     private readonly string _root = Path.Combine(Path.GetTempPath(), $"dw3-field-pack-{Guid.NewGuid():N}");
 
     [Fact]
@@ -80,12 +87,7 @@ public sealed class FieldDataPackLoaderTests : IDisposable
             new DataPackMetadata("test", "synthetic", SyntheticDataPackFixture.SyntheticEdition, DateTimeOffset.UnixEpoch),
             context =>
             {
-                foreach (string relative in new[]
-                {
-                    "zones/S200/depth-0.png", "zones/S200/depth-1.png", "zones/S200/depth-2.png",
-                    "zones/S200/floor-cells.png", "zones/S200/trigger-cells.png", "zones/S200/areas-cells.png",
-                    "player/frames/frame-0C.png", "npc/200/actor-0/frames/frame-09.png",
-                })
+                foreach (string relative in PackImagePaths)
                 {
                     string path = context.GetImagePath(relative);
                     Directory.CreateDirectory(Path.GetDirectoryName(path)!);
@@ -97,7 +99,7 @@ public sealed class FieldDataPackLoaderTests : IDisposable
                 {
                     map_entries_source = new { areas_entry = 3 },
                     map_source = new { sha256 = "synthetic-zone" },
-                    render = new { stream_depth11_modulate = new[] { 128, 64, 255 } },
+                    render = new { stream_depth11_modulate = new List<int> { 128, 64, 255 } },
                     slots = new object[]
                     {
                         new { arg = 2, condition = 0xFFFF, dir = 1, type = 2, x = 7, y = 8 },
@@ -124,7 +126,7 @@ public sealed class FieldDataPackLoaderTests : IDisposable
                                             new
                                             {
                                                 duration = 4,
-                                                foot_ground_contact = new[] { 0.0, 0.0 },
+                                                foot_ground_contact = new List<double> { 0.0, 0.0 },
                                                 frame = 12,
                                                 offset = new[] { 2, -5 },
                                             },
