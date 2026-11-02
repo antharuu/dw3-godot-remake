@@ -17,7 +17,7 @@ namespace Dw3.Extractor;
 /// Disc constants are derived from the EU disc (SLES_039.36) by binary correlation:
 ///   - FIELDSTG.PRO virtual load address: 0x80082CB0
 ///   - FIELDSTG_stages RAM address:       0x8009A884
-///   - FILE_SECTORS base offset verified against WSTAG200.PRO LBA at index 466
+///   - FILE_SECTORS base offset verified against WSTAG200.PRO LBA at index 466.
 /// </remarks>
 public static class DiscStageModeReader
 {
@@ -66,6 +66,10 @@ public static class DiscStageModeReader
     /// <summary>
     /// Reads the complete raw registry and resolves each overlay file id to its WSTAG disc member.
     /// </summary>
+    /// <param name="disc">The open disc source to read files from.</param>
+    /// <param name="entries">All file entries on the disc (from disc.ListFiles()).</param>
+    /// <returns>All resolved field stages in the order they appear in FIELDSTG_stages.</returns>
+    /// <exception cref="InvalidDataException">A required disc file is absent or the FILE_SECTORS verification fails.</exception>
     public static IReadOnlyList<DiscFieldStage> BuildRegistry(DiscSource disc, IReadOnlyList<DiscFileEntry> entries)
     {
         ArgumentNullException.ThrowIfNull(disc);
@@ -80,6 +84,12 @@ public static class DiscStageModeReader
 
     // ── Implementation ────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Builds a mapping from disc LBA to WSTAG filename by scanning the entry list
+    /// for files matching the pattern <c>WSTAG###.PRO</c> (three-digit decimal, uppercase).
+    /// </summary>
+    /// <param name="entries">The full disc file entry list to scan.</param>
+    /// <returns>A dictionary from LBA to stage filename (e.g. <c>WSTAG200.PRO</c>).</returns>
     private static Dictionary<int, string> BuildLbaToStageNameMap(IReadOnlyList<DiscFileEntry> entries)
     {
         var map = new Dictionary<int, string>();
@@ -97,6 +107,16 @@ public static class DiscStageModeReader
         return map;
     }
 
+    /// <summary>
+    /// Reads the FILE_SECTORS int32 array from SLES_039.36 at the known fixed offset,
+    /// verifying that entry 466 matches the LBA of WSTAG200.PRO before returning the full table.
+    /// </summary>
+    /// <param name="slesData">The raw bytes of SLES_039.36.</param>
+    /// <param name="lbaToStageName">LBA-to-filename map used for verification (WSTAG200.PRO LBA lookup).</param>
+    /// <param name="entries">The full disc file entry list used for the verification LBA lookup.</param>
+    /// <returns>The complete FILE_SECTORS LBA table as an int32 array.</returns>
+    /// <exception cref="InvalidDataException">WSTAG200.PRO is absent, the verification offset is out of range,
+    /// or the stored LBA does not match the disc directory LBA.</exception>
     private static int[] ReadFileSectors(byte[] slesData, Dictionary<int, string> lbaToStageName,
         IReadOnlyList<DiscFileEntry> entries)
     {
@@ -139,6 +159,17 @@ public static class DiscStageModeReader
         ParseStageRegistry(fieldStgData, fileSectors, lbaToStageName, entryCount, tableOffset)
             .ToDictionary(stage => stage.Mode, stage => stage.StageId);
 
+    /// <summary>
+    /// Parses the FIELDSTG_stages table and resolves each overlay file id to the matching WSTAG stage number.
+    /// Entries whose LBA does not match a known WSTAG filename are silently skipped.
+    /// </summary>
+    /// <param name="fieldStgData">The FIELDSTG.PRO overlay bytes.</param>
+    /// <param name="fileSectors">The FILE_SECTORS LBA table extracted from SLES_039.36.</param>
+    /// <param name="lbaToStageName">LBA-to-WSTAG-filename map used to resolve overlay file ids.</param>
+    /// <param name="entryCount">Number of entries in the FIELDSTG stages table; defaults to the EU value (240).</param>
+    /// <param name="tableOffset">Byte offset of the FIELDSTG stages table in the overlay; defaults to the EU value.</param>
+    /// <returns>All resolved field stages in the order they appear in FIELDSTG_stages.</returns>
+    /// <exception cref="InvalidDataException">The FIELDSTG stage registry is malformed or a stage filename cannot be parsed.</exception>
     internal static IReadOnlyList<DiscFieldStage> ParseStageRegistry(byte[] fieldStgData,
         IReadOnlyList<int> fileSectors, Dictionary<int, string> lbaToStageName,
         int entryCount = FieldStgStagesEntryCount, int tableOffset = FieldStgStagesFileOffset)
@@ -175,6 +206,14 @@ public static class DiscStageModeReader
         return result;
     }
 
+    /// <summary>
+    /// Reads and returns the raw bytes of a required disc file.
+    /// </summary>
+    /// <param name="disc">The open disc source to read the file from.</param>
+    /// <param name="entries">The full disc file entry list to locate the file.</param>
+    /// <param name="isoPath">The ISO path of the required file (ordinal match).</param>
+    /// <returns>The raw file bytes.</returns>
+    /// <exception cref="InvalidDataException">No disc entry with the given ISO path exists.</exception>
     private static byte[] ReadRequiredFile(DiscSource disc, IReadOnlyList<DiscFileEntry> entries, string isoPath)
     {
         DiscFileEntry? entry = entries.SingleOrDefault(e =>

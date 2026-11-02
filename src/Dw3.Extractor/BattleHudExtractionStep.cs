@@ -27,6 +27,15 @@ internal static class BattleHudExtractionStep
     // Required HUD frame ids (HP bar caps, background, tech gauge blink frames 0x33..0x3A).
     private static readonly int[] RequiredFrameIds = [0, 1, 0xB, 0x1E, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3A];
 
+    /// <summary>
+    /// Opens the disc, reads the HUD sprite sheet (file 0x455) and images archive (file 0x456),
+    /// renders all HUD frames with 5 CLUT rows each, decodes the cursor bar, and writes the data pack.
+    /// </summary>
+    /// <param name="cuePath">Path to the CUE sheet of the supported disc image.</param>
+    /// <param name="outputDirectory">Root of the data pack to write into.</param>
+    /// <param name="output">Receives one JSON event line on success.</param>
+    /// <param name="error">Receives one plain-text error line on failure.</param>
+    /// <returns>0 on success, 1 on extraction error.</returns>
     internal static int Extract(string cuePath, string outputDirectory, TextWriter output, TextWriter error)
     {
         try
@@ -61,6 +70,13 @@ internal static class BattleHudExtractionStep
         }
     }
 
+    /// <summary>
+    /// Parses the HUD sprite sheet and texture pages, validates required frame ids, renders all
+    /// frames with 5 CLUT rows each, decodes the cursor bar, and writes PNGs and <c>hud.json</c>.
+    /// </summary>
+    /// <param name="context">The data pack write context providing the database, transaction, and image paths.</param>
+    /// <param name="sheetData">The raw bytes of the HUD sprite sheet archive (file 0x455).</param>
+    /// <param name="imagesData">The raw bytes of the HUD images archive (file 0x456).</param>
     private static void WriteHudDomain(DataPackWriteContext context, byte[] sheetData, byte[] imagesData)
     {
         var (parts, ids, frameOffsets) = HudSpriteSheetParser.Parse(sheetData);
@@ -105,6 +121,17 @@ internal static class BattleHudExtractionStep
         File.WriteAllText(context.GetImagePath($"{OutputSubdir}/hud.json"), hudJson, new System.Text.UTF8Encoding(false));
     }
 
+    /// <summary>
+    /// Builds the <c>hud.json</c> document as a UTF-8 string with exact property names and ordering.
+    /// Includes schema, source file ids, per-frame CLUT row paths, and cursor metadata.
+    /// </summary>
+    /// <param name="frameRecords">All rendered frames with their per-CLUT-row PNG paths and dimensions.</param>
+    /// <param name="ids">The ordered frame id list from the sprite sheet header.</param>
+    /// <param name="sheetData">The raw sheet bytes, used to compute the source SHA-256.</param>
+    /// <param name="imagesData">The raw images bytes, used to compute the source SHA-256.</param>
+    /// <param name="cw">The total width of the cursor bar strip in pixels.</param>
+    /// <param name="ch">The height of the cursor bar strip in pixels.</param>
+    /// <returns>A UTF-8 JSON string terminated with a newline.</returns>
     private static string BuildHudJson(
         List<(int Id, List<(string Path, int W, int H, int Ox, int Oy)> Rows)> frameRecords,
         IReadOnlyList<int> ids, byte[] sheetData, byte[] imagesData, int cw, int ch)
@@ -175,6 +202,16 @@ internal static class BattleHudExtractionStep
     }
 
     // Falls back to row 0 when the computed CLUT row is outside the page (Python behaviour).
+    /// <summary>
+    /// Renders one HUD frame using the given CLUT row, falling back to row 0 when the palette
+    /// falls outside the loaded texture pages (matches Python fallback behaviour).
+    /// </summary>
+    /// <param name="parts">The ordered sprite-part list from the HUD sprite sheet header.</param>
+    /// <param name="sheetBody">The sprite sheet body bytes starting at byte 4 (after the outer pointer).</param>
+    /// <param name="frameOffset">Byte offset of the frame header within <paramref name="sheetBody"/>.</param>
+    /// <param name="pages">The loaded HUD texture pages.</param>
+    /// <param name="row">The CLUT row index to render; falls back to 0 on palette-out-of-range errors.</param>
+    /// <returns>Rendered RGBA pixel data plus bounding box and ABR flag.</returns>
     private static (byte[] Rgba, int W, int H, int Ox, int Oy, int Abr) TryRenderFrame(
         IReadOnlyList<HudSpritePart> parts, ReadOnlySpan<byte> sheetBody, int frameOffset,
         IReadOnlyList<HudTexturePage> pages, int row)
@@ -184,6 +221,16 @@ internal static class BattleHudExtractionStep
         { return HudFrameRenderer.RenderFrame(parts, sheetBody, frameOffset, pages, 0); }
     }
 
+    /// <summary>
+    /// Crops one cursor frame from the full cursor bar strip.
+    /// The strip stores <c>frameIdx</c> frames side-by-side; each frame is <paramref name="fw"/>×<paramref name="fh"/> pixels.
+    /// </summary>
+    /// <param name="full">The full cursor bar RGBA pixel array (width <paramref name="fullW"/>).</param>
+    /// <param name="fullW">The width of the full cursor bar in pixels.</param>
+    /// <param name="frameIdx">Zero-based frame index to crop.</param>
+    /// <param name="fw">Width of one cursor frame in pixels.</param>
+    /// <param name="fh">Height of one cursor frame in pixels.</param>
+    /// <returns>RGBA pixel data for the cropped cursor frame.</returns>
     private static byte[] CropCursorFrame(byte[] full, int fullW, int frameIdx, int fw, int fh)
     {
         var result = new byte[fw * fh * 4];
@@ -192,12 +239,22 @@ internal static class BattleHudExtractionStep
         return result;
     }
 
+    /// <summary>
+    /// Reads disc members by engine file id through the executable's file-sector table.
+    /// Builds the LBA-to-path map from non-empty disc entries only (zero-length entries share LBAs).
+    /// </summary>
     private sealed class EngineFiles
     {
         private readonly DiscSource _disc;
         private readonly DiscFileTable _table;
         private readonly Dictionary<string, DiscFileEntry> _byPath;
 
+        /// <summary>
+        /// Initialises the file-sector table and ISO path index from the executable and disc entries.
+        /// </summary>
+        /// <param name="disc">The open disc source for subsequent file reads.</param>
+        /// <param name="entries">All disc file entries; zero-length entries are excluded from the LBA map.</param>
+        /// <param name="executable">The parsed PS1 executable carrying the FILE_SECTORS table.</param>
         internal EngineFiles(DiscSource disc, IReadOnlyList<DiscFileEntry> entries, PsxExecutable executable)
         {
             _disc = disc;
@@ -208,6 +265,13 @@ internal static class BattleHudExtractionStep
             _byPath = entries.Where(e => e.Size > 0).GroupBy(e => e.IsoPath).ToDictionary(g => g.Key, g => g.First());
         }
 
+        /// <summary>
+        /// Returns the ISO path and raw bytes for the disc member starting at engine file id
+        /// <paramref name="fileId"/> in the file-sector table.
+        /// </summary>
+        /// <param name="fileId">The engine file id (0-based index into the FILE_SECTORS table).</param>
+        /// <returns>The ISO path and raw byte content of the disc member.</returns>
+        /// <exception cref="FormatException">The file id is outside the table or no disc member starts at its sector.</exception>
         internal (string Path, byte[] Bytes) Read(int fileId)
         {
             string path = _table.PathOf(fileId)

@@ -13,7 +13,7 @@ namespace Dw3.Extractor;
 /// Overlay load base address: 0x800A5DE0 (disc executable constant).
 /// Supported overlay actor addresses (overlay RAM addresses):
 ///   S200: actor1 = 0x800A7110
-///   S235: actor0 = 0x800A6524, actor1 = 0x800A6538
+///   S235: actor0 = 0x800A6524, actor1 = 0x800A6538.
 /// </summary>
 internal static class CollisionExtractionStep
 {
@@ -30,6 +30,16 @@ internal static class CollisionExtractionStep
             ["S235"] = new() { ["actor0"] = 0x800A6524u, ["actor1"] = 0x800A6538u },
         };
 
+    /// <summary>
+    /// Decodes FieldActor records from the S200 and S235 stage overlays and writes
+    /// <c>collision/collision-manifest.json</c> to the data pack at <paramref name="outputDirectory"/>.
+    /// </summary>
+    /// <param name="cuePath">Path to the CUE sheet of the supported disc image.</param>
+    /// <param name="outputDirectory">Root of the data pack to write into.</param>
+    /// <param name="onlyDomain">When non-null, must equal <c>"collision"</c>; other values return exit 2.</param>
+    /// <param name="output">Receives one JSON event line on success.</param>
+    /// <param name="error">Receives one plain-text error line on failure.</param>
+    /// <returns>0 on success, 1 on extraction error, 2 on usage error.</returns>
     internal static int Extract(string cuePath, string outputDirectory, string? onlyDomain, TextWriter output, TextWriter error)
     {
         if (onlyDomain is not null && !string.Equals(onlyDomain, "collision", StringComparison.Ordinal))
@@ -80,6 +90,15 @@ internal static class CollisionExtractionStep
         }
     }
 
+    /// <summary>
+    /// Returns the first disc entry whose ISO path equals <paramref name="isoPath"/>,
+    /// throwing <see cref="InvalidDataException"/> when no such entry exists.
+    /// </summary>
+    /// <param name="entries">The full disc file entry list to search.</param>
+    /// <param name="isoPath">The ISO path to match exactly (ordinal comparison).</param>
+    /// <param name="context">A human-readable stage name used in the error message.</param>
+    /// <returns>The matching <see cref="DiscFileEntry"/>.</returns>
+    /// <exception cref="InvalidDataException">The required disc member is absent.</exception>
     private static DiscFileEntry RequireFile(IReadOnlyList<DiscFileEntry> entries, string isoPath, string context)
     {
         return entries.SingleOrDefault(entry => string.Equals(entry.IsoPath, isoPath, StringComparison.Ordinal))

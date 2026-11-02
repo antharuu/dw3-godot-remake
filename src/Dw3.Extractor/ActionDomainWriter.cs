@@ -10,6 +10,9 @@ namespace Dw3.Extractor;
 public static class ActionDomainWriter
 {
     /// <summary>Writes one domain beneath its domain name in the data pack.</summary>
+    /// <param name="context">The data pack write context providing the database, transaction, and image paths.</param>
+    /// <param name="domain">The decoded action domain to write; must have a non-empty name and manifest schema.</param>
+    /// <exception cref="ArgumentException">The domain name or manifest schema is null or whitespace.</exception>
     public static void Write(DataPackWriteContext context, ActionDomain domain)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -28,6 +31,12 @@ public static class ActionDomainWriter
         WriteManifest(context, domain);
     }
 
+    /// <summary>
+    /// Encodes one action animation frame as a PNG file and inserts a row into <c>action_frames</c>.
+    /// </summary>
+    /// <param name="context">The data pack write context providing the database, transaction, and image paths.</param>
+    /// <param name="domain">The domain name used as the output subdirectory (e.g. <c>climb</c>).</param>
+    /// <param name="frame">The decoded frame with width, height, and RGBA pixel data.</param>
     private static void WriteFrame(DataPackWriteContext context, string domain, ActionFrame frame)
     {
         string relativePath = $"{domain}/frames/frame-{frame.FrameId:X2}.png";
@@ -39,6 +48,12 @@ public static class ActionDomainWriter
             domain, frame.FrameId, frame.Width, frame.Height, relativePath);
     }
 
+    /// <summary>
+    /// Inserts one row into <c>action_sets</c> and one row per animation record into <c>action_records</c>.
+    /// </summary>
+    /// <param name="context">The data pack write context providing the database and transaction.</param>
+    /// <param name="domain">The domain name used as the partition key in the tables.</param>
+    /// <param name="set">The action animation set with its ordered records and terminator type.</param>
     private static void WriteSet(DataPackWriteContext context, string domain, ActionSet set)
     {
         Insert(context, "INSERT INTO action_sets (domain, set_id, name, terminator) VALUES ($1, $2, $3, $4)",
@@ -51,6 +66,12 @@ public static class ActionDomainWriter
         }
     }
 
+    /// <summary>
+    /// Serialises the action domain manifest to an indented JSON file at
+    /// <c>&lt;domain.Name&gt;/manifest.json</c> under the data pack's image root.
+    /// </summary>
+    /// <param name="context">The data pack write context providing image path resolution.</param>
+    /// <param name="domain">The action domain with all frames and sets to include in the manifest.</param>
     private static void WriteManifest(DataPackWriteContext context, ActionDomain domain)
     {
         string path = context.GetImagePath($"{domain.Name}/manifest.json");
@@ -105,9 +126,21 @@ public static class ActionDomainWriter
         json.WriteEndObject();
     }
 
+    /// <summary>
+    /// Returns the JSON-safe string representation of an <see cref="ActionSequenceTerminator"/> value.
+    /// A loop terminator maps to <c>"loop"</c>; all other values map to <c>"end"</c>.
+    /// </summary>
+    /// <param name="terminator">The terminator value from the decoded action archive.</param>
+    /// <returns><c>"loop"</c> or <c>"end"</c>.</returns>
     private static string TerminatorName(ActionSequenceTerminator terminator) =>
         terminator == ActionSequenceTerminator.Loop ? "loop" : "end";
 
+    /// <summary>
+    /// Executes a parameterised INSERT command against the current pack transaction.
+    /// </summary>
+    /// <param name="context">The data pack write context providing the database and transaction.</param>
+    /// <param name="sql">The parameterised SQL text using positional parameters ($1, $2, …).</param>
+    /// <param name="values">The parameter values in positional order.</param>
     private static void Insert(DataPackWriteContext context, string sql, params object[] values)
     {
         using SqliteCommand command = context.Database.CreateCommand();

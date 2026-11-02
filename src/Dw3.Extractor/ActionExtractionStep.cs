@@ -44,6 +44,17 @@ internal static class ActionExtractionStep
             [0x19] = "LAND",
         });
 
+    /// <summary>
+    /// Decodes the action archive for the given domain (<c>climb</c> or <c>drop</c>), writes
+    /// PNG frames and SQLite rows, and emits a completion JSON line.
+    /// </summary>
+    /// <param name="cuePath">Path to the CUE sheet of the supported disc image.</param>
+    /// <param name="outputDirectory">Root of the data pack to write into.</param>
+    /// <param name="domain">Either <c>"climb"</c> or <c>"drop"</c>; determines which archive to decode.</param>
+    /// <param name="output">Receives one JSON event line on success.</param>
+    /// <param name="error">Receives one plain-text error line on failure.</param>
+    /// <returns>0 on success, 1 on extraction error.</returns>
+    /// <exception cref="ArgumentException">The domain is neither <c>"climb"</c> nor <c>"drop"</c>.</exception>
     internal static int Extract(string cuePath, string outputDirectory, string domain, TextWriter output, TextWriter error)
     {
         ActionDefinition definition = domain switch
@@ -78,6 +89,16 @@ internal static class ActionExtractionStep
         }
     }
 
+    /// <summary>
+    /// Decodes the offset table, set table, sequences, and TIM frames from the action archive,
+    /// validates set names against the definition, and returns a fully populated <see cref="ActionDomain"/>.
+    /// </summary>
+    /// <param name="definition">The disc-layout constants and set-name map for this domain.</param>
+    /// <param name="archive">The raw bytes of the action archive BIN file.</param>
+    /// <param name="archiveIsoPath">The ISO path of the archive; stored as provenance in the domain record.</param>
+    /// <returns>The decoded action domain with all frames, sets, and records.</returns>
+    /// <exception cref="FormatException">The archive has no animation sets, a set maps multiple directions to
+    /// different sequences, or a set id is not in the definition's name map.</exception>
     private static ActionDomain Decode(ActionDefinition definition, byte[] archive, string archiveIsoPath)
     {
         int[] offsets = ActionArchiveDecoder.DecodeOffsetTable(archive, definition.AnimationSetEntry);
@@ -118,5 +139,14 @@ internal static class ActionExtractionStep
             archiveIsoPath, Convert.ToHexStringLower(SHA256.HashData(archive)), archive.Length, frames, sets);
     }
 
+    /// <summary>
+    /// Holds the disc-layout constants and set-name map for one action extraction domain.
+    /// </summary>
+    /// <param name="Domain">Domain identifier: <c>"climb"</c> or <c>"drop"</c>.</param>
+    /// <param name="ManifestSchema">Cache schema identifier written into the data pack manifest.</param>
+    /// <param name="FileId">Engine file id of the action archive in the disc's file-sector table.</param>
+    /// <param name="AnimationSetEntry">Archive entry index of the animation-set table.</param>
+    /// <param name="DiscPath">ISO path of the action archive BIN file.</param>
+    /// <param name="SetNames">Maps each set id (0x1A..0x20 for climb, 0x16..0x19 for drop) to its constant name.</param>
     private sealed record ActionDefinition(string Domain, string ManifestSchema, int FileId, int AnimationSetEntry, string DiscPath, IReadOnlyDictionary<int, string> SetNames);
 }

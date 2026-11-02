@@ -17,6 +17,17 @@ internal static class WaterExtractionStep
 {
     private const string DomainName = "water";
 
+    /// <summary>
+    /// Iterates every field stage in the disc registry, decodes its StageTile objects from
+    /// the WSTAG overlay, the SnnnTMPK sprite sheet and the SnnnMASK texture, and writes the
+    /// result to <paramref name="outputDirectory"/>. Stages that the decoder rejects are
+    /// recorded as skipped rather than failing the whole run.
+    /// </summary>
+    /// <param name="cuePath">Path to the CUE sheet of the supported disc image.</param>
+    /// <param name="outputDirectory">Root of the data pack to write into.</param>
+    /// <param name="output">Receives progress and completion JSON event lines.</param>
+    /// <param name="error">Receives one plain-text error line on a fatal failure.</param>
+    /// <returns>0 on success, 1 on fatal extraction error.</returns>
     internal static int Extract(string cuePath, string outputDirectory, TextWriter output, TextWriter error)
     {
         try
@@ -61,5 +72,8 @@ internal static class WaterExtractionStep
         }
     }
 
+    /// <summary>Returns the lowercase hex-encoded SHA-256 digest of <paramref name="data"/>.</summary>
+    /// <param name="data">The byte array to hash; may not be <see langword="null"/>.</param>
+    /// <returns>A 64-character lowercase hex string.</returns>
     private static string Sha256(byte[] data) => Convert.ToHexStringLower(SHA256.HashData(data));
 }

@@ -227,6 +227,12 @@ public static class NpcDomainWriter
         }
     }
 
+    /// <summary>
+    /// Inserts one row into <c>npc_characters</c> for the given NPC character.
+    /// </summary>
+    /// <param name="context">The data pack write context providing the database and transaction.</param>
+    /// <param name="c">The extracted NPC character record to insert.</param>
+    /// <param name="prefix">Unused prefix parameter retained for call-site uniformity.</param>
     private static void InsertCharacter(DataPackWriteContext context, NpcExtractedCharacter c, string prefix)
     {
         _ = prefix;
@@ -249,6 +255,14 @@ public static class NpcDomainWriter
             c.Frames.Count);
     }
 
+    /// <summary>
+    /// Encodes one animation frame as a PNG, registers it with the data pack, and inserts
+    /// a row into <c>npc_frames</c> with width, height, and image path.
+    /// </summary>
+    /// <param name="context">The data pack write context providing the database, transaction, and image paths.</param>
+    /// <param name="c">The character the frame belongs to; provides actor id, stage id, and actor index.</param>
+    /// <param name="prefix">The relative subdirectory under the data pack root (e.g. <c>npc/S200/0</c>).</param>
+    /// <param name="frame">The decoded frame with pixel data and display offsets.</param>
     private static void WriteFrame(DataPackWriteContext context, NpcExtractedCharacter c, string prefix, NpcExtractedFrame frame)
     {
         string relativePath = $"{prefix}/frames/frame-{frame.FrameId:X2}.png";
@@ -268,6 +282,14 @@ public static class NpcDomainWriter
             relativePath);
     }
 
+    /// <summary>
+    /// Inserts one row into <c>npc_anim_sets</c> with the five directional sequence indices.
+    /// Every NPC animation set carries exactly five direction slots (South, West, North, East, unused).
+    /// </summary>
+    /// <param name="context">The data pack write context providing the database and transaction.</param>
+    /// <param name="c">The character the set belongs to; provides actor id, stage id, and actor index.</param>
+    /// <param name="set">The animation set with set id and five directional sequence indices.</param>
+    /// <exception cref="ArgumentException">The set does not contain exactly five sequence indices.</exception>
     private static void WriteAnimSet(DataPackWriteContext context, NpcExtractedCharacter c, NpcAnimSet set)
     {
         if (set.SequenceIndices.Count != 5)
@@ -289,6 +311,13 @@ public static class NpcDomainWriter
             set.SequenceIndices[4]);
     }
 
+    /// <summary>
+    /// Inserts one row into <c>npc_sequences</c> and one row per animation record into
+    /// <c>npc_sequence_records</c> for the given character sequence.
+    /// </summary>
+    /// <param name="context">The data pack write context providing the database and transaction.</param>
+    /// <param name="c">The character the sequence belongs to; provides actor id, stage id, and actor index.</param>
+    /// <param name="seq">The animation sequence with terminator type and ordered animation records.</param>
     private static void WriteSequence(DataPackWriteContext context, NpcExtractedCharacter c, NpcAnimSequence seq)
     {
         string terminator = seq.Terminator == NpcSequenceTerminator.Loop ? "loop" : "end";
@@ -318,6 +347,13 @@ public static class NpcDomainWriter
         }
     }
 
+    /// <summary>
+    /// Serialises the NPC character manifest to JSON and writes it to
+    /// <c>&lt;prefix&gt;/manifest.json</c> under the data pack's image root.
+    /// </summary>
+    /// <param name="context">The data pack write context providing image path resolution.</param>
+    /// <param name="c">The extracted NPC character with all frames, sets, and sequences.</param>
+    /// <param name="prefix">The relative subdirectory under the data pack root (e.g. <c>npc/S200/0</c>).</param>
     private static void WriteManifest(DataPackWriteContext context, NpcExtractedCharacter c, string prefix)
     {
         string relativePath = $"{prefix}/manifest.json";
@@ -350,6 +386,12 @@ public static class NpcDomainWriter
         File.WriteAllText(path, System.Text.Json.JsonSerializer.Serialize(manifest, ManifestSerializerOptions));
     }
 
+    /// <summary>
+    /// Executes a parameterised INSERT command against the current pack transaction.
+    /// </summary>
+    /// <param name="context">The data pack write context providing the database and transaction.</param>
+    /// <param name="sql">The parameterised SQL text using positional parameters ($1, $2, …).</param>
+    /// <param name="parameters">The parameter values in positional order.</param>
     private static void Insert(DataPackWriteContext context, string sql, params object[] parameters)
     {
         using SqliteCommand command = context.Database.CreateCommand();

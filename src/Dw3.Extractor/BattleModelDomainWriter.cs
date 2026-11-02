@@ -14,6 +14,9 @@ public static class BattleModelDomainWriter
     private const string ModelsDirectory = "battle/models";
 
     /// <summary>Writes every fighter in entry order.</summary>
+    /// <param name="context">The data pack write context providing the database, transaction, and image paths.</param>
+    /// <param name="fighters">The decoded fighter list; failed decodings are recorded as failed rows.</param>
+    /// <param name="edition">The disc edition label written into the model JSON (e.g. <c>"SLES-03936"</c>).</param>
     public static void Write(DataPackWriteContext context, IReadOnlyList<BattleModelExtraction> fighters, string edition)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -32,6 +35,16 @@ public static class BattleModelDomainWriter
                 fighters.Count(fighter => fighter.Payload?.Metadata.Face.Parts.Count > 0)));
     }
 
+    /// <summary>
+    /// Writes the model manifest JSON, inserts a decoded row into <c>battle_models</c>, inserts bone rows,
+    /// and writes texture and track assets when a full payload is available.
+    /// </summary>
+    /// <param name="context">The data pack write context providing the database, transaction, and image paths.</param>
+    /// <param name="ordinal">The zero-based position of this fighter in the fighter table.</param>
+    /// <param name="reference">The resolved fighter model reference with file and archive entry numbers.</param>
+    /// <param name="model">The decoded model structure with bones and mesh counts.</param>
+    /// <param name="fighter">The full extraction result providing the disc path and optional payload.</param>
+    /// <param name="edition">The disc edition label written into the model JSON.</param>
     private static void WriteDecoded(DataPackWriteContext context, int ordinal, FighterModelReference reference, BattleModelStructure model, BattleModelExtraction fighter, string edition)
     {
         string manifest = $"{ModelsDirectory}/fighter-{reference.FighterId}-model.json";
@@ -50,6 +63,13 @@ public static class BattleModelDomainWriter
             WriteAssets(context, reference.FighterId, full);
     }
 
+    /// <summary>
+    /// Writes texture PNGs and inserts rows into <c>battle_model_textures</c>,
+    /// <c>battle_model_track_keys</c>, and <c>battle_model_motion_steps</c> for a fully decoded payload.
+    /// </summary>
+    /// <param name="context">The data pack write context providing the database, transaction, and image paths.</param>
+    /// <param name="fighterId">The fighter id used as the filename prefix and database key.</param>
+    /// <param name="payload">The decoded model payload with textures, bone tracks, and motion steps.</param>
     private static void WriteAssets(DataPackWriteContext context, int fighterId, BattleModelPayload payload)
     {
         foreach (BattleTexture texture in payload.Textures.Textures)
@@ -75,10 +95,22 @@ public static class BattleModelDomainWriter
             }
     }
 
+    /// <summary>
+    /// Inserts a failed row into <c>battle_models</c> for a fighter whose model could not be decoded.
+    /// </summary>
+    /// <param name="context">The data pack write context providing the database and transaction.</param>
+    /// <param name="ordinal">The zero-based position of this fighter in the fighter table.</param>
+    /// <param name="outcome">The failed outcome carrying the fighter entry and failure reason.</param>
     private static void WriteFailed(DataPackWriteContext context, int ordinal, BattleModelOutcome outcome) =>
         Insert(context, "INSERT INTO battle_models (fighter_id,entry_ordinal,record_index,kind,status,reason) VALUES ($1,$2,$3,$4,'failed',$5)",
             outcome.Entry.FighterId, ordinal, outcome.Entry.Index, outcome.Entry.Kind, outcome.Reason!);
 
+    /// <summary>
+    /// Executes a parameterised INSERT command against the current pack transaction.
+    /// </summary>
+    /// <param name="context">The data pack write context providing the database and transaction.</param>
+    /// <param name="sql">The parameterised SQL text using positional parameters ($1, $2, …).</param>
+    /// <param name="values">The parameter values in positional order.</param>
     private static void Insert(DataPackWriteContext context, string sql, params object[] values)
     {
         using SqliteCommand command = context.Database.CreateCommand();

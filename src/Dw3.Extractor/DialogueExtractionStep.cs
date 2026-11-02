@@ -7,6 +7,17 @@ namespace Dw3.Extractor;
 /// <summary>Extracts every dialogue-bearing stage from the user disc into SQLite and manifest JSON.</summary>
 internal static class DialogueExtractionStep
 {
+    /// <summary>
+    /// Runs the dialogue extraction pipeline against the disc at <paramref name="cuePath"/> and writes
+    /// the SQLite rows and manifest JSON to <paramref name="outputDirectory"/>. Stages whose mode is
+    /// not a dialogue zone (modes 0x204 and 0x22D) are silently omitted; unexpected failures for
+    /// non-0x210 modes are treated as fatal and propagated as <see cref="FormatException"/>.
+    /// </summary>
+    /// <param name="cuePath">Path to the CUE sheet of the supported disc image.</param>
+    /// <param name="outputDirectory">Root of the data pack to write into.</param>
+    /// <param name="output">Receives one JSON event line on success.</param>
+    /// <param name="error">Receives one plain-text error line on failure.</param>
+    /// <returns>0 on success, 1 on extraction error.</returns>
     internal static int Extract(string cuePath, string outputDirectory, TextWriter output, TextWriter error)
     {
         try

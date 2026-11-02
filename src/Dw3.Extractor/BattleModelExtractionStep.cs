@@ -25,6 +25,15 @@ internal static class BattleModelExtractionStep
     /// <summary>Engine file id of the fighter table (AAA/PRO/SMDLDATA.PRO) in the file-sector table.</summary>
     private const int FighterTableFileId = 0x1CC;
 
+    /// <summary>
+    /// Opens the disc, builds the engine file table, iterates every fighter table entry,
+    /// and writes models domain to <paramref name="outputDirectory"/>.
+    /// </summary>
+    /// <param name="cuePath">Path to the CUE sheet of the supported disc image.</param>
+    /// <param name="outputDirectory">Root of the data pack to write into.</param>
+    /// <param name="output">Receives one JSON event line on success.</param>
+    /// <param name="error">Receives per-fighter decode errors and one fatal error line on failure.</param>
+    /// <returns>0 on success, 1 on fatal extraction error.</returns>
     internal static int Extract(string cuePath, string outputDirectory, TextWriter output, TextWriter error)
     {
         try
@@ -57,6 +66,15 @@ internal static class BattleModelExtractionStep
         }
     }
 
+    /// <summary>
+    /// Attempts to decode the full model payload for one fighter entry; returns a failed extraction
+    /// record when the model data cannot be decoded, logging the reason to <paramref name="error"/>.
+    /// </summary>
+    /// <param name="table">The fighter model table providing reference resolution and metadata.</param>
+    /// <param name="entry">The fighter table entry to extract.</param>
+    /// <param name="files">Engine file reader backed by the disc's file-sector table.</param>
+    /// <param name="error">Receives a single plain-text error line when decoding fails.</param>
+    /// <returns>A decoded extraction or a failed extraction record with the reason.</returns>
     private static BattleModelExtraction ExtractFighter(FighterModelTable table, FighterModelEntry entry, EngineFiles files, TextWriter error)
     {
         try
@@ -82,6 +100,12 @@ internal static class BattleModelExtractionStep
         private readonly DiscFileTable _table;
         private readonly Dictionary<string, DiscFileEntry> _byPath;
 
+        /// <summary>
+        /// Initialises the file-sector table and ISO path index from the executable and disc entries.
+        /// </summary>
+        /// <param name="disc">The open disc source for subsequent file reads.</param>
+        /// <param name="entries">All disc file entries; zero-length entries are excluded from the LBA map.</param>
+        /// <param name="executable">The parsed PS1 executable carrying the FILE_SECTORS table.</param>
         internal EngineFiles(DiscSource disc, IReadOnlyList<DiscFileEntry> entries, PsxExecutable executable)
         {
             _disc = disc;
@@ -95,6 +119,11 @@ internal static class BattleModelExtractionStep
             _byPath = entries.Where(entry => entry.Size > 0).GroupBy(entry => entry.IsoPath).ToDictionary(group => group.Key, group => group.First());
         }
 
+        /// <summary>
+        /// Returns the ISO path and raw bytes for the disc member at engine file id <paramref name="fileId"/>.
+        /// </summary>
+        /// <param name="fileId">The engine file id (0-based index into the FILE_SECTORS table).</param>
+        /// <returns>The ISO path and raw byte content of the disc member.</returns>
         /// <exception cref="FormatException">The id is outside the table or no disc member starts at its sector.</exception>
         internal (string Path, byte[] Bytes) Read(int fileId)
         {

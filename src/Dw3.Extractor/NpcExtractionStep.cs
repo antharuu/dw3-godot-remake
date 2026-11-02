@@ -22,6 +22,17 @@ internal static class NpcExtractionStep
     // Stage overlay load base (EU disc, constant across all WSTAG*.PRO overlays).
     private const uint StageVram = 0x800A5DE0u;
 
+    /// <summary>
+    /// Extracts NPC character sprites and animation data for every stage provided by
+    /// <paramref name="tableSource"/>. Writes PNG frames, sequence rows, set rows, and manifest
+    /// JSON to <paramref name="outputDirectory"/>; characters that fail to decode are skipped.
+    /// </summary>
+    /// <param name="cuePath">Path to the CUE sheet of the supported disc image.</param>
+    /// <param name="outputDirectory">Root of the data pack to write into.</param>
+    /// <param name="tableSource">Source providing actor tables, file paths, and stage id lists.</param>
+    /// <param name="output">Receives progress and completion JSON event lines.</param>
+    /// <param name="error">Receives per-character decode error lines and a final error line on failure.</param>
+    /// <returns>0 on success, 1 on fatal extraction error.</returns>
     internal static int Extract(
         string cuePath,
         string outputDirectory,
@@ -74,6 +85,15 @@ internal static class NpcExtractionStep
         }
     }
 
+    /// <summary>
+    /// Convenience overload that builds the actor table source from the disc and delegates to
+    /// <see cref="Extract(string, string, INpcActorTableSource, TextWriter, TextWriter)"/>.
+    /// </summary>
+    /// <param name="cuePath">Path to the CUE sheet of the supported disc image.</param>
+    /// <param name="outputDirectory">Root of the data pack to write into.</param>
+    /// <param name="output">Receives progress and completion JSON event lines.</param>
+    /// <param name="error">Receives one plain-text error line on failure.</param>
+    /// <returns>0 on success, 1 on fatal extraction error.</returns>
     internal static int Extract(string cuePath, string outputDirectory, TextWriter output, TextWriter error)
     {
         try
@@ -187,6 +207,17 @@ internal static class NpcExtractionStep
         return (path, new NpcFileEntry(packedEntry.Value.FileNumber, packedEntry.Value.ArchiveEntry));
     }
 
+    /// <summary>
+    /// Decodes the animation frames, sets, and sequences from an NPC character archive and
+    /// returns a fully populated <see cref="NpcExtractedCharacter"/>.
+    /// </summary>
+    /// <param name="archiveBytes">The raw bytes of the NPC character archive (WSTAG-relative sprite BIN).</param>
+    /// <param name="discPath">The ISO path of the archive, stored as provenance in the character record.</param>
+    /// <param name="archiveEntry">The archive entry index of the animation-set table (frames precede it, 0-based).</param>
+    /// <param name="actorId">The disc actor id (FIELDSTG_fileEntries index).</param>
+    /// <param name="stageId">The three-digit stage number the actor was placed in.</param>
+    /// <param name="actorIndex">The zero-based actor placement index within the stage overlay.</param>
+    /// <returns>A fully decoded NPC character with frames, sets, sequences, and metadata.</returns>
     private static NpcExtractedCharacter DecodeCharacter(
         byte[] archiveBytes, string discPath, int archiveEntry, int actorId, int stageId, int actorIndex)
     {

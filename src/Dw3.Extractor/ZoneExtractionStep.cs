@@ -610,6 +610,13 @@ internal static class ZoneExtractionStep
         return Convert.ToHexStringLower(hash);
     }
 
+    /// <summary>
+    /// Extracts the three-digit numeric stage identifier from an ISO path of the form
+    /// <c>AAA/PRO/WSTAG###.PRO</c>. Returns <see langword="null"/> for paths that do not
+    /// match the prefix or suffix pattern, or whose numeric segment cannot be parsed.
+    /// </summary>
+    /// <param name="isoPath">The ISO path to examine.</param>
+    /// <returns>The stage number, or <see langword="null"/> when the path does not match.</returns>
     private static int? ParseProStage(string isoPath)
     {
         const string prefix = "AAA/PRO/WSTAG";

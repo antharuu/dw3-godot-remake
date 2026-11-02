@@ -10,6 +10,14 @@ namespace Dw3.Extractor;
 /// </summary>
 internal static class DialogueSqlWriter
 {
+    /// <summary>
+    /// Inserts all dialogue zones, actors, and talks for every stage in <paramref name="stages"/>
+    /// into the pack database, evaluating talk selection with the supplied progress snapshot.
+    /// </summary>
+    /// <param name="context">The data pack write context providing the database and transaction.</param>
+    /// <param name="stages">The analysed stage dialogue records ordered by stage id.</param>
+    /// <param name="progress">The progress condition tables for conditional talk selection.</param>
+    /// <param name="snapshotProgress">The snapshot progress value used for condition evaluation; ranges 0..n.</param>
     internal static void Write(
         DataPackWriteContext context,
         IReadOnlyList<StageDialogueAnalysis> stages,
@@ -34,6 +42,17 @@ internal static class DialogueSqlWriter
         }
     }
 
+    /// <summary>
+    /// Inserts one row per condition or action code into <c>dialogue_codes</c> for the
+    /// given actor and talk, with their computed kind strings.
+    /// </summary>
+    /// <param name="context">The data pack write context providing the database and transaction.</param>
+    /// <param name="stageId">The stage the actor belongs to.</param>
+    /// <param name="actorIndex">The actor index within the stage.</param>
+    /// <param name="talkIndex">The talk index within the actor.</param>
+    /// <param name="listKind">Either <c>"condition"</c> or <c>"action"</c>.</param>
+    /// <param name="codes">The ordered list of NPC condition or action codes to insert.</param>
+    /// <param name="kind">A delegate that maps a raw code integer to its kind string.</param>
     internal static void InsertCodes(
         DataPackWriteContext context, int stageId, int actorIndex, int talkIndex,
         string listKind, IReadOnlyList<NpcCondition> codes, Func<int, string> kind)
@@ -46,6 +65,12 @@ internal static class DialogueSqlWriter
         }
     }
 
+    /// <summary>
+    /// Executes a parameterised INSERT command against the current pack transaction.
+    /// </summary>
+    /// <param name="context">The data pack write context providing the database and transaction.</param>
+    /// <param name="sql">The parameterised SQL text using positional parameters ($1, $2, …).</param>
+    /// <param name="values">The parameter values in positional order.</param>
     internal static void Insert(DataPackWriteContext context, string sql, params object[] values)
     {
         using SqliteCommand command = context.Database.CreateCommand();

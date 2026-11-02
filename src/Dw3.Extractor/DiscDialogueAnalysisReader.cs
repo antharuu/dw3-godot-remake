@@ -16,6 +16,14 @@ internal static class DiscDialogueAnalysisReader
     private const string ExecutablePath = "SLES_039.36";
     private const string FieldStgPath = "AAA/PRO/FIELDSTG.PRO";
 
+    /// <summary>
+    /// Reads the SLES executable, the FIELDSTG overlay and every WSTAG stage overlay from the disc,
+    /// then analyses all field stages for FieldTalk dialogue data.
+    /// </summary>
+    /// <param name="disc">The open disc source to read files from.</param>
+    /// <param name="entries">The full list of disc file entries (from disc.ListFiles()).</param>
+    /// <returns>The complete analysis result including stage analyses, failures, and progress tables.</returns>
+    /// <exception cref="InvalidDataException">A required disc file is absent.</exception>
     public static RomAnalysisResult Read(DiscSource disc, IReadOnlyList<DiscFileEntry> entries)
     {
         ArgumentNullException.ThrowIfNull(disc);
@@ -37,6 +45,14 @@ internal static class DiscDialogueAnalysisReader
         return RomAnalysis.Analyze(executable, layout, files, CountryFolder, widths, stages);
     }
 
+    /// <summary>
+    /// Returns the first disc entry with a path matching <paramref name="path"/> exactly (ordinal),
+    /// throwing <see cref="InvalidDataException"/> when no such entry exists.
+    /// </summary>
+    /// <param name="entries">The disc file entry list to search.</param>
+    /// <param name="path">The ISO path to find.</param>
+    /// <returns>The matching <see cref="DiscFileEntry"/>.</returns>
+    /// <exception cref="InvalidDataException">The required disc file is absent.</exception>
     private static DiscFileEntry Require(IReadOnlyList<DiscFileEntry> entries, string path) =>
         entries.SingleOrDefault(entry => string.Equals(entry.IsoPath, path, StringComparison.Ordinal))
         ?? throw new InvalidDataException($"Required disc file is absent: {path}");

@@ -88,6 +88,15 @@ internal static class DialogueManifestWriter
         json.Flush();
     }
 
+    /// <summary>
+    /// Appends a named JSON array of condition or action code objects to <paramref name="json"/>.
+    /// Each object contains <c>code</c>, <c>value</c>, and <c>kind</c> (the kind string from
+    /// <paramref name="kind"/>).
+    /// </summary>
+    /// <param name="json">The JSON writer to append to.</param>
+    /// <param name="name">The property name for the array.</param>
+    /// <param name="codes">The ordered list of NPC condition or action codes.</param>
+    /// <param name="kind">A delegate that maps a raw code integer to its kind string.</param>
     internal static void WriteCodes(Utf8JsonWriter json, string name, IReadOnlyList<NpcCondition> codes, Func<int, string> kind)
     {
         json.WriteStartArray(name);
@@ -103,6 +112,13 @@ internal static class DialogueManifestWriter
         json.WriteEndArray();
     }
 
+    /// <summary>
+    /// Classifies a raw condition code into a named category by its high byte group.
+    /// Group 0x00..0x40 (even): flag; 0x60: progress; 0x70: special; 0x80..0x8E: item;
+    /// 0x90: start_event; everything else: none.
+    /// </summary>
+    /// <param name="code">The raw 16-bit condition code from the disc talk table.</param>
+    /// <returns>A lowercase ASCII kind string consumed by the runtime manifest reader.</returns>
     internal static string ConditionKind(int code)
     {
         int group = (code >> 8) & 0xFE;
@@ -117,6 +133,14 @@ internal static class DialogueManifestWriter
         };
     }
 
+    /// <summary>
+    /// Classifies a raw action code into a named category by its high byte group.
+    /// Group 0x00..0x40 (even): flag_set; 0x70: special; 0x74: event_battle;
+    /// 0x76/0x78: card_battle; 0x7A/0x7C/0x94: mode_change; 0x80..0x8E: item;
+    /// 0x90: start_event; 0x92: card; everything else: unknown.
+    /// </summary>
+    /// <param name="code">The raw 16-bit action code from the disc talk table.</param>
+    /// <returns>A lowercase ASCII kind string consumed by the runtime manifest reader.</returns>
     internal static string ActionKind(int code)
     {
         int group = (code >> 8) & 0xFE;

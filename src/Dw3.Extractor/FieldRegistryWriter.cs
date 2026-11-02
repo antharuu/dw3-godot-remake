@@ -8,6 +8,9 @@ namespace Dw3.Extractor;
 public static class FieldRegistryWriter
 {
     /// <summary>Persists every classified field stage before resolving its exit destinations.</summary>
+    /// <param name="context">The data pack write context providing the database and transaction.</param>
+    /// <param name="stages">The extracted field stages including mode, overlay file id, and warp slots.</param>
+    /// <exception cref="InvalidDataException">Two stages share the same field mode.</exception>
     public static void Write(DataPackWriteContext context, IReadOnlyList<ExtractedFieldStage> stages)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -34,6 +37,11 @@ public static class FieldRegistryWriter
         }
     }
 
+    /// <summary>
+    /// Inserts one row into <c>field_stages</c> with stage id, mode, overlay file id, status, and error.
+    /// </summary>
+    /// <param name="context">The data pack write context providing the database and transaction.</param>
+    /// <param name="stage">The extracted field stage to insert.</param>
     private static void InsertStage(DataPackWriteContext context, ExtractedFieldStage stage)
     {
         using SqliteCommand command = context.Database.CreateCommand();
@@ -50,6 +58,15 @@ public static class FieldRegistryWriter
         command.ExecuteNonQuery();
     }
 
+    /// <summary>
+    /// Inserts one row into <c>field_warps</c> for a type-1 (warp) slot. The destination stage id
+    /// is stored when it can be resolved from the known mode-to-stage map; otherwise NULL is written.
+    /// </summary>
+    /// <param name="context">The data pack write context providing the database and transaction.</param>
+    /// <param name="sourceStage">The stage containing this warp slot.</param>
+    /// <param name="slotIndex">The zero-based slot index within the stage.</param>
+    /// <param name="slot">The warp slot with destination mode, position, and condition.</param>
+    /// <param name="destinationStage">The resolved destination stage id, or <see langword="null"/> when unknown.</param>
     private static void InsertWarp(
         DataPackWriteContext context,
         int sourceStage,

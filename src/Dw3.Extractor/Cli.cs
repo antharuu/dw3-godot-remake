@@ -58,6 +58,14 @@ public static class Cli
         return 2;
     }
 
+    /// <summary>
+    /// Parses the extract subcommand arguments, validates required fields, and runs either the full
+    /// extraction pipeline or a single-domain dispatch.
+    /// </summary>
+    /// <param name="arguments">Full argument list including the "extract" verb.</param>
+    /// <param name="output">Receives JSONL progress events on full extraction or one completion line on single-domain.</param>
+    /// <param name="error">Receives usage or extraction error messages.</param>
+    /// <returns>0 on success, 1 on extraction error, 2 on usage error.</returns>
     private static int RunExtract(IReadOnlyList<string> arguments, TextWriter output, TextWriter error)
     {
         bool jsonlRequested = arguments.Skip(1).Any(
@@ -97,6 +105,15 @@ public static class Cli
         return DispatchSingleDomain(opts.OnlyDomain, opts.CuePath, opts.OutputPath, output, error);
     }
 
+    /// <summary>
+    /// Parses <c>--disc</c>, <c>--out</c>, <c>--only</c>, and <c>--progress</c> from the extract
+    /// argument list, writing a usage error and returning null on the first unrecognised token.
+    /// </summary>
+    /// <param name="arguments">Full argument list including the "extract" verb.</param>
+    /// <param name="jsonlRequested">Whether JSONL progress output was requested (drives error format).</param>
+    /// <param name="output">Used when writing JSONL-format errors.</param>
+    /// <param name="error">Used when writing plain-text errors.</param>
+    /// <returns>The parsed options, or <see langword="null"/> on a usage error.</returns>
     private static ExtractOptions? TryParseExtractOptions(
         IReadOnlyList<string> arguments,
         bool jsonlRequested,
@@ -136,6 +153,16 @@ public static class Cli
         return new ExtractOptions(cuePath, outputPath, onlyDomain, progressFormat);
     }
 
+    /// <summary>
+    /// Routes a single domain name to the appropriate extraction step.
+    /// Tries field domains first, then content domains, then battle domains.
+    /// </summary>
+    /// <param name="domain">The domain name (e.g. <c>"zones"</c>, <c>"battle"</c>).</param>
+    /// <param name="cuePath">Path to the CUE sheet of the supported disc image.</param>
+    /// <param name="outputPath">Root of the data pack to write into.</param>
+    /// <param name="output">Receives one JSON event line on success.</param>
+    /// <param name="error">Receives one plain-text error line on failure.</param>
+    /// <returns>0 on success, 1 on extraction error, 2 on unknown domain.</returns>
     private static int DispatchSingleDomain(
         string domain,
         string cuePath,
@@ -155,6 +182,16 @@ public static class Cli
         return result.Value;
     }
 
+    /// <summary>
+    /// Attempts to dispatch a field-geometry domain: zones, collision, player, water, climb, drop, npc.
+    /// Returns <see langword="null"/> for unrecognised names.
+    /// </summary>
+    /// <param name="domain">The domain name to match.</param>
+    /// <param name="cuePath">Path to the CUE sheet of the supported disc image.</param>
+    /// <param name="outputPath">Root of the data pack to write into.</param>
+    /// <param name="output">Receives one JSON event line on success.</param>
+    /// <param name="error">Receives one plain-text error line on failure.</param>
+    /// <returns>The extraction exit code, or <see langword="null"/> when the domain is not a field domain.</returns>
     private static int? TryDispatchFieldDomain(
         string domain,
         string cuePath,
@@ -196,6 +233,16 @@ public static class Cli
         return null;
     }
 
+    /// <summary>
+    /// Attempts to dispatch a content domain: cue, icon, font, text, dialogue, talk-box.
+    /// Returns <see langword="null"/> for unrecognised names.
+    /// </summary>
+    /// <param name="domain">The domain name to match.</param>
+    /// <param name="cuePath">Path to the CUE sheet of the supported disc image.</param>
+    /// <param name="outputPath">Root of the data pack to write into.</param>
+    /// <param name="output">Receives one JSON event line on success.</param>
+    /// <param name="error">Receives one plain-text error line on failure.</param>
+    /// <returns>The extraction exit code, or <see langword="null"/> when the domain is not a content domain.</returns>
     private static int? TryDispatchContentDomain(
         string domain,
         string cuePath,
@@ -228,6 +275,16 @@ public static class Cli
         return null;
     }
 
+    /// <summary>
+    /// Attempts to dispatch a battle domain: encounter, battle, digivolution, battle-models,
+    /// battle-stages, battle-hud, battle-report. Returns <see langword="null"/> for unrecognised names.
+    /// </summary>
+    /// <param name="domain">The domain name to match.</param>
+    /// <param name="cuePath">Path to the CUE sheet of the supported disc image.</param>
+    /// <param name="outputPath">Root of the data pack to write into.</param>
+    /// <param name="output">Receives one JSON event line on success.</param>
+    /// <param name="error">Receives one plain-text error line on failure.</param>
+    /// <returns>The extraction exit code, or <see langword="null"/> when the domain is not a battle domain.</returns>
     private static int? TryDispatchBattleDomain(
         string domain,
         string cuePath,
@@ -269,6 +326,16 @@ public static class Cli
         return null;
     }
 
+    /// <summary>
+    /// Writes a usage error in either JSONL format (when <paramref name="jsonlRequested"/> is true) or
+    /// plain text, then returns exit code 2.
+    /// </summary>
+    /// <param name="message">The usage error message to emit.</param>
+    /// <param name="jsonlRequested">When true, writes a JSONL error object to <paramref name="output"/>; otherwise
+    /// writes plain text to <paramref name="error"/>.</param>
+    /// <param name="output">Used for JSONL-format errors.</param>
+    /// <param name="error">Used for plain-text errors.</param>
+    /// <returns>Always 2 (POSIX usage error).</returns>
     private static int ExtractUsageError(string message, bool jsonlRequested, TextWriter output, TextWriter error)
     {
         if (jsonlRequested)
@@ -288,7 +355,7 @@ public static class Cli
 
     /// <summary>
     /// Lists every file on the disc with its SHA-256 digest, sorted by ISO path.
-    /// Output format (one line per file): &lt;sha256&gt;  &lt;iso/path&gt;
+    /// Output format (one line per file): &lt;sha256&gt;  &lt;iso/path&gt;.
     /// </summary>
     /// <param name="arguments">Full argument list including the "list-files" verb.</param>
     /// <param name="output">Receives one line per disc file: sha256  iso/path.</param>

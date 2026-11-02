@@ -30,6 +30,12 @@ internal static class EncounterSqlWriter
         WriteStageArrays(context, stages);
     }
 
+    /// <summary>
+    /// Inserts one row per enemy record into <c>encounter_enemies</c> with index, fighter,
+    /// level, HP, MP, and strength (all cast to int from their unsigned disc representation).
+    /// </summary>
+    /// <param name="context">The data pack write context providing the database and transaction.</param>
+    /// <param name="enemies">The decoded enemy records in source order.</param>
     private static void WriteEnemies(DataPackWriteContext context, IReadOnlyList<BattleEnemy> enemies)
     {
         foreach (BattleEnemy enemy in enemies)
@@ -46,6 +52,12 @@ internal static class EncounterSqlWriter
         }
     }
 
+    /// <summary>
+    /// Inserts one row per encounter record into <c>encounter_records</c> with enemy indices,
+    /// ambush chance, kind, and a JSON-encoded blocks array.
+    /// </summary>
+    /// <param name="context">The data pack write context providing the database and transaction.</param>
+    /// <param name="encounters">The decoded encounter records in source order.</param>
     private static void WriteEncounters(DataPackWriteContext context, IReadOnlyList<EncounterRecord> encounters)
     {
         foreach (EncounterRecord encounter in encounters)
@@ -64,6 +76,12 @@ internal static class EncounterSqlWriter
         }
     }
 
+    /// <summary>
+    /// Inserts one row per rate index into <c>encounter_battle_rates</c>.
+    /// Each rate is the probability (per step) of triggering a random encounter in the corresponding field zone.
+    /// </summary>
+    /// <param name="context">The data pack write context providing the database and transaction.</param>
+    /// <param name="battleRates">The ordered battle rate values in source order.</param>
     private static void WriteBattleRates(DataPackWriteContext context, IReadOnlyList<int> battleRates)
     {
         for (int index = 0; index < battleRates.Count; index++)
@@ -76,6 +94,12 @@ internal static class EncounterSqlWriter
         }
     }
 
+    /// <summary>
+    /// Inserts one row per stage battle array into <c>encounter_stage_arrays</c> with the overlay
+    /// RAM address, entry count, and overlay SHA-256 for provenance.
+    /// </summary>
+    /// <param name="context">The data pack write context providing the database and transaction.</param>
+    /// <param name="stages">Maps stage identifiers to their decoded stage array data.</param>
     private static void WriteStageArrays(
         DataPackWriteContext context,
         IReadOnlyDictionary<int, EncounterStageData> stages)
@@ -97,6 +121,12 @@ internal static class EncounterSqlWriter
         }
     }
 
+    /// <summary>
+    /// Executes a parameterised INSERT command against the current pack transaction.
+    /// </summary>
+    /// <param name="context">The data pack write context providing the database and transaction.</param>
+    /// <param name="sql">The parameterised SQL text using positional parameters ($1, $2, …).</param>
+    /// <param name="values">The parameter values in positional order.</param>
     private static void Insert(DataPackWriteContext context, string sql, params object[] values)
     {
         using SqliteCommand command = context.Database.CreateCommand();

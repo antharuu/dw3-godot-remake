@@ -38,6 +38,17 @@ internal static class BattleExtractionStep
         "AAA/DAT/COUNTRY/FRA/FSFGTRPT.BIN"
     ];
 
+    /// <summary>
+    /// Reads the SLES executable and STFGTREP.PRO from the disc, then dispatches to
+    /// <c>WriteBattle</c> (digimon, techniques, items, rewards, growth, text tables) or
+    /// <c>WriteDigivolution</c> (evolution prerequisites per partner) based on <paramref name="domain"/>.
+    /// </summary>
+    /// <param name="cuePath">Path to the CUE sheet of the supported disc image.</param>
+    /// <param name="outputDirectory">Root of the data pack to write into.</param>
+    /// <param name="domain">Either <c>"battle"</c> or <c>"digivolution"</c>.</param>
+    /// <param name="output">Receives one JSON event line on success.</param>
+    /// <param name="error">Receives one plain-text error line on failure.</param>
+    /// <returns>0 on success, 1 on extraction error.</returns>
     internal static int Extract(string cuePath, string outputDirectory, string domain, TextWriter output, TextWriter error)
     {
         try
@@ -65,6 +76,15 @@ internal static class BattleExtractionStep
         }
     }
 
+    /// <summary>
+    /// Decodes digimon, techniques, items, rewards, growth tables, and French text tables
+    /// from the executable and SDIGIEDT.PRO, then persists them to SQLite and JSON.
+    /// </summary>
+    /// <param name="context">The data pack write context providing the database, transaction, and image paths.</param>
+    /// <param name="disc">The open disc source for reading overlay files.</param>
+    /// <param name="entries">The full disc file entry list.</param>
+    /// <param name="executable">The parsed PS1 executable for RAM-relative data reads.</param>
+    /// <param name="executableBytes">The raw executable bytes (retained for forward compatibility; currently unused).</param>
     private static void WriteBattle(DataPackWriteContext context, DiscSource disc, IReadOnlyList<DiscFileEntry> entries, PsxExecutable executable, byte[] executableBytes)
     {
         _ = executableBytes;
@@ -97,6 +117,14 @@ internal static class BattleExtractionStep
         foreach (string path in FrenchTextPaths) WriteTextTable(context, path, disc.ReadFile(Require(entries, path)));
     }
 
+    /// <summary>
+    /// Reads the evolution prerequisite table (8 partners × 44 entries, each 12 bytes)
+    /// from STFGTREP.PRO and inserts rows into <c>digivolution_records</c> and <c>digivolution_needs</c>.
+    /// Writes <c>digivolution/digivolution.json</c> for parity verification.
+    /// </summary>
+    /// <param name="context">The data pack write context providing the database, transaction, and image paths.</param>
+    /// <param name="executable">The parsed PS1 executable, used to read digimon ids for index-to-id mapping.</param>
+    /// <param name="report">The raw bytes of STFGTREP.PRO containing the evolution and pointer tables.</param>
     private static void WriteDigivolution(DataPackWriteContext context, PsxExecutable executable, byte[] report)
     {
         var ids = new int[DigimonCount];
@@ -122,12 +150,30 @@ internal static class BattleExtractionStep
         File.WriteAllText(path, BattleJsonWriter.WriteDigivolution(digimon, partnerRecords));
     }
 
+    /// <summary>
+    /// Writes <c>battle/battle.json</c> containing all digimon, techniques, battle table entries,
+    /// items, rewards, and growth data in the parity-verified JSON layout.
+    /// </summary>
+    /// <param name="context">The data pack write context providing image path resolution.</param>
+    /// <param name="digimon">All decoded digimon records in table order.</param>
+    /// <param name="techniques">All decoded technique records in table order.</param>
+    /// <param name="table">All decoded battle encounter table records.</param>
+    /// <param name="items">All decoded item records with optional effect records.</param>
+    /// <param name="rewards">All decoded battle reward records indexed by encounter.</param>
+    /// <param name="growth">The growth curve tables (level exp, vital cuts, stat gains, resistance gains).</param>
     private static void WriteBattleJson(DataPackWriteContext context, IReadOnlyList<DigimonRecord> digimon, IReadOnlyList<TechniqueRecord> techniques, IReadOnlyList<BattleTableRecord> table, IReadOnlyList<(ItemRecord Item, ItemEffect? Effect)> items, IReadOnlyList<BattleReward> rewards, BattleGrowthData growth)
     {
         string path = context.GetImagePath("battle/battle.json"); Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         File.WriteAllText(path, BattleJsonWriter.WriteBattle(digimon, techniques, table, items, rewards, growth));
     }
 
+    /// <summary>
+    /// Decodes the text token table from a French BIN file and inserts rows into
+    /// <c>battle_text_tables</c> and <c>battle_text_tokens</c>; also writes a JSON copy.
+    /// </summary>
+    /// <param name="context">The data pack write context providing the database, transaction, and image paths.</param>
+    /// <param name="discPath">The ISO path of the source BIN file (stored as provenance key).</param>
+    /// <param name="bytes">The raw bytes of the decoded text table BIN file.</param>
     private static void WriteTextTable(DataPackWriteContext context, string discPath, byte[] bytes)
     {
         IReadOnlyList<IReadOnlyList<TextToken>> entries = TextTableDecoder.DecodeFile(bytes);
@@ -142,6 +188,13 @@ internal static class BattleExtractionStep
         File.WriteAllText(path, JsonSerializer.Serialize(new { discPath, entries = entries.Select(entry => entry.Select(token => new { kind = (int)token.Kind, token.Code, token.Args })) }, IndentedJsonOptions));
     }
 
+    /// <summary>
+    /// Writes all rows of the <c>battle_growth</c> table from the decoded growth data,
+    /// preserving the fixed write order: levelExperience, vitalCuts, vitalRandom,
+    /// statGains (one row per curve), resistanceGains.
+    /// </summary>
+    /// <param name="context">The data pack write context providing the database and transaction.</param>
+    /// <param name="growth">The decoded growth data containing all curve arrays.</param>
     private static void WriteGrowth(DataPackWriteContext context, BattleGrowthData growth)
     {
         WriteGrowthRow(context, "levelExperience", 0, growth.LevelExperience);
@@ -150,9 +203,22 @@ internal static class BattleExtractionStep
         for (int row = 0; row < growth.StatGains.Count; row++) WriteGrowthRow(context, "statGains", row, growth.StatGains[row]);
         WriteGrowthRow(context, "resistanceGains", 0, growth.ResistanceGains);
     }
+    /// <summary>
+    /// Inserts one value per ordinal for a single growth curve row into <c>battle_growth</c>.
+    /// </summary>
+    /// <param name="context">The data pack write context providing the database and transaction.</param>
+    /// <param name="table">The curve group name (e.g. <c>"levelExperience"</c> or <c>"statGains"</c>).</param>
+    /// <param name="row">The row index within the curve group (0 for single-row tables).</param>
+    /// <param name="values">The ordered growth values for this row.</param>
     private static void WriteGrowthRow(DataPackWriteContext context, string table, int row, IReadOnlyList<int> values)
     { for (int ordinal = 0; ordinal < values.Count; ordinal++) Insert(context, "INSERT INTO battle_growth (table_name,row_ordinal,value_ordinal,value) VALUES ($1,$2,$3,$4)", table, row, ordinal, values[ordinal]); }
 
+    /// <summary>
+    /// Verifies that the STFGTREP.PRO evolution pointer table at RAM 0x8008903C holds
+    /// the expected contiguous-table pointers for all eight partners.
+    /// </summary>
+    /// <param name="report">The raw bytes of STFGTREP.PRO.</param>
+    /// <exception cref="FormatException">A pointer does not reference the expected entry in the contiguous evolution table.</exception>
     private static void ValidateEvolutionPointers(byte[] report)
     {
         int offset = ReportOffset(EvolutionPointersAddress, Partners * 4, "evolution pointers");

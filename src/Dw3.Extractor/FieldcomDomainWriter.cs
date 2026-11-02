@@ -14,6 +14,14 @@ public static class FieldcomDomainWriter
     private const string FieldLayer = "FIELD_LAYER_MAP";
     private const string LoopSemantics = "a step whose frame equals 0xFF is a loop sentinel: its duration slot is the step index to jump to (step = anim[step][1]); a trailing {0x00, 0} step after the sentinel is alignment padding never reached";
 
+    /// <summary>
+    /// Writes the cue and/or icon FIELDCOM domains to the data pack, including PNG frames,
+    /// SQLite rows, and <c>manifest.json</c>. At least one domain must be non-null.
+    /// </summary>
+    /// <param name="context">The data pack write context providing the database, transaction, and image paths.</param>
+    /// <param name="cue">The cue domain to write, or <see langword="null"/> to skip.</param>
+    /// <param name="icon">The icon domain to write, or <see langword="null"/> to skip.</param>
+    /// <exception cref="ArgumentException">Both <paramref name="cue"/> and <paramref name="icon"/> are null.</exception>
     public static void Write(DataPackWriteContext context, FieldcomCueDomain? cue, FieldcomIconDomain? icon)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -22,6 +30,12 @@ public static class FieldcomDomainWriter
         if (icon is not null) WriteIcon(context, icon);
     }
 
+    /// <summary>
+    /// Writes the cue domain: SQLite rows for the domain, frames, exit rows, inner sequences,
+    /// pop sequences, and the cue manifest JSON.
+    /// </summary>
+    /// <param name="context">The data pack write context providing the database, transaction, and image paths.</param>
+    /// <param name="cue">The decoded cue domain with frames, exit rows, and animation sequences.</param>
     private static void WriteCue(DataPackWriteContext context, FieldcomCueDomain cue)
     {
         Insert(context, "INSERT INTO fieldcom_domains (domain, disc_path, sha256, bytes) VALUES ($1,$2,$3,$4)", "cue", cue.DiscPath, cue.Sha256, cue.ByteCount);
@@ -64,6 +78,12 @@ public static class FieldcomDomainWriter
         });
     }
 
+    /// <summary>
+    /// Writes the icon domain: SQLite rows for the domain, frames, animation steps,
+    /// and the icon manifest JSON.
+    /// </summary>
+    /// <param name="context">The data pack write context providing the database, transaction, and image paths.</param>
+    /// <param name="icon">The decoded icon domain with frames and animation table.</param>
     private static void WriteIcon(DataPackWriteContext context, FieldcomIconDomain icon)
     {
         Insert(context, "INSERT INTO fieldcom_domains (domain, disc_path, sha256, bytes) VALUES ($1,$2,$3,$4)", "icon", icon.DiscPath, icon.Sha256, icon.ByteCount);
@@ -91,6 +111,12 @@ public static class FieldcomDomainWriter
         });
     }
 
+    /// <summary>
+    /// Encodes each frame as a PNG, registers it with the data pack, and inserts a row into <c>fieldcom_frames</c>.
+    /// </summary>
+    /// <param name="context">The data pack write context providing the database, transaction, and image paths.</param>
+    /// <param name="domain">The domain name (<c>"cue"</c> or <c>"icon"</c>) used as the output subdirectory.</param>
+    /// <param name="frames">The decoded frames in frame-id order.</param>
     private static void WriteFrames(DataPackWriteContext context, string domain, IReadOnlyList<FieldcomExtractedFrame> frames)
     {
         foreach (FieldcomExtractedFrame frame in frames.OrderBy(x => x.FrameId))
@@ -101,6 +127,13 @@ public static class FieldcomDomainWriter
     }
 
     // Inner sequences carry the field row the cue selects them by; pop sequences have none.
+    /// <summary>
+    /// Inserts one row per animation step into <c>cue_sequences</c> for all named cue sequences.
+    /// Inner sequences carry the field row derived from their first frame; pop sequences use NULL.
+    /// </summary>
+    /// <param name="context">The data pack write context providing the database and transaction.</param>
+    /// <param name="kind">Either <c>"inner"</c> or <c>"pop"</c>; determines whether a field row is stored.</param>
+    /// <param name="sequences">The named sequences to insert.</param>
     private static void WriteCueSequences(DataPackWriteContext context, string kind, IReadOnlyList<FieldcomNamedSequence> sequences)
     {
         foreach (FieldcomNamedSequence sequence in sequences)
@@ -110,6 +143,17 @@ public static class FieldcomDomainWriter
         }
     }
 
+    /// <summary>
+    /// Writes the FIELDCOM manifest JSON to <c>&lt;domain&gt;/manifest.json</c> with domain-specific
+    /// payload (anchor, sequences/animations, and schema identifier) followed by a frames object.
+    /// </summary>
+    /// <param name="context">The data pack write context providing image path resolution.</param>
+    /// <param name="domain">The domain name (<c>"cue"</c> or <c>"icon"</c>) used as the output subdirectory.</param>
+    /// <param name="discPath">The ISO path of the source archive file.</param>
+    /// <param name="sha256">The SHA-256 hex digest of the source archive.</param>
+    /// <param name="bytes">The byte length of the source archive.</param>
+    /// <param name="frames">The decoded frames to include in the frames object.</param>
+    /// <param name="payload">A callback that writes additional domain-specific JSON properties before the frames object.</param>
     private static void WriteManifest(DataPackWriteContext context, string domain, string discPath, string sha256, int bytes, IReadOnlyList<FieldcomExtractedFrame> frames, Action<Utf8JsonWriter> payload)
     {
         string path = context.GetImagePath($"{domain}/manifest.json"); Directory.CreateDirectory(Path.GetDirectoryName(path)!); using var stream = File.Create(path); using var json = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true }); json.WriteStartObject(); payload(json); json.WriteStartObject("frames");
@@ -117,9 +161,21 @@ public static class FieldcomDomainWriter
         json.WriteEndObject(); json.WriteString("schema", domain == "cue" ? "m1-exit-cue-v1" : "m5-icon-v1"); json.WriteStartObject("source"); json.WriteStartObject("archive_entries"); json.WriteNumber("sheet", 0); json.WriteStartArray("vram_pages"); json.WriteNumberValue(2); json.WriteNumberValue(3); json.WriteEndArray(); json.WriteEndObject(); json.WriteNumber("bytes", bytes); json.WriteNumber("file_id", FieldcomFileId); json.WriteString("path", discPath); json.WriteString("sha256", sha256); json.WriteEndObject(); json.WriteEndObject();
     }
 
-    // The five two-frame records identify their field rows by their first frame ID.
+    /// <summary>
+    /// Returns the field row index (6..10) for a cue inner sequence by matching the first frame id
+    /// to the five known cue exit-row frame identifiers.
+    /// </summary>
+    /// <param name="steps">The animation steps of the sequence; the first step's frame determines the row.</param>
+    /// <returns>The field row index (6..10).</returns>
+    /// <exception cref="FormatException">The first frame id does not match any known cue row frame.</exception>
     private static int CueRow(IReadOnlyList<FieldcomFrameStep> steps) => steps[0].Frame switch { 0x10 => 6, 0x0E => 7, 0x0C => 8, 0x12 => 9, 0x45 => 10, _ => throw new FormatException("Unknown FIELDCOM cue row frame.") };
 
+    /// <summary>
+    /// Executes a parameterised INSERT command against the current pack transaction.
+    /// </summary>
+    /// <param name="context">The data pack write context providing the database and transaction.</param>
+    /// <param name="sql">The parameterised SQL text using positional parameters ($1, $2, …).</param>
+    /// <param name="values">The parameter values in positional order.</param>
     private static void Insert(DataPackWriteContext context, string sql, params object[] values)
     {
         using SqliteCommand command = context.Database.CreateCommand();

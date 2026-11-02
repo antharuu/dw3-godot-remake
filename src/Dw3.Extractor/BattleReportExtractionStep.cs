@@ -22,6 +22,16 @@ internal static class BattleReportExtractionStep
     private const string ReportOverlayPath = "AAA/PRO/STFGTREP.PRO";
     private const string OutputSubdir = "battle/report";
 
+    /// <summary>
+    /// Reads file 0x79F (sheet), file 0x7A0 (texture), CMFONTCS (0x286, arrow sheet), CMFONTTM (0x287,
+    /// arrow texture) and STFGTREP.PRO from the disc, then renders all result-screen frames and writes
+    /// the data pack.
+    /// </summary>
+    /// <param name="cuePath">Path to the CUE sheet of the supported disc image.</param>
+    /// <param name="outputDirectory">Root of the data pack to write into.</param>
+    /// <param name="output">Receives one JSON event line on success.</param>
+    /// <param name="error">Receives one plain-text error line on failure.</param>
+    /// <returns>0 on success, 1 on extraction error.</returns>
     internal static int Extract(string cuePath, string outputDirectory, TextWriter output, TextWriter error)
     {
         try
@@ -62,6 +72,16 @@ internal static class BattleReportExtractionStep
         }
     }
 
+    /// <summary>
+    /// Decodes and validates all STFGTREP sheet frames and the menu arrow frame, renders every
+    /// required frame with variable CLUT row counts, and writes PNGs and <c>report.json</c>.
+    /// </summary>
+    /// <param name="context">The data pack write context providing the database, transaction, and image paths.</param>
+    /// <param name="sheetArchive">The STFGTREP sheet archive (file 0x79F); outer uint32 must equal 4.</param>
+    /// <param name="textureArchive">The STFGTREP texture archive (file 0x7A0).</param>
+    /// <param name="menuSheet">The CMFONTCS sheet archive (file 0x286), carrying the arrow frame.</param>
+    /// <param name="menuTexture">The CMFONTTM texture archive (file 0x287), carrying the arrow palette.</param>
+    /// <param name="overlay">The STFGTREP.PRO overlay bytes containing the animation table.</param>
     private static void WriteReportDomain(DataPackWriteContext context,
         byte[] sheetArchive, byte[] textureArchive, byte[] menuSheet, byte[] menuTexture, byte[] overlay)
     {
@@ -138,6 +158,16 @@ internal static class BattleReportExtractionStep
         WriteMenuIcons(context, menuPartsArr, menuSheet, menuIds, menuOffsets, menuPages);
     }
 
+    /// <summary>
+    /// Renders and writes the eight required menu icon frames (including frame 10 with 5 CLUT rows)
+    /// from the CMFONTCS sprite sheet and CMFONTTM texture, then writes <c>battle/menu-icons/manifest.json</c>.
+    /// </summary>
+    /// <param name="context">The data pack write context providing the database, transaction, and image paths.</param>
+    /// <param name="parts">The sprite-part list from the CMFONTCS sheet header.</param>
+    /// <param name="sheet">The raw bytes of the CMFONTCS sprite sheet archive.</param>
+    /// <param name="ids">The ordered frame id list from the CMFONTCS sheet.</param>
+    /// <param name="offsets">Per-frame byte offsets within the sheet body.</param>
+    /// <param name="pages">The menu texture pages decoded from CMFONTTM.</param>
     private static void WriteMenuIcons(DataPackWriteContext context, IReadOnlyList<HudSpritePart> parts, byte[] sheet,
         IReadOnlyList<int> ids, IReadOnlyList<int> offsets, IReadOnlyList<HudTexturePage> pages)
     {
@@ -187,12 +217,22 @@ internal static class BattleReportExtractionStep
         File.WriteAllBytes(context.GetImagePath($"{directory}/manifest.json"), stream.ToArray());
     }
 
+    /// <summary>
+    /// Reads disc members by engine file id through the executable's file-sector table.
+    /// Zero-length disc entries are excluded from the LBA-to-path map.
+    /// </summary>
     private sealed class EngineFiles
     {
         private readonly DiscSource _disc;
         private readonly DiscFileTable _table;
         private readonly Dictionary<string, DiscFileEntry> _byPath;
 
+        /// <summary>
+        /// Initialises the file-sector table and ISO path index from the executable and disc entries.
+        /// </summary>
+        /// <param name="disc">The open disc source for subsequent file reads.</param>
+        /// <param name="entries">All disc file entries; zero-length entries are excluded from the LBA map.</param>
+        /// <param name="executable">The parsed PS1 executable carrying the FILE_SECTORS table.</param>
         internal EngineFiles(DiscSource disc, IReadOnlyList<DiscFileEntry> entries, PsxExecutable executable)
         {
             _disc = disc;
@@ -203,6 +243,12 @@ internal static class BattleReportExtractionStep
             _byPath = entries.Where(e => e.Size > 0).GroupBy(e => e.IsoPath).ToDictionary(g => g.Key, g => g.First());
         }
 
+        /// <summary>
+        /// Returns the ISO path and raw bytes for the disc member at engine file id <paramref name="fileId"/>.
+        /// </summary>
+        /// <param name="fileId">The engine file id (0-based index into the FILE_SECTORS table).</param>
+        /// <returns>The ISO path and raw byte content of the disc member.</returns>
+        /// <exception cref="FormatException">The file id is outside the table or no disc member starts at its sector.</exception>
         internal (string Path, byte[] Bytes) Read(int fileId)
         {
             string path = _table.PathOf(fileId)
