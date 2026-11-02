@@ -56,7 +56,7 @@ public partial class GameHost : IFieldProbeHost
     IReadOnlyList<Occupant> IFieldProbeHost.Occupants => _occupants;
 
     /// <inheritdoc/>
-    int IFieldProbeHost.ZoneDecodeCount => _zoneDecodeCount;
+    int IFieldProbeHost.ZoneDecodeCount => ZoneCache.DecodeCount;
 
     /// <inheritdoc/>
     FieldZone IFieldProbeHost.GetOrLoadZone(string zoneId) => GetOrLoadZone(zoneId);

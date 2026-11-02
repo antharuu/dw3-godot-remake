@@ -504,11 +504,14 @@ src/Dw3.Game/Presentation/FieldTextureCache.cs
 src/Dw3.Game/Presentation/FieldWaterLayer.cs
 src/Dw3.Game/Presentation/FightReportRenderer.cs
 src/Dw3.Game/Presentation/IShotCameraRng.cs
+src/Dw3.Game/Presentation/PackTextures.cs
 src/Dw3.Game/Presentation/RenderOrderingTable.cs
 src/Dw3.Game/Presentation/PsxTextPainter.cs
 src/Dw3.Game/Presentation/RuntimeShotRng.cs
 src/Dw3.Game/Presentation/SourceBattleCameraView.cs
 src/Dw3.Game/Presentation/SourceCallbackOrder.cs
+src/Dw3.Game/Scene/FieldZoneCache.cs
+src/Dw3.Game/Scene/ZoneMapImages.cs
 src/Dw3.Game/Simulation/AnimationSample.cs
 src/Dw3.Game/Simulation/AreaBattle.cs
 src/Dw3.Game/Simulation/AreaMap.cs
@@ -572,6 +575,7 @@ src/Dw3.Game/Simulation/FloorMap.cs
 src/Dw3.Game/Simulation/GameState.cs
 src/Dw3.Game/Simulation/GrowthCalculator.cs
 src/Dw3.Game/Simulation/GrowthTables.cs
+src/Dw3.Game/Simulation/GrowthTablesBuilder.cs
 src/Dw3.Game/Simulation/IBattleRng.cs
 src/Dw3.Game/Simulation/IEncounterRng.cs
 src/Dw3.Game/Simulation/IconView.cs
@@ -589,10 +593,17 @@ src/Dw3.Game/Simulation/RunAwayRules.cs
 src/Dw3.Game/Simulation/SimClock.cs
 src/Dw3.Game/Simulation/StoryFixture.cs
 src/Dw3.Game/Simulation/TechData.cs
+src/Dw3.Game/Simulation/TestTeamGrowth.cs
 src/Dw3.Game/Simulation/TriggerMap.cs
 src/Dw3.Game/Simulation/WarpCallbacks.cs
 src/Dw3.Game/Simulation/WarpController.cs
 src/Dw3.Game/Simulation/WarpState.cs
+src/Dw3.Game/Simulation/ZoneBattleTable.cs
+src/Dw3.Game/Startup/DataPackValidator.cs
+src/Dw3.Game/Startup/RuntimeAssets.cs
+src/Dw3.Game/Startup/RuntimeAssetsLoader.cs
+src/Dw3.Game/Startup/SessionStart.cs
+src/Dw3.Game/Startup/SessionStartResolver.cs
 src/Dw3.Game/export_presets.cfg
 src/Dw3.Game/project.godot
 stylecop.json
@@ -694,6 +705,7 @@ tests/Dw3.Game.Tests/FieldProbeCatalogTests.cs
 tests/Dw3.Game.Tests/FieldDiagnosticProbeRunnerTests.cs
 tests/Dw3.Game.Tests/FightReportControllerVectorGenerator.cs
 tests/Dw3.Game.Tests/FightReportControllerVectorTests.cs
+tests/Dw3.Game.Tests/GrowthTablesBuilderTests.cs
 tests/Dw3.Game.Tests/HostStartupOptionsTests.cs
 tests/Dw3.Game.Tests/LegacyBattleConsoleTests.cs
 tests/Dw3.Game.Tests/LegacyBattleDataConsoleTests.cs
@@ -708,6 +720,7 @@ tests/Dw3.Game.Tests/LegacyInputStateConsoleTests.cs
 tests/Dw3.Game.Tests/LegacyLocomotionConsoleTests.cs
 tests/Dw3.Game.Tests/LegacyWarpConsoleTests.cs
 tests/Dw3.Game.Tests/RouteStallMonitorTests.cs
+tests/Dw3.Game.Tests/SessionStartResolverTests.cs
 tests/Dw3.Game.Tests/SyntheticDataPackFixture.cs
 tests/Dw3.Game.Tests/TriggerSlotLocatorTests.cs
 tests/Dw3.Game.Tests/Vectors/battle-enemy-ai.json

@@ -9,7 +9,9 @@ using Dw3Production.Diagnostics.Field;
 using Dw3Production.Input;
 using Dw3Production.Logging;
 using Dw3Production.Presentation;
+using Dw3Production.Scene;
 using Dw3Production.Simulation;
+using Dw3Production.Startup;
 using NumericsVector2 = System.Numerics.Vector2;
 
 namespace Dw3Production;
@@ -45,17 +47,15 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
     private readonly HostStartupOptions _options = HostStartupOptions.FromEnvironment();
     private readonly WarpController _warp = new();
     private readonly PlayerIconController _icon = new();
-    private readonly Dictionary<string, FieldZone> _zones = [];
     private BattleDataPackLoader? _battleLoader;
     private string _dataRoot = string.Empty;
     private FieldDataPackLoader? _fieldLoader;
     private FieldAnimationDataPackLoader? _animationLoader;
-    private int _zoneDecodeCount;
+    private FieldZoneCache? _zoneCache;
     private FieldZone? _currentZone;
     private FloorMap? _floor;
     private IReadOnlyList<Occupant> _occupants = [];
     private PlayerData? _playerData;
-    private ClimbData? _climbData;
     private ClimbData? _actionData;
     private WaterData? _water;
     private NpcData? _npc;
@@ -109,8 +109,6 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
     private int _battleSwitchPartner = -1;
     private int _battlePendingChangeMotion;
     private bool _battleSwitchForced;
-    // Debug-only test team (never written to a save): the balanced starter pack at level 25.
-    private const int TestTeamLevel = 25;
     // The diagnostic on-screen notice for a failed battle load, plus its last text (the
     // probe asserts both the ERROR log and the notice).
     private Label? _battleNoticeLabel;
@@ -135,18 +133,33 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
     // initialized runtime collaborator receives a useful failure instead of masking
     // a violated startup invariant with the null-forgiving operator.
     private FieldZone CurrentZone => _currentZone ?? throw new InvalidOperationException("field scene has not been applied");
+
     private FieldRenderer Renderer => _renderer ?? throw new InvalidOperationException("field renderer has not been initialized");
+
     private BattleFlowController BattleFlow => _battleFlow ?? throw new InvalidOperationException("battle flow has not been initialized");
+
     private BattleRenderer BattleRenderer => _battleRenderer ?? throw new InvalidOperationException("battle renderer has not been initialized");
+
     private BattleDataPackLoader BattleLoader => _battleLoader ?? throw new InvalidOperationException("battle data has not been initialized");
+
     private FighterData FighterData => _fighterData ?? throw new InvalidOperationException("fighter data has not been initialized");
+
     private TechniqueData TechniqueData => _techData ?? throw new InvalidOperationException("technique data has not been initialized");
+
     private DigivolutionData DigivolutionData => _digivolutionData ?? throw new InvalidOperationException("digivolution data has not been initialized");
+
     private BattleItemsData BattleItemsData => _battleItemsData ?? throw new InvalidOperationException("battle item data has not been initialized");
+
     private FloorMap Floor => _floor ?? throw new InvalidOperationException("field floor has not been initialized");
+
     private DialogueRenderer DialogueRenderer => _dialogueRenderer ?? throw new InvalidOperationException("dialogue renderer has not been initialized");
+
     private FieldDataPackLoader FieldLoader => _fieldLoader ?? throw new InvalidOperationException("field data has not been initialized");
+
     private ClimbData ActionData => _actionData ?? throw new InvalidOperationException("action data has not been initialized");
+
+    private FieldZoneCache ZoneCache => _zoneCache ?? throw new InvalidOperationException("zone loader or npc data unavailable before host ready");
+
     private Texture2D PanelTexture => _panelTexture ?? throw new InvalidOperationException("dialogue panel texture has not been initialized");
 
     #endregion
@@ -165,30 +178,13 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         // If the pack is missing, has an incompatible schema, or is corrupt, show the
         // first-launch extraction screen instead of crashing. Once it emits PackReady,
         // StartupWithDataPack continues normal initialization.
-        if (!TryValidateDataPack(dataRoot))
+        if (!DataPackValidator.IsUsable(dataRoot))
         {
             ShowFirstLaunchScreen(dataRoot);
             return;
         }
 
         StartupWithDataPack(dataRoot);
-    }
-
-    /// <summary>
-    /// Returns true when the pack at <paramref name="dataRoot"/> is valid and can be opened.
-    /// Any DataPackException (missing, incomplete, schema mismatch, corrupt) returns false.
-    /// </summary>
-    private static bool TryValidateDataPack(string dataRoot)
-    {
-        try
-        {
-            new DataPackReader(dataRoot).OpenDatabase().Dispose();
-            return true;
-        }
-        catch (DataPackException)
-        {
-            return false;
-        }
     }
 
     private void ShowFirstLaunchScreen(string dataRoot)
@@ -243,99 +239,26 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         {
             var startupWatch = Stopwatch.StartNew();
             _dataRoot = dataRoot;
-            var fieldLoader = new FieldDataPackLoader(new DataPackReader(dataRoot));
-            _fieldLoader = fieldLoader;
-            var player = fieldLoader.LoadPlayer();
-            var animationLoader = new FieldAnimationDataPackLoader(new DataPackReader(dataRoot));
-            _animationLoader = animationLoader;
-            var cue = animationLoader.LoadExitCue();
-            var climb = animationLoader.LoadClimb();
-            var drop = animationLoader.LoadDrop();
-            var water = animationLoader.LoadWater();
-            var icon = animationLoader.LoadPlayerIcon();
-            var npc = fieldLoader.LoadNpcs();
-            var battleLoader = new BattleDataPackLoader(new DataPackReader(dataRoot));
-            _battleLoader = battleLoader;
+            var assets = RuntimeAssetsLoader.Load(dataRoot);
+            AdoptAssets(assets);
             StoryFixture.Apply(_state);
             _state.IsRunning = true;
-            _playerData = player;
-            _climbData = climb;
-            _actionData = MergeActionData(climb, drop);
-            _climb.SetData(climb);
-            _drop.SetData(drop);
-            _water = water;
-            _npc = npc;
-            _iconData = icon;
-            _icon.SetAnimation(icon.Animations[0]);
-            _encounterData = battleLoader.LoadEncounters();
-            _fighterData = battleLoader.LoadFighters();
-            _techData = battleLoader.LoadTechs();
-            _digivolutionData = battleLoader.LoadDigivolutions();
-            _battleItemsData = battleLoader.LoadBattleItems();
-            _battleTextData = battleLoader.LoadBattleText();
-            _rewardsData = battleLoader.LoadRewards();
-            _growthTables = BuildGrowthTables(_rewardsData);
-            _partyDigimonIds = BattleSetupFactory.StarterPartnerDigimonIds(_fighterData);
-            _partyGrowth = BuildPartyGrowth(_partyDigimonIds, _fighterData);
             _encounter.RandomBattles = true;
             _encounter.RollBattleSteps();
             BuildBattleNotice();
             BuildTitleScreen();
-            _renderer = new FieldRenderer(this, cue, water, icon);
-            using var dialogueLoader = new DialogueDataPackLoader(new DataPackReader(dataRoot));
-            _dialogueData = dialogueLoader.LoadDialogue();
-            _dialogueRenderer = new DialogueRenderer(this);
-            DialogueRenderer.SetFont(_dialogueData.Font, LoadTexture(_dialogueData.Font.Page0Path), LoadTexture(_dialogueData.Font.Page1Path));
-            var dialogueFrames = dialogueLoader.LoadDialogueFrame();
-            var frameTextures = new Dictionary<int, Texture2D>();
-            foreach (var (frameId, frame) in dialogueFrames.Frames)
-                frameTextures[frameId] = LoadTexture(frame.Path);
-            _panelTexture = LoadTexture(dialogueFrames.Panel.Path);
-            _dialogueFrames = dialogueFrames;
-            _frameTextures = frameTextures;
-            DialogueRenderer.SetFrames(dialogueFrames, frameTextures, _panelTexture);
-            // DEC-019 lazy zone loading: only the spawn zone is built at startup. The rest
-            // are constructed on demand at warp time (GetOrLoadZone) and kept in _zones.
-
-            // DEC-019 diagnostic access: start the interactive session directly in a
-            // selected imported zone, distinct from the normal S200 spawn and the city
-            // warp graph. Explicitly selected only via DW3_START_ZONE; it inspects a map,
-            // never proves traversal, and the normal spawn and warps are unchanged. A
-            // non-imported zone is refused with CACHE_RESOURCE_UNAVAILABLE.
-            var diagnosticZone = ResolveDiagnosticZone();
-            if (diagnosticZone is not null)
+            _renderer = new FieldRenderer(this, assets.ExitCue, assets.Water, assets.Icon);
+            BuildDialoguePresentation(assets.Dialogue, assets.DialogueFrames);
+            EnterStartZone(startupWatch);
+            if (_options.StartF3)
             {
-                var target = GetOrLoadZone(diagnosticZone);
-                var (spawn, facing) = ResolveDiagnosticSpawn(target);
-                _state.ZoneId = diagnosticZone;
-                _state.Position = spawn;
-                _state.SetFacing(facing);
-                _state.AnimationSet = 1;
-                _state.AnimationDirection = _state.Facing;
-                _renderer.DiagnosticBadge = $"DIAGNOSTIC zone={diagnosticZone}";
-                ApplyScene(target);
-                QuietLog.Info($"diagnostic zone={_state.ZoneId} position=({_state.Position.X:0},{_state.Position.Y:0}) facing={_state.Facing} progress=0x{_state.Progress:X2} zones={_zones.Count} decoded={_zoneDecodeCount} npcs={npc.Occupants.Count} startup_ms={startupWatch.ElapsedMilliseconds}");
-            }
-            else
-            {
-                _state.ZoneId = "S200";
-                _state.Position = new NumericsVector2(1000, 236);
-                _state.SetFacing(1);
-                _state.AnimationSet = 1;
-                _state.AnimationDirection = _state.Facing;
-                ApplyScene(GetOrLoadZone("S200"));
-                QuietLog.Info($"host ready zone={_state.ZoneId} position=({_state.Position.X:0},{_state.Position.Y:0}) facing={_state.Facing} progress=0x{_state.Progress:X2} zones={_zones.Count} decoded={_zoneDecodeCount} npcs={npc.Occupants.Count} startup_ms={startupWatch.ElapsedMilliseconds}");
+                ToggleF3();
             }
 
-            if (_options.StartF3) ToggleF3();
-            if (new FieldDiagnosticProbeRunner(this).TryDispatch(_options)
-                || new DialogueDiagnosticProbeRunner(this).TryDispatch(_options)
-                || new BattleDiagnosticProbeRunner(this).TryDispatch(_options)
-                || new StorageDiagnosticProbeRunner(this).TryDispatch(_options))
+            if (!DispatchDiagnosticProbe())
             {
-                return;
+                CallDeferred(MethodName.CaptureSpawn);
             }
-            CallDeferred(MethodName.CaptureSpawn);
         }
         catch (CacheResourceException error)
         {
@@ -348,6 +271,90 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
             GetTree().Quit(2);
         }
     }
+
+    /// <summary>
+    /// Keeps the startup data for the session: the three open pack readers (disposed in
+    /// <see cref="_ExitTree"/>), the tables the field and battle rules read, and the zone cache
+    /// that builds zones lazily from the field reader.
+    /// </summary>
+    /// <param name="assets">Startup data read from the pack.</param>
+    private void AdoptAssets(RuntimeAssets assets)
+    {
+        _fieldLoader = assets.FieldLoader;
+        _animationLoader = assets.AnimationLoader;
+        _battleLoader = assets.BattleLoader;
+        _playerData = assets.Player;
+        _actionData = assets.Actions;
+        _climb.SetData(assets.Climb);
+        _drop.SetData(assets.Drop);
+        _water = assets.Water;
+        _npc = assets.Npc;
+        _iconData = assets.Icon;
+        _icon.SetAnimation(assets.Icon.Animations[0]);
+        _encounterData = assets.Encounters;
+        _fighterData = assets.Fighters;
+        _techData = assets.Techniques;
+        _digivolutionData = assets.Digivolutions;
+        _battleItemsData = assets.BattleItems;
+        _battleTextData = assets.BattleText;
+        _rewardsData = assets.Rewards;
+        _growthTables = assets.GrowthTables;
+        _partyDigimonIds = assets.PartyDigimonIds;
+        _partyGrowth = assets.PartyGrowth;
+        _zoneCache = new FieldZoneCache(assets.FieldLoader, assets.Npc.Occupants);
+    }
+
+    /// <summary>Creates the dialogue presenter and uploads the font pages and talk-box sprites as textures.</summary>
+    /// <param name="dialogue">Conversations and dialogue font.</param>
+    /// <param name="frames">Talk-box frame sprites and panel.</param>
+    private void BuildDialoguePresentation(DialogueData dialogue, DialogueFrameData frames)
+    {
+        _dialogueData = dialogue;
+        _dialogueRenderer = new DialogueRenderer(this);
+        DialogueRenderer.SetFont(dialogue.Font, PackTextures.Load(dialogue.Font.Page0Path), PackTextures.Load(dialogue.Font.Page1Path));
+        var frameTextures = new Dictionary<int, Texture2D>();
+        foreach (var (frameId, frame) in frames.Frames)
+        {
+            frameTextures[frameId] = PackTextures.Load(frame.Path);
+        }
+
+        _panelTexture = PackTextures.Load(frames.Panel.Path);
+        _dialogueFrames = frames;
+        _frameTextures = frameTextures;
+        DialogueRenderer.SetFrames(frames, frameTextures, _panelTexture);
+    }
+
+    /// <summary>
+    /// Places the player at the session start and applies its zone. Only that zone is built at
+    /// startup; the others are built on demand when a warp first reaches them.
+    /// </summary>
+    /// <param name="startupWatch">Clock started with the session, logged as the startup time.</param>
+    /// <exception cref="CacheResourceException">The selected start zone, position or facing is refused.</exception>
+    private void EnterStartZone(Stopwatch startupWatch)
+    {
+        var start = new SessionStartResolver(_options, FieldLoader.ZoneIds).Resolve(GetOrLoadZone);
+        _state.ZoneId = start.ZoneId;
+        _state.Position = start.Position;
+        _state.SetFacing(start.Facing);
+        _state.AnimationSet = 1;
+        _state.AnimationDirection = _state.Facing;
+        if (start.IsDiagnostic)
+        {
+            Renderer.DiagnosticBadge = $"DIAGNOSTIC zone={start.ZoneId}";
+        }
+
+        ApplyScene(GetOrLoadZone(start.ZoneId));
+        var label = start.IsDiagnostic ? "diagnostic" : "host ready";
+        QuietLog.Info($"{label} zone={_state.ZoneId} position=({_state.Position.X:0},{_state.Position.Y:0}) facing={_state.Facing} progress=0x{_state.Progress:X2} zones={ZoneCache.Count} decoded={ZoneCache.DecodeCount} npcs={_npc?.Occupants.Count} startup_ms={startupWatch.ElapsedMilliseconds}");
+    }
+
+    /// <summary>Starts the diagnostic probe selected by the environment, in the established family order.</summary>
+    /// <returns><see langword="true"/> when a probe was started and owns the rest of the session.</returns>
+    private bool DispatchDiagnosticProbe() =>
+        new FieldDiagnosticProbeRunner(this).TryDispatch(_options)
+        || new DialogueDiagnosticProbeRunner(this).TryDispatch(_options)
+        || new BattleDiagnosticProbeRunner(this).TryDispatch(_options)
+        || new StorageDiagnosticProbeRunner(this).TryDispatch(_options);
 
     void IDiagnosticProbeHost.RunInputProbeAndQuit()
     {
@@ -538,11 +545,6 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
     // the battle presentation flow:527-529 fades the terminal battle to black over ten PAL frames before STFGTREP.
     private const int BattleReportFadeFrames = 10;
 
-    // A battle area with no random battles, reused when a zone has no FIELD_MAP_AREAS
-    // or no battle table. Its count (0) maps to FIELDSTG_battleRates[0] = 2000, but the
-    // runtime never decrements it because safe zones have a null AreaMap.
-    private static readonly BattleList[] EmptyBattles = [.. Enumerable.Range(0, 4).Select(_ => new BattleList(0, [.. Enumerable.Range(0, 8).Select(_ => new AreaBattle(0, 0, 0))]))];
-
     /// <summary>FIELDSTG_countBattleSteps: one battle step every 8 movement frames while the
     /// player walks inside a battle area. The controller owns the countdown and the draws.</summary>
     private void CountEncounterStep()
@@ -604,7 +606,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
             Battle = encounterIndex,
             Stage = ResolveBattleStage(encounterIndex),
             EncounterKind = entry.Kind,
-            Partners = BattleSetupFactory.BuildParty(fighters, TestTeamLevel, party),
+            Partners = BattleSetupFactory.BuildParty(fighters, TestTeamGrowth.Level, party),
             Enemies = BattleSetupFactory.BuildEnemies(encounters, encounterIndex, fighters),
             Blocks = new int[12],
         };
@@ -666,7 +668,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         _battleRenderer.Show();
         RefreshActivePartnerCatalogs();
         _battleMenu.OpenRoot(flow.RootMenuLines());
-        QuietLog.Info($"battle-start {why} encounter={encounter} enemies=[{string.Join(",", _lastBattleEnemyIds)}] party=[{string.Join(",", flow.State.Players.Where(p => p is not null).Select(p => p!.Id))}] level={TestTeamLevel}");
+        QuietLog.Info($"battle-start {why} encounter={encounter} enemies=[{string.Join(",", _lastBattleEnemyIds)}] party=[{string.Join(",", flow.State.Players.Where(p => p is not null).Select(p => p!.Id))}] level={TestTeamGrowth.Level}");
     }
 
     private void BattleLoadFailed(Exception error)
@@ -710,28 +712,6 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         {
             QuietLog.Info($"battle-end outcome={outcome} return-to-field zone={_state.ZoneId} position=({_state.Position.X:0},{_state.Position.Y:0})");
         }
-    }
-
-    /// <summary>Loads the current zone's four battle lists into the controller. The source
-    /// assigns FIELDSTG_state.battles = stageBattles (the first FieldBattles place); story
-    /// progress place-selection and findBattles(GAME.place) are deferred to the story phase.</summary>
-    private void SetZoneBattles(FieldZone zone)
-    {
-        if (_encounterData is null || !_encounterData.Stages.TryGetValue(zone.Zone.Id[1..], out var stage))
-        {
-            _encounter.SetBattles(EmptyBattles);
-            return;
-        }
-        var place = stage.StageBattles.FirstOrDefault()?.Places.FirstOrDefault();
-        if (place is null || place.Areas.Count != 4)
-        {
-            _encounter.SetBattles(EmptyBattles);
-            return;
-        }
-        var lists = place.Areas.Select(area => new BattleList(
-            area.Count,
-            [.. area.Battles.Select(battle => new AreaBattle(battle.Encounter, battle.Stage, battle.Music))])).ToArray();
-        _encounter.SetBattles(lists);
     }
 
     /// <summary>The on-screen diagnostic notice shown when a battle fails to load. It is a
@@ -787,48 +767,6 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         subtitle.AddThemeFontSizeOverride("font_size", 24);
         subtitle.AddThemeColorOverride("font_color", new Color(0.9f, 0.9f, 0.95f));
         _titleScreen.AddChild(subtitle);
-    }
-
-    /// <summary>Builds the engine-free <see cref="GrowthTables"/> from the disc-decoded
-    /// Conversion.GrowthTablesData.</summary>
-    private static GrowthTables BuildGrowthTables(RewardsData data)
-    {
-        var tables = new GrowthTables();
-        for (var i = 0; i < tables.LevelExp.Length && i < data.Growth.LevelExp.Count; i++) tables.LevelExp[i] = data.Growth.LevelExp[i];
-        for (var i = 0; i < tables.VitalCuts.Length && i < data.Growth.VitalCuts.Count; i++) tables.VitalCuts[i] = data.Growth.VitalCuts[i];
-        for (var i = 0; i < tables.VitalRandom.Length && i < data.Growth.VitalRandom.Count; i++) tables.VitalRandom[i] = data.Growth.VitalRandom[i];
-        for (var tier = 0; tier < tables.StatGains.Length && tier < data.Growth.StatGains.Count; tier++)
-            for (var col = 0; col < tables.StatGains[tier].Length && col < data.Growth.StatGains[tier].Count; col++)
-                tables.StatGains[tier][col] = data.Growth.StatGains[tier][col];
-        for (var i = 0; i < tables.ResistGains.Length && i < data.Growth.ResistGains.Count; i++) tables.ResistGains[i] = data.Growth.ResistGains[i];
-        return tables;
-    }
-
-    /// <summary>Initialises the persistent test-team growth state at the slice's level, using the
-    /// same base + growth x (level - 1) stand-in that BuildParty resolves the battle stats with
-    /// (extended to charisma and the seven resistances). Future level-ups apply the real
-    /// the growth-table contract raiseStats on top.</summary>
-    private static IReadOnlyList<PartnerGrowthState> BuildPartyGrowth(IReadOnlyList<int> digimonIds, FighterData fighters)
-    {
-        var result = new List<PartnerGrowthState>();
-        foreach (var id in digimonIds)
-        {
-            var digimon = fighters.Digimon[id];
-            var grown = TestTeamLevel - 1;
-            var state = new PartnerGrowthState
-            {
-                Level = TestTeamLevel,
-                Exp = 0,
-                MaxHp = digimon.Hp + digimon.HpGrowth * grown,
-                MaxMp = digimon.Mp + digimon.MpGrowth * grown,
-            };
-            for (var i = 0; i < state.BattleStats.Length && i < digimon.StatGrowth.Count; i++)
-                state.BattleStats[i] = digimon.BattleStats[i] + digimon.StatGrowth[i] * grown;
-            for (var i = 0; i < state.Resistances.Length && i < digimon.ResistGrowth.Count; i++)
-                state.Resistances[i] = digimon.Resistances[i] + digimon.ResistGrowth[i] * grown;
-            result.Add(state);
-        }
-        return result;
     }
 
     /// <summary>One fixed tick of the battle: the menu consumes semantic input and resolves a
@@ -921,7 +859,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
             if (fighter is null || fighter.Id == 0) continue;
             var gained = flow.State.Fought[i] ? expShare : 0;
             var before = _partyGrowth is not null && i < _partyGrowth.Count ? _partyGrowth[i] : null;
-            var levelBefore = before?.Level ?? TestTeamLevel;
+            var levelBefore = before?.Level ?? TestTeamGrowth.Level;
             var expBefore = before?.Exp ?? 0;
             var leveled = false;
             if (gained > 0 && _partyGrowth is not null && i < _partyGrowth.Count && _growthTables is not null)
@@ -930,7 +868,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
                 var curve = new PartnerGrowthCurve(digimon.ExpRate, digimon.HpGrowth, digimon.MpGrowth, digimon.StatGrowth, digimon.ResistGrowth);
                 leveled = GrowthCalculator.AddExp(_growthTables, _partyGrowth[i], curve, gained, _battleRng);
             }
-            var level = _partyGrowth is not null && i < _partyGrowth.Count ? _partyGrowth[i].Level : TestTeamLevel;
+            var level = _partyGrowth is not null && i < _partyGrowth.Count ? _partyGrowth[i].Level : TestTeamGrowth.Level;
             partners.Add(new BattlePartnerReportView(fighter.Id, NameLine(fighter.Id), gained, level, leveled));
             // The F8 fixture has no equipped Digimon slots. Do not synthesize their report data.
             reportPartners.Add(new FightReportPartner(i, i, fighter.Id, levelBefore, expBefore, gained, level, []));
@@ -1193,7 +1131,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         flow.PlayerTechniques = BattleSetupFactory.PlayerTechniques(FighterData, TechniqueData, active.Id, flow.Text ?? throw new InvalidOperationException("battle text unavailable"));
         var partnerIndex = BattleSetupFactory.DigimonIndexFor(FighterData, active.Id);
         flow.PlayerDigivolutions = partnerIndex >= 0
-            ? BattleSetupFactory.DigivolutionForms(DigivolutionData, partnerIndex, TestTeamLevel)
+            ? BattleSetupFactory.DigivolutionForms(DigivolutionData, partnerIndex, TestTeamGrowth.Level)
             : [];
     }
 
@@ -1548,13 +1486,6 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         if (!dialogue.Texts.TryGetValue(zone.TalkFile, out var entries)) return false;
         if (talk.Entry < 0 || talk.Entry >= entries.Count) return false;
         return DialogueController.SplitPages(entries[talk.Entry]).Count >= 2;
-    }
-
-    private static Texture2D LoadTexture(string path)
-    {
-        var image = Image.LoadFromFile(path);
-        if (image is null || image.IsEmpty()) throw new CacheResourceException("CACHE_RESOURCE_UNAVAILABLE", $"image unreadable: {path}");
-        return ImageTexture.CreateFromImage(image);
     }
 
     /// <summary>Places the player one source step behind an actor, facing it, so its facing tile
@@ -1983,14 +1914,6 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         return !(nameCount == 1 && entry[first + 1].IsControl && entry[first + 1].Command == 9);
     }
 
-    private static ClimbData MergeActionData(ClimbData climb, ClimbData drop)
-    {
-        var merged = new Dictionary<int, ClimbSequence>(climb.Sequences);
-        foreach (var pair in drop.Sequences)
-            if (!merged.TryAdd(pair.Key, pair.Value)) throw new InvalidOperationException($"action animation set collision: {pair.Key:X}");
-        return new ClimbData(merged);
-    }
-
     private static SemanticDirection DirectionToward(NumericsVector2 from, NumericsVector2 to)
     {
         var horizontal = to.X - from.X;
@@ -2186,105 +2109,16 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         QuietLog.Info($"warp capture={capturePath}");
     }
 
-    private FieldZone BuildFieldZone(Zone zone, IReadOnlyList<CollisionActor> collision)
-    {
-        var occupants = collision.Where(actor => actor.ZoneId == zone.Id)
-            .Select(actor => new Occupant(actor.ActorId, new NumericsVector2(actor.X, actor.Y), actor.Width)).ToArray();
-        return new FieldZone(zone, LoadFloor(zone), LoadTriggers(zone), occupants, LoadAreas(zone));
-    }
-
-    private FieldZone GetOrLoadZone(string zoneId)
-    {
-        if (_zones.TryGetValue(zoneId, out var existing)) return existing;
-        if (_fieldLoader is null || _npc is null)
-            throw new InvalidOperationException("zone loader or npc data unavailable before host ready");
-        var zone = BuildFieldZone(_fieldLoader.LoadZone(zoneId), _npc.Occupants);
-        _zones.Add(zoneId, zone);
-        _zoneDecodeCount++;
-        return zone;
-    }
+    /// <summary>Returns a zone from the session cache, building it on first use.</summary>
+    /// <param name="zoneId">Normalized zone id (<c>Snnn</c>).</param>
+    /// <returns>The built zone.</returns>
+    private FieldZone GetOrLoadZone(string zoneId) => ZoneCache.GetOrLoad(zoneId);
 
     private FieldZone ResolveTarget(string zoneId)
     {
         if (_options.WarpProbeMissingTarget)
             throw new CacheResourceException("CACHE_RESOURCE_UNAVAILABLE", $"zone={zoneId} forced unavailable for probe");
         return GetOrLoadZone(zoneId);
-    }
-
-    /// <summary>Resolves the DW3_START_ZONE diagnostic selection (e.g. S330, 330, WSTAG330)
-    /// to a normalized imported zone id, or null when the variable is absent. A zone that is
-    /// not imported, or a value that is not a stage id, is refused explicitly.</summary>
-    private string? ResolveDiagnosticZone()
-    {
-        var raw = _options.StartZone;
-        if (string.IsNullOrWhiteSpace(raw)) return null;
-        var trimmed = raw.Trim();
-        var digits = trimmed;
-        if (digits.StartsWith("WSTAG", StringComparison.OrdinalIgnoreCase)) digits = digits[5..];
-        else if (digits.StartsWith("S", StringComparison.OrdinalIgnoreCase)) digits = digits[1..];
-        if (!int.TryParse(digits, System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var stage))
-            throw new CacheResourceException("CACHE_RESOURCE_UNAVAILABLE", $"zone={trimmed} is not a valid stage id");
-        var zoneId = $"S{stage:D3}";
-        if (!FieldLoader.ZoneIds.Contains(zoneId))
-            throw new CacheResourceException("CACHE_RESOURCE_UNAVAILABLE", $"zone={zoneId} not imported");
-        return zoneId;
-    }
-
-    /// <summary>Resolves the diagnostic spawn for a zone: an explicit DW3_START_POS=x,y
-    /// (validated inside the decoded floor) or, without one, the nearest walkable floor cell
-    /// to the map center. Facing is DW3_START_FACING (0..7) or the source default 1.</summary>
-    private (NumericsVector2 Position, int Facing) ResolveDiagnosticSpawn(FieldZone zone)
-    {
-        var facing = 1;
-        var facingRaw = _options.StartFacing;
-        if (!string.IsNullOrWhiteSpace(facingRaw))
-        {
-            if (!int.TryParse(facingRaw.Trim(), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out facing) || facing is < 0 or > 7)
-                throw new CacheResourceException("CACHE_RESOURCE_UNAVAILABLE", $"DW3_START_FACING={facingRaw} is not a direction (0..7)");
-        }
-
-        var posRaw = _options.StartPos;
-        if (string.IsNullOrWhiteSpace(posRaw)) return (FindWalkableSpawn(zone), facing);
-
-        var parts = posRaw.Split(',');
-        if (parts.Length != 2
-            || !int.TryParse(parts[0].Trim(), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var x)
-            || !int.TryParse(parts[1].Trim(), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out var y))
-            throw new CacheResourceException("CACHE_RESOURCE_UNAVAILABLE", $"DW3_START_POS={posRaw} is not x,y");
-        if (x < 0 || y < 0 || x >= zone.Floor.Width || y >= zone.Floor.Height)
-            throw new CacheResourceException("CACHE_RESOURCE_UNAVAILABLE", $"zone={zone.Zone.Id} position=({x},{y}) outside floor {zone.Floor.Width}x{zone.Floor.Height}");
-        return (new NumericsVector2(x, y), facing);
-    }
-
-    /// <summary>Default diagnostic spawn: the nearest source-admitted (walkable) floor cell to
-    /// the map center. Uses the same classification as the F3 overlay, so the player lands on a
-    /// green cell rather than on void or an unclassified slope.</summary>
-    private NumericsVector2 FindWalkableSpawn(FieldZone zone)
-    {
-        var centerX = zone.Floor.Width / 2;
-        var centerY = zone.Floor.Height / 2;
-        if (IsWalkableCell(zone, centerX, centerY)) return new NumericsVector2(centerX, centerY);
-        var maxRadius = Math.Max(zone.Floor.Width, zone.Floor.Height);
-        for (var radius = 1; radius <= maxRadius; radius++)
-            for (var dy = -radius; dy <= radius; dy++)
-                for (var dx = -radius; dx <= radius; dx++)
-                {
-                    if (Math.Max(Math.Abs(dx), Math.Abs(dy)) != radius) continue;
-                    var x = centerX + dx;
-                    var y = centerY + dy;
-                    if (x < 0 || y < 0 || x >= zone.Floor.Width || y >= zone.Floor.Height) continue;
-                    if (IsWalkableCell(zone, x, y)) return new NumericsVector2(x, y);
-                }
-        throw new CacheResourceException("CACHE_RESOURCE_UNAVAILABLE", $"zone={zone.Zone.Id} has no walkable floor cell");
-    }
-
-    private static bool IsWalkableCell(FieldZone zone, int x, int y)
-    {
-        var cell = zone.Floor.CellAt(new NumericsVector2(x, y));
-        if (cell == 0) return false;
-        var row = cell & 0x0F;
-        row -= row != 0 ? 1 : 0;
-        return row is >= 0 and <= 6;
     }
 
     /// <summary>
@@ -2299,7 +2133,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         _floor = zone.Floor;
         _areas = zone.Areas;
         _occupants = zone.Occupants;
-        SetZoneBattles(zone);
+        _encounter.SetBattles(ZoneBattleTable.For(_encounterData, zone.Zone));
         IReadOnlyList<NpcRecord>? npcRecords = null;
         if (_npc is not null && _npc.Zones.TryGetValue(zone.Zone.Id, out var records)) npcRecords = records;
         _renderer.LoadZone(zone.Zone, _playerData, ActionData, frame => ResolvePlayerFrame(frame), (set, frame) => ResolveActionFrame(set, frame), npcRecords);
@@ -2317,43 +2151,6 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
     {
         var loader = _animationLoader ?? throw new InvalidOperationException("field animation loader unavailable before host ready");
         return set is >= 0x16 and <= 0x19 ? loader.DropFramePath(frame) : loader.ClimbFramePath(frame);
-    }
-
-    /// <summary>Loads a single-channel (R8) map image and returns its cells as a flat byte array.
-    /// Throws <see cref="CacheResourceException"/> when the file is unreadable or its dimensions
-    /// do not match the zone contract. Shared by LoadFloor, LoadTriggers, and LoadAreas to avoid
-    /// repeating the identical load-validate-fill pattern.</summary>
-    private static byte[] LoadMapCells(string path, Zone zone, string kind)
-    {
-        var image = Image.LoadFromFile(path);
-        if (image is null || image.IsEmpty())
-            throw new CacheResourceException("CACHE_RESOURCE_UNAVAILABLE", $"{kind} image unreadable: {path}");
-        if (image.GetWidth() != zone.Width || image.GetHeight() != zone.Height)
-            throw new CacheResourceException("CACHE_INVALID", $"{kind} image dimensions mismatch: {path}");
-        var cells = new byte[zone.Width * zone.Height];
-        for (var y = 0; y < zone.Height; y++)
-            for (var x = 0; x < zone.Width; x++)
-                cells[y * zone.Width + x] = (byte)image.GetPixel(x, y).R8;
-        return cells;
-    }
-
-    private static FloorMap LoadFloor(Zone zone)
-    {
-        var cells = LoadMapCells(zone.FloorCellsPath, zone, "floor");
-        return new FloorMap(zone.Width, zone.Height, cells);
-    }
-
-    private static TriggerMap LoadTriggers(Zone zone)
-    {
-        var cells = LoadMapCells(zone.TriggerCellsPath, zone, "trigger");
-        return new TriggerMap(zone.Width, zone.Height, cells);
-    }
-
-    private static AreaMap? LoadAreas(Zone zone)
-    {
-        if (zone.AreasCellsPath is null) return null;  // safe zone: no battle areas
-        var cells = LoadMapCells(zone.AreasCellsPath, zone, "areas");
-        return new AreaMap(zone.Width, zone.Height, cells);
     }
 
     /// <summary>Returns the directory that probe captures should be written to, creating
