@@ -151,7 +151,7 @@
       "rule": "S107",
       "project": "Dw3.Game.Tests",
       "folder": ".",
-      "count": 4
+      "count": 3
     },
     {
       "rule": "S1075",
@@ -661,7 +661,7 @@
       "rule": "SA1117",
       "project": "Dw3.Game.Tests",
       "folder": ".",
-      "count": 103
+      "count": 102
     },
     {
       "rule": "SA1117",

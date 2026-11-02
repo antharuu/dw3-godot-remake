@@ -141,23 +141,20 @@ public sealed class BattleGrowthVectorGenerator
     /// AddExp: rngValues is the full materialized sequence for all level-ups.
     private static JsonObject AddExpCase(
         int id, GrowthTables tables, PartnerGrowthState stateIn,
-        int expRate, int hpGrowth, int mpGrowth,
-        int[] statGrowth, int[] resistGrowth, int exp, int[] rngValues)
+        PartnerGrowthCurve curve, int exp, int[] rngValues)
     {
         var state = CloneState(stateIn);
-        bool leveled = GrowthCalculator.AddExp(tables, state,
-            new PartnerGrowthCurve(expRate, hpGrowth, mpGrowth, statGrowth, resistGrowth), exp,
-            new SeqRng(rngValues));
+        bool leveled = GrowthCalculator.AddExp(tables, state, curve, exp, new SeqRng(rngValues));
 
         return new JsonObject
         {
             ["id"] = id,
             ["fn"] = "AddExp",
-            ["expRate"] = expRate,
-            ["hpGrowth"] = hpGrowth,
-            ["mpGrowth"] = mpGrowth,
-            ["statGrowth"] = ToJsonArray(statGrowth),
-            ["resistGrowth"] = ToJsonArray(resistGrowth),
+            ["expRate"] = curve.ExpRate,
+            ["hpGrowth"] = curve.HpGrowth,
+            ["mpGrowth"] = curve.MpGrowth,
+            ["statGrowth"] = ToJsonArray([.. curve.StatGrowth]),
+            ["resistGrowth"] = ToJsonArray([.. curve.ResistGrowth]),
             ["exp"] = exp,
             ["rngSequence"] = ToJsonArray(rngValues),
             ["inLevel"] = stateIn.Level,
@@ -308,44 +305,38 @@ public sealed class BattleGrowthVectorGenerator
         // ---- AddExp cases ----
         // no level-up
         cases.Add(AddExpCase(id++, def,
-            MakeState(level: 1, exp: 0), expRate: 10,
-            hpGrowth: 30, mpGrowth: 20,
-            statGrowth: statGrowthBase, resistGrowth: resistGrowthBase,
+            MakeState(level: 1, exp: 0),
+            curve: new PartnerGrowthCurve(10, 30, 20, statGrowthBase, resistGrowthBase),
             exp: 5, rngValues: []));
 
         // exactly one level-up (level 1→2, threshold = (8+10-6)*10/10 + 0 = 12)
         cases.Add(AddExpCase(id++, def,
-            MakeState(level: 1, exp: 0), expRate: 10,
-            hpGrowth: 30, mpGrowth: 20,
-            statGrowth: statGrowthBase, resistGrowth: resistGrowthBase,
+            MakeState(level: 1, exp: 0),
+            curve: new PartnerGrowthCurve(10, 30, 20, statGrowthBase, resistGrowthBase),
             exp: 13, rngValues: ConstSeq(0, 15)));
 
         // two level-ups (thresholds 12 and 36)
         cases.Add(AddExpCase(id++, def,
-            MakeState(level: 1, exp: 0), expRate: 10,
-            hpGrowth: 30, mpGrowth: 20,
-            statGrowth: statGrowthBase, resistGrowth: resistGrowthBase,
+            MakeState(level: 1, exp: 0),
+            curve: new PartnerGrowthCurve(10, 30, 20, statGrowthBase, resistGrowthBase),
             exp: 40, rngValues: ConstSeq(2, 30)));
 
         // at level 99 → no level-up
         cases.Add(AddExpCase(id++, def,
-            MakeState(level: 99, exp: 0), expRate: 10,
-            hpGrowth: 30, mpGrowth: 20,
-            statGrowth: statGrowthBase, resistGrowth: resistGrowthBase,
+            MakeState(level: 99, exp: 0),
+            curve: new PartnerGrowthCurve(10, 30, 20, statGrowthBase, resistGrowthBase),
             exp: 9999, rngValues: []));
 
         // exp cap at 999999
         cases.Add(AddExpCase(id++, def,
-            MakeState(level: 1, exp: 999990), expRate: 10,
-            hpGrowth: 30, mpGrowth: 20,
-            statGrowth: statGrowthBase, resistGrowth: resistGrowthBase,
+            MakeState(level: 1, exp: 999990),
+            curve: new PartnerGrowthCurve(10, 30, 20, statGrowthBase, resistGrowthBase),
             exp: 100, rngValues: ConstSeq(0, 60)));
 
         // expRate = 0 (no cubic component, threshold = LevelExp[tier])
         cases.Add(AddExpCase(id++, def,
-            MakeState(level: 1, exp: 0), expRate: 0,
-            hpGrowth: 30, mpGrowth: 20,
-            statGrowth: statGrowthBase, resistGrowth: resistGrowthBase,
+            MakeState(level: 1, exp: 0),
+            curve: new PartnerGrowthCurve(0, 30, 20, statGrowthBase, resistGrowthBase),
             exp: 5, rngValues: []));
 
         // expRate = 0 with large LevelExp[0]=5 → level-up at 6
@@ -353,9 +344,8 @@ public sealed class BattleGrowthVectorGenerator
             [5, 100, 500, 1000],
             def.VitalCuts, def.VitalRandom, def.StatGains, def.ResistGains);
         cases.Add(AddExpCase(id++, tablesHighBase,
-            MakeState(level: 1, exp: 0), expRate: 0,
-            hpGrowth: 30, mpGrowth: 20,
-            statGrowth: statGrowthBase, resistGrowth: resistGrowthBase,
+            MakeState(level: 1, exp: 0),
+            curve: new PartnerGrowthCurve(0, 30, 20, statGrowthBase, resistGrowthBase),
             exp: 6, rngValues: ConstSeq(0, 15)));
 
         // tier boundary level-ups (4→5, 19→20, 39→40)
@@ -367,24 +357,21 @@ public sealed class BattleGrowthVectorGenerator
             int threshold = (nextLevel * nextLevel * nextLevel + nextLevel * 5 - 6) * 10 / 10
                             + def.LevelExp[nextTier];
             cases.Add(AddExpCase(id++, def,
-                MakeState(level: lv, exp: 0), expRate: 10,
-                hpGrowth: 30, mpGrowth: 20,
-                statGrowth: statGrowthBase, resistGrowth: resistGrowthBase,
+                MakeState(level: lv, exp: 0),
+                curve: new PartnerGrowthCurve(10, 30, 20, statGrowthBase, resistGrowthBase),
                 exp: threshold + 1, rngValues: ConstSeq(1, 15)));
         }
 
         // Tp near cap
         cases.Add(AddExpCase(id++, def,
-            MakeState(level: 1, exp: 0, tp: 95), expRate: 10,
-            hpGrowth: 30, mpGrowth: 20,
-            statGrowth: statGrowthBase, resistGrowth: resistGrowthBase,
+            MakeState(level: 1, exp: 0, tp: 95),
+            curve: new PartnerGrowthCurve(10, 30, 20, statGrowthBase, resistGrowthBase),
             exp: 100, rngValues: ConstSeq(0, 60)));
 
         // multiple level-ups with mixed RNG
         cases.Add(AddExpCase(id++, def,
-            MakeState(level: 5, exp: 0), expRate: 10,
-            hpGrowth: 20, mpGrowth: 15,
-            statGrowth: [2, 2, 2, 2, 2, 2], resistGrowth: [1, 1, 1, 1, 1, 1, 1],
+            MakeState(level: 5, exp: 0),
+            curve: new PartnerGrowthCurve(10, 20, 15, [2, 2, 2, 2, 2, 2], [1, 1, 1, 1, 1, 1, 1]),
             exp: 5000, rngValues: [
                 3, 6, 2, 1, 3, 0, 2, 1, 2, 3, 1,
                 4, 5, 3, 0, 1, 2, 4, 3, 1, 2, 0,
@@ -397,9 +384,8 @@ public sealed class BattleGrowthVectorGenerator
         foreach (var rate in new[] { 5, 15, 20, 50 })
         {
             cases.Add(AddExpCase(id++, def,
-                MakeState(level: 1, exp: 0), expRate: rate,
-                hpGrowth: 20, mpGrowth: 10,
-                statGrowth: [1, 1, 1, 1, 1, 1], resistGrowth: [0, 0, 0, 0, 0, 0, 0],
+                MakeState(level: 1, exp: 0),
+                curve: new PartnerGrowthCurve(rate, 20, 10, [1, 1, 1, 1, 1, 1], [0, 0, 0, 0, 0, 0, 0]),
                 exp: 200, rngValues: ConstSeq(0, 60)));
         }
 
