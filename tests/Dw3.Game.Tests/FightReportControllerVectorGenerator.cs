@@ -20,9 +20,8 @@ public sealed class FightReportControllerVectorGenerator
     /// <summary>Build a FightReportPartner with invented values.</summary>
     private static FightReportPartner Partner(
         int partyIndex, int partnerId, int fighterId,
-        int levelBefore, int expBefore, int expGained, int levelAfter,
-        int[] slotIds)
-        => new(partyIndex, partnerId, fighterId, levelBefore, expBefore, expGained, levelAfter, slotIds);
+        (int Before, int After) levels, int expBefore, int expGained, int[] slotIds)
+        => new(partyIndex, partnerId, fighterId, levels.Before, expBefore, expGained, levels.After, slotIds);
 
     /// <summary>Serialize a FightReportPartner to JSON input fields.</summary>
     private static JsonObject PartnerToJson(FightReportPartner p)
@@ -188,68 +187,68 @@ public sealed class FightReportControllerVectorGenerator
 
     /// Single partner, exp=4, no level up, money=50, item=0.
     private static FightReportInput InputA() => new(
-        [Partner(0, 1, 383, 25, 0, 4, 25, [])],
+        [Partner(0, 1, 383, (25, 25), 0, 4, [])],
         Money: 50, Item: 0);
 
     /// Single partner, exp=4, level up 25→26, money=50, item=0.
     private static FightReportInput InputB() => new(
-        [Partner(0, 1, 383, 25, 0, 4, 26, [])],
+        [Partner(0, 1, 383, (25, 26), 0, 4, [])],
         Money: 50, Item: 0);
 
     /// Single partner, exp=0 (skipped), money=100, item=0.
     private static FightReportInput InputC() => new(
-        [Partner(0, 1, 383, 25, 0, 0, 25, [])],
+        [Partner(0, 1, 383, (25, 25), 0, 0, [])],
         Money: 100, Item: 0);
 
     /// Single partner, exp=100, no level up, money=0, item=0.
     private static FightReportInput InputD() => new(
-        [Partner(0, 1, 383, 25, 0, 100, 25, [])],
+        [Partner(0, 1, 383, (25, 25), 0, 100, [])],
         Money: 0, Item: 0);
 
     /// Single partner, exp=4, money=50, item=3.
     private static FightReportInput InputE() => new(
-        [Partner(0, 1, 383, 25, 0, 4, 25, [])],
+        [Partner(0, 1, 383, (25, 25), 0, 4, [])],
         Money: 50, Item: 3);
 
     /// Two partners, both with exp, money=100, item=0.
     private static FightReportInput InputF() => new(
         [
-            Partner(0, 1, 383, 25, 0,  4, 25, []),
-            Partner(1, 2, 400, 30, 50, 10, 30, [201, 202]),
+            Partner(0, 1, 383, (25, 25), 0,  4, []),
+            Partner(1, 2, 400, (30, 30), 50, 10, [201, 202]),
         ],
         Money: 100, Item: 0);
 
     /// Two partners: first exp=0 (skipped), second exp=10, money=50, item=0.
     private static FightReportInput InputG() => new(
         [
-            Partner(0, 1, 383, 25, 0, 0,  25, []),
-            Partner(1, 2, 400, 20, 0, 10, 21, [201]),
+            Partner(0, 1, 383, (25,  25), 0, 0, []),
+            Partner(1, 2, 400, (20, 21), 0, 10, [201]),
         ],
         Money: 50, Item: 0);
 
     /// Three partners, mixed: one skipped, one level up, one normal.
     private static FightReportInput InputH() => new(
         [
-            Partner(0, 1, 383, 25, 0,  0,  25, []),
-            Partner(1, 2, 400, 30, 50, 8,  31, [201]),
-            Partner(2, 3, 450, 15, 0,  4,  15, [301, 302, 303]),
+            Partner(0, 1, 383, (25,  25), 0,  0, []),
+            Partner(1, 2, 400, (30,  31), 50, 8, [201]),
+            Partner(2, 3, 450, (15,  15), 0,  4, [301, 302, 303]),
         ],
         Money: 200, Item: 7);
 
     /// Single partner, 3 slot digimons, exp=50, no level up.
     private static FightReportInput InputI() => new(
-        [Partner(0, 1, 383, 25, 0, 50, 25, [101, 102, 103])],
+        [Partner(0, 1, 383, (25, 25), 0, 50, [101, 102, 103])],
         Money: 75, Item: 0);
 
     /// Single partner, custom token counts (3 tokens for entry 2).
     private static FightReportInput InputJ() => new(
-        [Partner(0, 1, 383, 25, 0, 4, 25, [])],
+        [Partner(0, 1, 383, (25, 25), 0, 4, [])],
         Money: 50, Item: 0,
         MessageTokenCounts: new Dictionary<int, int> { { 2, 3 }, { 10, 2 } });
 
     /// Single partner, high exp (999990), no level up.
     private static FightReportInput InputK() => new(
-        [Partner(0, 1, 383, 50, 500000, 250, 50, [101])],
+        [Partner(0, 1, 383, (50, 50), 500000, 250, [101])],
         Money: 9999, Item: 0);
 
     // ------------------------------------------------------------------ generator
@@ -344,65 +343,65 @@ public sealed class FightReportControllerVectorGenerator
         foreach (var expBefore in new[] { 0, 50, 999, 12345, 999990 })
         {
             var input = new FightReportInput(
-                [Partner(0, 1, 383, 25, expBefore, 4, 25, [])],
+                [Partner(0, 1, 383, (25, 25), expBefore, 4, [])],
                 Money: 50, Item: 0);
             cases.Add(StepCase(id++, input, 70, crossEvery: 20, label: $"expBefore{expBefore}"));
         }
 
         // ExpGained = 1 (single digit)
         cases.Add(StepCase(id++, new FightReportInput(
-            [Partner(0, 1, 383, 25, 0, 1, 25, [])], 50, 0), 140, 20, "expGained1"));
+            [Partner(0, 1, 383, (25, 25), 0, 1, [])], 50, 0), 140, 20, "expGained1"));
 
         // ExpGained = 9
         cases.Add(StepCase(id++, new FightReportInput(
-            [Partner(0, 1, 383, 25, 0, 9, 25, [])], 50, 0), 140, 20, "expGained9"));
+            [Partner(0, 1, 383, (25, 25), 0, 9, [])], 50, 0), 140, 20, "expGained9"));
 
         // ExpGained = 10 (two digits, step=11)
         cases.Add(StepCase(id++, new FightReportInput(
-            [Partner(0, 1, 383, 25, 0, 10, 25, [])], 50, 0), 140, 20, "expGained10"));
+            [Partner(0, 1, 383, (25, 25), 0, 10, [])], 50, 0), 140, 20, "expGained10"));
 
         // ExpGained = 11
         cases.Add(StepCase(id++, new FightReportInput(
-            [Partner(0, 1, 383, 25, 0, 11, 25, [])], 50, 0), 140, 20, "expGained11"));
+            [Partner(0, 1, 383, (25, 25), 0, 11, [])], 50, 0), 140, 20, "expGained11"));
 
         // ExpGained = 999 (three digits, step=111)
         cases.Add(StepCase(id++, new FightReportInput(
-            [Partner(0, 1, 383, 25, 0, 999, 25, [])], 50, 0), 140, 20, "expGained999"));
+            [Partner(0, 1, 383, (25, 25), 0, 999, [])], 50, 0), 140, 20, "expGained999"));
 
         // ExpGained = 1000 (four digits, step=1111)
         cases.Add(StepCase(id++, new FightReportInput(
-            [Partner(0, 1, 383, 25, 0, 1000, 25, [])], 50, 0), 140, 20, "expGained1000"));
+            [Partner(0, 1, 383, (25, 25), 0, 1000, [])], 50, 0), 140, 20, "expGained1000"));
 
         // TargetExp capped at 999999 (expBefore+expGained > 999999)
         cases.Add(StepCase(id++, new FightReportInput(
-            [Partner(0, 1, 383, 25, 999990, 20, 25, [])], 50, 0), 140, 20, "targetExpCap"));
+            [Partner(0, 1, 383, (25, 25), 999990, 20, [])], 50, 0), 140, 20, "targetExpCap"));
 
         // Money=0, Item=0
         cases.Add(StepCase(id++, new FightReportInput(
-            [Partner(0, 1, 383, 25, 0, 4, 25, [])], 0, 0), 140, 20, "money0-item0"));
+            [Partner(0, 1, 383, (25, 25), 0, 4, [])], 0, 0), 140, 20, "money0-item0"));
 
         // Money=9999, Item=99
         cases.Add(StepCase(id++, new FightReportInput(
-            [Partner(0, 1, 383, 25, 0, 4, 25, [])], 9999, 99), 200, 20, "money9999-item99"));
+            [Partner(0, 1, 383, (25, 25), 0, 4, [])], 9999, 99), 200, 20, "money9999-item99"));
 
         // Three partners all with ExpGained=0 (all skipped, go straight to money)
         cases.Add(StepCase(id++, new FightReportInput(
             [
-                Partner(0, 1, 383, 25, 0, 0, 25, []),
-                Partner(1, 2, 400, 30, 0, 0, 30, []),
-                Partner(2, 3, 450, 15, 0, 0, 15, []),
+                Partner(0, 1, 383, (25, 25), 0, 0, []),
+                Partner(1, 2, 400, (30, 30), 0, 0, []),
+                Partner(2, 3, 450, (15, 15), 0, 0, []),
             ], 50, 0), 120, 20, "allSkipped"));
 
         // All partners skipped but item present
         cases.Add(StepCase(id++, new FightReportInput(
             [
-                Partner(0, 1, 383, 25, 0, 0, 25, []),
-                Partner(1, 2, 400, 30, 0, 0, 30, []),
+                Partner(0, 1, 383, (25, 25), 0, 0, []),
+                Partner(1, 2, 400, (30, 30), 0, 0, []),
             ], 50, 5), 200, 20, "allSkippedWithItem"));
 
         // MessageTokenCounts with entry 10 = 5 (slow money message reveal)
         cases.Add(StepCase(id++, new FightReportInput(
-            [Partner(0, 1, 383, 25, 0, 4, 25, [])], 50, 0,
+            [Partner(0, 1, 383, (25, 25), 0, 4, [])], 50, 0,
             new Dictionary<int, int> { { 10, 5 } }), 160, 20, "tokenCount10-5"));
 
         // Padding: varied single-partner frame captures to reach 300
@@ -414,7 +413,7 @@ public sealed class FightReportControllerVectorGenerator
             int money = 10 + extra % 200;
             int fr = padFrame + (extra % 8) * 10;
             var inputPad = new FightReportInput(
-                [Partner(0, 1, 383, 25, extra % 1000, expG, 25, [])],
+                [Partner(0, 1, 383, (25, 25), extra % 1000, expG, [])],
                 Money: money, Item: 0);
             cases.Add(StepCase(id++, inputPad, fr, crossEvery: 20, label: $"pad{extra}"));
         }
