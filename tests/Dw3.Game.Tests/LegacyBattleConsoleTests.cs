@@ -795,8 +795,7 @@ public sealed class LegacyBattleConsoleTests
         return s;
     }
 
-    private static TechData Tech(int power = 0, int element = 0, int elementPower = 0, int family = 0,
-        int effect = 0, int script = 0, int icon = 0, int mp = 0)
+    private static TechData Tech(int power = 0, int element = 0, int elementPower = 0, int family = 0, int mp = 0)
     {
         return new TechData
         {
@@ -804,9 +803,6 @@ public sealed class LegacyBattleConsoleTests
             Element = element,
             ElementPower = elementPower,
             Family = family,
-            Effect = effect,
-            Script = script,
-            Icon = icon,
             Mp = mp,
         };
     }
