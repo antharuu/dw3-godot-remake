@@ -39,9 +39,9 @@
     <QualityRatchetedRules>$(QualityRatchetedRules);SA1107;SA1116;SA1117;SA1118;SA1119;SA1124;SA1127;SA1128;SA1131;SA1132;SA1139</QualityRatchetedRules>
     <QualityRatchetedRules>$(QualityRatchetedRules);SA1200;SA1201;SA1202;SA1203;SA1204;SA1208;SA1210;SA1211;SA1214;SA1313;SA1316</QualityRatchetedRules>
     <!-- StyleCop maintainability and layout rules. -->
-    <QualityRatchetedRules>$(QualityRatchetedRules);SA1401;SA1402;SA1407;SA1408;SA1413;SA1414;SA1500;SA1501;SA1502;SA1503;SA1505;SA1507;SA1512;SA1513;SA1514;SA1515;SA1516;SA1519;SA1520</QualityRatchetedRules>
+    <QualityRatchetedRules>$(QualityRatchetedRules);SA1401;SA1407;SA1408;SA1413;SA1414;SA1500;SA1501;SA1502;SA1503;SA1505;SA1507;SA1512;SA1513;SA1514;SA1515;SA1516;SA1519;SA1520</QualityRatchetedRules>
     <!-- StyleCop documentation rules. -->
-    <QualityRatchetedRules>$(QualityRatchetedRules);SA1600;SA1601;SA1602;SA1604;SA1611;SA1612;SA1615;SA1626;SA1627;SA1629;SA1642;SA1648;SA1649</QualityRatchetedRules>
+    <QualityRatchetedRules>$(QualityRatchetedRules);SA1600;SA1601;SA1602;SA1604;SA1611;SA1612;SA1615;SA1626;SA1627;SA1629;SA1642;SA1648</QualityRatchetedRules>
     <WarningsNotAsErrors>$(WarningsNotAsErrors);$(QualityRatchetedRules)</WarningsNotAsErrors>
   </PropertyGroup>
 
