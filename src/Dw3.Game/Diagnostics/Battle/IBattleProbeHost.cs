@@ -109,6 +109,15 @@ internal interface IBattleProbeHost
     /// <summary>Starts the same manifest-backed battle as the F8 debug shortcut.</summary>
     void StartDebugBattle();
 
+    /// <summary>Runs the battle-light diagnostic and requests engine termination with its result.</summary>
+    void RunBattleLightProbe();
+
+    /// <summary>Runs the battle-model diagnostic and requests engine termination with its result.</summary>
+    void RunBattleModelProbe();
+
+    /// <summary>Renders the fighter diagnostic sheet and requests engine termination with its result.</summary>
+    void RunFighterSheet();
+
     /// <summary>Runs one fixed battle simulation step.</summary>
     void TickTestSimulation();
 

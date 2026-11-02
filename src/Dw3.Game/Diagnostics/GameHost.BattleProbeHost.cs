@@ -108,6 +108,15 @@ public partial class GameHost : IBattleProbeHost
     void IBattleProbeHost.StartDebugBattle() => StartDebugBattle();
 
     /// <inheritdoc/>
+    void IBattleProbeHost.RunBattleLightProbe() => RunBattleLightProbe();
+
+    /// <inheritdoc/>
+    void IBattleProbeHost.RunBattleModelProbe() => RunBattleModelProbe();
+
+    /// <inheritdoc/>
+    void IBattleProbeHost.RunFighterSheet() => RunFighterSheet();
+
+    /// <inheritdoc/>
     void IBattleProbeHost.TickTestSimulation() => TickTestSimulation();
 
     /// <inheritdoc/>
