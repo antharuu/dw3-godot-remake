@@ -16,6 +16,8 @@ internal static class CueParser
     /// <summary>
     /// Parses <paramref name="cuePath"/> and returns the absolute path to the referenced BIN file.
     /// </summary>
+    /// <param name="cuePath">Absolute or relative path to the <c>.cue</c> file to parse.</param>
+    /// <returns>The verified absolute path to the BIN file referenced by the CUE sheet.</returns>
     /// <exception cref="DiscSourceException">
     /// <see cref="DiscSourceException.FormatInvalid"/> on any structural problem with the CUE or BIN.
     /// </exception>

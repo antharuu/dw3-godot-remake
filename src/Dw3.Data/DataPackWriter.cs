@@ -11,9 +11,11 @@ public sealed class DataPackWriter
     private readonly string _rootDirectory;
 
     /// <summary>
-    /// Initializes a writer and removes stale staging directories from interrupted earlier extractions.
+    /// Initializes a new instance of the <see cref="DataPackWriter"/> class, creating the root directory
+    /// and removing stale staging or previous-pack directories left by interrupted earlier extractions.
     /// </summary>
-    /// <param name="rootDirectory">Parent directory that will contain the active <c>data</c> directory.</param>
+    /// <param name="rootDirectory">Parent directory that will contain the active <c>data</c> sub-directory.</param>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="rootDirectory"/> is null, empty, or whitespace.</exception>
     public DataPackWriter(string rootDirectory)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(rootDirectory);
@@ -74,6 +76,12 @@ public sealed class DataPackWriter
         }
     }
 
+    /// <summary>
+    /// Atomically replaces the active data directory with <paramref name="stagingDirectory"/>,
+    /// preserving a backup copy of the previous active directory until the rename succeeds.
+    /// The backup is removed on success; orphaned backups are cleaned up on the next construction.
+    /// </summary>
+    /// <param name="stagingDirectory">Validated staging directory to promote to the active location.</param>
     private void Promote(string stagingDirectory)
     {
         string activeDirectory = Path.Combine(_rootDirectory, DataDirectoryName);
@@ -120,6 +128,8 @@ public sealed class DataPackWriter
     /// file inside the source directory, causing <c>Directory.Move</c> to throw.
     /// An exponential back-off gives the external process time to release the handle.
     /// </summary>
+    /// <param name="source">Absolute path of the directory to move.</param>
+    /// <param name="destination">Absolute path the directory should be moved to; must not exist.</param>
     private static void MoveWithRetry(string source, string destination)
     {
         const int MaxAttempts = 8;
@@ -142,6 +152,12 @@ public sealed class DataPackWriter
         }
     }
 
+    /// <summary>
+    /// Deletes orphaned staging (<c>data.staging-*</c>) and superseded previous-pack
+    /// (<c>data.previous-*</c>) directories below the root.
+    /// Failures are silently swallowed because cleanup is best-effort and will be retried
+    /// on the next <see cref="DataPackWriter"/> construction.
+    /// </summary>
     private void RemoveOrphanedDirectories()
     {
         // Remove incomplete staging directories left by interrupted extractions.
@@ -163,6 +179,7 @@ public sealed class DataPackWriter
     /// A failed deletion is not a correctness issue: the directory will be retried on the
     /// next <see cref="DataPackWriter"/> construction via <see cref="RemoveOrphanedDirectories"/>.
     /// </summary>
+    /// <param name="directory">Absolute path of the directory to delete recursively.</param>
     private static void TryDeleteDirectory(string directory)
     {
         try
@@ -173,6 +190,13 @@ public sealed class DataPackWriter
         catch (UnauthorizedAccessException) { }
     }
 
+    /// <summary>
+    /// Writes the single <c>meta</c> row into the pack database, binding extractor version,
+    /// disc SHA-1, edition tag, and UTC completion timestamp alongside the current schema version.
+    /// </summary>
+    /// <param name="connection">Open SQLite connection to the staging database.</param>
+    /// <param name="transaction">Active transaction that must wrap the insert.</param>
+    /// <param name="metadata">Validated source-identity and completion metadata to persist.</param>
     private static void InsertMetadata(SqliteConnection connection, SqliteTransaction transaction, DataPackMetadata metadata)
     {
         using SqliteCommand command = connection.CreateCommand();
@@ -189,6 +213,12 @@ public sealed class DataPackWriter
         command.ExecuteNonQuery();
     }
 
+    /// <summary>
+    /// Confirms that the extractor version, disc SHA-1, and edition fields are all non-empty.
+    /// Called before staging begins so that an obvious metadata defect is caught immediately.
+    /// </summary>
+    /// <param name="metadata">Metadata to inspect before writing the staging database.</param>
+    /// <exception cref="ArgumentException">Thrown when any required metadata field is null or whitespace.</exception>
     private static void ValidateMetadata(DataPackMetadata metadata)
     {
         if (string.IsNullOrWhiteSpace(metadata.ExtractorVersion) || string.IsNullOrWhiteSpace(metadata.DiscSha1) || string.IsNullOrWhiteSpace(metadata.Edition))

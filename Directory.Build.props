@@ -41,7 +41,7 @@
     <!-- StyleCop maintainability and layout rules. -->
     <QualityRatchetedRules>$(QualityRatchetedRules);SA1401;SA1407;SA1408;SA1413;SA1414;SA1501;SA1502;SA1503;SA1505;SA1507;SA1512;SA1513;SA1514;SA1515;SA1516;SA1519;SA1520</QualityRatchetedRules>
     <!-- StyleCop documentation rules. -->
-    <QualityRatchetedRules>$(QualityRatchetedRules);SA1600;SA1601;SA1602;SA1604;SA1611;SA1612;SA1615;SA1626;SA1627;SA1629;SA1642;SA1648</QualityRatchetedRules>
+    <QualityRatchetedRules>$(QualityRatchetedRules);SA1600;SA1601;SA1602;SA1604;SA1611;SA1612;SA1615;SA1626;SA1627;SA1629;SA1642</QualityRatchetedRules>
     <WarningsNotAsErrors>$(WarningsNotAsErrors);$(QualityRatchetedRules)</WarningsNotAsErrors>
   </PropertyGroup>
 

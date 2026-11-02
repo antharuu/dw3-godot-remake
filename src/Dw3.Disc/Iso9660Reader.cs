@@ -25,6 +25,8 @@ public static class Iso9660Reader
     /// Reads the volume identifier string from the Primary Volume Descriptor.
     /// Returns the value trimmed of trailing spaces.
     /// </summary>
+    /// <param name="source">Open BIN stream positioned anywhere; seeked to sector 16 internally.</param>
+    /// <returns>The volume identifier string from PVD bytes 40–71, trimmed of trailing ASCII spaces.</returns>
     /// <exception cref="DiscSourceException">
     /// <see cref="DiscSourceException.FormatInvalid"/> if the image is truncated or malformed.
     /// </exception>
@@ -39,6 +41,8 @@ public static class Iso9660Reader
     /// Returns every file in the disc image in path-table traversal order.
     /// Directories and special dot entries are excluded.
     /// </summary>
+    /// <param name="source">Open BIN stream positioned anywhere; seeked to relevant sectors internally.</param>
+    /// <returns>All file entries in path-table traversal order, with ISO paths using forward-slash separators.</returns>
     /// <exception cref="DiscSourceException">
     /// <see cref="DiscSourceException.FormatInvalid"/> on structural problems.
     /// </exception>
@@ -61,6 +65,10 @@ public static class Iso9660Reader
     /// <summary>
     /// Reads the raw user-data bytes of a file identified by its extent.
     /// </summary>
+    /// <param name="source">Open BIN stream positioned anywhere; seeked to the file's LBA sectors internally.</param>
+    /// <param name="lba">Logical Block Address of the first sector of the file's data extent.</param>
+    /// <param name="size">Data length in bytes. When zero, returns an empty array immediately.</param>
+    /// <returns>Exactly <paramref name="size"/> bytes of user data read from the disc sectors starting at <paramref name="lba"/>.</returns>
     public static byte[] ReadFileContent(Stream source, int lba, int size)
     {
         if (size <= 0)
@@ -77,6 +85,13 @@ public static class Iso9660Reader
     /// Reads the 2048-byte user-data region of sector <paramref name="lba"/>
     /// from a 2352-byte-per-sector raw BIN stream.
     /// </summary>
+    /// <param name="source">Open BIN stream; seeked to position <c>lba × 2352 + 24</c> before reading.</param>
+    /// <param name="lba">Logical Block Address of the sector to read; must be non-negative.</param>
+    /// <returns>A 2048-byte array containing the user-data payload of the requested sector.</returns>
+    /// <exception cref="DiscSourceException">
+    /// <see cref="DiscSourceException.FormatInvalid"/> if <paramref name="lba"/> is negative,
+    /// the sector lies beyond the stream length, or the stream ends before 2048 bytes are read.
+    /// </exception>
     internal static byte[] ReadSector(Stream source, int lba)
     {
         if (lba < 0)
@@ -110,6 +125,14 @@ public static class Iso9660Reader
         return data;
     }
 
+    /// <summary>
+    /// Verifies that the 2048-byte sector buffer contains a well-formed ISO9660 Primary Volume Descriptor:
+    /// type byte = 1, identifier = <c>"CD001"</c> (bytes 1–5), version byte = 1 (byte 6).
+    /// </summary>
+    /// <param name="pvd">2048-byte user-data buffer read from disc sector 16.</param>
+    /// <exception cref="DiscSourceException">
+    /// <see cref="DiscSourceException.FormatInvalid"/> when any of the three PVD signature fields fails.
+    /// </exception>
     private static void ValidatePvd(byte[] pvd)
     {
         // PVD: type=1, identifier="CD001", version=1
@@ -124,6 +147,18 @@ public static class Iso9660Reader
         }
     }
 
+    /// <summary>
+    /// Reads the L-type (little-endian) ISO9660 path table from the disc and returns a list of
+    /// (Name, LBA, Parent) tuples, one entry per directory.
+    /// The path table size and LBA are read from PVD bytes 132 and 140 respectively.
+    /// Parent numbers in the path table are 1-indexed.
+    /// </summary>
+    /// <param name="source">Open BIN stream seeked internally to the path-table sectors.</param>
+    /// <param name="pvd">2048-byte Primary Volume Descriptor buffer providing the table size and LBA.</param>
+    /// <returns>A list of directory entries in path-table order; index 0 is always the root directory.</returns>
+    /// <exception cref="DiscSourceException">
+    /// <see cref="DiscSourceException.FormatInvalid"/> when the path table is empty or structurally malformed.
+    /// </exception>
     private static List<(string Name, int Lba, int Parent)> ReadPathTable(Stream source, byte[] pvd)
     {
         // Path table size and L-type path table LBA are at fixed PVD offsets.
@@ -172,6 +207,9 @@ public static class Iso9660Reader
     /// Builds the relative directory path for the given 0-based path-table index.
     /// Root (index 0) returns an empty string.
     /// </summary>
+    /// <param name="entries">The full path-table directory list; parent references are 1-indexed.</param>
+    /// <param name="index">Zero-based index of the directory whose path to build.</param>
+    /// <returns>The slash-separated relative path for the directory, or an empty string for the root.</returns>
     private static string BuildDirPath(IReadOnlyList<(string Name, int Lba, int Parent)> entries, int index)
     {
         if (index == 0)
@@ -194,6 +232,10 @@ public static class Iso9660Reader
     /// <summary>
     /// Reads <paramref name="totalBytes"/> contiguous bytes starting at sector <paramref name="startLba"/>.
     /// </summary>
+    /// <param name="source">Open BIN stream seeked internally to each required sector.</param>
+    /// <param name="startLba">Logical Block Address of the first sector of the contiguous region.</param>
+    /// <param name="totalBytes">Number of bytes to return; rounded up to a whole number of sectors for reading, then truncated.</param>
+    /// <returns>A byte array of exactly <paramref name="totalBytes"/> bytes from the requested sectors.</returns>
     private static byte[] ReadContiguous(Stream source, int startLba, int totalBytes)
     {
         int sectorsNeeded = (totalBytes + UserDataBytes - 1) / UserDataBytes;
@@ -208,6 +250,12 @@ public static class Iso9660Reader
     }
 
     /// <summary>Reads a little-endian 32-bit unsigned integer from <paramref name="data"/>.</summary>
+    /// <param name="data">Byte buffer containing the ISO9660 structure field.</param>
+    /// <param name="offset">Zero-based byte offset of the first byte of the 32-bit field; must leave room for 4 bytes.</param>
+    /// <returns>The 32-bit unsigned value read from the four bytes at <paramref name="offset"/>, cast to <see cref="int"/>.</returns>
+    /// <exception cref="DiscSourceException">
+    /// <see cref="DiscSourceException.FormatInvalid"/> when <paramref name="offset"/> is negative or the field extends beyond <paramref name="data"/>.
+    /// </exception>
     private static int ReadU32LE(byte[] data, int offset)
     {
         if (offset < 0 || offset + 4 > data.Length)

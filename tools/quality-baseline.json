@@ -1913,18 +1913,6 @@
     },
     {
       "rule": "SA1600",
-      "project": "Dw3.Data",
-      "folder": ".",
-      "count": 12
-    },
-    {
-      "rule": "SA1600",
-      "project": "Dw3.Disc",
-      "folder": ".",
-      "count": 3
-    },
-    {
-      "rule": "SA1600",
       "project": "Dw3.Extractor",
       "folder": ".",
       "count": 193
@@ -2069,18 +2057,6 @@
     },
     {
       "rule": "SA1611",
-      "project": "Dw3.Data",
-      "folder": ".",
-      "count": 4
-    },
-    {
-      "rule": "SA1611",
-      "project": "Dw3.Disc",
-      "folder": ".",
-      "count": 20
-    },
-    {
-      "rule": "SA1611",
       "project": "Dw3.Extractor",
       "folder": ".",
       "count": 23
@@ -2144,18 +2120,6 @@
       "project": "Dw3.Formats",
       "folder": "Mips",
       "count": 1
-    },
-    {
-      "rule": "SA1615",
-      "project": "Dw3.Data",
-      "folder": ".",
-      "count": 1
-    },
-    {
-      "rule": "SA1615",
-      "project": "Dw3.Disc",
-      "folder": ".",
-      "count": 16
     },
     {
       "rule": "SA1615",
@@ -2255,12 +2219,6 @@
     },
     {
       "rule": "SA1642",
-      "project": "Dw3.Data",
-      "folder": ".",
-      "count": 7
-    },
-    {
-      "rule": "SA1642",
       "project": "Dw3.Game",
       "folder": ".",
       "count": 3
@@ -2270,12 +2228,6 @@
       "project": "Dw3.Game",
       "folder": "Presentation",
       "count": 3
-    },
-    {
-      "rule": "SA1648",
-      "project": "Dw3.Disc",
-      "folder": ".",
-      "count": 2
     }
   ]
 }

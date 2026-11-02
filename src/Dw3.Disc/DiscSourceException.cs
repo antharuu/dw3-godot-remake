@@ -18,14 +18,25 @@ public sealed class DiscSourceException : Exception
     /// <summary>Gets stable error code understood by the launcher UI.</summary>
     public string ErrorCode { get; }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DiscSourceException"/> class with an error code and message.
+    /// The error code must be one of the stable constants defined on this class.
+    /// </summary>
+    /// <param name="errorCode">Stable player-facing identifier for the failure kind (e.g. <see cref="FormatInvalid"/>).</param>
+    /// <param name="message">Human-readable explanation of the specific failure.</param>
     public DiscSourceException(string errorCode, string message)
         : base($"{errorCode}: {message}")
     {
         ErrorCode = errorCode;
     }
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DiscSourceException"/> class with an error code,
+    /// message, and the underlying exception that caused this failure.
+    /// </summary>
+    /// <param name="errorCode">Stable player-facing identifier for the failure kind (e.g. <see cref="FormatInvalid"/>).</param>
+    /// <param name="message">Human-readable explanation of the specific failure.</param>
+    /// <param name="inner">Inner exception that describes the low-level cause.</param>
     public DiscSourceException(string errorCode, string message, Exception inner)
         : base($"{errorCode}: {message}", inner)
     {

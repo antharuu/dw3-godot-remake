@@ -15,8 +15,14 @@ public sealed class DataPackReader
 
     /// <summary>
     /// Resolves a pack-relative path without allowing it to escape the active data directory.
-    /// The caller still decides whether absence is an incomplete or corrupt domain contract.
+    /// The caller decides whether absence of the resolved file signals an incomplete or corrupt pack.
     /// </summary>
+    /// <param name="relativePath">
+    /// Slash-separated path beneath the data directory.
+    /// Must not be empty, rooted, or contain <c>..</c> or empty segments.
+    /// </param>
+    /// <returns>The absolute, normalized path on disk, guaranteed to lie inside the active data directory.</returns>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="relativePath"/> is null, empty, whitespace, or would escape the data directory.</exception>
     public string ResolvePath(string relativePath)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(relativePath);
@@ -34,9 +40,11 @@ public sealed class DataPackReader
     }
 
     /// <summary>
-    /// Initializes a reader for the active data directory below the supplied root.
+    /// Initializes a new instance of the <see cref="DataPackReader"/> class for the active data
+    /// directory below the supplied root, resolving the path to an absolute form.
     /// </summary>
-    /// <param name="rootDirectory">Parent directory containing the active <c>data</c> directory.</param>
+    /// <param name="rootDirectory">Parent directory containing the active <c>data</c> sub-directory.</param>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="rootDirectory"/> is null, empty, or whitespace.</exception>
     public DataPackReader(string rootDirectory)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(rootDirectory);

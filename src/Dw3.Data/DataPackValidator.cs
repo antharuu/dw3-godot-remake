@@ -2,8 +2,23 @@ using Microsoft.Data.Sqlite;
 
 namespace Dw3.Data;
 
+/// <summary>
+/// Validates an extracted data pack by checking the directory layout, database integrity,
+/// schema version, required metadata fields, and the presence of every registered image file.
+/// Called by both <see cref="DataPackWriter"/> after staging and <see cref="DataPackReader"/> before opening.
+/// </summary>
 internal static class DataPackValidator
 {
+    /// <summary>
+    /// Validates the data pack at <paramref name="dataDirectory"/>, raising a typed
+    /// <see cref="DataPackException"/> when any structural or integrity check fails.
+    /// </summary>
+    /// <param name="dataDirectory">Absolute path of the directory containing <c>dw3.sqlite</c>.</param>
+    /// <param name="expectedSchemaVersion">Schema version this runtime requires; checked against the <c>meta</c> row.</param>
+    /// <exception cref="DataPackMissing">Thrown when <paramref name="dataDirectory"/> does not exist.</exception>
+    /// <exception cref="DataPackIncomplete">Thrown when the database file is absent or the <c>meta</c> table is missing or incomplete.</exception>
+    /// <exception cref="DataPackSchemaMismatch">Thrown when the pack schema version differs from <paramref name="expectedSchemaVersion"/>.</exception>
+    /// <exception cref="DataPackCorrupt">Thrown when the SQLite integrity check fails, the metadata count is wrong, or an image file is missing.</exception>
     internal static void Validate(string dataDirectory, int expectedSchemaVersion)
     {
         if (!Directory.Exists(dataDirectory))
@@ -40,6 +55,12 @@ internal static class DataPackValidator
         }
     }
 
+    /// <summary>
+    /// Runs the SQLite <c>PRAGMA quick_check</c> and raises <see cref="DataPackCorrupt"/>
+    /// if the database reports any structural problem.
+    /// </summary>
+    /// <param name="connection">Open read-only connection to the pack database.</param>
+    /// <exception cref="DataPackCorrupt">Thrown when the integrity check returns a result other than <c>ok</c>.</exception>
     private static void VerifyDatabaseIntegrity(SqliteConnection connection)
     {
         using SqliteCommand command = connection.CreateCommand();
@@ -51,6 +72,15 @@ internal static class DataPackValidator
         }
     }
 
+    /// <summary>
+    /// Reads the single row from the <c>meta</c> table and validates the schema version
+    /// and the non-empty presence of all required text fields.
+    /// </summary>
+    /// <param name="connection">Open read-only connection to the pack database.</param>
+    /// <param name="expectedSchemaVersion">Schema version this runtime requires.</param>
+    /// <exception cref="DataPackIncomplete">Thrown when the <c>meta</c> table is absent, has no rows, or contains blank fields.</exception>
+    /// <exception cref="DataPackSchemaMismatch">Thrown when the stored schema version differs from <paramref name="expectedSchemaVersion"/>.</exception>
+    /// <exception cref="DataPackCorrupt">Thrown when the <c>meta</c> table contains more than one row.</exception>
     private static void VerifyMetadata(SqliteConnection connection, int expectedSchemaVersion)
     {
         try
@@ -88,6 +118,14 @@ internal static class DataPackValidator
         }
     }
 
+    /// <summary>
+    /// Reads every path registered in the <c>pack_images</c> table and confirms that
+    /// the corresponding file exists on disk relative to <paramref name="dataDirectory"/>.
+    /// </summary>
+    /// <param name="connection">Open read-only connection to the pack database.</param>
+    /// <param name="dataDirectory">Absolute path of the directory containing the extracted image files.</param>
+    /// <exception cref="DataPackIncomplete">Thrown when the <c>pack_images</c> table is absent.</exception>
+    /// <exception cref="DataPackCorrupt">Thrown when a registered image path is invalid or the corresponding file is missing.</exception>
     private static void VerifyImages(SqliteConnection connection, string dataDirectory)
     {
         try

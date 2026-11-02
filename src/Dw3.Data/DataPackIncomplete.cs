@@ -6,10 +6,11 @@ namespace Dw3.Data;
 public sealed class DataPackIncomplete : DataPackException
 {
     /// <summary>
-    /// Initializes an incomplete-pack failure.
+    /// Initializes a new instance of the <see cref="DataPackIncomplete"/> class
+    /// to report a pack whose required database metadata is absent.
     /// </summary>
-    /// <param name="message">Explanation of the incomplete pack.</param>
-    /// <param name="innerException">Underlying storage failure, when available.</param>
+    /// <param name="message">Explanation of the incomplete pack, shown to the user or logged by the launcher.</param>
+    /// <param name="innerException">Underlying storage failure that prevented metadata access, or <see langword="null"/> if none.</param>
     public DataPackIncomplete(string message, Exception? innerException = null)
         : base(message, innerException)
     {
