@@ -4,6 +4,7 @@ using Dw3.Data;
 using Microsoft.Data.Sqlite;
 using Dw3Production.Conversion;
 using Dw3Production.Diagnostics;
+using Dw3Production.Diagnostics.Battle;
 using Dw3Production.Diagnostics.Field;
 using Dw3Production.Input;
 using Dw3Production.Logging;
@@ -363,6 +364,12 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
             return;
         }
 
+        if (BattleProbeCatalog.Create(methodName, this) is { } battleProbe)
+        {
+            Callable.From(() => _ = battleProbe.RunAsync()).CallDeferred();
+            return;
+        }
+
         CallDeferred(methodName);
     }
 
@@ -452,7 +459,6 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
     }
 
     #endregion
-
 
     #region Field simulation and battle coordination
 
@@ -1289,14 +1295,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         return 18;
     }
 
-    /// <summary>
-    /// Battle play acceptance probe: pose the player in S200, trigger F8 (a real manifest battle),
-    /// show the battle, execute a command through the menu, verify the victory returns to the
-    /// field at the previous position, then verify the battle-load diagnostic on a deliberately
-    /// broken manifest. Captures before/battle/victory/after plus the diagnostic.
-    /// </summary>
     #endregion
-
 
     #region Field interaction and dialogue
 
@@ -2534,40 +2533,6 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost
         {
             try { if (File.Exists(dbPath)) File.Delete(dbPath); } catch { /* best-effort cleanup */ }
         }
-    }
-
-    // ---------------------------------------------------------------------------
-    // PSX reference helper — oracle images stored outside the data pack
-    // ---------------------------------------------------------------------------
-
-    /// <summary>Thrown by <see cref="LoadPsxReference"/> when DW3_PSX_REFERENCE_DIR is unset
-    /// or the requested file is absent.  Caught separately from generic probe failures so the
-    /// probe exits with code 5 and a clear PSX_REFERENCE_UNAVAILABLE message instead of a
-    /// crash on image load.</summary>
-    private sealed class PsxReferenceUnavailableException : Exception
-    {
-        public PsxReferenceUnavailableException(string reason)
-            : base($"PSX_REFERENCE_UNAVAILABLE: {reason}") { }
-    }
-
-    /// <summary>Loads a PSX reference image from DW3_PSX_REFERENCE_DIR.
-    /// <para>sub-path is relative to that root, using forward slashes,
-    /// e.g. <c>"battle/kotemon-383-command-menu-0.png"</c>.</para>
-    /// Throws <see cref="PsxReferenceUnavailableException"/> (exit 5) when the variable is
-    /// unset or the file does not exist, instead of crashing on a bad image path.</summary>
-    private static Image LoadPsxReference(string subPath)
-    {
-        var refDir = System.Environment.GetEnvironmentVariable("DW3_PSX_REFERENCE_DIR");
-        if (refDir is null)
-            throw new PsxReferenceUnavailableException(
-                "set DW3_PSX_REFERENCE_DIR to the root directory that contains battle/... frames");
-        var full = Path.Combine(refDir, subPath.Replace('/', Path.DirectorySeparatorChar));
-        if (!File.Exists(full))
-            throw new PsxReferenceUnavailableException($"file not found: {full}");
-        var img = Image.LoadFromFile(full);
-        if (img is null || img.IsEmpty())
-            throw new PsxReferenceUnavailableException($"image unreadable: {full}");
-        return img;
     }
 
     private async void CaptureSpawn()

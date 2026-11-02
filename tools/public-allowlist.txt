@@ -359,6 +359,19 @@ src/Dw3.Game/Conversion/FieldAnimationRecords.cs
 src/Dw3.Game/Conversion/FieldDataPackLoader.cs
 src/Dw3.Game/Conversion/RuntimeRecords.cs
 src/Dw3.Game/Conversion/Vec2I.Godot.cs
+src/Dw3.Game/Diagnostics/Battle/BattleCameraProbe.cs
+src/Dw3.Game/Diagnostics/Battle/BattleComparisonImage.cs
+src/Dw3.Game/Diagnostics/Battle/BattleEntranceProbe.cs
+src/Dw3.Game/Diagnostics/Battle/BattleFaceProbe.cs
+src/Dw3.Game/Diagnostics/Battle/BattleFontPixels.cs
+src/Dw3.Game/Diagnostics/Battle/BattleFontProbe.cs
+src/Dw3.Game/Diagnostics/Battle/BattleMotionProbe.cs
+src/Dw3.Game/Diagnostics/Battle/BattlePixelMetrics.cs
+src/Dw3.Game/Diagnostics/Battle/BattleProbe.cs
+src/Dw3.Game/Diagnostics/Battle/BattleProbeCapture.cs
+src/Dw3.Game/Diagnostics/Battle/BattleProbeCatalog.cs
+src/Dw3.Game/Diagnostics/Battle/IBattleProbeHost.cs
+src/Dw3.Game/Diagnostics/Battle/PsxReferenceUnavailableException.cs
 src/Dw3.Game/Diagnostics/Field/CityLoopRoute.cs
 src/Dw3.Game/Diagnostics/Field/ClimbDriver.cs
 src/Dw3.Game/Diagnostics/Field/ClimbHeightRange.cs
@@ -405,6 +418,7 @@ src/Dw3.Game/Diagnostics/Field/WarpRouteDriver.cs
 src/Dw3.Game/Diagnostics/Field/WaterProbe.cs
 src/Dw3.Game/Diagnostics/DiagnosticProbeFamilyRunners.cs
 src/Dw3.Game/Diagnostics/FieldDiagnosticProbeRunner.cs
+src/Dw3.Game/Diagnostics/GameHost.BattleProbeHost.cs
 src/Dw3.Game/Diagnostics/GameHost.BattleProbeImplementations.cs
 src/Dw3.Game/Diagnostics/GameHost.FieldProbeHost.cs
 src/Dw3.Game/Dw3.Game.csproj
@@ -653,6 +667,7 @@ tests/Dw3.Game.Tests/BattleMotionMachineVectorGenerator.cs
 tests/Dw3.Game.Tests/BattleMotionMachineVectorHarness.cs
 tests/Dw3.Game.Tests/BattleMotionMachineVectorTests.cs
 tests/Dw3.Game.Tests/BattlePresentationMathTests.cs
+tests/Dw3.Game.Tests/BattleProbeCatalogTests.cs
 tests/Dw3.Game.Tests/BattleShotCameraVectorGenerator.cs
 tests/Dw3.Game.Tests/BattleShotCameraVectorHarness.cs
 tests/Dw3.Game.Tests/BattleShotCameraVectorTests.cs

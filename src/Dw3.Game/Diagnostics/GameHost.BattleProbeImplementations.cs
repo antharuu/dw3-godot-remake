@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using Godot;
 using Dw3Production.Conversion;
+using Dw3Production.Diagnostics.Battle;
 using Dw3Production.Diagnostics.Field;
 using Dw3Production.Logging;
 using Dw3Production.Presentation;
@@ -12,6 +13,34 @@ namespace Dw3Production;
 
 public partial class GameHost
 {
+    /// <summary>Loads a private reference image for optional battle comparisons.</summary>
+    /// <param name="subPath">Forward-slash path relative to <c>DW3_PSX_REFERENCE_DIR</c>.</param>
+    /// <returns>The decoded reference image.</returns>
+    /// <exception cref="PsxReferenceUnavailableException">The root, file, or decoded image is unavailable.</exception>
+    private static Image LoadPsxReference(string subPath)
+    {
+        var referenceDirectory = System.Environment.GetEnvironmentVariable("DW3_PSX_REFERENCE_DIR");
+        if (referenceDirectory is null)
+        {
+            throw new PsxReferenceUnavailableException(
+                "set DW3_PSX_REFERENCE_DIR to the root directory that contains battle/... frames");
+        }
+
+        var fullPath = Path.Combine(referenceDirectory, subPath.Replace('/', Path.DirectorySeparatorChar));
+        if (!File.Exists(fullPath))
+        {
+            throw new PsxReferenceUnavailableException($"file not found: {fullPath}");
+        }
+
+        var image = Image.LoadFromFile(fullPath);
+        if (image is null || image.IsEmpty())
+        {
+            throw new PsxReferenceUnavailableException($"image unreadable: {fullPath}");
+        }
+
+        return image;
+    }
+
     #region Battle diagnostic probes
 
     private async void RunBattlePlayProbe()
@@ -150,76 +179,6 @@ public partial class GameHost
 
     /// <summary>Battle shot-camera probe. Captures PAL frame landmarks without using the
     /// unrelated PartnerView camera, then records the actual list/shot/substate state.</summary>
-    private async void RunBattleCameraProbe()
-    {
-        try
-        {
-            var generatedRoot = _options.ReferenceDir ?? _dataRoot;
-            var captureRoot = _options.CaptureDir
-                ?? Path.Combine(generatedRoot, "probe/battle-camera");
-            Directory.CreateDirectory(captureRoot);
-            ApplyScene(GetOrLoadZone("S200"));
-            _state.ZoneId = "S200";
-            StartDebugBattle();
-            TickTestSimulation();
-            var renderer = BattleRenderer;
-            // Settle lights first, then re-create the command task exactly as the player-turn presentation flow does.
-            while (renderer.LightFade < 1f)
-            {
-                renderer.Present(BuildBattleView());
-                await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
-            }
-            renderer.SetCommandMenuCamera();
-            renderer.SetProbePose(0);
-            async System.Threading.Tasks.Task<Image> CaptureAt(int frame, string name)
-            {
-                renderer.Present(BuildBattleView());
-                await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
-                var image = GetViewport().GetTexture().GetImage();
-                Require(image.SavePng(Path.Combine(captureRoot, name)) == Error.Ok, $"shot capture write failed={name}");
-                QuietLog.Info($"battle-shot-camera t={frame} {renderer.ShotCameraSummary()}");
-                return image;
-            }
-            var t0 = await CaptureAt(0, "shot-t0.png");
-            for (var i = 1; i < 60; i++) renderer.Present(BuildBattleView());
-            var t60 = await CaptureAt(60, "shot-t60.png");
-            for (var i = 61; i < 120; i++) renderer.Present(BuildBattleView());
-            var t120 = await CaptureAt(120, "shot-t120.png");
-            Require(renderer.ShotCameraSummary().Contains("enemy=False", StringComparison.Ordinal), "substate 5 did not hide the enemy model");
-            for (var i = 121; i < 200; i++) renderer.Present(BuildBattleView());
-            await CaptureAt(200, "shot-t200.png");
-            renderer.SetCommandMenuCamera();
-            renderer.Present(BuildBattleView());
-            renderer.SetModelVisibleForProbe(383, false);
-            await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
-            var playerOff = GetViewport().GetTexture().GetImage();
-            Require(playerOff.SavePng(Path.Combine(captureRoot, "shot-t0-without-kotemon.png")) == Error.Ok, "shot camera player-off write failed");
-            renderer.SetModelVisibleForProbe(383, true);
-            var remakeBox = DifferenceBoundingBox(ToSource320(t0), ToSource320(playerOff));
-            var psx = LoadPsxReference("battle/kotemon-383-command-menu-0.png");
-            var psx320 = ToSource320(psx);
-            var psxBox = WarmKotemonBoundingBox(psx320);
-            Require(remakeBox is not null && psxBox is not null, $"shot camera bbox unavailable remake={remakeBox} psx={psxBox}");
-            var a = remakeBox.GetValueOrDefault(); var b = psxBox.GetValueOrDefault();
-            var delta = Math.Max(Math.Max(Math.Abs(a.Position.X - b.Position.X), Math.Abs(a.Position.Y - b.Position.Y)),
-                Math.Max(Math.Abs(a.Size.X - b.Size.X), Math.Abs(a.Size.Y - b.Size.Y)));
-            Require(SideBySide(ToSource320(t0), psx320, "REMAKE SHOT t0", "PSX COMMAND").SavePng(Path.Combine(captureRoot, "compare-shot-camera-t0.png")) == Error.Ok,
-                "shot camera comparison write failed");
-            Require(delta <= 8, $"shot camera Kotemon bbox delta={delta:0} exceeds 8 source pixels remake={FormatBox(a)} psx={FormatBox(b)}");
-            QuietLog.Info($"battle-shot-camera PASS bbox remake={FormatBox(a)} psx={FormatBox(b)} delta={delta:0} captures={captureRoot}; PSX command-menu-1/2 timing is not journaled by the harness, so only -0 is frame-paired");
-            GetTree().Quit(0);
-        }
-        catch (PsxReferenceUnavailableException ex)
-        {
-            QuietLog.Info(ex.Message);
-            GetTree().Quit(5);
-        }
-        catch (Exception error)
-        {
-            GD.PushError($"BATTLE_CAMERA_PROBE_FAIL: {error.Message}");
-            GetTree().Quit(3);
-        }
-    }
 
     /// <summary>Command HUD probe. Drives the same Down edges as a player, then proves
     /// the two source cursor positions and six source line-sprite slots from framebuffer deltas.</summary>
@@ -698,186 +657,6 @@ public partial class GameHost
         }
     }
 
-    /// <summary>Offscreen proof of source motion stepping, blending and return to idle.</summary>
-    private async void RunBattleMotionProbe()
-    {
-        try
-        {
-            var generatedRoot = _options.ReferenceDir ?? _dataRoot;
-            var captureRoot = _options.CaptureDir ?? Path.Combine(generatedRoot, "probe/battle-motion");
-            Directory.CreateDirectory(captureRoot);
-            StartDebugBattle();
-            Require(_battleRenderer is not null && _battleRenderedPlayerId == 383, "F8 did not render Kotemon 383");
-            var renderer = BattleRenderer;
-            Require(renderer.ModelCount == 2, "F8 did not build two real fighter models");
-            renderer.SetMotionAll(1, restart: true);
-            var idle0 = await CaptureBattle(captureRoot, "idle-f0.png");
-            renderer.StepMotions(0.6f);
-            var idle30 = await CaptureBattle(captureRoot, "idle-f30.png");
-            renderer.StepMotions(0.6f);
-            var idle60 = await CaptureBattle(captureRoot, "idle-f60.png");
-            var idleDiff30 = CountDifferentPixels(idle0, idle30, 0, idle0.GetWidth());
-            var idleDiff60 = CountDifferentPixels(idle0, idle60, 0, idle0.GetWidth());
-            Require(idleDiff30 > 50 && idleDiff60 > 50, $"idle frames are frozen d30={idleDiff30} d60={idleDiff60}");
-            QuietLog.Info($"battle-motion fighter=383 motion=1 keyframes=62 loop=true idle-diff30={idleDiff30} idle-diff60={idleDiff60}");
-
-            // Kotemon motion 3 has its final 20 blend entries targeting the first idle frame.
-            renderer.SetMotionAll(3, restart: true);
-            await CaptureBattle(captureRoot, "attack-start.png");
-            renderer.StepMotions(0.24f);
-            await CaptureBattle(captureRoot, "attack-mid.png");
-            renderer.StepMotions(0.5f);
-            var end = await CaptureBattle(captureRoot, "attack-end.png");
-            Require(CountBrightPixels(end, 0, end.GetWidth()) > 1000, "attack end rendered no fighter pixels");
-            QuietLog.Info("battle-motion fighter=383 motion=3 done=true back_to_idle=true");
-            QuietLog.Info($"battle-motion probe PASS captures={captureRoot}/idle-f0.png,{captureRoot}/attack-end.png");
-            GetTree().Quit(0);
-        }
-        catch (Exception error)
-        {
-            GD.PushError($"BATTLE_MOTION_PROBE_FAIL: {error.Message}");
-            GetTree().Quit(3);
-        }
-    }
-
-    private static HashSet<(byte R, byte G, byte B)> FontPalettePixels(FontData font, int style, int palette)
-    {
-        var colors = new HashSet<(byte R, byte G, byte B)>();
-        for (var page = 0; page < 2; page++)
-        {
-            var image = Image.LoadFromFile(font.PalettePagePath(style, palette, page));
-            for (var y = 0; y < image.GetHeight(); y++) for (var x = 0; x < image.GetWidth(); x++)
-                {
-                    var pixel = image.GetPixel(x, y);
-                    if (pixel.A8 != 0) colors.Add(((byte)pixel.R8, (byte)pixel.G8, (byte)pixel.B8));
-                }
-        }
-        return colors;
-    }
-
-    private static int CountFontPalettePixels(Image capture, Rect2 rect, HashSet<(byte R, byte G, byte B)> colors)
-    {
-        var count = 0;
-        var fromX = Math.Max(0, (int)rect.Position.X); var toX = Math.Min(capture.GetWidth(), (int)rect.End.X);
-        var fromY = Math.Max(0, (int)rect.Position.Y); var toY = Math.Min(capture.GetHeight(), (int)rect.End.Y);
-        for (var y = fromY; y < toY; y++) for (var x = fromX; x < toX; x++)
-            {
-                var pixel = capture.GetPixel(x, y);
-                if (colors.Contains(((byte)pixel.R8, (byte)pixel.G8, (byte)pixel.B8))) count++;
-            }
-        return count;
-    }
-
-    /// <summary>Framebuffer proof: each captured source window contains only exact
-    /// decoded CLUT RGB texels for its source palette, never a Godot tint.</summary>
-    private async void RunBattleFontProbe()
-    {
-        try
-        {
-            var captureRoot = _options.CaptureDir
-                ?? Path.Combine(_dataRoot, "probe/battle-font");
-            Directory.CreateDirectory(captureRoot);
-            var font = _dialogueData?.Font ?? throw new InvalidOperationException("font unavailable");
-            Require(font.Styles.Count == 3 && font.Style(1).LineHeight == 14 && font.Style(2).LineHeight == 11 && font.Style(3).LineHeight == 9,
-                "font styles must be exactly 14/11/9");
-            StartDebugBattle();
-            Require(_battleRenderer is not null && _activeBattle is not null, "F8 did not create battle HUD");
-            var root = await CaptureBattle(captureRoot, "hud-numbers.png");
-            var white = FontPalettePixels(font, 1, 0);
-            var darkBlue = FontPalettePixels(font, 3, 2);
-            var grey = FontPalettePixels(font, 1, 7);
-            var rootWhite = CountFontPalettePixels(root, new Rect2(SourceToViewport(new Vector2(36, 109)), new Vector2(360, 342)), white);
-            Require(rootWhite > 20, $"root command glyphs lack WHITE CLUT pixels count={rootWhite}");
-
-            // command_the battle presentation flow:21-28. Re-open after setting the source sleep flag so its first
-            // three command windows are genuinely PALETTE_GREY in the rendered menu.
-            BattleFlow.State.ActivePlayerFighter!.Flags |= FighterFlags.Asleep;
-            _battleMenu.OpenRoot(BattleFlow.RootMenuLines());
-            var disabled = await CaptureBattle(captureRoot, "command-disabled.png");
-            var disabledGrey = CountFontPalettePixels(disabled, new Rect2(SourceToViewport(new Vector2(36, 109)), new Vector2(360, 57)), grey);
-            Require(disabledGrey > 20, $"disabled command glyphs lack GREY CLUT pixels count={disabledGrey}");
-
-            // tech_the battle presentation flow:50-55: both page labels are DARK_BLUE. Directly opening the menu
-            // keeps the production menu view and renderer path, without synthesising pixels.
-            OpenSubmenu(BattleMenuKind.Technique, BattleFlow.PlayerTechniques.Select(t => (t.Id, t.Text ?? BattleTextLine.Missing)).ToList(),
-                line: (id, text) => new BattleMenuLine(text.Debug, true, text));
-            var technique = await CaptureBattle(captureRoot, "technique-page-buttons.png");
-            var buttonDarkBlue = CountFontPalettePixels(technique, new Rect2(SourceToViewport(new Vector2(26, 159)), new Vector2(330, 30)), darkBlue);
-            Require(buttonDarkBlue > 8, $"technique page buttons lack DARK_BLUE CLUT pixels count={buttonDarkBlue}");
-
-            // switch_the battle presentation flow:89-94: force the inactive candidate KO, then render the normal
-            // Changement menu. Its name must use palette 7 independently of disabled commands.
-            var knockedOut = BattleFlow.State.Players.Select((player, index) => (player, index))
-                .First(pair => pair.player is not null && pair.index != BattleFlow.State.ActivePlayer).player!;
-            knockedOut.Hp = 0;
-            OpenSubmenu(BattleMenuKind.Switch, SwitchLines(BattleFlow), slot => !BattleFlow.State.Players[slot]!.IsKnockedOut);
-            var change = await CaptureBattle(captureRoot, "switch-ko.png");
-            var koGrey = CountFontPalettePixels(change, new Rect2(SourceToViewport(new Vector2(36, 76)), new Vector2(360, 42)), grey);
-            Require(koGrey > 8, $"KO switch name lacks GREY CLUT pixels count={koGrey}");
-            QuietLog.Info($"battle-font CLUT white_pixels={rootWhite} grey_disabled={disabledGrey} grey_ko={koGrey} dark_blue_buttons={buttonDarkBlue} white_rgb={string.Join(',', white.First())} grey_rgb={string.Join(',', grey.First())} dark_blue_rgb={string.Join(',', darkBlue.First())}");
-            QuietLog.Info($"battle-font probe PASS captures={captureRoot}/hud-numbers.png,{captureRoot}/command-disabled.png,{captureRoot}/technique-page-buttons.png,{captureRoot}/switch-ko.png");
-            GetTree().Quit(0);
-        }
-        catch (Exception error)
-        {
-            GD.PushError($"BATTLE_FONT_PROBE_FAIL: {error.Message}");
-            GetTree().Quit(3);
-        }
-    }
-
-    /// <summary>Paired command-menu oracle, measured on texture-specific
-    /// masks instead of the unrelated Kuwagamon visible in earlier reference captures.</summary>
-    private async void RunBattleEntranceProbe()
-    {
-        try
-        {
-            var generatedRoot = _options.ReferenceDir ?? _dataRoot;
-            var captureRoot = _options.CaptureDir ?? Path.Combine(generatedRoot, "probe/battle-entrance");
-            Directory.CreateDirectory(captureRoot);
-            ApplyScene(GetOrLoadZone("S200"));
-            _state.ZoneId = "S200";
-            StartDebugBattle();
-            Require(_battleRenderer is not null && _battleFlow is not null, "F8 did not build the battle");
-            var renderer = BattleRenderer;
-            renderer.SetHudVisibleForProbe(false);
-            var playerId = BattleFlow.State.ActivePlayerFighter!.Id;
-            var enemyId = BattleFlow.State.ActiveEnemyFighter!.Id;
-            double? settledRatio = null;
-            foreach (var fade in new[] { 0f, .25f, .5f, .75f, 1f })
-            {
-                renderer.SetLightFadeForProbe(fade);
-                var fadeName = fade.ToString("0.00", CultureInfo.InvariantCulture);
-                var full = ToSource320(await CaptureBattleRaw(captureRoot, $"entrance-{fadeName}.png"));
-                renderer.SetModelVisibleForProbe(playerId, false);
-                renderer.SetModelVisibleForProbe(enemyId, false);
-                var stage = ToSource320(await CaptureBattleRaw(captureRoot, $"entrance-{fadeName}-stage.png"));
-                renderer.SetModelVisibleForProbe(playerId, true);
-                renderer.SetModelVisibleForProbe(enemyId, true);
-                if (fade == 0f)
-                {
-                    var blackMean = MeanLuminance(full);
-                    QuietLog.Info($"battle-entrance fade={fade:0.00} fighter=0.0 stage=0.0 mean={blackMean:0.0}");
-                    Require(blackMean < 3, $"entrance frame 0 is not black mean={blackMean:0.0}");
-                    continue;
-                }
-                var (fighterLum, stageLum, meanLum) = MeasureFighterAndStageLuminance(full, stage);
-                QuietLog.Info($"battle-entrance fade={fade:0.00} fighter={fighterLum:0.0} stage={stageLum:0.0} mean={meanLum:0.0}");
-                var ratio = fighterLum / Math.Max(1d, stageLum);
-                settledRatio ??= ratio;
-                Require(Math.Abs(ratio - settledRatio.Value) <= .35d * settledRatio.Value,
-                    $"fighters fade apart from the stage fade={fade:0.00} ratio={ratio:0.00} settled={settledRatio:0.00}");
-            }
-            renderer.SetHudVisibleForProbe(true);
-            QuietLog.Info("battle-entrance PASS");
-            GetTree().Quit(0);
-        }
-        catch (Exception error)
-        {
-            GD.PushError($"BATTLE_ENTRANCE_PROBE_FAIL: {error.Message}");
-            GetTree().Quit(3);
-        }
-    }
-
     private async void RunBattleKotemonLightProbe()
     {
         try
@@ -1063,42 +842,6 @@ public partial class GameHost
         catch (Exception error)
         {
             GD.PushError($"BATTLE_LIGHT_PROBE_FAIL: {error.Message}");
-            GetTree().Quit(3);
-        }
-    }
-
-    /// <summary>Framebuffer proof: the source FaceRect copies replace Kotemon's eye
-    /// texels from frame 0 to frame 2 without changing a fighter that has no face parts.</summary>
-    private async void RunBattleFaceProbe()
-    {
-        try
-        {
-            var generatedRoot = _options.ReferenceDir ?? _dataRoot;
-            var captureRoot = _options.CaptureDir ?? Path.Combine(generatedRoot, "probe/battle-face");
-            Directory.CreateDirectory(captureRoot);
-            StartDebugBattle();
-            Require(_battleRenderer is not null && _battleRenderedPlayerId == 383, "face probe requires Kotemon 383");
-            var renderer = BattleRenderer;
-            Require(renderer.ModelCount == 2, "face probe requires two decoded fighters");
-            renderer.SetProbePose(10);
-            renderer.SetFaceRandomForProbe(383, 0);
-            renderer.SetFaceBlinkTimerForProbe(383, 0);
-            var open = await CaptureBattle(captureRoot, "face-open.png");
-            renderer.SetFaceBlinkTimerForProbe(383, 6);
-            var textureChanged = renderer.FaceChangedTexels(383);
-            Require(textureChanged > 0, "closed eyes did not change the destination FaceRect texels");
-            var closed = await CaptureBattle(captureRoot, "face-closed.png");
-            var changed = CountDifferentPixels(open, closed, 0, open.GetWidth() / 2);
-            Require(changed > 0, "forced closed eyes did not change Kotemon framebuffer pixels");
-            QuietLog.Info($"battle-face {renderer.FaceSummary(383)} blink=open-to-closed changed_pixels={changed} localized_texels={textureChanged}");
-            // Fighter 0 has no model face in the face-texture update contract. A decoded no-face fighter follows the same no-op path.
-            QuietLog.Info("battle-face fighter=0 parts=0 no_effect=true");
-            QuietLog.Info($"battle-face probe PASS captures={captureRoot}/face-open.png,{captureRoot}/face-closed.png");
-            GetTree().Quit(0);
-        }
-        catch (Exception error)
-        {
-            GD.PushError($"BATTLE_FACE_PROBE_FAIL: {error.Message}");
             GetTree().Quit(3);
         }
     }
@@ -1377,27 +1120,6 @@ public partial class GameHost
         return values.Sum(value => (value - mean) * (value - mean)) / values.Count;
     }
 
-    private static (double Lit, double Unlit) MaskedLuminanceVariance(Image lit, Image unlit, int xMin, int xMax)
-    {
-        var a = lit.GetData(); var b = unlit.GetData();
-        var bpp = lit.GetFormat() == Image.Format.Rgba8 ? 4 : 3;
-        var litValues = new List<double>();
-        for (var y = 0; y < lit.GetHeight(); y++)
-            for (var x = xMin; x < xMax; x++)
-            {
-                var offset = (y * lit.GetWidth() + x) * bpp;
-                var delta = Math.Abs(a[offset] - b[offset]) + Math.Abs(a[offset + 1] - b[offset + 1]) + Math.Abs(a[offset + 2] - b[offset + 2]);
-                if (delta <= 30) continue;
-                // Light contribution over this exact silhouette mask. The neutral capture's
-                // contribution is zero by construction, while the lit capture preserves the
-                // per-normal GTE ncs variation independently of texture colour.
-                litValues.Add((0.2126 * (a[offset] - b[offset]) + 0.7152 * (a[offset + 1] - b[offset + 1]) + 0.0722 * (a[offset + 2] - b[offset + 2])) / 255d);
-            }
-        if (litValues.Count == 0) return (0, 0);
-        var mean = litValues.Average();
-        return (litValues.Sum(value => (value - mean) * (value - mean)) / litValues.Count, 0);
-    }
-
     private static int CountDifferentPixels(Image a, Image b, int xMin, int xMax)
     {
         var ad = a.GetData(); var bd = b.GetData();
@@ -1410,15 +1132,6 @@ public partial class GameHost
                 if (Math.Abs(ad[offset] - bd[offset]) + Math.Abs(ad[offset + 1] - bd[offset + 1]) + Math.Abs(ad[offset + 2] - bd[offset + 2]) > 30) count++;
             }
         return count;
-    }
-
-    private async System.Threading.Tasks.Task<Image> CaptureBattleRaw(string captureRoot, string fileName)
-    {
-        await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
-        var image = GetViewport().GetTexture().GetImage();
-        var path = Path.Combine(captureRoot, fileName);
-        Require(image.SavePng(path) == Error.Ok, $"battle capture failed={path}");
-        return image;
     }
 
     private async System.Threading.Tasks.Task<Image> CaptureBattle(string captureRoot, string fileName)
@@ -1455,37 +1168,6 @@ public partial class GameHost
                 total += pixel.R * 54.213 + pixel.G * 182.376 + pixel.B * 18.411;
             }
         return total / (image.GetWidth() * image.GetHeight());
-    }
-
-    /// <summary>Measures fighters from the exact full-minus-stage difference, leaving the rest
-    /// as stage/background. Both means use 0..255 BT.601 luminance.</summary>
-    private static (double Fighter, double Stage, double Mean) MeasureFighterAndStageLuminance(Image full, Image stage)
-    {
-        Require(full.GetSize() == stage.GetSize(), "entrance images must share dimensions");
-        double fighters = 0, scene = 0, total = 0;
-        var fighterCount = 0;
-        var sceneCount = 0;
-        for (var y = 0; y < full.GetHeight(); y++)
-            for (var x = 0; x < full.GetWidth(); x++)
-            {
-                var a = full.GetPixel(x, y);
-                var b = stage.GetPixel(x, y);
-                var lum = a.R * 54.213 + a.G * 182.376 + a.B * 18.411;
-                total += lum;
-                if (Math.Abs(a.R - b.R) + Math.Abs(a.G - b.G) + Math.Abs(a.B - b.B) > .08f)
-                {
-                    fighters += lum;
-                    fighterCount++;
-                }
-                else
-                {
-                    scene += lum;
-                    sceneCount++;
-                }
-            }
-        Require(fighterCount > 0, "entrance fighter difference mask is empty");
-        Require(sceneCount > 0, "entrance stage difference complement is empty");
-        return (fighters / fighterCount, scene / sceneCount, total / (full.GetWidth() * full.GetHeight()));
     }
 
     private static Rect2? PartnerTargetBoundingBox(Image image)
