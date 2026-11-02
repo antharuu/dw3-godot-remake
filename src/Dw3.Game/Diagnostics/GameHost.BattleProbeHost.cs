@@ -111,7 +111,7 @@ public partial class GameHost : IBattleProbeHost
     void IBattleProbeHost.StartDebugBattle() => StartDebugBattle();
 
     /// <inheritdoc/>
-    void IBattleProbeHost.RunBattleModelProbe() => RunBattleModelProbe();
+    string IBattleProbeHost.ResolveBattleModelPath(int fighterId) => ResolveBattleModelPath(fighterId);
 
     /// <inheritdoc/>
     void IBattleProbeHost.RunFighterSheet() => RunFighterSheet();

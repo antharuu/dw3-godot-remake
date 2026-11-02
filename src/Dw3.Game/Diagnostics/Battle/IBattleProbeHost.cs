@@ -111,8 +111,10 @@ internal interface IBattleProbeHost
     /// <summary>Starts the same manifest-backed battle as the F8 debug shortcut.</summary>
     void StartDebugBattle();
 
-    /// <summary>Runs the battle-model diagnostic and requests engine termination with its result.</summary>
-    void RunBattleModelProbe();
+    /// <summary>Resolves the decoded battle model file of a fighter.</summary>
+    /// <param name="fighterId">Source fighter id.</param>
+    /// <returns>The model JSON path in the data pack.</returns>
+    string ResolveBattleModelPath(int fighterId);
 
     /// <summary>Renders the fighter diagnostic sheet and requests engine termination with its result.</summary>
     void RunFighterSheet();
