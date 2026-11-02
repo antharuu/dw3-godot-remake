@@ -33,23 +33,25 @@ namespace Dw3Production;
 public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverHost, IFieldTickHost, IBattleTickHost, IInteractiveFrameHost
 {
 
-    /// <summary>Initializes the host-owned frame coordinator around its session clock.</summary>
-    public GameHost()
-    {
-        _frameCoordinator = new InteractiveFrameCoordinator(_clock);
-        _battleMenuCoordinator = new BattleMenuCoordinator(this);
-        _battleSetupCoordinator = new BattleSetupCoordinator(this);
-        _fieldRuntimeCoordinator = new FieldRuntimeCoordinator(this);
-        _battlePresentationCoordinator = new BattlePresentationCoordinator(this);
-        _firstLaunchCompletionCoordinator = new FirstLaunchCompletionCoordinator(this);
-        _diagnosticProbeResolver = new DiagnosticProbeResolver(this);
-    }
-
     #region Composition state
+
+    private const int DebugBattleEncounter = 200;
+    private const int BattleReportFadeFrames = 10;
 
     private readonly GameState _state = new();
     private readonly SimClock _clock = new();
     private readonly InteractiveFrameCoordinator _frameCoordinator;
+    private readonly BattleMenuCoordinator _battleMenuCoordinator;
+    private readonly BattleSetupCoordinator _battleSetupCoordinator;
+    private readonly FieldRuntimeCoordinator _fieldRuntimeCoordinator;
+    private readonly BattlePresentationCoordinator _battlePresentationCoordinator;
+    private readonly FirstLaunchCompletionCoordinator _firstLaunchCompletionCoordinator;
+    private readonly DiagnosticProbeResolver _diagnosticProbeResolver;
+    private readonly DialogueController _dialogue = new();
+    private readonly EncounterController _encounter = new(new SystemRandomEncounterRng());
+    private readonly BattleMenuController _battleMenu = new();
+    private readonly IBattleRng _battleRng = new SystemRandomBattleRng();
+    private readonly FieldEncounterStepper _encounterStepper = new();
 
     private readonly ClimbController _climb = new();
     private readonly DropController _drop = new();
@@ -73,7 +75,6 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     private PlayerIconData? _iconData;
     private FieldRenderer? _renderer;
     private DialogueData? _dialogueData;
-    private readonly DialogueController _dialogue = new();
     private DialogueRenderer? _dialogueRenderer;
     private DialogueFrameData? _dialogueFrames;
     private Dictionary<int, Texture2D>? _frameTextures;
@@ -85,7 +86,6 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
 
     // M6 combat runtime: the engine-free encounter controller owns the step countdown and
     // the area/event draws; the loaded encounter/fighter/tech manifests fill BattleSetup.
-    private readonly EncounterController _encounter = new(new SystemRandomEncounterRng());
     private EncounterData? _encounterData;
     private FighterData? _fighterData;
     private TechniqueData? _techData;
@@ -95,20 +95,11 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     private AreaMap? _areas;
     private BattleSetup? _activeBattle;
     private BattleFlowController? _battleFlow;
-    private readonly BattleMenuController _battleMenu = new();
-    private readonly BattleMenuCoordinator _battleMenuCoordinator;
-    private readonly BattleSetupCoordinator _battleSetupCoordinator;
-    private readonly FieldRuntimeCoordinator _fieldRuntimeCoordinator;
-    private readonly BattlePresentationCoordinator _battlePresentationCoordinator;
-    private readonly FirstLaunchCompletionCoordinator _firstLaunchCompletionCoordinator;
-    private readonly DiagnosticProbeResolver _diagnosticProbeResolver;
-    private readonly IBattleRng _battleRng = new SystemRandomBattleRng();
     private BattleRenderer? _battleRenderer;
     private FightReportRenderer? _fightReportRenderer;
     private FightReportController? _fightReportController;
     private FightReportInput? _fightReportInput;
     private int _battleReportFadeTicks;
-    private readonly FieldEncounterStepper _encounterStepper = new();
     private int _lastBattleEncounter = -1;
     private int[] _lastBattleEnemyIds = [];
     private Dictionary<int, int> _battleNameIds = [];
@@ -146,6 +137,33 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     private CanvasLayer? _titleScreen;
     private bool _inTitle;
 
+    /// <summary>Initializes a new instance of the <see cref="GameHost"/> class.</summary>
+    public GameHost()
+    {
+        _frameCoordinator = new InteractiveFrameCoordinator(_clock);
+        _battleMenuCoordinator = new BattleMenuCoordinator(this);
+        _battleSetupCoordinator = new BattleSetupCoordinator(this);
+        _fieldRuntimeCoordinator = new FieldRuntimeCoordinator(this);
+        _battlePresentationCoordinator = new BattlePresentationCoordinator(this);
+        _firstLaunchCompletionCoordinator = new FirstLaunchCompletionCoordinator(this);
+        _diagnosticProbeResolver = new DiagnosticProbeResolver(this);
+    }
+
+    /// <inheritdoc/>
+    bool IInteractiveFrameHost.IsTestDriverActive => _testDriverActive;
+
+    /// <inheritdoc/>
+    bool IInteractiveFrameHost.HasInputFocus => _input.HasFocus;
+
+    /// <inheritdoc/>
+    bool IInteractiveFrameHost.IsInTitle => _inTitle;
+
+    /// <inheritdoc/>
+    bool IInteractiveFrameHost.HasField => _currentZone is not null;
+
+    /// <inheritdoc/>
+    bool IInteractiveFrameHost.HasActiveBattle => _activeBattle is not null;
+
     // These accessors mark lifecycle boundaries explicitly. A caller that needs an
     // initialized runtime collaborator receives a useful failure instead of masking
     // a violated startup invariant with the null-forgiving operator.
@@ -178,6 +196,30 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     private FieldZoneCache ZoneCache => _zoneCache ?? throw new InvalidOperationException("zone loader or npc data unavailable before host ready");
 
     private Texture2D PanelTexture => _panelTexture ?? throw new InvalidOperationException("dialogue panel texture has not been initialized");
+
+    /// <inheritdoc/>
+    BattleFlowController? IBattleTickHost.Flow => _battleFlow;
+
+    /// <inheritdoc/>
+    bool IBattleTickHost.HasFightReport => _fightReportController is not null;
+
+    /// <inheritdoc/>
+    bool IBattleTickHost.IsPlayerCameraActive => _battlePlayerCameraActive;
+
+    /// <inheritdoc/>
+    bool IBattleTickHost.IsBattleResolved => _battleResolved;
+
+    /// <inheritdoc/>
+    BattleFlowController IBattleMenuDriverHost.Flow => BattleFlow;
+
+    /// <inheritdoc/>
+    BattleMenuController IBattleMenuDriverHost.Menu => _battleMenu;
+
+    /// <inheritdoc/>
+    InputState IBattleMenuDriverHost.Input => _input.State;
+
+    /// <inheritdoc/>
+    IReadOnlyList<int> IBattleMenuDriverHost.SubmenuArguments => _battleSubmenuArgs;
 
     #endregion
 
@@ -343,100 +385,6 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
         || new BattleDiagnosticProbeRunner(this).TryDispatch(_options)
         || new StorageDiagnosticProbeRunner(this).TryDispatch(_options);
 
-    void IDiagnosticProbeHost.RunInputProbeAndQuit()
-    {
-        InputMappingProbe.Run();
-        GetTree().Quit(0);
-    }
-
-    void IDiagnosticProbeHost.ScheduleProbe(string methodName, bool ownsInput)
-    {
-        _testDriverActive = ownsInput;
-        var run = ResolveProbe(methodName);
-        Callable.From(() => _ = run()).CallDeferred();
-    }
-
-    /// <summary>
-    /// Forwards interactive Godot input to the input adapter. Scripted probes own their injected
-    /// input and suppress engine-delivered events to keep their deterministic route intact.
-    /// </summary>
-    public override void _Input(InputEvent inputEvent)
-    {
-        // The scripted test driver injects input exclusively through _input.Handle.
-        // While it runs, ignore engine-delivered events: under Xvfb the X11 backend
-        // can synthesize stray key events during an awaited FramePostDraw, which
-        // otherwise corrupt the driver's held-direction/action state and make the
-        // shared warp helpers flaky. Interactive mode (_testDriverActive=false)
-        // keeps normal engine input handling.
-        if (_testDriverActive) return;
-        _input.Handle(inputEvent);
-    }
-
-    /// <summary>
-    /// Synchronizes the input adapter with application focus so no held action survives a focus
-    /// loss and becomes an unintended action when the window regains focus.
-    /// </summary>
-    public override void _Notification(int what)
-    {
-        if (what == NotificationWMWindowFocusOut)
-        {
-            _input.SetFocused(false);
-            QuietLog.Info("input focus=out cleared=true");
-        }
-        else if (what == NotificationWMWindowFocusIn)
-        {
-            _input.SetFocused(true);
-            QuietLog.Info("input focus=in awaiting-new-events=true");
-        }
-    }
-
-    /// <summary>
-    /// Disposes data-pack readers opened for this session before Godot removes the host node.
-    /// </summary>
-    public override void _ExitTree()
-    {
-        _battleLoader?.Dispose();
-        _battleLoader = null;
-        _fieldLoader?.Dispose();
-        _fieldLoader = null;
-        _animationLoader?.Dispose();
-        _animationLoader = null;
-    }
-
-    /// <summary>
-    /// Advances an interactive session. It consumes fixed simulation ticks first, then presents one
-    /// final field or battle state per rendered frame so rendering does not multiply after a stall.
-    /// </summary>
-    public override void _Process(double delta) => _frameCoordinator.Advance(this, delta);
-
-    bool IInteractiveFrameHost.IsTestDriverActive => _testDriverActive;
-
-    bool IInteractiveFrameHost.HasInputFocus => _input.HasFocus;
-
-    bool IInteractiveFrameHost.IsInTitle => _inTitle;
-
-    bool IInteractiveFrameHost.HasField => _currentZone is not null;
-
-    bool IInteractiveFrameHost.HasActiveBattle => _activeBattle is not null;
-
-    void IInteractiveFrameHost.ShowTitle() => _titleScreen?.Show();
-
-    void IInteractiveFrameHost.StartDebugBattleIfRequested() => DebugBattleTrigger.TryStart(_input.State, StartDebugBattle);
-
-    void IInteractiveFrameHost.LogSimulationStall(int droppedTicks, int cap) =>
-        _log.Warn("sim-stall", $"simulation stall dropped_ticks={droppedTicks} cap={cap}");
-
-    void IInteractiveFrameHost.SimulateStep() =>
-        SimulateStep(movement => _log.Warn($"move:{movement.Rejection}", $"move reject={movement.Rejection} zone={_state.ZoneId} position=({_state.Position.X:0.##},{_state.Position.Y:0.##})"));
-
-    void IInteractiveFrameHost.PresentBattle() => _battleRenderer?.Present(BuildBattleView());
-
-    void IInteractiveFrameHost.PresentField(double delta)
-    {
-        _renderer?.Present(_state, CurrentZone, _input.F3On, delta, _icon.View);
-        _dialogueRenderer?.Present(_dialogue.IsActive ? BuildDialogueView() : (DialogueView?)null);
-    }
-
     /// <summary>Finds the probe registered under an entry name in the field, dialogue, battle and storage families.</summary>
     /// <param name="entryName">Entry name chosen by a diagnostic runner, such as <c>RunWarpProbe</c>.</param>
     /// <returns>The probe body, to be started after the current frame.</returns>
@@ -454,34 +402,6 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     /// </summary>
     private void SimulateStep(Action<MovementResult> onMovementRejection) =>
         new FieldTickCoordinator(this).Tick(onMovementRejection);
-
-    bool IFieldTickHost.IsInTitle => _inTitle;
-
-    bool IFieldTickHost.HasField => _floor is not null && _currentZone is not null;
-
-    bool IFieldTickHost.HasActiveBattle => _activeBattle is not null;
-
-    bool IFieldTickHost.HasActiveDialogue => _dialogue.IsActive;
-
-    bool IFieldTickHost.HasActiveTraversal => _climb.IsActive || _drop.IsActive;
-
-    void IFieldTickHost.TickBattleMode() => _fieldRuntimeCoordinator.TickBattleMode();
-
-    void IFieldTickHost.TickDialogueMode() => _fieldRuntimeCoordinator.TickDialogueMode();
-
-    void IFieldTickHost.TickTraversalMode() => _fieldRuntimeCoordinator.TickTraversalMode();
-
-    void IFieldTickHost.TickLocomotionMode(Action<MovementResult> onMovementRejection) => _fieldRuntimeCoordinator.TickLocomotionMode(onMovementRejection);
-
-    void IFieldTickHost.TickWarp() => _fieldRuntimeCoordinator.TickWarp();
-
-    void IFieldTickHost.AdvanceFieldPresentation() => _fieldRuntimeCoordinator.AdvancePresentation();
-
-    // The debug F8 battle mirrors the original battle test (debug battle setup
-    // WFIGHTTS): a real manifest encounter, only the zone restrictions are ignored.
-    private const int DebugBattleEncounter = 200;
-    // the battle presentation flow:527-529 fades the terminal battle to black over ten PAL frames before STFGTREP.
-    private const int BattleReportFadeFrames = 10;
 
     /// <summary>FIELDSTG_countBattleSteps: one battle step every 8 movement frames while the
     /// player walks inside a battle area. The controller owns the countdown and the draws.</summary>
@@ -547,7 +467,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
             var playerId = flow.State.Players[0]?.Id ?? 0;
             var enemyId = flow.State.Enemies.FirstOrDefault(enemy => enemy is not null)?.Id ?? 0;
             _battleRenderer.BuildModels(ResolveBattleModelPath(playerId), ResolveBattleModelPath(enemyId),
-                NameOf(playerId), NameOf(enemyId), enemyId);
+                $"fighter-{playerId}", $"fighter-{enemyId}", enemyId);
             _battleRenderedPlayerId = playerId;
             _battleRenderedEnemyId = enemyId;
             // The decoded battle-HUD sprites (HP-bar window frames, technique gauge,
@@ -568,7 +488,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
         _battleRenderer.RestartEntranceFade();
         _battleRenderer.SetOpeningCamera();
         _battleRenderer.Show();
-        RefreshActivePartnerCatalogs();
+        _battleMenuCoordinator.RefreshActivePartnerCatalogs();
         _battleMenu.OpenRoot(flow.RootMenuLines());
         QuietLog.Info($"battle-start {why} encounter={encounter} enemies=[{string.Join(",", _lastBattleEnemyIds)}] party=[{string.Join(",", flow.State.Players.Where(p => p is not null).Select(p => p!.Id))}] level={TestTeamGrowth.Level}");
     }
@@ -676,57 +596,6 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     /// the battle and returns to the field.</summary>
     private void TickBattle() => new BattleTickCoordinator(this).Tick();
 
-    BattleFlowController? IBattleTickHost.Flow => _battleFlow;
-
-    bool IBattleTickHost.HasFightReport => _fightReportController is not null;
-
-    bool IBattleTickHost.IsPlayerCameraActive => _battlePlayerCameraActive;
-
-    bool IBattleTickHost.IsBattleResolved => _battleResolved;
-
-    void IBattleTickHost.TickFightReport()
-    {
-        _fightReportController!.Step(_input.State.ConsumeActionPressed());
-        _fightReportRenderer?.Present(_fightReportController.View, BattleText(), BuildReportNames());
-        if (_fightReportController.View.Done)
-        {
-            EndBattle();
-        }
-    }
-
-    void IBattleTickHost.ActivatePlayerCamera()
-    {
-        _battleRenderer?.SetCommandMenuCamera();
-        _battlePlayerCameraActive = true;
-    }
-
-    void IBattleTickHost.DeactivatePlayerCamera() => _battlePlayerCameraActive = false;
-
-    void IBattleTickHost.TickBattleMenu() => TickBattleMenu();
-
-    void IBattleTickHost.EnemyAct() => BattleFlow.EnemyAct(_battleRng);
-
-    void IBattleTickHost.RefreshModels() => RefreshBattlePresentationModels();
-
-    void IBattleTickHost.ResolveOutcome() => ResolveBattleOutcome(BattleFlow);
-
-    void IBattleTickHost.MarkBattleResolved() => _battleResolved = true;
-
-    bool IBattleTickHost.AdvanceVictoryFade() => ++_battleReportFadeTicks >= BattleReportFadeFrames;
-
-    void IBattleTickHost.BeginFightReport()
-    {
-        _battleRenderer?.Hide();
-        _fightReportRenderer?.Show();
-        _fightReportController = BuildFightReportController(BattleFlow);
-        foreach (string log in _fightReportController.Logs)
-        {
-            _log.Warn(log, log);
-        }
-    }
-
-    void IBattleTickHost.EndBattle() => EndBattle();
-
     /// <summary>Replaces the visible models only when combat changes an active fighter.
     /// fighter metadata resolves the requested BattleFighter.Id directly via FighterEntry.id and
     /// fighter replacement flow swaps the new model into slot 0. ClearModels queues all old roots, so
@@ -791,92 +660,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
 
     private void TickBattleMenu() => new BattleMenuDriver(this).Tick();
 
-    BattleFlowController IBattleMenuDriverHost.Flow => BattleFlow;
-
-    BattleMenuController IBattleMenuDriverHost.Menu => _battleMenu;
-
-    InputState IBattleMenuDriverHost.Input => _input.State;
-
-    bool IBattleMenuDriverHost.WasUpHeld() => _battlePrevUp;
-
-    bool IBattleMenuDriverHost.WasDownHeld() => _battlePrevDown;
-
-    void IBattleMenuDriverHost.RememberHeldDirections(bool up, bool down)
-    {
-        _battlePrevUp = up;
-        _battlePrevDown = down;
-    }
-
-    IReadOnlyList<int> IBattleMenuDriverHost.SubmenuArguments => _battleSubmenuArgs;
-
-    void IBattleMenuDriverHost.RefreshActivePartnerCatalogs() => _battleMenuCoordinator.RefreshActivePartnerCatalogs();
-
-    void IBattleMenuDriverHost.OpenForcedSwitchMenu() => _battleMenuCoordinator.OpenForcedSwitchMenu();
-
-    void IBattleMenuDriverHost.CancelMenu() => _battleMenuCoordinator.Cancel(BattleFlow);
-
-    void IBattleMenuDriverHost.ConfirmRoot() => _battleMenuCoordinator.ConfirmRoot(BattleFlow);
-
-    void IBattleMenuDriverHost.ChooseTechnique(int argument) => BattleFlow.Choose(BattleCommand.Technique, argument, _battleRng);
-
-    void IBattleMenuDriverHost.ChooseDigivolution(int argument) => BattleFlow.Choose(BattleCommand.Digivolve, argument, _battleRng);
-
-    void IBattleMenuDriverHost.OpenSwitchIn(int argument) => _battleMenuCoordinator.OpenSwitchInMenu(BattleFlow, argument);
-
-    void IBattleMenuDriverHost.OpenPairSwitch(int argument) => _battleMenuCoordinator.OpenPairSwitchMenu(BattleFlow, argument);
-
-    void IBattleMenuDriverHost.ChooseItem(int argument) => BattleFlow.Choose(BattleCommand.Item, argument, _battleRng);
-
-    void IBattleMenuDriverHost.ConfirmPairSwitch()
-    {
-        if (_battleMenu.Cursor != 0 || _battleSwitchPartner < 0)
-        {
-            return;
-        }
-
-        if (BattleFlow.Choose(BattleCommand.Switch, _battleSwitchPartner, _battleRng))
-        {
-            _battlePendingChangeMotion = 13;
-            _battleSwitchForced = false;
-            QuietLog.Info($"battle-menu switch player={_battleSwitchPartner} action=5 consumes_turn=true");
-            return;
-        }
-
-        BattleFighter? target = BattleFlow.State.Players[_battleSwitchPartner];
-        _log.Warn(
-            "battle-menu-switch-refused",
-            $"slot={_battleSwitchPartner} active={BattleFlow.State.ActivePlayer} target={target?.Id} hp={target?.Hp}");
-    }
-
-    private void ConfirmRoot(BattleFlowController flow) => _battleMenuCoordinator.ConfirmRoot(flow);
-
-    private void OpenSwitchInMenu(BattleFlowController flow, int partner) => _battleMenuCoordinator.OpenSwitchInMenu(flow, partner);
-
-    private void OpenPairSwitchMenu(BattleFlowController flow, int incomingId) => _battleMenuCoordinator.OpenPairSwitchMenu(flow, incomingId);
-
-    private void CancelBattleMenu(BattleFlowController flow) => _battleMenuCoordinator.Cancel(flow);
-
-    private void OpenSubmenu(BattleMenuKind kind, IReadOnlyList<(int Arg, BattleTextLine Text)> entries, Func<int, bool>? enabled = null,
-        Func<int, BattleTextLine, BattleMenuLine>? line = null, BattleMenuStatusText? statusText = null) =>
-        _battleMenuCoordinator.OpenSubmenu(kind, entries, enabled, line, statusText);
-
-    private List<(int Slot, BattleTextLine Name)> SwitchLines(BattleFlowController flow) => _battleMenuCoordinator.SwitchLines(flow);
-
     private BattleTextCatalog BattleText() => new(_battleTextData ?? throw new InvalidOperationException("battle text unavailable"));
-
-    private static string NameOf(int id) => $"fighter-{id}";
-
-    private void RefreshActivePartnerCatalogs() => _battleMenuCoordinator.RefreshActivePartnerCatalogs();
-
-    private void WireBattleCatalogs(BattleFlowController flow) => _battleMenuCoordinator.WireCatalogs(flow);
-
-    /// <summary>Builds source-backed DIGNAM display records for every party/enemy fighter.
-    /// The renderer draws their token streams and the debug names remain provenance labels only.</summary>
-    private static Dictionary<int, int> BuildBattleNameIds(
-        IReadOnlyList<int> party,
-        FighterData fighters,
-        EncounterData encounters,
-        int encounterIndex) => BattleNameIdCatalog.Build(party, fighters, encounters, encounterIndex);
 
     /// <summary>DIGNAM identity is always the decoded record's nameId. The battle map covers
     /// active fighters, while the Digimon table also covers menu-only digivolution forms.</summary>

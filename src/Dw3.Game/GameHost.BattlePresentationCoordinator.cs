@@ -3,6 +3,7 @@ using Dw3Production.Simulation;
 
 namespace Dw3Production;
 
+/// <summary>Contains GameHost's battle-presentation coordination implementation.</summary>
 public partial class GameHost
 {
     /// <summary>Refreshes battle fighter models when the active pair changes.</summary>
@@ -10,7 +11,7 @@ public partial class GameHost
     {
         private readonly GameHost _host;
 
-        /// <summary>Initializes presentation coordination for one host session.</summary>
+        /// <summary>Initializes a new instance of the <see cref="BattlePresentationCoordinator"/> class.</summary>
         /// <param name="host">Runtime host that owns the battle renderer and flow.</param>
         public BattlePresentationCoordinator(GameHost host)
         {
@@ -34,7 +35,7 @@ public partial class GameHost
             }
 
             _host._battleRenderer.BuildModels(_host.ResolveBattleModelPath(playerId), _host.ResolveBattleModelPath(enemyId),
-                NameOf(playerId), NameOf(enemyId), enemyId);
+                $"fighter-{playerId}", $"fighter-{enemyId}", enemyId);
             ApplyPendingChangeMotion(playerId);
             _host._battleRenderedPlayerId = playerId;
             _host._battleRenderedEnemyId = enemyId;
@@ -57,10 +58,5 @@ public partial class GameHost
                 _host._log.Warn("battle-change-motion-unwired", $"fighter={playerId} motion={motion}");
             }
         }
-
-        /// <summary>Returns the debug provenance label for a fighter id.</summary>
-        /// <param name="id">Source fighter id.</param>
-        /// <returns>Debug label.</returns>
-        private static string NameOf(int id) => $"fighter-{id}";
     }
 }

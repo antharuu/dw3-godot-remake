@@ -26,12 +26,12 @@
     <QualitySarifFile>$(QualityArtifactsDir)sarif/$(MSBuildProjectName).sarif</QualitySarifFile>
     <ErrorLog>$(QualitySarifFile),version=2.1</ErrorLog>
     <!-- .NET analyzers (Recommended mode). -->
-    <QualityRatchetedRules>CA1050;CA1305;CA1707;CA1725;CA1822;CA1859;CA1861;CA1869;CA1875</QualityRatchetedRules>
+    <QualityRatchetedRules>CA1050;CA1305;CA1707;CA1859;CA1861;CA1869;CA1875</QualityRatchetedRules>
     <!-- Compiler documentation diagnostics. -->
     <QualityRatchetedRules>$(QualityRatchetedRules);CS1573;CS1591;CS1734</QualityRatchetedRules>
     <!-- Sonar rules. -->
-    <QualityRatchetedRules>$(QualityRatchetedRules);S107;S108;S127;S134;S138;S927;S1075;S1144;S1215;S1244;S1481;S1905;S1994</QualityRatchetedRules>
-    <QualityRatchetedRules>$(QualityRatchetedRules);S2077;S2245;S2325;S2737;S3011;S3168;S3218;S3267;S3358;S3376;S3398;S3626;S3776;S3903;S3973</QualityRatchetedRules>
+    <QualityRatchetedRules>$(QualityRatchetedRules);S107;S108;S127;S134;S138;S1075;S1144;S1215;S1244;S1481;S1905;S1994</QualityRatchetedRules>
+    <QualityRatchetedRules>$(QualityRatchetedRules);S2077;S2245;S2737;S3011;S3168;S3218;S3267;S3358;S3376;S3398;S3626;S3776;S3903;S3973</QualityRatchetedRules>
     <QualityRatchetedRules>$(QualityRatchetedRules);S4136;S6444;S6580;S8969</QualityRatchetedRules>
     <!-- DW3001: custom class cognitive complexity analyser (new; baseline violations ratcheted at introduction). -->
     <QualityRatchetedRules>$(QualityRatchetedRules);DW3001</QualityRatchetedRules>

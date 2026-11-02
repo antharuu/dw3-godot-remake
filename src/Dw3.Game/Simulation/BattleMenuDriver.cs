@@ -7,7 +7,7 @@ public sealed class BattleMenuDriver
 {
     private readonly IBattleMenuDriverHost _host;
 
-    /// <summary>Initializes a battle-menu driver.</summary>
+    /// <summary>Initializes a new instance of the <see cref="BattleMenuDriver"/> class.</summary>
     /// <param name="host">Input, menu state and command callbacks.</param>
     public BattleMenuDriver(IBattleMenuDriverHost host)
     {

@@ -7,6 +7,10 @@ public static class BattleEnemyAi
     public const int BattleTableFallback = 3;
 
     /// <summary>Evaluates one action-table condition against the current battle state.</summary>
+    /// <param name="condition">Decoded action-table condition id.</param>
+    /// <param name="arg">Decoded condition argument.</param>
+    /// <param name="ctx">Battle state exposed to condition evaluation.</param>
+    /// <param name="rng">Random source for chance conditions.</param>
     public static bool TestEnemyCondition(int condition, int arg, EnemyAiContext ctx, IBattleRng rng)
     {
         BattleFighter enemy = ctx.Enemy;
@@ -38,6 +42,8 @@ public static class BattleEnemyAi
     }
 
     /// <summary>Converts an action-table target kind into an executable decision.</summary>
+    /// <param name="enemy">Enemy whose action is selected.</param>
+    /// <param name="kind">Decoded action-table target kind.</param>
     public static EnemyDecision GetEnemyAction(BattleFighter enemy, int kind) => kind switch
     {
         1 => new(EnemyActionKind.Attack, enemy.Techs[0], -1),

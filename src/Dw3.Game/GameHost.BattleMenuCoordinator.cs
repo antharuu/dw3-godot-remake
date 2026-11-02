@@ -4,6 +4,7 @@ using Dw3Production.Simulation;
 
 namespace Dw3Production;
 
+/// <summary>Contains GameHost's battle-menu coordination implementation.</summary>
 public partial class GameHost
 {
     /// <summary>Owns the battle-menu branches while using the host only for composed runtime services.</summary>
@@ -11,15 +12,12 @@ public partial class GameHost
     {
         private readonly GameHost _host;
 
-        /// <summary>Initializes menu coordination for one host session.</summary>
+        /// <summary>Initializes a new instance of the <see cref="BattleMenuCoordinator"/> class.</summary>
         /// <param name="host">Composed runtime services and battle state.</param>
         public BattleMenuCoordinator(GameHost host)
         {
             _host = host;
         }
-
-        /// <summary>Gets the menu arguments corresponding to currently visible rows.</summary>
-        public IReadOnlyList<int> SubmenuArguments => _host._battleSubmenuArgs;
 
         /// <summary>Refreshes commands for the active partner after a switch or digivolution.</summary>
         public void RefreshActivePartnerCatalogs()
@@ -95,58 +93,6 @@ public partial class GameHost
                     flow.Choose(BattleCommand.Flee, 0, _host._battleRng);
                     break;
             }
-        }
-
-        /// <summary>Opens the technique page with MP availability and source text.</summary>
-        /// <param name="flow">Active battle flow.</param>
-        private void OpenTechniqueMenu(BattleFlowController flow)
-        {
-            OpenSubmenu(BattleMenuKind.Technique, flow.PlayerTechniques.Select(technique => (technique.Id, technique.Text ?? BattleTextLine.Missing)).ToList(),
-                line: (id, text) => BuildTechniqueLine(flow, id, text), statusText: TechniqueStatusText(flow.State.ActivePlayerFighter!));
-        }
-
-        /// <summary>Builds one technique row with its affordability and description.</summary>
-        /// <param name="flow">Active battle flow.</param>
-        /// <param name="id">Technique id.</param>
-        /// <param name="text">Decoded technique label.</param>
-        /// <returns>Configured menu row.</returns>
-        private BattleMenuLine BuildTechniqueLine(BattleFlowController flow, int id, BattleTextLine text)
-        {
-            BattleTechnique technique = flow.PlayerTechniques.First(candidate => candidate.Id == id);
-            BattleFighter fighter = flow.State.ActivePlayerFighter!;
-            bool enabled = fighter.Temporary || fighter.Mp >= technique.Tech.Mp;
-            BattleTextCatalog catalog = _host.BattleText();
-            return new BattleMenuLine(text.Debug, enabled, text, Icon: technique.Tech.Icon + 0x37, Cost: technique.Tech.Mp,
-                DescriptionText: enabled ? catalog.SkillInfo(id) : catalog.MenuEntry(0x54), CostLabelText: catalog.MenuEntry(0xD));
-        }
-
-        /// <summary>Opens the available digivolution forms for the active partner.</summary>
-        /// <param name="flow">Active battle flow.</param>
-        private void OpenDigivolutionMenu(BattleFlowController flow)
-        {
-            OpenSubmenu(BattleMenuKind.Digivolve, flow.PlayerDigivolutions.Select(id => (id, _host.NameLine(id))).ToList(),
-                line: (id, text) => new BattleMenuLine(text.Debug, id != flow.State.ActivePlayerFighter!.Id, text));
-        }
-
-        /// <summary>Opens the battle-item page with stock and decoded source labels.</summary>
-        /// <param name="flow">Active battle flow.</param>
-        private void OpenItemMenu(BattleFlowController flow)
-        {
-            OpenSubmenu(BattleMenuKind.Item, ItemLines(flow), line: (id, text) => BuildItemLine(flow, id, text),
-                statusText: new BattleMenuStatusText(_host.BattleText().MenuEntry(0xC)));
-        }
-
-        /// <summary>Builds one item row with stock, icon and decoded description.</summary>
-        /// <param name="flow">Active battle flow.</param>
-        /// <param name="id">Item id.</param>
-        /// <param name="text">Decoded item label.</param>
-        /// <returns>Configured menu row.</returns>
-        private BattleMenuLine BuildItemLine(BattleFlowController flow, int id, BattleTextLine text)
-        {
-            bool enabled = flow.ItemStock.TryGetValue(id, out int quantity) && quantity > 0;
-            int count = enabled ? quantity : 0;
-            int icon = _host.BattleItemsData.Items.First(item => item.Id == id).Category;
-            return new BattleMenuLine(text.Debug, enabled, text, Icon: icon, Quantity: count, DescriptionText: _host.BattleText().ItemInfo(id));
         }
 
         /// <summary>Opens a submenu and records its semantic arguments.</summary>
@@ -229,20 +175,6 @@ public partial class GameHost
             }
         }
 
-        /// <summary>Cancels the switch page unless a knockout made switching mandatory.</summary>
-        /// <param name="flow">Active battle flow.</param>
-        private void CancelSwitch(BattleFlowController flow)
-        {
-            if (_host._battleSwitchForced)
-            {
-                QuietLog.Info("battle-menu cancel=refused forced-switch");
-                return;
-            }
-
-            _host._battleMenu.OpenRoot(flow.RootMenuLines());
-            QuietLog.Info("battle-menu cancel=root");
-        }
-
         /// <summary>Returns selectable non-active partner rows.</summary>
         /// <param name="flow">Active battle flow.</param>
         /// <returns>Partner slot and name rows.</returns>
@@ -261,21 +193,79 @@ public partial class GameHost
             return result;
         }
 
-        /// <summary>Returns in-stock item rows with source-backed labels.</summary>
+        /// <summary>Opens the technique page with MP availability and source text.</summary>
         /// <param name="flow">Active battle flow.</param>
-        /// <returns>Item id and label rows.</returns>
-        private static List<(int ItemId, BattleTextLine Text)> ItemLines(BattleFlowController flow)
+        private void OpenTechniqueMenu(BattleFlowController flow)
         {
-            var result = new List<(int ItemId, BattleTextLine Text)>();
+            OpenSubmenu(BattleMenuKind.Technique, flow.PlayerTechniques.Select(technique => (technique.Id, technique.Text ?? BattleTextLine.Missing)).ToList(),
+                line: (id, text) => BuildTechniqueLine(flow, id, text), statusText: TechniqueStatusText(flow.State.ActivePlayerFighter!));
+        }
+
+        /// <summary>Builds one technique row with its affordability and description.</summary>
+        /// <param name="flow">Active battle flow.</param>
+        /// <param name="id">Technique id.</param>
+        /// <param name="text">Decoded technique label.</param>
+        /// <returns>Configured menu row.</returns>
+        private BattleMenuLine BuildTechniqueLine(BattleFlowController flow, int id, BattleTextLine text)
+        {
+            BattleTechnique technique = flow.PlayerTechniques.First(candidate => candidate.Id == id);
+            BattleFighter fighter = flow.State.ActivePlayerFighter!;
+            bool enabled = fighter.Temporary || fighter.Mp >= technique.Tech.Mp;
+            BattleTextCatalog catalog = _host.BattleText();
+            return new BattleMenuLine(text.Debug, enabled, text, Icon: technique.Tech.Icon + 0x37, Cost: technique.Tech.Mp,
+                DescriptionText: enabled ? catalog.SkillInfo(id) : catalog.MenuEntry(0x54), CostLabelText: catalog.MenuEntry(0xD));
+        }
+
+        /// <summary>Opens the available digivolution forms for the active partner.</summary>
+        /// <param name="flow">Active battle flow.</param>
+        private void OpenDigivolutionMenu(BattleFlowController flow)
+        {
+            OpenSubmenu(BattleMenuKind.Digivolve, flow.PlayerDigivolutions.Select(id => (id, _host.NameLine(id))).ToList(),
+                line: (id, text) => new BattleMenuLine(text.Debug, id != flow.State.ActivePlayerFighter!.Id, text));
+        }
+
+        /// <summary>Opens the battle-item page with stock and decoded source labels.</summary>
+        /// <param name="flow">Active battle flow.</param>
+        private void OpenItemMenu(BattleFlowController flow)
+        {
+            var entries = new List<(int ItemId, BattleTextLine Text)>();
             foreach ((int id, int count) in flow.ItemStock)
             {
                 if (count > 0)
                 {
-                    result.Add((id, flow.ItemText.TryGetValue(id, out BattleTextLine? text) ? text : BattleTextLine.Missing));
+                    entries.Add((id, flow.ItemText.TryGetValue(id, out BattleTextLine? text) ? text : BattleTextLine.Missing));
                 }
             }
 
-            return result;
+            OpenSubmenu(BattleMenuKind.Item, entries, line: (id, text) => BuildItemLine(flow, id, text),
+                statusText: new BattleMenuStatusText(_host.BattleText().MenuEntry(0xC)));
+        }
+
+        /// <summary>Builds one item row with stock, icon and decoded description.</summary>
+        /// <param name="flow">Active battle flow.</param>
+        /// <param name="id">Item id.</param>
+        /// <param name="text">Decoded item label.</param>
+        /// <returns>Configured menu row.</returns>
+        private BattleMenuLine BuildItemLine(BattleFlowController flow, int id, BattleTextLine text)
+        {
+            bool enabled = flow.ItemStock.TryGetValue(id, out int quantity) && quantity > 0;
+            int count = enabled ? quantity : 0;
+            int icon = _host.BattleItemsData.Items.First(item => item.Id == id).Category;
+            return new BattleMenuLine(text.Debug, enabled, text, Icon: icon, Quantity: count, DescriptionText: _host.BattleText().ItemInfo(id));
+        }
+
+        /// <summary>Cancels the switch page unless a knockout made switching mandatory.</summary>
+        /// <param name="flow">Active battle flow.</param>
+        private void CancelSwitch(BattleFlowController flow)
+        {
+            if (_host._battleSwitchForced)
+            {
+                QuietLog.Info("battle-menu cancel=refused forced-switch");
+                return;
+            }
+
+            _host._battleMenu.OpenRoot(flow.RootMenuLines());
+            QuietLog.Info("battle-menu cancel=root");
         }
 
         /// <summary>Builds MP status labels for the active technique menu.</summary>
@@ -284,18 +274,9 @@ public partial class GameHost
         private BattleMenuStatusText TechniqueStatusText(BattleFighter fighter)
         {
             BattleTextCatalog text = _host.BattleText();
-            BattleTextLine? currentOverride = fighter.Temporary ? ResolveTemporaryMpLabel(fighter.Mp, text) : null;
+            int id = fighter.Mp < 100 ? 0x1A : fighter.Mp < 1000 ? 0xF : 0x24;
+            BattleTextLine? currentOverride = fighter.Temporary ? text.MenuEntry(id) : null;
             return new BattleMenuStatusText(text.MenuEntry(0xD), currentOverride, text.MenuEntry(0x10));
-        }
-
-        /// <summary>Resolves the temporary fighter MP gauge label.</summary>
-        /// <param name="mp">Current MP.</param>
-        /// <param name="text">Decoded battle text.</param>
-        /// <returns>Gauge label.</returns>
-        private static BattleTextLine ResolveTemporaryMpLabel(int mp, BattleTextCatalog text)
-        {
-            int id = mp < 100 ? 0x1A : mp < 1000 ? 0xF : 0x24;
-            return text.MenuEntry(id);
         }
     }
 }

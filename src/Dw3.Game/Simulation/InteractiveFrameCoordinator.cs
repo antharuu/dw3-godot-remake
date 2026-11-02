@@ -5,7 +5,7 @@ public sealed class InteractiveFrameCoordinator
 {
     private readonly SimClock _clock;
 
-    /// <summary>Initializes the coordinator with the session's fixed-step clock.</summary>
+    /// <summary>Initializes a new instance of the <see cref="InteractiveFrameCoordinator"/> class.</summary>
     /// <param name="clock">Clock that converts rendered delta time into fixed ticks.</param>
     public InteractiveFrameCoordinator(SimClock clock)
     {
@@ -41,7 +41,13 @@ public sealed class InteractiveFrameCoordinator
             host.SimulateStep();
         }
 
-        Present(host, delta);
+        if (host.HasActiveBattle)
+        {
+            host.PresentBattle();
+            return;
+        }
+
+        host.PresentField(delta);
     }
 
     /// <summary>Writes the established stall warning only when the fixed-step cap dropped ticks.</summary>
@@ -52,19 +58,5 @@ public sealed class InteractiveFrameCoordinator
         {
             host.LogSimulationStall(_clock.LastDroppedTicks, SimClock.MaxTicksPerFrame);
         }
-    }
-
-    /// <summary>Presents exactly one final state after all fixed steps have completed.</summary>
-    /// <param name="host">Frame host that provides the active presentation mode.</param>
-    /// <param name="delta">Elapsed rendered-frame time.</param>
-    private static void Present(IInteractiveFrameHost host, double delta)
-    {
-        if (host.HasActiveBattle)
-        {
-            host.PresentBattle();
-            return;
-        }
-
-        host.PresentField(delta);
     }
 }

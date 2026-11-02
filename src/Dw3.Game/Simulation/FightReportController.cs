@@ -17,7 +17,8 @@ public sealed class FightReportController
     private int _partnerIndex;
     private bool _done;
 
-    /// <summary>Creates a report controller from one completed battle's reward data.</summary>
+    /// <summary>Initializes a new instance of the <see cref="FightReportController"/> class.</summary>
+    /// <param name="input">Completed battle reward data.</param>
     /// <exception cref="ArgumentNullException">Thrown when the input or its party list is null.</exception>
     public FightReportController(FightReportInput input)
     {

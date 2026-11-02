@@ -1,17 +1,76 @@
 using Dw3Production.Conversion;
 using Dw3Production.Logging;
+using Dw3Production.Presentation;
 using Dw3Production.Simulation;
 
 namespace Dw3Production;
 
+/// <summary>Contains GameHost's field-runtime coordination implementation.</summary>
 public partial class GameHost
 {
+    /// <inheritdoc/>
+    bool IFieldTickHost.IsInTitle => _inTitle;
+
+    /// <inheritdoc/>
+    bool IFieldTickHost.HasField => _floor is not null && _currentZone is not null;
+
+    /// <inheritdoc/>
+    bool IFieldTickHost.HasActiveBattle => _activeBattle is not null;
+
+    /// <inheritdoc/>
+    bool IFieldTickHost.HasActiveDialogue => _dialogue.IsActive;
+
+    /// <inheritdoc/>
+    bool IFieldTickHost.HasActiveTraversal => _climb.IsActive || _drop.IsActive;
+
+    /// <inheritdoc/>
+    void IFieldTickHost.TickBattleMode() => _fieldRuntimeCoordinator.TickBattleMode();
+
+    /// <inheritdoc/>
+    void IFieldTickHost.TickDialogueMode() => _fieldRuntimeCoordinator.TickDialogueMode();
+
+    /// <inheritdoc/>
+    void IFieldTickHost.TickTraversalMode() => _fieldRuntimeCoordinator.TickTraversalMode();
+
+    /// <inheritdoc/>
+    void IFieldTickHost.TickLocomotionMode(Action<MovementResult> onMovementRejection) => _fieldRuntimeCoordinator.TickLocomotionMode(onMovementRejection);
+
+    /// <inheritdoc/>
+    void IFieldTickHost.TickWarp() => _fieldRuntimeCoordinator.TickWarp();
+
+    /// <inheritdoc/>
+    void IFieldTickHost.AdvanceFieldPresentation() => _fieldRuntimeCoordinator.AdvancePresentation();
+
+    /// <inheritdoc/>
+    void IInteractiveFrameHost.ShowTitle() => _titleScreen?.Show();
+
+    /// <inheritdoc/>
+    void IInteractiveFrameHost.StartDebugBattleIfRequested() => DebugBattleTrigger.TryStart(_input.State, StartDebugBattle);
+
+    /// <inheritdoc/>
+    void IInteractiveFrameHost.LogSimulationStall(int droppedTicks, int cap) =>
+        _log.Warn("sim-stall", $"simulation stall dropped_ticks={droppedTicks} cap={cap}");
+
+    /// <inheritdoc/>
+    void IInteractiveFrameHost.SimulateStep() =>
+        SimulateStep(movement => _log.Warn($"move:{movement.Rejection}", $"move reject={movement.Rejection} zone={_state.ZoneId} position=({_state.Position.X:0.##},{_state.Position.Y:0.##})"));
+
+    /// <inheritdoc/>
+    void IInteractiveFrameHost.PresentBattle() => _battleRenderer?.Present(BuildBattleView());
+
+    /// <inheritdoc/>
+    void IInteractiveFrameHost.PresentField(double delta)
+    {
+        _renderer?.Present(_state, CurrentZone, _input.F3On, delta, _icon.View);
+        _dialogueRenderer?.Present(_dialogue.IsActive ? BuildDialogueView() : (DialogueView?)null);
+    }
+
     /// <summary>Coordinates field-mode operations that need the host's composed controllers and presenters.</summary>
     private sealed class FieldRuntimeCoordinator
     {
         private readonly GameHost _host;
 
-        /// <summary>Initializes field runtime coordination for one host session.</summary>
+        /// <summary>Initializes a new instance of the <see cref="FieldRuntimeCoordinator"/> class.</summary>
         /// <param name="host">Runtime host that owns field state.</param>
         public FieldRuntimeCoordinator(GameHost host)
         {

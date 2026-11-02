@@ -4,6 +4,7 @@ using Dw3Production.Diagnostics.Field;
 
 namespace Dw3Production;
 
+/// <summary>Contains GameHost's diagnostic-probe resolution implementation.</summary>
 public partial class GameHost
 {
     /// <summary>Resolves named diagnostic probe entry points across the established probe families.</summary>
@@ -11,7 +12,7 @@ public partial class GameHost
     {
         private readonly GameHost _host;
 
-        /// <summary>Initializes probe resolution for one host session.</summary>
+        /// <summary>Initializes a new instance of the <see cref="DiagnosticProbeResolver"/> class.</summary>
         /// <param name="host">Runtime host that owns probe callbacks.</param>
         public DiagnosticProbeResolver(GameHost host)
         {

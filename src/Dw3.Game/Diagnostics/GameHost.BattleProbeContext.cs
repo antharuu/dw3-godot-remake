@@ -147,7 +147,7 @@ public partial class GameHost
         public void TickTestSimulation() => _host.TickTestSimulation();
 
         /// <inheritdoc/>
-        public void RefreshActivePartnerCatalogs() => _host.RefreshActivePartnerCatalogs();
+        public void RefreshActivePartnerCatalogs() => _host._battleMenuCoordinator.RefreshActivePartnerCatalogs();
 
         /// <inheritdoc/>
         public BattleReward ResolveReward(int encounter) => _host.ResolveReward(encounter);
@@ -178,11 +178,11 @@ public partial class GameHost
             BattleMenuKind kind,
             IReadOnlyList<(int Arg, BattleTextLine Text)> entries,
             Func<int, bool>? enabled = null,
-            Func<int, BattleTextLine, BattleMenuLine>? line = null) => _host.OpenSubmenu(kind, entries, enabled, line);
+            Func<int, BattleTextLine, BattleMenuLine>? line = null) => _host._battleMenuCoordinator.OpenSubmenu(kind, entries, enabled, line);
 
         /// <inheritdoc/>
         public IReadOnlyList<(int Slot, BattleTextLine Name)> SwitchLines(BattleFlowController flow) =>
-            _host.SwitchLines(flow);
+            _host._battleMenuCoordinator.SwitchLines(flow);
 
         /// <inheritdoc/>
         public SignalAwaiter NextFrameDrawn() =>

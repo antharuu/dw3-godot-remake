@@ -2,6 +2,7 @@ using Godot;
 
 namespace Dw3Production;
 
+/// <summary>Contains GameHost's first-launch completion implementation.</summary>
 public partial class GameHost
 {
     /// <summary>Completes first-launch extraction and runs its optional post-startup capture probe.</summary>
@@ -9,7 +10,7 @@ public partial class GameHost
     {
         private readonly GameHost _host;
 
-        /// <summary>Initializes first-launch completion for one host session.</summary>
+        /// <summary>Initializes a new instance of the <see cref="FirstLaunchCompletionCoordinator"/> class.</summary>
         /// <param name="host">Runtime host that owns the first-launch screen and startup path.</param>
         public FirstLaunchCompletionCoordinator(GameHost host)
         {

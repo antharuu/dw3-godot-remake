@@ -3,6 +3,7 @@ using Dw3Production.Simulation;
 
 namespace Dw3Production;
 
+/// <summary>Contains GameHost's battle-setup coordination implementation.</summary>
 public partial class GameHost
 {
     /// <summary>Builds source-backed battle flows from the host's validated battle manifests.</summary>
@@ -10,7 +11,7 @@ public partial class GameHost
     {
         private readonly GameHost _host;
 
-        /// <summary>Initializes battle setup composition for one host session.</summary>
+        /// <summary>Initializes a new instance of the <see cref="BattleSetupCoordinator"/> class.</summary>
         /// <param name="host">Runtime host that owns validated manifest data.</param>
         public BattleSetupCoordinator(GameHost host)
         {

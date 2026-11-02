@@ -18,11 +18,11 @@ public static class BattleViewBuilder
         BattleReportView? report,
         Func<int, BattleTextLine> nameFor)
     {
-        IReadOnlyList<BattleFighterView> players = BuildFighters(
+        List<BattleFighterView> players = BuildFighters(
             flow.State.Players,
             flow.State.ActivePlayer,
             nameFor);
-        IReadOnlyList<BattleFighterView> enemies = BuildFighters(
+        List<BattleFighterView> enemies = BuildFighters(
             flow.State.Enemies,
             flow.State.ActiveEnemy,
             nameFor);
@@ -44,13 +44,13 @@ public static class BattleViewBuilder
     /// <param name="activeIndex">Active slot index.</param>
     /// <param name="nameFor">Decoded-name resolver.</param>
     /// <returns>Presentation fighter slots preserving empty entries.</returns>
-    private static IReadOnlyList<BattleFighterView> BuildFighters(
-        IReadOnlyList<BattleFighter?> fighters,
+    private static List<BattleFighterView> BuildFighters(
+        BattleFighter?[] fighters,
         int activeIndex,
         Func<int, BattleTextLine> nameFor)
     {
-        var result = new List<BattleFighterView>(fighters.Count);
-        for (int index = 0; index < fighters.Count; index++)
+        var result = new List<BattleFighterView>(fighters.Length);
+        for (int index = 0; index < fighters.Length; index++)
         {
             result.Add(BuildFighter(fighters[index], index == activeIndex, nameFor));
         }

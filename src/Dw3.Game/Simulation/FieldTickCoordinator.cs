@@ -5,7 +5,7 @@ public sealed class FieldTickCoordinator
 {
     private readonly IFieldTickHost _host;
 
-    /// <summary>Initializes the field coordinator.</summary>
+    /// <summary>Initializes a new instance of the <see cref="FieldTickCoordinator"/> class.</summary>
     /// <param name="host">Mode state and operations owned by the runtime composition root.</param>
     public FieldTickCoordinator(IFieldTickHost host)
     {

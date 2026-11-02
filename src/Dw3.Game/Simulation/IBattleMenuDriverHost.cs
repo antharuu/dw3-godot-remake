@@ -12,6 +12,9 @@ public interface IBattleMenuDriverHost
     /// <summary>Gets semantic input for the current fixed tick.</summary>
     InputState Input { get; }
 
+    /// <summary>Gets the arguments represented by current submenu rows.</summary>
+    IReadOnlyList<int> SubmenuArguments { get; }
+
     /// <summary>Reports whether Up was held on the previous fixed tick.</summary>
     /// <returns>True when Up was held.</returns>
     bool WasUpHeld();
@@ -24,9 +27,6 @@ public interface IBattleMenuDriverHost
     /// <param name="up">Whether Up is held now.</param>
     /// <param name="down">Whether Down is held now.</param>
     void RememberHeldDirections(bool up, bool down);
-
-    /// <summary>Gets the arguments represented by current submenu rows.</summary>
-    IReadOnlyList<int> SubmenuArguments { get; }
 
     /// <summary>Refreshes command catalogs for the active partner.</summary>
     void RefreshActivePartnerCatalogs();

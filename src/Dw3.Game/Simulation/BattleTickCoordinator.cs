@@ -5,7 +5,7 @@ public sealed class BattleTickCoordinator
 {
     private readonly IBattleTickHost _host;
 
-    /// <summary>Initializes a battle-tick coordinator.</summary>
+    /// <summary>Initializes a new instance of the <see cref="BattleTickCoordinator"/> class.</summary>
     /// <param name="host">Battle state and host-owned presentation operations.</param>
     public BattleTickCoordinator(IBattleTickHost host)
     {
