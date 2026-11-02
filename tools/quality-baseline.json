@@ -148,12 +148,6 @@
       "count": 1
     },
     {
-      "rule": "S107",
-      "project": "Dw3.Game.Tests",
-      "folder": ".",
-      "count": 3
-    },
-    {
       "rule": "S1075",
       "project": "Dw3.Disc",
       "folder": ".",
@@ -661,7 +655,7 @@
       "rule": "SA1117",
       "project": "Dw3.Game.Tests",
       "folder": ".",
-      "count": 102
+      "count": 97
     },
     {
       "rule": "SA1117",
@@ -1495,7 +1489,7 @@
       "rule": "SA1503",
       "project": "Dw3.Repository.Tests",
       "folder": ".",
-      "count": 2
+      "count": 1
     },
     {
       "rule": "SA1505",

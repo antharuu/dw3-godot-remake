@@ -54,7 +54,11 @@ public sealed class ContributorQualityTests
         while (directory is not null)
         {
             string gitPath = Path.Combine(directory, ".git");
-            if (Directory.Exists(gitPath) || File.Exists(gitPath)) return directory;
+            if (Directory.Exists(gitPath) || File.Exists(gitPath))
+            {
+                return directory;
+            }
+
             directory = Path.GetDirectoryName(directory);
         }
 

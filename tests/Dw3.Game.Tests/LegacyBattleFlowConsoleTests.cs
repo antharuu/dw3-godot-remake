@@ -54,7 +54,7 @@ public sealed class LegacyBattleFlowConsoleTests
 
     private static void AttackResolvesAndAdvancesPhase()
     {
-        var flow = Controller(SimpleBattle(playerAttack: 50, enemyRawDefense: 10, enemyHp: 500, enemySpeed: 1));
+        var flow = Controller(SimpleBattle(new BattleFixture(PlayerAttack: 50, EnemyRawDefense: 10, EnemyHp: 500, EnemySpeed: 1)));
 
         var before = flow.State.Enemies[0]!.Hp;
         Check(flow.Choose(BattleCommand.Attack, 0, new NoRng()), "a basic attack is spendable");
@@ -66,7 +66,7 @@ public sealed class LegacyBattleFlowConsoleTests
     {
         // A very fast enemy acts first: after the player's turn the enemy attacks back,
         // and since the enemy stays faster the phase becomes EnemyTurn, not PlayerCommand.
-        var flow = Controller(SimpleBattle(playerSpeed: 1, enemySpeed: 200, enemyRawAttack: 10, playerHp: 10000, enemyHp: 10000));
+        var flow = Controller(SimpleBattle(new BattleFixture(PlayerSpeed: 1, EnemySpeed: 200, EnemyRawAttack: 10, PlayerHp: 10000, EnemyHp: 10000)));
 
         flow.Choose(BattleCommand.Attack, 0, new NoRng());
         Check(flow.Phase is BattleFlowPhase.EnemyTurn or BattleFlowPhase.PlayerCommand, "phase advanced after the player's turn");
@@ -110,7 +110,7 @@ public sealed class LegacyBattleFlowConsoleTests
 
     private static void VictoryWhenAllEnemiesKo()
     {
-        var flow = Controller(SimpleBattle(playerAttack: 50, enemyRawDefense: 10, enemyHp: 50));
+        var flow = Controller(SimpleBattle(new BattleFixture(PlayerAttack: 50, EnemyRawDefense: 10, EnemyHp: 50)));
 
         flow.Choose(BattleCommand.Attack, 0, new NoRng());
         Check(flow.Outcome == BattleOutcome.Won, "knocking out every enemy wins the battle");
@@ -120,7 +120,7 @@ public sealed class LegacyBattleFlowConsoleTests
 
     private static void DefeatWhenAllPlayersKo()
     {
-        var flow = Controller(SimpleBattle(playerDefense: 10, playerHp: 50, enemyRawAttack: 100, enemyStrength: 16, enemySpeed: 200));
+        var flow = Controller(SimpleBattle(new BattleFixture(PlayerDefense: 10, PlayerHp: 50, EnemyRawAttack: 100, EnemyStrength: 16, EnemySpeed: 200)));
         // The menu always opens first: the player attacks once, then the faster enemy
         // counter-attacks for 100 damage and knocks the lone partner out.
         flow.Choose(BattleCommand.Attack, 0, new NoRng());
@@ -140,7 +140,7 @@ public sealed class LegacyBattleFlowConsoleTests
 
     private static void TechniqueConsumesMpAndSpendsTurn()
     {
-        var flow = Controller(SimpleBattle(playerAttack: 50, playerMp: 30, enemyRawDefense: 10, enemyHp: 500));
+        var flow = Controller(SimpleBattle(new BattleFixture(PlayerAttack: 50, PlayerMp: 30, EnemyRawDefense: 10, EnemyHp: 500)));
         flow.PlayerBasicTech = new TechData { Power = 20, Mp = 0 };
         flow.PlayerTechniques = [new BattleTechnique(9, "test", new TechData { Power = 20, Mp = 10 })];
 
@@ -150,7 +150,7 @@ public sealed class LegacyBattleFlowConsoleTests
 
     private static void UnaffordableTechniqueKeepsMenuOpen()
     {
-        var flow = Controller(SimpleBattle(playerMp: 5, enemyHp: 500));
+        var flow = Controller(SimpleBattle(new BattleFixture(PlayerMp: 5, EnemyHp: 500)));
         flow.PlayerTechniques = [new BattleTechnique(9, "test", new TechData { Power = 20, Mp = 10 })];
 
         Check(!flow.Choose(BattleCommand.Technique, 9, new NoRng()), "an unaffordable technique is refused");
@@ -162,8 +162,7 @@ public sealed class LegacyBattleFlowConsoleTests
     {
         // A full loop: the player keeps attacking (and the enemy counter-attacks on its
         // turns) until the battle reaches victory, under a deterministic zero RNG.
-        var flow = Controller(SimpleBattle(playerAttack: 50, playerDefense: 50, playerHp: 1000,
-            enemyRawAttack: 10, enemyRawDefense: 10, enemySpeed: 100, enemyHp: 200));
+        var flow = Controller(SimpleBattle(new BattleFixture(PlayerAttack: 50, PlayerDefense: 50, PlayerHp: 1000, EnemyRawAttack: 10, EnemyRawDefense: 10, EnemySpeed: 100, EnemyHp: 200)));
 
         var guard = 0;
         while (flow.Phase != BattleFlowPhase.Ended && guard++ < 64)
@@ -300,7 +299,7 @@ public sealed class LegacyBattleFlowConsoleTests
 
     private static void EnemyUsesTechniqueFromTable()
     {
-        var flow = Controller(SimpleBattle(enemyRawAttack: 100, playerDefense: 10, playerHp: 1000, enemyMp: 100));
+        var flow = Controller(SimpleBattle(new BattleFixture(EnemyRawAttack: 100, PlayerDefense: 10, PlayerHp: 1000, EnemyMp: 100)));
         var enemy = flow.State.Enemies[0]!;
         enemy.Techs = [777, 888, 0];
         enemy.Actions = [new BattleTableAction(2, 0, 0)];   // target 2 = technique 1, always
@@ -319,8 +318,7 @@ public sealed class LegacyBattleFlowConsoleTests
 
     private static void EnemyCounterDealsDamage()
     {
-        var flow = Controller(SimpleBattle(playerAttack: 50, enemyRawDefense: 10, enemyHp: 1000,
-            playerHp: 1000, enemyRawAttack: 100, playerDefense: 10));
+        var flow = Controller(SimpleBattle(new BattleFixture(PlayerAttack: 50, EnemyRawDefense: 10, EnemyHp: 1000, PlayerHp: 1000, EnemyRawAttack: 100, PlayerDefense: 10)));
         var enemy = flow.State.Enemies[0]!;
         enemy.Techs = [777, 0, 0];
         enemy.Counter = new BattleTableAction(1, 3, 0);   // counter with the basic attack, hp >= 0 (always)
@@ -356,7 +354,7 @@ public sealed class LegacyBattleFlowConsoleTests
 
     private static void EnemyRunAwayEndsFled()
     {
-        var flow = Controller(SimpleBattle(enemyHp: 1000, playerHp: 1000));
+        var flow = Controller(SimpleBattle(new BattleFixture(EnemyHp: 1000, PlayerHp: 1000)));
         var enemy = flow.State.Enemies[0]!;
         enemy.Techs = [777, 0, 0];
         enemy.Actions = [new BattleTableAction(4, 0, 0)];   // run away, always
@@ -365,29 +363,26 @@ public sealed class LegacyBattleFlowConsoleTests
         Check(flow.Outcome == BattleOutcome.Fled, "the enemy's run-away action ends the battle as fled");
     }
 
-    private static BattleState SimpleBattle(
-        int playerAttack = 100, int playerDefense = 100, int playerSpeed = 100,
-        int playerHp = 500, int playerMp = 100,
-        int enemyRawAttack = 100, int enemyRawDefense = 100, int enemySpeed = 100,
-        int enemyHp = 500, int enemyMp = 100, int enemyStrength = 16)
+    private static BattleState SimpleBattle(BattleFixture? fixture = null)
     {
+        var values = fixture ?? new BattleFixture();
         var setup = new BattleSetup();
         setup.Partners[0] = new PartnerSeed
         {
             Id = 1,
-            Hp = playerHp,
-            MaxHp = playerHp,
-            Mp = playerMp,
-            MaxMp = playerMp,
-            Stats = Stats(playerAttack, playerDefense, speed: playerSpeed),
+            Hp = values.PlayerHp,
+            MaxHp = values.PlayerHp,
+            Mp = values.PlayerMp,
+            MaxMp = values.PlayerMp,
+            Stats = Stats(values.PlayerAttack, values.PlayerDefense, speed: values.PlayerSpeed),
         };
         setup.Enemies[0] = new BattleEnemy
         {
             Fighter = 101,
-            Hp = enemyHp,
-            Mp = enemyMp,
-            Strength = enemyStrength,
-            BaseStats = Stats(enemyRawAttack, enemyRawDefense, speed: enemySpeed),
+            Hp = values.EnemyHp,
+            Mp = values.EnemyMp,
+            Strength = values.EnemyStrength,
+            BaseStats = Stats(values.EnemyRawAttack, values.EnemyRawDefense, speed: values.EnemySpeed),
             Techs = [777, 0, 0],
             Actions = [new BattleTableAction(1, 0, 0)],   // one unconditional fallback: attack
         };
@@ -460,4 +455,17 @@ public sealed class LegacyBattleFlowConsoleTests
     {
         Assert.True(condition, name);
     }
+
+    private sealed record BattleFixture(
+        int PlayerAttack = 100,
+        int PlayerDefense = 100,
+        int PlayerSpeed = 100,
+        int PlayerHp = 500,
+        int PlayerMp = 100,
+        int EnemyRawAttack = 100,
+        int EnemyRawDefense = 100,
+        int EnemySpeed = 100,
+        int EnemyHp = 500,
+        int EnemyMp = 100,
+        int EnemyStrength = 16);
 }

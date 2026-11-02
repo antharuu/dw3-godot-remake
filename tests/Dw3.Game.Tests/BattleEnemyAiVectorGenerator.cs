@@ -19,20 +19,23 @@ public sealed class BattleEnemyAiVectorGenerator
     private readonly JsonArray _cases = [];
     private readonly Random _random = new(Seed);
 
-    private static BattleFighter Enemy(int hp = 50, int maxHp = 100, int mp = 10, int charge = 0,
-        int turns = 0, int[]? boosts = null, int[]? techs = null,
-        BattleTableAction[]? actions = null, BattleTableAction counter = default) => new()
+    private static BattleFighter Enemy(EnemyStats? stats = null, int[]? boosts = null, int[]? techs = null,
+        BattleTableAction[]? actions = null, BattleTableAction counter = default)
+    {
+        var values = stats ?? new EnemyStats();
+        return new BattleFighter
         {
-            Hp = hp,
-            MaxHp = maxHp,
-            Mp = mp,
-            Charge = charge,
-            Turns = turns,
+            Hp = values.Hp,
+            MaxHp = values.MaxHp,
+            Mp = values.Mp,
+            Charge = values.Charge,
+            Turns = values.Turns,
             Boosts = boosts ?? [0, 0, 0, 0],
             Techs = techs ?? [101, 102, 103],
             Actions = actions ?? [],
             Counter = counter,
         };
+    }
 
     private static BattleFighter Slot(int id, int hp, int maxHp = 100, int flags = 0) =>
         new() { Id = id, Hp = hp, MaxHp = maxHp, Flags = flags };
@@ -105,16 +108,16 @@ public sealed class BattleEnemyAiVectorGenerator
                 int share = HpShareForTest(maxHp, arg);
                 foreach (int hp in new[] { share - 1, share, share + 1 }.Distinct())
                 {
-                    Condition(2, arg, Ctx(enemy: Enemy(hp: hp, maxHp: maxHp)), [], $"own hp {hp}/{maxHp} below arg {arg}");
-                    Condition(3, arg, Ctx(enemy: Enemy(hp: hp, maxHp: maxHp)), [], $"own hp {hp}/{maxHp} at or above arg {arg}");
+                    Condition(2, arg, Ctx(enemy: Enemy(stats: new EnemyStats(Hp: hp, MaxHp: maxHp))), [], $"own hp {hp}/{maxHp} below arg {arg}");
+                    Condition(3, arg, Ctx(enemy: Enemy(stats: new EnemyStats(Hp: hp, MaxHp: maxHp))), [], $"own hp {hp}/{maxHp} at or above arg {arg}");
                 }
             }
 
         // 4/5: the enemy's MP against the argument.
         foreach (int mp in new[] { 0, 9, 10, 11 })
         {
-            Condition(4, 10, Ctx(enemy: Enemy(mp: mp)), [], $"mp {mp} below 10");
-            Condition(5, 10, Ctx(enemy: Enemy(mp: mp)), [], $"mp {mp} at or above 10");
+            Condition(4, 10, Ctx(enemy: Enemy(stats: new EnemyStats(Mp: mp))), [], $"mp {mp} below 10");
+            Condition(5, 10, Ctx(enemy: Enemy(stats: new EnemyStats(Mp: mp))), [], $"mp {mp} at or above 10");
         }
 
         // 6/7: the active player's HP share, including no active player.
@@ -167,7 +170,7 @@ public sealed class BattleEnemyAiVectorGenerator
 
         // 14: the enemy holds a charge.
         foreach (int charge in new[] { 0, 1, 32, -4 })
-            Condition(14, 0, Ctx(enemy: Enemy(charge: charge)), [], $"charge {charge}");
+            Condition(14, 0, Ctx(enemy: Enemy(stats: new EnemyStats(Charge: charge))), [], $"charge {charge}");
 
         // 15/16/17: one of the first three boosts is lowered.
         foreach (int cond in new[] { 15, 16, 17 })
@@ -182,7 +185,7 @@ public sealed class BattleEnemyAiVectorGenerator
         // 18: the enemy's turn count is a multiple of the argument.
         foreach (int turns in new[] { 0, 1, 4, 7, -4 })
             foreach (int arg in new[] { 0, 1, 2, 3, -2 })
-                Condition(18, arg, Ctx(enemy: Enemy(turns: turns)), [], $"turns {turns} every {arg}");
+                Condition(18, arg, Ctx(enemy: Enemy(stats: new EnemyStats(Turns: turns))), [], $"turns {turns} every {arg}");
     }
 
     private void ActionKindCases()
@@ -225,8 +228,8 @@ public sealed class BattleEnemyAiVectorGenerator
         Pick("PickAction", Ctx(enemy: Enemy(actions: [A(2, 1, 0), A(3, 1, 0), A(4, 1, 0), A(1, 1, 0)])), [0, 0, 0], "four, all fail, fallback untested");
         Pick("PickAction", Ctx(enemy: Enemy(actions: [A(2, 1, 0), A(3, 1, 0), A(4, 1, 0), A(1, 0), A(5, 0)])), [0, 0, 0], "fifth action ignored");
         Pick("PickAction", Ctx(enemy: Enemy(actions: [A(2, 1, 10), A(3, 1, 10), A(4, 1, 10), A(1, 0)])), [50, 5, 99], "second roll holds, third not drawn");
-        Pick("PickAction", Ctx(enemy: Enemy(hp: 10, maxHp: 1000, actions: [A(3, 2, 32), A(2, 0), A(1, 0), A(4, 0)])), [], "low hp picks technique");
-        Pick("PickAction", Ctx(enemy: Enemy(hp: 900, maxHp: 1000, actions: [A(3, 2, 32), A(2, 0), A(1, 0), A(4, 0)])), [], "high hp falls to second");
+        Pick("PickAction", Ctx(enemy: Enemy(stats: new EnemyStats(Hp: 10, MaxHp: 1000), actions: [A(3, 2, 32), A(2, 0), A(1, 0), A(4, 0)])), [], "low hp picks technique");
+        Pick("PickAction", Ctx(enemy: Enemy(stats: new EnemyStats(Hp: 900, MaxHp: 1000), actions: [A(3, 2, 32), A(2, 0), A(1, 0), A(4, 0)])), [], "high hp falls to second");
         Pick("PickAction", Ctx(enemy: Enemy(actions: [A(9, 0), A(1, 0), A(1, 0), A(1, 0)])), [], "first holds with unknown kind");
         Pick("PickAction", Ctx(enemy: Enemy(actions: [A(8, 10, 0), A(1, 0), A(1, 0), A(1, 0)]),
             enemies: [Slot(10, 5), Slot(11, 5), null]), [], "switch when another enemy is alive");
@@ -251,8 +254,8 @@ public sealed class BattleEnemyAiVectorGenerator
         Pick("PickCounter", Ctx(enemy: Enemy(counter: A(1, 1, 128))), [3], "attack counter holds");
         Pick("PickCounter", Ctx(enemy: Enemy(counter: A(1, 1, 0))), [3], "attack counter fails");
         foreach (int target in Enumerable.Range(-1, 11))
-            Pick("PickCounter", Ctx(enemy: Enemy(charge: 1, counter: A(target, 14))), [], $"counter target kind {target}");
-        Pick("PickCounter", Ctx(enemy: Enemy(charge: 0, counter: A(2, 14))), [], "technique counter without charge");
+            Pick("PickCounter", Ctx(enemy: Enemy(stats: new EnemyStats(Charge: 1), counter: A(target, 14))), [], $"counter target kind {target}");
+        Pick("PickCounter", Ctx(enemy: Enemy(stats: new EnemyStats(Charge: 0), counter: A(2, 14))), [], "technique counter without charge");
         Pick("PickCounter", Ctx(enemy: Enemy(counter: A(2, 25))), [], "unknown condition counter holds");
         for (int i = 0; i < 40; i++)
         {
@@ -311,11 +314,7 @@ public sealed class BattleEnemyAiVectorGenerator
             roster[k] = _random.Next(4) == 0 ? null : Slot(_random.Next(0, 3) == 0 ? 0 : 11 + k, _random.Next(-1, 3));
         int playerMax = _random.Next(1, 2000);
         return Ctx(
-            enemy: Enemy(hp: _random.Next(0, maxHp + 1), maxHp: maxHp, mp: _random.Next(0, 60),
-                charge: _random.Next(0, 3), turns: _random.Next(0, 12),
-                boosts: [_random.Next(-1, 2), _random.Next(-1, 2), _random.Next(-1, 2), 0],
-                techs: [_random.Next(1, 500), _random.Next(1, 500), _random.Next(1, 500)],
-                actions: actions, counter: counter),
+            enemy: Enemy(stats: new EnemyStats(Hp: _random.Next(0, maxHp + 1), MaxHp: maxHp, Mp: _random.Next(0, 60), Charge: _random.Next(0, 3), Turns: _random.Next(0, 12)), boosts: [_random.Next(-1, 2), _random.Next(-1, 2), _random.Next(-1, 2), 0], techs: [_random.Next(1, 500), _random.Next(1, 500), _random.Next(1, 500)], actions: actions, counter: counter),
             player: _random.Next(5) == 0 ? null : Slot(_random.Next(1, 8), _random.Next(0, playerMax + 1), playerMax,
                 _random.Next(2) == 0 ? FighterFlags.Asleep : 0),
             enemies: roster,
@@ -355,4 +354,6 @@ public sealed class BattleEnemyAiVectorGenerator
 
         Assert.True(_cases.Count >= 300, $"Generated {_cases.Count} vectors, need at least 300.");
     }
+
+    private sealed record EnemyStats(int Hp = 50, int MaxHp = 100, int Mp = 10, int Charge = 0, int Turns = 0);
 }

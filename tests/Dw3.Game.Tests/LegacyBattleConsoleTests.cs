@@ -407,14 +407,14 @@ public sealed class LegacyBattleConsoleTests
 
     private static void AttackReducesHpExactly()
     {
-        var state = SimpleBattle(playerAttack: 50, enemyRawDefense: 10, enemyHp: 500);
+        var state = SimpleBattle(new BattleFixture(PlayerAttack: 50, EnemyRawDefense: 10, EnemyHp: 500));
         state.PlayerAttack(Tech(power: 20), new NoRng());
         Check(state.Enemies[0]!.Hp == 400, "a 100-damage hit leaves 400 of 500 HP");
     }
 
     private static void TurnOrderFasterSideActsMore()
     {
-        var state = SimpleBattle(playerAttack: 10, playerSpeed: 200, enemyRawAttack: 10, enemySpeed: 100);
+        var state = SimpleBattle(new BattleFixture(PlayerAttack: 10, PlayerSpeed: 200, EnemyRawAttack: 10, EnemySpeed: 100));
         var zero = Tech(power: 0);
         int playerTurns = 0, enemyTurns = 0;
         for (int i = 0; i < 6; i++)
@@ -429,7 +429,7 @@ public sealed class LegacyBattleConsoleTests
 
     private static void VictoryWhenAllEnemiesKo()
     {
-        var state = SimpleBattle(playerAttack: 50, enemyRawDefense: 10, enemyHp: 50);
+        var state = SimpleBattle(new BattleFixture(PlayerAttack: 50, EnemyRawDefense: 10, EnemyHp: 50));
         state.PlayerAttack(Tech(power: 20), new NoRng());   // 100 damage, KO
         Check(state.Outcome == BattleOutcome.Won, "knocking out every enemy wins the battle");
         Check(state.Enemies[0]!.Hp == 0, "the enemy HP clamps to zero");
@@ -437,7 +437,7 @@ public sealed class LegacyBattleConsoleTests
 
     private static void DefeatWhenAllPlayersKo()
     {
-        var state = SimpleBattle(playerDefense: 10, playerHp: 50, enemyRawAttack: 100, enemyStrength: 16);
+        var state = SimpleBattle(new BattleFixture(PlayerDefense: 10, PlayerHp: 50, EnemyRawAttack: 100, EnemyStrength: 16));
         state.EnemyAttack(Tech(power: 10), new NoRng());    // 10 * 16/16 * 100 / 10 = 100 damage, KO
         Check(state.Outcome == BattleOutcome.Lost, "knocking out every partner loses the battle");
         Check(state.Players[0]!.Hp == 0, "the partner HP clamps to zero");
@@ -475,7 +475,7 @@ public sealed class LegacyBattleConsoleTests
 
     private static void DigivolveChangesFormNoMp()
     {
-        var state = SimpleBattle(playerMp: 30);
+        var state = SimpleBattle(new BattleFixture(PlayerMp: 30));
         bool changed = state.PlayerDigivolve(555);
         Check(changed, "digivolving into another form succeeds");
         Check(state.Players[0]!.Id == 555, "the active partner changes form");
@@ -540,7 +540,7 @@ public sealed class LegacyBattleConsoleTests
 
     private static void TechniqueConsumesMp()
     {
-        var state = SimpleBattle(playerAttack: 50, playerMp: 30, enemyRawDefense: 10, enemyHp: 500);
+        var state = SimpleBattle(new BattleFixture(PlayerAttack: 50, PlayerMp: 30, EnemyRawDefense: 10, EnemyHp: 500));
         state.PlayerTechnique(Tech(power: 20, mp: 10), new NoRng());
         Check(state.Players[0]!.Mp == 20, "a technique subtracts its MP cost");
         Check(state.Enemies[0]!.Hp == 400, "a physical technique deals power * attack / defense");
@@ -548,7 +548,7 @@ public sealed class LegacyBattleConsoleTests
 
     private static void TechniqueInsufficientMpSpendsNothing()
     {
-        var state = SimpleBattle(playerMp: 5, enemyHp: 500);
+        var state = SimpleBattle(new BattleFixture(PlayerMp: 5, EnemyHp: 500));
         bool used = state.PlayerTechnique(Tech(power: 20, mp: 10), new NoRng());
         Check(!used, "a technique the partner can't afford is not used");
         Check(state.Players[0]!.Mp == 5 && state.Enemies[0]!.Hp == 500, "nothing is spent and no damage is dealt");
@@ -746,29 +746,26 @@ public sealed class LegacyBattleConsoleTests
 
     // ---- Fixtures ----
 
-    private static BattleState SimpleBattle(
-        int playerAttack = 100, int playerDefense = 100, int playerSpeed = 100,
-        int playerHp = 500, int playerMp = 100,
-        int enemyRawAttack = 100, int enemyRawDefense = 100, int enemySpeed = 100,
-        int enemyHp = 500, int enemyMp = 100, int enemyStrength = 16)
+    private static BattleState SimpleBattle(BattleFixture? fixture = null)
     {
+        var values = fixture ?? new BattleFixture();
         var setup = new BattleSetup();
         setup.Partners[0] = new PartnerSeed
         {
             Id = 1,
-            Hp = playerHp,
-            MaxHp = playerHp,
-            Mp = playerMp,
-            MaxMp = playerMp,
-            Stats = Stats(playerAttack, playerDefense, speed: playerSpeed),
+            Hp = values.PlayerHp,
+            MaxHp = values.PlayerHp,
+            Mp = values.PlayerMp,
+            MaxMp = values.PlayerMp,
+            Stats = Stats(values.PlayerAttack, values.PlayerDefense, speed: values.PlayerSpeed),
         };
         setup.Enemies[0] = new BattleEnemy
         {
             Fighter = 101,
-            Hp = enemyHp,
-            Mp = enemyMp,
-            Strength = enemyStrength,
-            BaseStats = Stats(enemyRawAttack, enemyRawDefense, speed: enemySpeed),
+            Hp = values.EnemyHp,
+            Mp = values.EnemyMp,
+            Strength = values.EnemyStrength,
+            BaseStats = Stats(values.EnemyRawAttack, values.EnemyRawDefense, speed: values.EnemySpeed),
         };
         return BattleState.InitFighters(setup, digimon: 999);
     }
@@ -856,4 +853,17 @@ public sealed class LegacyBattleConsoleTests
     {
         Assert.True(condition, name);
     }
+
+    private sealed record BattleFixture(
+        int PlayerAttack = 100,
+        int PlayerDefense = 100,
+        int PlayerSpeed = 100,
+        int PlayerHp = 500,
+        int PlayerMp = 100,
+        int EnemyRawAttack = 100,
+        int EnemyRawDefense = 100,
+        int EnemySpeed = 100,
+        int EnemyHp = 500,
+        int EnemyMp = 100,
+        int EnemyStrength = 16);
 }
