@@ -36,6 +36,32 @@ internal static class BattlePixelMetrics
         return count;
     }
 
+    /// <summary>Counts exact RGB changes within a clipped viewport rectangle.</summary>
+    /// <param name="before">Frame before the transition.</param>
+    /// <param name="after">Frame after the transition.</param>
+    /// <param name="region">Viewport rectangle to compare.</param>
+    /// <returns>The changed-pixel count.</returns>
+    public static int CountRgbChanges(Image before, Image after, Rect2 region)
+    {
+        var changed = 0;
+        var minX = Math.Max(0, (int)MathF.Floor(region.Position.X));
+        var maxX = Math.Min(after.GetWidth() - 1, (int)MathF.Ceiling(region.End.X));
+        var minY = Math.Max(0, (int)MathF.Floor(region.Position.Y));
+        var maxY = Math.Min(after.GetHeight() - 1, (int)MathF.Ceiling(region.End.Y));
+        for (var y = minY; y <= maxY; y++)
+        {
+            for (var x = minX; x <= maxX; x++)
+            {
+                if (ProbePixels.DifferentRgb(before.GetPixel(x, y), after.GetPixel(x, y)))
+                {
+                    changed++;
+                }
+            }
+        }
+
+        return changed;
+    }
+
     /// <summary>Counts pixels whose three channels sum above the historical probe threshold.</summary>
     /// <param name="image">Framebuffer image.</param>
     /// <param name="xMin">Inclusive left pixel.</param>

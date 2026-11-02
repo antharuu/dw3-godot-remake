@@ -11,6 +11,8 @@ public sealed class BattleProbeCatalogTests
     [InlineData("RunBattleFontProbe", typeof(BattleFontProbe))]
     [InlineData("RunBattleEntranceProbe", typeof(BattleEntranceProbe))]
     [InlineData("RunBattleFaceProbe", typeof(BattleFaceProbe))]
+    [InlineData("RunBattlePlayProbe", typeof(BattlePlayProbe))]
+    [InlineData("RunBattleReportProbe", typeof(BattleReportProbe))]
     public void BattleEntryNamesCreateTheirProbe(string entryName, Type expected)
     {
         var probe = BattleProbeCatalog.Create(entryName, null!);

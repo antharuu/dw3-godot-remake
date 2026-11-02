@@ -26,13 +26,55 @@ public partial class GameHost : IBattleProbeHost
     BattleFlowController IBattleProbeHost.Flow => BattleFlow;
 
     /// <inheritdoc/>
+    IBattleRng IBattleProbeHost.BattleRng => _battleRng;
+
+    /// <inheritdoc/>
     DialogueData? IBattleProbeHost.Dialogue => _dialogueData;
+
+    /// <inheritdoc/>
+    bool IBattleProbeHost.HasEncounterData => _encounterData is not null;
+
+    /// <inheritdoc/>
+    bool IBattleProbeHost.HasReportData => _rewardsData is not null && _growthTables is not null && _partyGrowth is not null;
 
     /// <inheritdoc/>
     bool IBattleProbeHost.HasActiveBattle => _activeBattle is not null;
 
     /// <inheritdoc/>
     int IBattleProbeHost.RenderedPlayerId => _battleRenderedPlayerId;
+
+    /// <inheritdoc/>
+    int IBattleProbeHost.LastBattleEncounter => _lastBattleEncounter;
+
+    /// <inheritdoc/>
+    IReadOnlyList<int> IBattleProbeHost.LastBattleEnemyIds => _lastBattleEnemyIds;
+
+    /// <inheritdoc/>
+    BattleReportView? IBattleProbeHost.BattleReport => _battleReport;
+
+    /// <inheritdoc/>
+    FightReportController? IBattleProbeHost.FightReportController => _fightReportController;
+
+    /// <inheritdoc/>
+    bool IBattleProbeHost.IsFightReportVisible => _fightReportRenderer is { Visible: true };
+
+    /// <inheritdoc/>
+    IReadOnlyList<PartnerGrowthState>? IBattleProbeHost.PartyGrowth => _partyGrowth;
+
+    /// <inheritdoc/>
+    int IBattleProbeHost.ReportFadeFrames => BattleReportFadeFrames;
+
+    /// <inheritdoc/>
+    bool IBattleProbeHost.IsInTitle => _inTitle;
+
+    /// <inheritdoc/>
+    bool IBattleProbeHost.IsTitleVisible => _titleScreen is { Visible: true };
+
+    /// <inheritdoc/>
+    string? IBattleProbeHost.BattleNoticeText => _battleNoticeText;
+
+    /// <inheritdoc/>
+    bool IBattleProbeHost.IsBattleNoticeVisible => _battleNoticeLabel is { Visible: true };
 
     /// <inheritdoc/>
     string IBattleProbeHost.PrepareCaptureDirectory(string relativeFallback)
@@ -51,10 +93,34 @@ public partial class GameHost : IBattleProbeHost
     }
 
     /// <inheritdoc/>
+    Task IBattleProbeHost.CaptureStillAsync(string captureRoot, string fileName) => CaptureStill(captureRoot, fileName);
+
+    /// <inheritdoc/>
     void IBattleProbeHost.StartDebugBattle() => StartDebugBattle();
 
     /// <inheritdoc/>
     void IBattleProbeHost.TickTestSimulation() => TickTestSimulation();
+
+    /// <inheritdoc/>
+    void IBattleProbeHost.RefreshActivePartnerCatalogs() => RefreshActivePartnerCatalogs();
+
+    /// <inheritdoc/>
+    BattleReward IBattleProbeHost.ResolveReward(int encounter) => ResolveReward(encounter);
+
+    /// <inheritdoc/>
+    void IBattleProbeHost.WithFighterDataUnavailable(Action operation)
+    {
+        var savedFighterData = _fighterData;
+        _fighterData = null;
+        try
+        {
+            operation();
+        }
+        finally
+        {
+            _fighterData = savedFighterData;
+        }
+    }
 
     /// <inheritdoc/>
     BattleView? IBattleProbeHost.BuildBattleView() => BuildBattleView();

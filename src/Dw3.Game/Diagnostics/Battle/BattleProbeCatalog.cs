@@ -14,6 +14,8 @@ internal static class BattleProbeCatalog
         "RunBattleFontProbe" => new BattleFontProbe(host),
         "RunBattleEntranceProbe" => new BattleEntranceProbe(host),
         "RunBattleFaceProbe" => new BattleFaceProbe(host),
+        "RunBattlePlayProbe" => new BattlePlayProbe(host),
+        "RunBattleReportProbe" => new BattleReportProbe(host),
         _ => null,
     };
 }

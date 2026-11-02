@@ -29,14 +29,56 @@ internal interface IBattleProbeHost
     /// <exception cref="InvalidOperationException">No battle flow exists.</exception>
     BattleFlowController Flow { get; }
 
+    /// <summary>Gets the random source used by battle command resolution.</summary>
+    IBattleRng BattleRng { get; }
+
     /// <summary>Gets the decoded dialogue font used by battle text, or null before startup completes.</summary>
     DialogueData? Dialogue { get; }
+
+    /// <summary>Gets a value indicating whether encounter data was loaded at startup.</summary>
+    bool HasEncounterData { get; }
+
+    /// <summary>Gets a value indicating whether the report data and party growth state are available.</summary>
+    bool HasReportData { get; }
 
     /// <summary>Gets a value indicating whether a battle setup is active.</summary>
     bool HasActiveBattle { get; }
 
     /// <summary>Gets the fighter id currently rendered on the player side.</summary>
     int RenderedPlayerId { get; }
+
+    /// <summary>Gets the last entered battle encounter id.</summary>
+    int LastBattleEncounter { get; }
+
+    /// <summary>Gets the enemy fighter ids saved when the active battle started.</summary>
+    IReadOnlyList<int> LastBattleEnemyIds { get; }
+
+    /// <summary>Gets the victory report resolved for the active battle, when one exists.</summary>
+    BattleReportView? BattleReport { get; }
+
+    /// <summary>Gets the report controller while the report owns input.</summary>
+    FightReportController? FightReportController { get; }
+
+    /// <summary>Gets a value indicating whether the report renderer is visible.</summary>
+    bool IsFightReportVisible { get; }
+
+    /// <summary>Gets the test party's persistent growth records, or null before startup.</summary>
+    IReadOnlyList<PartnerGrowthState>? PartyGrowth { get; }
+
+    /// <summary>Gets the fixed victory-to-report fade duration in simulation steps.</summary>
+    int ReportFadeFrames { get; }
+
+    /// <summary>Gets a value indicating whether a defeat reached the title screen.</summary>
+    bool IsInTitle { get; }
+
+    /// <summary>Gets a value indicating whether the title-screen node is visible.</summary>
+    bool IsTitleVisible { get; }
+
+    /// <summary>Gets the current battle-load notice text.</summary>
+    string? BattleNoticeText { get; }
+
+    /// <summary>Gets a value indicating whether the battle-load notice is visible.</summary>
+    bool IsBattleNoticeVisible { get; }
 
     /// <summary>Returns the probe output directory, honoring the capture override.</summary>
     /// <param name="relativeFallback">Fallback path below the reference or data root.</param>
@@ -46,11 +88,29 @@ internal interface IBattleProbeHost
     /// <summary>Applies the S200 field scene and records it as the live zone.</summary>
     void ApplyS200();
 
+    /// <summary>Captures the current field presentation after a frame-post-draw boundary.</summary>
+    /// <param name="captureRoot">Directory receiving the PNG.</param>
+    /// <param name="fileName">PNG file name.</param>
+    /// <returns>A task completed when the PNG has been written.</returns>
+    Task CaptureStillAsync(string captureRoot, string fileName);
+
     /// <summary>Starts the same manifest-backed battle as the F8 debug shortcut.</summary>
     void StartDebugBattle();
 
     /// <summary>Runs one fixed battle simulation step.</summary>
     void TickTestSimulation();
+
+    /// <summary>Refreshes active fighter command, technique, and digivolution catalogs.</summary>
+    void RefreshActivePartnerCatalogs();
+
+    /// <summary>Resolves an encounter reward or an explicit zero reward when it is absent.</summary>
+    /// <param name="encounter">Manifest encounter id.</param>
+    /// <returns>The corresponding reward.</returns>
+    BattleReward ResolveReward(int encounter);
+
+    /// <summary>Temporarily removes fighter data while an operation exercises the load-failure path.</summary>
+    /// <param name="operation">Operation that must see unavailable fighter data.</param>
+    void WithFighterDataUnavailable(Action operation);
 
     /// <summary>Builds the current presentation snapshot.</summary>
     /// <returns>The view, or null when no battle flow exists.</returns>
