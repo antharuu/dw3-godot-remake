@@ -48,14 +48,14 @@ internal static class ActionExtractionStep
     /// Decodes the action archive for the given domain (<c>climb</c> or <c>drop</c>), writes
     /// PNG frames and SQLite rows, and emits a completion JSON line.
     /// </summary>
-    /// <param name="cuePath">Path to the CUE sheet of the supported disc image.</param>
+    /// <param name="openDisc">Opens the disc that holds the player action archives; the handle is disposed before returning.</param>
     /// <param name="outputDirectory">Root of the data pack to write into.</param>
     /// <param name="domain">Either <c>"climb"</c> or <c>"drop"</c>; determines which archive to decode.</param>
     /// <param name="output">Receives one JSON event line on success.</param>
     /// <param name="error">Receives one plain-text error line on failure.</param>
     /// <returns>0 on success, 1 on extraction error.</returns>
     /// <exception cref="ArgumentException">The domain is neither <c>"climb"</c> nor <c>"drop"</c>.</exception>
-    internal static int Extract(string cuePath, string outputDirectory, string domain, TextWriter output, TextWriter error)
+    internal static int Extract(Func<IDiscSource> openDisc, string outputDirectory, string domain, TextWriter output, TextWriter error)
     {
         ActionDefinition definition = domain switch
         {
@@ -66,7 +66,7 @@ internal static class ActionExtractionStep
 
         try
         {
-            using var disc = DiscSource.Open(cuePath);
+            using var disc = openDisc();
             SupportedEdition edition = disc.IdentifyEdition();
             IReadOnlyList<DiscFileEntry> entries = disc.ListFiles();
             DiscFileEntry entry = entries.SingleOrDefault(item => string.Equals(item.IsoPath, definition.DiscPath, StringComparison.Ordinal))

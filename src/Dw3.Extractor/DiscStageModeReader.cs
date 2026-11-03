@@ -60,7 +60,7 @@ public static class DiscStageModeReader
     /// <param name="entries">All file entries on the disc (from disc.ListFiles()).</param>
     /// <returns>Dictionary mapping each 16-bit field mode to its stage number.</returns>
     /// <exception cref="InvalidDataException">Thrown when required disc files are absent or malformed.</exception>
-    public static IReadOnlyDictionary<ushort, int> Build(DiscSource disc, IReadOnlyList<DiscFileEntry> entries) =>
+    public static IReadOnlyDictionary<ushort, int> Build(IDiscSource disc, IReadOnlyList<DiscFileEntry> entries) =>
         BuildRegistry(disc, entries).ToDictionary(stage => stage.Mode, stage => stage.StageId);
 
     /// <summary>
@@ -70,7 +70,7 @@ public static class DiscStageModeReader
     /// <param name="entries">All file entries on the disc (from disc.ListFiles()).</param>
     /// <returns>All resolved field stages in the order they appear in FIELDSTG_stages.</returns>
     /// <exception cref="InvalidDataException">A required disc file is absent or the FILE_SECTORS verification fails.</exception>
-    public static IReadOnlyList<DiscFieldStage> BuildRegistry(DiscSource disc, IReadOnlyList<DiscFileEntry> entries)
+    public static IReadOnlyList<DiscFieldStage> BuildRegistry(IDiscSource disc, IReadOnlyList<DiscFileEntry> entries)
     {
         ArgumentNullException.ThrowIfNull(disc);
         ArgumentNullException.ThrowIfNull(entries);
@@ -214,7 +214,7 @@ public static class DiscStageModeReader
     /// <param name="isoPath">The ISO path of the required file (ordinal match).</param>
     /// <returns>The raw file bytes.</returns>
     /// <exception cref="InvalidDataException">No disc entry with the given ISO path exists.</exception>
-    private static byte[] ReadRequiredFile(DiscSource disc, IReadOnlyList<DiscFileEntry> entries, string isoPath)
+    private static byte[] ReadRequiredFile(IDiscSource disc, IReadOnlyList<DiscFileEntry> entries, string isoPath)
     {
         DiscFileEntry? entry = entries.SingleOrDefault(e =>
             string.Equals(e.IsoPath, isoPath, StringComparison.Ordinal)) ?? throw new InvalidDataException($"Required disc file is absent: {isoPath}");

@@ -43,13 +43,13 @@ internal static class ZoneExtractionStep
         new() { { 810, 4 } };
 
     /// <summary>Runs the zones extraction domain and writes results to <paramref name="outputDirectory"/>.</summary>
-    /// <param name="cuePath">Path to the supported disc CUE file.</param>
+    /// <param name="openDisc">Opens the disc that holds the stage registry, terrain packets and TMPK maps; disposed before returning.</param>
     /// <param name="outputDirectory">Root output directory for the data pack.</param>
     /// <param name="onlyDomain">When set, only "zones" is accepted; other values return exit code 2.</param>
     /// <param name="output">Progress log writer for event JSON lines.</param>
     /// <param name="error">Error writer for fatal messages; receives a single line before exit code 1 or 2.</param>
     /// <returns>0 on success, 1 on disc or format error, 2 when <paramref name="onlyDomain"/> is unsupported.</returns>
-    internal static int Extract(string cuePath, string outputDirectory, string? onlyDomain, TextWriter output, TextWriter error)
+    internal static int Extract(Func<IDiscSource> openDisc, string outputDirectory, string? onlyDomain, TextWriter output, TextWriter error)
     {
         if (onlyDomain is not null && !string.Equals(onlyDomain, "zones", StringComparison.Ordinal))
         {
@@ -59,7 +59,7 @@ internal static class ZoneExtractionStep
 
         try
         {
-            ExecuteZoneExtraction(cuePath, outputDirectory, output);
+            ExecuteZoneExtraction(openDisc, outputDirectory, output);
             return 0;
         }
         catch (Exception exception) when (exception is DiscSourceException or InvalidDataException or FormatException or IOException or ArgumentException)
@@ -80,7 +80,7 @@ internal static class ZoneExtractionStep
     /// <returns>Ordered list of 236 field stages.</returns>
     /// <exception cref="InvalidDataException">Thrown when the disc yields a count other than 236.</exception>
     internal static IReadOnlyList<ExtractedFieldStage> BuildFieldRegistry(
-        DiscSource disc,
+        IDiscSource disc,
         IReadOnlyList<DiscFileEntry> entries)
     {
         var structurallyRejected = new List<string>();
@@ -115,12 +115,12 @@ internal static class ZoneExtractionStep
     }
 
     /// <summary>Runs the full extraction and writes the domain-complete event line.</summary>
-    /// <param name="cuePath">Path to the supported disc CUE file.</param>
+    /// <param name="openDisc">Opens the disc read by the whole zone pass; the handle lives until the pack is written.</param>
     /// <param name="outputDirectory">Root output directory for the data pack.</param>
     /// <param name="output">Progress log writer for event JSON lines.</param>
-    private static void ExecuteZoneExtraction(string cuePath, string outputDirectory, TextWriter output)
+    private static void ExecuteZoneExtraction(Func<IDiscSource> openDisc, string outputDirectory, TextWriter output)
     {
-        using var disc = DiscSource.Open(cuePath);
+        using var disc = openDisc();
         SupportedEdition edition = disc.IdentifyEdition();
         IReadOnlyList<DiscFileEntry> entries = disc.ListFiles();
         IReadOnlyList<ExtractedFieldStage> registry = BuildFieldRegistry(disc, entries);
@@ -161,7 +161,7 @@ internal static class ZoneExtractionStep
     /// <param name="structurallyRejected">Mutable list that receives rejection reasons for the error message.</param>
     /// <returns>A populated field stage, or null when the overlay is structurally invalid.</returns>
     private static ExtractedFieldStage? TryBuildFieldStage(
-        DiscSource disc,
+        IDiscSource disc,
         IReadOnlyList<DiscFileEntry> entries,
         DiscFieldStage raw,
         List<string> structurallyRejected)
@@ -209,7 +209,7 @@ internal static class ZoneExtractionStep
     /// <param name="output">Progress log writer.</param>
     private static void WriteZones(
         DataPackWriteContext context,
-        DiscSource disc,
+        IDiscSource disc,
         IReadOnlyList<DiscFileEntry> entries,
         (DiscFileEntry Entry, int? Stage)[] packs,
         IReadOnlyList<ExtractedFieldStage> registry,

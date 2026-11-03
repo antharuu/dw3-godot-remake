@@ -15,33 +15,33 @@ internal static class FullExtractionStep
 {
     /// <summary>
     /// Describes one extraction domain: a short name and the function that runs it.
-    /// The function receives the disc CUE path and a scratch output directory; it returns 0 on
-    /// success and a non-zero exit code on failure.
+    /// The function receives the disc opener (each step opens and disposes its own handle) and a
+    /// scratch output directory; it returns 0 on success and a non-zero exit code on failure.
     /// </summary>
-    private sealed record Domain(string Name, Func<string, string, int> Run);
+    private sealed record Domain(string Name, Func<Func<IDiscSource>, string, int> Run);
 
     private static readonly IReadOnlyList<Domain> Domains =
     [
-        new("zones", (cue, output) => ZoneExtractionStep.Extract(cue, output, "zones", TextWriter.Null, TextWriter.Null)),
-        new("collision", (cue, output) => CollisionExtractionStep.Extract(cue, output, "collision", TextWriter.Null, TextWriter.Null)),
-        new("player", (cue, output) => PlayerExtractionStep.Extract(cue, output, "player", TextWriter.Null, TextWriter.Null)),
-        new("water", (cue, output) => WaterExtractionStep.Extract(cue, output, TextWriter.Null, TextWriter.Null)),
-        new("climb", (cue, output) => ActionExtractionStep.Extract(cue, output, "climb", TextWriter.Null, TextWriter.Null)),
-        new("drop", (cue, output) => ActionExtractionStep.Extract(cue, output, "drop", TextWriter.Null, TextWriter.Null)),
-        new("cue", (cue, output) => FieldcomExtractionStep.Extract(cue, output, "cue", TextWriter.Null, TextWriter.Null)),
-        new("icon", (cue, output) => FieldcomExtractionStep.Extract(cue, output, "icon", TextWriter.Null, TextWriter.Null)),
-        new("npc", (cue, output) => NpcExtractionStep.Extract(cue, output, TextWriter.Null, TextWriter.Null)),
-        new("text", (cue, output) => TextExtractionStep.Extract(cue, output, "text", TextWriter.Null, TextWriter.Null)),
-        new("font", (cue, output) => TextExtractionStep.Extract(cue, output, "font", TextWriter.Null, TextWriter.Null)),
-        new("dialogue", (cue, output) => DialogueExtractionStep.Extract(cue, output, TextWriter.Null, TextWriter.Null)),
-        new("talk-box", (cue, output) => TalkBoxExtractionStep.Extract(cue, output, TextWriter.Null, TextWriter.Null)),
-        new("encounter", (cue, output) => EncounterExtractionStep.Extract(cue, output, TextWriter.Null, TextWriter.Null)),
-        new("battle", (cue, output) => BattleExtractionStep.Extract(cue, output, "battle", TextWriter.Null, TextWriter.Null)),
-        new("digivolution", (cue, output) => BattleExtractionStep.Extract(cue, output, "digivolution", TextWriter.Null, TextWriter.Null)),
-        new("battle-models", (cue, output) => BattleModelExtractionStep.Extract(cue, output, TextWriter.Null, TextWriter.Null)),
-        new("battle-stages", (cue, output) => BattleStageExtractionStep.Extract(cue, output, TextWriter.Null, TextWriter.Null)),
-        new("battle-hud", (cue, output) => BattleHudExtractionStep.Extract(cue, output, TextWriter.Null, TextWriter.Null)),
-        new("battle-report", (cue, output) => BattleReportExtractionStep.Extract(cue, output, TextWriter.Null, TextWriter.Null)),
+        new("zones", (openDisc, output) => ZoneExtractionStep.Extract(openDisc, output, "zones", TextWriter.Null, TextWriter.Null)),
+        new("collision", (openDisc, output) => CollisionExtractionStep.Extract(openDisc, output, "collision", TextWriter.Null, TextWriter.Null)),
+        new("player", (openDisc, output) => PlayerExtractionStep.Extract(openDisc, output, "player", TextWriter.Null, TextWriter.Null)),
+        new("water", (openDisc, output) => WaterExtractionStep.Extract(openDisc, output, TextWriter.Null, TextWriter.Null)),
+        new("climb", (openDisc, output) => ActionExtractionStep.Extract(openDisc, output, "climb", TextWriter.Null, TextWriter.Null)),
+        new("drop", (openDisc, output) => ActionExtractionStep.Extract(openDisc, output, "drop", TextWriter.Null, TextWriter.Null)),
+        new("cue", (openDisc, output) => FieldcomExtractionStep.Extract(openDisc, output, "cue", TextWriter.Null, TextWriter.Null)),
+        new("icon", (openDisc, output) => FieldcomExtractionStep.Extract(openDisc, output, "icon", TextWriter.Null, TextWriter.Null)),
+        new("npc", (openDisc, output) => NpcExtractionStep.Extract(openDisc, output, TextWriter.Null, TextWriter.Null)),
+        new("text", (openDisc, output) => TextExtractionStep.Extract(openDisc, output, "text", TextWriter.Null, TextWriter.Null)),
+        new("font", (openDisc, output) => TextExtractionStep.Extract(openDisc, output, "font", TextWriter.Null, TextWriter.Null)),
+        new("dialogue", (openDisc, output) => DialogueExtractionStep.Extract(openDisc, output, TextWriter.Null, TextWriter.Null)),
+        new("talk-box", (openDisc, output) => TalkBoxExtractionStep.Extract(openDisc, output, TextWriter.Null, TextWriter.Null)),
+        new("encounter", (openDisc, output) => EncounterExtractionStep.Extract(openDisc, output, TextWriter.Null, TextWriter.Null)),
+        new("battle", (openDisc, output) => BattleExtractionStep.Extract(openDisc, output, "battle", TextWriter.Null, TextWriter.Null)),
+        new("digivolution", (openDisc, output) => BattleExtractionStep.Extract(openDisc, output, "digivolution", TextWriter.Null, TextWriter.Null)),
+        new("battle-models", (openDisc, output) => BattleModelExtractionStep.Extract(openDisc, output, TextWriter.Null, TextWriter.Null)),
+        new("battle-stages", (openDisc, output) => BattleStageExtractionStep.Extract(openDisc, output, TextWriter.Null, TextWriter.Null)),
+        new("battle-hud", (openDisc, output) => BattleHudExtractionStep.Extract(openDisc, output, TextWriter.Null, TextWriter.Null)),
+        new("battle-report", (openDisc, output) => BattleReportExtractionStep.Extract(openDisc, output, TextWriter.Null, TextWriter.Null)),
     ];
 
     /// <summary>
@@ -49,11 +49,11 @@ internal static class FullExtractionStep
     /// sub-directory, then merges all per-domain data packs into a single pack at
     /// <paramref name="outputDirectory"/> and removes the scratch tree.
     /// </summary>
-    /// <param name="cuePath">Path to the disc CUE file.</param>
+    /// <param name="openDisc">Opens a fresh disc handle; called once per domain step and once more to stamp the merged pack with the edition.</param>
     /// <param name="outputDirectory">Root directory for the final merged data pack.</param>
     /// <param name="output">Receives one JSON progress line per completed domain, and a final completion line.</param>
     /// <returns>0 on success, or the non-zero exit code returned by the first failing domain.</returns>
-    internal static int Extract(string cuePath, string outputDirectory, TextWriter output)
+    internal static int Extract(Func<IDiscSource> openDisc, string outputDirectory, TextWriter output)
     {
         string scratchDirectory = Path.Combine(Path.GetFullPath(outputDirectory), $".extracting-{Guid.NewGuid():N}");
         try
@@ -63,7 +63,7 @@ internal static class FullExtractionStep
             {
                 Domain domain = Domains[index];
                 string domainOutput = Path.Combine(scratchDirectory, domain.Name);
-                int exitCode = domain.Run(cuePath, domainOutput);
+                int exitCode = domain.Run(openDisc, domainOutput);
                 if (exitCode != 0)
                 {
                     WriteError(output, "DOMAIN_EXTRACTION_FAILED", $"The {domain.Name} extraction step failed with exit code {exitCode}.");
@@ -73,7 +73,7 @@ internal static class FullExtractionStep
                 output.WriteLine(JsonSerializer.Serialize(new { step = domain.Name, done = index + 1, total = Domains.Count }));
             }
 
-            using (var disc = DiscSource.Open(cuePath))
+            using (var disc = openDisc())
             {
                 SupportedEdition edition = disc.IdentifyEdition();
                 new DataPackWriter(outputDirectory).Write(

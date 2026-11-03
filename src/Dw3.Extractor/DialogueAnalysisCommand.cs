@@ -19,8 +19,9 @@ internal static class DialogueAnalysisCommand
     /// <param name="arguments">Command-line arguments; element 0 is the subcommand name.</param>
     /// <param name="output">Receives the summary line and optional per-stage JSON lines.</param>
     /// <param name="error">Receives usage or error messages on failure.</param>
+    /// <param name="openDisc">Opens the disc named by the <c>--disc</c> value; the handle is disposed before returning.</param>
     /// <returns>0 on success, 1 on disc or analysis error, 2 on invalid arguments.</returns>
-    public static int Run(IReadOnlyList<string> arguments, TextWriter output, TextWriter error)
+    public static int Run(IReadOnlyList<string> arguments, TextWriter output, TextWriter error, Func<string, IDiscSource> openDisc)
     {
         string? cuePath = null;
         bool details = false;
@@ -52,7 +53,7 @@ internal static class DialogueAnalysisCommand
 
         try
         {
-            using DiscSource disc = DiscSource.Open(cuePath);
+            using IDiscSource disc = openDisc(cuePath);
             disc.IdentifyEdition();
             RomAnalysisResult result = DiscDialogueAnalysisReader.Read(disc, disc.ListFiles());
             Report(result, output, details);

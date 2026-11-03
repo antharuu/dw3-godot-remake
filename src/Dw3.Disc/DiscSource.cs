@@ -5,7 +5,7 @@ namespace Dw3.Disc;
 /// The stream is held open for the lifetime of the instance.
 /// Dispose to release the file handle.
 /// </summary>
-public sealed class DiscSource : IDisposable
+public sealed class DiscSource : IDiscSource
 {
     private readonly FileStream _stream;
     private readonly string _binPath;

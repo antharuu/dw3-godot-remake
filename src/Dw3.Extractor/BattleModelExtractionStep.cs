@@ -2,7 +2,6 @@ using Dw3.Data;
 using Dw3.Disc;
 using Dw3.Formats.Battle;
 using Dw3.Formats.Binary;
-using Dw3.Formats.Dialogue;
 
 namespace Dw3.Extractor;
 
@@ -29,22 +28,22 @@ internal static class BattleModelExtractionStep
     /// Opens the disc, builds the engine file table, iterates every fighter table entry,
     /// and writes models domain to <paramref name="outputDirectory"/>.
     /// </summary>
-    /// <param name="cuePath">Path to the CUE sheet of the supported disc image.</param>
+    /// <param name="openDisc">Opens the disc whose executable file table locates the fighter model files; disposed before returning.</param>
     /// <param name="outputDirectory">Root of the data pack to write into.</param>
     /// <param name="output">Receives one JSON event line on success.</param>
     /// <param name="error">Receives per-fighter decode errors and one fatal error line on failure.</param>
     /// <returns>0 on success, 1 on fatal extraction error.</returns>
-    internal static int Extract(string cuePath, string outputDirectory, TextWriter output, TextWriter error)
+    internal static int Extract(Func<IDiscSource> openDisc, string outputDirectory, TextWriter output, TextWriter error)
     {
         try
         {
-            using var disc = DiscSource.Open(cuePath);
+            using var disc = openDisc();
             SupportedEdition edition = disc.IdentifyEdition();
             IReadOnlyList<DiscFileEntry> entries = disc.ListFiles();
             DiscFileEntry executableEntry = entries.SingleOrDefault(entry => entry.IsoPath == ExecutablePath)
                 ?? throw new InvalidDataException($"Required disc member missing: {ExecutablePath}");
             PsxExecutable executable = PsxExecutable.Parse(disc.ReadFile(executableEntry));
-            var files = new EngineFiles(disc, entries, executable);
+            var files = new EngineFileReader(disc, entries, executable);
             FighterModelTable table = FighterModelTable.Parse(files.Read(FighterTableFileId).Bytes);
 
             var fighters = new List<BattleModelExtraction>(table.Entries.Count);
@@ -75,7 +74,7 @@ internal static class BattleModelExtractionStep
     /// <param name="files">Engine file reader backed by the disc's file-sector table.</param>
     /// <param name="error">Receives a single plain-text error line when decoding fails.</param>
     /// <returns>A decoded extraction or a failed extraction record with the reason.</returns>
-    private static BattleModelExtraction ExtractFighter(FighterModelTable table, FighterModelEntry entry, EngineFiles files, TextWriter error)
+    private static BattleModelExtraction ExtractFighter(FighterModelTable table, FighterModelEntry entry, EngineFileReader files, TextWriter error)
     {
         try
         {
@@ -90,47 +89,6 @@ internal static class BattleModelExtractionStep
         {
             error.WriteLine($"ERROR battle-model-failed fighter={entry.FighterId} reason={ex.Message}");
             return new BattleModelExtraction(BattleModelOutcome.Failed(entry, ex.Message), null, null, null);
-        }
-    }
-
-    /// <summary>Reads disc members by engine file id through the executable's file-sector table.</summary>
-    private sealed class EngineFiles
-    {
-        private readonly DiscSource _disc;
-        private readonly DiscFileTable _table;
-        private readonly Dictionary<string, DiscFileEntry> _byPath;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="EngineFiles"/> class from the given disc,
-        /// entries, and PS1 executable. Builds the LBA-to-path map from non-empty entries only.
-        /// </summary>
-        /// <param name="disc">The open disc source for subsequent file reads.</param>
-        /// <param name="entries">All disc file entries; zero-length entries are excluded from the LBA map.</param>
-        /// <param name="executable">The parsed PS1 executable carrying the FILE_SECTORS table.</param>
-        internal EngineFiles(DiscSource disc, IReadOnlyList<DiscFileEntry> entries, PsxExecutable executable)
-        {
-            _disc = disc;
-            DialogueRomLayout layout = DialogueRomLayout.Sles03936;
-            // Zero-length members can share an LBA with a real file; only non-empty members are addressable.
-            IReadOnlyDictionary<int, string> pathByLba = entries
-                .Where(entry => entry.Size > 0)
-                .GroupBy(entry => entry.Lba)
-                .ToDictionary(group => group.Key, group => group.First().IsoPath);
-            _table = DiscFileTable.Read(executable, layout.FileSectorsAddress, layout.FileSectorCount, pathByLba);
-            _byPath = entries.Where(entry => entry.Size > 0).GroupBy(entry => entry.IsoPath).ToDictionary(group => group.Key, group => group.First());
-        }
-
-        /// <summary>
-        /// Returns the ISO path and raw bytes for the disc member at engine file id <paramref name="fileId"/>.
-        /// </summary>
-        /// <param name="fileId">The engine file id (0-based index into the FILE_SECTORS table).</param>
-        /// <returns>The ISO path and raw byte content of the disc member.</returns>
-        /// <exception cref="FormatException">The id is outside the table or no disc member starts at its sector.</exception>
-        internal (string Path, byte[] Bytes) Read(int fileId)
-        {
-            string path = _table.PathOf(fileId)
-                ?? throw new FormatException($"Engine file 0x{fileId:X} does not start a disc member.");
-            return (path, _disc.ReadFile(_byPath[path]));
         }
     }
 }

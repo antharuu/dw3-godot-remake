@@ -17,16 +17,16 @@ internal static class EncounterExtractionStep
     /// Reads FIELDSTG.PRO and all WSTAG overlays, decodes enemies, encounters, battle rates, and
     /// per-stage battle arrays, then writes them to <paramref name="outputDirectory"/>.
     /// </summary>
-    /// <param name="cuePath">Path to the CUE sheet of the supported disc image.</param>
+    /// <param name="openDisc">Opens the disc that holds FIELDSTG.PRO and the WSTAG overlays; disposed before returning.</param>
     /// <param name="outputDirectory">Root of the data pack to write into.</param>
     /// <param name="output">Receives one JSON completion event line on success.</param>
     /// <param name="error">Receives one plain-text error line on failure.</param>
     /// <returns>0 on success, 1 on extraction error.</returns>
-    internal static int Extract(string cuePath, string outputDirectory, TextWriter output, TextWriter error)
+    internal static int Extract(Func<IDiscSource> openDisc, string outputDirectory, TextWriter output, TextWriter error)
     {
         try
         {
-            using var disc = DiscSource.Open(cuePath);
+            using var disc = openDisc();
             SupportedEdition edition = disc.IdentifyEdition();
             IReadOnlyList<DiscFileEntry> entries = disc.ListFiles();
             DiscFileEntry fieldStgEntry = FindFieldStageEntry(entries);
@@ -74,7 +74,7 @@ internal static class EncounterExtractionStep
     /// <param name="entries">The full disc file entry list.</param>
     /// <returns>A map from stage id to decoded stage battle arrays.</returns>
     private static Dictionary<int, EncounterStageData> ScanStageArrays(
-        DiscSource disc,
+        IDiscSource disc,
         IReadOnlyList<DiscFileEntry> entries)
     {
         var stages = new Dictionary<int, EncounterStageData>();
@@ -108,7 +108,7 @@ internal static class EncounterExtractionStep
     /// <param name="entry">The disc file entry for the WSTAG overlay.</param>
     /// <param name="stages">The mutable map to add the decoded stage data to.</param>
     private static void TryAddStageArrays(
-        DiscSource disc,
+        IDiscSource disc,
         DiscFileEntry entry,
         Dictionary<int, EncounterStageData> stages)
     {

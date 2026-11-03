@@ -27,14 +27,14 @@ internal static class NpcExtractionStep
     /// <paramref name="tableSource"/>. Writes PNG frames, sequence rows, set rows, and manifest
     /// JSON to <paramref name="outputDirectory"/>; characters that fail to decode are skipped.
     /// </summary>
-    /// <param name="cuePath">Path to the CUE sheet of the supported disc image.</param>
+    /// <param name="openDisc">Opens the disc that holds the stage overlays and character archives; disposed before returning.</param>
     /// <param name="outputDirectory">Root of the data pack to write into.</param>
     /// <param name="tableSource">Source providing actor tables, file paths, and stage id lists.</param>
     /// <param name="output">Receives progress and completion JSON event lines.</param>
     /// <param name="error">Receives per-character decode error lines and a final error line on failure.</param>
     /// <returns>0 on success, 1 on fatal extraction error.</returns>
     internal static int Extract(
-        string cuePath,
+        Func<IDiscSource> openDisc,
         string outputDirectory,
         INpcActorTableSource tableSource,
         TextWriter output,
@@ -43,7 +43,7 @@ internal static class NpcExtractionStep
         ArgumentNullException.ThrowIfNull(tableSource);
         try
         {
-            using var disc = DiscSource.Open(cuePath);
+            using var disc = openDisc();
             SupportedEdition edition = disc.IdentifyEdition();
             IReadOnlyList<DiscFileEntry> entries = disc.ListFiles();
 
@@ -87,22 +87,22 @@ internal static class NpcExtractionStep
 
     /// <summary>
     /// Convenience overload that builds the actor table source from the disc and delegates to
-    /// <see cref="Extract(string, string, INpcActorTableSource, TextWriter, TextWriter)"/>.
+    /// <see cref="Extract(Func{IDiscSource}, string, INpcActorTableSource, TextWriter, TextWriter)"/>.
     /// </summary>
-    /// <param name="cuePath">Path to the CUE sheet of the supported disc image.</param>
+    /// <param name="openDisc">Opens the disc twice: once to build the actor table source, once for the extraction itself.</param>
     /// <param name="outputDirectory">Root of the data pack to write into.</param>
     /// <param name="output">Receives progress and completion JSON event lines.</param>
     /// <param name="error">Receives one plain-text error line on failure.</param>
     /// <returns>0 on success, 1 on fatal extraction error.</returns>
-    internal static int Extract(string cuePath, string outputDirectory, TextWriter output, TextWriter error)
+    internal static int Extract(Func<IDiscSource> openDisc, string outputDirectory, TextWriter output, TextWriter error)
     {
         try
         {
-            using var disc = DiscSource.Open(cuePath);
+            using var disc = openDisc();
             disc.IdentifyEdition();
             IReadOnlyList<DiscFileEntry> entries = disc.ListFiles();
             DiscNpcActorTableSource source = DiscNpcActorTableSource.Create(disc, entries);
-            return Extract(cuePath, outputDirectory, source, output, error);
+            return Extract(openDisc, outputDirectory, source, output, error);
         }
         catch (Exception exception) when (exception is DiscSourceException or InvalidDataException or FormatException or IOException or ArgumentException)
         {
@@ -119,7 +119,7 @@ internal static class NpcExtractionStep
     /// <param name="context">Active write context used to persist decoded character archives.</param>
     /// <returns>The decoded zone record plus counts of visible and successfully decoded characters.</returns>
     private static (NpcExtractedZone Zone, int Characters, int Visible) ExtractStage(
-        DiscSource disc,
+        IDiscSource disc,
         IReadOnlyList<DiscFileEntry> entries,
         int stageId,
         INpcActorTableSource tableSource,

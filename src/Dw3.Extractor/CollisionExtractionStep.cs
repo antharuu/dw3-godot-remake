@@ -34,13 +34,13 @@ internal static class CollisionExtractionStep
     /// Decodes FieldActor records from the S200 and S235 stage overlays and writes
     /// <c>collision/collision-manifest.json</c> to the data pack at <paramref name="outputDirectory"/>.
     /// </summary>
-    /// <param name="cuePath">Path to the CUE sheet of the supported disc image.</param>
+    /// <param name="openDisc">Opens the disc that holds the WSTAG overlays of the collision stages; disposed before returning.</param>
     /// <param name="outputDirectory">Root of the data pack to write into.</param>
     /// <param name="onlyDomain">When non-null, must equal <c>"collision"</c>; other values return exit 2.</param>
     /// <param name="output">Receives one JSON event line on success.</param>
     /// <param name="error">Receives one plain-text error line on failure.</param>
     /// <returns>0 on success, 1 on extraction error, 2 on usage error.</returns>
-    internal static int Extract(string cuePath, string outputDirectory, string? onlyDomain, TextWriter output, TextWriter error)
+    internal static int Extract(Func<IDiscSource> openDisc, string outputDirectory, string? onlyDomain, TextWriter output, TextWriter error)
     {
         if (onlyDomain is not null && !string.Equals(onlyDomain, "collision", StringComparison.Ordinal))
         {
@@ -50,7 +50,7 @@ internal static class CollisionExtractionStep
 
         try
         {
-            using var disc = DiscSource.Open(cuePath);
+            using var disc = openDisc();
             IReadOnlyList<DiscFileEntry> entries = disc.ListFiles();
 
             var actors = new Dictionary<string, Dictionary<string, FieldActor>>();

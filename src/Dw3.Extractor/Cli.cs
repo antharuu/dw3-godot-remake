@@ -21,7 +21,20 @@ public static class Cli
     /// <param name="output">Standard output stream for normal program output.</param>
     /// <param name="error">Standard error stream for diagnostics and usage messages.</param>
     /// <returns>POSIX exit code: 0 on success, 1 on extraction error, 2 on usage error.</returns>
-    public static int Run(IReadOnlyList<string> arguments, TextWriter output, TextWriter error)
+    public static int Run(IReadOnlyList<string> arguments, TextWriter output, TextWriter error) =>
+        Run(arguments, output, error, DiscSource.Open);
+
+    /// <summary>
+    /// Dispatches a CLI invocation against discs opened by <paramref name="openDisc"/>. The public
+    /// overload passes <see cref="DiscSource.Open"/>, which reads the BIN named by a CUE sheet; tests
+    /// pass a function that returns an in-memory disc built from fabricated files.
+    /// </summary>
+    /// <param name="arguments">Command-line arguments, as passed to the entry point.</param>
+    /// <param name="output">Standard output stream for normal program output.</param>
+    /// <param name="error">Standard error stream for diagnostics and usage messages.</param>
+    /// <param name="openDisc">Maps the <c>--disc</c> value to an open disc; every caller disposes the handle it gets.</param>
+    /// <returns>POSIX exit code: 0 on success, 1 on extraction error, 2 on usage error.</returns>
+    internal static int Run(IReadOnlyList<string> arguments, TextWriter output, TextWriter error, Func<string, IDiscSource> openDisc)
     {
         if (arguments.Count == 1 && arguments[0] == "--version")
         {
@@ -33,17 +46,17 @@ public static class Cli
 
         if (arguments.Count >= 1 && arguments[0] == "list-files")
         {
-            return RunListFiles(arguments, output, error);
+            return RunListFiles(arguments, output, error, openDisc);
         }
 
         if (arguments.Count >= 1 && arguments[0] == "extract")
         {
-            return RunExtract(arguments, output, error);
+            return RunExtract(arguments, output, error, openDisc);
         }
 
         if (arguments.Count >= 1 && arguments[0] == "analyze-dialogue")
         {
-            return DialogueAnalysisCommand.Run(arguments, output, error);
+            return DialogueAnalysisCommand.Run(arguments, output, error, openDisc);
         }
 
         string option = arguments.Count == 0 ? "<none>" : arguments[0];
@@ -65,8 +78,9 @@ public static class Cli
     /// <param name="arguments">Full argument list including the "extract" verb.</param>
     /// <param name="output">Receives JSONL progress events on full extraction or one completion line on single-domain.</param>
     /// <param name="error">Receives usage or extraction error messages.</param>
+    /// <param name="openDisc">Maps the <c>--disc</c> value to an open disc; each step opens and disposes its own handle.</param>
     /// <returns>0 on success, 1 on extraction error, 2 on usage error.</returns>
-    private static int RunExtract(IReadOnlyList<string> arguments, TextWriter output, TextWriter error)
+    private static int RunExtract(IReadOnlyList<string> arguments, TextWriter output, TextWriter error, Func<string, IDiscSource> openDisc)
     {
         bool jsonlRequested = arguments.Skip(1).Any(
             arg => string.Equals(arg, "--progress", StringComparison.Ordinal));
@@ -94,7 +108,7 @@ public static class Cli
                 return ExtractUsageError("Full extraction requires --progress jsonl.", false, output, error);
             }
 
-            return FullExtractionStep.Extract(opts.CuePath, opts.OutputPath, output);
+            return FullExtractionStep.Extract(() => openDisc(opts.CuePath), opts.OutputPath, output);
         }
 
         if (opts.ProgressFormat is not null)
@@ -102,7 +116,7 @@ public static class Cli
             return ExtractUsageError("--progress jsonl is only available for full extraction.", true, output, error);
         }
 
-        return DispatchSingleDomain(opts.OnlyDomain, opts.CuePath, opts.OutputPath, output, error);
+        return DispatchSingleDomain(opts.OnlyDomain, () => openDisc(opts.CuePath), opts.OutputPath, output, error);
     }
 
     /// <summary>
@@ -158,21 +172,21 @@ public static class Cli
     /// Tries field domains first, then content domains, then battle domains.
     /// </summary>
     /// <param name="domain">The domain name (e.g. <c>"zones"</c>, <c>"battle"</c>).</param>
-    /// <param name="cuePath">Path to the CUE sheet of the supported disc image.</param>
+    /// <param name="openDisc">Opens the disc for the chosen step; the step disposes the handle before returning.</param>
     /// <param name="outputPath">Root of the data pack to write into.</param>
     /// <param name="output">Receives one JSON event line on success.</param>
     /// <param name="error">Receives one plain-text error line on failure.</param>
     /// <returns>0 on success, 1 on extraction error, 2 on unknown domain.</returns>
     private static int DispatchSingleDomain(
         string domain,
-        string cuePath,
+        Func<IDiscSource> openDisc,
         string outputPath,
         TextWriter output,
         TextWriter error)
     {
-        int? result = TryDispatchFieldDomain(domain, cuePath, outputPath, output, error);
-        result ??= TryDispatchContentDomain(domain, cuePath, outputPath, output, error);
-        result ??= TryDispatchBattleDomain(domain, cuePath, outputPath, output, error);
+        int? result = TryDispatchFieldDomain(domain, openDisc, outputPath, output, error);
+        result ??= TryDispatchContentDomain(domain, openDisc, outputPath, output, error);
+        result ??= TryDispatchBattleDomain(domain, openDisc, outputPath, output, error);
         if (result is null)
         {
             error.WriteLine($"Unsupported extraction domain: {domain}");
@@ -187,47 +201,47 @@ public static class Cli
     /// Returns <see langword="null"/> for unrecognised names.
     /// </summary>
     /// <param name="domain">The domain name to match.</param>
-    /// <param name="cuePath">Path to the CUE sheet of the supported disc image.</param>
+    /// <param name="openDisc">Opens the disc for a field step; forwarded unchanged to the step.</param>
     /// <param name="outputPath">Root of the data pack to write into.</param>
     /// <param name="output">Receives one JSON event line on success.</param>
     /// <param name="error">Receives one plain-text error line on failure.</param>
     /// <returns>The extraction exit code, or <see langword="null"/> when the domain is not a field domain.</returns>
     private static int? TryDispatchFieldDomain(
         string domain,
-        string cuePath,
+        Func<IDiscSource> openDisc,
         string outputPath,
         TextWriter output,
         TextWriter error)
     {
         if (string.Equals(domain, "zones", StringComparison.Ordinal))
         {
-            return ZoneExtractionStep.Extract(cuePath, outputPath, domain, output, error);
+            return ZoneExtractionStep.Extract(openDisc, outputPath, domain, output, error);
         }
 
         if (string.Equals(domain, "collision", StringComparison.Ordinal))
         {
-            return CollisionExtractionStep.Extract(cuePath, outputPath, domain, output, error);
+            return CollisionExtractionStep.Extract(openDisc, outputPath, domain, output, error);
         }
 
         if (string.Equals(domain, "player", StringComparison.Ordinal))
         {
-            return PlayerExtractionStep.Extract(cuePath, outputPath, domain, output, error);
+            return PlayerExtractionStep.Extract(openDisc, outputPath, domain, output, error);
         }
 
         if (string.Equals(domain, "water", StringComparison.Ordinal))
         {
-            return WaterExtractionStep.Extract(cuePath, outputPath, output, error);
+            return WaterExtractionStep.Extract(openDisc, outputPath, output, error);
         }
 
         if (string.Equals(domain, "climb", StringComparison.Ordinal) ||
             string.Equals(domain, "drop", StringComparison.Ordinal))
         {
-            return ActionExtractionStep.Extract(cuePath, outputPath, domain, output, error);
+            return ActionExtractionStep.Extract(openDisc, outputPath, domain, output, error);
         }
 
         if (string.Equals(domain, "npc", StringComparison.Ordinal))
         {
-            return NpcExtractionStep.Extract(cuePath, outputPath, output, error);
+            return NpcExtractionStep.Extract(openDisc, outputPath, output, error);
         }
 
         return null;
@@ -238,14 +252,14 @@ public static class Cli
     /// Returns <see langword="null"/> for unrecognised names.
     /// </summary>
     /// <param name="domain">The domain name to match.</param>
-    /// <param name="cuePath">Path to the CUE sheet of the supported disc image.</param>
+    /// <param name="openDisc">Opens the disc for a content step; forwarded unchanged to the step.</param>
     /// <param name="outputPath">Root of the data pack to write into.</param>
     /// <param name="output">Receives one JSON event line on success.</param>
     /// <param name="error">Receives one plain-text error line on failure.</param>
     /// <returns>The extraction exit code, or <see langword="null"/> when the domain is not a content domain.</returns>
     private static int? TryDispatchContentDomain(
         string domain,
-        string cuePath,
+        Func<IDiscSource> openDisc,
         string outputPath,
         TextWriter output,
         TextWriter error)
@@ -253,23 +267,23 @@ public static class Cli
         if (string.Equals(domain, "cue", StringComparison.Ordinal) ||
             string.Equals(domain, "icon", StringComparison.Ordinal))
         {
-            return FieldcomExtractionStep.Extract(cuePath, outputPath, domain, output, error);
+            return FieldcomExtractionStep.Extract(openDisc, outputPath, domain, output, error);
         }
 
         if (string.Equals(domain, "font", StringComparison.Ordinal) ||
             string.Equals(domain, "text", StringComparison.Ordinal))
         {
-            return TextExtractionStep.Extract(cuePath, outputPath, domain, output, error);
+            return TextExtractionStep.Extract(openDisc, outputPath, domain, output, error);
         }
 
         if (string.Equals(domain, "dialogue", StringComparison.Ordinal))
         {
-            return DialogueExtractionStep.Extract(cuePath, outputPath, output, error);
+            return DialogueExtractionStep.Extract(openDisc, outputPath, output, error);
         }
 
         if (string.Equals(domain, "talk-box", StringComparison.Ordinal))
         {
-            return TalkBoxExtractionStep.Extract(cuePath, outputPath, output, error);
+            return TalkBoxExtractionStep.Extract(openDisc, outputPath, output, error);
         }
 
         return null;
@@ -280,47 +294,47 @@ public static class Cli
     /// battle-stages, battle-hud, battle-report. Returns <see langword="null"/> for unrecognised names.
     /// </summary>
     /// <param name="domain">The domain name to match.</param>
-    /// <param name="cuePath">Path to the CUE sheet of the supported disc image.</param>
+    /// <param name="openDisc">Opens the disc for a battle step; forwarded unchanged to the step.</param>
     /// <param name="outputPath">Root of the data pack to write into.</param>
     /// <param name="output">Receives one JSON event line on success.</param>
     /// <param name="error">Receives one plain-text error line on failure.</param>
     /// <returns>The extraction exit code, or <see langword="null"/> when the domain is not a battle domain.</returns>
     private static int? TryDispatchBattleDomain(
         string domain,
-        string cuePath,
+        Func<IDiscSource> openDisc,
         string outputPath,
         TextWriter output,
         TextWriter error)
     {
         if (string.Equals(domain, "encounter", StringComparison.Ordinal))
         {
-            return EncounterExtractionStep.Extract(cuePath, outputPath, output, error);
+            return EncounterExtractionStep.Extract(openDisc, outputPath, output, error);
         }
 
         if (string.Equals(domain, "battle", StringComparison.Ordinal) ||
             string.Equals(domain, "digivolution", StringComparison.Ordinal))
         {
-            return BattleExtractionStep.Extract(cuePath, outputPath, domain, output, error);
+            return BattleExtractionStep.Extract(openDisc, outputPath, domain, output, error);
         }
 
         if (string.Equals(domain, "battle-models", StringComparison.Ordinal))
         {
-            return BattleModelExtractionStep.Extract(cuePath, outputPath, output, error);
+            return BattleModelExtractionStep.Extract(openDisc, outputPath, output, error);
         }
 
         if (string.Equals(domain, "battle-stages", StringComparison.Ordinal))
         {
-            return BattleStageExtractionStep.Extract(cuePath, outputPath, output, error);
+            return BattleStageExtractionStep.Extract(openDisc, outputPath, output, error);
         }
 
         if (string.Equals(domain, "battle-hud", StringComparison.Ordinal))
         {
-            return BattleHudExtractionStep.Extract(cuePath, outputPath, output, error);
+            return BattleHudExtractionStep.Extract(openDisc, outputPath, output, error);
         }
 
         if (string.Equals(domain, "battle-report", StringComparison.Ordinal))
         {
-            return BattleReportExtractionStep.Extract(cuePath, outputPath, output, error);
+            return BattleReportExtractionStep.Extract(openDisc, outputPath, output, error);
         }
 
         return null;
@@ -360,8 +374,9 @@ public static class Cli
     /// <param name="arguments">Full argument list including the "list-files" verb.</param>
     /// <param name="output">Receives one line per disc file: sha256  iso/path.</param>
     /// <param name="error">Receives the usage message when --disc is absent.</param>
+    /// <param name="openDisc">Maps the <c>--disc</c> value to an open disc; the handle is disposed before returning.</param>
     /// <returns>0 on success, 1 on disc error, 2 on missing --disc argument.</returns>
-    private static int RunListFiles(IReadOnlyList<string> arguments, TextWriter output, TextWriter error)
+    private static int RunListFiles(IReadOnlyList<string> arguments, TextWriter output, TextWriter error, Func<string, IDiscSource> openDisc)
     {
         string? cuePath = null;
         for (int i = 1; i < arguments.Count - 1; i++)
@@ -381,7 +396,7 @@ public static class Cli
 
         try
         {
-            using var disc = DiscSource.Open(cuePath);
+            using IDiscSource disc = openDisc(cuePath);
             var files = disc.ListFiles()
                             .OrderBy(f => f.IsoPath, StringComparer.Ordinal)
                             .ToList();

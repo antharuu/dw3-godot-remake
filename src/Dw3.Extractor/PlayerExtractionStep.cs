@@ -41,14 +41,14 @@ internal static class PlayerExtractionStep
     /// to <paramref name="outputDirectory"/>. Returns 2 when <paramref name="onlyDomain"/> is set
     /// to a value other than <c>"player"</c>.
     /// </summary>
-    /// <param name="cuePath">Path to the disc CUE file.</param>
+    /// <param name="openDisc">Opens the disc that holds the player sprite archives; disposed before returning.</param>
     /// <param name="outputDirectory">Root directory for the written data pack.</param>
     /// <param name="onlyDomain">When non-null, must equal <c>"player"</c>; any other value returns exit code 2.</param>
     /// <param name="output">Receives one JSON progress line on success.</param>
     /// <param name="error">Receives a plain-text error message on failure.</param>
     /// <returns>0 on success, 1 on disc or decoding error, 2 on unsupported domain.</returns>
     internal static int Extract(
-        string cuePath,
+        Func<IDiscSource> openDisc,
         string outputDirectory,
         string? onlyDomain,
         TextWriter output,
@@ -62,7 +62,7 @@ internal static class PlayerExtractionStep
 
         try
         {
-            using var disc = DiscSource.Open(cuePath);
+            using var disc = openDisc();
             SupportedEdition edition = disc.IdentifyEdition();
             IReadOnlyList<DiscFileEntry> entries = disc.ListFiles();
 

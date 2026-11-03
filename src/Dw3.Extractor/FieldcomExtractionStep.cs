@@ -22,21 +22,21 @@ namespace Dw3.Extractor;
 internal static class FieldcomExtractionStep
 {
     /// <summary>
-    /// Opens the disc at <paramref name="cuePath"/>, reads FIELDCOM.BIN and FIELDSTG.PRO,
+    /// Opens the disc through <paramref name="openDisc"/>, reads FIELDCOM.BIN and FIELDSTG.PRO,
     /// decodes the requested domain's frames and sequences, and writes a data pack to
     /// <paramref name="outputDirectory"/>.
     /// </summary>
-    /// <param name="cuePath">Path to the disc CUE file.</param>
+    /// <param name="openDisc">Opens the disc that holds FIELDCOM.BIN and FIELDSTG.PRO; disposed before returning.</param>
     /// <param name="outputDirectory">Root directory for the written data pack.</param>
     /// <param name="domain">Either <c>"cue"</c> (warp-exit connection animation) or <c>"icon"</c> (above-head indicator).</param>
     /// <param name="output">Receives one JSON progress line on success.</param>
     /// <param name="error">Receives a plain-text error message on failure.</param>
     /// <returns>0 on success, 1 on any disc or decoding error.</returns>
-    internal static int Extract(string cuePath, string outputDirectory, string domain, TextWriter output, TextWriter error)
+    internal static int Extract(Func<IDiscSource> openDisc, string outputDirectory, string domain, TextWriter output, TextWriter error)
     {
         try
         {
-            using var disc = DiscSource.Open(cuePath);
+            using var disc = openDisc();
             SupportedEdition edition = disc.IdentifyEdition();
             var entries = disc.ListFiles();
             byte[] fieldcom = disc.ReadFile(Require(entries, "AAA/DAT/FIELD/FIELDCOM.BIN"));

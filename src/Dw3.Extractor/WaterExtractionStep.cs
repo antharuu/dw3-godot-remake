@@ -23,16 +23,16 @@ internal static class WaterExtractionStep
     /// result to <paramref name="outputDirectory"/>. Stages that the decoder rejects are
     /// recorded as skipped rather than failing the whole run.
     /// </summary>
-    /// <param name="cuePath">Path to the CUE sheet of the supported disc image.</param>
+    /// <param name="openDisc">Opens the disc that holds the WSTAG overlays and the SnnnTMPK and SnnnMASK stage files; disposed before returning.</param>
     /// <param name="outputDirectory">Root of the data pack to write into.</param>
     /// <param name="output">Receives progress and completion JSON event lines.</param>
     /// <param name="error">Receives one plain-text error line on a fatal failure.</param>
     /// <returns>0 on success, 1 on fatal extraction error.</returns>
-    internal static int Extract(string cuePath, string outputDirectory, TextWriter output, TextWriter error)
+    internal static int Extract(Func<IDiscSource> openDisc, string outputDirectory, TextWriter output, TextWriter error)
     {
         try
         {
-            using var disc = DiscSource.Open(cuePath);
+            using var disc = openDisc();
             SupportedEdition edition = disc.IdentifyEdition();
             IReadOnlyList<DiscFileEntry> entries = disc.ListFiles();
             var zones = new List<ExtractedWaterZone>();

@@ -24,7 +24,7 @@ internal static class DiscDialogueAnalysisReader
     /// <param name="entries">The full list of disc file entries (from disc.ListFiles()).</param>
     /// <returns>The complete analysis result including stage analyses, failures, and progress tables.</returns>
     /// <exception cref="InvalidDataException">A required disc file is absent.</exception>
-    public static RomAnalysisResult Read(DiscSource disc, IReadOnlyList<DiscFileEntry> entries)
+    public static RomAnalysisResult Read(IDiscSource disc, IReadOnlyList<DiscFileEntry> entries)
     {
         ArgumentNullException.ThrowIfNull(disc);
         ArgumentNullException.ThrowIfNull(entries);

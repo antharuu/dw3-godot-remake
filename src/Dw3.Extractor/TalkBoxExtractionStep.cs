@@ -26,19 +26,19 @@ internal static class TalkBoxExtractionStep
     private const int ArrowClutFrames = 4;
 
     /// <summary>
-    /// Opens the disc at <paramref name="cuePath"/>, reads SLES_039.36, CMFONTCS.BIN and CMFONTTM.BIN,
+    /// Opens the disc through <paramref name="openDisc"/>, reads SLES_039.36, CMFONTCS.BIN and CMFONTTM.BIN,
     /// decodes the talk-box domain, and writes its data pack to <paramref name="outputDirectory"/>.
     /// </summary>
-    /// <param name="cuePath">Path to the disc CUE file.</param>
+    /// <param name="openDisc">Opens the disc that holds SLES_039.36 and the CMFONT files; disposed before returning.</param>
     /// <param name="outputDirectory">Root directory for the written data pack.</param>
     /// <param name="output">Receives one JSON progress line on success.</param>
     /// <param name="error">Receives a plain-text error message on failure.</param>
     /// <returns>0 on success, 1 on any disc or decoding error.</returns>
-    internal static int Extract(string cuePath, string outputDirectory, TextWriter output, TextWriter error)
+    internal static int Extract(Func<IDiscSource> openDisc, string outputDirectory, TextWriter output, TextWriter error)
     {
         try
         {
-            using var disc = DiscSource.Open(cuePath);
+            using var disc = openDisc();
             SupportedEdition edition = disc.IdentifyEdition();
             IReadOnlyList<DiscFileEntry> entries = disc.ListFiles();
             PsxExecutable executable = PsxExecutable.Parse(disc.ReadFile(Require(entries, ExecutablePath)));

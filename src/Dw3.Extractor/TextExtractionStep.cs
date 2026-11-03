@@ -50,20 +50,20 @@ internal static class TextExtractionStep
     private static string TalkDiscPath(int index) => $"AAA/DAT/COUNTRY/FRA/FSTALK{index:D2}.BIN";
 
     /// <summary>
-    /// Opens the disc at <paramref name="cuePath"/> and dispatches to either
+    /// Opens the disc through <paramref name="openDisc"/> and dispatches to either
     /// <c>ExtractFont</c> or <c>ExtractText</c> depending on <paramref name="domain"/>.
     /// </summary>
-    /// <param name="cuePath">Path to the disc CUE file.</param>
+    /// <param name="openDisc">Opens the disc that holds the text tables and font files; disposed before returning.</param>
     /// <param name="outputDirectory">Root directory for the written data pack.</param>
     /// <param name="domain">Either <c>"font"</c> or <c>"text"</c>; determines which extraction path to take.</param>
     /// <param name="output">Receives JSON progress lines on success.</param>
     /// <param name="error">Receives a plain-text error message on failure.</param>
     /// <returns>0 on success, 1 on any disc or decoding error.</returns>
-    internal static int Extract(string cuePath, string outputDirectory, string domain, TextWriter output, TextWriter error)
+    internal static int Extract(Func<IDiscSource> openDisc, string outputDirectory, string domain, TextWriter output, TextWriter error)
     {
         try
         {
-            using var disc = DiscSource.Open(cuePath);
+            using var disc = openDisc();
             SupportedEdition edition = disc.IdentifyEdition();
             IReadOnlyList<DiscFileEntry> entries = disc.ListFiles();
 
@@ -105,7 +105,7 @@ internal static class TextExtractionStep
     /// <param name="context">Write context for the destination data pack.</param>
     /// <param name="output">Receives one JSON progress line on completion.</param>
     private static void ExtractFont(
-        DiscSource disc,
+        IDiscSource disc,
         IReadOnlyList<DiscFileEntry> entries,
         DataPackWriteContext context,
         TextWriter output)
@@ -334,7 +334,7 @@ internal static class TextExtractionStep
     /// <param name="context">Write context for the destination data pack.</param>
     /// <param name="output">Receives one JSON progress line on completion.</param>
     private static void ExtractText(
-        DiscSource disc,
+        IDiscSource disc,
         IReadOnlyList<DiscFileEntry> entries,
         DataPackWriteContext context,
         TextWriter output)

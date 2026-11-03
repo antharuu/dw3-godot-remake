@@ -17,7 +17,7 @@ namespace Dw3.Extractor;
 /// <param name="Output">Progress log writer for event JSON lines.</param>
 internal sealed record ZoneWriteJob(
     DataPackWriteContext Pack,
-    DiscSource Disc,
+    IDiscSource Disc,
     IReadOnlyList<DiscFileEntry> Entries,
     Dictionary<int, byte[]> Overlays,
     Dictionary<ushort, int> StageModes,

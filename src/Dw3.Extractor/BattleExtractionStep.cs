@@ -43,17 +43,17 @@ internal static class BattleExtractionStep
     /// <c>WriteBattle</c> (digimon, techniques, items, rewards, growth, text tables) or
     /// <c>WriteDigivolution</c> (evolution prerequisites per partner) based on <paramref name="domain"/>.
     /// </summary>
-    /// <param name="cuePath">Path to the CUE sheet of the supported disc image.</param>
+    /// <param name="openDisc">Opens the disc whose executable and battle files are decoded; disposed before returning.</param>
     /// <param name="outputDirectory">Root of the data pack to write into.</param>
     /// <param name="domain">Either <c>"battle"</c> or <c>"digivolution"</c>.</param>
     /// <param name="output">Receives one JSON event line on success.</param>
     /// <param name="error">Receives one plain-text error line on failure.</param>
     /// <returns>0 on success, 1 on extraction error.</returns>
-    internal static int Extract(string cuePath, string outputDirectory, string domain, TextWriter output, TextWriter error)
+    internal static int Extract(Func<IDiscSource> openDisc, string outputDirectory, string domain, TextWriter output, TextWriter error)
     {
         try
         {
-            using var disc = DiscSource.Open(cuePath);
+            using var disc = openDisc();
             SupportedEdition edition = disc.IdentifyEdition();
             IReadOnlyList<DiscFileEntry> entries = disc.ListFiles();
             byte[] executableBytes = disc.ReadFile(Require(entries, SlesPath));
@@ -85,7 +85,7 @@ internal static class BattleExtractionStep
     /// <param name="entries">The full disc file entry list.</param>
     /// <param name="executable">The parsed PS1 executable for RAM-relative data reads.</param>
     /// <param name="executableBytes">The raw executable bytes (retained for forward compatibility; currently unused).</param>
-    private static void WriteBattle(DataPackWriteContext context, DiscSource disc, IReadOnlyList<DiscFileEntry> entries, PsxExecutable executable, byte[] executableBytes)
+    private static void WriteBattle(DataPackWriteContext context, IDiscSource disc, IReadOnlyList<DiscFileEntry> entries, PsxExecutable executable, byte[] executableBytes)
     {
         _ = executableBytes;
         var digimon = new List<DigimonRecord>();

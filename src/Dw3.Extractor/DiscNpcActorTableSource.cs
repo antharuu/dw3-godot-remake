@@ -56,7 +56,7 @@ internal sealed class DiscNpcActorTableSource : INpcActorTableSource
     /// <param name="entries">All disc file entries (from disc.ListFiles()).</param>
     /// <returns>A fully populated <see cref="DiscNpcActorTableSource"/> ready for extraction.</returns>
     /// <exception cref="InvalidDataException">A required disc file is absent or the executable table is truncated.</exception>
-    public static DiscNpcActorTableSource Create(DiscSource disc, IReadOnlyList<DiscFileEntry> entries)
+    public static DiscNpcActorTableSource Create(IDiscSource disc, IReadOnlyList<DiscFileEntry> entries)
     {
         byte[] executable = disc.ReadFile(Require(entries, ExecutablePath));
         byte[] fieldStg = disc.ReadFile(Require(entries, FieldStgPath));
