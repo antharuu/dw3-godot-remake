@@ -309,13 +309,13 @@ public sealed class BattleModel
     public void SetCullModeForProbe(BaseMaterial3D.CullModeEnum mode)
     {
         var cullBack = mode == BaseMaterial3D.CullModeEnum.Back;
-        foreach (var surface in _litSurfaces)
+        foreach (var material in _litSurfaces.Select(surface => surface.Material))
         {
-            var texture = (Texture2D)surface.Material.GetShaderParameter("tex");
-            var alphaScissor = (bool)surface.Material.GetShaderParameter("alpha_scissor");
-            surface.Material.Shader = BattlePs1Material.CreateShader(cullBack, opaque: alphaScissor);
-            surface.Material.SetShaderParameter("tex", texture);
-            surface.Material.SetShaderParameter("alpha_scissor", alphaScissor);
+            var texture = (Texture2D)material.GetShaderParameter("tex");
+            var alphaScissor = (bool)material.GetShaderParameter("alpha_scissor");
+            material.Shader = BattlePs1Material.CreateShader(cullBack, opaque: alphaScissor);
+            material.SetShaderParameter("tex", texture);
+            material.SetShaderParameter("alpha_scissor", alphaScissor);
         }
     }
 

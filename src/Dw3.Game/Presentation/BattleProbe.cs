@@ -49,7 +49,7 @@ public sealed partial class BattleProbe : Node2D
             _captureRoot = captureRoot;
 
             BuildField(_animationLoader, _fieldLoader);
-            CallDeferred(MethodName.RunScenario);
+            CallDeferred(MethodName.StartScenario);
         }
         catch (Exception error)
         {
@@ -76,12 +76,10 @@ public sealed partial class BattleProbe : Node2D
     private static ClimbData MergeActionData(ClimbData climb, ClimbData drop)
     {
         var merged = new Dictionary<int, ClimbSequence>(climb.Sequences);
-        foreach (var pair in drop.Sequences)
+        int[] collisions = [.. drop.Sequences.Where(pair => !merged.TryAdd(pair.Key, pair.Value)).Select(pair => pair.Key)];
+        if (collisions.Length > 0)
         {
-            if (!merged.TryAdd(pair.Key, pair.Value))
-            {
-                throw new InvalidOperationException($"action animation set collision: {pair.Key:X}");
-            }
+            throw new InvalidOperationException($"action animation set collision: {collisions[0]:X}");
         }
 
         return new ClimbData(merged);
@@ -312,8 +310,15 @@ public sealed partial class BattleProbe : Node2D
         _fieldRenderer.Present(_state, _zone, f3On: false);
     }
 
-    /// <summary>Runs the deterministic battle scenario and writes its captures.</summary>
-    private async void RunScenario()
+    /// <summary>
+    /// Starts the battle scenario from a deferred engine call. The engine can only defer methods with a
+    /// Variant-compatible result, so the scenario task is started here and observes its own errors.
+    /// </summary>
+    private void StartScenario() => _ = RunScenarioAsync();
+
+    /// <summary>Runs the deterministic battle scenario and writes its captures; every failure is caught and reported.</summary>
+    /// <returns>A task that completes when the scenario has returned to the field or failed.</returns>
+    private async Task RunScenarioAsync()
     {
         try
         {

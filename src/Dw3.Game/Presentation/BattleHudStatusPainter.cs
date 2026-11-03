@@ -158,7 +158,16 @@ internal static class BattleHudStatusPainter
     /// <returns>The battle menu sheet frame id.</returns>
     private static int TeamIconFrame(BattleFighterView fighter)
     {
-        var baseFrame = fighter.KnockedOut ? 2 : fighter.Hp != fighter.MaxHp ? 1 : 0;
+        int baseFrame = 0;
+        if (fighter.KnockedOut)
+        {
+            baseFrame = 2;
+        }
+        else if (fighter.Hp != fighter.MaxHp)
+        {
+            baseFrame = 1;
+        }
+
         return baseFrame + (fighter.Active ? 0xC : 0x3C);
     }
 

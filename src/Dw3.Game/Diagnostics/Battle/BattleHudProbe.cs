@@ -34,93 +34,9 @@ internal sealed class BattleHudProbe : BattleProbe
             "F8 did not reach the root command menu");
         Host.TickTestSimulation();
         Host.Renderer.SetCommandMenuCamera();
-        var line0 = await BattleProbeCapture.CaptureAsync(Host, captureRoot, "command-menu-line0.png");
-        await BattleProbeCapture.CaptureAsync(Host, captureRoot, "hud-full.png");
-        ProbeRequirement.Require(Host.Menu.Cursor == 0 && Host.Menu.Lines.Count == 6, $"root menu cursor={Host.Menu.Cursor} lines={Host.Menu.Lines.Count}");
-        for (var i = 0; i < 3; i++)
-        {
-            InjectBattleKey(Key.S);
-        }
-
-        ProbeRequirement.Require(
-            Host.Menu.Menu == BattleMenuKind.Root && Host.Menu.Cursor == 3,
-            $"three Down inputs did not reach root line 3 cursor={Host.Menu.Cursor} menu={Host.Menu.Menu}");
-        var line3 = await BattleProbeCapture.CaptureAsync(Host, captureRoot, "command-menu-line3.png");
-
-        // Source 320x240 coordinates are mapped exactly by BattleHudLayout: cursor at
-        // (17,110 + sel*19), while WFIGHTMN frame 0x22's own part offset puts its pixels at
-        // (16,106 + i*19), all scaled 3 and offset 160.
-        var cursor0 = ToViewport(new Vector2(17, 110));
-        var cursor3 = ToViewport(new Vector2(17, 167));
-        ProbeRequirement.Require(
-            CountDifferentPixelsInRect(line0, line3, new Rect2(cursor0, new Vector2(36, 36))) > 40,
-            "cursor line0 pixels did not move at source=(17,110)");
-        ProbeRequirement.Require(
-            CountDifferentPixelsInRect(line0, line3, new Rect2(cursor3, new Vector2(36, 36))) > 40,
-            "cursor line3 pixels did not move at source=(17,167)");
-        var spriteSlots = 0;
-        for (var i = 0; i < 6; i++)
-        {
-            var slot = ToViewport(new Vector2(16, 106 + (i * 19)));
-            if (BattlePixelMetrics.CountBright(line3, new Rect2(slot, new Vector2(36, 36))) > 12)
-            {
-                spriteSlots++;
-            }
-        }
-
-        ProbeRequirement.Require(spriteSlots == 6, $"source sprite 0x22 slots visible={spriteSlots}/6");
-        ProbeRequirement.Require(
-            BattlePixelMetrics.CountBright(line3, new Rect2(ToViewport(new Vector2(11, 15)), new Vector2(450, 129))) > 500,
-            "HUD names/icons/HP gauge area has insufficient rendered pixels");
-        Host.Renderer.SetHudVisibleForProbe(false);
-        var noHud = await BattleProbeCapture.CaptureAsync(Host, captureRoot, "command-menu-no-hud.png");
-        Host.Renderer.SetHudVisibleForProbe(true);
-        var rightMargin = new Rect2(ToViewport(new Vector2(311, 70)), new Vector2((3 * 9) + 160, 3 * 70));
-        var spill = CountDifferentPixelsInRect(line3, noHud, rightMargin);
-        ProbeRequirement.Require(spill == 0, $"partner frame 0x0A spills right of x=310 changed={spill}");
-        var partner = await BattleProbeCapture.CaptureAsync(Host, captureRoot, "partner-view.png");
-        var partnerPixels = Host.Renderer.PartnerViewOpaquePixels();
-        var partnerRect = new Rect2(ToViewport(new Vector2(208, 76)), new Vector2(100 * BattleHudLayout.Scale, 60 * BattleHudLayout.Scale));
-        var frameRect = new Rect2(ToViewport(new Vector2(206, 74)), new Vector2(104 * BattleHudLayout.Scale, 64 * BattleHudLayout.Scale));
-        var partnerTargetPath = Path.Combine(captureRoot, "partner-view-target.png");
-        ProbeRequirement.Require(
-            Host.Renderer.SavePartnerView(partnerTargetPath) == Error.Ok,
-            "partner view target write failed");
-
-        // The source target is layer 0x1009 at (208,76,100,60). Its raw reference uses the
-        // documented night-blue panel key, while Godot clears this offscreen target to alpha 0.
-        var partnerTarget = Image.LoadFromFile(partnerTargetPath);
-        var partnerPsxFull = Host.LoadPsxReference("battle/kotemon-383-command-menu-0.png");
-        ProbeRequirement.Require(
-            partnerTarget is not null && !partnerTarget.IsEmpty(),
-            $"partner view references unreadable remake={partnerTargetPath}");
-        var partnerPsx = partnerPsxFull.GetRegion(new Rect2I(208, 76, 100, 60));
-        var partnerRemakeBox = PartnerTargetBoundingBox(partnerTarget!);
-        var partnerPsxBox = PartnerPsxBoundingBox(partnerPsx);
-        ProbeRequirement.Require(
-            partnerRemakeBox is not null && partnerPsxBox is not null,
-            $"partner view bbox unavailable remake={partnerRemakeBox} psx={partnerPsxBox}");
-        var partnerRemakeBounds = partnerRemakeBox.GetValueOrDefault();
-        var partnerPsxBounds = partnerPsxBox.GetValueOrDefault();
-        var partnerHeightDelta = MathF.Abs(partnerRemakeBounds.Size.Y - partnerPsxBounds.Size.Y) / partnerPsxBounds.Size.Y;
-        ProbeRequirement.Require(
-            partnerHeightDelta <= .25f,
-            $"partner view model height delta={partnerHeightDelta:P1} exceeds 25% remake={BattleComparisonImage.FormatBounds(partnerRemakeBounds)} psx={BattleComparisonImage.FormatBounds(partnerPsxBounds)}");
-        var partnerSheet = BattleComparisonImage.SideBySide(partnerTarget!, partnerPsx, "REMAKE", "PSX");
-        partnerSheet.Resize(partnerSheet.GetWidth() * 4, partnerSheet.GetHeight() * 4, Image.Interpolation.Nearest);
-        ProbeRequirement.Require(
-            partnerSheet.SavePng(Path.Combine(captureRoot, "partner-view-side-by-side-x4.png")) == Error.Ok,
-            "partner view side-by-side write failed");
-        QuietLog.Info($"battle-partner-view bbox remake={BattleComparisonImage.FormatBounds(partnerRemakeBounds)} psx={BattleComparisonImage.FormatBounds(partnerPsxBounds)} height-delta={partnerHeightDelta:P1}");
-        ProbeRequirement.Require(partnerPixels > 300, $"partner view target has insufficient opaque pixels={partnerPixels}");
-        ProbeRequirement.Require(BattlePixelMetrics.CountBright(partner, frameRect) > 30, "partner-view frame 10 absent");
-        Host.Renderer.SetPartnerModelVisibleForProbe(false);
-        var withoutPartner = await BattleProbeCapture.CaptureAsync(Host, captureRoot, "command-menu-without-partner-view.png");
-        Host.Renderer.SetPartnerModelVisibleForProbe(true);
-        var partnerCompositePixels = CountDifferentPixelsInRect(partner, withoutPartner, partnerRect);
-        ProbeRequirement.Require(
-            partnerCompositePixels > 300,
-            $"partner view is absent from the composed framebuffer changed={partnerCompositePixels}");
+        var (line3, cursor0, cursor3, spriteSlots) = await VerifyCommandCursorAsync(captureRoot);
+        var spill = await MeasurePartnerFrameSpillAsync(captureRoot, line3);
+        var (partnerPixels, partnerCompositePixels, partnerRect) = await VerifyPartnerViewAsync(captureRoot);
 
         // Ended is outside the player-turn presentation flow. Presenting it removes the layer, which proves the
         // lifecycle condition without forging a separate visibility switch in the renderer.
@@ -128,28 +44,7 @@ internal sealed class BattleHudProbe : BattleProbe
         await Host.NextFrameDrawn();
         ProbeRequirement.Require(Host.Renderer.PartnerViewOpaquePixels() == 0, "partner view persists outside player turn");
         Host.Renderer.Present(Host.BuildBattleView());
-
-        // The shot camera is assessed against the paired Kotemon command-menu frame.
-        // Difference against the same Godot capture with Kotemon hidden gives a model mask
-        // without guessing a stage colour. The PSX mask keeps warm Kotemon body texels only.
-        Host.Renderer.SetModelVisibleForProbe(383, false);
-        var withoutPlayer = await BattleProbeCapture.CaptureAsync(Host, captureRoot, "command-menu-without-kotemon.png");
-        Host.Renderer.SetModelVisibleForProbe(383, true);
-        var command = await BattleProbeCapture.CaptureAsync(Host, captureRoot, "command-menu-kotemon.png");
-        var remakeBox = BattlePixelMetrics.DifferenceBounds(BattleComparisonImage.ToSourceSize(command), BattleComparisonImage.ToSourceSize(withoutPlayer));
-        var psx = Host.LoadPsxReference("battle/kotemon-383-command-menu-0.png");
-        var psx320 = BattleComparisonImage.ToSourceSize(psx);
-        var psxBox = BattlePixelMetrics.WarmKotemonBounds(psx320);
-        ProbeRequirement.Require(remakeBox is not null && psxBox is not null, $"camera bbox unavailable remake={remakeBox} psx={psxBox}");
-        var remakeBounds = remakeBox.GetValueOrDefault();
-        var psxBounds = psxBox.GetValueOrDefault();
-        var delta = Math.Max(
-            Math.Max(Math.Abs(remakeBounds.Position.X - psxBounds.Position.X), Math.Abs(remakeBounds.Position.Y - psxBounds.Position.Y)),
-            Math.Max(Math.Abs(remakeBounds.Size.X - psxBounds.Size.X), Math.Abs(remakeBounds.Size.Y - psxBounds.Size.Y)));
-        var compare = BattleComparisonImage.SideBySide(BattleComparisonImage.ToSourceSize(command), psx320, "REMAKE COMMAND", "PSX COMMAND");
-        ProbeRequirement.Require(compare.SavePng(Path.Combine(captureRoot, "compare-command-menu-partnerview.png")) == Error.Ok, "partner-view comparison write failed");
-        var suffix = delta <= 8 ? "PASS" : "CAUSE=Host.Renderer.cs:SetCommandMenuCamera uses source shot view 2 while projection/GTE rasterization remains unimplemented";
-        QuietLog.Info($"battle-camera phase=command-menu psx_bbox={BattleComparisonImage.FormatBounds(psxBounds)} remake_bbox={BattleComparisonImage.FormatBounds(remakeBounds)} delta={delta:0} {suffix}");
+        await VerifyCommandCameraAsync(captureRoot);
         QuietLog.Info($"battle-hud partner-frame spill={spill} thumbnail={partnerPixels} composed={partnerCompositePixels}");
         QuietLog.Info($"battle-hud partner_view=100x60 source=(208,76) viewport=({partnerRect.Position.X:0},{partnerRect.Position.Y:0}) pixels={partnerPixels} frame10=(206,74) captures={Path.Combine(captureRoot, "partner-view.png")}");
         QuietLog.Info($"battle-hud probe PASS cursor0=(17,110)->({cursor0.X:0},{cursor0.Y:0}) cursor3=(17,167)->({cursor3.X:0},{cursor3.Y:0}) sprites={spriteSlots}/6 captures={captureRoot}");
@@ -237,13 +132,158 @@ internal sealed class BattleHudProbe : BattleProbe
         return new Vector2(x, y);
     }
 
-    /// <summary>Injects a complete native press edge through battle simulation.</summary>
-    /// <param name="key">Godot key to inject.</param>
-    private void InjectBattleKey(Key key)
+    /// <summary>
+    /// Captures the command root at line 0, moves the cursor to line 3 with three Down presses and checks
+    /// that the cursor pixels moved at source (17, 110) and (17, 167), that the six WFIGHTMN 0x22 line
+    /// sprites are drawn and that the HUD name, icon and HP gauge area is rendered.
+    /// </summary>
+    /// <param name="captureRoot">Directory receiving the command menu captures.</param>
+    /// <returns>The line 3 capture, the viewport positions of both cursors and the number of visible line sprites.</returns>
+    /// <exception cref="InvalidOperationException">An assertion fails.</exception>
+    private async Task<(Image Line3, Vector2 Cursor0, Vector2 Cursor3, int SpriteSlots)> VerifyCommandCursorAsync(string captureRoot)
     {
-        Host.Input.Handle(new InputEventKey { Keycode = key, Pressed = true });
-        Host.TickTestSimulation();
-        Host.Input.Handle(new InputEventKey { Keycode = key, Pressed = false });
-        Host.TickTestSimulation();
+        var line0 = await BattleProbeCapture.CaptureAsync(Host, captureRoot, "command-menu-line0.png");
+        await BattleProbeCapture.CaptureAsync(Host, captureRoot, "hud-full.png");
+        ProbeRequirement.Require(Host.Menu.Cursor == 0 && Host.Menu.Lines.Count == 6, $"root menu cursor={Host.Menu.Cursor} lines={Host.Menu.Lines.Count}");
+        InjectBattleKey(Key.S, 3);
+
+        ProbeRequirement.Require(
+            Host.Menu.Menu == BattleMenuKind.Root && Host.Menu.Cursor == 3,
+            $"three Down inputs did not reach root line 3 cursor={Host.Menu.Cursor} menu={Host.Menu.Menu}");
+        var line3 = await BattleProbeCapture.CaptureAsync(Host, captureRoot, "command-menu-line3.png");
+
+        // Source 320x240 coordinates are mapped exactly by BattleHudLayout: cursor at
+        // (17,110 + sel*19), while WFIGHTMN frame 0x22's own part offset puts its pixels at
+        // (16,106 + i*19), all scaled 3 and offset 160.
+        var cursor0 = ToViewport(new Vector2(17, 110));
+        var cursor3 = ToViewport(new Vector2(17, 167));
+        ProbeRequirement.Require(
+            CountDifferentPixelsInRect(line0, line3, new Rect2(cursor0, new Vector2(36, 36))) > 40,
+            "cursor line0 pixels did not move at source=(17,110)");
+        ProbeRequirement.Require(
+            CountDifferentPixelsInRect(line0, line3, new Rect2(cursor3, new Vector2(36, 36))) > 40,
+            "cursor line3 pixels did not move at source=(17,167)");
+        var spriteSlots = 0;
+        for (var i = 0; i < 6; i++)
+        {
+            var slot = ToViewport(new Vector2(16, 106 + (i * 19)));
+            if (BattlePixelMetrics.CountBright(line3, new Rect2(slot, new Vector2(36, 36))) > 12)
+            {
+                spriteSlots++;
+            }
+        }
+
+        ProbeRequirement.Require(spriteSlots == 6, $"source sprite 0x22 slots visible={spriteSlots}/6");
+        ProbeRequirement.Require(
+            BattlePixelMetrics.CountBright(line3, new Rect2(ToViewport(new Vector2(11, 15)), new Vector2(450, 129))) > 500,
+            "HUD names/icons/HP gauge area has insufficient rendered pixels");
+        return (line3, cursor0, cursor3, spriteSlots);
+    }
+
+    /// <summary>
+    /// Captures the command menu without the HUD and counts the pixels that differ right of source x 310:
+    /// the partner frame 0x0A must not spill into that margin.
+    /// </summary>
+    /// <param name="captureRoot">Directory receiving <c>command-menu-no-hud.png</c>.</param>
+    /// <param name="line3">The command menu capture with the HUD, cursor on line 3.</param>
+    /// <returns>The number of differing pixels, always 0 when the method returns.</returns>
+    /// <exception cref="InvalidOperationException">The frame spills into the right margin.</exception>
+    private async Task<int> MeasurePartnerFrameSpillAsync(string captureRoot, Image line3)
+    {
+        Host.Renderer.SetHudVisibleForProbe(false);
+        var noHud = await BattleProbeCapture.CaptureAsync(Host, captureRoot, "command-menu-no-hud.png");
+        Host.Renderer.SetHudVisibleForProbe(true);
+        var rightMargin = new Rect2(ToViewport(new Vector2(311, 70)), new Vector2((3 * 9) + 160, 3 * 70));
+        var spill = CountDifferentPixelsInRect(line3, noHud, rightMargin);
+        ProbeRequirement.Require(spill == 0, $"partner frame 0x0A spills right of x=310 changed={spill}");
+        return spill;
+    }
+
+    /// <summary>
+    /// Checks the partner view: its offscreen target holds more than 300 opaque pixels, its model height is
+    /// within 25 % of the PSX reference, frame 10 surrounds it, and hiding the model changes more than 300
+    /// pixels of the composed framebuffer. Writes a 4x side-by-side comparison with the PSX reference.
+    /// </summary>
+    /// <param name="captureRoot">Directory receiving the partner view captures.</param>
+    /// <returns>The opaque target pixels, the composed pixels attributed to the model, and the view rectangle in the viewport.</returns>
+    /// <exception cref="InvalidOperationException">A capture cannot be written or read, or an assertion fails.</exception>
+    private async Task<(int Pixels, int CompositePixels, Rect2 Rect)> VerifyPartnerViewAsync(string captureRoot)
+    {
+        var partner = await BattleProbeCapture.CaptureAsync(Host, captureRoot, "partner-view.png");
+        var partnerPixels = Host.Renderer.PartnerViewOpaquePixels();
+        var partnerRect = new Rect2(ToViewport(new Vector2(208, 76)), new Vector2(100 * BattleHudLayout.Scale, 60 * BattleHudLayout.Scale));
+        var frameRect = new Rect2(ToViewport(new Vector2(206, 74)), new Vector2(104 * BattleHudLayout.Scale, 64 * BattleHudLayout.Scale));
+        var partnerTargetPath = Path.Combine(captureRoot, "partner-view-target.png");
+        ProbeRequirement.Require(
+            Host.Renderer.SavePartnerView(partnerTargetPath) == Error.Ok,
+            "partner view target write failed");
+
+        // The source target is layer 0x1009 at (208,76,100,60). Its raw reference uses the
+        // documented night-blue panel key, while Godot clears this offscreen target to alpha 0.
+        var partnerTarget = Image.LoadFromFile(partnerTargetPath);
+        var partnerPsxFull = Host.LoadPsxReference("battle/kotemon-383-command-menu-0.png");
+        ProbeRequirement.Require(
+            partnerTarget is not null && !partnerTarget.IsEmpty(),
+            $"partner view references unreadable remake={partnerTargetPath}");
+        var partnerPsx = partnerPsxFull.GetRegion(new Rect2I(208, 76, 100, 60));
+        var partnerRemakeBox = PartnerTargetBoundingBox(partnerTarget!);
+        var partnerPsxBox = PartnerPsxBoundingBox(partnerPsx);
+        ProbeRequirement.Require(
+            partnerRemakeBox is not null && partnerPsxBox is not null,
+            $"partner view bbox unavailable remake={partnerRemakeBox} psx={partnerPsxBox}");
+        var partnerRemakeBounds = partnerRemakeBox.GetValueOrDefault();
+        var partnerPsxBounds = partnerPsxBox.GetValueOrDefault();
+        var partnerHeightDelta = MathF.Abs(partnerRemakeBounds.Size.Y - partnerPsxBounds.Size.Y) / partnerPsxBounds.Size.Y;
+        ProbeRequirement.Require(
+            partnerHeightDelta <= .25f,
+            $"partner view model height delta={partnerHeightDelta:P1} exceeds 25% remake={BattleComparisonImage.FormatBounds(partnerRemakeBounds)} psx={BattleComparisonImage.FormatBounds(partnerPsxBounds)}");
+        var partnerSheet = BattleComparisonImage.SideBySide(partnerTarget!, partnerPsx, "REMAKE", "PSX");
+        partnerSheet.Resize(partnerSheet.GetWidth() * 4, partnerSheet.GetHeight() * 4, Image.Interpolation.Nearest);
+        ProbeRequirement.Require(
+            partnerSheet.SavePng(Path.Combine(captureRoot, "partner-view-side-by-side-x4.png")) == Error.Ok,
+            "partner view side-by-side write failed");
+        QuietLog.Info($"battle-partner-view bbox remake={BattleComparisonImage.FormatBounds(partnerRemakeBounds)} psx={BattleComparisonImage.FormatBounds(partnerPsxBounds)} height-delta={partnerHeightDelta:P1}");
+        ProbeRequirement.Require(partnerPixels > 300, $"partner view target has insufficient opaque pixels={partnerPixels}");
+        ProbeRequirement.Require(BattlePixelMetrics.CountBright(partner, frameRect) > 30, "partner-view frame 10 absent");
+        Host.Renderer.SetPartnerModelVisibleForProbe(false);
+        var withoutPartner = await BattleProbeCapture.CaptureAsync(Host, captureRoot, "command-menu-without-partner-view.png");
+        Host.Renderer.SetPartnerModelVisibleForProbe(true);
+        var partnerCompositePixels = CountDifferentPixelsInRect(partner, withoutPartner, partnerRect);
+        ProbeRequirement.Require(
+            partnerCompositePixels > 300,
+            $"partner view is absent from the composed framebuffer changed={partnerCompositePixels}");
+        return (partnerPixels, partnerCompositePixels, partnerRect);
+    }
+
+    /// <summary>
+    /// Compares the Kotemon bounds of the command-menu shot with the PSX reference frame and logs the
+    /// largest position or size difference; a difference above 8 source pixels is logged with its cause.
+    /// </summary>
+    /// <param name="captureRoot">Directory receiving the camera captures and the side-by-side comparison.</param>
+    /// <returns>A task that completes once the comparison is logged.</returns>
+    /// <exception cref="InvalidOperationException">A bounding box is unavailable, or the comparison cannot be written.</exception>
+    private async Task VerifyCommandCameraAsync(string captureRoot)
+    {
+        // The shot camera is assessed against the paired Kotemon command-menu frame.
+        // Difference against the same Godot capture with Kotemon hidden gives a model mask
+        // without guessing a stage colour. The PSX mask keeps warm Kotemon body texels only.
+        Host.Renderer.SetModelVisibleForProbe(383, false);
+        var withoutPlayer = await BattleProbeCapture.CaptureAsync(Host, captureRoot, "command-menu-without-kotemon.png");
+        Host.Renderer.SetModelVisibleForProbe(383, true);
+        var command = await BattleProbeCapture.CaptureAsync(Host, captureRoot, "command-menu-kotemon.png");
+        var remakeBox = BattlePixelMetrics.DifferenceBounds(BattleComparisonImage.ToSourceSize(command), BattleComparisonImage.ToSourceSize(withoutPlayer));
+        var psx = Host.LoadPsxReference("battle/kotemon-383-command-menu-0.png");
+        var psx320 = BattleComparisonImage.ToSourceSize(psx);
+        var psxBox = BattlePixelMetrics.WarmKotemonBounds(psx320);
+        ProbeRequirement.Require(remakeBox is not null && psxBox is not null, $"camera bbox unavailable remake={remakeBox} psx={psxBox}");
+        var remakeBounds = remakeBox.GetValueOrDefault();
+        var psxBounds = psxBox.GetValueOrDefault();
+        var delta = Math.Max(
+            Math.Max(Math.Abs(remakeBounds.Position.X - psxBounds.Position.X), Math.Abs(remakeBounds.Position.Y - psxBounds.Position.Y)),
+            Math.Max(Math.Abs(remakeBounds.Size.X - psxBounds.Size.X), Math.Abs(remakeBounds.Size.Y - psxBounds.Size.Y)));
+        var compare = BattleComparisonImage.SideBySide(BattleComparisonImage.ToSourceSize(command), psx320, "REMAKE COMMAND", "PSX COMMAND");
+        ProbeRequirement.Require(compare.SavePng(Path.Combine(captureRoot, "compare-command-menu-partnerview.png")) == Error.Ok, "partner-view comparison write failed");
+        var suffix = delta <= 8 ? "PASS" : "CAUSE=Host.Renderer.cs:SetCommandMenuCamera uses source shot view 2 while projection/GTE rasterization remains unimplemented";
+        QuietLog.Info($"battle-camera phase=command-menu psx_bbox={BattleComparisonImage.FormatBounds(psxBounds)} remake_bbox={BattleComparisonImage.FormatBounds(remakeBounds)} delta={delta:0} {suffix}");
     }
 }

@@ -56,11 +56,11 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
 
     private readonly DialogueController _dialogue = new();
 
-    private readonly EncounterController _encounter = new(new SystemRandomEncounterRng());
+    private readonly EncounterController _encounter = new(LinearCongruentialRng.FromSeedText(System.Environment.GetEnvironmentVariable("DW3_RNG_SEED")));
 
     private readonly BattleMenuController _battleMenu = new();
 
-    private readonly IBattleRng _battleRng = new SystemRandomBattleRng();
+    private readonly IBattleRng _battleRng = LinearCongruentialRng.FromSeedText(System.Environment.GetEnvironmentVariable("DW3_RNG_SEED"));
 
     private readonly FieldEncounterStepper _encounterStepper = new();
 
@@ -1091,52 +1091,5 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
         var root = _options.CaptureDir ?? Path.Combine(dataRoot, "captures");
         Directory.CreateDirectory(root);
         return root;
-    }
-
-    /// <summary>
-    /// Encounter RNG that draws from <see cref="System.Random"/>, seeded from
-    /// the <c>DW3_RNG_SEED</c> environment variable when set for reproducible test runs.
-    /// </summary>
-    private sealed class SystemRandomEncounterRng : IEncounterRng
-    {
-        private readonly System.Random _random;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="SystemRandomEncounterRng"/> class.
-        /// Reads <c>DW3_RNG_SEED</c> to produce a deterministic sequence for testing.
-        /// </summary>
-        public SystemRandomEncounterRng()
-        {
-            var seedRaw = System.Environment.GetEnvironmentVariable("DW3_RNG_SEED");
-            _random = int.TryParse(seedRaw, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var seed)
-                ? new System.Random(seed)
-                : new System.Random();
-        }
-
-        /// <summary>Returns the next encounter random value in the controller's 0..4095 domain.</summary>
-        /// <returns>A uniformly distributed integer in [0, 4095].</returns>
-        public int Draw() => _random.Next(0, 4096);
-    }
-
-    /// <summary>The battle's RNG, mirroring SystemRandomEncounterRng (same DW3_RNG_SEED seed).</summary>
-    private sealed class SystemRandomBattleRng : IBattleRng
-    {
-        private readonly System.Random _random;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="SystemRandomBattleRng"/> class.
-        /// Reads <c>DW3_RNG_SEED</c> to produce a deterministic sequence for testing.
-        /// </summary>
-        public SystemRandomBattleRng()
-        {
-            var seedRaw = System.Environment.GetEnvironmentVariable("DW3_RNG_SEED");
-            _random = int.TryParse(seedRaw, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var seed)
-                ? new System.Random(seed)
-                : new System.Random();
-        }
-
-        /// <summary>Returns the next battle random value in the controller's 0..4095 domain.</summary>
-        /// <returns>A uniformly distributed integer in [0, 4095].</returns>
-        public int NextValue() => _random.Next(0, 4096);
     }
 }

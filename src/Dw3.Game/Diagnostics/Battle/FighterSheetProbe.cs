@@ -90,7 +90,8 @@ internal sealed class FighterSheetProbe : BattleProbe
     /// <returns>The pulled-back view.</returns>
     private static BattleModel.BattleCameraView PullBack(BattleModel.BattleCameraView view, float factor)
     {
-        if (factor == 1f)
+        // The factors never go below 1, so 1 (the smallest) is the source view itself.
+        if (factor <= 1f)
         {
             return view;
         }
@@ -223,7 +224,7 @@ internal sealed class FighterSheetProbe : BattleProbe
         Save(empty, Path.Combine(captureRoot, $"fighter-{fighter.Id}-background.png"), $"background save failed fighter={fighter.Id}");
         var output = Path.Combine(captureRoot, $"fighter-{fighter.Id}.png");
         Save(image, output, $"save failed={output}");
-        var framing = factor == 1f ? $"source-view-{ViewIndex}" : $"pulled-back x{factor.ToString("0.0", CultureInfo.InvariantCulture)}";
+        var framing = factor <= 1f ? $"source-view-{ViewIndex}" : $"pulled-back x{factor.ToString("0.0", CultureInfo.InvariantCulture)}";
         QuietLog.Info($"FIGHTER_SHEET fighter={fighter.Id} status=ok enemy={fighter.Enemy} cameras={fighter.CameraCount} framing={framing} image={output}");
         return true;
     }

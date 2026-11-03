@@ -11,8 +11,19 @@ namespace Dw3Production.Conversion;
 /// </summary>
 public sealed class FieldDataPackLoader : IDisposable
 {
-    // Validated column names for the NPC anim-set direction query; spriteDirection is 0-4.
-    private static readonly string[] NpcSeqColumns = ["seq0", "seq1", "seq2", "seq3", "seq4"];
+    /// <summary>
+    /// The standing-sequence query of each sprite direction 0..4: <c>npc_anim_sets</c> stores one
+    /// sequence index column per direction (<c>seq0</c> to <c>seq4</c>), and set 1 is the standing set.
+    /// The queries are spelled out because a column name cannot be a SQL parameter.
+    /// </summary>
+    private static readonly string[] NpcIdleSequenceQueries =
+    [
+        "SELECT seq0 FROM npc_anim_sets WHERE actor_id=$actor AND stage_id=$stage AND actor_index=$index AND set_id=1",
+        "SELECT seq1 FROM npc_anim_sets WHERE actor_id=$actor AND stage_id=$stage AND actor_index=$index AND set_id=1",
+        "SELECT seq2 FROM npc_anim_sets WHERE actor_id=$actor AND stage_id=$stage AND actor_index=$index AND set_id=1",
+        "SELECT seq3 FROM npc_anim_sets WHERE actor_id=$actor AND stage_id=$stage AND actor_index=$index AND set_id=1",
+        "SELECT seq4 FROM npc_anim_sets WHERE actor_id=$actor AND stage_id=$stage AND actor_index=$index AND set_id=1",
+    ];
 
     private readonly DataPackReader _pack;
 
@@ -312,11 +323,8 @@ public sealed class FieldDataPackLoader : IDisposable
     private List<NpcFrame>? TryReadNpcIdle(int stage, int actorIndex, int actorId, int direction, out int spriteDirection, out bool flipH)
     {
         (spriteDirection, flipH) = ResolveNpcSpriteDirection(direction);
-        string seqColumn = NpcSeqColumns[spriteDirection];
         using SqliteCommand sequence = _database.CreateCommand();
-
-        // Column name is taken from NpcSeqColumns (a fixed whitelist, not user input).
-        sequence.CommandText = $"SELECT {seqColumn} FROM npc_anim_sets WHERE actor_id=$actor AND stage_id=$stage AND actor_index=$index AND set_id=1";
+        sequence.CommandText = NpcIdleSequenceQueries[spriteDirection];
         sequence.Parameters.AddWithValue("$actor", actorId);
         sequence.Parameters.AddWithValue("$stage", stage);
         sequence.Parameters.AddWithValue("$index", actorIndex);

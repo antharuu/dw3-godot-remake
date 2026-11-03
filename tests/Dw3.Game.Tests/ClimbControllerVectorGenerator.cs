@@ -18,6 +18,22 @@ namespace Dw3.Game.Tests;
 /// </summary>
 public sealed class ClimbControllerVectorGenerator
 {
+    private static readonly (int Set, bool Loops, ClimbRecord[] Records)[] StandardSets =
+    [
+        (0x1A, true,  [new ClimbRecord(0, 6, -21, -32), new ClimbRecord(1, 6, -21, -32)]),
+        (0x1B, true,  [new ClimbRecord(1, 6, -21, -32)]),
+        (0x1C, false, [new ClimbRecord(0, 4, -17, -29), new ClimbRecord(1, 4, -17, -29)]),
+        (0x1D, false, [new ClimbRecord(0, 4, -21, -32)]),
+        (0x1E, false, [new ClimbRecord(0, 4, -25, -49)]),
+        (0x1F, false, [new ClimbRecord(0, 4, -20, -32)]),
+        (0x20, true,  [new ClimbRecord(0, 6, -21, -32)]),
+    ];
+
+    private static readonly int[] SampleTicks =
+    [
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 20, 50, 100, 999,
+    ];
+
     // ------------------------------------------------------------------ generator
     [Fact]
     public void GenerateClimbControllerVectors()
@@ -28,209 +44,70 @@ public sealed class ClimbControllerVectorGenerator
         }
 
         var cases = new JsonArray();
-        int id = 1;
 
-        // ============================================================
-        // Section A: ClimbAnimation.Sample cases
-        // ============================================================
-
-        // Standard animation data (inline per case for self-containment).
-        // We test all 7 animation sets with 21 tick values each = 147 cases.
-        var stdSets = new (int Set, bool Loops, ClimbRecord[] Records)[]
+        // Section A: ClimbAnimation.Sample, all 7 animation sets with 21 tick values each = 147 cases.
+        foreach (var (set, loops, records) in StandardSets)
         {
-            (0x1A, true,  [new ClimbRecord(0, 6, -21, -32), new ClimbRecord(1, 6, -21, -32)]),
-            (0x1B, true,  [new ClimbRecord(1, 6, -21, -32)]),
-            (0x1C, false, [new ClimbRecord(0, 4, -17, -29), new ClimbRecord(1, 4, -17, -29)]),
-            (0x1D, false, [new ClimbRecord(0, 4, -21, -32)]),
-            (0x1E, false, [new ClimbRecord(0, 4, -25, -49)]),
-            (0x1F, false, [new ClimbRecord(0, 4, -20, -32)]),
-            (0x20, true,  [new ClimbRecord(0, 6, -21, -32)]),
-        };
-
-        int[] sampleTicks =
-        [
-            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 20, 50, 100, 999
-        ];
-
-        foreach (var (set, loops, records) in stdSets)
-        {
-            foreach (var ticks in sampleTicks)
+            foreach (var ticks in SampleTicks)
             {
-                cases.Add(AnimSampleCase(id++, set, ticks, loops, records));
+                cases.Add(AnimSampleCase(cases.Count + 1, set, ticks, loops, records));
             }
         }
 
-        // ============================================================
-        // Section B: ClimbSequence cases — full traversals
-        // ============================================================
+        // Section B: full traversals, holding the direction until done; 8 heights x 4 directions each.
+        // Max ticks = height + 20 (GetOnWall=8 or GetOverEdge=4, ClimbOff=4, buffer).
         int[] heights = [1, 2, 4, 8, 16, 32, 64, 128];
         int[] dirs = [0, 3, 5, 6];
+        AddSequenceGrid(cases, heights, dirs, new ClimbStart("Up", 100f, 100f), h => RunUntilDone("Up", h + 20));
+        AddSequenceGrid(cases, heights, dirs, new ClimbStart("Down", 100f, 100f), h => RunUntilDone("Down", h + 20));
 
-        // Full ClimbUp (hold Up until done): 8 × 4 = 32 cases.
-        // Max ticks = height + 20 (GetOnWall=8, ClimbOff=4, buffer=8).
+        // Section C: partial traversals. 5 ticks Up stays in GetOnWall for most heights, 15 ticks Up
+        // begins climbing, 5 ticks Down stays in GetOverEdge for all heights.
+        AddSequenceGrid(cases, heights, dirs, new ClimbStart("Up", 50f, 80f), _ => Repeat("Up", 5));
+        AddSequenceGrid(cases, heights, dirs, new ClimbStart("Up", 200f, 300f), _ => Repeat("Up", 15));
+        AddSequenceGrid(cases, heights, dirs, new ClimbStart("Down", 150f, 200f), _ => Repeat("Down", 5));
+
+        // Section D: hold still for 20 ticks after StartClimbUp, then 8 ticks Up / 4 None / 4 Down,
+        // then StartClimbDown and hold Up for 20 ticks.
+        AddSequenceGrid(cases, [4, 16, 32, 64], dirs, new ClimbStart("Up", 0f, 0f), _ => Repeat("None", 20));
+        string[] mixedInputs = [.. Repeat("Up", 8), .. Repeat("None", 4), .. Repeat("Down", 4)];
+        AddSequenceGrid(cases, [8, 32, 64, 128], [0, 3], new ClimbStart("Up", 100f, 100f), _ => mixedInputs);
+        AddSequenceGrid(cases, [8, 16, 32, 64], [3, 6], new ClimbStart("Down", 100f, 100f), _ => Repeat("Up", 20));
+
+        AddPadding(cases);
+        WriteVectors(cases);
+
+        Assert.True(cases.Count >= 300, $"Generated {cases.Count} vectors, need at least 300.");
+    }
+
+    // Adds one ClimbSequence case per (height, direction) pair, heights outermost; ids follow the cases already added.
+    private static void AddSequenceGrid(JsonArray cases, int[] heights, int[] dirs, ClimbStart start, Func<int, string[]> inputs)
+    {
         foreach (var h in heights)
         {
             foreach (var d in dirs)
             {
-                int maxT = h + 20;
-                cases.Add(ClimbSequenceCase(
-                    id++,
-                    "Up",
-                    d,
-                    100f,
-                    100f,
-                    h,
-                    RunUntilDone("Up", maxT)));
+                cases.Add(ClimbSequenceCase(cases.Count + 1, start.Mode, d, start.X, start.Y, h, inputs(h)));
             }
         }
+    }
 
-        // Full ClimbDown (hold Down until done): 8 × 4 = 32 cases.
-        // Max ticks = height + 20 (GetOverEdge=4, ClimbOff=4, buffer=12).
-        foreach (var h in heights)
-        {
-            foreach (var d in dirs)
-            {
-                int maxT = h + 20;
-                cases.Add(ClimbSequenceCase(
-                    id++,
-                    "Down",
-                    d,
-                    100f,
-                    100f,
-                    h,
-                    RunUntilDone("Down", maxT)));
-            }
-        }
-
-        // ============================================================
-        // Section C: ClimbSequence cases — partial traversals
-        // ============================================================
-
-        // Partial 5-tick all-Up (still in GetOnWall for most heights): 8 × 4 = 32 cases.
-        foreach (var h in heights)
-        {
-            foreach (var d in dirs)
-            {
-                cases.Add(ClimbSequenceCase(
-                    id++,
-                    "Up",
-                    d,
-                    50f,
-                    80f,
-                    h,
-                    Repeat("Up", 5)));
-            }
-        }
-
-        // Partial 15-tick all-Up (exits GetOnWall, begins climbing): 8 × 4 = 32 cases.
-        foreach (var h in heights)
-        {
-            foreach (var d in dirs)
-            {
-                cases.Add(ClimbSequenceCase(
-                    id++,
-                    "Up",
-                    d,
-                    200f,
-                    300f,
-                    h,
-                    Repeat("Up", 15)));
-            }
-        }
-
-        // Partial 5-tick all-Down (still in GetOverEdge for all heights): 8 × 4 = 32 cases.
-        foreach (var h in heights)
-        {
-            foreach (var d in dirs)
-            {
-                cases.Add(ClimbSequenceCase(
-                    id++,
-                    "Down",
-                    d,
-                    150f,
-                    200f,
-                    h,
-                    Repeat("Down", 5)));
-            }
-        }
-
-        // ============================================================
-        // Section D: ClimbSequence cases — hold still and mixed inputs
-        // ============================================================
-
-        // Hold still (None) for 20 ticks after StartClimbUp: 4 heights × 4 dirs = 16 cases.
-        foreach (var h in new[] { 4, 16, 32, 64 })
-        {
-            foreach (var d in dirs)
-            {
-                cases.Add(ClimbSequenceCase(
-                    id++,
-                    "Up",
-                    d,
-                    0f,
-                    0f,
-                    h,
-                    Repeat("None", 20)));
-            }
-        }
-
-        // Mixed Up/Down/None: 8 ticks up, 4 none, 4 down: 4 heights × 2 dirs = 8 cases.
-        var mixedInputs = new string[16];
-        for (int i = 0; i < 8; i++)
-        {
-            mixedInputs[i] = "Up";
-        }
-
-        for (int i = 8; i < 12; i++)
-        {
-            mixedInputs[i] = "None";
-        }
-
-        for (int i = 12; i < 16; i++)
-        {
-            mixedInputs[i] = "Down";
-        }
-
-        foreach (var h in new[] { 8, 32, 64, 128 })
-        {
-            foreach (var d in new[] { 0, 3 })
-            {
-                cases.Add(ClimbSequenceCase(id++, "Up", d, 100f, 100f, h, mixedInputs));
-            }
-        }
-
-        // StartClimbDown then hold Up for 20 ticks: 4 heights × 2 dirs = 8 cases.
-        foreach (var h in new[] { 8, 16, 32, 64 })
-        {
-            foreach (var d in new[] { 3, 6 })
-            {
-                cases.Add(ClimbSequenceCase(
-                    id++,
-                    "Down",
-                    d,
-                    100f,
-                    100f,
-                    h,
-                    Repeat("Up", 20)));
-            }
-        }
-
-        // ============================================================
-        // Pad to reach 300 if needed (extra AnimSample with additional tick values).
-        // ============================================================
+    // Pads to 300 cases with extra AnimSample tick values.
+    private static void AddPadding(JsonArray cases)
+    {
         int[] extraTicks = [17, 18, 19, 21, 22, 23, 24, 25, 30, 40, 60, 75, 200, 500];
         int padIdx = 0;
         while (cases.Count < 300)
         {
-            var (set, loops, records) = stdSets[padIdx % stdSets.Length];
+            var (set, loops, records) = StandardSets[padIdx % StandardSets.Length];
             int t = extraTicks[padIdx % extraTicks.Length];
-            cases.Add(AnimSampleCase(id++, set, t, loops, records));
+            cases.Add(AnimSampleCase(cases.Count + 1, set, t, loops, records));
             padIdx++;
         }
+    }
 
-        // ============================================================
-        // Write output file.
-        // ============================================================
+    private static void WriteVectors(JsonArray cases)
+    {
         var root = new JsonObject
         {
             ["metadata"] = new JsonObject
@@ -254,8 +131,6 @@ public sealed class ClimbControllerVectorGenerator
             "climb-controller.json");
         Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
         File.WriteAllText(outPath, root.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
-
-        Assert.True(cases.Count >= 300, $"Generated {cases.Count} vectors, need at least 300.");
     }
 
     // ------------------------------------------------------------------ standard ClimbData
@@ -425,4 +300,6 @@ public sealed class ClimbControllerVectorGenerator
     // Run ticks until ClimbActive becomes false OR maxTicks is reached.
     private static string[] RunUntilDone(string label, int maxTicks)
         => Repeat(label, maxTicks); // The controller stops writing when inactive; the test just runs all ticks.
+
+    private sealed record ClimbStart(string Mode, float X, float Y);
 }

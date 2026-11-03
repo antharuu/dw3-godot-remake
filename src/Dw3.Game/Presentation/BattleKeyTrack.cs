@@ -84,7 +84,8 @@ internal static class BattleKeyTrack
     /// <returns>The interpolated channel value.</returns>
     private static Vector3 Interpolate(Vector4 a, Vector4 b, int frame)
     {
-        if (frame == b.W)
+        // Key frames are whole frame numbers stored in W, so they compare as integers.
+        if (frame == (int)b.W)
         {
             return Value(b);
         }

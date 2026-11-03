@@ -91,26 +91,6 @@ internal static class BattleShotCameraVectorHarness
         return r;
     }
 
-    private static void ApplyOp(BattleShotCamera camera, string op)
-    {
-        if (op == "1")
-        {
-            camera.Step();
-        }
-        else if (op == "x")
-        {
-            camera.Stop();
-        }
-        else if (op.StartsWith("s:", StringComparison.Ordinal))
-        {
-            camera.StepFrames(int.Parse(op[2..], System.Globalization.CultureInfo.InvariantCulture));
-        }
-        else
-        {
-            throw new InvalidOperationException($"unknown vector op '{op}'");
-        }
-    }
-
     public sealed class CycledRng : IShotCameraRng
     {
         private readonly int[] _values;
@@ -132,7 +112,7 @@ internal static class BattleShotCameraVectorHarness
     public sealed record Result(List<int[]> Snapshots, List<List<string>> Calls, int ThrowsAt, string? Exception);
 
     /// <summary>
-    /// A live recording session. <paramref name="nextEnemyView"/> / <paramref name="nextFighterView"/>
+    /// A live recording session. <c>nextEnemyView</c> / <c>nextFighterView</c>
     /// are null for the neutral (two-argument) constructor; otherwise they supply successive fresh
     /// views. Snapshot 0 is the state right after construction. After the first exception the
     /// session refuses further operations.
@@ -211,5 +191,25 @@ internal static class BattleShotCameraVectorHarness
         }
 
         public Result ToResult() => new(Snapshots, Calls, ThrowsAt, Exception);
+
+        private static void ApplyOp(BattleShotCamera camera, string op)
+        {
+            if (op == "1")
+            {
+                camera.Step();
+            }
+            else if (op == "x")
+            {
+                camera.Stop();
+            }
+            else if (op.StartsWith("s:", StringComparison.Ordinal))
+            {
+                camera.StepFrames(int.Parse(op[2..], System.Globalization.CultureInfo.InvariantCulture));
+            }
+            else
+            {
+                throw new InvalidOperationException($"unknown vector op '{op}'");
+            }
+        }
     }
 }

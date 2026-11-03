@@ -44,14 +44,7 @@ public partial class GameHost
         /// <summary>Queues the first-launch screen for removal before normal session startup.</summary>
         private void RemoveFirstLaunchScreen()
         {
-            foreach (Node child in _host.GetChildren())
-            {
-                if (child is FirstLaunchScreen)
-                {
-                    child.QueueFree();
-                    return;
-                }
-            }
+            _host.GetChildren().OfType<FirstLaunchScreen>().FirstOrDefault()?.QueueFree();
         }
     }
 }

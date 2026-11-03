@@ -8,7 +8,7 @@ namespace Dw3Production.Presentation;
 internal sealed class FieldWaterLayer : IDisposable
 {
     private readonly List<WaterRuntime> _waterSprites = [];
-    private readonly Dictionary<int, ShaderMaterial> _blendMaterials = [];
+    private readonly PsxBlendMaterials _blendMaterials = new();
     private readonly FieldTextureCache _textures;
 
     /// <summary>Initializes a new instance of the <see cref="FieldWaterLayer"/> class backed by the given texture cache.</summary>
@@ -21,12 +21,7 @@ internal sealed class FieldWaterLayer : IDisposable
     /// <summary>Releases Godot resources owned by this layer.</summary>
     public void Dispose()
     {
-        foreach (var mat in _blendMaterials.Values)
-        {
-            mat.Dispose();
-        }
-
-        _blendMaterials.Clear();
+        _blendMaterials.Dispose();
     }
 
     /// <summary>Instantiates sprite pairs for the water objects in the given zone.</summary>
@@ -47,7 +42,7 @@ internal sealed class FieldWaterLayer : IDisposable
             // atomically at the object's callback/immediate slot.
             var pair = new Node2D();
             var opaque = new Sprite2D { Centered = false };
-            var semi = new Sprite2D { Centered = false, Material = BlendMaterial(-1) };
+            var semi = new Sprite2D { Centered = false, Material = _blendMaterials.Get(-1) };
             pair.AddChild(opaque);
             pair.AddChild(semi);
             depthRoot(obj.Depth).AddChild(pair);
@@ -61,12 +56,9 @@ internal sealed class FieldWaterLayer : IDisposable
     /// <param name="visibleViewport">Camera viewport in world space used to cull off-screen objects.</param>
     public void Advance(Rect2 visibleViewport)
     {
-        foreach (var water in _waterSprites)
+        foreach (var water in _waterSprites.Where(water => IsVisible(water, visibleViewport)))
         {
-            if (IsVisible(water, visibleViewport))
-            {
-                AdvanceObject(water);
-            }
+            AdvanceObject(water);
         }
     }
 
@@ -188,7 +180,12 @@ internal sealed class FieldWaterLayer : IDisposable
         // Converter orders cycle-1 frames by frame ID and cycles 2/3 by CLUT row.
         // The full source values stay in the manifest but paths are opaque, so map
         // the live source value onto the deterministic exported order.
-        var index = obj.Cycle == 1 ? frame - obj.CycleFirst : obj.Cycle is 2 or 3 ? clut - obj.CycleFirst : 0;
+        var index = obj.Cycle switch
+        {
+            1 => frame - obj.CycleFirst,
+            2 or 3 => clut - obj.CycleFirst,
+            _ => 0,
+        };
         return index >= 0 && index < obj.Frames.Count && ReferenceEquals(candidate, obj.Frames[index]);
     }
 
@@ -225,57 +222,34 @@ internal sealed class FieldWaterLayer : IDisposable
         var frame = water.Object.Frames.FirstOrDefault(candidate => FrameMatches(water.Object, candidate, water.Frame, water.Clut)) ?? water.Object.Frames[0];
         water.Opaque.Texture = _textures.TextureFor(frame.OpaquePath);
         water.Semi.Texture = _textures.TextureFor(frame.SemiPath);
-        water.Semi.Material = BlendMaterial(frame.Abr);
+        water.Semi.Material = _blendMaterials.Get(frame.Abr);
         var position = new Vector2(water.Object.X + frame.OffsetX, water.Object.Y + frame.OffsetY);
         water.Opaque.Position = position;
         water.Semi.Position = position;
     }
 
-    /// <summary>Returns (or creates) the cached <see cref="ShaderMaterial"/> for the given PS1 ABR blend mode.</summary>
-    /// <param name="abr">PS1 semi-transparency mode: -1 = none, 0 = 50/50, 1 = additive, 2 = subtractive, 3 = quarter-add.</param>
-    /// <returns>A <see cref="ShaderMaterial"/> matching the requested blend mode.</returns>
-    private ShaderMaterial BlendMaterial(int abr)
-    {
-        if (_blendMaterials.TryGetValue(abr, out var material))
-        {
-            return material;
-        }
-
-        var code = abr switch
-        {
-            0 => "shader_type canvas_item; void fragment(){ COLOR = texture(TEXTURE, UV); COLOR.a *= 0.5; }",
-            1 => "shader_type canvas_item; render_mode blend_add; void fragment(){ COLOR = texture(TEXTURE, UV); }",
-            2 => "shader_type canvas_item; render_mode blend_sub; void fragment(){ COLOR = texture(TEXTURE, UV); }",
-            3 => "shader_type canvas_item; render_mode blend_add; void fragment(){ COLOR = texture(TEXTURE, UV); COLOR.a *= 0.25; }",
-            _ => "shader_type canvas_item; void fragment(){ COLOR = texture(TEXTURE, UV); }",
-        };
-        material = new ShaderMaterial { Shader = new Shader { Code = code } };
-        _blendMaterials.Add(abr, material);
-        return material;
-    }
-
     /// <summary>Per-water-object runtime state: sprite pair nodes and live cycle position.</summary>
     private sealed class WaterRuntime
     {
-        /// <summary>Parent node grouping the opaque and semi-transparent sprite passes.</summary>
-        public required Node2D Pair;
+        /// <summary>Gets the parent node grouping the opaque and semi-transparent sprite passes, sorted as one map object.</summary>
+        public required Node2D Pair { get; init; }
 
-        /// <summary>Sprite node for the opaque (non-STP) pass.</summary>
-        public required Sprite2D Opaque;
+        /// <summary>Gets the sprite node of the opaque pass (texels without the STP bit).</summary>
+        public required Sprite2D Opaque { get; init; }
 
-        /// <summary>Sprite node for the semi-transparent (STP) pass.</summary>
-        public required Sprite2D Semi;
+        /// <summary>Gets the sprite node of the semi-transparent pass (STP texels, drawn with the object's ABR blend).</summary>
+        public required Sprite2D Semi { get; init; }
 
-        /// <summary>Source water object record containing cycle type, frame list, and position.</summary>
-        public required WaterObject Object;
+        /// <summary>Gets the source water object record: cycle type, exported frames and position.</summary>
+        public required WaterObject Object { get; init; }
 
-        /// <summary>Current live frame index within the object's exported frame list.</summary>
-        public int Frame;
+        /// <summary>Gets or sets the live source frame id; type-1 cycles step it from CycleFirst to CycleLast.</summary>
+        public int Frame { get; set; }
 
-        /// <summary>Current live CLUT row index for type-2 and type-3 cycle objects.</summary>
-        public int Clut;
+        /// <summary>Gets or sets the live CLUT row of type-2 and type-3 cycle objects.</summary>
+        public int Clut { get; set; }
 
-        /// <summary>8.8 fixed-point cycle timer; type-3 uses the high bit as a direction flag.</summary>
-        public int CycleTime;
+        /// <summary>Gets or sets the 8.8 fixed-point cycle timer; type-3 objects keep their direction in bit 15.</summary>
+        public int CycleTime { get; set; }
     }
 }

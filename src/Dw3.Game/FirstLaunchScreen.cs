@@ -52,9 +52,11 @@ public partial class FirstLaunchScreen : CanvasLayer
         }
     }
 
-    /// <summary>Emitted on the main thread when extraction completes and the pack is ready.</summary>
-    [Signal]
-    public delegate void PackReadyEventHandler();
+    /// <summary>
+    /// Raised on the main thread when extraction completes and the pack is ready. A plain .NET event:
+    /// only C# code subscribes, so it does not need to be an engine signal.
+    /// </summary>
+    public event Action? PackReady;
 
     /// <inheritdoc/>
     public override void _Ready()
@@ -243,7 +245,7 @@ public partial class FirstLaunchScreen : CanvasLayer
     private void OnExtractionComplete()
     {
         SetStatus("Extraction complete. Loading...");
-        EmitSignal(SignalName.PackReady);
+        PackReady?.Invoke();
     }
 
     // ---------------------------------------------------------------------------

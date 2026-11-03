@@ -165,12 +165,10 @@ public sealed class DialogueDataPackLoader : IDisposable
                 reader.GetInt32(4) != 0));
         }
 
-        foreach (int required in RequiredFrames)
+        int[] missing = [.. RequiredFrames.Where(required => !frames.ContainsKey(required))];
+        if (missing.Length > 0)
         {
-            if (!frames.ContainsKey(required))
-            {
-                throw Invalid($"talk-box frame {required} missing");
-            }
+            throw Invalid($"talk-box frame {missing[0]} missing");
         }
 
         return frames;

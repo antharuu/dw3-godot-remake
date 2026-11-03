@@ -112,7 +112,10 @@ public sealed class BattleState
         for (int i = 0; i < 3; i++)
         {
             var seed = setup.Partners[i];
-            state.Players[i] = seed == null ? null : BattleFighter.FromPartner(seed, i == 0 ? digimon : seed.Id);
+
+            // The first partner fights as the chosen digimon; the other two as themselves.
+            int fighterDigimon = i == 0 ? digimon : seed?.Id ?? 0;
+            state.Players[i] = seed == null ? null : BattleFighter.FromPartner(seed, fighterDigimon);
             var enemy = setup.Enemies[i];
             state.Enemies[i] = enemy is null or { Fighter: 0 } ? null : BattleFighter.FromEnemy(enemy);
         }

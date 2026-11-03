@@ -32,11 +32,24 @@ public sealed class BattleShotCameraVectorGenerator
             return;
         }
 
+        // The families draw from one seeded generator in this order, so their order fixes the file.
         var random = new Random(Seed);
         var cases = new List<JsonObject>();
-        void Add(Builder b) => cases.Add(b.ToJson(cases.Count + 1));
+        AddBoundaryWalks(random, cases);
+        AddPerFrameTraces(random, cases);
+        AddStopInterleavings(random, cases);
+        AddExtremeValues(random, cases);
+        AddRngEdges(random, cases);
+        WriteVectors(cases);
 
-        // 1. Boundary walks through 3..7 shots, fabricated views (some neutral).
+        Assert.True(cases.Count >= 300, $"Generated {cases.Count} vectors, need at least 300.");
+    }
+
+    private static void AddCase(List<JsonObject> cases, Builder b) => cases.Add(b.ToJson(cases.Count + 1));
+
+    // 1. Boundary walks through 3..7 shots, fabricated views (some neutral).
+    private static void AddBoundaryWalks(Random random, List<JsonObject> cases)
+    {
         for (var n = 0; n < 150; n++)
         {
             var b = new Builder(random, "boundary-walk", RandomRng(random), neutral: n % 10 == 0, extreme: false);
@@ -46,10 +59,13 @@ public sealed class BattleShotCameraVectorGenerator
                 b.WalkBoundary(2, 2);
             }
 
-            Add(b);
+            AddCase(cases, b);
         }
+    }
 
-        // 2. Single-frame traces inside a shot (first frames and mid-shot) to pin per-frame rules.
+    // 2. Single-frame traces inside a shot (first frames and mid-shot) to pin per-frame rules.
+    private static void AddPerFrameTraces(Random random, List<JsonObject> cases)
+    {
         for (var n = 0; n < 40; n++)
         {
             var b = new Builder(random, "per-frame", RandomRng(random), neutral: n % 8 == 0, extreme: false);
@@ -70,10 +86,13 @@ public sealed class BattleShotCameraVectorGenerator
                 b.Op("1");
             }
 
-            Add(b);
+            AddCase(cases, b);
         }
+    }
 
-        // 3. Random interleavings of Step, StepFrames (including <= 0) and Stop.
+    // 3. Random interleavings of Step, StepFrames (including <= 0) and Stop.
+    private static void AddStopInterleavings(Random random, List<JsonObject> cases)
+    {
         for (var n = 0; n < 70; n++)
         {
             var b = new Builder(random, "stop-interleave", RandomRng(random), neutral: n % 7 == 0, extreme: false);
@@ -93,10 +112,13 @@ public sealed class BattleShotCameraVectorGenerator
                 b.Op(op);
             }
 
-            Add(b);
+            AddCase(cases, b);
         }
+    }
 
-        // 4. Extreme provider values: 32-bit wraparound of offsets and yaw.
+    // 4. Extreme provider values: 32-bit wraparound of offsets and yaw.
+    private static void AddExtremeValues(Random random, List<JsonObject> cases)
+    {
         for (var n = 0; n < 40; n++)
         {
             var b = new Builder(random, "extreme-values", RandomRng(random), neutral: false, extreme: true);
@@ -110,10 +132,13 @@ public sealed class BattleShotCameraVectorGenerator
                 }
             }
 
-            Add(b);
+            AddCase(cases, b);
         }
+    }
 
-        // 5. RNG edge values, including the one value whose magnitude is not representable.
+    // 5. RNG edge values, including the one value whose magnitude is not representable.
+    private static void AddRngEdges(Random random, List<JsonObject> cases)
+    {
         int[][] edgeRngs =
         [
             [int.MinValue], [0, int.MinValue], [1, 2, int.MinValue], [int.MinValue + 1], [int.MaxValue],
@@ -133,10 +158,13 @@ public sealed class BattleShotCameraVectorGenerator
                     b.Op($"s:{b.Session.Camera.Time}");
                 }
 
-                Add(b);
+                AddCase(cases, b);
             }
         }
+    }
 
+    private static void WriteVectors(List<JsonObject> cases)
+    {
         var sb = new StringBuilder();
         sb.Append("{\n  \"metadata\": ");
         sb.Append(new JsonObject
@@ -162,13 +190,7 @@ public sealed class BattleShotCameraVectorGenerator
             : Path.Combine(AppContext.BaseDirectory, "Vectors", "battle-shot-camera.json");
         Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
         File.WriteAllText(outPath, sb.ToString());
-
-        Assert.True(cases.Count >= 300, $"Generated {cases.Count} vectors, need at least 300.");
     }
-
-    private static JsonArray Arr(int[] a) => [.. a.Select(v => (JsonNode)v).ToArray()];
-
-    private static JsonArray Rows(IEnumerable<int[]> rows) => [.. rows.Select(r => (JsonNode)Arr(r)).ToArray()];
 
     private static int[] RandomRng(Random random, int maxLength = 5)
     {
@@ -299,5 +321,9 @@ public sealed class BattleShotCameraVectorGenerator
         }
 
         public int RandomInt(int min, int max) => _random.Next(min, max);
+
+        private static JsonArray Rows(IEnumerable<int[]> rows) => [.. rows.Select(r => (JsonNode)Arr(r)).ToArray()];
+
+        private static JsonArray Arr(int[] a) => [.. a.Select(v => (JsonNode)v).ToArray()];
     }
 }

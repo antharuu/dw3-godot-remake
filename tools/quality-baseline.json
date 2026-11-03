@@ -10,142 +10,10 @@
   },
   "violations": [
     {
-      "rule": "CA1050",
-      "project": "Dw3.Game",
-      "folder": ".",
-      "count": 1
-    },
-    {
-      "rule": "CS1591",
-      "project": "Dw3.Game",
-      "folder": ".godot",
-      "count": 1
-    },
-    {
-      "rule": "CS1734",
-      "project": "Dw3.Game.Tests",
-      "folder": ".",
-      "count": 2
-    },
-    {
-      "rule": "S1215",
-      "project": "Dw3.Game",
-      "folder": "Diagnostics",
-      "count": 1
-    },
-    {
-      "rule": "S1244",
-      "project": "Dw3.Game",
-      "folder": "Diagnostics",
-      "count": 6
-    },
-    {
-      "rule": "S1244",
-      "project": "Dw3.Game",
-      "folder": "Presentation",
-      "count": 1
-    },
-    {
-      "rule": "S1244",
-      "project": "Dw3.Game.Tests",
-      "folder": ".",
-      "count": 6
-    },
-    {
       "rule": "S134",
       "project": "Dw3.Game.Tests",
       "folder": ".",
       "count": 1
-    },
-    {
-      "rule": "S138",
-      "project": "Dw3.Game",
-      "folder": "Diagnostics",
-      "count": 2
-    },
-    {
-      "rule": "S2077",
-      "project": "Dw3.Game",
-      "folder": "Conversion",
-      "count": 1
-    },
-    {
-      "rule": "S2245",
-      "project": "Dw3.Game",
-      "folder": ".",
-      "count": 4
-    },
-    {
-      "rule": "S3011",
-      "project": "Dw3.Game",
-      "folder": ".",
-      "count": 2
-    },
-    {
-      "rule": "S3168",
-      "project": "Dw3.Game",
-      "folder": "Presentation",
-      "count": 1
-    },
-    {
-      "rule": "S3267",
-      "project": "Dw3.Game",
-      "folder": ".",
-      "count": 1
-    },
-    {
-      "rule": "S3267",
-      "project": "Dw3.Game",
-      "folder": "Conversion",
-      "count": 1
-    },
-    {
-      "rule": "S3267",
-      "project": "Dw3.Game",
-      "folder": "Presentation",
-      "count": 4
-    },
-    {
-      "rule": "S3267",
-      "project": "Dw3.Game",
-      "folder": "Simulation",
-      "count": 1
-    },
-    {
-      "rule": "S3358",
-      "project": "Dw3.Game",
-      "folder": ".",
-      "count": 1
-    },
-    {
-      "rule": "S3358",
-      "project": "Dw3.Game",
-      "folder": "Diagnostics",
-      "count": 1
-    },
-    {
-      "rule": "S3358",
-      "project": "Dw3.Game",
-      "folder": "Presentation",
-      "count": 7
-    },
-    {
-      "rule": "S3358",
-      "project": "Dw3.Game",
-      "folder": "Simulation",
-      "count": 2
-    },
-    {
-      "rule": "S3358",
-      "project": "Dw3.Game.Tests",
-      "folder": ".",
-      "count": 5
-    },
-    {
-      "rule": "S3398",
-      "project": "Dw3.Game.Tests",
-      "folder": ".",
-      "count": 2
     },
     {
       "rule": "S3776",
@@ -155,51 +23,9 @@
     },
     {
       "rule": "S3776",
-      "project": "Dw3.Extractor",
-      "folder": ".",
-      "count": 1
-    },
-    {
-      "rule": "S3776",
-      "project": "Dw3.Game",
-      "folder": "Diagnostics",
-      "count": 1
-    },
-    {
-      "rule": "S3776",
       "project": "Dw3.Game.Tests",
       "folder": ".",
-      "count": 14
-    },
-    {
-      "rule": "S3903",
-      "project": "Dw3.Game",
-      "folder": ".",
-      "count": 1
-    },
-    {
-      "rule": "SA1118",
-      "project": "Dw3.Game.Tests",
-      "folder": ".",
-      "count": 1
-    },
-    {
-      "rule": "SA1313",
-      "project": "Dw3.Game",
-      "folder": "Presentation",
-      "count": 2
-    },
-    {
-      "rule": "SA1316",
-      "project": "Dw3.Game.Tests",
-      "folder": ".",
-      "count": 3
-    },
-    {
-      "rule": "SA1401",
-      "project": "Dw3.Game",
-      "folder": "Presentation",
-      "count": 11
+      "count": 12
     }
   ]
 }

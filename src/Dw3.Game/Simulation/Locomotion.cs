@@ -399,14 +399,12 @@ public static class Locomotion
     private static bool CheckOccupancy(Vector2 position, float radius, IReadOnlyList<Occupant> occupants, out string rejection, out Vector2 contact)
     {
         // Occupancy: the circle must not overlap an occupant's unchanged original diamond.
-        foreach (var occupant in occupants)
+        Occupant? hit = occupants.FirstOrDefault(occupant => occupant.DistanceTo(position) <= radius);
+        if (hit is not null)
         {
-            if (occupant.DistanceTo(position) <= radius)
-            {
-                rejection = $"actor:{occupant.Name}";
-                contact = position;
-                return false;
-            }
+            rejection = $"actor:{hit.Name}";
+            contact = position;
+            return false;
         }
 
         rejection = string.Empty;

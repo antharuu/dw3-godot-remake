@@ -206,7 +206,7 @@ public sealed class BattleEnemyAiVectorGenerator
         Condition(9, 0, Ctx(player: null), [], "asleep check without player");
 
         // 10: another enemy is alive (any, or with a given id).
-        var rosters = new (BattleFighter?[] roster, int active, string label)[]
+        var rosters = new (BattleFighter?[] Roster, int Active, string Label)[]
         {
             ([Slot(10, 5), Slot(11, 5), Slot(12, 5)], 0, "all alive, active 0"),
             ([Slot(10, 5), Slot(11, 0), Slot(12, 0)], 0, "others down"),
@@ -414,13 +414,20 @@ public sealed class BattleEnemyAiVectorGenerator
             var roster = new BattleFighter?[count];
             for (int k = 0; k < count; k++)
             {
-                roster[k] = _random.Next(5) == 0 ? null : Slot(_random.Next(0, 3) == 0 ? 0 : 20 + k, _random.Next(-2, 4));
+                roster[k] = _random.Next(5) == 0 ? null : RandomSlot(20 + k, -2, 4);
             }
 
             int slot = _random.Next(-1, Math.Max(count, 1));
             var kind = slot < 0 ? EnemyActionKind.SwitchToAny : EnemyActionKind.SwitchTo0 + Math.Min(slot, 2);
             Switch(new EnemyDecision(kind, 0, slot), roster, _random.Next(-1, 4), RandomRolls(1), $"seeded switch {i}");
         }
+    }
+
+    // Draws, in this order, whether the slot id is replaced by 0 (one chance in three), then the hp.
+    private BattleFighter RandomSlot(int id, int minHp, int maxHpExclusive)
+    {
+        int slotId = _random.Next(0, 3) == 0 ? 0 : id;
+        return Slot(slotId, _random.Next(minHp, maxHpExclusive));
     }
 
     private int[] RandomRolls(int n) => [.. Enumerable.Range(0, n).Select(_ => _random.Next(0, 0x8000))];
@@ -431,21 +438,29 @@ public sealed class BattleEnemyAiVectorGenerator
         var roster = new BattleFighter?[3];
         for (int k = 0; k < 3; k++)
         {
-            roster[k] = _random.Next(4) == 0 ? null : Slot(_random.Next(0, 3) == 0 ? 0 : 11 + k, _random.Next(-1, 3));
+            roster[k] = _random.Next(4) == 0 ? null : RandomSlot(11 + k, -1, 3);
         }
 
         int playerMax = _random.Next(1, 2000);
+
+        // Locals keep the order in which the random values were drawn by the inline argument list.
+        var enemy = Enemy(stats: new EnemyStats(Hp: _random.Next(0, maxHp + 1), MaxHp: maxHp, Mp: _random.Next(0, 60), Charge: _random.Next(0, 3), Turns: _random.Next(0, 12)), boosts: [_random.Next(-1, 2), _random.Next(-1, 2), _random.Next(-1, 2), 0], techs: [_random.Next(1, 500), _random.Next(1, 500), _random.Next(1, 500)], actions: actions, counter: counter);
+        BattleFighter? player = _random.Next(5) == 0 ? null : RandomPlayer(playerMax);
         return Ctx(
-            enemy: Enemy(stats: new EnemyStats(Hp: _random.Next(0, maxHp + 1), MaxHp: maxHp, Mp: _random.Next(0, 60), Charge: _random.Next(0, 3), Turns: _random.Next(0, 12)), boosts: [_random.Next(-1, 2), _random.Next(-1, 2), _random.Next(-1, 2), 0], techs: [_random.Next(1, 500), _random.Next(1, 500), _random.Next(1, 500)], actions: actions, counter: counter),
-            player: _random.Next(5) == 0 ? null : Slot(
-                _random.Next(1, 8),
-                _random.Next(0, playerMax + 1),
-                playerMax,
-                _random.Next(2) == 0 ? FighterFlags.Asleep : 0),
+            enemy: enemy,
+            player: player,
             enemies: roster,
             activeEnemy: _random.Next(0, 3),
             encounter: (_random.Next(0, 4), _random.Next(0, 4), _random.Next(0, 4)),
             starters: [1, 3, 5]);
+    }
+
+    private BattleFighter RandomPlayer(int maxHp)
+    {
+        int id = _random.Next(1, 8);
+        int hp = _random.Next(0, maxHp + 1);
+        int flags = _random.Next(2) == 0 ? FighterFlags.Asleep : 0;
+        return Slot(id, hp, maxHp, flags);
     }
 
     private sealed record EnemyStats(int Hp = 50, int MaxHp = 100, int Mp = 10, int Charge = 0, int Turns = 0);

@@ -46,4 +46,21 @@ internal abstract class BattleProbe
     /// <returns>A task that completes after every assertion passes.</returns>
     /// <exception cref="InvalidOperationException">A required resource or assertion is unavailable.</exception>
     protected abstract Task ExecuteAsync();
+
+    /// <summary>
+    /// Presses and releases a key, advancing the battle simulation one tick after each edge, so the menu
+    /// sees a complete native press exactly as from a keyboard.
+    /// </summary>
+    /// <param name="key">Godot key to inject.</param>
+    /// <param name="times">How many complete presses to inject, one after the other.</param>
+    protected void InjectBattleKey(Key key, int times = 1)
+    {
+        for (int press = 0; press < times; press++)
+        {
+            Host.Input.Handle(new InputEventKey { Keycode = key, Pressed = true });
+            Host.TickTestSimulation();
+            Host.Input.Handle(new InputEventKey { Keycode = key, Pressed = false });
+            Host.TickTestSimulation();
+        }
+    }
 }

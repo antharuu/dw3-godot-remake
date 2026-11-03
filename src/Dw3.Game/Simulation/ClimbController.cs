@@ -213,11 +213,16 @@ public sealed class ClimbController
             return;
         }
 
-        ClimbSubstate wanted = input.HeldUp
-            ? ClimbSubstate.ClimbUp
-            : input.HeldDown
-                ? ClimbSubstate.ClimbDown
-                : ClimbSubstate.Climb;
+        ClimbSubstate wanted = ClimbSubstate.Climb;
+        if (input.HeldUp)
+        {
+            wanted = ClimbSubstate.ClimbUp;
+        }
+        else if (input.HeldDown)
+        {
+            wanted = ClimbSubstate.ClimbDown;
+        }
+
         TransitionTo(wanted);
     }
 

@@ -25,6 +25,10 @@ void fragment() {
 
     private readonly Dictionary<(BattleModel Model, int TextureKey), int> _pageLayers = [];
 
+    // Face animation rewrites one page in place; the texture array is rebuilt from all pages on the next
+    // draw, so the changed key and image are not needed. One delegate instance so it can be unsubscribed.
+    private readonly Action<int, Image> _markPagesDirty;
+
     private Texture2DArray? _pages;
 
     private bool _dirtyPages = true;
@@ -34,6 +38,7 @@ void fragment() {
     /// <param name="name">Name applied to the mesh instance node.</param>
     public BattleModelLayer(Node3D parent, string name)
     {
+        _markPagesDirty = (_, _) => _dirtyPages = true;
         _instance = new MeshInstance3D { Name = name, CastShadow = GeometryInstance3D.ShadowCastingSetting.Off };
         _material = new ShaderMaterial { Shader = new Shader { Code = ShaderCode } };
         _instance.MaterialOverride = _material;
@@ -191,8 +196,8 @@ void fragment() {
         var pageIndex = _pageLayers.Count;
         foreach (var model in models)
         {
-            model.FacePageChanged -= OnFacePageChanged;
-            model.FacePageChanged += OnFacePageChanged;
+            model.FacePageChanged -= _markPagesDirty;
+            model.FacePageChanged += _markPagesDirty;
             foreach (var (key, image) in model.EnumerateTexturePages())
             {
                 if (image.GetWidth() != 256 || image.GetHeight() != 256)
@@ -216,9 +221,9 @@ void fragment() {
     private void BuildTextureArray()
     {
         var images = new Godot.Collections.Array<Image>();
-        foreach (var pair in _pageLayers.OrderBy(pair => pair.Value))
+        foreach (var page in _pageLayers.OrderBy(pair => pair.Value).Select(pair => pair.Key))
         {
-            images.Add(pair.Key.Model.EnumerateTexturePages().Single(value => value.TextureKey == pair.Key.TextureKey).Image);
+            images.Add(page.Model.EnumerateTexturePages().Single(value => value.TextureKey == page.TextureKey).Image);
         }
 
         if (images.Count == 0)
@@ -236,11 +241,6 @@ void fragment() {
         _material.SetShaderParameter("pages", _pages);
         _dirtyPages = false;
     }
-
-    /// <summary>Marks texture pages stale after face animation changes one page.</summary>
-    /// <param name="_">Changed texture key.</param>
-    /// <param name="__">Updated page image.</param>
-    private void OnFacePageChanged(int _, Image __) => _dirtyPages = true;
 
     /// <summary>Emits the ordered pending polygons into the Godot mesh.</summary>
     /// <param name="pending">Polygons to emit.</param>

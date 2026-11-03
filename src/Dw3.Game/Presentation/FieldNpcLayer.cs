@@ -91,16 +91,16 @@ internal sealed class FieldNpcLayer
     /// <summary>Per-NPC runtime state: the Godot sprite, the source record, and the idle animation cursor.</summary>
     private sealed class NpcRuntime
     {
-        /// <summary>Godot sprite node for this NPC, parented at depth 4.</summary>
-        public required Sprite2D Sprite;
+        /// <summary>Gets the Godot sprite node that draws this NPC, parented at depth 4.</summary>
+        public required Sprite2D Sprite { get; init; }
 
-        /// <summary>Source record carrying the NPC position, flip flag, and idle frame list.</summary>
-        public required NpcRecord Record;
+        /// <summary>Gets the source record carrying the NPC position, flip flag and idle frame list.</summary>
+        public required NpcRecord Record { get; init; }
 
-        /// <summary>Index into <see cref="NpcRecord.IdleFrames"/> for the currently displayed frame.</summary>
-        public int FrameCursor;
+        /// <summary>Gets or sets the index into <see cref="NpcRecord.IdleFrames"/> of the displayed frame; it wraps to 0 after the last frame.</summary>
+        public int FrameCursor { get; set; }
 
-        /// <summary>Source ticks remaining before the cursor advances to the next frame.</summary>
-        public int TicksRemaining;
+        /// <summary>Gets or sets the source ticks (60 per second) left before the cursor moves to the next frame.</summary>
+        public int TicksRemaining { get; set; }
     }
 }

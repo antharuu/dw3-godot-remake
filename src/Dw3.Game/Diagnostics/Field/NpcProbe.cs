@@ -61,7 +61,6 @@ internal sealed class NpcProbe : FieldProbe
         AssertNpcCollision("S200", "actor28");
         var reenteredCount = AssertSingleSpritePerNpcOnReentry(present["S200"]);
         QuietLog.Info($"npc probe PASS zones=S200,S210,S235 npcs={string.Join(",", present.Select(kv => $"{kv.Key}={kv.Value}"))} pixels={string.Join(",", pixelMatches.Select(kv => $"{kv.Key}={kv.Value}"))} occlusion_front={frontMatches} occlusion_back={backMatches} reentry={reenteredCount}");
-        ProbeMemory.CollectBeforeQuit();
     }
 
     /// <summary>Frames an NPC with the player offset away from it and counts its visible texels.</summary>
@@ -78,7 +77,7 @@ internal sealed class NpcProbe : FieldProbe
         // without covering it.
         Host.State.Position = new NumericsVector2(npc.X + 60, npc.Y + 60);
         Host.State.SetFacing(1);
-        var capture = await ViewportCapture.PresentAsync(Host);
+        using var capture = await ViewportCapture.PresentAsync(Host);
         var path = Path.Combine(captureRoot, $"npc-{zoneId}-{npc.ActorId}.png");
         ViewportCapture.Save(capture, path, $"npc capture write failed={path}");
         return new NpcPixels(Host).CountSourceMatches(capture, npc, npc.IdleFrames[0]);
@@ -99,7 +98,7 @@ internal sealed class NpcProbe : FieldProbe
         Host.State.ZoneId = zoneId;
         Host.State.Position = new NumericsVector2((npc.X + waterObject.X) / 2f, ((npc.Y + waterObject.Y) / 2f) + 40);
         Host.State.SetFacing(1);
-        var capture = await ViewportCapture.PresentAsync(Host);
+        using var capture = await ViewportCapture.PresentAsync(Host);
         var path = Path.Combine(captureRoot, $"npc-occlusion-{zoneId}-{npcActorId}-obj{objectIndex}-{(npcInFront ? "front" : "back")}.png");
         ViewportCapture.Save(capture, path, $"npc occlusion capture write failed={path}");
         return new NpcPixels(Host).CountObjectOverlapMatches(capture, npc, waterObject, npcInFront);

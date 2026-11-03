@@ -98,35 +98,88 @@ internal static class BattleExtractionStep
     private static void WriteBattle(DataPackWriteContext context, IDiscSource disc, IReadOnlyList<DiscFileEntry> entries, PsxExecutable executable, byte[] executableBytes)
     {
         _ = executableBytes;
+        List<DigimonRecord> digimon = WriteDigimon(context, executable);
+        List<TechniqueRecord> techniques = WriteTechniques(context, executable);
+        IReadOnlyList<BattleTableRecord> table = WriteEnemyTable(context, disc.ReadFile(Require(entries, BattleTablePath)));
+        List<(ItemRecord Item, ItemEffect? Effect)> items = WriteItems(context, executable);
+
+        byte[] report = disc.ReadFile(Require(entries, ReportPath));
+        BattleReward[] rewards = WriteRewards(context, report);
+        BattleGrowthData growth = BattleDataDecoder.DecodeGrowth(report, ReportOffset(GrowthAddress, 316, "growth tables"));
+        WriteGrowth(context, growth);
+        WriteBattleJson(context, digimon, techniques, table, items, rewards, growth);
+        foreach (string path in FrenchTextPaths)
+        {
+            WriteTextTable(context, path, disc.ReadFile(Require(entries, path)));
+        }
+    }
+
+    /// <summary>
+    /// Decodes the digimon table of the executable (<see cref="DigimonCount"/> records of
+    /// <see cref="BattleDataDecoder.DigimonStride"/> bytes from <see cref="DigimonAddress"/>) and inserts one
+    /// <c>battle_digimon</c> row per record, numbered from 1 in table order.
+    /// </summary>
+    /// <param name="context">The data pack write context.</param>
+    /// <param name="executable">The parsed PS1 executable.</param>
+    /// <returns>The decoded records in table order.</returns>
+    private static List<DigimonRecord> WriteDigimon(DataPackWriteContext context, PsxExecutable executable)
+    {
         var digimon = new List<DigimonRecord>();
         for (int i = 0; i < DigimonCount; i++)
         {
             digimon.Add(BattleDataDecoder.DecodeDigimon(executable.Slice(DigimonAddress + (uint)(i * BattleDataDecoder.DigimonStride), BattleDataDecoder.DigimonStride), 0));
-        }
-
-        var techniques = new List<TechniqueRecord>();
-        for (int i = 0; i < TechniqueCount; i++)
-        {
-            techniques.Add(BattleDataDecoder.DecodeTechnique(executable.Slice(TechniqueAddress + (uint)(i * BattleDataDecoder.TechniqueStride), BattleDataDecoder.TechniqueStride), 0));
-        }
-
-        byte[] tableBytes = disc.ReadFile(Require(entries, BattleTablePath));
-        IReadOnlyList<BattleTableRecord> table = BattleDataDecoder.DecodeBattleTable(tableBytes);
-        for (int i = 0; i < digimon.Count; i++)
-        {
             Insert(context, "INSERT INTO battle_digimon (id,name_id,family) VALUES ($1,$2,$3)", i + 1, digimon[i].NameId, digimon[i].Family);
         }
 
-        for (int i = 0; i < techniques.Count; i++)
+        return digimon;
+    }
+
+    /// <summary>
+    /// Decodes the technique table of the executable (<see cref="TechniqueCount"/> records of
+    /// <see cref="BattleDataDecoder.TechniqueStride"/> bytes from <see cref="TechniqueAddress"/>) and inserts one
+    /// <c>battle_techniques</c> row per record, numbered from 1 in table order.
+    /// </summary>
+    /// <param name="context">The data pack write context.</param>
+    /// <param name="executable">The parsed PS1 executable.</param>
+    /// <returns>The decoded records in table order.</returns>
+    private static List<TechniqueRecord> WriteTechniques(DataPackWriteContext context, PsxExecutable executable)
+    {
+        var techniques = new List<TechniqueRecord>();
+        for (int i = 0; i < TechniqueCount; i++)
         {
-            Insert(context, "INSERT INTO battle_techniques (id,mp,power,icon,kind,accuracy,element,family) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)", i + 1, techniques[i].Mp, techniques[i].Power, techniques[i].Icon, techniques[i].Kind, techniques[i].Accuracy, techniques[i].Element, techniques[i].Family);
+            TechniqueRecord technique = BattleDataDecoder.DecodeTechnique(executable.Slice(TechniqueAddress + (uint)(i * BattleDataDecoder.TechniqueStride), BattleDataDecoder.TechniqueStride), 0);
+            techniques.Add(technique);
+            Insert(context, "INSERT INTO battle_techniques (id,mp,power,icon,kind,accuracy,element,family) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)", i + 1, technique.Mp, technique.Power, technique.Icon, technique.Kind, technique.Accuracy, technique.Element, technique.Family);
         }
 
+        return techniques;
+    }
+
+    /// <summary>Decodes the enemy battle table file and inserts one <c>battle_enemy_table</c> row per record, keyed by its own id.</summary>
+    /// <param name="context">The data pack write context.</param>
+    /// <param name="tableBytes">The bytes of the battle table file read from the disc.</param>
+    /// <returns>The decoded records in file order.</returns>
+    private static IReadOnlyList<BattleTableRecord> WriteEnemyTable(DataPackWriteContext context, byte[] tableBytes)
+    {
+        IReadOnlyList<BattleTableRecord> table = BattleDataDecoder.DecodeBattleTable(tableBytes);
         foreach (BattleTableRecord record in table)
         {
             Insert(context, "INSERT INTO battle_enemy_table (id,item,item_chance,name_id,family) VALUES ($1,$2,$3,$4,$5)", record.Id, record.Item, record.ItemChance, record.NameId, record.Family);
         }
 
+        return table;
+    }
+
+    /// <summary>
+    /// Decodes the item table of the executable and, for each item whose data pointer is not 0, the effect
+    /// record it points to; inserts one <c>battle_items</c> row per item, numbered from 1, with NULL effect
+    /// columns for an item without effect.
+    /// </summary>
+    /// <param name="context">The data pack write context.</param>
+    /// <param name="executable">The parsed PS1 executable; data pointers are RAM addresses inside it.</param>
+    /// <returns>Each item with its effect, or null when it has none, in table order.</returns>
+    private static List<(ItemRecord Item, ItemEffect? Effect)> WriteItems(DataPackWriteContext context, PsxExecutable executable)
+    {
         var items = new List<(ItemRecord Item, ItemEffect? Effect)>();
         for (int i = 0; i < ItemCount; i++)
         {
@@ -136,21 +189,27 @@ internal static class BattleExtractionStep
             Insert(context, "INSERT INTO battle_items (id,data_pointer,price,sell_price,kind,type,flags,effect_kind,amount) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)", i + 1, unchecked((int)item.DataPointer), item.Price, item.SellPrice, item.Kind, item.Type, effect is null ? DBNull.Value : effect.Flags, effect is null ? DBNull.Value : effect.Kind, effect is null ? DBNull.Value : effect.Amount);
         }
 
+        return items;
+    }
+
+    /// <summary>
+    /// Decodes the <see cref="RewardCount"/> reward records of the report overlay (at the overlay offset of
+    /// <see cref="RewardsAddress"/>) and inserts one <c>battle_rewards</c> row per record, numbered from 0.
+    /// </summary>
+    /// <param name="context">The data pack write context.</param>
+    /// <param name="report">The bytes of the report overlay.</param>
+    /// <returns>The decoded rewards in table order.</returns>
+    /// <exception cref="FormatException">The reward table does not lie inside the overlay.</exception>
+    private static BattleReward[] WriteRewards(DataPackWriteContext context, byte[] report)
+    {
         int rewardOffset = ReportOffset(RewardsAddress, RewardCount * BattleDataDecoder.RewardStride, "reward table");
-        byte[] report = disc.ReadFile(Require(entries, ReportPath));
-        var rewards = Enumerable.Range(0, RewardCount).Select(i => BattleDataDecoder.DecodeReward(report, rewardOffset + (i * BattleDataDecoder.RewardStride))).ToArray();
-        BattleGrowthData growth = BattleDataDecoder.DecodeGrowth(report, ReportOffset(GrowthAddress, 316, "growth tables"));
+        BattleReward[] rewards = [.. Enumerable.Range(0, RewardCount).Select(i => BattleDataDecoder.DecodeReward(report, rewardOffset + (i * BattleDataDecoder.RewardStride)))];
         for (int i = 0; i < rewards.Length; i++)
         {
             Insert(context, "INSERT INTO battle_rewards (id,digimon_experience,experience,money) VALUES ($1,$2,$3,$4)", i, rewards[i].DigimonExperience, rewards[i].Experience, rewards[i].Money);
         }
 
-        WriteGrowth(context, growth);
-        WriteBattleJson(context, digimon, techniques, table, items, rewards, growth);
-        foreach (string path in FrenchTextPaths)
-        {
-            WriteTextTable(context, path, disc.ReadFile(Require(entries, path)));
-        }
+        return rewards;
     }
 
     /// <summary>

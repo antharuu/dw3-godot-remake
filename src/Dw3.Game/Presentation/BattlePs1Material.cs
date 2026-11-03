@@ -34,11 +34,12 @@ internal static class BattlePs1Material
     /// <param name="cullBack">True to cull back faces, false to draw both sides.</param>
     /// <param name="opaque">True for the depth-writing cut-out shader, false for the ALPHA-writing one.</param>
     /// <returns>A new shader instance.</returns>
-    public static Shader CreateShader(bool cullBack, bool opaque) => new()
+    public static Shader CreateShader(bool cullBack, bool opaque)
     {
-        Code = opaque
+        string cull = cullBack ? "cull_back" : "cull_disabled";
+        string code = opaque
             ? $@"shader_type spatial;
-render_mode unshaded, depth_draw_opaque, {(cullBack ? "cull_back" : "cull_disabled")};
+render_mode unshaded, depth_draw_opaque, {cull};
 uniform sampler2D tex : source_color, filter_nearest;
 uniform bool alpha_scissor = true;
 void fragment() {{
@@ -47,15 +48,16 @@ void fragment() {{
     ALBEDO = sampled.rgb * COLOR.rgb * 2.0;
 }}"
             : $@"shader_type spatial;
-render_mode unshaded, {(cullBack ? "cull_back" : "cull_disabled")};
+render_mode unshaded, {cull};
 uniform sampler2D tex : source_color, filter_nearest;
 uniform bool alpha_scissor = false;
 void fragment() {{
     vec4 sampled = texture(tex, UV);
     ALBEDO = sampled.rgb * COLOR.rgb * 2.0;
     ALPHA = sampled.a;
-}}",
-    };
+}}";
+        return new Shader { Code = code };
+    }
 
     /// <summary>Tells whether a material is drawn in Godot's opaque, depth-writing pass.</summary>
     /// <param name="material">A material created by <see cref="Create"/>.</param>

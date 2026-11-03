@@ -43,7 +43,10 @@ internal sealed class FrameSequenceRecorder
         await _host.NextFrameDrawn();
         var framePath = Path.Combine(_frameRoot, $"frame-{NextFrame.ToString("D4", CultureInfo.InvariantCulture)}.png");
         NextFrame++;
-        ProbeRequirement.Require(_host.CaptureViewport().SavePng(framePath) == Error.Ok, $"video frame write failed={framePath}");
+
+        // One image per recorded tick: dispose each at once so thousands of engine images are not left to the finalizer.
+        using Image frame = _host.CaptureViewport();
+        ProbeRequirement.Require(frame.SavePng(framePath) == Error.Ok, $"video frame write failed={framePath}");
     }
 
     /// <summary>Records the current state when <paramref name="tick"/> falls on the sampling period, or always in every-tick mode.</summary>

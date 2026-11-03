@@ -202,6 +202,22 @@ public partial class GameHost
             return result;
         }
 
+        /// <summary>
+        /// Chooses the battle menu text entry that labels a temporary fighter's MP by its digit count:
+        /// entry 0x1A below 100, 0x0F below 1000, 0x24 from 1000 up.
+        /// </summary>
+        /// <param name="mp">The fighter's current MP.</param>
+        /// <returns>The menu text entry id.</returns>
+        private static int MpDigitsEntry(int mp)
+        {
+            if (mp < 100)
+            {
+                return 0x1A;
+            }
+
+            return mp < 1000 ? 0xF : 0x24;
+        }
+
         /// <summary>Opens the technique page with MP availability and source text.</summary>
         /// <param name="flow">Active battle flow.</param>
         private void OpenTechniqueMenu(BattleFlowController flow)
@@ -297,8 +313,7 @@ public partial class GameHost
         private BattleMenuStatusText TechniqueStatusText(BattleFighter fighter)
         {
             BattleTextCatalog text = _host.BattleText();
-            int id = fighter.Mp < 100 ? 0x1A : fighter.Mp < 1000 ? 0xF : 0x24;
-            BattleTextLine? currentOverride = fighter.Temporary ? text.MenuEntry(id) : null;
+            BattleTextLine? currentOverride = fighter.Temporary ? text.MenuEntry(MpDigitsEntry(fighter.Mp)) : null;
             return new BattleMenuStatusText(text.MenuEntry(0xD), currentOverride, text.MenuEntry(0x10));
         }
     }

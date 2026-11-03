@@ -24,6 +24,12 @@ internal sealed class ClimbProbe : FieldProbe
     /// <summary>Vertical distance between a climb slot and its landing, added to the wall height, in world units.</summary>
     private const int LandingDepthOffset = 24;
 
+    /// <summary>
+    /// Largest distance, in world units, at which a landing coordinate still counts as the expected one.
+    /// Landings are whole world units; the tolerance only absorbs single-precision rounding.
+    /// </summary>
+    private const float LandingTolerance = 0.001f;
+
     /// <summary>Initializes a new instance of the <see cref="ClimbProbe"/> class.</summary>
     /// <param name="host">Running game.</param>
     public ClimbProbe(IFieldProbeHost host)
@@ -50,14 +56,14 @@ internal sealed class ClimbProbe : FieldProbe
         var up = await driver.DriveAsync(zone, upSlot, climbUp: true);
         Require(up.MaxClimbHeight == upSlot.Height << 8, $"climb up reached {up.MaxClimbHeight} instead of wall height {upSlot.Height << 8}");
         Require(
-            Math.Abs(up.Final.X - upSlot.X) == LandingSideOffset && up.Final.Y == upSlot.Y - LandingDepthOffset - upSlot.Height,
+            IsAt(Math.Abs(up.Final.X - upSlot.X), LandingSideOffset) && IsAt(up.Final.Y, upSlot.Y - LandingDepthOffset - upSlot.Height),
             $"climb up landed off-ledge actual=({up.Final.X},{up.Final.Y}) expected=({upSlot.X}±16,{upSlot.Y - LandingDepthOffset - upSlot.Height})");
         QuietLog.Info($"climb up PASS slot={upSlot.Slot} height={upSlot.Height} max_climb={up.MaxClimbHeight} final=({up.Final.X},{up.Final.Y}) dir={up.Direction}");
 
         var down = await driver.DriveAsync(zone, downSlot, climbUp: false);
         Require(down.MinClimbHeight == 0, $"climb down reached min {down.MinClimbHeight} instead of 0");
         Require(
-            Math.Abs(down.Final.X - downSlot.X) == LandingSideOffset && down.Final.Y == downSlot.Y + LandingDepthOffset + downSlot.Height && down.FinalFacing == 0,
+            IsAt(Math.Abs(down.Final.X - downSlot.X), LandingSideOffset) && IsAt(down.Final.Y, downSlot.Y + LandingDepthOffset + downSlot.Height) && down.FinalFacing == 0,
             $"climb down landed at the foot actual=({down.Final.X},{down.Final.Y}) facing={down.FinalFacing} expected=({downSlot.X}±16,{downSlot.Y + LandingDepthOffset + downSlot.Height}) facing=0");
         QuietLog.Info($"climb down PASS slot={downSlot.Slot} height={downSlot.Height} min_climb={down.MinClimbHeight} final=({down.Final.X},{down.Final.Y}) dir={down.Direction}");
 
@@ -72,4 +78,10 @@ internal sealed class ClimbProbe : FieldProbe
         Require(!Host.Input.F3On, "climb probe enabled F3");
         QuietLog.Info($"climb probe PASS zone=S330 up_slot={upSlot.Slot} down_slot={downSlot.Slot} captures={captureRoot}/climb-*.png");
     }
+
+    /// <summary>Tells whether a landing coordinate equals the expected whole world-unit value.</summary>
+    /// <param name="actual">The measured coordinate, in world units.</param>
+    /// <param name="expected">The expected coordinate, in world units.</param>
+    /// <returns><see langword="true"/> when the two differ by less than <see cref="LandingTolerance"/>.</returns>
+    private static bool IsAt(float actual, float expected) => Math.Abs(actual - expected) < LandingTolerance;
 }

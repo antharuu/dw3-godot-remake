@@ -198,7 +198,13 @@ public sealed partial class DiagnosticOverlay : IDisposable
                 }
 
                 var rect = new Rect2(runStart, y, x - runStart, 1);
-                (runClass == FloorClass.Walkable ? walkable : runClass == FloorClass.Blocked ? blocked : unknown).Add(rect);
+                List<Rect2> runs = runClass switch
+                {
+                    FloorClass.Walkable => walkable,
+                    FloorClass.Blocked => blocked,
+                    _ => unknown,
+                };
+                runs.Add(rect);
                 if (x < zone.Floor.Width)
                 {
                     runStart = x;

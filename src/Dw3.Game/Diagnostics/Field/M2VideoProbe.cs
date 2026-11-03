@@ -42,6 +42,5 @@ internal sealed class M2VideoProbe : FieldProbe
         ProbeVideoEncoder.Encode(frameRoot, videoPath, RealTimeFrameRate);
         Require(File.Exists(videoPath) && new FileInfo(videoPath).Length > 0, "ffmpeg produced no m2-traversal.mp4");
         QuietLog.Info($"m2 video PASS frames={frames.NextFrame} commits={Host.Warp.CommitCount} route=S200->S210->S200->S235->S200 video={videoPath}");
-        ProbeMemory.CollectBeforeQuit();
     }
 }

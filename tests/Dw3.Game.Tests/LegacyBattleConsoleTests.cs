@@ -91,7 +91,7 @@ public sealed class LegacyBattleConsoleTests
             enemy.Position.Equals(new Vector3(0, 0, -25.5f)),
             "fighter 51 uses the source +0x1400+distance position converted to Godot Z");
         Check(
-            player.YawRadians.Equals(MathF.PI) && enemy.YawRadians.Equals(0f),
+            MathF.Abs(player.YawRadians - MathF.PI) < 0.0001f && MathF.Abs(enemy.YawRadians) < 0.0001f,
             "the player alone receives the source half-turn so both camps face each other");
     }
 

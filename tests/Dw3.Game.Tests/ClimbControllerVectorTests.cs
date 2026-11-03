@@ -245,12 +245,12 @@ public sealed class ClimbControllerVectorTests
             errors.Add($"{tag}: AnimationDirection got {state.AnimationDirection} expected {expAnimDirection}");
         }
 
-        if (!state.Position.X.Equals(expPosX))
+        if (BitConverter.SingleToInt32Bits(state.Position.X) != BitConverter.SingleToInt32Bits(expPosX))
         {
             errors.Add($"{tag}: Position.X got {state.Position.X} expected {expPosX}");
         }
 
-        if (!state.Position.Y.Equals(expPosY))
+        if (BitConverter.SingleToInt32Bits(state.Position.Y) != BitConverter.SingleToInt32Bits(expPosY))
         {
             errors.Add($"{tag}: Position.Y got {state.Position.Y} expected {expPosY}");
         }

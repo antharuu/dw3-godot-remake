@@ -32,8 +32,6 @@ internal sealed class ObjectProbe : FieldProbe
         {
             await CheckZoneAsync(captureRoot, zoneId);
         }
-
-        ProbeMemory.CollectBeforeQuit();
     }
 
     /// <summary>Frames the first opaque object of a zone and counts its visible texels.</summary>
@@ -57,7 +55,7 @@ internal sealed class ObjectProbe : FieldProbe
         // Offset the player so its sprite does not cover the object the camera frames.
         Host.State.Position = new NumericsVector2(target.X + 60, target.Y + 60);
         Host.State.SetFacing(1);
-        var capture = await ViewportCapture.PresentAsync(Host);
+        using var capture = await ViewportCapture.PresentAsync(Host);
         var path = Path.Combine(captureRoot, $"objects-{zoneId}.png");
         ViewportCapture.Save(capture, path, $"object capture write failed={path}");
         var matches = new MapObjectPixels(Host).CountOpaqueSourceMatches(capture, target);

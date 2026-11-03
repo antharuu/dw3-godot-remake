@@ -136,7 +136,12 @@ internal sealed class BattleFaceAnimator
     /// <summary>Chooses the forced eye frame associated with a motion.</summary>
     /// <param name="motion">One-based active motion number.</param>
     /// <returns>Forced eye frame or zero when blinking controls the eyes.</returns>
-    private static int MotionEyeFrame(int motion) => motion is >= 4 and <= 11 ? 2 : motion == 2 ? 1 : 0;
+    private static int MotionEyeFrame(int motion) => motion switch
+    {
+        >= 4 and <= 11 => 2,
+        2 => 1,
+        _ => 0,
+    };
 
     /// <summary>Checks whether a rectangle lies within one texture page.</summary>
     /// <param name="x">Rectangle horizontal coordinate.</param>

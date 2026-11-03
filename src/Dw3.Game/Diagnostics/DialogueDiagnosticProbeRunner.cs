@@ -10,10 +10,16 @@ public sealed class DialogueDiagnosticProbeRunner(IDiagnosticProbeHost host)
     /// <returns><see langword="true"/> when a probe was started.</returns>
     public bool TryDispatch(HostStartupOptions options)
     {
-        string? methodName = options.DialogueProbe ? "RunDialogueProbe"
-            : options.IconProbe ? "RunIconProbe"
-            : null;
-        if (methodName is null)
+        string methodName;
+        if (options.DialogueProbe)
+        {
+            methodName = "RunDialogueProbe";
+        }
+        else if (options.IconProbe)
+        {
+            methodName = "RunIconProbe";
+        }
+        else
         {
             return false;
         }

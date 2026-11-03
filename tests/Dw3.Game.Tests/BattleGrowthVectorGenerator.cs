@@ -188,7 +188,7 @@ public sealed class BattleGrowthVectorGenerator
         foreach (var lv in tpLevels)
         {
             int nextLevel = lv + 1;
-            int nextTier = nextLevel < 5 ? 0 : nextLevel < 20 ? 1 : nextLevel < 40 ? 2 : 3;
+            int nextTier = LevelTier(nextLevel);
             int threshold = (((nextLevel * nextLevel * nextLevel) + (nextLevel * 5) - 6) * 10 / 10)
                             + def.LevelExp[nextTier];
             cases.Add(AddExpCase(
@@ -618,6 +618,15 @@ public sealed class BattleGrowthVectorGenerator
             ["expected"] = result,
         };
     }
+
+    // Growth tier of a level: 1..4, 5..19, 20..39, then 40 and above.
+    private static int LevelTier(int level) => level switch
+    {
+        < 5 => 0,
+        < 20 => 1,
+        < 40 => 2,
+        _ => 3,
+    };
 
     // ------------------------------------------------------------------ helpers
     private sealed class SeqRng : IBattleRng

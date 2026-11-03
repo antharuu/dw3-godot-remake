@@ -211,7 +211,13 @@ public sealed partial class FightReportRenderer : IDisposable
             }
 
             var substitutions = message.Substitutions.Select(BattleTextCatalog.Number).ToArray();
-            var line = _catalog.Report(message.Entry == 2 ? "expGained" : message.Entry == 10 ? "moneyGained" : "partnerLevel", substitutions);
+            string template = message.Entry switch
+            {
+                2 => "expGained",
+                10 => "moneyGained",
+                _ => "partnerLevel",
+            };
+            var line = _catalog.Report(template, substitutions);
             _text.DrawLine(1, 0x14, 0xc2, line, false, 0, message.TokensRevealed);
             if (message.ArrowVisible && _arrow is { Length: > 0 })
             {

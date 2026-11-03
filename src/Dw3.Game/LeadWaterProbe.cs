@@ -1,7 +1,7 @@
-using System.Reflection;
-using System.Runtime.CompilerServices;
 using Dw3Production.Presentation;
 using Godot;
+
+namespace Dw3Production.Diagnostics;
 
 /// <summary>
 /// Standalone Godot scene that synthesises a 2×1 pixel texture per ABR blend mode
@@ -16,9 +16,7 @@ public partial class LeadWaterProbe : Node2D
     {
         try
         {
-            var renderer = (FieldRenderer)RuntimeHelpers.GetUninitializedObject(typeof(FieldRenderer));
-            typeof(FieldRenderer).GetField("_waterBlendMaterials", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(renderer, new Dictionary<int, ShaderMaterial>());
-            var method = typeof(FieldRenderer).GetMethod("WaterBlendMaterial", BindingFlags.NonPublic | BindingFlags.Instance)!;
+            var blendMaterials = new PsxBlendMaterials();
             var background = new Color(0.4f, 0.6f, 0.8f, 1f);
             AddChild(new ColorRect { Position = Vector2.Zero, Size = new Vector2(400, 200), Color = background });
             var test = Image.CreateEmpty(2, 1, false, Image.Format.Rgba8);
@@ -27,7 +25,7 @@ public partial class LeadWaterProbe : Node2D
             var texture = ImageTexture.CreateFromImage(test);
             foreach (var abr in new[] { 0, 1, 2, 3 })
             {
-                AddChild(new Sprite2D { Texture = texture, Centered = false, Position = new Vector2(20 + (abr * 80), 20), Scale = new Vector2(25, 25), Material = (ShaderMaterial)method.Invoke(renderer, [abr])! });
+                AddChild(new Sprite2D { Texture = texture, Centered = false, Position = new Vector2(20 + (abr * 80), 20), Scale = new Vector2(25, 25), Material = blendMaterials.Get(abr) });
             }
 
             await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
