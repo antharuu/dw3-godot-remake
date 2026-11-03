@@ -100,16 +100,16 @@ public sealed class DiscStageModeReaderTests
     }
 
     private static byte[] BuildFieldStgFragment(
-        IEnumerable<(int mode, int overlayIndex, int funcPtr)> entries)
+        IEnumerable<(int Mode, int OverlayIndex, int FuncPtr)> entries)
     {
         var list = entries.ToList();
         byte[] data = new byte[list.Count * 12];
         for (int i = 0; i < list.Count; i++)
         {
             int off = i * 12;
-            BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(off, 4), list[i].mode);
-            BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(off + 4, 4), list[i].overlayIndex);
-            BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(off + 8, 4), list[i].funcPtr);
+            BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(off, 4), list[i].Mode);
+            BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(off + 4, 4), list[i].OverlayIndex);
+            BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(off + 8, 4), list[i].FuncPtr);
         }
 
         return data;

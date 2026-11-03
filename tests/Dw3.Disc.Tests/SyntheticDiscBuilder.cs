@@ -12,7 +12,7 @@ namespace Dw3.Disc.Tests;
 ///   Sector 18     : Root directory
 ///   Sector 19     : SUBDIR directory
 ///   Sector 20     : HELLO.TXT content
-///   Sector 21     : SUBDIR/DATA.BIN content
+///   Sector 21     : SUBDIR/DATA.BIN content.
 /// </summary>
 internal static class SyntheticDiscBuilder
 {

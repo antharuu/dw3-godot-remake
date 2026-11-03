@@ -84,10 +84,9 @@ public sealed class NpcDomainWriterTests : IDisposable
 
         using SqliteConnection connection = new DataPackReader(_root).OpenDatabase();
 
-        string charRow = Row(
-            connection,
-            "SELECT actor_id, stage_id, actor_index, archive_disc_path, archive_entry, frame_count " +
-            "FROM npc_characters WHERE actor_id = 21");
+        const string characterQuery = "SELECT actor_id, stage_id, actor_index, archive_disc_path, archive_entry, frame_count "
+            + "FROM npc_characters WHERE actor_id = 21";
+        string charRow = Row(connection, characterQuery);
         Assert.Equal("21|200|0|AAA/DAT/FIELD/SPRT/NPC_TEST.BIN|3|1", charRow);
 
         string setRow = Row(

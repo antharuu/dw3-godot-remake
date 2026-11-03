@@ -430,7 +430,7 @@ public sealed class RepositoryGuardTests : IDisposable
     /// Creates a minimal Git repo in a temp dir with the given tracked files.
     /// All files are added and committed; no real ROM data is used.
     /// </summary>
-    private string MakeRepo(params (string path, string content)[] files)
+    private string MakeRepo(params (string Path, string Content)[] files)
     {
         var dir = Path.Combine(Path.GetTempPath(), $"dw3-guard-{Guid.NewGuid():N}");
         Directory.CreateDirectory(dir);

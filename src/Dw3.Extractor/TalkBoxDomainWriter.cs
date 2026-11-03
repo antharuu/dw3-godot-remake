@@ -8,6 +8,12 @@ namespace Dw3.Extractor;
 /// <summary>Persists the talk box as PNG images under dialogue/frame and three SQLite tables.</summary>
 public static class TalkBoxDomainWriter
 {
+    /// <summary>One row per talk box layout; every coordinate is a screen pixel position.</summary>
+    private const string InsertLayoutSql = """
+        INSERT INTO talk_box_layouts (layout,sprite,sprite_x,sprite_y,sprite0_x,sprite0_y,panel_x,panel_y,sprite2_x,sprite2_y,name_x,name_y,text_x,text_y,arrow_x,arrow_y)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+        """;
+
     private const string Directory = "dialogue/frame";
 
     /// <summary>
@@ -95,10 +101,7 @@ public static class TalkBoxDomainWriter
             TalkBoxLayoutRecord layout = layouts[index];
             Insert(
                 context,
-                """
-                INSERT INTO talk_box_layouts (layout,sprite,sprite_x,sprite_y,sprite0_x,sprite0_y,panel_x,panel_y,sprite2_x,sprite2_y,name_x,name_y,text_x,text_y,arrow_x,arrow_y)
-                VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
-                """,
+                InsertLayoutSql,
                 index,
                 layout.Sprite,
                 layout.SpriteX,

@@ -78,7 +78,7 @@ public sealed class ExtractionControllerTests
             Complete(3),
         };
         var controller = Build(lines);
-        var received = new List<(string domain, int done, int total)>();
+        var received = new List<(string Domain, int Done, int Total)>();
         controller.ProgressUpdated += (d, done, total) => received.Add((d, done, total));
 
         controller.Extract("/fake/disc.cue", "/fake/out");

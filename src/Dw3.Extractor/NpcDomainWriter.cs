@@ -12,6 +12,14 @@ namespace Dw3.Extractor;
 /// </summary>
 public static class NpcDomainWriter
 {
+    /// <summary>One row per decoded NPC character: the actor, its stage and the sprite archive entry it was read from.</summary>
+    private const string InsertCharacterSql = """
+        INSERT INTO npc_characters
+            (actor_id, stage_id, actor_index, manifest_schema,
+             archive_disc_path, archive_sha256, archive_bytes, archive_entry, frame_count)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        """;
+
     private static readonly System.Text.Json.JsonSerializerOptions ManifestSerializerOptions =
         new() { WriteIndented = true };
 
@@ -238,12 +246,7 @@ public static class NpcDomainWriter
         _ = prefix;
         Insert(
             context,
-            """
-            INSERT INTO npc_characters
-                (actor_id, stage_id, actor_index, manifest_schema,
-                 archive_disc_path, archive_sha256, archive_bytes, archive_entry, frame_count)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-            """,
+            InsertCharacterSql,
             c.ActorId,
             c.StageId,
             c.ActorIndex,

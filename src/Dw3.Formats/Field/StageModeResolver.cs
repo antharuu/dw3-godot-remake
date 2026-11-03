@@ -33,10 +33,7 @@ public static class StageModeResolver
 
             // Several overlays embed borrowed slot tables. The first raw owner is the
             // authoritative mode binding. Later copies do not redefine the mode.
-            if (!result.TryAdd(mode, stage) && result[mode] == stage)
-            {
-                continue;
-            }
+            result.TryAdd(mode, stage);
         }
 
         return result;

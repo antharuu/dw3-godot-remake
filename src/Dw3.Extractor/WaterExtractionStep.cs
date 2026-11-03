@@ -37,9 +37,8 @@ internal static class WaterExtractionStep
             IReadOnlyList<DiscFileEntry> entries = disc.ListFiles();
             var zones = new List<ExtractedWaterZone>();
             var skipped = new List<SkippedWaterZone>();
-            foreach (ExtractedFieldStage stage in ZoneExtractionStep.BuildFieldRegistry(disc, entries))
+            foreach (int id in ZoneExtractionStep.BuildFieldRegistry(disc, entries).Select(stage => stage.StageId))
             {
-                int id = stage.StageId;
                 byte[] overlay = disc.ReadFile(ZoneExtractionStep.RequireStageFile(entries, "AAA/PRO/WSTAG", ".PRO", id));
                 byte[] sheet = disc.ReadFile(ZoneExtractionStep.RequireStageFile(entries, "AAA/DAT/FIELD/STAGE/S", "TMPK.BIN", id));
                 byte[] texture = disc.ReadFile(ZoneExtractionStep.RequireStageFile(entries, "AAA/DAT/FIELD/STAGE/S", "MASK.BIN", id));

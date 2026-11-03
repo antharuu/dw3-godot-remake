@@ -73,10 +73,10 @@ public static class FieldcomDomainWriter
 
             writer.WriteEndObject();
             writer.WriteStartObject("inner_rows");
-            foreach (FieldcomNamedSequence sequence in cue.InnerSequences.OrderBy(x => CueRow(x.Steps)))
+            foreach (IReadOnlyList<FieldcomFrameStep> steps in cue.InnerSequences.Select(sequence => sequence.Steps).OrderBy(CueRow))
             {
-                writer.WriteStartArray(CueRow(sequence.Steps).ToString(CultureInfo.InvariantCulture));
-                foreach (FieldcomFrameStep step in sequence.Steps)
+                writer.WriteStartArray(CueRow(steps).ToString(CultureInfo.InvariantCulture));
+                foreach (FieldcomFrameStep step in steps)
                 {
                     writer.WriteStartObject();
                     writer.WriteNumber("duration_ticks", step.Duration);

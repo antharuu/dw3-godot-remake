@@ -360,10 +360,9 @@ internal static class PlayerExtractionStep
         }
 
         w.WriteEndArray();
-        w.WriteString(
-            "note",
-            "FIELDSTG_drawActor draws the whole 32x32 TIM with its top-left at (tile + offset); " +
-            "the player's ground contact is the bottom-centre of the visible pixels, not the TIM's bottom edge.");
+        const string anchorNote = "FIELDSTG_drawActor draws the whole 32x32 TIM with its top-left at (tile + offset); "
+            + "the player's ground contact is the bottom-centre of the visible pixels, not the TIM's bottom edge.";
+        w.WriteString("note", anchorNote);
         w.WriteStartArray("offset");
         w.WriteNumberValue(AnchorOffsetX);
         w.WriteNumberValue(AnchorOffsetY);

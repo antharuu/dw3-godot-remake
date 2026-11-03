@@ -292,9 +292,13 @@ public sealed class LegacyBattleFlowConsoleTests
             menu.NextPage() && menu.First == 7 && menu.Cursor == 0 && menu.SelectedIndex == 7,
             "PAD_R1 advances one item page and resets the source cursor to row zero");
         Check(menu.View.Lines.Count == 7 && menu.View.Lines[0].Label == "Item 7", "the view renders the new first source item");
+        int pagesTurned = 0;
         while (menu.NextPage())
         {
+            pagesTurned++;
         }
+
+        Check(pagesTurned > 0, "PAD_R1 keeps turning pages until the last populated one");
 
         Check(menu.First == 28 && menu.View.Lines.Count == 1 && !menu.NextPage(), "the final item page has only its populated row");
         Check(menu.PreviousPage() && menu.First == 21 && menu.Cursor == 0, "PAD_L1 returns one page and resets cursor");

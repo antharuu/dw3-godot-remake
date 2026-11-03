@@ -55,9 +55,10 @@ public static class BattleModelDomainWriter
     private static void WriteDecoded(DataPackWriteContext context, int ordinal, FighterModelReference reference, BattleModelStructure model, BattleModelExtraction fighter, string edition)
     {
         string manifest = $"{ModelsDirectory}/fighter-{reference.FighterId}-model.json";
-        File.WriteAllText(context.GetImagePath(manifest), fighter.Payload is { } payload
+        string modelJson = fighter.Payload is { } payload
             ? BattleModelJsonWriter.WriteModel(reference, payload, edition)
-            : BattleModelJsonWriter.WriteModel(reference, model, edition));
+            : BattleModelJsonWriter.WriteModel(reference, model, edition);
+        File.WriteAllText(context.GetImagePath(manifest), modelJson);
         Insert(
             context,
             "INSERT INTO battle_models (fighter_id,entry_ordinal,record_index,kind,status,reason,is_enemy,model_file,model_entry,motion_file,motion_entry,texture_entry,bone_count,mesh_count,disc_path,sha256,manifest_path) VALUES ($1,$2,$3,$4,'decoded',NULL,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)",

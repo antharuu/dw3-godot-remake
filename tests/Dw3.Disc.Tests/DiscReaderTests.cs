@@ -47,10 +47,9 @@ public sealed class DiscReaderTests : IDisposable
     public void CueMultipleFiles_ThrowsFormatInvalid()
     {
         string cue = Path.Combine(_tmp, "multi.cue");
-        File.WriteAllText(
-            cue,
-            "FILE \"a.bin\" BINARY\r\nTRACK 01 MODE2/2352\r\n" +
-            "FILE \"b.bin\" BINARY\r\nTRACK 02 MODE2/2352\r\n");
+        const string twoFiles = "FILE \"a.bin\" BINARY\r\nTRACK 01 MODE2/2352\r\n"
+            + "FILE \"b.bin\" BINARY\r\nTRACK 02 MODE2/2352\r\n";
+        File.WriteAllText(cue, twoFiles);
         var ex = Assert.Throws<DiscSourceException>(() => DiscSource.Open(cue));
         Assert.Equal(DiscSourceException.FormatInvalid, ex.ErrorCode);
     }

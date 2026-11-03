@@ -23,7 +23,7 @@ internal sealed class ConstantAnalyzerConfigOptionsProvider : AnalyzerConfigOpti
     private readonly string _value;
 
     /// <summary>
-    /// Initializes a new instance of <see cref="ConstantAnalyzerConfigOptionsProvider"/>.
+    /// Initializes a new instance of the <see cref="ConstantAnalyzerConfigOptionsProvider"/> class.
     /// </summary>
     /// <param name="filePath">The source file path the options apply to.</param>
     /// <param name="key">The editorconfig key to expose.</param>
@@ -68,7 +68,7 @@ internal sealed class ConstantAnalyzerConfigOptionsProvider : AnalyzerConfigOpti
         private readonly string _value;
 
         /// <summary>
-        /// Initializes a new instance of <see cref="SingleKeyOptions"/>.
+        /// Initializes a new instance of the <see cref="SingleKeyOptions"/> class.
         /// </summary>
         internal SingleKeyOptions(string key, string value)
         {

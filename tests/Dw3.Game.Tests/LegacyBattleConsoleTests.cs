@@ -85,13 +85,13 @@ public sealed class LegacyBattleConsoleTests
         var player = BattleSceneMath.FighterPlacement(enemy: false, distance: 192, height: 0);
         var enemy = BattleSceneMath.FighterPlacement(enemy: true, distance: 1408, height: 0);
         Check(
-            player.Position.X == 0 && player.Position.Y == 0 && player.Position.Z == 20.75f,
+            player.Position.Equals(new Vector3(0, 0, 20.75f)),
             "Kotemon uses the source -0x1400-distance position converted to Godot Z");
         Check(
-            enemy.Position.X == 0 && enemy.Position.Y == 0 && enemy.Position.Z == -25.5f,
+            enemy.Position.Equals(new Vector3(0, 0, -25.5f)),
             "fighter 51 uses the source +0x1400+distance position converted to Godot Z");
         Check(
-            player.YawRadians == MathF.PI && enemy.YawRadians == 0,
+            player.YawRadians.Equals(MathF.PI) && enemy.YawRadians.Equals(0f),
             "the player alone receives the source half-turn so both camps face each other");
     }
 

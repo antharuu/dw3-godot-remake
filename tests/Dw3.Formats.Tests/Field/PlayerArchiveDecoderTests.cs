@@ -392,7 +392,7 @@ public sealed class PlayerArchiveDecoderTests
     /// All pixels use CLUT index 1 (opaque magenta, word=0x7C1F) except
     /// a specified set of pixels that use CLUT index 0 (transparent, word=0).
     /// </summary>
-    private static byte[] BuildTim4Bit(int widthWords, int height, HashSet<(int x, int y)>? transparentPixels = null)
+    private static byte[] BuildTim4Bit(int widthWords, int height, HashSet<(int X, int Y)>? transparentPixels = null)
     {
         int width = widthWords * 4;
 

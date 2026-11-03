@@ -137,13 +137,13 @@ internal static class FullExtractionStep
             deferForeignKeys.ExecuteNonQuery();
         }
 
-        foreach (ExtractionDomain domain in domains)
+        foreach (string domainName in domains.Select(domain => domain.Name))
         {
-            string sourceDirectory = Path.Combine(scratchDirectory, domain.Name, "data");
+            string sourceDirectory = Path.Combine(scratchDirectory, domainName, "data");
             string sourceDatabase = Path.Combine(sourceDirectory, "dw3.sqlite");
             if (!File.Exists(sourceDatabase))
             {
-                throw new InvalidDataException($"The {domain.Name} extraction step did not produce a data pack.");
+                throw new InvalidDataException($"The {domainName} extraction step did not produce a data pack.");
             }
 
             MergeDatabase(context, sourceDatabase);
@@ -335,12 +335,10 @@ internal static class FullExtractionStep
     /// <param name="name">The identifier to validate.</param>
     private static void ValidateIdentifier(string name)
     {
-        foreach (char c in name)
+        char[] unsafeCharacters = [.. name.Where(c => !char.IsLetterOrDigit(c) && c != '_')];
+        if (unsafeCharacters.Length > 0)
         {
-            if (!char.IsLetterOrDigit(c) && c != '_')
-            {
-                throw new InvalidDataException($"Identifier '{name}' contains an unsafe character '{c}'.");
-            }
+            throw new InvalidDataException($"Identifier '{name}' contains an unsafe character '{unsafeCharacters[0]}'.");
         }
     }
 }

@@ -94,7 +94,7 @@ public sealed class TmpkMapSelectionReaderTests
         TmpkMapSelection selection = TmpkMapSelectionReader.Recover(words.SelectMany(BitConverter.GetBytes).ToArray());
 
         Assert.Equal(1, selection.FloorEntry);
-        Assert.False(((int?)selection.TriggerEntry).HasValue);
+        Assert.Null(selection.TriggerEntry);
         Assert.Null(selection.AreasEntry);
     }
 

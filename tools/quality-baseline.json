@@ -28,18 +28,6 @@
       "count": 2
     },
     {
-      "rule": "DW3001",
-      "project": "Dw3.Extractor",
-      "folder": ".",
-      "count": 1
-    },
-    {
-      "rule": "S108",
-      "project": "Dw3.Game.Tests",
-      "folder": ".",
-      "count": 1
-    },
-    {
       "rule": "S1215",
       "project": "Dw3.Game",
       "folder": "Diagnostics",
@@ -61,13 +49,7 @@
       "rule": "S1244",
       "project": "Dw3.Game.Tests",
       "folder": ".",
-      "count": 8
-    },
-    {
-      "rule": "S127",
-      "project": "Dw3.Extractor",
-      "folder": ".",
-      "count": 1
+      "count": 6
     },
     {
       "rule": "S134",
@@ -80,30 +62,6 @@
       "project": "Dw3.Game",
       "folder": "Diagnostics",
       "count": 2
-    },
-    {
-      "rule": "S1481",
-      "project": "Dw3.Formats.Tests",
-      "folder": "Encounter",
-      "count": 1
-    },
-    {
-      "rule": "S1905",
-      "project": "Dw3.Formats.Tests",
-      "folder": "Encounter",
-      "count": 6
-    },
-    {
-      "rule": "S1905",
-      "project": "Dw3.Formats.Tests",
-      "folder": "Field",
-      "count": 1
-    },
-    {
-      "rule": "S1994",
-      "project": "Dw3.Formats",
-      "folder": "Battle",
-      "count": 1
     },
     {
       "rule": "S2077",
@@ -130,18 +88,6 @@
       "count": 1
     },
     {
-      "rule": "S3218",
-      "project": "Dw3.Extractor",
-      "folder": ".",
-      "count": 2
-    },
-    {
-      "rule": "S3267",
-      "project": "Dw3.Extractor",
-      "folder": ".",
-      "count": 5
-    },
-    {
       "rule": "S3267",
       "project": "Dw3.Game",
       "folder": ".",
@@ -163,12 +109,6 @@
       "rule": "S3267",
       "project": "Dw3.Game",
       "folder": "Simulation",
-      "count": 1
-    },
-    {
-      "rule": "S3358",
-      "project": "Dw3.Formats",
-      "folder": "Mips",
       "count": 1
     },
     {
@@ -208,12 +148,6 @@
       "count": 2
     },
     {
-      "rule": "S3626",
-      "project": "Dw3.Formats",
-      "folder": "Field",
-      "count": 1
-    },
-    {
       "rule": "S3776",
       "project": "Dw3.Analyzers.Tests",
       "folder": ".",
@@ -245,36 +179,6 @@
     },
     {
       "rule": "SA1118",
-      "project": "Dw3.Analyzers",
-      "folder": ".",
-      "count": 1
-    },
-    {
-      "rule": "SA1118",
-      "project": "Dw3.Disc.Tests",
-      "folder": ".",
-      "count": 1
-    },
-    {
-      "rule": "SA1118",
-      "project": "Dw3.Extractor",
-      "folder": ".",
-      "count": 6
-    },
-    {
-      "rule": "SA1118",
-      "project": "Dw3.Extractor.Tests",
-      "folder": ".",
-      "count": 1
-    },
-    {
-      "rule": "SA1118",
-      "project": "Dw3.Game",
-      "folder": "Presentation",
-      "count": 1
-    },
-    {
-      "rule": "SA1118",
       "project": "Dw3.Game.Tests",
       "folder": ".",
       "count": 1
@@ -286,58 +190,16 @@
       "count": 2
     },
     {
-      "rule": "SA1313",
-      "project": "Dw3.Game.Tests",
-      "folder": ".",
-      "count": 1
-    },
-    {
       "rule": "SA1316",
-      "project": "Dw3.Extractor.Tests",
+      "project": "Dw3.Game.Tests",
       "folder": ".",
       "count": 3
-    },
-    {
-      "rule": "SA1316",
-      "project": "Dw3.Formats.Tests",
-      "folder": "Field",
-      "count": 2
-    },
-    {
-      "rule": "SA1316",
-      "project": "Dw3.Game.Tests",
-      "folder": ".",
-      "count": 6
-    },
-    {
-      "rule": "SA1316",
-      "project": "Dw3.Repository.Tests",
-      "folder": ".",
-      "count": 2
     },
     {
       "rule": "SA1401",
       "project": "Dw3.Game",
       "folder": "Presentation",
       "count": 11
-    },
-    {
-      "rule": "SA1414",
-      "project": "Dw3.Formats",
-      "folder": "Field",
-      "count": 2
-    },
-    {
-      "rule": "SA1629",
-      "project": "Dw3.Disc.Tests",
-      "folder": ".",
-      "count": 1
-    },
-    {
-      "rule": "SA1642",
-      "project": "Dw3.Analyzers.Tests",
-      "folder": ".",
-      "count": 3
     }
   ]
 }

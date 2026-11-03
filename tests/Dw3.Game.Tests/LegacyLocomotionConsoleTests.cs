@@ -32,7 +32,7 @@ public sealed class LegacyLocomotionConsoleTests
             result.Moved && Math.Abs(result.Step.X - Locomotion.SourceRunWorldUnitsPerSimulationTick) < 0.0001f && result.Step.Y == 0f,
             "flat right step preserves the derived PAL source speed");
         Check(
-            Math.Abs(state.Position.X - (8f + Locomotion.SourceRunWorldUnitsPerSimulationTick)) < 0.0001f && state.Position.Y == 8f,
+            Math.Abs(state.Position.X - (8f + Locomotion.SourceRunWorldUnitsPerSimulationTick)) < 0.0001f && state.Position.Y.Equals(8f),
             "position advances by the converted source step each simulation tick");
         var stoppedAt = state.Position;
         result = Locomotion.Tick(state, SemanticDirection.None, map, []);
@@ -95,12 +95,12 @@ public sealed class LegacyLocomotionConsoleTests
         var before = state.Position;
         var slide = Locomotion.Tick(state, SemanticDirection.UpRight, map, []);
         Check(
-            slide.Moved && slide.Step.X == 0f && slide.Step.Y < 0f && state.Position.X == before.X && state.Position.Y < before.Y,
+            slide.Moved && slide.Step.X.Equals(0f) && slide.Step.Y < 0f && state.Position.X.Equals(before.X) && state.Position.Y < before.Y,
             "diagonal contact projects onto the free wall tangent without backing away");
 
         var inward = Locomotion.Tick(state, SemanticDirection.Right, map, []);
         Check(
-            !inward.Moved && inward.Rejection == "void-footprint" && state.Position.X == before.X,
+            !inward.Moved && inward.Rejection == "void-footprint" && state.Position.X.Equals(before.X),
             "pure inward input remains blocked at the contacted wall");
 
         // A second wall turns the tangent into a corner. Repeated diagonal input must

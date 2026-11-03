@@ -57,11 +57,11 @@ public sealed class StageBattlesScannerTests
         // sw $t2, 0x20($t0)     ← second store (element 1 pointer)
         // jr $ra / nop
         uint fsUpper = FieldStateAddress >> 16;
-        uint fsLow = (uint)(FieldStateAddress & 0xFFFF);
+        uint fsLow = FieldStateAddress & 0xFFFF;
         uint arrUpper = arrayAddress >> 16;
-        uint arrLow = (uint)(arrayAddress & 0xFFFF);
+        uint arrLow = arrayAddress & 0xFFFF;
         uint e1Upper = elem1 >> 16;
-        uint e1Low = (uint)(elem1 & 0xFFFF);
+        uint e1Low = elem1 & 0xFFFF;
         if ((FieldStateAddress & 0x8000) != 0)
         {
             fsUpper++;
@@ -110,7 +110,6 @@ public sealed class StageBattlesScannerTests
         // Layout: two consecutive valid 1-entry FieldBattles entries at offsetA and offsetA+28.
         // MIPS only stores addrB (= addrA+28) directly; addrA is materialised but not stored.
         int offsetA = 0x800;
-        int offsetB = offsetA + FieldEncounterDecoder.FieldBattlesStride;
 
         // Build a 2-entry overlay so both addrA and addrB have valid FieldBattles data.
         var (overlay, addrA, _) = BuildOverlayWithBattles(offsetA, 2);
@@ -118,11 +117,11 @@ public sealed class StageBattlesScannerTests
 
         // Overwrite MIPS stub: store addrB to battles (confirmed), materialise addrA (Strategy C).
         uint fsUpper = FieldStateAddress >> 16;
-        uint fsLow = (uint)(FieldStateAddress & 0xFFFF);
+        uint fsLow = FieldStateAddress & 0xFFFF;
         uint bUpper = addrB >> 16;
-        uint bLow = (uint)(addrB & 0xFFFF);
+        uint bLow = addrB & 0xFFFF;
         uint aUpper = addrA >> 16;
-        uint aLow = (uint)(addrA & 0xFFFF);
+        uint aLow = addrA & 0xFFFF;
         if ((FieldStateAddress & 0x8000) != 0)
         {
             fsUpper++;

@@ -50,8 +50,9 @@ internal static class BattleTexturePages
             throw new InvalidOperationException("unsupported battle model texture kind");
         }
 
-        var imagePath = Path.Combine(directory, texture.GetProperty("image").GetString()
-            ?? throw new InvalidOperationException("battle model texture image missing"));
+        string imageName = texture.GetProperty("image").GetString()
+            ?? throw new InvalidOperationException("battle model texture image missing");
+        var imagePath = Path.Combine(directory, imageName);
         if (!File.Exists(imagePath))
         {
             throw new InvalidOperationException($"battle model texture image missing: {imagePath}");

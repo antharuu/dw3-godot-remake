@@ -254,13 +254,7 @@ internal static class NpcExtractionStep
         foreach (int seqIndex in sequenceIndices)
         {
             ActionAnimationSequence raw = ActionArchiveDecoder.DecodeSequence(archiveBytes, offsets, seqIndex, archiveEntry);
-            foreach (ActionAnimationRecord record in raw.Records)
-            {
-                if (record.Frame > maxFrame)
-                {
-                    maxFrame = record.Frame;
-                }
-            }
+            maxFrame = raw.Records.Select(record => record.Frame).Prepend(maxFrame).Max();
 
             sequences.Add(new NpcAnimSequence(
                 seqIndex,

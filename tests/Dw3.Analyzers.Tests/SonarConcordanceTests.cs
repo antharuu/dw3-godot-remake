@@ -24,7 +24,7 @@ public sealed class SonarConcordanceTests
     private readonly ITestOutputHelper _output;
 
     /// <summary>
-    /// Initializes a new instance of <see cref="SonarConcordanceTests"/>.
+    /// Initializes a new instance of the <see cref="SonarConcordanceTests"/> class.
     /// </summary>
     public SonarConcordanceTests(ITestOutputHelper output)
     {

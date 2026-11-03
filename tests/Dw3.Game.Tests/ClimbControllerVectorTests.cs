@@ -245,12 +245,12 @@ public sealed class ClimbControllerVectorTests
             errors.Add($"{tag}: AnimationDirection got {state.AnimationDirection} expected {expAnimDirection}");
         }
 
-        if (state.Position.X != expPosX)
+        if (!state.Position.X.Equals(expPosX))
         {
             errors.Add($"{tag}: Position.X got {state.Position.X} expected {expPosX}");
         }
 
-        if (state.Position.Y != expPosY)
+        if (!state.Position.Y.Equals(expPosY))
         {
             errors.Add($"{tag}: Position.Y got {state.Position.Y} expected {expPosY}");
         }

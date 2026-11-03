@@ -16,6 +16,19 @@ public static class WaterDomainWriter
     /// <summary>Manifest schema identifier read by the runtime.</summary>
     public const string ManifestSchema = "m1-stage-water-v3";
 
+    /// <summary>One row per animation frame of a stage object, with the paths of its opaque and STP images.</summary>
+    private const string InsertObjectFrameSql = """
+        INSERT INTO water_object_frames (stage_id, object_index, ordinal, frame_id, clut_row, offset_x, offset_y, abr, opaque_image, stp_image)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        """;
+
+    /// <summary>One row per stage object of a water zone, carrying its decoded tile record.</summary>
+    private const string InsertObjectSql = """
+        INSERT INTO water_objects (stage_id, object_index, visible, anim, margin, depth, frame, cycle, cycle_first, cycle_last,
+            cycle_delay, clut_row, x, y, sort_y, cycle_time, source_address)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+        """;
+
     private const string Domain = "water";
 
     /// <summary>Persists decoded and skipped stages in stage order.</summary>
@@ -102,11 +115,7 @@ public static class WaterDomainWriter
         StageTile tile = item.Tile;
         Insert(
             context,
-            """
-            INSERT INTO water_objects (stage_id, object_index, visible, anim, margin, depth, frame, cycle, cycle_first, cycle_last,
-                cycle_delay, clut_row, x, y, sort_y, cycle_time, source_address)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
-            """,
+            InsertObjectSql,
             stageId,
             item.Index,
             tile.Visible,
@@ -167,10 +176,7 @@ public static class WaterDomainWriter
         WriteImage(context, $"{Domain}/{name}/{stp}", image.Width, image.Height, image.ToStpRgba());
         Insert(
             context,
-            """
-            INSERT INTO water_object_frames (stage_id, object_index, ordinal, frame_id, clut_row, offset_x, offset_y, abr, opaque_image, stp_image)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-            """,
+            InsertObjectFrameSql,
             stageId,
             objectIndex,
             ordinal,

@@ -55,7 +55,14 @@ public readonly record struct MipsValue
 
     /// <summary>Returns a diagnostic string: <c>0xADDR±0xADDEND</c> for loaded words and <c>0xVALUE</c> for constants.</summary>
     /// <returns>A hex-formatted string suitable for logging and diagnostics.</returns>
-    public override string ToString() => IsLoadedWord
-        ? $"[0x{_constantOrAddress:X8}]{(Addend < 0 ? "-" : "+")}0x{Math.Abs((long)Addend):X}"
-        : $"0x{_constantOrAddress:X8}";
+    public override string ToString()
+    {
+        if (!IsLoadedWord)
+        {
+            return $"0x{_constantOrAddress:X8}";
+        }
+
+        string sign = Addend < 0 ? "-" : "+";
+        return $"[0x{_constantOrAddress:X8}]{sign}0x{Math.Abs((long)Addend):X}";
+    }
 }

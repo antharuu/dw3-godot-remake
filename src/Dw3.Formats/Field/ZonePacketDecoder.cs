@@ -94,7 +94,7 @@ public static class ZonePacketDecoder
     /// <param name="tileIndex">Zero-based tile index, used in tile record and error messages.</param>
     /// <returns>Ordered list of (depth, RGBA image) pairs for this tile, and the tile's metadata record.</returns>
     /// <exception cref="FormatException">The packet is truncated, the TIM is not an 8-bit indexed image, or a layer record is malformed.</exception>
-    private static (IReadOnlyList<(int Depth, RgbaImage Image)>, ZoneTileRecord) DecodeTileWithMetadata(ReadOnlySpan<byte> rawPacket, int tileIndex)
+    private static (IReadOnlyList<(int Depth, RgbaImage Image)> Layers, ZoneTileRecord Record) DecodeTileWithMetadata(ReadOnlySpan<byte> rawPacket, int tileIndex)
     {
         var (packet, wasCompressed) = RlenDecoder.DecompressIfNeeded(rawPacket);
         if (packet.Length < 16)

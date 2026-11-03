@@ -171,7 +171,8 @@ public static class HudTexturePageDecoder
     private static List<int> ReadMenuOffsets(byte[] data)
     {
         var offsets = new List<int>();
-        for (int index = 0; ; index++)
+        int index = 0;
+        while (true)
         {
             int at = 4 + (index * 4);
             if (at + 4 > data.Length)
@@ -191,6 +192,7 @@ public static class HudTexturePageDecoder
             }
 
             offsets.Add(offset);
+            index++;
         }
 
         if (offsets.Count == 0)

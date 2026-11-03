@@ -109,7 +109,7 @@ public static class Cli
             return ExtractUsageError("--progress jsonl is only available for full extraction.", true, output, error);
         }
 
-        return DispatchSingleDomain(opts.OnlyDomain, () => openDisc(opts.CuePath), opts.OutputPath, output, error);
+        return ExtractDomainDispatcher.Dispatch(opts.OnlyDomain, () => openDisc(opts.CuePath), opts.OutputPath, output, error);
     }
 
     /// <summary>
@@ -131,206 +131,37 @@ public static class Cli
         string? outputPath = null;
         string? onlyDomain = null;
         string? progressFormat = null;
-        for (int index = 1; index < arguments.Count; index++)
+
+        // Every extract option takes exactly one value, so the arguments after the verb are read in pairs.
+        int index = 1;
+        while (index < arguments.Count)
         {
             string option = arguments[index];
-            if (option is "--disc" or "--out" or "--only" or "--progress")
-            {
-                if (++index >= arguments.Count)
-                {
-                    ExtractUsageError($"Missing value for {option}.", jsonlRequested, output, error);
-                    return null;
-                }
-
-                switch (option)
-                {
-                    case "--disc": cuePath = arguments[index]; break;
-                    case "--out": outputPath = arguments[index]; break;
-                    case "--only": onlyDomain = arguments[index]; break;
-                    case "--progress": progressFormat = arguments[index]; break;
-                }
-            }
-            else
+            if (option is not ("--disc" or "--out" or "--only" or "--progress"))
             {
                 ExtractUsageError($"Unknown extract option: {option}", jsonlRequested, output, error);
                 return null;
             }
+
+            if (index + 1 >= arguments.Count)
+            {
+                ExtractUsageError($"Missing value for {option}.", jsonlRequested, output, error);
+                return null;
+            }
+
+            string value = arguments[index + 1];
+            switch (option)
+            {
+                case "--disc": cuePath = value; break;
+                case "--out": outputPath = value; break;
+                case "--only": onlyDomain = value; break;
+                default: progressFormat = value; break;
+            }
+
+            index += 2;
         }
 
         return new ExtractOptions(cuePath, outputPath, onlyDomain, progressFormat);
-    }
-
-    /// <summary>
-    /// Routes a single domain name to the appropriate extraction step.
-    /// Tries field domains first, then content domains, then battle domains.
-    /// </summary>
-    /// <param name="domain">The domain name (e.g. <c>"zones"</c>, <c>"battle"</c>).</param>
-    /// <param name="openDisc">Opens the disc for the chosen step; the step disposes the handle before returning.</param>
-    /// <param name="outputPath">Root of the data pack to write into.</param>
-    /// <param name="output">Receives one JSON event line on success.</param>
-    /// <param name="error">Receives one plain-text error line on failure.</param>
-    /// <returns>0 on success, 1 on extraction error, 2 on unknown domain.</returns>
-    private static int DispatchSingleDomain(
-        string domain,
-        Func<IDiscSource> openDisc,
-        string outputPath,
-        TextWriter output,
-        TextWriter error)
-    {
-        int? result = TryDispatchFieldDomain(domain, openDisc, outputPath, output, error);
-        result ??= TryDispatchContentDomain(domain, openDisc, outputPath, output, error);
-        result ??= TryDispatchBattleDomain(domain, openDisc, outputPath, output, error);
-        if (result is null)
-        {
-            error.WriteLine($"Unsupported extraction domain: {domain}");
-            return 2;
-        }
-
-        return result.Value;
-    }
-
-    /// <summary>
-    /// Attempts to dispatch a field-geometry domain: zones, collision, player, water, climb, drop, npc.
-    /// Returns <see langword="null"/> for unrecognised names.
-    /// </summary>
-    /// <param name="domain">The domain name to match.</param>
-    /// <param name="openDisc">Opens the disc for a field step; forwarded unchanged to the step.</param>
-    /// <param name="outputPath">Root of the data pack to write into.</param>
-    /// <param name="output">Receives one JSON event line on success.</param>
-    /// <param name="error">Receives one plain-text error line on failure.</param>
-    /// <returns>The extraction exit code, or <see langword="null"/> when the domain is not a field domain.</returns>
-    private static int? TryDispatchFieldDomain(
-        string domain,
-        Func<IDiscSource> openDisc,
-        string outputPath,
-        TextWriter output,
-        TextWriter error)
-    {
-        if (string.Equals(domain, "zones", StringComparison.Ordinal))
-        {
-            return ZoneExtractionStep.Extract(openDisc, outputPath, domain, output, error);
-        }
-
-        if (string.Equals(domain, "collision", StringComparison.Ordinal))
-        {
-            return CollisionExtractionStep.Extract(openDisc, outputPath, domain, output, error);
-        }
-
-        if (string.Equals(domain, "player", StringComparison.Ordinal))
-        {
-            return PlayerExtractionStep.Extract(openDisc, outputPath, domain, output, error);
-        }
-
-        if (string.Equals(domain, "water", StringComparison.Ordinal))
-        {
-            return WaterExtractionStep.Extract(openDisc, outputPath, output, error);
-        }
-
-        if (string.Equals(domain, "climb", StringComparison.Ordinal) ||
-            string.Equals(domain, "drop", StringComparison.Ordinal))
-        {
-            return ActionExtractionStep.Extract(openDisc, outputPath, domain, output, error);
-        }
-
-        if (string.Equals(domain, "npc", StringComparison.Ordinal))
-        {
-            return NpcExtractionStep.Extract(openDisc, outputPath, output, error);
-        }
-
-        return null;
-    }
-
-    /// <summary>
-    /// Attempts to dispatch a content domain: cue, icon, font, text, dialogue, talk-box.
-    /// Returns <see langword="null"/> for unrecognised names.
-    /// </summary>
-    /// <param name="domain">The domain name to match.</param>
-    /// <param name="openDisc">Opens the disc for a content step; forwarded unchanged to the step.</param>
-    /// <param name="outputPath">Root of the data pack to write into.</param>
-    /// <param name="output">Receives one JSON event line on success.</param>
-    /// <param name="error">Receives one plain-text error line on failure.</param>
-    /// <returns>The extraction exit code, or <see langword="null"/> when the domain is not a content domain.</returns>
-    private static int? TryDispatchContentDomain(
-        string domain,
-        Func<IDiscSource> openDisc,
-        string outputPath,
-        TextWriter output,
-        TextWriter error)
-    {
-        if (string.Equals(domain, "cue", StringComparison.Ordinal) ||
-            string.Equals(domain, "icon", StringComparison.Ordinal))
-        {
-            return FieldcomExtractionStep.Extract(openDisc, outputPath, domain, output, error);
-        }
-
-        if (string.Equals(domain, "font", StringComparison.Ordinal) ||
-            string.Equals(domain, "text", StringComparison.Ordinal))
-        {
-            return TextExtractionStep.Extract(openDisc, outputPath, domain, output, error);
-        }
-
-        if (string.Equals(domain, "dialogue", StringComparison.Ordinal))
-        {
-            return DialogueExtractionStep.Extract(openDisc, outputPath, output, error);
-        }
-
-        if (string.Equals(domain, "talk-box", StringComparison.Ordinal))
-        {
-            return TalkBoxExtractionStep.Extract(openDisc, outputPath, output, error);
-        }
-
-        return null;
-    }
-
-    /// <summary>
-    /// Attempts to dispatch a battle domain: encounter, battle, digivolution, battle-models,
-    /// battle-stages, battle-hud, battle-report. Returns <see langword="null"/> for unrecognised names.
-    /// </summary>
-    /// <param name="domain">The domain name to match.</param>
-    /// <param name="openDisc">Opens the disc for a battle step; forwarded unchanged to the step.</param>
-    /// <param name="outputPath">Root of the data pack to write into.</param>
-    /// <param name="output">Receives one JSON event line on success.</param>
-    /// <param name="error">Receives one plain-text error line on failure.</param>
-    /// <returns>The extraction exit code, or <see langword="null"/> when the domain is not a battle domain.</returns>
-    private static int? TryDispatchBattleDomain(
-        string domain,
-        Func<IDiscSource> openDisc,
-        string outputPath,
-        TextWriter output,
-        TextWriter error)
-    {
-        if (string.Equals(domain, "encounter", StringComparison.Ordinal))
-        {
-            return EncounterExtractionStep.Extract(openDisc, outputPath, output, error);
-        }
-
-        if (string.Equals(domain, "battle", StringComparison.Ordinal) ||
-            string.Equals(domain, "digivolution", StringComparison.Ordinal))
-        {
-            return BattleExtractionStep.Extract(openDisc, outputPath, domain, output, error);
-        }
-
-        if (string.Equals(domain, "battle-models", StringComparison.Ordinal))
-        {
-            return BattleModelExtractionStep.Extract(openDisc, outputPath, output, error);
-        }
-
-        if (string.Equals(domain, "battle-stages", StringComparison.Ordinal))
-        {
-            return BattleStageExtractionStep.Extract(openDisc, outputPath, output, error);
-        }
-
-        if (string.Equals(domain, "battle-hud", StringComparison.Ordinal))
-        {
-            return BattleHudExtractionStep.Extract(openDisc, outputPath, output, error);
-        }
-
-        if (string.Equals(domain, "battle-report", StringComparison.Ordinal))
-        {
-            return BattleReportExtractionStep.Extract(openDisc, outputPath, output, error);
-        }
-
-        return null;
     }
 
     /// <summary>

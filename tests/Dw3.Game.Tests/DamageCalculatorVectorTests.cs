@@ -195,7 +195,7 @@ public sealed class DamageCalculatorVectorTests
     private static void VerifyComputeDamage(JsonNode c, int id, List<string> errors)
     {
         var tech = ReadTech(c);
-        var user = ReadUserStats(c, "user");
+        var user = ReadUserStats(c);
         var target = ReadTargetStats(c);
         bool enemy = B(c, "enemyAttacker");
         int str = I(c, "strength");
@@ -456,9 +456,8 @@ public sealed class DamageCalculatorVectorTests
         Script = I(c, "techScript"),
     };
 
-    private static BattleStats ReadUserStats(JsonNode c, string _prefix)
+    private static BattleStats ReadUserStats(JsonNode c)
     {
-        _ = _prefix;
         var s = new BattleStats
         {
             Family = I(c, "userFamily"),

@@ -32,6 +32,11 @@ public sealed class ClassCognitiveComplexityAnalyzer : DiagnosticAnalyzer
     /// <summary>The .editorconfig key that overrides <see cref="DefaultMaxComplexity"/>.</summary>
     public const string EditorConfigKey = "dw3_class_cognitive_complexity_max";
 
+    /// <summary>The long description shown with DW3001 in the IDE and in SARIF logs.</summary>
+    private const string Description = "The sum of the cognitive complexity of all methods, constructors "
+        + "and property accessors in the class exceeds the configured limit. "
+        + "Break the type into smaller, more focused types or extract methods.";
+
     /// <summary>The custom tag required for diagnostics reported in CompilationEndAction.</summary>
     private static readonly string[] CompilationEndTags = ["CompilationEnd"];
 
@@ -43,9 +48,7 @@ public sealed class ClassCognitiveComplexityAnalyzer : DiagnosticAnalyzer
         category: "Maintainability",
         defaultSeverity: DiagnosticSeverity.Warning,
         isEnabledByDefault: true,
-        description: "The sum of the cognitive complexity of all methods, constructors "
-                   + "and property accessors in the class exceeds the configured limit. "
-                   + "Break the type into smaller, more focused types or extract methods.",
+        description: Description,
         helpLinkUri: "https://github.com/antharuu/dw3-remake/blob/main/docs/CODE_RULES.md#dw3001",
         customTags: CompilationEndTags);
 

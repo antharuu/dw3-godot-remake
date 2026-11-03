@@ -933,9 +933,11 @@ src/Dw3.Game/Simulation/InteractiveFrameCoordinator.cs
 tests/Dw3.Game.Tests/InteractiveFrameCoordinatorTests.cs
 src/Dw3.Disc/IDiscSource.cs
 src/Dw3.Extractor/EngineFileReader.cs
+src/Dw3.Extractor/ExtractDomainDispatcher.cs
 tests/Dw3.Extractor.Tests/FabricatedDisc.cs
 tests/Dw3.Extractor.Tests/ExtractionStepFailureTests.cs
 src/Dw3.Extractor/ExtractionDomain.cs
+src/Dw3.Extractor/StreamWriterAdapter.cs
 tests/Dw3.Extractor.Tests/Fabricate.cs
 tests/Dw3.Extractor.Tests/FullExtractionStepTests.cs
 tests/Dw3.Extractor.Tests/BattleExtractionStepTests.cs
