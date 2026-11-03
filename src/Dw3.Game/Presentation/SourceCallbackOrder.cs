@@ -9,9 +9,16 @@ namespace Dw3Production.Presentation;
 /// </summary>
 public static class SourceCallbackOrder
 {
+    /// <summary>Stable registration rank used for field objects that predate the player callback.</summary>
     public const int MapObjectRegistration = 0;
+
+    /// <summary>Stable registration rank used for the player callback after map-object callbacks.</summary>
     public const int PlayerRegistration = 1;
 
+    /// <summary>Sorts callbacks into their final painter order for one source depth bucket.</summary>
+    /// <typeparam name="T">Payload carried by each draw callback.</typeparam>
+    /// <param name="callbacks">Callbacks with their source priority and stable registration rank.</param>
+    /// <returns>Callback payloads ordered from the first primitive painted to the last.</returns>
     public static IReadOnlyList<T> Order<T>(IEnumerable<(T Item, int Priority, int Registration)> callbacks)
         => [.. callbacks
             .OrderBy(entry => entry.Priority)

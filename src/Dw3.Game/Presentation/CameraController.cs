@@ -3,6 +3,7 @@ using Dw3Production.Conversion;
 
 namespace Dw3Production.Presentation;
 
+/// <summary>Centers the exploration camera on the player while preserving map bounds and source-style panning.</summary>
 public sealed class CameraController
 {
     private const float ViewWidth = 1280f / 3f;
@@ -26,6 +27,10 @@ public sealed class CameraController
         _camera.PositionSmoothingEnabled = false;
     }
 
+    /// <summary>Applies map limits and moves the camera to the player immediately or through quarter-distance panning.</summary>
+    /// <param name="zone">Loaded field zone that supplies the map bounds in world pixels.</param>
+    /// <param name="playerPosition">Player center in world pixels.</param>
+    /// <param name="smooth"><see langword="true"/> to move one quarter of the remaining distance this update.</param>
     public void Apply(Zone zone, Vector2 playerPosition, bool smooth = false)
     {
         var target = PositionFor(zone.Width, zone.Height, playerPosition);
@@ -54,6 +59,11 @@ public sealed class CameraController
         _camera.MakeCurrent();
     }
 
+    /// <summary>Calculates the camera center, clamping the player target to the visible map rectangle.</summary>
+    /// <param name="mapWidth">Map width in world pixels.</param>
+    /// <param name="mapHeight">Map height in world pixels.</param>
+    /// <param name="playerPosition">Unclamped player center in world pixels.</param>
+    /// <returns>A center that shows no area outside the map unless the map is smaller than the viewport.</returns>
     public static Vector2 PositionFor(int mapWidth, int mapHeight, Vector2 playerPosition)
     {
         var halfWidth = ViewWidth / 2f;

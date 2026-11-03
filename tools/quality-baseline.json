@@ -91,7 +91,7 @@
       "rule": "CS1591",
       "project": "Dw3.Game",
       "folder": "Presentation",
-      "count": 95
+      "count": 76
     },
     {
       "rule": "CS1734",
@@ -1843,7 +1843,7 @@
       "rule": "SA1600",
       "project": "Dw3.Game",
       "folder": "Presentation",
-      "count": 248
+      "count": 225
     },
     {
       "rule": "SA1601",
@@ -1891,7 +1891,7 @@
       "rule": "SA1611",
       "project": "Dw3.Game",
       "folder": "Presentation",
-      "count": 135
+      "count": 114
     },
     {
       "rule": "SA1615",
@@ -1903,7 +1903,7 @@
       "rule": "SA1615",
       "project": "Dw3.Game",
       "folder": "Presentation",
-      "count": 46
+      "count": 36
     },
     {
       "rule": "SA1626",

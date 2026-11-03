@@ -52,13 +52,13 @@ public sealed class BattleMotionMachine
     /// <summary>Gets the most recently published fixed-point blend weight.</summary>
     public int Blend { get; private set; }
 
-    /// <summary>Gets a value indicating whether gets whether the most recently published entry blends between poses.</summary>
+    /// <summary>Gets a value indicating whether the published entry interpolates between two poses.</summary>
     public bool Blending { get; private set; }
 
-    /// <summary>Gets a value indicating whether gets whether the active motion reached its finish marker.</summary>
+    /// <summary>Gets a value indicating whether the active motion reached its terminal marker.</summary>
     public bool MotionDone { get; private set; }
 
-    /// <summary>Gets a value indicating whether gets whether the active motion returns to the selected idle motion when finished.</summary>
+    /// <summary>Gets a value indicating whether a completed motion returns to the selected idle motion.</summary>
     public bool ToIdle { get; private set; }
 
     /// <summary>Gets the destination frame of the current blend, or zero when none is active.</summary>
@@ -73,7 +73,7 @@ public sealed class BattleMotionMachine
     /// <summary>Gets the expanded values of the active motion timeline.</summary>
     public IReadOnlyList<int> Keyframes => _keyframes;
 
-    /// <summary>Gets a value indicating whether gets whether the expanded motion ends in a loop marker.</summary>
+    /// <summary>Gets a value indicating whether the expanded motion ends by jumping to an earlier frame.</summary>
     public bool Looping => _keyframes.Count > 0 && _keyframes[^1] == BlendFlag;
 
     /// <summary>
@@ -226,6 +226,11 @@ public sealed class BattleMotionMachine
         return true;
     }
 
+    /// <summary>Expands a timed interpolation step into fixed-point blend entries.</summary>
+    /// <param name="step">Current decoded step row.</param>
+    /// <param name="count">Number of interpolation frames.</param>
+    /// <param name="stepIndex">Zero-based position of <paramref name="step"/> in <paramref name="steps"/>.</param>
+    /// <param name="steps">All decoded step rows needed to find neighboring pose frames.</param>
     private void ExpandBlendRun(IReadOnlyList<int> step, int count, int stepIndex, IReadOnlyList<IReadOnlyList<int>> steps)
     {
         var index = step[0];
@@ -244,6 +249,10 @@ public sealed class BattleMotionMachine
         }
     }
 
+    /// <summary>Appends one encoded timeline entry and its blend endpoints in matching list positions.</summary>
+    /// <param name="value">Frame number or fixed-point blend value with its marker bit.</param>
+    /// <param name="target">Destination pose frame for a blend entry.</param>
+    /// <param name="source">Source pose frame for a blend entry, or negative one when absent.</param>
     private void AddEntry(int value, int target, int source)
     {
         _keyframes.Add(value);
@@ -251,6 +260,8 @@ public sealed class BattleMotionMachine
         _sources.Add(source);
     }
 
+    /// <summary>Publishes one expanded entry as a direct frame or a blend state.</summary>
+    /// <param name="index">Zero-based index into the expanded timeline.</param>
     private void PublishEntry(int index)
     {
         var value = _keyframes[index];
@@ -266,6 +277,9 @@ public sealed class BattleMotionMachine
         Blending = false;
     }
 
+    /// <summary>Publishes the endpoints and 12-bit weight of an interpolation entry.</summary>
+    /// <param name="index">Zero-based index into the blend endpoint lists.</param>
+    /// <param name="value">Encoded timeline value containing the blend marker and weight.</param>
     private void PublishBlendEntry(int index, int value)
     {
         var target = _targets[index];
