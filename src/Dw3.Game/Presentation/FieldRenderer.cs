@@ -37,6 +37,15 @@ public sealed class FieldRenderer : IDisposable
     private Func<int, string>? _framePath;
     private Func<int, int, string>? _climbFramePath;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="FieldRenderer"/> class.
+    /// Creates depth-ordered sub-nodes (11, 7, 4, 3, 2, 1), a camera, a diagnostic overlay,
+    /// a water layer, and an NPC layer, all rooted under <paramref name="root"/>.
+    /// </summary>
+    /// <param name="root">Parent Godot node that receives all depth-ordered sub-nodes, the camera, and the diagnostic overlay.</param>
+    /// <param name="cue">Decoded exit-cue frames and per-direction animation sequences for the field connection balloon.</param>
+    /// <param name="water">Decoded water domain data providing animated stage objects for each loaded zone.</param>
+    /// <param name="icon">Decoded above-head connection indicator frames and animation sequences.</param>
     public FieldRenderer(Node2D root, ExitCue cue, WaterData water, PlayerIconData icon)
     {
         _root = root;

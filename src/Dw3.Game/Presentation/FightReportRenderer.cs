@@ -13,6 +13,12 @@ public sealed partial class FightReportRenderer : IDisposable
     private readonly ReportControl _control;
     private readonly ColorRect _fader;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="FightReportRenderer"/> class.
+    /// Creates a canvas layer at depth 350, a report control scaled and positioned
+    /// by the shared HUD layout, and a full-rect colour fade overlay.
+    /// </summary>
+    /// <param name="root">Parent Godot node that receives the report canvas layer.</param>
     public FightReportRenderer(Node root)
     {
         _layer = new CanvasLayer { Layer = 350, Visible = false };

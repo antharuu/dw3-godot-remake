@@ -11,6 +11,10 @@ public sealed class PsxTextPainter
     private FontData? _font;
     private readonly Dictionary<(int Style, int Palette, int Page), Texture2D> _pages = [];
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="PsxTextPainter"/> class.
+    /// </summary>
+    /// <param name="owner">The Godot Control node whose DrawTextureRectRegion is called for all glyph and icon draws.</param>
     public PsxTextPainter(Control owner) => _owner = owner;
 
     public void SetFont(FontData font)

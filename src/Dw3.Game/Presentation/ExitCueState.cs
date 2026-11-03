@@ -21,6 +21,11 @@ public sealed class ExitCueState
     private int _innerElapsed;
     private int _rawDirection;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ExitCueState"/> class.
+    /// </summary>
+    /// <param name="innerRows">Per-direction row map from the field cue archive: key is the row id (6..10),
+    /// value is the ordered (frame, duration) sequence used to animate the open cue sprite.</param>
     public ExitCueState(IReadOnlyDictionary<int, IReadOnlyList<(int Frame, int Duration)>> innerRows)
     {
         _innerRows = innerRows;

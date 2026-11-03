@@ -15,6 +15,12 @@ public sealed partial class DiagnosticOverlay : IDisposable
     private GeometryCache? _cache;
     private float _hudAge = HudIntervalSeconds;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DiagnosticOverlay"/> class.
+    /// Creates a hidden DebugGeometry node for world-space geometry and a CanvasLayer HUD label,
+    /// both added as children of <paramref name="root"/>.
+    /// </summary>
+    /// <param name="root">The Godot Node2D that receives the debug geometry and HUD canvas layer as children.</param>
     public DiagnosticOverlay(Node2D root)
     {
         _world = new DebugGeometry { ZIndex = 100, Visible = false };

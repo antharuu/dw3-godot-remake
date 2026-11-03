@@ -91,13 +91,13 @@
       "rule": "CS1591",
       "project": "Dw3.Game",
       "folder": "Conversion",
-      "count": 2
+      "count": 1
     },
     {
       "rule": "CS1591",
       "project": "Dw3.Game",
       "folder": "Presentation",
-      "count": 102
+      "count": 95
     },
     {
       "rule": "CS1591",
@@ -1855,7 +1855,7 @@
       "rule": "SA1600",
       "project": "Dw3.Game",
       "folder": "Conversion",
-      "count": 78
+      "count": 77
     },
     {
       "rule": "SA1600",
@@ -1873,7 +1873,7 @@
       "rule": "SA1600",
       "project": "Dw3.Game",
       "folder": "Presentation",
-      "count": 255
+      "count": 248
     },
     {
       "rule": "SA1600",

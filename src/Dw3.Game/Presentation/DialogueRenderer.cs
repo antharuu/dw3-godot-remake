@@ -24,6 +24,12 @@ public sealed partial class DialogueRenderer : IDisposable
 
     private readonly DialogueBoxNode _box;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DialogueRenderer"/> class.
+    /// Creates a CanvasLayer at layer 200 containing the dialogue box node,
+    /// scaled to 3× and horizontally centred at the source screen's 160-pixel midpoint.
+    /// </summary>
+    /// <param name="root">The Godot node that receives the canvas layer containing the dialogue box.</param>
     public DialogueRenderer(Node root)
     {
         var layer = new CanvasLayer { Layer = 200 };

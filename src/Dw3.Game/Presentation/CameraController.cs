@@ -11,6 +11,12 @@ public sealed class CameraController
     private Vector2 _pan;
     private bool _initialized;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="CameraController"/> class.
+    /// Sets the camera zoom to 3× and disables Godot position smoothing so the source
+    /// exponential pan can be applied manually without the camera drifting off-map.
+    /// </summary>
+    /// <param name="camera">The Godot Camera2D node to drive; its zoom and smoothing are configured immediately.</param>
     public CameraController(Camera2D camera)
     {
         _camera = camera;
