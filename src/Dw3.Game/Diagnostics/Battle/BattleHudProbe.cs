@@ -19,6 +19,11 @@ internal sealed class BattleHudProbe : BattleProbe
     /// <inheritdoc/>
     protected override string FailureCode => "BATTLE_HUD_PROBE";
 
+    /// <summary>
+    /// Runs the HUD probe: starts a debug battle, captures the command menu and partner view,
+    /// and asserts sprite-slot count and cursor position against the source layout.
+    /// </summary>
+    /// <returns>A task that completes when the probe assertions pass or throws on failure.</returns>
     protected override async Task ExecuteAsync()
     {
         var captureRoot = Host.PrepareCaptureDirectory("probe/battle-hud");
@@ -126,6 +131,14 @@ internal sealed class BattleHudProbe : BattleProbe
         QuietLog.Info($"battle-hud probe PASS cursor0=(17,110)->({cursor0.X:0},{cursor0.Y:0}) cursor3=(17,167)->({cursor3.X:0},{cursor3.Y:0}) sprites={spriteSlots}/6 captures={captureRoot}");
     }
 
+    /// <summary>
+    /// Counts pixels whose RGB channels differ between two same-sized images within a rectangular region.
+    /// Used to verify that a UI element (cursor, sprite) changes between two captured frames.
+    /// </summary>
+    /// <param name="a">First image; must have the same dimensions as <paramref name="b"/>.</param>
+    /// <param name="b">Second image; must have the same dimensions as <paramref name="a"/>.</param>
+    /// <param name="rect">Screen-space rectangle to examine; clamped to the image bounds.</param>
+    /// <returns>Number of pixels that differ in at least one RGB channel within the rectangle.</returns>
     private static int CountDifferentPixelsInRect(Image a, Image b, Rect2 rect)
     {
         var count = 0;

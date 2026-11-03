@@ -23,6 +23,13 @@ public sealed class BattleDiagnosticProbeRunner(IDiagnosticProbeHost host)
         || TrySchedule(options.BattleReportProbe, "RunBattleReportProbe")
         || TrySchedule(options.FighterSheet, "RunFighterSheet");
 
+    /// <summary>
+    /// Schedules <paramref name="methodName"/> when <paramref name="enabled"/> is true;
+    /// returns <see langword="false"/> immediately otherwise.
+    /// </summary>
+    /// <param name="enabled">Whether this probe is enabled by the current startup options.</param>
+    /// <param name="methodName">Entry-point method name registered in the probe catalog.</param>
+    /// <returns><see langword="true"/> when the probe was scheduled.</returns>
     private bool TrySchedule(bool enabled, string methodName)
     {
         if (!enabled) return false;

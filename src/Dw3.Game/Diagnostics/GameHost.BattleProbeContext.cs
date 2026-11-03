@@ -7,6 +7,7 @@ using Godot;
 
 namespace Dw3Production;
 
+/// <summary>Contains GameHost's battle probe context implementation, exposing the narrow <see cref="IBattleProbeHost"/> contract.</summary>
 public partial class GameHost
 {
     /// <summary>

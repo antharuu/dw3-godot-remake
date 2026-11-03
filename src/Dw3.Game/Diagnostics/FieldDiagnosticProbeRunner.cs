@@ -36,6 +36,14 @@ public sealed class FieldDiagnosticProbeRunner(IDiagnosticProbeHost host)
             || TrySchedule(options.DropProbe, "RunDropProbe", ownsInput: true);
     }
 
+    /// <summary>
+    /// Schedules <paramref name="methodName"/> when <paramref name="enabled"/> is true;
+    /// returns <see langword="false"/> immediately otherwise.
+    /// </summary>
+    /// <param name="enabled">Whether this probe is enabled by the current startup options.</param>
+    /// <param name="methodName">Entry-point method name registered in the probe catalog.</param>
+    /// <param name="ownsInput">When <see langword="true"/>, the probe takes exclusive control of keyboard input.</param>
+    /// <returns><see langword="true"/> when the probe was scheduled.</returns>
     private bool TrySchedule(bool enabled, string methodName, bool ownsInput)
     {
         if (!enabled) return false;

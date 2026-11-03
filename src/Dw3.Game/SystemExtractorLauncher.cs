@@ -12,8 +12,10 @@ public sealed class SystemExtractorLauncher : IExtractorLauncher
     private readonly string _extractorBinary;
 
     /// <summary>
-    /// Initializes the launcher with the path to the Dw3.Extractor binary.
+    /// Initializes a new instance of the <see cref="SystemExtractorLauncher"/> class
+    /// with the path to the Dw3.Extractor binary.
     /// </summary>
+    /// <param name="extractorBinary">Absolute or relative path to the Dw3.Extractor executable.</param>
     public SystemExtractorLauncher(string extractorBinary)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(extractorBinary);
@@ -52,6 +54,8 @@ public sealed class SystemExtractorLauncher : IExtractorLauncher
     /// Prefers the <c>DW3_EXTRACTOR</c> environment variable (development override).
     /// Falls back to the debug build output path relative to <paramref name="repoRoot"/>.
     /// </summary>
+    /// <param name="repoRoot">Root directory of the repository, used to construct the default debug output path.</param>
+    /// <returns>Absolute or relative path to the Dw3.Extractor binary.</returns>
     public static string ResolveExtractorPath(string repoRoot)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(repoRoot);

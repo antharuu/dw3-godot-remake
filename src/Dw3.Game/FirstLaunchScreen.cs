@@ -31,9 +31,12 @@ public partial class FirstLaunchScreen : CanvasLayer
     public delegate void PackReadyEventHandler();
 
     /// <summary>
-    /// Constructs the screen with the data directory where the pack will be written
-    /// and the path to the Dw3.Extractor binary.
+    /// Initializes a new instance of the <see cref="FirstLaunchScreen"/> class.
+    /// Shown when the data pack is absent or invalid; the screen manages extraction
+    /// and emits <see cref="PackReady"/> once the pack is usable.
     /// </summary>
+    /// <param name="dataDir">Directory where the extractor writes the data pack and where progress captures are saved.</param>
+    /// <param name="extractorPath">Path to the Dw3.Extractor binary launched as a child process.</param>
     public FirstLaunchScreen(string dataDir, string extractorPath)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(dataDir);
@@ -87,6 +90,12 @@ public partial class FirstLaunchScreen : CanvasLayer
     // UI helpers
     // ---------------------------------------------------------------------------
 
+    /// <summary>
+    /// Adds the semi-transparent backdrop and the status label as direct children of this
+    /// <see cref="Godot.CanvasLayer"/>. Reads the viewport size explicitly because a
+    /// <see cref="Godot.Control"/> child of a CanvasLayer does not receive the viewport rect
+    /// via anchors before the first layout pass.
+    /// </summary>
     private void BuildOverlay()
     {
         // In Godot 4, a Control added as a direct CanvasLayer child does not automatically
@@ -119,6 +128,8 @@ public partial class FirstLaunchScreen : CanvasLayer
         AddChild(root);
     }
 
+    /// <summary>Updates the status label text on the main thread.</summary>
+    /// <param name="text">User-facing message displayed in the overlay label.</param>
     private void SetStatus(string text)
     {
         _statusLabel?.Text = text;
@@ -128,6 +139,11 @@ public partial class FirstLaunchScreen : CanvasLayer
     // File dialog
     // ---------------------------------------------------------------------------
 
+    /// <summary>
+    /// Opens a native file picker constrained to <c>.cue</c> files so the user can select
+    /// the source disc. Connected to <see cref="OnDiscSelected"/> on confirmation and to a
+    /// closure that shows an error message on cancellation.
+    /// </summary>
     private void OpenDiscDialog()
     {
         var dialog = new FileDialog
@@ -148,6 +164,8 @@ public partial class FirstLaunchScreen : CanvasLayer
         dialog.PopupCentered();
     }
 
+    /// <summary>Called when the user confirms the disc selection in the file picker.</summary>
+    /// <param name="path">Absolute path to the chosen <c>.cue</c> file.</param>
     private void OnDiscSelected(string path)
     {
         SetStatus($"Extracting from {path}...");
@@ -158,6 +176,11 @@ public partial class FirstLaunchScreen : CanvasLayer
     // Extraction
     // ---------------------------------------------------------------------------
 
+    /// <summary>
+    /// Spawns an <see cref="ExtractionController"/> and starts the extraction background thread.
+    /// Progress and completion events are marshalled back to the main thread via the action queue.
+    /// </summary>
+    /// <param name="discPath">Absolute path to the disc cue sheet file passed to the extractor.</param>
     private void BeginExtraction(string discPath)
     {
         var controller = new ExtractionController(new SystemExtractorLauncher(_extractorPath));
@@ -194,6 +217,7 @@ public partial class FirstLaunchScreen : CanvasLayer
         _extractionThread.Start();
     }
 
+    /// <summary>Called on the main thread when the extraction controller fires its Completed event.</summary>
     private void OnExtractionComplete()
     {
         SetStatus("Extraction complete. Loading...");
@@ -206,8 +230,12 @@ public partial class FirstLaunchScreen : CanvasLayer
 
     /// <summary>
     /// Waits for one fully-rendered frame, then saves a viewport screenshot to
-    /// <c>DW3_CAPTURE_DIR/{filename}</c>.  Only called when <c>_probeActive</c> is true.
+    /// <c>DW3_CAPTURE_DIR/{filename}</c>. Only called when <c>_probeActive</c> is true.
     /// </summary>
+    /// <param name="filename">File name written under the active capture directory.</param>
+    /// <param name="quitAfter">When <see langword="true"/>, calls <c>GetTree().Quit(0)</c> after saving.</param>
+    /// <param name="thenDo">Optional action invoked after the capture is saved, before the optional quit.</param>
+    /// <returns>A task that completes after the capture is saved and any post-capture actions are done.</returns>
     private async System.Threading.Tasks.Task CaptureAfterFrameAsync(
         string filename, bool quitAfter = false, Action? thenDo = null)
     {

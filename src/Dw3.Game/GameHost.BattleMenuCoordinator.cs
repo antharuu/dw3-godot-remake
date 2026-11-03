@@ -69,6 +69,7 @@ public partial class GameHost
         }
 
         /// <summary>Confirms the selected root command.</summary>
+        /// <param name="flow">Active battle flow receiving the chosen command.</param>
         public void ConfirmRoot(BattleFlowController flow)
         {
             switch (_host._battleMenu.Cursor)

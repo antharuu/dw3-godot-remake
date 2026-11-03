@@ -10,10 +10,12 @@ public interface IExtractorProcess : IDisposable
     /// Returns the next line from the extractor's standard output, or null at EOF.
     /// Blocking call — runs on the extraction background thread.
     /// </summary>
+    /// <returns>The next UTF-8 text line, or <see langword="null"/> when the process has closed its stdout.</returns>
     string? ReadLine();
 
     /// <summary>
     /// Blocks until the process exits and returns its exit code.
     /// </summary>
+    /// <returns>The process exit code; 0 indicates successful extraction.</returns>
     int WaitForExit();
 }

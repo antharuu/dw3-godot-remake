@@ -20,6 +20,11 @@ internal sealed class BattleInputProbe : BattleProbe
     /// <inheritdoc/>
     protected override string FailureCode => "BATTLE_INPUT_PROBE";
 
+    /// <summary>
+    /// Runs the input probe: opens every battle submenu in sequence, injects directional keys
+    /// and confirm, and verifies that each page transitions correctly.
+    /// </summary>
+    /// <returns>A task that completes when the probe assertions pass or throws on failure.</returns>
     protected override async Task ExecuteAsync()
     {
         var captureRoot = Host.PrepareCaptureDirectory("probe/battle-input");

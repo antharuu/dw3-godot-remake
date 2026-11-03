@@ -167,34 +167,50 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     // These accessors mark lifecycle boundaries explicitly. A caller that needs an
     // initialized runtime collaborator receives a useful failure instead of masking
     // a violated startup invariant with the null-forgiving operator.
+
+    /// <summary>Gets the active field zone; throws when the field scene has not been applied yet.</summary>
     private FieldZone CurrentZone => _currentZone ?? throw new InvalidOperationException("field scene has not been applied");
 
+    /// <summary>Gets the field renderer; throws when the renderer has not been initialized yet.</summary>
     private FieldRenderer Renderer => _renderer ?? throw new InvalidOperationException("field renderer has not been initialized");
 
+    /// <summary>Gets the active battle flow controller; throws when no battle is in progress.</summary>
     private BattleFlowController BattleFlow => _battleFlow ?? throw new InvalidOperationException("battle flow has not been initialized");
 
+    /// <summary>Gets the battle renderer; throws when the battle renderer has not been initialized yet.</summary>
     private BattleRenderer BattleRenderer => _battleRenderer ?? throw new InvalidOperationException("battle renderer has not been initialized");
 
+    /// <summary>Gets the battle data-pack loader; throws when battle data has not been loaded yet.</summary>
     private BattleDataPackLoader BattleLoader => _battleLoader ?? throw new InvalidOperationException("battle data has not been initialized");
 
+    /// <summary>Gets the decoded fighter table; throws when fighter data has not been loaded yet.</summary>
     private FighterData FighterData => _fighterData ?? throw new InvalidOperationException("fighter data has not been initialized");
 
+    /// <summary>Gets the decoded technique table; throws when technique data has not been loaded yet.</summary>
     private TechniqueData TechniqueData => _techData ?? throw new InvalidOperationException("technique data has not been initialized");
 
+    /// <summary>Gets the decoded digivolution table; throws when digivolution data has not been loaded yet.</summary>
     private DigivolutionData DigivolutionData => _digivolutionData ?? throw new InvalidOperationException("digivolution data has not been initialized");
 
+    /// <summary>Gets the decoded battle-item table; throws when battle item data has not been loaded yet.</summary>
     private BattleItemsData BattleItemsData => _battleItemsData ?? throw new InvalidOperationException("battle item data has not been initialized");
 
+    /// <summary>Gets the current field floor map; throws when the field floor has not been initialized yet.</summary>
     private FloorMap Floor => _floor ?? throw new InvalidOperationException("field floor has not been initialized");
 
+    /// <summary>Gets the dialogue renderer; throws when the dialogue renderer has not been initialized yet.</summary>
     private DialogueRenderer DialogueRenderer => _dialogueRenderer ?? throw new InvalidOperationException("dialogue renderer has not been initialized");
 
+    /// <summary>Gets the field data-pack loader; throws when field data has not been loaded yet.</summary>
     private FieldDataPackLoader FieldLoader => _fieldLoader ?? throw new InvalidOperationException("field data has not been initialized");
 
+    /// <summary>Gets the climb and action animation data; throws when action data has not been initialized yet.</summary>
     private ClimbData ActionData => _actionData ?? throw new InvalidOperationException("action data has not been initialized");
 
+    /// <summary>Gets the field zone cache; throws when the cache is unavailable before host ready.</summary>
     private FieldZoneCache ZoneCache => _zoneCache ?? throw new InvalidOperationException("zone loader or npc data unavailable before host ready");
 
+    /// <summary>Gets the dialogue panel texture; throws when the dialogue panel has not been initialized yet.</summary>
     private Texture2D PanelTexture => _panelTexture ?? throw new InvalidOperationException("dialogue panel texture has not been initialized");
 
     /// <inheritdoc/>
@@ -246,6 +262,12 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
         StartupWithDataPack(dataRoot);
     }
 
+    /// <summary>
+    /// Presents the first-launch extraction overlay when the data pack is absent or invalid.
+    /// Resolves the extractor binary path, wires the completion callback, and adds the screen
+    /// as a child so <see cref="GameHost._Ready"/> returns immediately.
+    /// </summary>
+    /// <param name="dataRoot">Directory that will receive the extracted data pack.</param>
     private void ShowFirstLaunchScreen(string dataRoot)
     {
         // Resolve the extractor binary: DW3_EXTRACTOR env var (development) or the debug
@@ -260,8 +282,19 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
         AddChild(screen);
     }
 
+    /// <summary>
+    /// Marshals the first-launch completion back to the main thread and continues
+    /// normal session startup with the freshly extracted data pack.
+    /// </summary>
+    /// <param name="dataRoot">Directory containing the newly extracted data pack.</param>
     private void OnFirstLaunchComplete(string dataRoot) => _ = _firstLaunchCompletionCoordinator.CompleteAsync(dataRoot);
 
+    /// <summary>
+    /// Loads runtime assets, wires all collaborators, applies the start zone, and optionally
+    /// dispatches a diagnostic probe. Exits with code 2 when the data pack is corrupt or
+    /// an unexpected exception prevents initialization.
+    /// </summary>
+    /// <param name="dataRoot">Directory containing a validated data pack.</param>
     private void StartupWithDataPack(string dataRoot)
     {
         try
@@ -400,6 +433,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     /// movement, warp and action processing, diagnostic edges, animation presentation timing, then
     /// encounter selection. Presentation receives the completed state only after this method returns.
     /// </summary>
+    /// <param name="onMovementRejection">Callback invoked when the simulation rejects the requested movement.</param>
     private void SimulateStep(Action<MovementResult> onMovementRejection) =>
         new FieldTickCoordinator(this).Tick(onMovementRejection);
 
@@ -414,6 +448,12 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
         }
     }
 
+    /// <summary>
+    /// Transitions to a walk-triggered battle for the resolved encounter record.
+    /// Logs the encounter and delegates to <see cref="EnterBattle"/>; transitions to the field
+    /// on any battle setup failure.
+    /// </summary>
+    /// <param name="record">Encounter record resolved by the encounter stepper for the player's position.</param>
     private void StartBattle(EncounterRecord record)
     {
         try
@@ -427,6 +467,10 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
         }
     }
 
+    /// <summary>
+    /// Starts the F8 debug battle using the fixed test encounter <see cref="DebugBattleEncounter"/>.
+    /// On setup failure, hides the renderer and shows the on-screen diagnostic notice.
+    /// </summary>
     private void StartDebugBattle()
     {
         try
@@ -441,8 +485,18 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
 
     /// <summary>Builds the real 1v1 battle for a manifest encounter: the debug-only test team
     /// (balanced starter pack at level 25) against the encounter's enemies, then starts the flow.</summary>
+    /// <param name="encounterIndex">Zero-based encounter index in the encounter manifest.</param>
+    /// <returns>A freshly constructed battle flow controller ready to accept the first command.</returns>
     private BattleFlowController BuildEncounterBattle(int encounterIndex) => _battleSetupCoordinator.Build(encounterIndex);
 
+    /// <summary>
+    /// Initialises the 1v1 battle session: resets all per-battle tracking, builds
+    /// the renderer and HUD on first entry, applies the fight stage, restarts the
+    /// entrance fade, and opens the root command menu.
+    /// </summary>
+    /// <param name="flow">Freshly constructed battle flow for this encounter.</param>
+    /// <param name="encounter">Zero-based encounter index used for stage and log output.</param>
+    /// <param name="why">Short description of why the battle started, written to the log.</param>
     private void EnterBattle(BattleFlowController flow, int encounter, string why)
     {
         _activeBattle = new BattleSetup { Battle = encounter };
@@ -493,6 +547,11 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
         QuietLog.Info($"battle-start {why} encounter={encounter} enemies=[{string.Join(",", _lastBattleEnemyIds)}] party=[{string.Join(",", flow.State.Players.Where(p => p is not null).Select(p => p!.Id))}] level={TestTeamGrowth.Level}");
     }
 
+    /// <summary>
+    /// Clears the active battle state, hides the renderer, and shows the on-screen diagnostic
+    /// notice with the failure reason. The field remains visible so the player can continue.
+    /// </summary>
+    /// <param name="error">Exception thrown during battle setup or model loading.</param>
     private void BattleLoadFailed(Exception error)
     {
         _activeBattle = null;
@@ -509,6 +568,10 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
         QuietLog.Info("battle-load-failed return-to-field");
     }
 
+    /// <summary>
+    /// Tears down the active battle, hides both renderers, and returns to the field.
+    /// On defeat (<see cref="BattleOutcome.Lost"/>), activates the title screen overlay instead.
+    /// </summary>
     private void EndBattle()
     {
         var outcome = _battleFlow?.Outcome ?? BattleOutcome.None;
@@ -605,6 +668,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     /// <summary>On a victory, resolves the encounter's real reward, shares its exp by the partners
     /// who fought, applies the growth (exp + level-up via GrowthCalculator.AddExp) and builds the
     /// report view the HUD draws. Flight and defeat resolve no reward.</summary>
+    /// <param name="flow">Completed battle flow whose outcome and party state are read.</param>
     private void ResolveBattleOutcome(BattleFlowController flow)
     {
         if (flow.Outcome != BattleOutcome.Won)
@@ -630,6 +694,13 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
         QuietLog.Info(resolution.Log);
     }
 
+    /// <summary>
+    /// Constructs the fight-report controller from the resolved victory input.
+    /// Throws when the battle did not end in a win or the input was not resolved.
+    /// </summary>
+    /// <param name="flow">Completed battle flow confirming the victory outcome.</param>
+    /// <returns>A fight-report controller pre-loaded with the victory data.</returns>
+    /// <exception cref="InvalidOperationException">The battle outcome is not a win or the fight-report input is null.</exception>
     private FightReportController BuildFightReportController(BattleFlowController flow)
     {
         if (flow.Outcome != BattleOutcome.Won || _fightReportInput is null)
@@ -638,11 +709,15 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
         return new FightReportController(_fightReportInput);
     }
 
+    /// <summary>Builds the Digimon name map for fight report rendering from the resolved victory input.</summary>
+    /// <returns>Map from fighter id to the decoded name line used in the fight report.</returns>
     private Dictionary<int, BattleTextLine> BuildReportNames() =>
         FightReportNameCatalog.Build(_fightReportInput, NameLine);
 
     /// <summary>The encounter's reward, or an explicit zero reward when the id is absent or
     /// out of the manifest (never invented).</summary>
+    /// <param name="encounter">Zero-based encounter index to look up in the rewards manifest.</param>
+    /// <returns>The reward record for the encounter, or a zero reward when the index is out of range.</returns>
     private BattleReward ResolveReward(int encounter)
     {
         if (_rewardsData is null || encounter < 0 || encounter >= _rewardsData.Rewards.Count)
@@ -651,6 +726,12 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
         return new BattleReward(entry.DigimonExp, entry.Exp, entry.Money);
     }
 
+    /// <summary>
+    /// Resolves the Digimon record for a test-team party slot via the decoded fighter table.
+    /// </summary>
+    /// <param name="slot">Zero-based party slot index (0–2).</param>
+    /// <returns>The Digimon record matching the test-team member at <paramref name="slot"/>.</returns>
+    /// <exception cref="InvalidOperationException">The party, slot, or fighter table is unavailable.</exception>
     private Conversion.DigimonData DigimonFor(int slot)
     {
         if (_partyDigimonIds is null || slot < 0 || slot >= _partyDigimonIds.Count || _fighterData is null)
@@ -658,12 +739,18 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
         return _fighterData.Digimon[_partyDigimonIds[slot]];
     }
 
+    /// <summary>Advances the battle menu state machine by one input tick.</summary>
     private void TickBattleMenu() => new BattleMenuDriver(this).Tick();
 
+    /// <summary>Constructs a text catalog over the loaded battle text data.</summary>
+    /// <returns>A catalog wrapping the session's decoded battle text table.</returns>
+    /// <exception cref="InvalidOperationException">Battle text data has not been loaded yet.</exception>
     private BattleTextCatalog BattleText() => new(_battleTextData ?? throw new InvalidOperationException("battle text unavailable"));
 
     /// <summary>DIGNAM identity is always the decoded record's nameId. The battle map covers
     /// active fighters, while the Digimon table also covers menu-only digivolution forms.</summary>
+    /// <param name="fighterId">Fighter or Digimon id to look up.</param>
+    /// <returns>The decoded name line for the fighter, or a missing-name sentinel when the id is unknown.</returns>
     private BattleTextLine NameLine(int fighterId)
     {
         if (_battleNameIds.TryGetValue(fighterId, out var nameId)) return BattleText().DigimonByNameId(nameId);
@@ -673,18 +760,24 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
         return enemy is null ? BattleTextLine.Missing : BattleText().DigimonByNameId(enemy.NameId);
     }
 
+    /// <summary>Builds the current battle view snapshot for presentation, or null when no battle is active.</summary>
+    /// <returns>A snapshot of the current battle state for the renderer, or <see langword="null"/> when no battle is running.</returns>
     private BattleView? BuildBattleView() => _battleFlow is null
         ? null
         : BattleViewBuilder.Build(_battleFlow, _battleMenu.View, _battleReport, NameLine);
 
     /// <summary>The decoded battle-model JSON for a fighter id from the validated data pack.
     /// <c>DW3_BATTLE_MODEL</c> overrides the player path for isolated probes.</summary>
+    /// <param name="fighterId">Fighter id whose model path to resolve.</param>
+    /// <returns>Absolute path to the decoded model JSON file in the data pack.</returns>
     private string ResolveBattleModelPath(int fighterId) =>
         _options.BattleModel
         ?? BattleLoader.ModelPath(fighterId);
 
     /// <summary>The decoded fight-stage JSON for a stage id from the validated data pack.
     /// <c>DW3_BATTLE_STAGE</c> overrides the path for isolated probes.</summary>
+    /// <param name="stageId">Stage id whose background path to resolve.</param>
+    /// <returns>Absolute path to the decoded stage JSON file in the data pack.</returns>
     private string ResolveBattleStagePath(int stageId) =>
         _options.BattleStage
         ?? BattleLoader.StagePath(stageId);
@@ -692,16 +785,26 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     /// <summary>The fight stage (AreaBattle.stage) of an encounter, resolved from the encounter
     /// manifest: the first AreaBattle whose encounter matches. A field encounter reuses the field
     /// stage's own area battle, so this resolves the same stage the source battle would use.</summary>
+    /// <param name="encounterIndex">Zero-based encounter index to look up in the encounter manifest.</param>
+    /// <returns>Stage id for the encounter, used to load the fight background.</returns>
     private int ResolveBattleStage(int encounterIndex) => BattleStageResolver.Resolve(_encounterData, encounterIndex);
 
     #endregion
 
     #region Field interaction and dialogue
 
+    /// <summary>
+    /// Encounter RNG that draws from <see cref="System.Random"/>, seeded from
+    /// the <c>DW3_RNG_SEED</c> environment variable when set for reproducible test runs.
+    /// </summary>
     private sealed class SystemRandomEncounterRng : IEncounterRng
     {
         private readonly System.Random _random;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SystemRandomEncounterRng"/> class.
+        /// Reads <c>DW3_RNG_SEED</c> to produce a deterministic sequence for testing.
+        /// </summary>
         public SystemRandomEncounterRng()
         {
             var seedRaw = System.Environment.GetEnvironmentVariable("DW3_RNG_SEED");
@@ -711,6 +814,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
         }
 
         /// <summary>Returns the next encounter random value in the controller's 0..4095 domain.</summary>
+        /// <returns>A uniformly distributed integer in [0, 4095].</returns>
         public int Draw() => _random.Next(0, 4096);
     }
 
@@ -719,6 +823,10 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     {
         private readonly System.Random _random;
 
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SystemRandomBattleRng"/> class.
+        /// Reads <c>DW3_RNG_SEED</c> to produce a deterministic sequence for testing.
+        /// </summary>
         public SystemRandomBattleRng()
         {
             var seedRaw = System.Environment.GetEnvironmentVariable("DW3_RNG_SEED");
@@ -728,6 +836,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
         }
 
         /// <summary>Returns the next battle random value in the controller's 0..4095 domain.</summary>
+        /// <returns>A uniformly distributed integer in [0, 4095].</returns>
         public int NextValue() => _random.Next(0, 4096);
     }
 
@@ -739,6 +848,12 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     // overlap the wall one row above the (open) foot cell, leaving the player stuck in
     // every direction. Nudge back to the nearest free cell, mirroring the source's
     // diamond-only leading-edge probes which let the player walk straight down off it.
+
+    /// <summary>
+    /// Nudges the player back to the nearest collision-free cell when a climb landing
+    /// overlaps the wall above the open foot cell. Applies the same recovery as the
+    /// diamond-only leading-edge probes that allow walking straight down off the platform.
+    /// </summary>
     private void DepenetrateFromWall()
     {
         if (_floor is not null)
@@ -747,12 +862,23 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
         }
     }
 
+    /// <summary>Returns whether the player's collision circle fits at <paramref name="pos"/> without overlapping a wall cell.</summary>
+    /// <param name="pos">World-space position to test.</param>
+    /// <returns><see langword="true"/> when the circle at the position does not intersect any solid cell.</returns>
     private bool CircleFreeAt(NumericsVector2 pos) => FieldCollisionRecovery.CircleFreeAt(Floor, pos);
 
     /// <summary>FIELDSTG_setOffTrigger's climb branch: SLOT_CLIMB_UP climbs with the raw
     /// trigger direction, SLOT_CLIMB_DOWN with dir==1 ? 5 : 3 (the trigger-slot contract).</summary>
+    /// <param name="climb">Climb descriptor from the current floor tile's trigger slot.</param>
+    /// <param name="triggerDirection">Raw trigger direction value (1–8) from the floor map.</param>
     private void StartClimb(Climb climb, int triggerDirection) => _fieldRuntimeCoordinator.StartClimb(climb, triggerDirection);
 
+    /// <summary>
+    /// Initiates a SLOT_DROP fall: records the drop height and direction in the drop controller
+    /// and logs the trigger position.
+    /// </summary>
+    /// <param name="drop">Drop descriptor from the current floor tile's trigger slot.</param>
+    /// <param name="triggerDirection">Raw trigger direction value (1–8) from the floor map.</param>
     private void StartDrop(Drop drop, int triggerDirection)
     {
         _drop.StartDrop(_state, triggerDirection, drop.Height);
@@ -763,6 +889,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     /// Returns true when a conversation began. Unsupported controls (5 buffer insert, 8 player
     /// name) are signalled once per command and never rendered. The player stands and faces the
     /// actor it talks to.</summary>
+    /// <returns><see langword="true"/> when a conversation was started; <see langword="false"/> when no eligible actor faces the player.</returns>
     private bool TryStartDialogue()
     {
         if (_dialogueData is null || _currentZone is null)
@@ -785,6 +912,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     /// <summary>Builds the render view for the active conversation: the box origin and type are
     /// computed from the actor's source position, the camera and its facing, exactly like
     /// FIELDSTG_createTalk + FIELDSTG_getSpeechPos.</summary>
+    /// <returns>A dialogue view snapshot containing the box position, type, width, and current page state.</returns>
     private DialogueView BuildDialogueView()
     {
         var actor = _dialogue.Actor ?? throw new InvalidOperationException("dialogue view without actor");
@@ -801,6 +929,11 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
             _dialogue.WaitingForAdvance);
     }
 
+    /// <summary>
+    /// Injects held-key events for the specified semantic direction, releasing all four
+    /// movement keys first. Used by diagnostic drivers that steer the player without UI interaction.
+    /// </summary>
+    /// <param name="direction">Semantic movement direction to simulate as held keyboard input.</param>
     private void SetTestHeldDirection(SemanticDirection direction)
     {
         foreach (var key in new[] { Key.Q, Key.D, Key.Z, Key.S })
@@ -820,6 +953,13 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
             _input.Handle(new InputEventKey { Keycode = key, Pressed = true });
     }
 
+    /// <summary>
+    /// Renders one field frame, waits for the GPU to finish drawing, and saves a PNG screenshot.
+    /// Used by diagnostic probes to capture reference images.
+    /// </summary>
+    /// <param name="captureRoot">Directory where the capture file is written.</param>
+    /// <param name="fileName">File name of the capture PNG relative to <paramref name="captureRoot"/>.</param>
+    /// <returns>A task that completes when the image has been written to disk.</returns>
     private async System.Threading.Tasks.Task CaptureStill(string captureRoot, string fileName)
     {
         _renderer?.Present(_state, CurrentZone, _input.F3On);
@@ -828,6 +968,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
         Require(GetViewport().GetTexture().GetImage().SavePng(capturePath) == Error.Ok, $"capture write failed={capturePath}");
     }
 
+    /// <summary>Fires a synthetic F3 key press and release to toggle the diagnostic overlay.</summary>
     private void ToggleF3()
     {
         _input.Handle(new InputEventKey { PhysicalKeycode = Key.F3, Pressed = true });
@@ -843,6 +984,13 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     /// <returns>The built zone.</returns>
     private FieldZone GetOrLoadZone(string zoneId) => ZoneCache.GetOrLoad(zoneId);
 
+    /// <summary>
+    /// Resolves a zone by id, but throws <see cref="CacheResourceException"/> when the
+    /// warp probe's missing-target flag is set, forcing the probe through its error path.
+    /// </summary>
+    /// <param name="zoneId">Normalized zone id (<c>Snnn</c>) to resolve.</param>
+    /// <returns>The built zone.</returns>
+    /// <exception cref="CacheResourceException">The warp probe missing-target flag is active.</exception>
     private FieldZone ResolveTarget(string zoneId)
     {
         if (_options.WarpProbeMissingTarget)
@@ -855,14 +1003,29 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     /// occupant state before rebuilding renderer nodes, resets the player icon at the current actor
     /// position, and presents the completed scene once before the next simulation tick.
     /// </summary>
+    /// <param name="zone">The built field zone to apply as the active scene.</param>
     private void ApplyScene(FieldZone zone) => _fieldRuntimeCoordinator.ApplyScene(zone);
 
+    /// <summary>
+    /// Resolves the PNG path for a player animation frame from the field data-pack.
+    /// </summary>
+    /// <param name="frame">Zero-based animation frame index.</param>
+    /// <returns>Absolute path to the player frame PNG in the data pack.</returns>
+    /// <exception cref="InvalidOperationException">The field loader is unavailable before host ready.</exception>
     private string ResolvePlayerFrame(int frame)
     {
         return _fieldLoader?.PlayerFramePath(frame)
             ?? throw new InvalidOperationException("field data-pack loader unavailable before host ready");
     }
 
+    /// <summary>
+    /// Resolves the PNG path for a climb or drop action animation frame from the field data-pack.
+    /// Animation sets 0x16–0x19 are drop frames; all other sets are climb frames.
+    /// </summary>
+    /// <param name="set">Animation set index; 0x16–0x19 selects drop frames, others select climb frames.</param>
+    /// <param name="frame">Zero-based frame index within the selected animation set.</param>
+    /// <returns>Absolute path to the action frame PNG in the data pack.</returns>
+    /// <exception cref="InvalidOperationException">The animation loader is unavailable before host ready.</exception>
     private string ResolveActionFrame(int set, int frame)
     {
         var loader = _animationLoader ?? throw new InvalidOperationException("field animation loader unavailable before host ready");
@@ -873,6 +1036,8 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     /// it if it does not yet exist. Prefers the explicit DW3_CAPTURE_DIR option; otherwise
     /// places a "captures" subdirectory under <paramref name="dataRoot"/>. Shared by all
     /// probe methods to avoid repeating the inline null-coalesce + CreateDirectory pattern.</summary>
+    /// <param name="dataRoot">Session data directory used as the fallback capture root.</param>
+    /// <returns>Absolute path to the capture directory, guaranteed to exist.</returns>
     private string ProbeOutputRoot(string dataRoot)
     {
         var root = _options.CaptureDir ?? Path.Combine(dataRoot, "captures");
@@ -880,6 +1045,9 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
         return root;
     }
 
+    /// <summary>Asserts <paramref name="condition"/> and throws <see cref="ProbeRequirement"/> with <paramref name="message"/> when false.</summary>
+    /// <param name="condition">The condition that must be true.</param>
+    /// <param name="message">Failure message passed to the probe requirement exception.</param>
     private static void Require(bool condition, string message) => ProbeRequirement.Require(condition, message);
 
     #endregion

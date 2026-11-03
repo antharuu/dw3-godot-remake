@@ -3,8 +3,15 @@ using Dw3Production.Presentation;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 
+/// <summary>
+/// Standalone Godot scene that synthesises a 2×1 pixel texture per ABR blend mode
+/// and compares the captured colours against expected values.
+/// Used as a headless regression probe for the water-blend shader pipeline;
+/// exits 0 on pass, 1 on colour mismatch, 2 on exception.
+/// </summary>
 public partial class LeadWaterProbe : Node2D
 {
+    /// <summary>Runs the ABR blend probe: renders four sprites, captures a screenshot, and asserts pixel colours.</summary>
     public override async void _Ready()
     {
         try

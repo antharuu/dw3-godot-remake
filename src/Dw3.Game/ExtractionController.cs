@@ -27,8 +27,10 @@ public sealed class ExtractionController
     public event Action<string>? Failed;
 
     /// <summary>
-    /// Initializes the controller with the launcher that will spawn the extractor.
+    /// Initializes a new instance of the <see cref="ExtractionController"/> class
+    /// with the launcher that will spawn the extractor.
     /// </summary>
+    /// <param name="launcher">Launcher used to start the extractor child process.</param>
     public ExtractionController(IExtractorLauncher launcher)
     {
         ArgumentNullException.ThrowIfNull(launcher);
@@ -75,8 +77,12 @@ public sealed class ExtractionController
         Failed?.Invoke(reason);
     }
 
-    // Parses one JSONL line from the extractor's stdout.
-    // Non-JSON lines (diagnostic output) are silently ignored.
+    /// <summary>
+    /// Parses one JSONL line from the extractor's stdout and fires the appropriate event.
+    /// Lines with a <c>step</c> property advance the progress counter; lines with an <c>event</c>
+    /// property signal completion or failure. Non-JSON lines (diagnostic output) are ignored.
+    /// </summary>
+    /// <param name="json">Raw text line read from the extractor process stdout.</param>
     private void ProcessLine(string json)
     {
         if (string.IsNullOrWhiteSpace(json)) return;

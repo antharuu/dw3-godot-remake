@@ -33,7 +33,7 @@ internal sealed class CognitiveComplexityWalker : CSharpSyntaxWalker
     private int _complexity;
 
     /// <summary>
-    /// Initializes a new instance of <see cref="CognitiveComplexityWalker"/>.
+    /// Initializes a new instance of the <see cref="CognitiveComplexityWalker"/> class.
     /// </summary>
     /// <param name="semanticModel">Semantic model for the compilation.</param>
     /// <param name="symbol">Symbol of the member being analysed; used for recursion detection. May be null.</param>
@@ -258,6 +258,7 @@ internal sealed class CognitiveComplexityWalker : CSharpSyntaxWalker
     /// Sonar S3776 treats these the same as <c>&amp;&amp;</c> / <c>||</c>:
     /// each distinct sequence of the same combinator adds one increment.
     /// </summary>
+    /// <param name="node">The binary pattern node being visited.</param>
     public override void VisitBinaryPattern(BinaryPatternSyntax node)
     {
         var kind = node.Kind();

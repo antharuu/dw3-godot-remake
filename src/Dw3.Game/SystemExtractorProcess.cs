@@ -9,6 +9,11 @@ internal sealed class SystemExtractorProcess : IExtractorProcess
 {
     private readonly Process _process;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SystemExtractorProcess"/> class,
+    /// wrapping the already-started <paramref name="process"/> whose stdout is captured.
+    /// </summary>
+    /// <param name="process">Running child process with <c>RedirectStandardOutput</c> enabled.</param>
     internal SystemExtractorProcess(Process process) => _process = process;
 
     /// <inheritdoc/>
