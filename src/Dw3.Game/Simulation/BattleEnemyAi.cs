@@ -11,6 +11,12 @@ public static class BattleEnemyAi
     /// <param name="arg">Decoded condition argument.</param>
     /// <param name="ctx">Battle state exposed to condition evaluation.</param>
     /// <param name="rng">Random source for chance conditions.</param>
+    /// <returns>
+    /// Whether the condition holds. Condition 0 and unknown ids always hold, so a malformed row
+    /// still acts. HP thresholds take <paramref name="arg"/> as a share of maximum HP in 128ths,
+    /// condition 1 is a chance of <paramref name="arg"/> in 128, and condition 18 holds every
+    /// <paramref name="arg"/> enemy turns. Only condition 1 draws from <paramref name="rng"/>.
+    /// </returns>
     public static bool TestEnemyCondition(int condition, int arg, EnemyAiContext ctx, IBattleRng rng)
     {
         BattleFighter enemy = ctx.Enemy;
@@ -43,7 +49,8 @@ public static class BattleEnemyAi
 
     /// <summary>Converts an action-table target kind into an executable decision.</summary>
     /// <param name="enemy">Enemy whose action is selected.</param>
-    /// <param name="kind">Decoded action-table target kind.</param>
+    /// <param name="kind">Decoded action-table target kind: 1 attack, 2 and 3 the second and third techniques, 4 run away, 5..7 switch to a given slot, 8 switch to any living reserve.</param>
+    /// <returns>The decision with the technique id to use or the slot to switch to, or <see cref="EnemyDecision.None"/> for any other kind.</returns>
     public static EnemyDecision GetEnemyAction(BattleFighter enemy, int kind) => kind switch
     {
         1 => new(EnemyActionKind.Attack, enemy.Techs[0], -1),
@@ -58,6 +65,11 @@ public static class BattleEnemyAi
     };
 
     /// <summary>Selects the first eligible action row, or the table's untested fallback row.</summary>
+    /// <remarks>Rows before the fallback are tested in table order and the first one whose condition holds wins, so earlier rows have priority. A table shorter than four rows uses its last row as the fallback.</remarks>
+    /// <param name="enemy">Enemy whose action table is evaluated.</param>
+    /// <param name="ctx">Battle state exposed to condition evaluation.</param>
+    /// <param name="rng">Random source for chance conditions.</param>
+    /// <returns>The chosen decision, or <see cref="EnemyDecision.None"/> when the enemy has no action row.</returns>
     public static EnemyDecision PickAction(BattleFighter enemy, EnemyAiContext ctx, IBattleRng rng)
     {
         if (enemy.Actions.Length == 0)
@@ -79,6 +91,10 @@ public static class BattleEnemyAi
     }
 
     /// <summary>Selects an eligible attack or technique from the enemy's counter row.</summary>
+    /// <param name="enemy">Enemy that was just hit.</param>
+    /// <param name="ctx">Battle state exposed to condition evaluation.</param>
+    /// <param name="rng">Random source for chance conditions.</param>
+    /// <returns>An attack or technique decision, or <see cref="EnemyDecision.None"/> when the counter row is empty (condition 0), its condition fails, or it names a run away or switch, which a counter cannot do.</returns>
     public static EnemyDecision PickCounter(BattleFighter enemy, EnemyAiContext ctx, IBattleRng rng)
     {
         BattleTableAction counter = enemy.Counter;
@@ -92,6 +108,11 @@ public static class BattleEnemyAi
     }
 
     /// <summary>Resolves a switch decision to a living enemy roster slot, or -1 when none qualifies.</summary>
+    /// <param name="decision">A switch decision. A fixed slot is used as is, otherwise a living reserve is drawn.</param>
+    /// <param name="enemies">Enemy roster, at most three slots are considered.</param>
+    /// <param name="activeEnemy">Slot of the enemy currently fighting, never chosen.</param>
+    /// <param name="rng">Random source, drawn only when two reserves qualify (one bit picks between them).</param>
+    /// <returns>A slot index 0..2 different from <paramref name="activeEnemy"/>, or -1 when the requested slot is dead or no reserve is alive.</returns>
     public static int ResolveSwitch(
         EnemyDecision decision,
         IReadOnlyList<BattleFighter?> enemies,
@@ -122,9 +143,17 @@ public static class BattleEnemyAi
         };
     }
 
+    /// <summary>Converts a threshold expressed in 128ths into HP, with the same integer truncation as the original rule (percent first, then hundredths of maximum HP), so thresholds hit the same boundary values.</summary>
+    /// <param name="maximum">Maximum HP of the fighter.</param>
+    /// <param name="fraction">Share of maximum HP in 128ths, 0..128.</param>
+    /// <returns>The HP threshold, rounded down at each step.</returns>
     private static int HpShare(int maximum, int fraction) =>
         unchecked((maximum / 100) * (fraction * 100 / 128));
 
+    /// <summary>Tests condition 10: whether a reserve enemy (not the active one) is alive and is the requested Digimon.</summary>
+    /// <param name="ctx">Battle state holding the enemy roster and the active slot.</param>
+    /// <param name="requestedId">Digimon id from the condition argument, 0 for any living reserve.</param>
+    /// <returns><see langword="true"/> when at least one of the first three slots matches.</returns>
     private static bool HasMatchingReserve(EnemyAiContext ctx, int requestedId)
     {
         for (int i = 0; i < 3 && i < ctx.Enemies.Count; i++)

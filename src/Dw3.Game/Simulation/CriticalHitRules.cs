@@ -7,6 +7,13 @@ namespace Dw3Production.Simulation;
 public static class CriticalHitRules
 {
     /// <summary>Returns whether a physical technique receives a critical hit.</summary>
+    /// <param name="tech">The technique used.</param>
+    /// <param name="atk">The attacker's resolved stats.</param>
+    /// <param name="def">The defender's resolved stats.</param>
+    /// <param name="atkFighter">The attacker, for its special state.</param>
+    /// <param name="defFighter">The defender, whose disabling statuses raise the chance.</param>
+    /// <param name="rngValue">Raw random value. Only its low seven bits are used.</param>
+    /// <returns><see langword="true"/> when the roll falls under base + family + status chance, out of 128.</returns>
     public static bool RollCritical(TechData tech, BattleStats atk, BattleStats def, BattleFighter atkFighter, BattleFighter defFighter, int rngValue)
     {
         int chance = BaseChance(tech, atk, atkFighter) + FamilyChance(tech, atk, def);
@@ -15,6 +22,11 @@ public static class CriticalHitRules
     }
 
     /// <summary>Returns whether a magic technique receives a critical hit.</summary>
+    /// <param name="tech">The technique used. It must have an element, since the target's resistance to it is the divisor.</param>
+    /// <param name="def">The defender's resolved stats.</param>
+    /// <param name="defFighter">The defender, whose disabling statuses raise the chance.</param>
+    /// <param name="rngValue">Raw random value. Only its low seven bits are used.</param>
+    /// <returns><see langword="true"/> when the roll falls under the chance: element power × 100 / resistance capped at 64, plus 4, or plus 64 when the technique's family matches the defender.</returns>
     public static bool RollMagicCritical(TechData tech, BattleStats def, BattleFighter defFighter, int rngValue)
     {
         int value = Math.Min(tech.ElementPower * 100 / def.Resist[tech.Element - BattleConst.ElementFirst], 0x40);

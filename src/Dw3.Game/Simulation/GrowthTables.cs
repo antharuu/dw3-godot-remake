@@ -18,6 +18,8 @@ public sealed class GrowthTables
     /// <summary>Gets or sets the resistance gain lookup values.</summary>
     public int[] ResistGains { get; set; } = new int[8];
 
+    /// <summary>Allocates the six stat gain rows (tier 0 plus the five tiers starting at levels 5, 20, 40, 60 and 80), nine values each, filled with zeros until the pack values are copied in.</summary>
+    /// <returns>A new 6 × 9 jagged array.</returns>
     private static int[][] CreateStatGainRows()
     {
         var rows = new int[6][];

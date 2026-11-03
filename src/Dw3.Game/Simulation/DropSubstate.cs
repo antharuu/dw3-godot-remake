@@ -1,8 +1,8 @@
 namespace Dw3Production.Simulation;
 
 /// <summary>
-/// Phases of the SLOT_DROP action state machine. Transitions run in order:
-/// DropOff → Fall → Land → (back to None via EndDrop).
+/// Phases of the cliff drop state machine. Transitions run in order:
+/// DropOff → Fall → Land → (back to None when the landing animation ends).
 /// </summary>
 public enum DropSubstate
 {
@@ -12,7 +12,7 @@ public enum DropSubstate
     /// <summary>The drop-off animation plays at the cliff edge before the fall begins.</summary>
     DropOff,
 
-    /// <summary>The actor is descending: climbHeight decreases by FallStep each tick.</summary>
+    /// <summary>The actor is descending: its height offset decreases by 3 pixels each tick.</summary>
     Fall,
 
     /// <summary>The landing animation plays; field control is restored on completion.</summary>

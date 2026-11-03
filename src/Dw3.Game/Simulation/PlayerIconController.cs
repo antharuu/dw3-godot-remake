@@ -82,8 +82,11 @@ public sealed class PlayerIconController
         }
     }
 
-    // Animation step logic: each step has a duration; once elapsed, advance to the next step.
-    // When the step index exceeds the last step, wrap to the loop target index.
+    /// <summary>
+    /// Advances the indicator animation by one original tick: each step lasts its duration plus
+    /// one tick, then the next step starts. Past the last step the animation wraps to its loop
+    /// target, so an intro played once can precede a looping tail.
+    /// </summary>
     private void AdvanceSourceTick()
     {
         var steps = _animation.Steps;

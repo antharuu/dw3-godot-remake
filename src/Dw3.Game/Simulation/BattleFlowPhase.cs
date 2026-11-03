@@ -4,7 +4,12 @@ namespace Dw3Production.Simulation;
 /// enemy's turn is EnemyTurn; Ended is any terminal outcome (won/lost/fled).</summary>
 public enum BattleFlowPhase
 {
+    /// <summary>The player picks a command. Only this phase accepts <see cref="BattleFlowController.Choose"/>.</summary>
     PlayerCommand,
+
+    /// <summary>The active enemy acts. Only this phase accepts <see cref="BattleFlowController.EnemyAct"/>.</summary>
     EnemyTurn,
+
+    /// <summary>The battle has an outcome and no more turns are played.</summary>
     Ended,
 }

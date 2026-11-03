@@ -10,9 +10,9 @@ namespace Dw3Production.Simulation;
 /// </summary>
 public sealed class WarpController
 {
-    // Semantic reconstruction of FIELDSTG_nearDirs: raw trigger direction and
-    // player-facing are source directions (0=down, counter-clockwise). An exit
-    // offers only when facing is within 45 degrees of its encoded direction.
+    // Admission table: raw trigger direction and player facing are disc
+    // directions (0=down, counter-clockwise). An exit offers only when facing
+    // is within 45 degrees of its encoded direction.
     private static readonly bool[,] SourceNearDirections =
     {
         { true, true, false, false, false, false, false, true },
@@ -25,10 +25,10 @@ public sealed class WarpController
         { true, false, false, false, false, false, true, true },
     };
 
-    // Intentional M1 comfort adaptation: accept a source exit cell within two world
-    // units when the short direct segment stays on non-void source floor.
+    // Intentional comfort adaptation: accept an exit cell within two world
+    // units when the short direct segment stays on non-void floor.
 
-    /// <summary>Warp-offer search radius in world units (M1 comfort adaptation: two tiles).</summary>
+    /// <summary>Warp-offer search radius in world units (comfort adaptation: two tiles).</summary>
     public const float OfferRadiusWorldUnits = 2f;
 
     private const int FadeTicks = 2;
@@ -52,7 +52,7 @@ public sealed class WarpController
 
     /// <summary>
     /// Returns true when the actor is facing within 45° of a trigger's encoded direction.
-    /// Reconstructed from FIELDSTG_nearDirs (both indices are source direction 0=down CCW).
+    /// Both indices are disc directions (0 = down), as stored in the trigger cells and the facing.
     /// </summary>
     /// <param name="triggerDirection">Source direction encoded in the trigger cell bits 7..5.</param>
     /// <param name="actorFacing">Current source facing of the actor.</param>
@@ -114,6 +114,10 @@ public sealed class WarpController
         }
     }
 
+    /// <summary>Looks for an admissible trigger around the player. A match records the pending exit, climb or drop and moves to Offer, otherwise an unimplemented trigger under the player is reported once.</summary>
+    /// <param name="state">Player state, whose offer flag is set or cleared.</param>
+    /// <param name="current">Zone the player is in.</param>
+    /// <param name="callbacks">Log sinks used for the transition and the warnings.</param>
     private void TickIdle(GameState state, FieldZone current, WarpCallbacks callbacks)
     {
         if (TryOffer(state, current, out var exit, out var climb, out var drop, out var climbDirection))
@@ -133,6 +137,13 @@ public sealed class WarpController
         }
     }
 
+    /// <summary>Keeps the offer in sync while the player moves and dispatches it on a Cross press: a climb or drop starts at once, an exit locks input and goes on to target validation. Leaving every trigger cancels the offer.</summary>
+    /// <param name="state">Player state, whose offer flag follows the pending trigger.</param>
+    /// <param name="input">Input of the tick, checked for a held Cross.</param>
+    /// <param name="current">Zone the player is in.</param>
+    /// <param name="actionPressed">Whether Cross was pressed this tick (already consumed by <see cref="Tick"/>).</param>
+    /// <param name="callbacks">Traversal dispatchers and log sinks.</param>
+    /// <exception cref="InvalidOperationException">A press is reported while Cross is not held, which would mean the input state is inconsistent.</exception>
     private void TickOffer(GameState state, InputState input, FieldZone current, bool actionPressed, WarpCallbacks callbacks)
     {
         if (!TryOffer(state, current, out var offeredExit, out var offeredClimb, out var offeredDrop, out var offeredClimbDirection))
@@ -161,6 +172,10 @@ public sealed class WarpController
         DispatchAdmittedOffer(state, callbacks);
     }
 
+    /// <summary>Acts on an accepted offer. Climbs win over drops, which win over exits: a climb or drop is handed to its controller and the warp machine returns to Idle, an exit continues to LockInput.</summary>
+    /// <param name="state">Player state, whose offer flag is cleared for a climb or drop.</param>
+    /// <param name="callbacks">Climb and drop dispatchers and the log sink.</param>
+    /// <exception cref="InvalidOperationException">A drop is offered but no drop dispatcher was supplied.</exception>
     private void DispatchAdmittedOffer(GameState state, WarpCallbacks callbacks)
     {
         if (_pendingClimb is not null)
@@ -190,6 +205,8 @@ public sealed class WarpController
         }
     }
 
+    /// <summary>Forgets the pending exit, climb and drop and hides the exit cue.</summary>
+    /// <param name="state">Player state whose offer flag is cleared.</param>
     private void ClearPending(GameState state)
     {
         _pendingExit = null;
@@ -199,6 +216,12 @@ public sealed class WarpController
         state.Offer = false;
     }
 
+    /// <summary>Records the trigger currently offered (only one of exit, climb or drop is non-null) and shows the exit cue.</summary>
+    /// <param name="exit">Offered exit, or null.</param>
+    /// <param name="climb">Offered climb, or null.</param>
+    /// <param name="drop">Offered drop, or null.</param>
+    /// <param name="climbDirection">Trigger direction of the climb or drop, -1 for an exit.</param>
+    /// <param name="state">Player state whose offer flag is set.</param>
     private void UpdatePending(FieldExit? exit, Climb? climb, Drop? drop, int climbDirection, GameState state)
     {
         _pendingExit = exit;
@@ -208,6 +231,10 @@ public sealed class WarpController
         state.Offer = true;
     }
 
+    /// <summary>Warns once per zone and slot when the player stands on a trigger cell whose slot (low five bits) matches no exit, climb or drop of the zone. Standing elsewhere resets the memory so the warning can fire again later.</summary>
+    /// <param name="state">Player state, whose position selects the trigger cell.</param>
+    /// <param name="current">Zone the player is in.</param>
+    /// <param name="warn">Keyed warning sink.</param>
     private void ReportUnimplementedExit(GameState state, FieldZone current, Action<string, string> warn)
     {
         var raw = current.Triggers.CellAt(state.Position);
@@ -237,6 +264,9 @@ public sealed class WarpController
     /// and the offer is logged once per zone:slot so the non-enforcement is explicit
     /// rather than silent.
     /// </summary>
+    /// <param name="exit">The offered exit.</param>
+    /// <param name="current">Zone the player is in.</param>
+    /// <param name="warn">Keyed warning sink.</param>
     private void ReportUnevaluatedExitCondition(FieldExit exit, FieldZone current, Action<string, string> warn)
     {
         if (!exit.IsUnevaluated)
@@ -253,6 +283,18 @@ public sealed class WarpController
         warn($"exit-condition-not-enforced:{key}", $"exit-condition-not-enforced zone={current.Zone.Id} slot={exit.Slot} condition=0x{exit.Condition!.Value:X4}");
     }
 
+    /// <summary>
+    /// Finds the trigger to offer: the nearest non-empty trigger cell within <see cref="OfferRadiusWorldUnits"/>
+    /// whose direction (bits 7..5) admits the player's facing, whose straight path from the player stays on floor,
+    /// and whose slot (bits 4..0) matches an exit, a climb or a drop, tried in that order.
+    /// </summary>
+    /// <param name="state">Player state. Its offered trigger direction is set on a match and reset to -1 otherwise.</param>
+    /// <param name="current">Zone the player is in.</param>
+    /// <param name="exit">Receives the matched exit, or null.</param>
+    /// <param name="climb">Receives the matched climb, or null.</param>
+    /// <param name="drop">Receives the matched drop, or null.</param>
+    /// <param name="climbDirection">Receives the trigger direction for a climb or drop, -1 otherwise.</param>
+    /// <returns><see langword="true"/> when one trigger matched.</returns>
     private static bool TryOffer(GameState state, FieldZone current, out FieldExit? exit, out Climb? climb, out Drop? drop, out int climbDirection)
     {
         exit = null;
@@ -295,6 +337,13 @@ public sealed class WarpController
         return false;
     }
 
+    /// <summary>Matches a trigger slot against the zone's exits.</summary>
+    /// <param name="current">Zone the player is in.</param>
+    /// <param name="slot">Slot number from the trigger cell, 0..31.</param>
+    /// <param name="triggerDirection">Direction from the trigger cell, 0..7.</param>
+    /// <param name="state">Player state that receives the offered trigger direction on a match.</param>
+    /// <param name="exit">Receives the matched exit; left unchanged otherwise.</param>
+    /// <returns><see langword="true"/> when an exit uses that slot.</returns>
     private static bool MatchExit(FieldZone current, int slot, int triggerDirection, GameState state, ref FieldExit? exit)
     {
         var matched = current.Zone.Exits.FirstOrDefault(item => item.Slot == slot);
@@ -308,6 +357,14 @@ public sealed class WarpController
         return true;
     }
 
+    /// <summary>Matches a trigger slot against the zone's climb slots.</summary>
+    /// <param name="current">Zone the player is in.</param>
+    /// <param name="slot">Slot number from the trigger cell, 0..31.</param>
+    /// <param name="triggerDirection">Direction from the trigger cell, 0..7, which becomes the climb direction.</param>
+    /// <param name="state">Player state that receives the offered trigger direction on a match.</param>
+    /// <param name="climb">Receives the matched climb; left unchanged otherwise.</param>
+    /// <param name="climbDirection">Receives the trigger direction on a match.</param>
+    /// <returns><see langword="true"/> when a climb uses that slot.</returns>
     private static bool MatchClimb(FieldZone current, int slot, int triggerDirection, GameState state, ref Climb? climb, ref int climbDirection)
     {
         var matched = current.Zone.Climbs.FirstOrDefault(item => item.Slot == slot);
@@ -322,6 +379,14 @@ public sealed class WarpController
         return true;
     }
 
+    /// <summary>Matches a trigger slot against the zone's drop slots. Zones without drop data never match.</summary>
+    /// <param name="current">Zone the player is in.</param>
+    /// <param name="slot">Slot number from the trigger cell, 0..31.</param>
+    /// <param name="triggerDirection">Direction from the trigger cell, 0..7, which becomes the drop direction.</param>
+    /// <param name="state">Player state that receives the offered trigger direction on a match.</param>
+    /// <param name="drop">Receives the matched drop; left unchanged otherwise.</param>
+    /// <param name="climbDirection">Receives the trigger direction on a match.</param>
+    /// <returns><see langword="true"/> when a drop uses that slot.</returns>
     private static bool MatchDrop(FieldZone current, int slot, int triggerDirection, GameState state, ref Drop? drop, ref int climbDirection)
     {
         var matched = current.Zone.Drops?.FirstOrDefault(item => item.Slot == slot);
@@ -336,6 +401,11 @@ public sealed class WarpController
         return true;
     }
 
+    /// <summary>Samples the straight segment between two points about once per pixel and checks that every sample lies on floor, so a trigger behind a wall is never offered.</summary>
+    /// <param name="start">Player position.</param>
+    /// <param name="end">Trigger cell position.</param>
+    /// <param name="floor">Floor map of the zone.</param>
+    /// <returns><see langword="false"/> when a sample is out of bounds or on a void cell.</returns>
     private static bool FloorPathOpen(Vector2 start, Vector2 end, FloorMap floor)
     {
         var steps = Math.Max(1, (int)MathF.Ceiling(Vector2.Distance(start, end)));
@@ -351,6 +421,10 @@ public sealed class WarpController
         return true;
     }
 
+    /// <summary>Loads the destination zone of the pending exit and checks that it has an exit back to the current zone. On success a two-tick fade starts, on a cache error the warp is abandoned with a warning and the machine releases.</summary>
+    /// <param name="current">Zone the player is leaving.</param>
+    /// <param name="callbacks">Zone loader and log sinks.</param>
+    /// <exception cref="InvalidOperationException">No exit is pending.</exception>
     private void ValidateTarget(FieldZone current, WarpCallbacks callbacks)
     {
         if (_pendingExit is null)
@@ -379,6 +453,11 @@ public sealed class WarpController
         }
     }
 
+    /// <summary>Moves the player into the validated zone: zone name, arrival position and facing of the exit, standing animation, then the scene swap through the callbacks.</summary>
+    /// <param name="state">Player state rewritten for the new zone.</param>
+    /// <param name="callbacks">Scene applier and log sink.</param>
+    /// <exception cref="InvalidOperationException">No validated target is pending.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">The exit's facing is outside 0..7.</exception>
     private void Commit(GameState state, WarpCallbacks callbacks)
     {
         if (_pendingExit is null || _pendingTarget is null)
@@ -399,6 +478,9 @@ public sealed class WarpController
         Transition(WarpState.Release, callbacks.Info);
     }
 
+    /// <summary>Changes state and logs the transition, which the probes read to check the warp path.</summary>
+    /// <param name="next">State to enter.</param>
+    /// <param name="info">Log sink.</param>
     private void Transition(WarpState next, Action<string> info)
     {
         info($"warp state={State}->{next}");

@@ -294,6 +294,7 @@ public sealed class HostStartupOptions
     // ── Factory methods ───────────────────────────────────────────────────────
 
     /// <summary>Creates options from the current process environment variables.</summary>
+    /// <returns>Options with every variable read once. Later changes to the environment are not seen.</returns>
     public static HostStartupOptions FromEnvironment() =>
         From(System.Environment.GetEnvironmentVariable);
 
@@ -304,6 +305,7 @@ public sealed class HostStartupOptions
     /// </summary>
     /// <param name="getEnv">Function that returns the value for a named variable, or null
     /// when the variable is absent.</param>
+    /// <returns>Options where each flag is true only for the exact value <c>1</c> and each path or text value is passed through unchanged, null when absent.</returns>
     public static HostStartupOptions From(Func<string, string?> getEnv) => new()
     {
         DataDir = getEnv("DW3_DATA_DIR"),

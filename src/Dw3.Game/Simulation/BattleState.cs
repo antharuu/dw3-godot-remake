@@ -3,26 +3,24 @@ namespace Dw3Production.Simulation;
 /// <summary>
 /// The 1v1 battle state and its turn loop: three fighters per side stored but one active,
 /// the element boost, run attempts, and a deterministic time-to-turn scheduler built on
-/// DamageCalculator.GetTurnDelay. Engine-free, like WarpController.
-///
-/// Fidelity vs simplification: the source runs a real-time event queue (FIGHTSTG_events)
-/// with per-kind delays and a state machine (WFIGHTMN_states); this core collapses that to
-/// a two-actor conditional-turn scheduler whose per-side delay uses the kind-0
-/// formula, seeded as the source seeds it (player at 0, enemy at half the player's cycle).
-///
-/// The six source commands are attack/technique/digivolve/switch/item/run and each is
-/// exposed here: attack (first learned skill, FIGHTSTG_startFirstTech), technique (a picked
-/// skill, MP spent), digivolve (a permanent change to another of the partner's forms,
-/// WFIGHTMN_digivolve — no MP cost, gated only by FIGHTER_NO_DIGIVOLVE), switch (a manual
-/// change of the active partner, WFIGHTMN_tag), item (a battle-usable item, FIGHTSTG_startItem)
-/// and flee (FIGHTSTG_testRunAway). Knock-outs do NOT auto-switch the player to the next
-/// fighter: the battle ends in defeat when no partner is alive, and the switch is the manual
-/// Switch command (the Switch and SwitchIn menus). The enemy side decides its turn from its
-/// battle table (BattleEnemyAi, through EnemyTurnResolver): attack/technique/switch/run-away,
-/// plus the counter-attack its counter field triggers when the player's hit lands. The blast
-/// (WFIGHTMN_blast, a temporary gauge-triggered digivolution, not a command) and statuses are
-/// out of scope.
+/// <see cref="DamageCalculator.GetTurnDelay"/>. Engine-free, like <see cref="WarpController"/>.
 /// </summary>
+/// <remarks>
+/// <para>Fidelity vs simplification: the original game runs a real-time event queue with
+/// per-kind delays and a menu state machine; this core collapses that to a two-actor
+/// conditional-turn scheduler whose per-side delay uses the formula of a plain action,
+/// seeded as the original seeds it (player at 0, enemy at half the player's cycle).</para>
+/// <para>Each of the six battle menu commands is exposed here: attack (first learned skill),
+/// technique (a picked skill, MP spent), digivolve (a permanent change to another of the
+/// partner's forms, no MP cost, gated only by <see cref="FighterFlags.NoDigivolve"/>), switch (a
+/// manual change of the active partner), item (a battle-usable item) and flee. Knock-outs do NOT
+/// auto-switch the player to the next fighter: the battle ends in defeat when no partner is
+/// alive, and the switch is the manual Switch command (the Switch and SwitchIn menus). The enemy
+/// side decides its turn from its fighter table (<see cref="BattleEnemyAi"/>, through
+/// <see cref="EnemyTurnResolver"/>): attack, technique, switch or run away, plus the
+/// counter-attack its counter field triggers when the player's hit lands. The blast (a
+/// temporary gauge-triggered digivolution, not a command) and statuses are out of scope.</para>
+/// </remarks>
 public sealed class BattleState
 {
     private readonly EnemyTurnResolver _enemyTurn;
@@ -33,40 +31,47 @@ public sealed class BattleState
         _enemyTurn = new EnemyTurnResolver(this);
     }
 
+    /// <summary>Gets or sets the three party slots. A null slot is empty.</summary>
     public BattleFighter?[] Players { get; set; } = new BattleFighter?[3];
 
+    /// <summary>Gets or sets the three enemy slots. A null slot is empty.</summary>
     public BattleFighter?[] Enemies { get; set; } = new BattleFighter?[3];
 
+    /// <summary>Gets or sets the slot of the partner currently fighting, 0..2, or -1 before set up or when no partner is alive.</summary>
     public int ActivePlayer { get; set; } = -1;
 
+    /// <summary>Gets or sets the slot of the enemy currently fighting, 0..2, or -1 when no enemy is alive.</summary>
     public int ActiveEnemy { get; set; } = -1;
 
+    /// <summary>Gets or sets the number of run away attempts made by the player in this battle. Each failure raises the next chance by 8 out of 128.</summary>
     public int RunAttempts { get; set; }
 
+    /// <summary>Gets or sets a battle kind value kept for callers. The current rules do not read it.</summary>
     public int Kind { get; set; }
 
     /// <summary>Gets or sets the battlefield's element boost (none by default).</summary>
     public ElementBoost Boost { get; set; }
 
-    /// <summary>Gets or sets BATTLE_SETUP.battle, for the enemy AI's condition 12 (FIGHTSTG_testEnemyCondition).</summary>
+    /// <summary>Gets or sets the encounter index of the battle, tested by enemy AI condition 12.</summary>
     public int BattleId { get; set; }
 
-    /// <summary>Gets or sets BATTLE_SETUP.encounterKind, for the enemy AI's condition 13.</summary>
+    /// <summary>Gets or sets the encounter kind of the battle, tested by enemy AI condition 13.</summary>
     public int EncounterKind { get; set; }
 
-    /// <summary>Gets or sets the eight partner Digimon ids (DIGIMON_DATA's first eight), for condition 8.</summary>
+    /// <summary>Gets or sets the Digimon ids of the eight partners (the first eight entries of the Digimon table), tested by enemy AI condition 8.</summary>
     public IReadOnlyCollection<int> StarterDigimonIds { get; set; } = [];
 
     /// <summary>Gets or sets the technique catalogue (id -> resolved technique), for resolving the enemy's
-    /// battle-table techniques on its turn and its counter-attack.</summary>
+    /// fighter table techniques on its turn and its counter-attack.</summary>
     public IReadOnlyDictionary<int, TechData> Techs { get; set; } = new Dictionary<int, TechData>();
 
-    /// <summary>Gets or sets BATTLE_SETUP.blocks, for the run-away block (and future blocks).</summary>
+    /// <summary>Gets or sets the twelve block flags of the encounter. Only <see cref="BattleConst.BlockRunAway"/> is applied today.</summary>
     public int[] Blocks { get; set; } = new int[12];
 
+    /// <summary>Gets or sets how the battle ended. Once set to a value other than <see cref="BattleOutcome.None"/> it is never replaced by the outcome check.</summary>
     public BattleOutcome Outcome { get; set; }
 
-    /// <summary>Gets or sets BATTLE_RESULT.partners[i].fought: whether each party member took a turn this
+    /// <summary>Gets or sets, per party slot, whether that partner took a turn this
     /// battle. The battle report shares the earned exp only among the partners who took a turn.</summary>
     public bool[] Fought { get; set; } = new bool[3];
 
@@ -79,17 +84,22 @@ public sealed class BattleState
     /// <summary>Gets or sets the enemy side's time-to-next-turn counter.</summary>
     public int NextEnemyTurn { get; set; }
 
+    /// <summary>Gets the partner in the active slot, null when no slot is active.</summary>
     public BattleFighter? ActivePlayerFighter => ActivePlayer >= 0 ? Players[ActivePlayer] : null;
 
+    /// <summary>Gets the enemy in the active slot, null when no slot is active.</summary>
     public BattleFighter? ActiveEnemyFighter => ActiveEnemy >= 0 ? Enemies[ActiveEnemy] : null;
 
     /// <summary>Gets the side whose next-turn time is due first (Player on a tie).</summary>
     public BattleSide NextActor => NextPlayerTurn <= NextEnemyTurn ? BattleSide.Player : BattleSide.Enemy;
 
     /// <summary>
-    /// WFIGHTMN_initFighters: fills the three partners (the first with the active digimon)
+    /// Fills the three partners (the first with the active Digimon)
     /// and the three enemies, loading HP/MP and resolving stats, then seeds the turn clock.
     /// </summary>
+    /// <param name="setup">The battle set up by the encounter.</param>
+    /// <param name="digimon">Digimon id slot 0 fights as, which may differ from its seed after a digivolution on the field.</param>
+    /// <returns>A state on the first living fighter of each side. Its outcome is already set when a side starts with no living fighter.</returns>
     public static BattleState InitFighters(BattleSetup setup, int digimon)
     {
         var state = new BattleState
@@ -115,6 +125,9 @@ public sealed class BattleState
     }
 
     /// <summary>The active partner attacks the active enemy with its basic technique.</summary>
+    /// <param name="tech">The basic attack technique.</param>
+    /// <param name="rng">The battle's random source, for the critical roll and the counter.</param>
+    /// <returns><see langword="false"/> when the active partner is knocked out or no enemy is active, otherwise <see langword="true"/> with the turn spent.</returns>
     public bool PlayerAttack(TechData tech, IBattleRng rng)
     {
         var attacker = ActivePlayerFighter;
@@ -129,6 +142,9 @@ public sealed class BattleState
     }
 
     /// <summary>The active partner uses a technique (physical or magic by its icon), paying its MP.</summary>
+    /// <param name="tech">The technique picked in the menu.</param>
+    /// <param name="rng">The battle's random source, for the critical roll and the counter.</param>
+    /// <returns><see langword="false"/> without spending the turn when the technique costs more MP than the partner has or nobody can fight, otherwise <see langword="true"/>.</returns>
     public bool PlayerTechnique(TechData tech, IBattleRng rng)
     {
         var attacker = ActivePlayerFighter;
@@ -148,6 +164,8 @@ public sealed class BattleState
     /// command). It is a permanent change for the battle, costs no MP, and is gated only
     /// by the NoDigivolve flag; picking the current form is refused.
     /// </summary>
+    /// <param name="form">Digimon id of the target form.</param>
+    /// <returns><see langword="true"/> when the form changed and the turn was spent.</returns>
     public bool PlayerDigivolve(int form)
     {
         var attacker = ActivePlayerFighter;
@@ -169,6 +187,8 @@ public sealed class BattleState
     /// re-armed) but does not change any knock-out state, so a knocked-out active can be
     /// replaced without ending the battle.
     /// </summary>
+    /// <param name="slot">Party slot to bring in, 0..2.</param>
+    /// <returns><see langword="false"/> for an out-of-range, active, empty or knocked-out slot, otherwise <see langword="true"/>.</returns>
     public bool PlayerSwitch(int slot)
     {
         if (slot < 0 || slot >= Players.Length || slot == ActivePlayer || Players[slot] is not { Id: not 0, IsKnockedOut: false })
@@ -182,10 +202,12 @@ public sealed class BattleState
     }
 
     /// <summary>
-    /// The active partner uses a battle item (FIGHTSTG_startItem). The effect is applied to
-    /// the active fighter (or the party for revive); the item's removal from the bag is the
-    /// the flow controller's concern (the flow controller decrements the bag stock).
+    /// The active partner uses a battle item. The effect is applied to
+    /// the active fighter (or the party for revive); removing the item from the bag is the
+    /// flow controller's concern.
     /// </summary>
+    /// <param name="item">The item used.</param>
+    /// <returns><see langword="false"/> when the active partner is knocked out, otherwise <see langword="true"/> with the turn spent.</returns>
     public bool PlayerItem(BattleItem item)
     {
         var attacker = ActivePlayerFighter;
@@ -200,7 +222,9 @@ public sealed class BattleState
         return true;
     }
 
-    /// <summary>The active partner tries to run away (FIGHTSTG_testRunAway). Returns true when it fled.</summary>
+    /// <summary>The active partner tries to run away. A success ends the battle as fled, a failure spends the turn.</summary>
+    /// <param name="rng">The battle's random source, one value drawn per attempt.</param>
+    /// <returns><see langword="true"/> when the party fled. Also <see langword="false"/> without an attempt when nobody can fight.</returns>
     public bool PlayerFlee(IBattleRng rng)
     {
         var attacker = ActivePlayerFighter;
@@ -224,33 +248,44 @@ public sealed class BattleState
     }
 
     /// <summary>The active enemy attacks the active partner with the given technique (its basic
-    /// attack on a turn, FIGHTSTG_startEnemyAttack/FIGHTSTG_startFirstTech).</summary>
+    /// attack on a turn).</summary>
+    /// <param name="tech">The enemy's basic attack.</param>
+    /// <param name="rng">The battle's random source.</param>
     public void EnemyAttack(TechData tech, IBattleRng rng) => _enemyTurn.Attack(tech, rng);
 
-    /// <summary>The active enemy uses one of its battle-table techniques (useEnemyTech,
-    /// the enemy's battle-table techniques): pays the MP and deals the damage. Returns false when it cannot afford the
-    /// technique — the source shows a "no MP" message but still spends the turn.</summary>
+    /// <summary>The active enemy uses one of its fighter table techniques: pays the MP and deals the damage.</summary>
+    /// <param name="tech">The technique picked by the enemy AI.</param>
+    /// <param name="rng">The battle's random source.</param>
+    /// <returns><see langword="false"/> when the enemy cannot afford the technique. The original game shows a "no MP" message and still spends the turn.</returns>
     public bool EnemyTechnique(TechData tech, IBattleRng rng) => _enemyTurn.Technique(tech, rng);
 
-    /// <summary>The enemy switches to another living fighter (FIGHTSTG_pickEnemySwitch). Returns
-    /// the new active slot, or -1 when there is no valid target (the turn is still spent).</summary>
+    /// <summary>The enemy switches to another living fighter.</summary>
+    /// <param name="decision">The switch decision of the enemy AI.</param>
+    /// <param name="rng">The battle's random source, used when the reserve is picked at random.</param>
+    /// <returns>The new active slot, or -1 when there is no valid target (the turn is still spent).</returns>
     public int EnemySwitch(EnemyDecision decision, IBattleRng rng) => _enemyTurn.Switch(decision, rng);
 
-    /// <summary>The enemy's run-away action (FIGHTSTG_queueRunAway -> WFIGHTMN_runAway ->
-    /// FIGHTSTG_testRunAway): ends the battle as fled on success. Returns whether it fled.</summary>
+    /// <summary>The enemy's run-away action: ends the battle as fled on success.</summary>
+    /// <param name="rng">The battle's random source, one value drawn.</param>
+    /// <returns>Whether the enemy fled.</returns>
     public bool EnemyRunAway(IBattleRng rng) => _enemyTurn.RunAway(rng);
 
-    /// <summary>The enemy counter-attacks the damage it just received with the given technique
-    /// (counterattack reaction). It is a reaction inside the player's
-    /// turn, so it does not spend the enemy's turn.</summary>
+    /// <summary>The enemy counter-attacks the damage it just received with the given technique.
+    /// It is a reaction inside the player's turn, so it does not spend the enemy's turn.</summary>
+    /// <param name="tech">The counter technique, whose effect power scales the received damage.</param>
+    /// <param name="receivedDamage">Damage the enemy took from the hit it answers.</param>
+    /// <param name="rng">The battle's random source.</param>
     public void EnemyCounter(TechData tech, int receivedDamage, IBattleRng rng) => _enemyTurn.Counter(tech, receivedDamage, rng);
 
-    /// <summary>The enemy's turn: decides its action from its battle table
-    /// (BattleEnemyAi.PickAction) and executes it. Returns the decision (None when the table is
-    /// empty, so the enemy does nothing).</summary>
+    /// <summary>The enemy's turn: decides its action from its fighter table
+    /// (<see cref="BattleEnemyAi.PickAction"/>) and executes it.</summary>
+    /// <param name="rng">The battle's random source.</param>
+    /// <returns>The decision taken, <see cref="EnemyDecision.None"/> when the table is empty and the enemy does nothing.</returns>
     public EnemyDecision RunEnemyTurn(IBattleRng rng) => _enemyTurn.RunTurn(rng);
 
-    /// <summary>The enemy's action from its battle table (BattleEnemyAi.PickAction).</summary>
+    /// <summary>Decides the enemy's action from its fighter table without executing it.</summary>
+    /// <param name="rng">The battle's random source, drawn by chance conditions.</param>
+    /// <returns>The decision, <see cref="EnemyDecision.None"/> when no enemy is active or its table is empty.</returns>
     public EnemyDecision DecideEnemyAction(IBattleRng rng) => _enemyTurn.Decide(rng);
 
     /// <summary>Creates the hit resolver for one action, with this battle's boost and critical setting.</summary>
@@ -324,11 +359,12 @@ public sealed class BattleState
         CheckOutcome();
     }
 
+    /// <summary>Re-arms the player cadence after it spent its turn, by the speed-based delay against the active enemy.</summary>
     private void AdvancePlayerTurn() => NextPlayerTurn += TurnDelay(ActivePlayerFighter, ActiveEnemyFighter);
 
-    /// <summary>WFIGHTMN_knockOut's enemy branch: the enemy side brings in its next living
+    /// <summary>The enemy side brings in its next living
     /// fighter when the active one falls to a hit. This reinforcement is distinct from the
-    /// enemy's own voluntary switch action (FIGHTSTG_pickEnemySwitch, EnemySwitch).</summary>
+    /// enemy's own voluntary switch action (<see cref="EnemySwitch"/>).</summary>
     private void ResolveEnemySlot()
     {
         if (ActiveEnemyFighter is { IsKnockedOut: true })
@@ -337,6 +373,7 @@ public sealed class BattleState
         }
     }
 
+    /// <summary>Records that the active partner took a turn, so it gets a share of the experience.</summary>
     private void MarkFought()
     {
         if (ActivePlayer >= 0 && ActivePlayer < Fought.Length)

@@ -36,6 +36,8 @@ public sealed class FightReportController
     public IReadOnlyList<string> Logs => _logs;
 
     /// <summary>Calculates the decimal-wheel increment used by an animated experience counter.</summary>
+    /// <param name="targetExp">Experience value the counter rolls towards.</param>
+    /// <returns>A repunit with as many ones as <paramref name="targetExp"/> has digits (1, 11, 111...), so every digit turns at once. For 0 or less it returns -954437177, the value the original integer arithmetic yields, which keeps the rolling identical for an empty target.</returns>
     public static int RollStep(int targetExp)
     {
         if (targetExp <= 0)
@@ -54,7 +56,8 @@ public sealed class FightReportController
         return result;
     }
 
-    /// <summary>Advances the report by one PAL frame and handles one Cross button edge.</summary>
+    /// <summary>Advances the report by one PAL frame and handles one Cross button edge. Does nothing once the report is done.</summary>
+    /// <param name="crossPressedEdge">Whether Cross went down this frame. A held button must not be passed as a new press, or messages would skip.</param>
     public void Step(bool crossPressedEdge)
     {
         if (_done)
@@ -262,6 +265,8 @@ public sealed class FightReportController
         }
     }
 
+    /// <summary>Gathers the fade levels, background scroll, panel views and message view of the current frame.</summary>
+    /// <returns>An immutable snapshot for the renderer.</returns>
     private FightReportView BuildView()
     {
         var partnerViews = _partners.Select(partner => partner.ToView()).ToArray();

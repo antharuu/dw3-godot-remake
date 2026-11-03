@@ -41,20 +41,25 @@ public interface IBattleMenuDriverHost
     void ConfirmRoot();
 
     /// <summary>Chooses a technique row.</summary>
+    /// <param name="argument">Technique id stored for the selected row (absolute index across pages).</param>
     void ChooseTechnique(int argument);
 
     /// <summary>Chooses a digivolution row.</summary>
+    /// <param name="argument">Digimon id of the form stored for the cursor row.</param>
     void ChooseDigivolution(int argument);
 
     /// <summary>Opens the selected partner's switch-in page.</summary>
+    /// <param name="argument">Party slot (0..2) stored for the cursor row.</param>
     void OpenSwitchIn(int argument);
 
-    /// <summary>Opens the recovered pair-switch page.</summary>
+    /// <summary>Opens the pair-switch page, the second page of a switch-in.</summary>
+    /// <param name="argument">Value stored for the cursor row of the switch-in page, identifying the incoming partner's Digimon.</param>
     void OpenPairSwitch(int argument);
 
-    /// <summary>Confirms the recovered pair-switch command.</summary>
+    /// <summary>Confirms the pair-switch page: swaps partners or uses the pair technique.</summary>
     void ConfirmPairSwitch();
 
     /// <summary>Chooses an item row.</summary>
+    /// <param name="argument">Item id stored for the selected row (absolute index across pages).</param>
     void ChooseItem(int argument);
 }

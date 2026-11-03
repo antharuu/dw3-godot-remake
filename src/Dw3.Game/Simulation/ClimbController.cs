@@ -8,13 +8,28 @@ namespace Dw3Production.Simulation;
 /// </summary>
 public enum ClimbSubstate
 {
+    /// <summary>No climb in progress. The player is under normal field control.</summary>
     None,
+
+    /// <summary>Mounting the wall from its foot (animation set 0x1C), played once.</summary>
     GetOnWall,
+
+    /// <summary>Stepping over the top edge onto the wall to climb down (animation set 0x1E), played once.</summary>
     GetOverEdge,
+
+    /// <summary>Hanging on the wall with no vertical input (idle set 0x20, looping).</summary>
     Climb,
+
+    /// <summary>Moving up one pixel per tick while up is held (set 0x1A).</summary>
     ClimbUp,
+
+    /// <summary>Moving down one pixel per tick while down is held (set 0x1B).</summary>
     ClimbDown,
+
+    /// <summary>Leaving the wall over its top edge (set 0x1D), played once before control returns.</summary>
     ClimbOffTop,
+
+    /// <summary>Leaving the wall at its foot (set 0x1F), played once before control returns.</summary>
     ClimbOffBottom,
 }
 
@@ -48,18 +63,20 @@ public sealed class ClimbController
     private bool _overEdgeOffsetApplied;
 
     /// <summary>
-    /// Gets a value indicating whether gets whether the actor is currently committed to a wall traverse.
+    /// Gets a value indicating whether the actor is committed to a wall traverse. While true, field movement is ignored and only <see cref="Tick"/> moves the actor.
     /// </summary>
     public bool IsActive => _substate != ClimbSubstate.None;
 
     /// <summary>
-    /// Gets the direction captured when the actor entered the wall traverse.
+    /// Gets the direction captured when the actor entered the wall traverse, 0..7. It stays fixed for the whole climb and selects the side the actor shifts to.
     /// </summary>
     public int Direction => _direction;
 
     /// <summary>
     /// Supplies the animation sequences used by future climb actions.
     /// </summary>
+    /// <param name="data">Climb animation sets from the pack, keyed by set id 0x1A..0x20.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="data"/> is null.</exception>
     public void SetData(ClimbData data)
     {
         _data = data ?? throw new ArgumentNullException(nameof(data));
@@ -68,6 +85,13 @@ public sealed class ClimbController
     /// <summary>
     /// Starts an upward traverse from the foot of a wall.
     /// </summary>
+    /// <param name="state">Game state that receives the position, facing and climb fields.</param>
+    /// <param name="dir">Facing direction of the climb slot, 0..7.</param>
+    /// <param name="x">Foot position X in pixels.</param>
+    /// <param name="y">Foot position Y in pixels.</param>
+    /// <param name="height">Wall height in pixels.</param>
+    /// <exception cref="InvalidOperationException">No climb data was supplied.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="state"/> is null.</exception>
     public void StartClimbUp(GameState state, int dir, int x, int y, int height)
     {
         EnsureData();
@@ -86,8 +110,17 @@ public sealed class ClimbController
     }
 
     /// <summary>
-    /// Starts a downward traverse from the top edge of a wall.
+    /// Starts a downward traverse from the top edge of a wall. The actor is moved past the edge
+    /// (16 pixels sideways, 24 pixels plus the wall height down) and the camera smoothing is held
+    /// for 16 ticks so the jump does not snap the view.
     /// </summary>
+    /// <param name="state">Game state that receives the position, facing and climb fields.</param>
+    /// <param name="dir">Facing direction of the climb slot, 0..7.</param>
+    /// <param name="x">Top edge position X in pixels.</param>
+    /// <param name="y">Top edge position Y in pixels.</param>
+    /// <param name="height">Wall height in pixels.</param>
+    /// <exception cref="InvalidOperationException">No climb data was supplied.</exception>
+    /// <exception cref="ArgumentNullException"><paramref name="state"/> is null.</exception>
     public void StartClimbDown(GameState state, int dir, int x, int y, int height)
     {
         EnsureData();
@@ -109,6 +142,10 @@ public sealed class ClimbController
     /// <summary>
     /// Advances the active wall traverse by one fixed simulation tick.
     /// </summary>
+    /// <param name="state">Game state updated with the climb fields, and released back to field control when the climb ends.</param>
+    /// <param name="input">Held directions: up and down choose the climb direction while on the wall.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="state"/> or <paramref name="input"/> is null.</exception>
+    /// <exception cref="InvalidOperationException">No climb is active.</exception>
     public void Tick(GameState state, InputState input)
     {
         ArgumentNullException.ThrowIfNull(state);
@@ -124,6 +161,9 @@ public sealed class ClimbController
         WriteTo(state);
     }
 
+    /// <summary>Stores the climb direction and wall height for a new traverse. Direction 5 climbs on the left side, every other direction on the right.</summary>
+    /// <param name="direction">Facing direction of the climb slot, 0..7.</param>
+    /// <param name="height">Wall height in pixels, stored internally in 1/256 pixel units.</param>
     private void InitialiseWall(int direction, int height)
     {
         _direction = direction;
@@ -131,6 +171,8 @@ public sealed class ClimbController
         _wallHeight = height * SourceUnitsPerPixel;
     }
 
+    /// <summary>Picks climbing up, down or hanging from the held directions. Ignored while a mount or dismount animation plays, so those always finish. Up wins when both are held.</summary>
+    /// <param name="input">Current held input.</param>
     private void ApplyMovementInput(InputState input)
     {
         if (_substate is not (ClimbSubstate.Climb or ClimbSubstate.ClimbUp or ClimbSubstate.ClimbDown))
@@ -146,6 +188,8 @@ public sealed class ClimbController
         TransitionTo(wanted);
     }
 
+    /// <summary>Runs one tick of the current substate: one-shot animations move on when done, climbing moves one pixel and switches to the matching dismount when the height reaches the top or the foot.</summary>
+    /// <param name="state">Game state, changed only when the actor leaves the wall or steps over the edge.</param>
     private void AdvanceSubstate(GameState state)
     {
         switch (_substate)
@@ -200,6 +244,8 @@ public sealed class ClimbController
         }
     }
 
+    /// <summary>On the first tick of a step over the edge that was not prepositioned, moves the actor past the edge and holds the camera smoothing. Then waits for the animation to finish before hanging on the wall.</summary>
+    /// <param name="state">Game state whose position is shifted once.</param>
     private void AdvanceGetOverEdge(GameState state)
     {
         if (!_overEdgeOffsetApplied)
@@ -215,6 +261,8 @@ public sealed class ClimbController
         }
     }
 
+    /// <summary>Ends a climb over the top edge: undoes the edge shift so the actor stands on the upper floor, holds the camera smoothing and returns control.</summary>
+    /// <param name="state">Game state that receives the final position.</param>
     private void FinishAtTop(GameState state)
     {
         state.Position += new Vector2(-SideOffset(), -(EdgeClearancePixels + (_wallHeight / SourceUnitsPerPixel)));
@@ -222,12 +270,16 @@ public sealed class ClimbController
         EndClimb(state);
     }
 
+    /// <summary>Ends a climb at the foot of the wall facing direction 0 (down), away from the wall, and returns control.</summary>
+    /// <param name="state">Game state that receives the final facing.</param>
     private void FinishAtBottom(GameState state)
     {
         state.SetFacing(0);
         EndClimb(state);
     }
 
+    /// <summary>Clears the climb and hands the actor back to normal field movement.</summary>
+    /// <param name="state">Game state restored to field control.</param>
     private void EndClimb(GameState state)
     {
         _substate = ClimbSubstate.None;
@@ -235,6 +287,8 @@ public sealed class ClimbController
         state.RestoreFieldControl();
     }
 
+    /// <summary>Switches substate and restarts the matching animation set from tick 0. Staying in the same substate keeps the animation running, so a held direction does not restart its loop.</summary>
+    /// <param name="next">Substate to enter.</param>
     private void TransitionTo(ClimbSubstate next)
     {
         if (_substate == next)
@@ -247,6 +301,8 @@ public sealed class ClimbController
         _animationTicks = 0;
     }
 
+    /// <summary>Tells whether the current one-shot animation has played all its records.</summary>
+    /// <returns><see langword="true"/> once the elapsed ticks reach the sum of the record durations. Always <see langword="false"/> for looping sets and for sets missing from the data.</returns>
     private bool IsAnimationDone()
     {
         if (_data is null || !_data.Sequences.TryGetValue(_animationSet, out ClimbSequence? sequence))
@@ -263,8 +319,13 @@ public sealed class ClimbController
         return totalDuration <= _animationTicks;
     }
 
+    /// <summary>Sideways shift applied when stepping over or off the top edge.</summary>
+    /// <returns>+16 pixels on the right side, -16 on the left side.</returns>
     private int SideOffset() => _climbSide != 0 ? SideShiftPixels : -SideShiftPixels;
 
+    /// <summary>Maps a substate to the climb animation set it plays, 0x1A..0x20 in the action archive.</summary>
+    /// <param name="substate">Substate to map.</param>
+    /// <returns>The set id, or 0 for <see cref="ClimbSubstate.None"/>.</returns>
     private static int AnimationSetFor(ClimbSubstate substate) => substate switch
     {
         ClimbSubstate.GetOnWall => GetOnWallSet,
@@ -277,6 +338,8 @@ public sealed class ClimbController
         _ => 0,
     };
 
+    /// <summary>Publishes the climb fields to the game state so the renderer and the F3 overlay can draw the actor on the wall.</summary>
+    /// <param name="state">Game state that receives the fields.</param>
     private void WriteTo(GameState state)
     {
         state.ClimbActive = IsActive;
@@ -287,6 +350,8 @@ public sealed class ClimbController
         state.AnimationDirection = _direction;
     }
 
+    /// <summary>Rejects a climb start before <see cref="SetData"/> was called.</summary>
+    /// <exception cref="InvalidOperationException">No climb data was supplied.</exception>
     private void EnsureData()
     {
         if (_data is null)

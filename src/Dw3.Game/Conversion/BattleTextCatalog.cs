@@ -92,8 +92,17 @@ public sealed class BattleTextCatalog
         return [.. value.ToString(System.Globalization.CultureInfo.InvariantCulture).Select(character => new TextToken("g", 4 + character - '0', 0, []))];
     }
 
+    /// <summary>Looks up a line of the battle menu text table, tagging it with a debug label for the probe logs.</summary>
+    /// <param name="entry">Entry index in the menu table.</param>
+    /// <param name="debug">Label recorded on the line for diagnostics.</param>
+    /// <returns>The line, or <see cref="BattleTextLine.Missing"/> when the index is out of range.</returns>
     private BattleTextLine FromMenu(int entry, string debug) => From(_data.Menu, entry, debug);
 
+    /// <summary>Looks up one entry of a text table without throwing, so a pack with a short table still renders the rest of the battle.</summary>
+    /// <param name="table">Token lines of a text table.</param>
+    /// <param name="entry">Entry index. Any value outside 0..Count-1 is accepted.</param>
+    /// <param name="debug">Label recorded on the line for diagnostics.</param>
+    /// <returns>The line without substitutions, or <see cref="BattleTextLine.Missing"/> when the index is out of range.</returns>
     private static BattleTextLine From(IReadOnlyList<IReadOnlyList<TextToken>> table, int entry, string debug) =>
         entry >= 0 && entry < table.Count ? new BattleTextLine(table[entry], [], debug) : BattleTextLine.Missing;
 }

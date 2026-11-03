@@ -76,6 +76,8 @@ public sealed class InputAdapter
         State.Clear();
     }
 
+    /// <summary>Handles keyboard events. Key repeats are ignored. F3 toggles the diagnostic overlay and F8 requests the debug battle, both matched by physical key so every layout uses the same keys. Shift holds walk, everything else goes to the direction and button mapping.</summary>
+    /// <param name="keyEvent">A keyboard event, press or release.</param>
     private void HandleKey(InputEventKey keyEvent)
     {
         if (keyEvent.Echo)
@@ -115,6 +117,8 @@ public sealed class InputAdapter
         HandleDirectionKey(keyEvent);
     }
 
+    /// <summary>Maps the remaining keys. Arrows and ZQSD (AZERTY) set the held keyboard directions, Enter is Cross (confirm), X is Circle (cancel), Page Up and Page Down are L1 and R1. Only direction keys recompute the combined directions.</summary>
+    /// <param name="keyEvent">A non-repeated keyboard event that is not F3, F8 or Shift.</param>
     private void HandleDirectionKey(InputEventKey keyEvent)
     {
         bool pressed = keyEvent.Pressed;
@@ -181,6 +185,8 @@ public sealed class InputAdapter
         ApplyDirections();
     }
 
+    /// <summary>Turns the left stick into four digital directions. An axis counts as held past ±0.5, which matches the digital pad of the original controller and ignores stick drift.</summary>
+    /// <param name="motionEvent">An axis event. Axes other than the left stick X and Y are ignored.</param>
     private void HandleJoypadMotion(InputEventJoypadMotion motionEvent)
     {
         if (motionEvent.Axis == JoyAxis.LeftX)
@@ -199,6 +205,8 @@ public sealed class InputAdapter
         }
     }
 
+    /// <summary>Maps controller buttons: south (A) to Cross, east (B) to Circle, left and right shoulders to L1 and R1. Shoulders only act on press, so a page turn fires once per press.</summary>
+    /// <param name="buttonEvent">A controller button event.</param>
     private void HandleJoypadButton(InputEventJoypadButton buttonEvent)
     {
         if (buttonEvent.ButtonIndex == JoyButton.A)
@@ -233,6 +241,7 @@ public sealed class InputAdapter
         }
     }
 
+    /// <summary>Publishes the held directions to <see cref="State"/>, OR-ing keyboard and stick so either source can hold a direction while the other releases it.</summary>
     private void ApplyDirections() => State.SetDirections(
         left: _keyLeft || _stickLeft,
         right: _keyRight || _stickRight,

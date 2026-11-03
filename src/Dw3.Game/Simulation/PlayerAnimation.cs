@@ -50,6 +50,10 @@ public static class PlayerAnimation
         throw new InvalidOperationException("animation cadence selection failed");
     }
 
+    /// <summary>Maps a facing direction 0..7 to one of the five sprite directions stored for the player, mirroring 5, 6 and 7 from 3, 2 and 1.</summary>
+    /// <param name="direction">Facing direction, 0..7.</param>
+    /// <returns>The stored direction (0..4) and whether to flip the sprite horizontally.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="direction"/> is outside 0..7.</exception>
     private static (int Direction, bool FlipH) ResolveSpriteDirection(int direction) => direction switch
     {
         0 => (0, false),

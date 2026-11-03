@@ -23,6 +23,11 @@ internal static class DialogueZoneReader
         return ReadZoneRows(database, actors);
     }
 
+    /// <summary>Reads <c>dialogue_codes</c>, where each row is one condition or action code of a talk entry, and sorts the rows into the two maps. Row order (by <c>ordinal</c>) is kept so codes are evaluated in their disc order.</summary>
+    /// <param name="database">Open pack database connection.</param>
+    /// <param name="conditions">Receives the condition codes, keyed by stage, actor index and talk index.</param>
+    /// <param name="actions">Receives the action codes, with the same key.</param>
+    /// <exception cref="CacheResourceException">A row has a <c>list_kind</c> other than <c>condition</c> or <c>action</c>.</exception>
     private static void ReadCodeRows(
         SqliteConnection database,
         Dictionary<(int Stage, int Actor, int Talk), List<DialogueCondition>> conditions,
@@ -41,6 +46,15 @@ internal static class DialogueZoneReader
         }
     }
 
+    /// <summary>Routes one code row to the condition or action map according to its list kind.</summary>
+    /// <param name="list">Value of <c>list_kind</c>: <c>condition</c> or <c>action</c>.</param>
+    /// <param name="key">Stage id, actor index and talk index the code belongs to.</param>
+    /// <param name="code">Raw condition or action opcode.</param>
+    /// <param name="value">Operand of the opcode, for example a flag number.</param>
+    /// <param name="kind">Semantic label written by the extractor for the opcode.</param>
+    /// <param name="conditions">Map that receives condition codes.</param>
+    /// <param name="actions">Map that receives action codes.</param>
+    /// <exception cref="CacheResourceException"><paramref name="list"/> is neither <c>condition</c> nor <c>action</c>.</exception>
     private static void AppendCodeRow(
         string list,
         (int Stage, int Actor, int Talk) key,
@@ -64,6 +78,9 @@ internal static class DialogueZoneReader
         }
     }
 
+    /// <summary>Reads <c>dialogue_talk_families</c>, the labels that group talk entries sharing the same story context (several rows per talk are allowed).</summary>
+    /// <param name="database">Open pack database connection.</param>
+    /// <returns>Family labels keyed by stage, actor index and talk index, sorted alphabetically per key.</returns>
     private static Dictionary<(int Stage, int Actor, int Talk), List<string>> ReadFamilyRows(SqliteConnection database)
     {
         var families = new Dictionary<(int Stage, int Actor, int Talk), List<string>>();
@@ -78,6 +95,12 @@ internal static class DialogueZoneReader
         return families;
     }
 
+    /// <summary>Reads <c>dialogue_talks</c> and attaches to each talk its conditions, actions and families. A talk without codes or families gets empty lists rather than null.</summary>
+    /// <param name="database">Open pack database connection.</param>
+    /// <param name="conditions">Condition codes keyed by stage, actor and talk.</param>
+    /// <param name="actions">Action codes keyed by stage, actor and talk.</param>
+    /// <param name="families">Family labels keyed by stage, actor and talk.</param>
+    /// <returns>Talks keyed by stage and actor, in talk index order, which is the order the runtime tests them.</returns>
     private static Dictionary<(int Stage, int Actor), List<DialogueTalk>> ReadTalkRows(
         SqliteConnection database,
         Dictionary<(int Stage, int Actor, int Talk), List<DialogueCondition>> conditions,
@@ -101,6 +124,10 @@ internal static class DialogueZoneReader
         return talks;
     }
 
+    /// <summary>Reads <c>dialogue_actors</c>: the tile position, facing direction and interaction width of every speaking actor, with the talks found for it.</summary>
+    /// <param name="database">Open pack database connection.</param>
+    /// <param name="talks">Talks keyed by stage and actor index.</param>
+    /// <returns>Actors keyed by stage id, in actor index order.</returns>
     private static Dictionary<int, List<DialogueActor>> ReadActorRows(
         SqliteConnection database,
         Dictionary<(int Stage, int Actor), List<DialogueTalk>> talks)
@@ -119,6 +146,10 @@ internal static class DialogueZoneReader
         return actors;
     }
 
+    /// <summary>Reads <c>dialogue_zones</c>, which ties each stage to the talk text file it uses, and names each zone <c>Snnn</c> with the stage id on three digits.</summary>
+    /// <param name="database">Open pack database connection.</param>
+    /// <param name="actors">Actors keyed by stage id.</param>
+    /// <returns>Zones keyed by name. A stage without actors gets an empty actor list.</returns>
     private static Dictionary<string, ZoneDialogue> ReadZoneRows(
         SqliteConnection database,
         Dictionary<int, List<DialogueActor>> actors)
@@ -137,6 +168,12 @@ internal static class DialogueZoneReader
         return zones;
     }
 
+    /// <summary>Adds a value to the list stored under a key, creating the list on first use.</summary>
+    /// <typeparam name="TKey">Key type.</typeparam>
+    /// <typeparam name="TValue">Element type of the lists.</typeparam>
+    /// <param name="map">Map of lists to update.</param>
+    /// <param name="key">Key of the list.</param>
+    /// <param name="value">Value appended at the end, so insertion order is kept.</param>
     private static void Append<TKey, TValue>(Dictionary<TKey, List<TValue>> map, TKey key, TValue value)
         where TKey : notnull
     {

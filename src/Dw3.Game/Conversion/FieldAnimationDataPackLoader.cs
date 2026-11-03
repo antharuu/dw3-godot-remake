@@ -84,12 +84,18 @@ public sealed class FieldAnimationDataPackLoader : IDisposable
     /// <summary>Releases the underlying SQLite connection.</summary>
     public void Dispose() => _database.Dispose();
 
+    /// <summary>Reads the exit cue sprites (domain <c>cue</c> of <c>fieldcom_frames</c>) and wraps each one with its frame id and draw offset.</summary>
+    /// <returns>Cue frames keyed by frame id. Completeness is checked by the caller.</returns>
+    /// <exception cref="CacheResourceException">A frame PNG is missing from the pack.</exception>
     private Dictionary<int, CueFrame> LoadCueFrames()
     {
         Dictionary<int, (string Path, int OffsetX, int OffsetY)> sprites = ReadFieldcomFrames("cue");
         return sprites.ToDictionary(pair => pair.Key, pair => new CueFrame(pair.Key, pair.Value.Path, pair.Value.OffsetX, pair.Value.OffsetY));
     }
 
+    /// <summary>Reads the inner exit cue sequences of <c>cue_sequences</c>, one per field row, as (frame id, duration in source ticks) steps in disc order. The pop sequence is stored separately and is skipped here.</summary>
+    /// <returns>Steps keyed by field row.</returns>
+    /// <exception cref="CacheResourceException">An inner sequence row has a null field row.</exception>
     private Dictionary<int, List<(int Frame, int Duration)>> LoadCueRows()
     {
         var rows = new Dictionary<int, List<(int Frame, int Duration)>>();
@@ -115,6 +121,11 @@ public sealed class FieldAnimationDataPackLoader : IDisposable
         return rows;
     }
 
+    /// <summary>Loads a player action archive (climb or drop) from <c>action_records</c> and <c>action_sets</c>, and checks that the sets the controller plays are present.</summary>
+    /// <param name="domain">Action domain in the pack: <c>climb</c> or <c>drop</c>.</param>
+    /// <param name="requiredSets">Set ids that must exist, for example 0x16..0x19 for the drop. Empty when any non-empty archive is accepted.</param>
+    /// <returns>The action sequences keyed by set id.</returns>
+    /// <exception cref="CacheResourceException">The archive has no sequence, misses a required set, or a set is malformed.</exception>
     private ClimbData LoadAction(string domain, IReadOnlyCollection<int> requiredSets) => Read($"{domain} actions", () =>
     {
         Dictionary<int, List<ClimbRecord>> records = LoadActionRecords(domain);
@@ -132,6 +143,9 @@ public sealed class FieldAnimationDataPackLoader : IDisposable
         return new ClimbData(sequences);
     });
 
+    /// <summary>Reads the frame records of every set of an action domain: frame id, duration in source ticks and sprite offset from the actor position, in disc order.</summary>
+    /// <param name="domain">Action domain: <c>climb</c> or <c>drop</c>.</param>
+    /// <returns>Records keyed by set id.</returns>
     private Dictionary<int, List<ClimbRecord>> LoadActionRecords(string domain)
     {
         var records = new Dictionary<int, List<ClimbRecord>>();
@@ -152,6 +166,11 @@ public sealed class FieldAnimationDataPackLoader : IDisposable
         return records;
     }
 
+    /// <summary>Pairs each set listed in <c>action_sets</c> with its records and its terminator: <c>loop</c> sets repeat while the action lasts, <c>end</c> sets stop on their last frame.</summary>
+    /// <param name="domain">Action domain: <c>climb</c> or <c>drop</c>.</param>
+    /// <param name="records">Frame records keyed by set id.</param>
+    /// <returns>Sequences keyed by set id.</returns>
+    /// <exception cref="CacheResourceException">A set has a terminator other than <c>loop</c> or <c>end</c>, or has no record.</exception>
     private Dictionary<int, ClimbSequence> BuildActionSequences(string domain, Dictionary<int, List<ClimbRecord>> records)
     {
         var sequences = new Dictionary<int, ClimbSequence>();
@@ -177,6 +196,11 @@ public sealed class FieldAnimationDataPackLoader : IDisposable
         return sequences;
     }
 
+    /// <summary>Finds the PNG of one action frame in <c>action_frames</c> and resolves it inside the pack.</summary>
+    /// <param name="domain">Action domain: <c>climb</c> or <c>drop</c>.</param>
+    /// <param name="frame">Frame id referenced by an action record.</param>
+    /// <returns>The absolute path of an existing PNG.</returns>
+    /// <exception cref="CacheResourceException"><c>CACHE_RESOURCE_UNAVAILABLE</c> when the frame has no row or its file is absent, <c>CACHE_INVALID</c> on a SQLite error or a rejected path.</exception>
     private string ActionFramePath(string domain, int frame)
     {
         string context = $"{domain} frame={frame}";
@@ -194,6 +218,10 @@ public sealed class FieldAnimationDataPackLoader : IDisposable
         }
     }
 
+    /// <summary>Reads the sprites cut from the FIELDCOM archive for one domain (exit cue or connection indicator), with the draw offset of each frame in pixels.</summary>
+    /// <param name="domain">Domain of <c>fieldcom_frames</c>, for example <c>cue</c>.</param>
+    /// <returns>Absolute PNG path and offset keyed by frame id.</returns>
+    /// <exception cref="CacheResourceException">A frame PNG is missing from the pack.</exception>
     private Dictionary<int, (string Path, int OffsetX, int OffsetY)> ReadFieldcomFrames(string domain)
     {
         var frames = new Dictionary<int, (string Path, int OffsetX, int OffsetY)>();
@@ -208,6 +236,12 @@ public sealed class FieldAnimationDataPackLoader : IDisposable
         return frames;
     }
 
+    /// <summary>Runs a load step and wraps SQLite and data conversion failures into a cache error, so every malformed field animation record surfaces as one error type.</summary>
+    /// <typeparam name="T">Type of the loaded value.</typeparam>
+    /// <param name="subject">Domain name used in the error message.</param>
+    /// <param name="read">The load step.</param>
+    /// <returns>The value returned by <paramref name="read"/>.</returns>
+    /// <exception cref="CacheResourceException">The step threw a cache error, which is rethrown unchanged, or a SQLite, invalid operation or cast error, which is wrapped.</exception>
     private static T Read<T>(string subject, Func<T> read)
     {
         try
@@ -224,8 +258,15 @@ public sealed class FieldAnimationDataPackLoader : IDisposable
         }
     }
 
+    /// <summary>Builds the error used when a field animation record breaks the pack contract.</summary>
+    /// <param name="detail">Description of the defect.</param>
+    /// <returns>An exception with code <c>CACHE_INVALID</c>, not yet thrown.</returns>
     private static CacheResourceException Invalid(string detail) => new("CACHE_INVALID", detail);
 
+    /// <summary>Creates a command on the loader's connection, binding <c>$domain</c> when a domain is given.</summary>
+    /// <param name="sql">SQL statement. Only constant statements of this class are passed.</param>
+    /// <param name="domain">Value bound to <c>$domain</c>, or <see langword="null"/> when the statement has no such parameter.</param>
+    /// <returns>A new command the caller must dispose.</returns>
     private SqliteCommand Command(string sql, string? domain = null)
     {
         SqliteCommand command = _database.CreateCommand();

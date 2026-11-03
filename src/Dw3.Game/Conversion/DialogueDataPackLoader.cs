@@ -73,8 +73,13 @@ public sealed class DialogueDataPackLoader : IDisposable
     /// <summary>Releases the underlying SQLite connection.</summary>
     public void Dispose() => _database.Dispose();
 
+    /// <summary>Reads every stage's talk table from the pack database through <see cref="DialogueZoneReader"/>.</summary>
+    /// <returns>Zone dialogue keyed by stage name. May be empty, which the caller rejects.</returns>
     private Dictionary<string, ZoneDialogue> ReadZones() => DialogueZoneReader.ReadZones(_database);
 
+    /// <summary>Reads the talk box frame sprites from <c>talk_box_frames</c> (size in pixels, CLUT frame count, semi-transparency flag, PNG path) and checks that the seven frames the box draws are all present.</summary>
+    /// <returns>Frames keyed by frame id, containing at least ids 0 and 2..7.</returns>
+    /// <exception cref="CacheResourceException">A required frame is absent or a frame PNG is missing from the pack.</exception>
     private Dictionary<int, DialogueFrame> ReadTalkBoxFrames()
     {
         var frames = new Dictionary<int, DialogueFrame>();
@@ -98,6 +103,9 @@ public sealed class DialogueDataPackLoader : IDisposable
         return frames;
     }
 
+    /// <summary>Reads the single <c>talk_box_panel</c> row: the panel fill color (8-bit RGB), semi-transparency, texture page and CLUT of the source primitive, and the panel sprite PNG with its size.</summary>
+    /// <returns>The panel description.</returns>
+    /// <exception cref="CacheResourceException">The table has zero or several rows, or the panel PNG is missing.</exception>
     private PanelSpec ReadTalkBoxPanel()
     {
         PanelSpec? panel = null;
@@ -118,6 +126,9 @@ public sealed class DialogueDataPackLoader : IDisposable
         return panel;
     }
 
+    /// <summary>Reads the four talk box layouts from <c>talk_box_layouts</c>. Each layout gives, in screen pixels of the 320-wide original frame, the positions of the portrait sprites, the panel, the speaker name, the text origin and the "next" arrow.</summary>
+    /// <returns>Exactly four layouts, list index equal to layout id.</returns>
+    /// <exception cref="CacheResourceException">A layout id is skipped or the table does not hold exactly four layouts.</exception>
     private List<TalkBoxLayout> ReadTalkBoxLayouts()
     {
         var layouts = new List<TalkBoxLayout>();
@@ -147,6 +158,9 @@ public sealed class DialogueDataPackLoader : IDisposable
         return layouts;
     }
 
+    /// <summary>Reads the list of decoded talk text files from <c>text_files</c>, then loads each <c>text/talkNN.json</c> and checks its entry count against the count recorded at extraction.</summary>
+    /// <returns>Token lines keyed by text file index. Never empty.</returns>
+    /// <exception cref="CacheResourceException">No text file is listed, a file is missing or malformed, or its entry count differs from the database.</exception>
     private Dictionary<int, IReadOnlyList<IReadOnlyList<TextToken>>> ReadTexts()
     {
         var files = new List<(int Index, int Count)>();
@@ -180,6 +194,11 @@ public sealed class DialogueDataPackLoader : IDisposable
         return texts;
     }
 
+    /// <summary>Parses one talk text JSON file whose <c>entries</c> array holds one token array per message.</summary>
+    /// <param name="path">Absolute path of the JSON file.</param>
+    /// <param name="index">Text file index, used in the error message.</param>
+    /// <returns>The messages in file order, each as a token list.</returns>
+    /// <exception cref="CacheResourceException">The file cannot be read, is not valid JSON, or a token is malformed.</exception>
     private static List<IReadOnlyList<TextToken>> ParseTextFile(string path, int index)
     {
         try
@@ -199,6 +218,10 @@ public sealed class DialogueDataPackLoader : IDisposable
         }
     }
 
+    /// <summary>Decodes one token of a talk text file: <c>g</c> glyph and <c>i</c> icon carry a code in <c>c</c>, <c>c</c> control tokens carry a command in <c>cmd</c> and integer arguments in <c>args</c>.</summary>
+    /// <param name="token">A token object with a <c>t</c> type field.</param>
+    /// <returns>The runtime token.</returns>
+    /// <exception cref="JsonException">The type field is null or not one of <c>g</c>, <c>i</c>, <c>c</c>.</exception>
     private static TextToken ParseTextToken(JsonElement token)
     {
         string type = token.GetProperty("t").GetString() ?? throw new JsonException("token type missing");
@@ -211,6 +234,9 @@ public sealed class DialogueDataPackLoader : IDisposable
         };
     }
 
+    /// <summary>Assembles the font: line heights and metrics of the three styles, the two glyph page PNGs of the field dialogue style (style 1) and the pack font directory for the other pages.</summary>
+    /// <returns>The font, whose top-level glyphs, icons and line height are those of style 1.</returns>
+    /// <exception cref="CacheResourceException">A style contract is broken, a page PNG is missing or the font directory is rejected.</exception>
     private FontData ReadFont()
     {
         Dictionary<int, int> lineHeights = ReadFontLineHeights();
@@ -223,6 +249,8 @@ public sealed class DialogueDataPackLoader : IDisposable
             dialogue.LineHeight, styles, directory);
     }
 
+    /// <summary>Reads the line height in pixels of each font style from <c>font_styles</c>.</summary>
+    /// <returns>Line heights keyed by style id, as stored. Validation is left to the caller.</returns>
     private Dictionary<int, int> ReadFontLineHeights()
     {
         var lineHeights = new Dictionary<int, int>();
@@ -236,6 +264,10 @@ public sealed class DialogueDataPackLoader : IDisposable
         return lineHeights;
     }
 
+    /// <summary>Loads glyph and icon metrics for styles 1, 2 and 3 and checks each style's line height against the expected 14, 11 and 9 pixels, so a pack with a shifted font table is rejected.</summary>
+    /// <param name="lineHeights">Line heights read from <c>font_styles</c>, keyed by style id.</param>
+    /// <returns>The three styles keyed by style id.</returns>
+    /// <exception cref="CacheResourceException">A style is absent, has the wrong line height, or has no glyph or icon metrics.</exception>
     private Dictionary<int, FontStyleData> ReadFontStyles(Dictionary<int, int> lineHeights)
     {
         var styles = new Dictionary<int, FontStyleData>();
@@ -254,6 +286,9 @@ public sealed class DialogueDataPackLoader : IDisposable
         return styles;
     }
 
+    /// <summary>Resolves the pack's <c>font</c> directory, which holds one PNG per style and page.</summary>
+    /// <returns>The absolute directory path. Its existence is not checked here.</returns>
+    /// <exception cref="CacheResourceException">The pack rejects the path.</exception>
     private string ResolveFontDirectory()
     {
         try
@@ -266,6 +301,10 @@ public sealed class DialogueDataPackLoader : IDisposable
         }
     }
 
+    /// <summary>Reads the metrics of one style from a metrics table: glyph page, texel origin (u, v), CLUT position, size, drawing offset and advance, all in pixels.</summary>
+    /// <param name="table">Either <c>font_glyphs</c> or <c>font_icons</c>. The value is a fixed literal, never user input.</param>
+    /// <param name="style">Font style id, 1 to 3.</param>
+    /// <returns>Metrics keyed by character or icon code. Empty when the style has no row.</returns>
     private Dictionary<int, GlyphMetric> ReadMetrics(string table, int style)
     {
         var metrics = new Dictionary<int, GlyphMetric>();
@@ -283,6 +322,12 @@ public sealed class DialogueDataPackLoader : IDisposable
         return metrics;
     }
 
+    /// <summary>Runs a load step and wraps SQLite and data conversion failures into a cache error, so the host reports one error type for any malformed pack.</summary>
+    /// <typeparam name="T">Type of the loaded value.</typeparam>
+    /// <param name="subject">Domain name used in the error message.</param>
+    /// <param name="read">The load step.</param>
+    /// <returns>The value returned by <paramref name="read"/>.</returns>
+    /// <exception cref="CacheResourceException">The step threw a cache error, which is rethrown unchanged, or a SQLite, invalid operation or cast error, which is wrapped.</exception>
     private static T Read<T>(string subject, Func<T> read)
     {
         try
@@ -299,6 +344,9 @@ public sealed class DialogueDataPackLoader : IDisposable
         }
     }
 
+    /// <summary>Creates a command on the loader's connection with the given SQL text.</summary>
+    /// <param name="sql">SQL statement. Only constant statements of this class are passed.</param>
+    /// <returns>A new command the caller must dispose.</returns>
     private SqliteCommand Command(string sql)
     {
         SqliteCommand command = _database.CreateCommand();
@@ -306,5 +354,8 @@ public sealed class DialogueDataPackLoader : IDisposable
         return command;
     }
 
+    /// <summary>Builds the error used when a dialogue record exists but breaks the pack contract.</summary>
+    /// <param name="detail">Description of the defect.</param>
+    /// <returns>An exception with code <c>CACHE_INVALID</c>, not yet thrown.</returns>
     private static CacheResourceException Invalid(string detail) => new("CACHE_INVALID", detail);
 }

@@ -265,12 +265,20 @@ public sealed class BattleDataPackLoader : IDisposable
     /// <summary>Releases the underlying SQLite connection.</summary>
     public void Dispose() => _database.Dispose();
 
+    /// <summary>Resolves a battle text table JSON inside the pack and parses it into token lines, one entry per message index.</summary>
+    /// <param name="relativePath">Pack-relative path of the table, for example under <c>battle/</c>.</param>
+    /// <param name="subject">Human-readable name used in the error message when the file is missing or malformed.</param>
+    /// <returns>The parsed lines in file order. Never null.</returns>
+    /// <exception cref="CacheResourceException">The file is missing, its path escapes the pack, or its content is invalid.</exception>
     private List<IReadOnlyList<TextToken>> LoadTextTable(string relativePath, string subject)
     {
         string path = RequireFile(relativePath, subject);
         return BattleLoadoutJsonParser.ParseTextTable(path, subject);
     }
 
+    /// <summary>Opens <c>battle/battle.json</c> and checks that its <c>schema</c> field is <c>m9b-battle-v2</c> before handing it out, so a pack built by an older extractor is rejected instead of half-parsed.</summary>
+    /// <returns>The parsed document, owned by the caller, who must dispose it.</returns>
+    /// <exception cref="CacheResourceException">The file is missing or unreadable, or the schema tag does not match.</exception>
     private JsonDocument ReadBattleJson()
     {
         JsonDocument document = ReadJson("battle/battle.json", "battle data");
@@ -283,6 +291,11 @@ public sealed class BattleDataPackLoader : IDisposable
         return document;
     }
 
+    /// <summary>Resolves a pack-relative JSON file and parses it, turning I/O and syntax failures into a cache error that names the subject.</summary>
+    /// <param name="relativePath">Pack-relative path of the JSON file.</param>
+    /// <param name="subject">Human-readable name used in error messages.</param>
+    /// <returns>The parsed document, owned by the caller, who must dispose it.</returns>
+    /// <exception cref="CacheResourceException">The file is missing, its path is rejected by the pack, or it cannot be read or parsed.</exception>
     private JsonDocument ReadJson(string relativePath, string subject)
     {
         string path = RequireFile(relativePath, subject);
@@ -296,6 +309,11 @@ public sealed class BattleDataPackLoader : IDisposable
         }
     }
 
+    /// <summary>Maps a pack-relative path to an absolute file path and checks that the file exists.</summary>
+    /// <param name="relativePath">Pack-relative path, rejected by the pack when it escapes the pack root.</param>
+    /// <param name="subject">Human-readable name used in error messages.</param>
+    /// <returns>An absolute path to an existing file.</returns>
+    /// <exception cref="CacheResourceException"><c>CACHE_INVALID</c> when the path is rejected, <c>CACHE_RESOURCE_UNAVAILABLE</c> when the file does not exist.</exception>
     private string RequireFile(string relativePath, string subject)
     {
         string path;
@@ -316,7 +334,13 @@ public sealed class BattleDataPackLoader : IDisposable
         return path;
     }
 
+    /// <summary>Builds the error used when a required pack resource does not exist, so the host can tell the player to rerun extraction.</summary>
+    /// <param name="message">Description of the missing resource.</param>
+    /// <returns>An exception with code <c>CACHE_RESOURCE_UNAVAILABLE</c>, not yet thrown.</returns>
     private static CacheResourceException Missing(string message) => new("CACHE_RESOURCE_UNAVAILABLE", message);
 
+    /// <summary>Builds the error used when a pack resource exists but its content cannot be trusted.</summary>
+    /// <param name="message">Description of the defect.</param>
+    /// <returns>An exception with code <c>CACHE_INVALID</c>, not yet thrown.</returns>
     private static CacheResourceException Invalid(string message) => new("CACHE_INVALID", message);
 }

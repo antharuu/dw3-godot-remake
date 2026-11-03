@@ -9,10 +9,13 @@ internal sealed class FightReportFade
     /// <summary>The fully opaque level, 1.0 in the PSX 4.12 fixed-point format.</summary>
     public const int FullFade = 4096;
 
+    /// <summary>Gets the current opacity, 0 (transparent) to <see cref="FullFade"/> (opaque).</summary>
     public int Level { get; private set; }
 
+    /// <summary>Gets or sets the change applied to <see cref="Level"/> per frame, positive while fading in.</summary>
     private int Step { get; set; }
 
+    /// <summary>Gets or sets a value indicating whether a fade is running. <see cref="Update"/> is a no-op once it is false.</summary>
     private bool Active { get; set; }
 
     /// <summary>Starts a fade from transparent (fade in) or opaque (fade out).</summary>

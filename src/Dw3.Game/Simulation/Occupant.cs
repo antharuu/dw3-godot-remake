@@ -12,7 +12,7 @@ public sealed record Occupant(string Name, Vector2 Position, int Width)
 {
     /// <summary>
     /// Returns true when <paramref name="position"/> is inside this occupant's source diamond.
-    /// Reconstructs FIELDSTG_checkActorFlightProbes: the diamond is axis-aligned with half-width
+    /// Matches the original actor blocking test: the diamond is axis-aligned with half-width
     /// on X and half-width/2 on Y, inscribed in the bounding box.
     /// </summary>
     /// <param name="position">World position to test.</param>
@@ -73,6 +73,11 @@ public sealed record Occupant(string Name, Vector2 Position, int Width)
         return best;
     }
 
+    /// <summary>Shortest distance from a point to a line segment, used to measure the gap to each edge of the occupant's diamond.</summary>
+    /// <param name="point">Point to measure from.</param>
+    /// <param name="segmentA">First end of the segment.</param>
+    /// <param name="segmentB">Second end of the segment. A segment shorter than about 1e-6 is treated as the point <paramref name="segmentA"/>.</param>
+    /// <returns>The distance, 0 or more, in the same units as the inputs.</returns>
     private static float DistanceToSegment(Vector2 point, Vector2 segmentA, Vector2 segmentB)
     {
         var ab = segmentB - segmentA;

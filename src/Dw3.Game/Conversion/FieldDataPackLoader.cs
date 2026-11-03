@@ -202,6 +202,9 @@ public sealed class FieldDataPackLoader : IDisposable
     /// <summary>Releases the underlying SQLite connection.</summary>
     public void Dispose() => _database.Dispose();
 
+    /// <summary>Flattens the <c>sets</c> array of the player animation JSON into one list holding every (set, direction) sequence.</summary>
+    /// <param name="player">Root element of the player animation JSON.</param>
+    /// <returns>Sequences in file order, sets first, then directions inside each set.</returns>
     private static List<PlayerSequence> ParsePlayerSequences(JsonElement player)
     {
         var sequences = new List<PlayerSequence>();
@@ -216,6 +219,10 @@ public sealed class FieldDataPackLoader : IDisposable
         return sequences;
     }
 
+    /// <summary>Reads the records of one player sequence: frame id, duration in source ticks, sprite offset in pixels and the foot ground contact point, rounded to whole pixels because the extractor stores it as a float.</summary>
+    /// <param name="set">The animation set object, which carries the set id.</param>
+    /// <param name="sequence">One element of the set's <c>sequences</c> array, which carries the direction.</param>
+    /// <returns>The sequence with its records in disc order.</returns>
     private static PlayerSequence ParseOnePlayerSequence(JsonElement set, JsonElement sequence)
     {
         var records = new List<AnimationRecord>();
@@ -235,6 +242,15 @@ public sealed class FieldDataPackLoader : IDisposable
         return new PlayerSequence(set.GetProperty("set").GetInt32(), sequence.GetProperty("direction").GetInt32(), records);
     }
 
+    /// <summary>Reads the standing (set 1) loop of an NPC for its placed direction. The disc stores five sprite directions (0..4); directions 5..7 reuse 3..1 mirrored horizontally.</summary>
+    /// <param name="stage">Stage id of the NPC.</param>
+    /// <param name="actorIndex">Index of the NPC in the stage's actor list.</param>
+    /// <param name="actorId">Actor id that selects the NPC's sprite archive.</param>
+    /// <param name="direction">Placed facing direction, 0..7.</param>
+    /// <param name="spriteDirection">Receives the stored sprite direction, 0..4.</param>
+    /// <param name="flipH">Receives <see langword="true"/> when the sprite must be mirrored.</param>
+    /// <returns>The loop frames with their PNG, offset and duration, or <see langword="null"/> when the NPC has no standing set for that direction.</returns>
+    /// <exception cref="CacheResourceException">The direction is outside 0..7, the standing set exists but has no record, or a frame PNG is missing.</exception>
     private List<NpcFrame>? TryReadNpcIdle(int stage, int actorIndex, int actorId, int direction, out int spriteDirection, out bool flipH)
     {
         (spriteDirection, flipH) = ResolveNpcSpriteDirection(direction);
@@ -282,6 +298,8 @@ public sealed class FieldDataPackLoader : IDisposable
         return idle;
     }
 
+    /// <summary>Lists the zones whose stage the extractor marked <c>loadable</c>. Stages that failed to decode stay in the pack for diagnostics but are not offered to the runtime.</summary>
+    /// <returns>Zone names <c>Snnn</c> in stage id order.</returns>
     private List<string> ReadZoneIds()
     {
         var result = new List<string>();
@@ -301,6 +319,10 @@ public sealed class FieldDataPackLoader : IDisposable
         return result;
     }
 
+    /// <summary>Reads the map size in pixels and the extraction status of one stage.</summary>
+    /// <param name="stage">Stage id.</param>
+    /// <returns>Width and height of the background in pixels, and the status written by the extractor.</returns>
+    /// <exception cref="CacheResourceException">The stage has no zone row.</exception>
     private (int Width, int Height, string Status) ReadZoneHeader(int stage)
     {
         using SqliteCommand command = _database.CreateCommand();
@@ -319,6 +341,9 @@ public sealed class FieldDataPackLoader : IDisposable
         return (row.GetInt32(0), row.GetInt32(1), row.GetString(2));
     }
 
+    /// <summary>Reads the warp slots of a stage from <c>field_warps</c>: destination, trigger tile, arrival facing, gate condition and whether that condition is resolved. Slots with no destination stage are unused on the disc and are skipped.</summary>
+    /// <param name="stage">Source stage id.</param>
+    /// <returns>Exits in slot order.</returns>
     private List<FieldExit> ReadWarps(int stage)
     {
         var exits = new List<FieldExit>();
@@ -342,8 +367,17 @@ public sealed class FieldDataPackLoader : IDisposable
         return exits;
     }
 
+    /// <summary>Resolves a pack-relative path through <see cref="DataPackFiles.Require"/> with this loader's pack.</summary>
+    /// <param name="relativePath">Path relative to the pack root.</param>
+    /// <param name="context">Description of the resource, used in the error message.</param>
+    /// <returns>An absolute path to an existing file.</returns>
+    /// <exception cref="CacheResourceException">The path is rejected or the file is absent.</exception>
     private string RequirePackFile(string relativePath, string context) => DataPackFiles.Require(_pack, relativePath, context);
 
+    /// <summary>Reads the color modulation of the depth-11 streamed layer. Channels are PSX vertex colors where 128 means unchanged, so each byte is divided by 128 (range 0..~2).</summary>
+    /// <param name="element">A three-integer array, or JSON null when the layer is not modulated.</param>
+    /// <returns>The modulation, or <see langword="null"/> for JSON null.</returns>
+    /// <exception cref="JsonException">The value is neither null nor a three-element array, or a channel is outside 0..255.</exception>
     private static StreamModulate? ReadStreamModulate(JsonElement element)
     {
         if (element.ValueKind == JsonValueKind.Null)
@@ -365,6 +399,10 @@ public sealed class FieldDataPackLoader : IDisposable
         return new StreamModulate(channels[0] / 128f, channels[1] / 128f, channels[2] / 128f);
     }
 
+    /// <summary>Parses a zone name <c>Snnn</c> back into its stage id. Signs, spaces and other lengths are rejected.</summary>
+    /// <param name="zoneId">Zone name, exactly four characters.</param>
+    /// <returns>The stage id, 0..999.</returns>
+    /// <exception cref="CacheResourceException">The name is not <c>S</c> followed by three digits.</exception>
     private static int ParseZoneId(string zoneId)
     {
         if (zoneId.Length != 4 || zoneId[0] != 'S' || !int.TryParse(zoneId.AsSpan(1), NumberStyles.None, CultureInfo.InvariantCulture, out int stage))
@@ -375,6 +413,10 @@ public sealed class FieldDataPackLoader : IDisposable
         return stage;
     }
 
+    /// <summary>Maps a facing direction 0..7 to one of the five sprite directions stored on the disc, mirroring 5, 6 and 7 from 3, 2 and 1.</summary>
+    /// <param name="direction">Facing direction, 0..7.</param>
+    /// <returns>The stored sprite direction (0..4) and whether to flip it horizontally.</returns>
+    /// <exception cref="CacheResourceException">The direction is outside 0..7.</exception>
     private static (int Direction, bool FlipH) ResolveNpcSpriteDirection(int direction) => direction switch
     {
         0 => (0, false),

@@ -243,6 +243,10 @@ internal static class BattleLoadoutJsonParser
         }
     }
 
+    /// <summary>Decodes one serialized text token: kind 0 is a glyph (<c>g</c>), kind 1 an inline icon (<c>i</c>), kind 2 a control code (<c>c</c>) with its argument list.</summary>
+    /// <param name="token">A token object with <c>kind</c>, <c>Code</c> and, for control codes, <c>Args</c>.</param>
+    /// <returns>The runtime token.</returns>
+    /// <exception cref="JsonException">The kind is not 0, 1 or 2.</exception>
     private static TextToken ParseTextToken(JsonElement token) => token.GetProperty("kind").GetInt32() switch
     {
         0 => new TextToken("g", token.GetProperty("Code").GetInt32(), 0, []),
@@ -251,9 +255,18 @@ internal static class BattleLoadoutJsonParser
         int kind => throw new JsonException($"unknown text token kind {kind}"),
     };
 
+    /// <summary>Builds a battle message template pointing at an entry of the battle menu text table.</summary>
+    /// <param name="entry">Entry index in the battle menu text table.</param>
+    /// <param name="substitutions">Names of the values substituted into the message, in display order.</param>
+    /// <returns>A template tagged as coming from the disc battle behavior.</returns>
     private static BattleTextTemplate Template(int entry, params string[] substitutions) =>
         new(entry, "message", substitutions, "disc battle behavior");
 
+    /// <summary>Classifies a battle item by its id range: healing items 0x2B..0x2E, status cures 0x42..0x45, revive 0x46, then the single-id boosts and enemy-targeted items up to 0x5A.</summary>
+    /// <param name="id">Item id from the item table.</param>
+    /// <param name="effect">On success, the effect name such as <c>heal</c> or <c>boostElement</c>, otherwise empty.</param>
+    /// <param name="target">On success, <c>partner</c>, <c>party</c>, <c>field</c> or <c>enemy</c>, otherwise empty.</param>
+    /// <returns><see langword="true"/> when the id falls in a known range, <see langword="false"/> for items with no battle use.</returns>
     private static bool TryItemSemantics(int id, out string effect, out string target)
     {
         (int Low, int High, string Effect, string Target)[] ranges =
@@ -279,6 +292,11 @@ internal static class BattleLoadoutJsonParser
         return false;
     }
 
+    /// <summary>Makes a resource path written in the battle manifest pack-relative: paths already under <c>battle/</c> are kept, bare names are prefixed with the given directory.</summary>
+    /// <param name="directory">Pack directory used as prefix for bare names.</param>
+    /// <param name="path">Path as written in the manifest.</param>
+    /// <returns>A pack-relative path.</returns>
+    /// <exception cref="JsonException">The path is null, empty or whitespace.</exception>
     private static string NormalizePackPath(string directory, string? path)
     {
         if (string.IsNullOrWhiteSpace(path))
