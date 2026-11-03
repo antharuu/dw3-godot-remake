@@ -79,6 +79,34 @@ public sealed class DiscFormatErrorTests : IDisposable
     }
 
     [Fact]
+    public void OpeningAUnixSocketAsABinIsReportedAsUnreadable()
+    {
+        if (!OperatingSystem.IsLinux())
+        {
+            return;
+        }
+
+        string socketPath = Path.Combine("/tmp", $"dw3-{Guid.NewGuid():N}.bin");
+        string cue = Path.ChangeExtension(socketPath, ".cue");
+        File.WriteAllText(cue, $"FILE \"{Path.GetFileName(socketPath)}\" BINARY\n");
+        DiscSourceException exception;
+        try
+        {
+            using var socket = new System.Net.Sockets.Socket(System.Net.Sockets.AddressFamily.Unix, System.Net.Sockets.SocketType.Stream, System.Net.Sockets.ProtocolType.Unspecified);
+            socket.Bind(new System.Net.Sockets.UnixDomainSocketEndPoint(socketPath));
+            exception = Assert.Throws<DiscSourceException>(() => DiscSource.Open(cue));
+        }
+        finally
+        {
+            File.Delete(socketPath);
+            File.Delete(cue);
+        }
+
+        Assert.Equal(DiscSourceException.FormatInvalid, exception.ErrorCode);
+        Assert.NotNull(exception.InnerException);
+    }
+
+    [Fact]
     public void ReadFileContentReturnsNothingForEmptyExtent()
     {
         using var stream = new MemoryStream(SyntheticDiscBuilder.Build());
@@ -94,6 +122,17 @@ public sealed class DiscFormatErrorTests : IDisposable
         var exception = Assert.Throws<DiscSourceException>(() => Iso9660Reader.ReadFileContent(stream, -1, 16));
 
         Assert.Contains("Negative", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ReadFileContentRejectsAStreamThatEndsDuringSectorRead()
+    {
+        using var stream = new ZeroReadMemoryStream(new byte[Iso9660Reader.SectorBytes]);
+
+        var exception = Assert.Throws<DiscSourceException>(() => Iso9660Reader.ReadFileContent(stream, 0, 1));
+
+        Assert.Equal(DiscSourceException.FormatInvalid, exception.ErrorCode);
+        Assert.Contains("unexpected end of stream", exception.Message, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -231,5 +270,15 @@ public sealed class DiscFormatErrorTests : IDisposable
         string path = Path.Combine(_tmp, name);
         File.WriteAllText(path, text);
         return path;
+    }
+
+    private sealed class ZeroReadMemoryStream : MemoryStream
+    {
+        public ZeroReadMemoryStream(byte[] buffer)
+            : base(buffer, writable: false)
+        {
+        }
+
+        public override int Read(byte[] buffer, int offset, int count) => 0;
     }
 }

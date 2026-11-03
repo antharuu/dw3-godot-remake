@@ -83,6 +83,19 @@ public sealed class DataPackTests : IDisposable
     }
 
     [Fact]
+    public void WriterCleansStagingWhenAnExistingFileBlocksPromotion()
+    {
+        Directory.CreateDirectory(_root);
+        File.WriteAllText(Path.Combine(_root, "data"), "fabricated collision");
+        var writer = new DataPackWriter(_root);
+
+        Assert.Throws<IOException>(() => writer.Write(CreateMetadata(), _ => { }));
+
+        Assert.True(File.Exists(Path.Combine(_root, "data")));
+        Assert.Empty(Directory.EnumerateDirectories(_root, "data.staging-*"));
+    }
+
+    [Fact]
     public void PromotionSucceedsAfterDisposedReaderConnection()
     {
         // Write pack v1 and open a reader, then dispose it.  On Windows, Dispose() returns
@@ -225,6 +238,34 @@ public sealed class DataPackTests : IDisposable
         var exception = Assert.Throws<DataPackCorruptException>(() => new DataPackReader(_root).OpenDatabase());
 
         Assert.IsType<SqliteException>(exception.InnerException);
+    }
+
+    [Fact]
+    public void ReaderReportsFailedQuickCheckAsCorrupt()
+    {
+        int rootPage = 0;
+        CreateRawPack(connection =>
+        {
+            DataPackSchema.Create(connection);
+            InsertMeta(connection, DataPackSchema.Version, edition: "test-edition");
+            Execute(connection, "CREATE TABLE unchecked_payload (value TEXT)");
+            Execute(connection, "INSERT INTO unchecked_payload VALUES ('fabricated')");
+            using SqliteCommand command = connection.CreateCommand();
+            command.CommandText = "SELECT rootpage FROM sqlite_master WHERE name = 'unchecked_payload'";
+            rootPage = Convert.ToInt32(command.ExecuteScalar(), System.Globalization.CultureInfo.InvariantCulture);
+        });
+
+        string databasePath = Path.Combine(_root, "data", "dw3.sqlite");
+        byte[] database = File.ReadAllBytes(databasePath);
+        int pageSize = (database[16] << 8) | database[17];
+        int firstCellPointer = ((rootPage - 1) * pageSize) + 8;
+        database[firstCellPointer] = 0;
+        database[firstCellPointer + 1] = 0;
+        File.WriteAllBytes(databasePath, database);
+
+        var exception = Assert.Throws<DataPackCorruptException>(() => new DataPackReader(_root).OpenDatabase());
+
+        Assert.Contains("integrity", exception.Message, StringComparison.OrdinalIgnoreCase);
     }
 
     [Fact]
