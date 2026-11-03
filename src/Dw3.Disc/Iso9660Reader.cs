@@ -96,14 +96,16 @@ public static class Iso9660Reader
     {
         if (lba < 0)
         {
-            throw new DiscSourceException(DiscSourceException.FormatInvalid,
+            throw new DiscSourceException(
+                DiscSourceException.FormatInvalid,
                 $"Negative ISO9660 sector LBA: {lba}.");
         }
 
-        long position = (long)lba * SectorBytes + UserDataOffset;
+        long position = ((long)lba * SectorBytes) + UserDataOffset;
         if (position < 0 || position + UserDataBytes > source.Length)
         {
-            throw new DiscSourceException(DiscSourceException.FormatInvalid,
+            throw new DiscSourceException(
+                DiscSourceException.FormatInvalid,
                 $"Truncated Mode-2 sector at LBA {lba}: image may be incomplete.");
         }
 
@@ -115,7 +117,8 @@ public static class Iso9660Reader
             int n = source.Read(data, totalRead, UserDataBytes - totalRead);
             if (n == 0)
             {
-                throw new DiscSourceException(DiscSourceException.FormatInvalid,
+                throw new DiscSourceException(
+                    DiscSourceException.FormatInvalid,
                     $"Truncated Mode-2 sector at LBA {lba}: unexpected end of stream.");
             }
 
@@ -142,7 +145,8 @@ public static class Iso9660Reader
             || pvd[3] != (byte)'0' || pvd[4] != (byte)'0' || pvd[5] != (byte)'1'
             || pvd[6] != 1)
         {
-            throw new DiscSourceException(DiscSourceException.FormatInvalid,
+            throw new DiscSourceException(
+                DiscSourceException.FormatInvalid,
                 "Sector 16 is not an ISO9660 Primary Volume Descriptor.");
         }
     }
@@ -167,7 +171,8 @@ public static class Iso9660Reader
 
         if (tableSize == 0)
         {
-            throw new DiscSourceException(DiscSourceException.FormatInvalid,
+            throw new DiscSourceException(
+                DiscSourceException.FormatInvalid,
                 "ISO9660 path table is empty.");
         }
 
@@ -179,17 +184,20 @@ public static class Iso9660Reader
         {
             if (cursor + 8 > tableData.Length)
             {
-                throw new DiscSourceException(DiscSourceException.FormatInvalid,
+                throw new DiscSourceException(
+                    DiscSourceException.FormatInvalid,
                     "Truncated ISO9660 path table entry.");
             }
 
             int nameLen = tableData[cursor];
+
             // Each entry is 8 fixed bytes + nameLen + optional padding byte.
             int recordSize = 8 + nameLen + (nameLen & 1);
 
             if (nameLen == 0 || cursor + recordSize > tableData.Length)
             {
-                throw new DiscSourceException(DiscSourceException.FormatInvalid,
+                throw new DiscSourceException(
+                    DiscSourceException.FormatInvalid,
                     "Invalid ISO9660 path table entry: bad length.");
             }
 
@@ -218,15 +226,17 @@ public static class Iso9660Reader
         }
 
         var (name, _, parent) = entries[index];
+
         // Parent numbers in the path table are 1-indexed.
         if (parent <= 0 || parent - 1 >= index)
         {
-            throw new DiscSourceException(DiscSourceException.FormatInvalid,
+            throw new DiscSourceException(
+                DiscSourceException.FormatInvalid,
                 "Invalid ISO9660 directory parent reference in path table.");
         }
 
         string parentPath = BuildDirPath(entries, parent - 1);
-        return parentPath.Length == 0 ? name : parentPath + "/" + name;
+        return parentPath.Length == 0 ? name : parentPath + Path.AltDirectorySeparatorChar + name;
     }
 
     /// <summary>
@@ -260,7 +270,8 @@ public static class Iso9660Reader
     {
         if (offset < 0 || offset + 4 > data.Length)
         {
-            throw new DiscSourceException(DiscSourceException.FormatInvalid,
+            throw new DiscSourceException(
+                DiscSourceException.FormatInvalid,
                 $"ISO9660 field at offset {offset} lies outside available data.");
         }
 
@@ -344,7 +355,8 @@ public static class Iso9660Reader
     {
         if (cursor + recordLen > dirData.Length || recordLen < 34)
         {
-            throw new DiscSourceException(DiscSourceException.FormatInvalid,
+            throw new DiscSourceException(
+                DiscSourceException.FormatInvalid,
                 "Malformed ISO9660 directory record: length out of range.");
         }
     }
@@ -359,7 +371,8 @@ public static class Iso9660Reader
     {
         if (33 + nameLen > recordLen)
         {
-            throw new DiscSourceException(DiscSourceException.FormatInvalid,
+            throw new DiscSourceException(
+                DiscSourceException.FormatInvalid,
                 "Malformed ISO9660 directory record: name exceeds record.");
         }
     }
@@ -376,9 +389,10 @@ public static class Iso9660Reader
     private static void AddFileEntry(byte[] dirData, int cursor, int nameLen, string dirPrefix, List<DiscFileEntry> results)
     {
         string rawName = Encoding.ASCII.GetString(dirData, cursor + 33, nameLen);
+
         // Strip ISO9660 version suffix (e.g. ";1").
         string cleanName = rawName.Split(';')[0];
-        string isoPath = dirPrefix.Length == 0 ? cleanName : dirPrefix + "/" + cleanName;
+        string isoPath = dirPrefix.Length == 0 ? cleanName : dirPrefix + Path.AltDirectorySeparatorChar + cleanName;
 
         int lba = ReadU32LE(dirData, cursor + 2);
         int size = ReadU32LE(dirData, cursor + 10);

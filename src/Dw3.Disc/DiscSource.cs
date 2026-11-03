@@ -43,8 +43,10 @@ public sealed class DiscSource : IDisposable
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            throw new DiscSourceException(DiscSourceException.FormatInvalid,
-                $"Cannot open BIN file: {binPath}", ex);
+            throw new DiscSourceException(
+                DiscSourceException.FormatInvalid,
+                $"Cannot open BIN file: {binPath}",
+                ex);
         }
 
         return new DiscSource(stream, binPath);
@@ -93,13 +95,16 @@ public sealed class DiscSource : IDisposable
         }
         catch (DiscSourceException ex)
         {
-            throw new DiscSourceException(DiscSourceException.FormatInvalid,
-                $"BIN is not a supported Mode-2 ISO9660 disc: {ex.Message}", ex);
+            throw new DiscSourceException(
+                DiscSourceException.FormatInvalid,
+                $"BIN is not a supported Mode-2 ISO9660 disc: {ex.Message}",
+                ex);
         }
 
         if (volumeId != "DMW3")
         {
-            throw new DiscSourceException(DiscSourceException.EditionInvalid,
+            throw new DiscSourceException(
+                DiscSourceException.EditionInvalid,
                 $"Disc volume ID is '{volumeId}', expected 'DMW3'.");
         }
 

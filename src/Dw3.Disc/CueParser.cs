@@ -11,7 +11,8 @@ internal static class CueParser
     // Matches: FILE "quoted name" BINARY  or  FILE bare_name BINARY
     private static readonly Regex FileDirective = new(
         @"^\s*FILE\s+(?:""(?<quoted>[^""]+)""|(?<bare>\S+))\s+(?<kind>\S+)\s*$",
-        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        RegexOptions.IgnoreCase | RegexOptions.Compiled,
+        Regex.InfiniteMatchTimeout);
 
     /// <summary>
     /// Parses <paramref name="cuePath"/> and returns the absolute path to the referenced BIN file.
@@ -45,7 +46,8 @@ internal static class CueParser
         {
             throw new DiscSourceException(
                 DiscSourceException.FormatInvalid,
-                $"CUE sheet cannot be read: {cuePath}", ex);
+                $"CUE sheet cannot be read: {cuePath}",
+                ex);
         }
     }
 
@@ -89,7 +91,8 @@ internal static class CueParser
         Match m = FileDirective.Match(line);
         if (!m.Success)
         {
-            throw new DiscSourceException(DiscSourceException.FormatInvalid,
+            throw new DiscSourceException(
+                DiscSourceException.FormatInvalid,
                 $"Malformed FILE directive in CUE: {cuePath}");
         }
 
@@ -104,7 +107,8 @@ internal static class CueParser
     {
         if (references.Count != 1)
         {
-            throw new DiscSourceException(DiscSourceException.FormatInvalid,
+            throw new DiscSourceException(
+                DiscSourceException.FormatInvalid,
                 $"CUE must reference exactly one BIN file; found {references.Count} FILE directive(s): {cuePath}");
         }
     }
@@ -116,7 +120,8 @@ internal static class CueParser
     {
         if (!targetKind.Equals("BINARY", StringComparison.OrdinalIgnoreCase))
         {
-            throw new DiscSourceException(DiscSourceException.FormatInvalid,
+            throw new DiscSourceException(
+                DiscSourceException.FormatInvalid,
                 $"CUE FILE type must be BINARY, not '{targetKind}': {cuePath}");
         }
     }
@@ -133,13 +138,15 @@ internal static class CueParser
         string normalised = targetName.Replace('\\', '/');
         if (Path.IsPathRooted(normalised) || normalised.Contains(".."))
         {
-            throw new DiscSourceException(DiscSourceException.FormatInvalid,
+            throw new DiscSourceException(
+                DiscSourceException.FormatInvalid,
                 $"CUE BIN path must be a relative local filename: {targetName}");
         }
 
         if (!normalised.EndsWith(".bin", StringComparison.OrdinalIgnoreCase))
         {
-            throw new DiscSourceException(DiscSourceException.FormatInvalid,
+            throw new DiscSourceException(
+                DiscSourceException.FormatInvalid,
                 $"CUE must reference a .bin file, not '{targetName}'");
         }
 
@@ -157,14 +164,16 @@ internal static class CueParser
     {
         // Resolve relative to the CUE directory.
         string cueDir = Path.GetDirectoryName(Path.GetFullPath(cuePath))
-            ?? throw new DiscSourceException(DiscSourceException.FormatInvalid,
+            ?? throw new DiscSourceException(
+                DiscSourceException.FormatInvalid,
                 $"Cannot determine directory of CUE: {cuePath}");
         string[] parts = normalised.Split('/');
         string binPath = Path.GetFullPath(Path.Combine(cueDir, Path.Combine(parts)));
 
         if (!File.Exists(binPath))
         {
-            throw new DiscSourceException(DiscSourceException.FormatInvalid,
+            throw new DiscSourceException(
+                DiscSourceException.FormatInvalid,
                 $"BIN file referenced by CUE not found: {binPath}");
         }
 

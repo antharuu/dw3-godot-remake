@@ -15,9 +15,6 @@ public sealed class DiscSourceException : Exception
     /// <summary>A required file is absent or corrupt on the disc.</summary>
     public const string DiscIncomplete = "SOURCE_INCOMPLETE";
 
-    /// <summary>Gets stable error code understood by the launcher UI.</summary>
-    public string ErrorCode { get; }
-
     /// <summary>
     /// Initializes a new instance of the <see cref="DiscSourceException"/> class with an error code and message.
     /// The error code must be one of the stable constants defined on this class.
@@ -42,4 +39,7 @@ public sealed class DiscSourceException : Exception
     {
         ErrorCode = errorCode;
     }
+
+    /// <summary>Gets stable error code understood by the launcher UI.</summary>
+    public string ErrorCode { get; }
 }

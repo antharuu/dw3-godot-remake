@@ -36,18 +36,12 @@ public static class DiscIdentity
     /// </exception>
     public static SupportedEdition Identify(string binMd5, string binSha1)
     {
-        foreach (var edition in KnownEditions)
-        {
-            if (string.Equals(edition.BinMd5, binMd5, StringComparison.OrdinalIgnoreCase)
-             && string.Equals(edition.BinSha1, binSha1, StringComparison.OrdinalIgnoreCase))
-            {
-                return edition;
-            }
-        }
-
-        throw new DiscSourceException(DiscSourceException.EditionInvalid,
-            "BIN digest does not match the supported Europe SLES-03936 edition; " +
-            "provide the documented BIN/CUE pair.");
+        return KnownEditions.FirstOrDefault(e =>
+            string.Equals(e.BinMd5, binMd5, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(e.BinSha1, binSha1, StringComparison.OrdinalIgnoreCase))
+            ?? throw new DiscSourceException(
+                DiscSourceException.EditionInvalid,
+                "BIN digest does not match the supported Europe SLES-03936 edition; provide the documented BIN/CUE pair.");
     }
 
     // ── Hashing helpers ────────────────────────────────────────────────────
