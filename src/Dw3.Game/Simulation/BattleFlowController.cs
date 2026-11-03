@@ -312,15 +312,29 @@ public sealed class BattleFlowController
     /// <param name="command">Command index, 0..5 in <see cref="BattleCommand"/> order.</param>
     /// <param name="enabled">Whether the command can be picked, greyed otherwise.</param>
     /// <returns>The line, with missing text when no catalogue is set.</returns>
-    private BattleMenuLine Line(int command, bool enabled) { var line = Text?.Command(command) ?? BattleTextLine.Missing; return new BattleMenuLine(line.Debug, enabled, line); }
+    private BattleMenuLine Line(int command, bool enabled)
+    {
+        var line = Text?.Command(command) ?? BattleTextLine.Missing;
+        return new BattleMenuLine(line.Debug, enabled, line);
+    }
 
     /// <summary>Replaces the message with a catalogue message and shows it when the catalogue has the key.</summary>
     /// <param name="key">Message key of the battle text catalogue, for example <c>technique</c>.</param>
     /// <param name="substitutions">Token streams inserted into the message, in template order (actor first).</param>
-    private void SetMessage(string key, params IReadOnlyList<TextToken>[] substitutions) { MessageText = Text?.Message(key, substitutions) ?? BattleTextLine.Missing; Message = MessageText.Debug; MessageVisible = MessageText != BattleTextLine.Missing; }
+    private void SetMessage(string key, params IReadOnlyList<TextToken>[] substitutions)
+    {
+        MessageText = Text?.Message(key, substitutions) ?? BattleTextLine.Missing;
+        Message = MessageText.Debug;
+        MessageVisible = MessageText != BattleTextLine.Missing;
+    }
 
     /// <summary>Hides the message and forgets its text and label.</summary>
-    private void ClearMessage() { MessageText = BattleTextLine.Missing; Message = string.Empty; MessageVisible = false; }
+    private void ClearMessage()
+    {
+        MessageText = BattleTextLine.Missing;
+        Message = string.Empty;
+        MessageVisible = false;
+    }
 
     /// <summary>Looks up the displayed name of a fighter through <see cref="NameIds"/> and the Digimon name table.</summary>
     /// <param name="fighter">Fighter to name, may be null when the slot is empty.</param>

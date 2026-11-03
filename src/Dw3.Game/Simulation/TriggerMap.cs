@@ -49,7 +49,7 @@ public sealed class TriggerMap
     {
         var x = Math.Clamp((int)MathF.Round(position.X), 0, Width - 1);
         var y = Math.Clamp((int)MathF.Round(position.Y), 0, Height - 1);
-        return _cells[y * Width + x];
+        return _cells[(y * Width) + x];
     }
 
     /// <summary>
@@ -72,7 +72,7 @@ public sealed class TriggerMap
                 var candidate = new Vector2(x, y);
                 if (Vector2.Distance(position, candidate) <= radius)
                 {
-                    yield return (candidate, _cells[y * Width + x]);
+                    yield return (candidate, _cells[(y * Width) + x]);
                 }
             }
         }

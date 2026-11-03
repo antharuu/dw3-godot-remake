@@ -18,15 +18,30 @@ public static class ActionDomainWriter
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(domain);
         if (string.IsNullOrWhiteSpace(domain.Name) || string.IsNullOrWhiteSpace(domain.ManifestSchema))
+        {
             throw new ArgumentException("Action domain name and manifest schema are required.", nameof(domain));
+        }
 
-        Insert(context, "INSERT INTO action_domains (domain, file_id, anim_set_entry, manifest_schema, disc_path, sha256, bytes) VALUES ($1, $2, $3, $4, $5, $6, $7)",
-            domain.Name, domain.FileId, domain.AnimationSetEntry, domain.ManifestSchema, domain.DiscPath, domain.Sha256, domain.ByteCount);
+        Insert(
+            context,
+            "INSERT INTO action_domains (domain, file_id, anim_set_entry, manifest_schema, disc_path, sha256, bytes) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+            domain.Name,
+            domain.FileId,
+            domain.AnimationSetEntry,
+            domain.ManifestSchema,
+            domain.DiscPath,
+            domain.Sha256,
+            domain.ByteCount);
 
         foreach (ActionFrame frame in domain.Frames.OrderBy(frame => frame.FrameId))
+        {
             WriteFrame(context, domain.Name, frame);
+        }
+
         foreach (ActionSet set in domain.Sets.OrderBy(set => set.SetId))
+        {
             WriteSet(context, domain.Name, set);
+        }
 
         WriteManifest(context, domain);
     }
@@ -44,8 +59,14 @@ public static class ActionDomainWriter
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         File.WriteAllBytes(path, PngEncoder.Encode(frame.Width, frame.Height, frame.RgbaPixels));
         context.RegisterImage(relativePath);
-        Insert(context, "INSERT INTO action_frames (domain, frame_id, width, height, image_path) VALUES ($1, $2, $3, $4, $5)",
-            domain, frame.FrameId, frame.Width, frame.Height, relativePath);
+        Insert(
+            context,
+            "INSERT INTO action_frames (domain, frame_id, width, height, image_path) VALUES ($1, $2, $3, $4, $5)",
+            domain,
+            frame.FrameId,
+            frame.Width,
+            frame.Height,
+            relativePath);
     }
 
     /// <summary>
@@ -56,13 +77,26 @@ public static class ActionDomainWriter
     /// <param name="set">The action animation set with its ordered records and terminator type.</param>
     private static void WriteSet(DataPackWriteContext context, string domain, ActionSet set)
     {
-        Insert(context, "INSERT INTO action_sets (domain, set_id, name, terminator) VALUES ($1, $2, $3, $4)",
-            domain, set.SetId, set.Name, TerminatorName(set.Terminator));
+        Insert(
+            context,
+            "INSERT INTO action_sets (domain, set_id, name, terminator) VALUES ($1, $2, $3, $4)",
+            domain,
+            set.SetId,
+            set.Name,
+            TerminatorName(set.Terminator));
         for (int ordinal = 0; ordinal < set.Records.Count; ordinal++)
         {
             ActionAnimationRecord record = set.Records[ordinal];
-            Insert(context, "INSERT INTO action_records (domain, set_id, ordinal, duration, frame_id, offset_x, offset_y) VALUES ($1, $2, $3, $4, $5, $6, $7)",
-                domain, set.SetId, ordinal, record.Duration, record.Frame, record.OffsetX, record.OffsetY);
+            Insert(
+                context,
+                "INSERT INTO action_records (domain, set_id, ordinal, duration, frame_id, offset_x, offset_y) VALUES ($1, $2, $3, $4, $5, $6, $7)",
+                domain,
+                set.SetId,
+                ordinal,
+                record.Duration,
+                record.Frame,
+                record.OffsetX,
+                record.OffsetY);
         }
     }
 
@@ -89,6 +123,7 @@ public static class ActionDomainWriter
             json.WriteEndArray();
             json.WriteEndObject();
         }
+
         json.WriteEndObject();
         json.WriteString("schema", domain.ManifestSchema);
         json.WriteStartArray("sets");
@@ -108,11 +143,13 @@ public static class ActionDomainWriter
                 json.WriteEndArray();
                 json.WriteEndObject();
             }
+
             json.WriteEndArray();
             json.WriteNumber("set", set.SetId);
             json.WriteString("terminator", TerminatorName(set.Terminator));
             json.WriteEndObject();
         }
+
         json.WriteEndArray();
         json.WriteStartObject("source");
         json.WriteNumber("anim_set_entry", domain.AnimationSetEntry);
@@ -147,7 +184,10 @@ public static class ActionDomainWriter
         command.Transaction = context.Transaction;
         command.CommandText = sql;
         for (int index = 0; index < values.Length; index++)
+        {
             command.Parameters.AddWithValue($"${index + 1}", values[index]);
+        }
+
         command.ExecuteNonQuery();
     }
 }

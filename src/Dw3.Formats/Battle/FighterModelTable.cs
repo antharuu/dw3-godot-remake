@@ -94,8 +94,14 @@ public sealed class FighterModelTable
         uint model = BinaryPrimitives.ReadUInt32LittleEndian(_data.AsSpan(record, 4));
         uint motions = BinaryPrimitives.ReadUInt32LittleEndian(_data.AsSpan(record + 4, 4));
         return new FighterModelReference(
-            fighterId, entry.Index, entry.Kind, isEnemy,
-            (int)(model >> 16), (int)(model & 0xFFFF), (int)(motions >> 16), (int)(motions & 0xFFFF));
+            fighterId,
+            entry.Index,
+            entry.Kind,
+            isEnemy,
+            (int)(model >> 16),
+            (int)(model & 0xFFFF),
+            (int)(motions >> 16),
+            (int)(motions & 0xFFFF));
     }
 
     /// <summary>Reads placement, source cameras and face rectangles from the fighter record.</summary>
@@ -105,11 +111,30 @@ public sealed class FighterModelTable
     public BattleFighterMetadata ReadMetadata(int fighterId)
     {
         (_, int record, bool isEnemy) = Locate(fighterId);
-        int cameraCount = isEnemy ? 3 : 12;
+        List<BattleCamera> cameras = ReadCameras(fighterId, record, isEnemy ? 3 : 12);
+        (int faceOffset, List<BattleFacePart> parts) = ReadFaceParts(fighterId, record);
+        return new BattleFighterMetadata(
+            cameras,
+            new BattleGeometry(ReadI16(record + 0x10), ReadI16(record + 0x18)),
+            new BattleFace(new BattleFaceSource(record, record + 0x0C, faceOffset, 10, "x==0xff"), parts));
+    }
+
+    /// <summary>
+    /// Reads the source cameras of a fighter record. From record offset 0x1A the record holds three
+    /// parallel arrays of <paramref name="cameraCount"/> entries: camera positions (3 x s16), reference
+    /// points (3 x s16), then projection distances (s16).
+    /// </summary>
+    /// <param name="fighterId">Fighter id, used in error messages.</param>
+    /// <param name="record">Offset of the fighter record in the table.</param>
+    /// <param name="cameraCount">The number of cameras: 3 for an enemy, 12 for a partner.</param>
+    /// <returns>The cameras in record order.</returns>
+    /// <exception cref="FormatException">The three arrays run past the end of the table.</exception>
+    private List<BattleCamera> ReadCameras(int fighterId, int record, int cameraCount)
+    {
         int cameraPos = record + 0x1A;
-        int cameraRef = cameraPos + cameraCount * 6;
-        int cameraProjection = cameraRef + cameraCount * 6;
-        if (cameraProjection + cameraCount * 2 > _data.Length)
+        int cameraRef = cameraPos + (cameraCount * 6);
+        int cameraProjection = cameraRef + (cameraCount * 6);
+        if (cameraProjection + (cameraCount * 2) > _data.Length)
         {
             throw new FormatException($"Fighter {fighterId} camera arrays overrun the fighter table.");
         }
@@ -118,11 +143,29 @@ public sealed class FighterModelTable
         for (int index = 0; index < cameraCount; index++)
         {
             cameras.Add(new BattleCamera(
-                ReadI16(cameraPos + index * 6), ReadI16(cameraPos + index * 6 + 2), ReadI16(cameraPos + index * 6 + 4),
-                ReadI16(cameraRef + index * 6), ReadI16(cameraRef + index * 6 + 2), ReadI16(cameraRef + index * 6 + 4),
-                ReadI16(cameraProjection + index * 2)));
+                ReadI16(cameraPos + (index * 6)),
+                ReadI16(cameraPos + (index * 6) + 2),
+                ReadI16(cameraPos + (index * 6) + 4),
+                ReadI16(cameraRef + (index * 6)),
+                ReadI16(cameraRef + (index * 6) + 2),
+                ReadI16(cameraRef + (index * 6) + 4),
+                ReadI16(cameraProjection + (index * 2))));
         }
 
+        return cameras;
+    }
+
+    /// <summary>
+    /// Reads the face rectangles of a fighter. The u32 at record offset 0x0C is the RAM address of a
+    /// list of up to 16 ten-byte parts, rebased on the table's own load address (its first u32). A part
+    /// whose first byte is 0xFF ends the list; a part whose third byte is 0 is unused and skipped.
+    /// </summary>
+    /// <param name="fighterId">Fighter id, used in error messages.</param>
+    /// <param name="record">Offset of the fighter record in the table.</param>
+    /// <returns>The table offset of the part list, and the used parts, each with its index in the list.</returns>
+    /// <exception cref="FormatException">The face address lies outside the table, a part overruns it, or no terminator appears in 16 parts.</exception>
+    private (int Offset, List<BattleFacePart> Parts) ReadFaceParts(int fighterId, int record)
+    {
         uint baseAddress = BinaryPrimitives.ReadUInt32LittleEndian(_data);
         uint faceAddress = BinaryPrimitives.ReadUInt32LittleEndian(_data.AsSpan(record + 0x0C, 4));
         long faceOffsetLong = (long)faceAddress - baseAddress;
@@ -136,19 +179,29 @@ public sealed class FighterModelTable
         bool terminated = false;
         for (int index = 0; index < 16; index++)
         {
-            int at = faceOffset + index * 10;
+            int at = faceOffset + (index * 10);
             if (at + 10 > _data.Length)
             {
                 throw new FormatException($"Fighter {fighterId} face part {index} overruns the fighter table.");
             }
 
-            if (_data[at] == 0xFF) { terminated = true; break; }
+            if (_data[at] == 0xFF)
+            {
+                terminated = true;
+                break;
+            }
+
             if (_data[at + 2] == 0)
             {
                 continue;
             }
 
-            parts.Add(new BattleFacePart(index, _data[at], _data[at + 1], _data[at + 2], _data[at + 3],
+            parts.Add(new BattleFacePart(
+                index,
+                _data[at],
+                _data[at + 1],
+                _data[at + 2],
+                _data[at + 3],
                 [new(_data[at + 4], _data[at + 5]), new(_data[at + 6], _data[at + 7]), new(_data[at + 8], _data[at + 9])]));
         }
 
@@ -157,9 +210,7 @@ public sealed class FighterModelTable
             throw new FormatException($"Fighter {fighterId} face has no x=0xff terminator in 16 parts.");
         }
 
-        return new BattleFighterMetadata(cameras,
-            new BattleGeometry(ReadI16(record + 0x10), ReadI16(record + 0x18)),
-            new BattleFace(new BattleFaceSource(record, record + 0x0C, faceOffset, 10, "x==0xff"), parts));
+        return (faceOffset, parts);
     }
 
     /// <summary>Locates the record of <paramref name="fighterId"/>, determining partner vs enemy and computing the file offset.</summary>
@@ -171,7 +222,7 @@ public sealed class FighterModelTable
         FighterModelEntry entry = Entries.FirstOrDefault(candidate => candidate.FighterId == fighterId)
             ?? throw new FormatException($"Fighter {fighterId} is absent from the fighter table.");
         bool isEnemy = entry.Kind >= EnemyKindMinimum;
-        long record = isEnemy ? _enemies + (long)entry.Index * EnemyStride : _partners + (long)entry.Index * PartnerStride;
+        long record = isEnemy ? _enemies + ((long)entry.Index * EnemyStride) : _partners + ((long)entry.Index * PartnerStride);
         if (record + (isEnemy ? EnemyStride : PartnerStride) > _data.Length)
         {
             throw new FormatException($"{(isEnemy ? "Enemy" : "Partner")} record {entry.Index} of fighter {fighterId} lies outside the fighter table.");

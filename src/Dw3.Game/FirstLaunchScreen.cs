@@ -46,7 +46,9 @@ public partial class FirstLaunchScreen : CanvasLayer
         Layer = 128;  // Draw on top of everything.
         _probeActive = System.Environment.GetEnvironmentVariable("DW3_FIRST_LAUNCH_PROBE") == "1";
         if (_probeActive)
+        {
             _captureDir = System.Environment.GetEnvironmentVariable("DW3_CAPTURE_DIR");
+        }
     }
 
     /// <inheritdoc/>
@@ -61,20 +63,29 @@ public partial class FirstLaunchScreen : CanvasLayer
         {
             SetStatus($"Test mode: extracting from {testDisc}...");
             if (_probeActive)
+            {
                 // Probe: capture the pre-extraction state, then start extraction.
-                _ = CaptureAfterFrameAsync("first-launch-initial.png",
-                        thenDo: () => BeginExtraction(testDisc));
+                _ = CaptureAfterFrameAsync(
+                    "first-launch-initial.png",
+                    thenDo: () => BeginExtraction(testDisc));
+            }
             else
+            {
                 BeginExtraction(testDisc);
+            }
         }
         else
         {
             SetStatus("Select your Digimon World 2003 (Europe) disc to continue.");
+
             // FileDialog needs the window to be visible; defer by one frame.
             CallDeferred(MethodName.OpenDiscDialog);
+
             // Probe: capture the initial "select disc" prompt.
             if (_probeActive)
+            {
                 _ = CaptureAfterFrameAsync("first-launch-initial.png");
+            }
         }
     }
 
@@ -83,7 +94,9 @@ public partial class FirstLaunchScreen : CanvasLayer
     {
         // Drain actions queued from the background extraction thread.
         while (_mainActions.TryDequeue(out Action? action))
+        {
             action();
+        }
     }
 
     // ---------------------------------------------------------------------------
@@ -189,6 +202,7 @@ public partial class FirstLaunchScreen : CanvasLayer
             _mainActions.Enqueue(() =>
             {
                 SetStatus($"Extracting: {domain} ({done}/{total})");
+
                 // Probe: capture the first progress update to show an in-progress state.
                 if (_probeActive && !_progressCaptured)
                 {
@@ -204,9 +218,12 @@ public partial class FirstLaunchScreen : CanvasLayer
             _mainActions.Enqueue(() =>
             {
                 SetStatus($"Extraction failed:\n{message}\n\nRestart the game and try again.");
+
                 // Probe: capture the error state then quit successfully (proof of error UI).
                 if (_probeActive)
+                {
                     _ = CaptureAfterFrameAsync("first-launch-error.png", quitAfter: true);
+                }
             });
 
         _extractionThread = new Thread(() => controller.Extract(discPath, _dataDir))
@@ -251,6 +268,8 @@ public partial class FirstLaunchScreen : CanvasLayer
             : $"FIRST_LAUNCH_PROBE capture FAIL ({saveErr}): {path}");
         thenDo?.Invoke();
         if (quitAfter)
+        {
             GetTree().Quit(0);
+        }
     }
 }

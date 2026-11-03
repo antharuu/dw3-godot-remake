@@ -145,11 +145,13 @@ internal static class ZoneExtractionStep
 
         var writer = new DataPackWriter(outputDirectory);
         DateTimeOffset started = DateTimeOffset.UtcNow;
-        writer.Write(new DataPackMetadata(
+        writer.Write(
+            new DataPackMetadata(
             typeof(ZoneExtractionStep).Assembly.GetName().Version?.ToString(3) ?? "0.1.0",
             edition.BinSha1,
             edition.Label,
-            DateTimeOffset.UtcNow), context => WriteZones(context, disc, entries, packs, registry, output));
+            DateTimeOffset.UtcNow),
+            context => WriteZones(context, disc, entries, packs, registry, output));
         TimeSpan elapsed = DateTimeOffset.UtcNow - started;
         output.WriteLine($"{{\"event\":\"domain-complete\",\"domain\":\"zones\",\"stages\":{packs.Length},\"elapsed_seconds\":{elapsed.TotalSeconds.ToString("F3", CultureInfo.InvariantCulture)}}}");
     }
@@ -264,6 +266,7 @@ internal static class ZoneExtractionStep
         IReadOnlyList<StageSlot> slots)
     {
         TmpkMapSelection selection = TmpkMapSelectionReader.Recover(overlayBytes);
+
         // Apply trigger override when TmpkMapSelectionReader cannot recover it.
         int? resolvedTriggerEntry = TriggerEntryOverrides.TryGetValue(stage, out int trigOvr)
             ? trigOvr
@@ -566,9 +569,9 @@ internal static class ZoneExtractionStep
         {
             byte value = map.Cells[index];
             rgba[index * 4] = value;
-            rgba[index * 4 + 1] = value;
-            rgba[index * 4 + 2] = value;
-            rgba[index * 4 + 3] = byte.MaxValue;
+            rgba[(index * 4) + 1] = value;
+            rgba[(index * 4) + 2] = value;
+            rgba[(index * 4) + 3] = byte.MaxValue;
         }
 
         WriteImage(context, relativePath, map.Width, map.Height, rgba);

@@ -235,8 +235,13 @@ public sealed class BattleState
         }
 
         RunAttempts++;
-        bool fled = RunAwayRules.TestRunAway(RunAttempts, attacker.Stats, defender.Stats,
-            Blocks[BattleConst.BlockRunAway] != 0, attacker.Flags, rng.NextValue());
+        bool fled = RunAwayRules.TestRunAway(
+            RunAttempts,
+            attacker.Stats,
+            defender.Stats,
+            Blocks[BattleConst.BlockRunAway] != 0,
+            attacker.Flags,
+            rng.NextValue());
         if (fled)
         {
             Outcome = BattleOutcome.Fled;

@@ -16,8 +16,10 @@ public sealed class MipsStoreScannerTests
     public void LuiAddiuMaterializesBaseAndLuiOriMaterializesValue()
     {
         byte[] code = Code(
-            Lui(S0, State), AddiuLow(S0, S0, State),
-            LuiForOri(T0, 0x800AF000), Ori(T0, T0, 0x800AF000),
+            Lui(S0, State),
+            AddiuLow(S0, S0, State),
+            LuiForOri(T0, 0x800AF000),
+            Ori(T0, T0, 0x800AF000),
             Sw(T0, S0, 0x4C));
 
         MipsStoreMatch store = Assert.Single(Scan(code, 0x4C));
@@ -56,8 +58,10 @@ public sealed class MipsStoreScannerTests
     public void WatchedWordLoadIsTrackedSymbolicallyThroughAddiu()
     {
         byte[] code = Code(
-            Lui(V0, Global), LwLow(V0, V0, Global),
-            Lui(S0, State), AddiuLow(S0, S0, State),
+            Lui(V0, Global),
+            LwLow(V0, V0, Global),
+            Lui(S0, State),
+            AddiuLow(S0, S0, State),
             Addiu(V0, V0, 0xC5),
             Sw(V0, S0, 0x44));
 
@@ -78,8 +82,12 @@ public sealed class MipsStoreScannerTests
     public void ZeroRegisterCopiesPropagateValues()
     {
         byte[] code = Code(
-            Lui(S0, State), AddiuLow(S0, S0, State),
-            Addiu(T0, Zero, 9), Addu(T1, T0, Zero), Or(A0, Zero, T1), Addu(S1, S0, Zero),
+            Lui(S0, State),
+            AddiuLow(S0, S0, State),
+            Addiu(T0, Zero, 9),
+            Addu(T1, T0, Zero),
+            Or(A0, Zero, T1),
+            Addu(S1, S0, Zero),
             Sw(A0, S1, 0x10));
 
         Assert.Equal(MipsValue.Constant(9), Assert.Single(Scan(code, 0x10)).Value);
@@ -89,10 +97,17 @@ public sealed class MipsStoreScannerTests
     public void UnknownWriterInvalidatesDestination()
     {
         byte[] code = Code(
-            Lui(S0, State), AddiuLow(S0, S0, State),
-            Addiu(T0, Zero, 9), Subu(T0, T0, T0), Sw(T0, S0, 0x10),
-            Addiu(T1, Zero, 9), Lbu(T1, Sp, 0), Sw(T1, S0, 0x10),
-            Addiu(A0, Zero, 9), Sll(A0, A0, 2), Sw(A0, S0, 0x10));
+            Lui(S0, State),
+            AddiuLow(S0, S0, State),
+            Addiu(T0, Zero, 9),
+            Subu(T0, T0, T0),
+            Sw(T0, S0, 0x10),
+            Addiu(T1, Zero, 9),
+            Lbu(T1, Sp, 0),
+            Sw(T1, S0, 0x10),
+            Addiu(A0, Zero, 9),
+            Sll(A0, A0, 2),
+            Sw(A0, S0, 0x10));
 
         Assert.Empty(Scan(code, 0x10));
     }
@@ -109,9 +124,12 @@ public sealed class MipsStoreScannerTests
     public void CallClobbersCallerSavedRegistersAfterItsDelaySlot()
     {
         byte[] code = Code(
-            Lui(S0, State), AddiuLow(S0, S0, State),
-            Addiu(T0, Zero, 1), Addiu(S1, Zero, 2),
-            Jal(0x80020000), Sw(T0, S0, 0x10),   // delay slot still sees t0
+            Lui(S0, State),
+            AddiuLow(S0, S0, State),
+            Addiu(T0, Zero, 1),
+            Addiu(S1, Zero, 2),
+            Jal(0x80020000),
+            Sw(T0, S0, 0x10),   // delay slot still sees t0
             Sw(T0, S0, 0x14),                    // t0 is caller-saved: lost
             Sw(S1, S0, 0x18));                   // s1 is callee-saved: kept
 
@@ -124,8 +142,11 @@ public sealed class MipsStoreScannerTests
     public void ReturnEndsTheFunctionAndForgetsEveryRegisterAfterItsDelaySlot()
     {
         byte[] code = Code(
-            Lui(S0, State), AddiuLow(S0, S0, State), Addiu(S1, Zero, 4),
-            Jr(Ra), Sw(S1, S0, 0x10),
+            Lui(S0, State),
+            AddiuLow(S0, S0, State),
+            Addiu(S1, Zero, 4),
+            Jr(Ra),
+            Sw(S1, S0, 0x10),
             Sw(S1, S0, 0x14));
 
         Assert.Single(Scan(code, 0x10));
@@ -136,9 +157,12 @@ public sealed class MipsStoreScannerTests
     public void ReportsEveryMatchingStoreInCodeOrder()
     {
         byte[] code = Code(
-            Lui(S0, State), AddiuLow(S0, S0, State),
-            Addiu(T0, Zero, 1), Sw(T0, S0, 0x10),
-            Addiu(T0, Zero, 2), Sw(T0, S0, 0x10));
+            Lui(S0, State),
+            AddiuLow(S0, S0, State),
+            Addiu(T0, Zero, 1),
+            Sw(T0, S0, 0x10),
+            Addiu(T0, Zero, 2),
+            Sw(T0, S0, 0x10));
 
         Assert.Equal([MipsValue.Constant(1), MipsValue.Constant(2)], Scan(code, 0x10).Select(store => store.Value));
     }

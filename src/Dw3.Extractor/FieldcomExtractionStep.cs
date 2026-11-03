@@ -58,7 +58,7 @@ internal static class FieldcomExtractionStep
                     hash,
                     fieldcom.Length,
                     cueFrames,
-                    Enumerable.Range(0, 8).Select(direction => new FieldcomExitRow(direction, direction / 2 + 6)).ToArray(),
+                    Enumerable.Range(0, 8).Select(direction => new FieldcomExitRow(direction, (direction / 2) + 6)).ToArray(),
                     inner.Select((x, index) => new FieldcomNamedSequence($"row-{x.Steps[0].Frame:X2}", x.Steps)).ToArray(),
                     [
                         new FieldcomNamedSequence("opening", cueFrames.Where(x => x.FrameId is >= 0x32 and <= 0x35).Select(x => new FieldcomFrameStep(x.FrameId, 1)).ToArray()),
@@ -108,16 +108,19 @@ internal static class FieldcomExtractionStep
     private static FieldcomExtractedFrame DecodeFrame(int id, SpriteSheet sheet, FieldcomVram vram)
     {
         if (!sheet.Frames.TryGetValue(id, out var raw))
+        {
             throw new FormatException($"FIELDCOM sheet lacks frame 0x{id:X2}");
+        }
+
         FieldcomSpriteImage image = FieldcomSpriteCompositor.Compose(sheet.Parts, raw.Span, vram);
         byte[] rgba = new byte[image.Words.Length * 4];
         for (int i = 0; i < image.Words.Length; i++)
         {
             ushort w = image.Words[i];
             rgba[i * 4] = (byte)((w & 31) * 255 / 31);
-            rgba[i * 4 + 1] = (byte)(((w >> 5) & 31) * 255 / 31);
-            rgba[i * 4 + 2] = (byte)(((w >> 10) & 31) * 255 / 31);
-            rgba[i * 4 + 3] = w == 0 ? (byte)0 : (byte)255;
+            rgba[(i * 4) + 1] = (byte)(((w >> 5) & 31) * 255 / 31);
+            rgba[(i * 4) + 2] = (byte)(((w >> 10) & 31) * 255 / 31);
+            rgba[(i * 4) + 3] = w == 0 ? (byte)0 : (byte)255;
         }
 
         return new FieldcomExtractedFrame(id, image.Width, image.Height, image.OffsetX, image.OffsetY, 0, image.Abr, rgba);

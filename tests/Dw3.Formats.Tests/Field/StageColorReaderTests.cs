@@ -1,5 +1,5 @@
-using Xunit;
 using Dw3.Formats.Field;
+using Xunit;
 
 namespace Dw3.Formats.Tests.Field;
 
@@ -50,8 +50,10 @@ public sealed class StageColorReaderTests
     {
         // Overlay that has opcode 0x20 (LB) at offset 0 (code), and the gray CVECTOR at 0x90.
         var overlay = new byte[0x98];
+
         // offset 0: LB instruction (opcode 32 = 0x20), upper 6 bits = 100000
         overlay[3] = 0x80; // high byte: 10000000 → top 6 bits = 100000 = 0x20
+
         // offset 0x90: gray CVECTOR {128, 128, 128, 0} = 0x00808080
         overlay[0x90] = 128;
         overlay[0x91] = 128;

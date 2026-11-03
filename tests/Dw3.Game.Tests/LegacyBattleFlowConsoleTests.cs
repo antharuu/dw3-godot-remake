@@ -1,20 +1,18 @@
-using Xunit;
-
-namespace Dw3.Game.Tests;
-
 using Dw3Production.Simulation;
+using Xunit;
 using BattleTextCatalog = Dw3Production.Conversion.BattleTextCatalog;
 using BattleTextData = Dw3Production.Conversion.BattleTextData;
 using BattleTextLine = Dw3Production.Conversion.BattleTextLine;
 using BattleTextTemplate = Dw3Production.Conversion.BattleTextTemplate;
-using TextToken = Dw3Production.Conversion.TextToken;
 using DigimonData = Dw3Production.Conversion.DigimonData;
 using FighterData = Dw3Production.Conversion.FighterData;
 using TechniqueData = Dw3Production.Conversion.TechniqueData;
+using TextToken = Dw3Production.Conversion.TextToken;
+
+namespace Dw3.Game.Tests;
 
 public sealed class LegacyBattleFlowConsoleTests
 {
-
     [Fact]
     public void PreservesLegacyConsoleAssertions()
     {
@@ -72,7 +70,10 @@ public sealed class LegacyBattleFlowConsoleTests
         Check(flow.Phase is BattleFlowPhase.EnemyTurn or BattleFlowPhase.PlayerCommand, "phase advanced after the player's turn");
         var hpBefore = flow.State.Players[0]!.Hp;
         while (flow.Phase == BattleFlowPhase.EnemyTurn)
+        {
             flow.EnemyAct(new NoRng());
+        }
+
         Check(flow.State.Players[0]!.Hp <= hpBefore, "the enemy attack resolved against the player");
         Check(flow.Phase == BattleFlowPhase.PlayerCommand, "control returns to the player once the enemy is done");
     }
@@ -103,7 +104,8 @@ public sealed class LegacyBattleFlowConsoleTests
         });
         var listed = BattleSetupFactory.PlayerTechniques(fighters, techs, 383, TestText());
         Check(BattleSetupFactory.SkillId(flagged) == 1, "SKILL_ID strips PartnerEntry flag bits");
-        Check(listed.Count == 1 && listed[0].Id == 1 && listed[0].Tech.Power == 42,
+        Check(
+            listed.Count == 1 && listed[0].Id == 1 && listed[0].Tech.Power == 42,
             "flagged PartnerEntry skill resolves TECHS by SKILL_ID");
         Check(listed[0].Text?.Debug == "SKLNAM id=1", "flagged PartnerEntry skill resolves SKLNAM by SKILL_ID");
     }
@@ -121,11 +123,15 @@ public sealed class LegacyBattleFlowConsoleTests
     private static void DefeatWhenAllPlayersKo()
     {
         var flow = Controller(SimpleBattle(new BattleFixture(PlayerDefense: 10, PlayerHp: 50, EnemyRawAttack: 100, EnemyStrength: 16, EnemySpeed: 200)));
+
         // The menu always opens first: the player attacks once, then the faster enemy
         // counter-attacks for 100 damage and knocks the lone partner out.
         flow.Choose(BattleCommand.Attack, 0, new NoRng());
         while (flow.Phase == BattleFlowPhase.EnemyTurn)
+        {
             flow.EnemyAct(new NoRng());
+        }
+
         Check(flow.Outcome == BattleOutcome.Lost, "knocking out every partner loses the battle");
         Check(flow.Phase == BattleFlowPhase.Ended, "a lost battle reaches the Ended phase");
     }
@@ -167,9 +173,16 @@ public sealed class LegacyBattleFlowConsoleTests
         var guard = 0;
         while (flow.Phase != BattleFlowPhase.Ended && guard++ < 64)
         {
-            if (flow.Phase == BattleFlowPhase.PlayerCommand) flow.Choose(BattleCommand.Attack, 0, new NoRng());
-            else flow.EnemyAct(new NoRng());
+            if (flow.Phase == BattleFlowPhase.PlayerCommand)
+            {
+                flow.Choose(BattleCommand.Attack, 0, new NoRng());
+            }
+            else
+            {
+                flow.EnemyAct(new NoRng());
+            }
         }
+
         Check(flow.Outcome == BattleOutcome.Won, "a deterministic attack loop reaches victory");
         Check(flow.Phase == BattleFlowPhase.Ended, "the loop terminates on the Ended phase");
     }
@@ -256,7 +269,8 @@ public sealed class LegacyBattleFlowConsoleTests
     private static void SubmenuLineCarriesSourcePresentationFields()
     {
         var line = new BattleMenuLine("Test", true, null, Icon: 0x39, Cost: 12, Quantity: 3, Description: "source description");
-        Check(line.Icon == 0x39 && line.Cost == 12 && line.Quantity == 3 && line.Description == "source description",
+        Check(
+            line.Icon == 0x39 && line.Cost == 12 && line.Quantity == 3 && line.Description == "source description",
             "a submenu line carries source icon, cost, quantity and description");
     }
 
@@ -265,19 +279,29 @@ public sealed class LegacyBattleFlowConsoleTests
         var lines = Enumerable.Range(0, 29).Select(index => new BattleMenuLine($"Item {index}", true)).ToArray();
         var menu = new BattleMenuController();
         menu.Open(BattleMenuKind.Item, lines);
-        Check(menu.PageSize == 7 && menu.PageCount == 5 && menu.View.Lines.Count == 7,
+        Check(
+            menu.PageSize == 7 && menu.PageCount == 5 && menu.View.Lines.Count == 7,
             "item_menu.c exposes seven rows and five pages for 29 items");
-        for (var i = 0; i < 10; i++) menu.MoveDown();
+        for (var i = 0; i < 10; i++)
+        {
+            menu.MoveDown();
+        }
+
         Check(menu.Cursor == 6 && menu.First == 0, "Down clamps at item page row six and does not invent scrolling");
-        Check(menu.NextPage() && menu.First == 7 && menu.Cursor == 0 && menu.SelectedIndex == 7,
+        Check(
+            menu.NextPage() && menu.First == 7 && menu.Cursor == 0 && menu.SelectedIndex == 7,
             "PAD_R1 advances one item page and resets the source cursor to row zero");
         Check(menu.View.Lines.Count == 7 && menu.View.Lines[0].Label == "Item 7", "the view renders the new first source item");
-        while (menu.NextPage()) { }
+        while (menu.NextPage())
+        {
+        }
+
         Check(menu.First == 28 && menu.View.Lines.Count == 1 && !menu.NextPage(), "the final item page has only its populated row");
         Check(menu.PreviousPage() && menu.First == 21 && menu.Cursor == 0, "PAD_L1 returns one page and resets cursor");
 
         menu.Open(BattleMenuKind.Technique, lines);
-        Check(menu.PageSize == 6 && menu.PageCount == 5 && menu.View.Lines.Count == 6,
+        Check(
+            menu.PageSize == 6 && menu.PageCount == 5 && menu.View.Lines.Count == 6,
             "tech_menu.c exposes six rows per page");
         Check(menu.NextPage() && menu.First == 6 && menu.Cursor == 0, "technique PAD_R1 uses a six-row source page");
     }
@@ -296,7 +320,6 @@ public sealed class LegacyBattleFlowConsoleTests
     }
 
     // ---- fixtures ----
-
     private static void EnemyUsesTechniqueFromTable()
     {
         var flow = Controller(SimpleBattle(new BattleFixture(EnemyRawAttack: 100, PlayerDefense: 10, PlayerHp: 1000, EnemyMp: 100)));
@@ -312,7 +335,8 @@ public sealed class LegacyBattleFlowConsoleTests
         var mpBefore = enemy.Mp;
         flow.EnemyAct(new NoRng());
         Check(enemy.Mp == mpBefore - 20, "the enemy's chosen technique spends its MP");
-        Check(flow.Phase == BattleFlowPhase.PlayerCommand && !flow.MessageVisible && flow.MessageText == BattleTextLine.Missing,
+        Check(
+            flow.Phase == BattleFlowPhase.PlayerCommand && !flow.MessageVisible && flow.MessageText == BattleTextLine.Missing,
             "the enemy action message is destroyed before PlayerCommand opens the menu");
     }
 
@@ -348,7 +372,11 @@ public sealed class LegacyBattleFlowConsoleTests
         setup.Enemies[1] = new BattleEnemy { Fighter = 102, Hp = 1000, Mp = 100, Strength = 16, BaseStats = Stats(attack: 100, defense: 100) };
         var flow = Controller(BattleState.InitFighters(setup, digimon: 999));
         flow.Choose(BattleCommand.Attack, 0, new NoRng());
-        if (flow.Phase == BattleFlowPhase.EnemyTurn) flow.EnemyAct(new NoRng());
+        if (flow.Phase == BattleFlowPhase.EnemyTurn)
+        {
+            flow.EnemyAct(new NoRng());
+        }
+
         Check(flow.State.ActiveEnemy == 1, "the enemy's switch action brings in the other enemy");
     }
 
@@ -359,7 +387,11 @@ public sealed class LegacyBattleFlowConsoleTests
         enemy.Techs = [777, 0, 0];
         enemy.Actions = [new BattleTableAction(4, 0, 0)];   // run away, always
         flow.Choose(BattleCommand.Attack, 0, new NoRng());
-        if (flow.Phase == BattleFlowPhase.EnemyTurn) flow.EnemyAct(new NoRng());
+        if (flow.Phase == BattleFlowPhase.EnemyTurn)
+        {
+            flow.EnemyAct(new NoRng());
+        }
+
         Check(flow.Outcome == BattleOutcome.Fled, "the enemy's run-away action ends the battle as fled");
     }
 
@@ -416,7 +448,13 @@ public sealed class LegacyBattleFlowConsoleTests
     {
         var token = (IReadOnlyList<TextToken>)[new TextToken("g", 14, 0, [])];
         var table = Enumerable.Range(0, 500).Select(_ => token).ToArray();
-        var data = new BattleTextData(table, table, table, table, table, table,
+        var data = new BattleTextData(
+            table,
+            table,
+            table,
+            table,
+            table,
+            table,
             [.. Enumerable.Range(0, 6).Select(i => new BattleTextTemplate(i + 1, "menu", [], "disc battle menu"))],
             new Dictionary<string, BattleTextTemplate>
             {
@@ -430,7 +468,8 @@ public sealed class LegacyBattleFlowConsoleTests
                 ["lost"] = new(83, "message", [], "disc battle behavior"),
                 ["switch"] = new(56, "message", ["actor"], "disc battle behavior"),
                 ["fledPlayer"] = new(67, "message", ["actor"], "disc battle behavior"),
-            }, new Dictionary<string, int> { ["expLabel"] = 1, ["expGained"] = 2, ["partnerLevel"] = 7, ["moneyGained"] = 10 });
+            },
+            new Dictionary<string, int> { ["expLabel"] = 1, ["expGained"] = 2, ["partnerLevel"] = 7, ["moneyGained"] = 10 });
         return new BattleTextCatalog(data);
     }
 

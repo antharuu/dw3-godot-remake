@@ -16,14 +16,21 @@ internal static class FighterSheetBounds
     public static (int TexturedPixels, bool TouchesFrame) Measure(Image image, Image background)
     {
         if (image.GetWidth() != background.GetWidth() || image.GetHeight() != background.GetHeight())
+        {
             throw new InvalidOperationException("sheet capture/background dimensions differ");
+        }
+
         var count = 0;
         var touches = false;
         for (var y = 0; y < image.GetHeight(); y++)
         {
             for (var x = 0; x < image.GetWidth(); x++)
             {
-                if (!IsFighterPixel(image.GetPixel(x, y), background.GetPixel(x, y))) continue;
+                if (!IsFighterPixel(image.GetPixel(x, y), background.GetPixel(x, y)))
+                {
+                    continue;
+                }
+
                 count++;
                 touches |= IsBorder(image, x, y);
             }

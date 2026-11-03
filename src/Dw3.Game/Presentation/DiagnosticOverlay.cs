@@ -1,6 +1,6 @@
-using Godot;
 using Dw3Production.Conversion;
 using Dw3Production.Simulation;
+using Godot;
 using NumericsVector2 = System.Numerics.Vector2;
 
 namespace Dw3Production.Presentation;
@@ -147,7 +147,7 @@ public sealed partial class DiagnosticOverlay : IDisposable
                 ScanTriggerRow(zone, y, exitStatus, climbSlots, unconditionalExits, unevaluatedExits, climbs);
             }
 
-            var occupants = zone.Occupants.Select(actor => new Rect2(actor.Position.X - actor.Width / 2f, actor.Position.Y - actor.Width / 4f, actor.Width, actor.Width / 2f)).ToArray();
+            var occupants = zone.Occupants.Select(actor => new Rect2(actor.Position.X - (actor.Width / 2f), actor.Position.Y - (actor.Width / 4f), actor.Width, actor.Width / 2f)).ToArray();
             return new GeometryCache
             {
                 Zone = zone,

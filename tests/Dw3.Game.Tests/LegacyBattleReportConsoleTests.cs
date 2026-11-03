@@ -1,12 +1,10 @@
+using Dw3Production.Simulation;
 using Xunit;
 
 namespace Dw3.Game.Tests;
 
-using Dw3Production.Simulation;
-
 public sealed class LegacyBattleReportConsoleTests
 {
-
     [Fact]
     public void PreservesLegacyConsoleAssertions()
     {
@@ -29,7 +27,6 @@ public sealed class LegacyBattleReportConsoleTests
     }
 
     // ---- growth.c: STFGTREP_raiseStats ----
-
     private static void RaiseStatsAppliesGrowthDeterministically()
     {
         var tables = Tables();
@@ -41,6 +38,7 @@ public sealed class LegacyBattleReportConsoleTests
             BattleStats = [10, 10, 10, 10, 10, 10],
             Resistances = [5, 5, 5, 5, 5, 5, 5],
         };
+
         // identity tables + a zero RNG make each gain exactly the growth value.
         GrowthCalculator.RaiseStats(tables, state, new PartnerGrowthCurve(0, 10, 5, [2, 3, 4, 2, 3, 4], [2, 2, 2, 2, 2, 2, 2]), level: 10, new NoRng());
 
@@ -75,7 +73,6 @@ public sealed class LegacyBattleReportConsoleTests
     }
 
     // ---- growth.c: STFGTREP_addExp ----
-
     private static void AddExpLevelsUpAndRaisesStats()
     {
         var tables = Tables();
@@ -87,9 +84,14 @@ public sealed class LegacyBattleReportConsoleTests
             BattleStats = [10, 10, 10, 10, 10, 10],
             Resistances = [5, 5, 5, 5, 5, 5, 5],
         };
+
         // Level 2's threshold: (2^3 + 2*5 - 6) * 10 / 10 + 0 = 12, so exp 13 crosses it.
-        var leveled = GrowthCalculator.AddExp(tables, state, new PartnerGrowthCurve(10, 10, 5, [2, 3, 4, 2, 3, 4], [2, 2, 2, 2, 2, 2, 2]),
-            exp: 13, new NoRng());
+        var leveled = GrowthCalculator.AddExp(
+            tables,
+            state,
+            new PartnerGrowthCurve(10, 10, 5, [2, 3, 4, 2, 3, 4], [2, 2, 2, 2, 2, 2, 2]),
+            exp: 13,
+            new NoRng());
 
         Check(leveled, "adding exp past the threshold levels the partner up");
         Check(state.Level == 2, "the partner reached level 2");
@@ -103,8 +105,12 @@ public sealed class LegacyBattleReportConsoleTests
     {
         var tables = Tables();
         var state = new PartnerGrowthState { Level = 1, MaxHp = 100, MaxMp = 50, BattleStats = new int[6], Resistances = new int[7] };
-        var leveled = GrowthCalculator.AddExp(tables, state, new PartnerGrowthCurve(10, 10, 5, [2, 2, 2, 2, 2, 2], [2, 2, 2, 2, 2, 2, 2]),
-            exp: 12, new NoRng());
+        var leveled = GrowthCalculator.AddExp(
+            tables,
+            state,
+            new PartnerGrowthCurve(10, 10, 5, [2, 2, 2, 2, 2, 2], [2, 2, 2, 2, 2, 2, 2]),
+            exp: 12,
+            new NoRng());
 
         Check(!leveled, "exp below the threshold does not level up");
         Check(state.Level == 1, "the level stays 1");
@@ -115,9 +121,14 @@ public sealed class LegacyBattleReportConsoleTests
     {
         var tables = Tables();
         var state = new PartnerGrowthState { Level = 1, MaxHp = 0, MaxMp = 0, BattleStats = new int[6], Resistances = new int[7] };
+
         // Thresholds: level 2 = 12, level 3 = 36, level 4 = 78, level 5 = 144 (tier 0, expRate 10).
-        var leveled = GrowthCalculator.AddExp(tables, state, new PartnerGrowthCurve(10, 0, 0, [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0]),
-            exp: 100, new NoRng());
+        var leveled = GrowthCalculator.AddExp(
+            tables,
+            state,
+            new PartnerGrowthCurve(10, 0, 0, [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0]),
+            exp: 100,
+            new NoRng());
 
         Check(leveled, "enough exp levels up several times");
         Check(state.Level == 4, "exp 100 reaches level 4 (144 is out of reach)");
@@ -128,13 +139,16 @@ public sealed class LegacyBattleReportConsoleTests
     {
         var tables = Tables();
         var state = new PartnerGrowthState { Level = 99, Exp = 999990, MaxHp = 0, MaxMp = 0, BattleStats = new int[6], Resistances = new int[7] };
-        GrowthCalculator.AddExp(tables, state, new PartnerGrowthCurve(10, 0, 0, [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0]),
-            exp: 100, new NoRng());
+        GrowthCalculator.AddExp(
+            tables,
+            state,
+            new PartnerGrowthCurve(10, 0, 0, [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0]),
+            exp: 100,
+            new NoRng());
         Check(state.Exp == 999999, "exp caps at 999999");
     }
 
     // ---- report.c: exp sharing ----
-
     private static void ExpShareOneTwoThreeFought()
     {
         Check(GrowthCalculator.ExpShare(4, 1) == 4, "one fighter keeps the whole reward exp");
@@ -143,20 +157,25 @@ public sealed class LegacyBattleReportConsoleTests
     }
 
     // ---- growth.c: digimon exp ----
-
     private static void GetDigimonExpBranches()
     {
-        Check(GrowthCalculator.GetDigimonExp(level: 10, digimonExpLevel: 20, entryLevel: 5, exp: 1, used: 1) == 1,
+        Check(
+            GrowthCalculator.GetDigimonExp(level: 10, digimonExpLevel: 20, entryLevel: 5, exp: 1, used: 1) == 1,
             "digimon exp: one used Digimon gets the whole share");
-        Check(GrowthCalculator.GetDigimonExp(level: 10, digimonExpLevel: 20, entryLevel: 5, exp: 10, used: 2) == 6,
+        Check(
+            GrowthCalculator.GetDigimonExp(level: 10, digimonExpLevel: 20, entryLevel: 5, exp: 10, used: 2) == 6,
             "digimon exp: two used Digimon split six-tenths each");
-        Check(GrowthCalculator.GetDigimonExp(level: 10, digimonExpLevel: 20, entryLevel: 5, exp: 10, used: 3) == 3,
+        Check(
+            GrowthCalculator.GetDigimonExp(level: 10, digimonExpLevel: 20, entryLevel: 5, exp: 10, used: 3) == 3,
             "digimon exp: three used Digimon split a third each");
-        Check(GrowthCalculator.GetDigimonExp(level: 10, digimonExpLevel: 20, entryLevel: 5, exp: 100, used: 1) == 10,
+        Check(
+            GrowthCalculator.GetDigimonExp(level: 10, digimonExpLevel: 20, entryLevel: 5, exp: 100, used: 1) == 10,
             "digimon exp caps at 10 below the Digimon's expLevel");
-        Check(GrowthCalculator.GetDigimonExp(level: 10, digimonExpLevel: 20, entryLevel: 30, exp: 100, used: 1) == 50,
+        Check(
+            GrowthCalculator.GetDigimonExp(level: 10, digimonExpLevel: 20, entryLevel: 30, exp: 100, used: 1) == 50,
             "digimon exp caps at 50 past the Digimon's expLevel");
-        Check(GrowthCalculator.GetDigimonExp(level: 100, digimonExpLevel: 20, entryLevel: 5, exp: 1, used: 1) == 1,
+        Check(
+            GrowthCalculator.GetDigimonExp(level: 100, digimonExpLevel: 20, entryLevel: 5, exp: 1, used: 1) == 1,
             "a zero share floors at 1");
     }
 
@@ -184,7 +203,6 @@ public sealed class LegacyBattleReportConsoleTests
     }
 
     // ---- battle integration: BATTLE_RESULT.partners[i].fought ----
-
     private static void FoughtMarkedWhenPartnerActs()
     {
         var setup = new BattleSetup();
@@ -199,7 +217,6 @@ public sealed class LegacyBattleReportConsoleTests
     }
 
     // ---- fixtures ----
-
     private static GrowthTables Tables()
     {
         var tables = new GrowthTables();
@@ -207,8 +224,13 @@ public sealed class LegacyBattleReportConsoleTests
         tables.VitalCuts = [0, 0, 0, 0];
         tables.VitalRandom = [0, 0, 0, 0, 0, 0, 0, 0, 0];
         for (var tier = 0; tier < 6; tier++)
+        {
             for (var col = 0; col < 9; col++)
+            {
                 tables.StatGains[tier][col] = col;   // identity: gain == growth column
+            }
+        }
+
         tables.ResistGains = [0, 1, 2, 3, 4, 5, 6, 7];
         return tables;
     }
@@ -230,12 +252,16 @@ public sealed class LegacyBattleReportConsoleTests
     }
 
     // ---- report.c / partner.c: engine-free STFGTREP controller ----
-
     private static void ReportNeverEndsWithoutCross()
     {
         var report = new FightReportController(SampleInput());
-        for (var i = 0; i < 10_000; i++) report.Step(crossPressedEdge: false);
-        Check(!report.View.Done && report.View.Message is { Entry: 2 },
+        for (var i = 0; i < 10_000; i++)
+        {
+            report.Step(crossPressedEdge: false);
+        }
+
+        Check(
+            !report.View.Done && report.View.Message is { Entry: 2 },
             "report waits on its first EXP message without Cross");
         Check(report.View.Message?.ArrowVisible == true, "the completed EXP page shows its Cross arrow");
     }
@@ -247,11 +273,17 @@ public sealed class LegacyBattleReportConsoleTests
         for (var i = 0; i < 20_000 && !report.View.Done; i++)
         {
             var entry = report.View.Message?.Entry ?? -1;
-            if (entry >= 0 && (seen.Count == 0 || seen[^1] != entry)) seen.Add(entry);
+            if (entry >= 0 && (seen.Count == 0 || seen[^1] != entry))
+            {
+                seen.Add(entry);
+            }
+
             report.Step(crossPressedEdge: i % 20 == 0);
         }
+
         Check(report.View.Done, "report reaches Done with Cross presses");
-        Check(seen.SequenceEqual([2, 10]),
+        Check(
+            seen.SequenceEqual([2, 10]),
             $"FGTRPT messages={string.Join(",", seen)} expected=2,10");
         Check(report.View.ExitFade == 0x1000, "the 30-frame report fader reaches opaque black at Done");
     }
@@ -266,12 +298,14 @@ public sealed class LegacyBattleReportConsoleTests
             sawSeven |= report.View.Message?.Entry == 7;
             report.Step(crossPressedEdge: i % 20 == 0);
         }
+
         Check(sawSeven, "partner level up shows FGTRPT 7");
     }
 
     private static void ReportRollsExpDigitByDigit()
     {
-        Check(FightReportController.RollStep(4) == 1 && FightReportController.RollStep(250) == 111,
+        Check(
+            FightReportController.RollStep(4) == 1 && FightReportController.RollStep(250) == 111,
             "rollExp step is 1 per digit (4 -> 1, 250 -> 111)");
         var report = new FightReportController(SampleInput());
         var shown = new List<int>();
@@ -280,17 +314,25 @@ public sealed class LegacyBattleReportConsoleTests
             shown.Add(report.View.Partners[0].ShownExp);
             report.Step(i % 20 == 0);
         }
-        Check(shown.Contains(1) && shown.Contains(2) && shown.Contains(3) && shown.Contains(4),
+
+        Check(
+            shown.Contains(1) && shown.Contains(2) && shown.Contains(3) && shown.Contains(4),
             "rollExp exposes the source counter's intermediate digits before target EXP");
     }
 
     private static void ReportSkipsUnwiredDigimonSlotsOnce()
     {
         var report = new FightReportController(SampleInput());
-        for (var i = 0; i < 20_000 && !report.View.Done; i++) report.Step(i % 20 == 0);
-        Check(report.Logs.Count(line => line == "report-digimon-exp-unwired") == 1,
+        for (var i = 0; i < 20_000 && !report.View.Done; i++)
+        {
+            report.Step(i % 20 == 0);
+        }
+
+        Check(
+            report.Logs.Count(line => line == "report-digimon-exp-unwired") == 1,
             "unwired Digimon-slot EXP is logged once, not simulated");
-        Check(report.View.Partners.Single().Slots.All(slot => !slot.ExpApplied),
+        Check(
+            report.View.Partners.Single().Slots.All(slot => !slot.ExpApplied),
             "unwired Digimon slots never receive invented EXP");
     }
 

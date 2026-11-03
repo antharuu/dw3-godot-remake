@@ -1,14 +1,12 @@
+using System.Numerics;
+using Dw3Production.Conversion;
+using Dw3Production.Simulation;
 using Xunit;
 
 namespace Dw3.Game.Tests;
 
-using System.Numerics;
-using Dw3Production.Conversion;
-using Dw3Production.Simulation;
-
 public sealed class LegacyDropConsoleTests
 {
-
     [Fact]
     public void PreservesLegacyConsoleAssertions()
     {
@@ -23,7 +21,8 @@ public sealed class LegacyDropConsoleTests
         var drop = new DropController();
         drop.SetData(Data());
         drop.StartDrop(state, dir: 3, height);
-        Check(state.ClimbActive && state.ClimbHeight == height << 8 && state.Position == new Vector2(84, 296),
+        Check(
+            state.ClimbActive && state.ClimbHeight == height << 8 && state.Position == new Vector2(84, 296),
             "drop entry applies left side shift and ground descent without snapping to slot");
         var input = new InputState();
         var sawFarFall = false;
@@ -32,8 +31,10 @@ public sealed class LegacyDropConsoleTests
             drop.Tick(state, input);
             sawFarFall |= state.ClimbAnimationSet == 0x18;
         }
+
         Check(sawFarFall, "drop switches to FALL_FAR after more than 24 pixels");
-        Check(!state.ClimbActive && state.ClimbHeight == 0 && state.AnimationSet == 1,
+        Check(
+            !state.ClimbActive && state.ClimbHeight == 0 && state.AnimationSet == 1,
             "drop completes in STAND with climb state cleared");
         Check(state.Position == new Vector2(84, 296), "drop final position keeps the one-time entry shift");
     }
@@ -44,7 +45,8 @@ public sealed class LegacyDropConsoleTests
         var drop = new DropController();
         drop.SetData(Data());
         drop.StartDrop(state, dir: 7, height: 32);
-        Check(state.ClimbSide == 1 && state.Position == new Vector2(116, 232),
+        Check(
+            state.ClimbSide == 1 && state.Position == new Vector2(116, 232),
             "only source direction 7 shifts right on drop entry");
     }
 

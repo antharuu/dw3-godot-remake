@@ -83,12 +83,14 @@ public static class Locomotion
         }
 
         var direction = (int)input;
+
         // SemanticDirection is 0=up clockwise; the disc's direction vectors, facing and
         // trigger table use 0=down counter-clockwise. Rebase once before any source use.
         var sourceDirection = (direction + 4) % 8;
         state.SetFacing(sourceDirection);
         state.AnimationDirection = sourceDirection;
         var cell = map.CellAt(state.Position);
+
         // The walk-step map lookup does not block cell 0: void (0) and
         // open (1) both resolve to slope row 0, so walking over void is legal. The
         // only rejection is an unclassified low nibble (slope row > 6).
@@ -102,6 +104,7 @@ public static class Locomotion
         var mirror = (cell & 0x10) != 0;
         var effective = mirror ? MirrorDirections[sourceDirection] : sourceDirection;
         var vector = DirectionVectors[row, effective];
+
         // The original walk step uses the complete 8.8 actor speed for RUN and
         // one quarter for WALK. Convert its 50 Hz PAL task cadence to the fixed 60 Hz tick.
         var scale = state.IsRunning ? SourceRunWorldUnitsPerSimulationTick : SourceWalkWorldUnitsPerSimulationTick;
@@ -220,7 +223,7 @@ public static class Locomotion
             return null;
         }
 
-        var tangentStep = step - slideNormal * intoWall;
+        var tangentStep = step - (slideNormal * intoWall);
         if (tangentStep == Vector2.Zero)
         {
             return null;
@@ -300,7 +303,7 @@ public static class Locomotion
         var substeps = Math.Max(1, (int)MathF.Ceiling(MathF.Max(MathF.Abs(step.X), MathF.Abs(step.Y))));
         for (var index = 1; index <= substeps; index++)
         {
-            var next = start + step * (index / (float)substeps);
+            var next = start + (step * (index / (float)substeps));
             if (!map.Contains(next))
             {
                 rejection = "map-bound";

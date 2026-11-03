@@ -136,23 +136,35 @@ public sealed class DialogueDataPackLoaderTests : IDisposable
                     Execute(context, $"INSERT INTO font_glyphs VALUES ({style},4,0,1,2,3,4,5,6,-1,-2,7)");
                     Execute(context, $"INSERT INTO font_icons VALUES ({style},1,0,1,2,3,4,5,6,0,0,7)");
                     for (int page = 0; page < 2; page++)
+                    {
                         for (int palette = 0; palette < 8; palette++)
+                        {
                             File(context, $"font/font-style-{style}-palette-{palette}-page-{page}.png", "png");
+                        }
+                    }
                 }
+
                 File(context, "font/font-style-1-page-0.png", "png");
                 File(context, "font/font-style-1-page-1.png", "png");
 
                 foreach (int frame in DialogueFrameNumbers)
                 {
-                    if (frame == skipFrame) continue;
+                    if (frame == skipFrame)
+                    {
+                        continue;
+                    }
+
                     string path = File(context, $"dialogue/frame/frame-{frame}.png", "png");
                     Execute(context, $"INSERT INTO talk_box_frames VALUES ({frame},8,8,{(frame == 7 ? 4 : 1)},{(frame == 7 ? 0 : 1)},'{path}')");
                 }
+
                 string panel = File(context, "dialogue/frame/panel.png", "png");
                 Execute(context, $"INSERT INTO talk_box_panel VALUES (222,238,255,1,69,11351,12,62,'{panel}')");
                 int[] sprites = [3, 5, 5, 6];
                 for (int layout = 0; layout < layouts; layout++)
+                {
                     Execute(context, $"INSERT INTO talk_box_layouts VALUES ({layout},{sprites[layout]},-16,-16,-26,-74,-10,-74,125,-74,-20,-71,-20,-58,125,-38)");
+                }
             });
     }
 
@@ -161,7 +173,11 @@ public sealed class DialogueDataPackLoaderTests : IDisposable
         string path = context.GetImagePath(relative);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         System.IO.File.WriteAllText(path, content);
-        if (register) context.RegisterImage(relative);
+        if (register)
+        {
+            context.RegisterImage(relative);
+        }
+
         return relative;
     }
 
@@ -178,6 +194,9 @@ public sealed class DialogueDataPackLoaderTests : IDisposable
         // Release pooled connections before deletion; on Windows, the pool keeps
         // the file handle open past Dispose(), preventing Directory.Delete.
         SqliteConnection.ClearAllPools();
-        if (Directory.Exists(_root)) Directory.Delete(_root, true);
+        if (Directory.Exists(_root))
+        {
+            Directory.Delete(_root, true);
+        }
     }
 }

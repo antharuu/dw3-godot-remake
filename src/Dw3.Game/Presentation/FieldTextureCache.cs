@@ -81,7 +81,7 @@ internal sealed class FieldTextureCache : IDisposable
             {
                 var dx = (x - 15.5f) / 16f;
                 var dy = (y - 7.5f) / 8f;
-                var distance = dx * dx + dy * dy;
+                var distance = (dx * dx) + (dy * dy);
                 var alpha = distance >= 1f ? 0f : 0.35f * (1f - distance);
                 image.SetPixel(x, y, new Color(0f, 0f, 0f, alpha));
             }

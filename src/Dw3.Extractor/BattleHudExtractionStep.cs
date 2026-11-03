@@ -50,9 +50,12 @@ internal static class BattleHudExtractionStep
             (_, byte[] sheetData) = files.Read(BattleHudFiles.HudSheetFileId);
             (_, byte[] imagesData) = files.Read(BattleHudFiles.HudImagesFileId);
 
-            new DataPackWriter(outputDirectory).Write(new DataPackMetadata(
+            new DataPackWriter(outputDirectory).Write(
+                new DataPackMetadata(
                 typeof(BattleHudExtractionStep).Assembly.GetName().Version?.ToString(3) ?? "0.1.0",
-                edition.BinSha1, edition.Label, DateTimeOffset.UtcNow),
+                edition.BinSha1,
+                edition.Label,
+                DateTimeOffset.UtcNow),
                 context =>
                 {
                     Directory.CreateDirectory(context.GetImagePath(OutputSubdir));
@@ -85,9 +88,14 @@ internal static class BattleHudExtractionStep
         var idSet = new HashSet<int>(ids);
         int missingId = RequiredFrameIds.FirstOrDefault(id => !idSet.Contains(id), -1);
         if (missingId >= 0)
+        {
             throw new FormatException($"Battle HUD sheet lacks required frame id {missingId}.");
+        }
+
         if (idSet.Count != ids.Count)
+        {
             throw new FormatException("Battle HUD sprite sheet contains duplicate frame ids.");
+        }
 
         // Render all frames with 5 CLUT rows each.
         var frameRecords = new List<(int Id, List<(string Path, int W, int H, int Ox, int Oy)> Rows)>();
@@ -104,6 +112,7 @@ internal static class BattleHudExtractionStep
                 context.RegisterImage(rel);
                 clutRows.Add((name, w, h, ox, oy));
             }
+
             frameRecords.Add((frameId, clutRows));
         }
 
@@ -133,7 +142,11 @@ internal static class BattleHudExtractionStep
     /// <returns>A UTF-8 JSON string terminated with a newline.</returns>
     private static string BuildHudJson(
         List<(int Id, List<(string Path, int W, int H, int Ox, int Oy)> Rows)> frameRecords,
-        IReadOnlyList<int> ids, byte[] sheetData, byte[] imagesData, int cw, int ch)
+        IReadOnlyList<int> ids,
+        byte[] sheetData,
+        byte[] imagesData,
+        int cw,
+        int ch)
     {
         using var stream = new MemoryStream();
         using (var json = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true }))
@@ -156,7 +169,11 @@ internal static class BattleHudExtractionStep
 
             json.WriteNumber("frameCount", ids.Count);
             json.WriteStartArray("frameIds");
-            foreach (int id in ids) json.WriteNumberValue(id);
+            foreach (int id in ids)
+            {
+                json.WriteNumberValue(id);
+            }
+
             json.WriteEndArray();
 
             json.WriteStartObject("frames");
@@ -179,9 +196,11 @@ internal static class BattleHudExtractionStep
                     json.WriteNumber("offsetY", oy);
                     json.WriteEndObject();
                 }
+
                 json.WriteEndArray();
                 json.WriteEndObject();
             }
+
             json.WriteEndObject();
 
             // Cursor.
@@ -197,6 +216,7 @@ internal static class BattleHudExtractionStep
 
             json.WriteEndObject();
         }
+
         return Encoding.UTF8.GetString(stream.ToArray()) + "\n";
     }
 
@@ -213,12 +233,20 @@ internal static class BattleHudExtractionStep
     /// <param name="row">The CLUT row index to render; falls back to 0 on palette-out-of-range errors.</param>
     /// <returns>Rendered RGBA pixel data plus bounding box and ABR flag.</returns>
     private static (byte[] Rgba, int W, int H, int Ox, int Oy, int Abr) TryRenderFrame(
-        IReadOnlyList<HudSpritePart> parts, ReadOnlySpan<byte> sheetBody, int frameOffset,
-        IReadOnlyList<HudTexturePage> pages, int row)
+        IReadOnlyList<HudSpritePart> parts,
+        ReadOnlySpan<byte> sheetBody,
+        int frameOffset,
+        IReadOnlyList<HudTexturePage> pages,
+        int row)
     {
-        try { return HudFrameRenderer.RenderFrame(parts, sheetBody, frameOffset, pages, row); }
+        try
+        {
+            return HudFrameRenderer.RenderFrame(parts, sheetBody, frameOffset, pages, row);
+        }
         catch (FormatException ex) when (ex.Message.Contains("palette outside loaded texture"))
-        { return HudFrameRenderer.RenderFrame(parts, sheetBody, frameOffset, pages, 0); }
+        {
+            return HudFrameRenderer.RenderFrame(parts, sheetBody, frameOffset, pages, 0);
+        }
     }
 
     /// <summary>
@@ -235,7 +263,10 @@ internal static class BattleHudExtractionStep
     {
         var result = new byte[fw * fh * 4];
         for (int y = 0; y < fh; y++)
-            Buffer.BlockCopy(full, (y * fullW + frameIdx * fw) * 4, result, y * fw * 4, fw * 4);
+        {
+            Buffer.BlockCopy(full, ((y * fullW) + (frameIdx * fw)) * 4, result, y * fw * 4, fw * 4);
+        }
+
         return result;
     }
 }

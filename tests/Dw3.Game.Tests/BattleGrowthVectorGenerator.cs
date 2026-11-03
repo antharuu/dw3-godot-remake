@@ -17,28 +17,36 @@ namespace Dw3.Game.Tests;
 public sealed class BattleGrowthVectorGenerator
 {
     // ------------------------------------------------------------------ helpers
-
     private sealed class SeqRng : IBattleRng
     {
         private readonly int[] _v;
         private int _i;
+
         public SeqRng(params int[] v) => _v = v;
+
         // Returns 0 if the sequence is empty (safe fallback for cases with no level-up
         // that accidentally reach RNG due to zero thresholds or other edge conditions).
         public int NextValue() => _v.Length == 0 ? 0 : _v[_i++ % _v.Length];
     }
 
-    /// Returns an int[] of length n filled with value v (for use as a SeqRng sequence).
+    // Returns an int[] of length n filled with value v (for use as a SeqRng sequence).
     private static int[] ConstSeq(int v, int n)
     {
         var a = new int[n];
-        for (int i = 0; i < n; i++) a[i] = v;
+        for (int i = 0; i < n; i++)
+        {
+            a[i] = v;
+        }
+
         return a;
     }
 
     private static GrowthTables MakeTables(
-        int[] levelExp, int[] vitalCuts, int[] vitalRandom,
-        int[][] statGains, int[] resistGains) => new()
+        int[] levelExp,
+        int[] vitalCuts,
+        int[] vitalRandom,
+        int[][] statGains,
+        int[] resistGains) => new()
         {
             LevelExp = levelExp,
             VitalCuts = vitalCuts,
@@ -63,18 +71,25 @@ public sealed class BattleGrowthVectorGenerator
         resistGains: [0, 1, 2, 3, 4, 5, 6, 7]);
 
     // ------------------------------------------------------------------ JSON helpers
-
     private static JsonArray ToJsonArray(int[] arr)
     {
         var a = new JsonArray();
-        foreach (var v in arr) a.Add(v);
+        foreach (var v in arr)
+        {
+            a.Add(v);
+        }
+
         return a;
     }
 
     private static JsonArray StatGainsToJson(int[][] sg)
     {
         var outer = new JsonArray();
-        foreach (var row in sg) outer.Add(ToJsonArray(row));
+        foreach (var row in sg)
+        {
+            outer.Add(ToJsonArray(row));
+        }
+
         return outer;
     }
 
@@ -90,9 +105,13 @@ public sealed class BattleGrowthVectorGenerator
     };
 
     private static PartnerGrowthState MakeState(
-        int level = 1, int exp = 0, int tp = 0,
-        int maxHp = 100, int maxMp = 50,
-        int[]? battleStats = null, int[]? resistances = null) => new()
+        int level = 1,
+        int exp = 0,
+        int tp = 0,
+        int maxHp = 100,
+        int maxMp = 50,
+        int[]? battleStats = null,
+        int[]? resistances = null) => new()
         {
             Level = level,
             Exp = exp,
@@ -105,10 +124,14 @@ public sealed class BattleGrowthVectorGenerator
 
     // ------------------------------------------------------------------ case builders
 
-    /// RaiseStats: rngValues is the full materialized sequence (stored in JSON for replay).
+    // RaiseStats: rngValues is the full materialized sequence (stored in JSON for replay).
     private static JsonObject RaiseStatsCase(
-        int id, GrowthTables tables, PartnerGrowthState stateIn,
-        PartnerGrowthCurve curve, int level, int[] rngValues)
+        int id,
+        GrowthTables tables,
+        PartnerGrowthState stateIn,
+        PartnerGrowthCurve curve,
+        int level,
+        int[] rngValues)
     {
         var state = CloneState(stateIn);
         GrowthCalculator.RaiseStats(tables, state, curve, level, new SeqRng(rngValues));
@@ -138,10 +161,14 @@ public sealed class BattleGrowthVectorGenerator
         };
     }
 
-    /// AddExp: rngValues is the full materialized sequence for all level-ups.
+    // AddExp: rngValues is the full materialized sequence for all level-ups.
     private static JsonObject AddExpCase(
-        int id, GrowthTables tables, PartnerGrowthState stateIn,
-        PartnerGrowthCurve curve, int exp, int[] rngValues)
+        int id,
+        GrowthTables tables,
+        PartnerGrowthState stateIn,
+        PartnerGrowthCurve curve,
+        int exp,
+        int[] rngValues)
     {
         var state = CloneState(stateIn);
         bool leveled = GrowthCalculator.AddExp(tables, state, curve, exp, new SeqRng(rngValues));
@@ -230,12 +257,13 @@ public sealed class BattleGrowthVectorGenerator
     }
 
     // ------------------------------------------------------------------ generator
-
     [Fact]
     public void GenerateBattleGrowthVectors()
     {
         if (Environment.GetEnvironmentVariable("GENERATE_VECTORS") != "1")
+        {
             return;
+        }
 
         var cases = new JsonArray();
         int id = 1;
@@ -252,101 +280,148 @@ public sealed class BattleGrowthVectorGenerator
         foreach (var lv in raiseLevels)
         {
             // RNG all-zero
-            cases.Add(RaiseStatsCase(id++, def,
+            cases.Add(RaiseStatsCase(
+                id++,
+                def,
                 MakeState(level: lv),
                 curve: new PartnerGrowthCurve(0, 30, 20, statGrowthBase, resistGrowthBase),
-                level: lv, rngValues: ConstSeq(0, 15)));
+                level: lv,
+                rngValues: ConstSeq(0, 15)));
 
             // RNG all max for % 9
-            cases.Add(RaiseStatsCase(id++, def,
+            cases.Add(RaiseStatsCase(
+                id++,
+                def,
                 MakeState(level: lv),
                 curve: new PartnerGrowthCurve(0, 30, 20, statGrowthBase, resistGrowthBase),
-                level: lv, rngValues: ConstSeq(8, 15)));
+                level: lv,
+                rngValues: ConstSeq(8, 15)));
 
             // Mixed RNG sequence
-            cases.Add(RaiseStatsCase(id++, def,
+            cases.Add(RaiseStatsCase(
+                id++,
+                def,
                 MakeState(level: lv),
                 curve: new PartnerGrowthCurve(0, 25, 15, [1, 2, 3, 2, 1, 0], [1, 2, 1, 0, 2, 1, 0]),
-                level: lv, rngValues: [3, 6, 1, 2, 3, 4, 0, 1, 2, 0, 1, 2, 3, 1, 0]));
+                level: lv,
+                rngValues: [3, 6, 1, 2, 3, 4, 0, 1, 2, 0, 1, 2, 3, 1, 0]));
         }
 
         // RaiseStats: near-saturation
-        cases.Add(RaiseStatsCase(id++, def,
-            MakeState(maxHp: 9990, maxMp: 9990,
+        cases.Add(RaiseStatsCase(
+            id++,
+            def,
+            MakeState(
+                maxHp: 9990,
+                maxMp: 9990,
                 battleStats: [995, 996, 997, 998, 999, 999],
                 resistances: [998, 999, 999, 995, 996, 997, 998]),
             curve: new PartnerGrowthCurve(0, 50, 50, [4, 4, 4, 4, 4, 4], [4, 4, 4, 4, 4, 4, 4]),
-            level: 1, rngValues: ConstSeq(8, 15)));
+            level: 1,
+            rngValues: ConstSeq(8, 15)));
 
         // RaiseStats: negative gain (vitalCut > hpGrowth + swing)
-        cases.Add(RaiseStatsCase(id++, def,
+        cases.Add(RaiseStatsCase(
+            id++,
+            def,
             MakeState(maxHp: 50, maxMp: 50),
             curve: new PartnerGrowthCurve(0, 3, 3, statGrowthBase, resistGrowthBase),
-            level: 20, rngValues: ConstSeq(0, 15)));
+            level: 20,
+            rngValues: ConstSeq(0, 15)));
 
         // RaiseStats: varied hpGrowth / mpGrowth
         foreach (var hg in new[] { 0, 10, 50, 100 })
         {
-            cases.Add(RaiseStatsCase(id++, def,
+            cases.Add(RaiseStatsCase(
+                id++,
+                def,
                 MakeState(),
-                curve: new PartnerGrowthCurve(0, hg, hg / 2 + 1, statGrowthBase, resistGrowthBase),
-                level: 10, rngValues: ConstSeq(4, 15)));
+                curve: new PartnerGrowthCurve(0, hg, (hg / 2) + 1, statGrowthBase, resistGrowthBase),
+                level: 10,
+                rngValues: ConstSeq(4, 15)));
         }
 
         // RaiseStats: varied stat-tier levels for broader coverage
         foreach (var lv in new[] { 2, 8, 15, 25, 35, 45, 55, 65, 75, 85, 95 })
         {
-            cases.Add(RaiseStatsCase(id++, def,
+            cases.Add(RaiseStatsCase(
+                id++,
+                def,
                 MakeState(level: lv, maxHp: lv * 50, maxMp: lv * 30),
-                curve: new PartnerGrowthCurve(0, 20 + lv / 10, 15 + lv / 10, [2, 2, 2, 2, 2, 2], [1, 1, 1, 1, 1, 1, 1]),
-                level: lv, rngValues: ConstSeq(3, 15)));
+                curve: new PartnerGrowthCurve(0, 20 + (lv / 10), 15 + (lv / 10), [2, 2, 2, 2, 2, 2], [1, 1, 1, 1, 1, 1, 1]),
+                level: lv,
+                rngValues: ConstSeq(3, 15)));
         }
 
         // ---- AddExp cases ----
         // no level-up
-        cases.Add(AddExpCase(id++, def,
+        cases.Add(AddExpCase(
+            id++,
+            def,
             MakeState(level: 1, exp: 0),
             curve: new PartnerGrowthCurve(10, 30, 20, statGrowthBase, resistGrowthBase),
-            exp: 5, rngValues: []));
+            exp: 5,
+            rngValues: []));
 
         // exactly one level-up (level 1→2, threshold = (8+10-6)*10/10 + 0 = 12)
-        cases.Add(AddExpCase(id++, def,
+        cases.Add(AddExpCase(
+            id++,
+            def,
             MakeState(level: 1, exp: 0),
             curve: new PartnerGrowthCurve(10, 30, 20, statGrowthBase, resistGrowthBase),
-            exp: 13, rngValues: ConstSeq(0, 15)));
+            exp: 13,
+            rngValues: ConstSeq(0, 15)));
 
         // two level-ups (thresholds 12 and 36)
-        cases.Add(AddExpCase(id++, def,
+        cases.Add(AddExpCase(
+            id++,
+            def,
             MakeState(level: 1, exp: 0),
             curve: new PartnerGrowthCurve(10, 30, 20, statGrowthBase, resistGrowthBase),
-            exp: 40, rngValues: ConstSeq(2, 30)));
+            exp: 40,
+            rngValues: ConstSeq(2, 30)));
 
         // at level 99 → no level-up
-        cases.Add(AddExpCase(id++, def,
+        cases.Add(AddExpCase(
+            id++,
+            def,
             MakeState(level: 99, exp: 0),
             curve: new PartnerGrowthCurve(10, 30, 20, statGrowthBase, resistGrowthBase),
-            exp: 9999, rngValues: []));
+            exp: 9999,
+            rngValues: []));
 
         // exp cap at 999999
-        cases.Add(AddExpCase(id++, def,
+        cases.Add(AddExpCase(
+            id++,
+            def,
             MakeState(level: 1, exp: 999990),
             curve: new PartnerGrowthCurve(10, 30, 20, statGrowthBase, resistGrowthBase),
-            exp: 100, rngValues: ConstSeq(0, 60)));
+            exp: 100,
+            rngValues: ConstSeq(0, 60)));
 
         // expRate = 0 (no cubic component, threshold = LevelExp[tier])
-        cases.Add(AddExpCase(id++, def,
+        cases.Add(AddExpCase(
+            id++,
+            def,
             MakeState(level: 1, exp: 0),
             curve: new PartnerGrowthCurve(0, 30, 20, statGrowthBase, resistGrowthBase),
-            exp: 5, rngValues: []));
+            exp: 5,
+            rngValues: []));
 
         // expRate = 0 with large LevelExp[0]=5 → level-up at 6
         var tablesHighBase = MakeTables(
             [5, 100, 500, 1000],
-            def.VitalCuts, def.VitalRandom, def.StatGains, def.ResistGains);
-        cases.Add(AddExpCase(id++, tablesHighBase,
+            def.VitalCuts,
+            def.VitalRandom,
+            def.StatGains,
+            def.ResistGains);
+        cases.Add(AddExpCase(
+            id++,
+            tablesHighBase,
             MakeState(level: 1, exp: 0),
             curve: new PartnerGrowthCurve(0, 30, 20, statGrowthBase, resistGrowthBase),
-            exp: 6, rngValues: ConstSeq(0, 15)));
+            exp: 6,
+            rngValues: ConstSeq(0, 15)));
 
         // tier boundary level-ups (4→5, 19→20, 39→40)
         int[] tpLevels = [4, 19, 39];
@@ -354,25 +429,34 @@ public sealed class BattleGrowthVectorGenerator
         {
             int nextLevel = lv + 1;
             int nextTier = nextLevel < 5 ? 0 : nextLevel < 20 ? 1 : nextLevel < 40 ? 2 : 3;
-            int threshold = (nextLevel * nextLevel * nextLevel + nextLevel * 5 - 6) * 10 / 10
+            int threshold = (((nextLevel * nextLevel * nextLevel) + (nextLevel * 5) - 6) * 10 / 10)
                             + def.LevelExp[nextTier];
-            cases.Add(AddExpCase(id++, def,
+            cases.Add(AddExpCase(
+                id++,
+                def,
                 MakeState(level: lv, exp: 0),
                 curve: new PartnerGrowthCurve(10, 30, 20, statGrowthBase, resistGrowthBase),
-                exp: threshold + 1, rngValues: ConstSeq(1, 15)));
+                exp: threshold + 1,
+                rngValues: ConstSeq(1, 15)));
         }
 
         // Tp near cap
-        cases.Add(AddExpCase(id++, def,
+        cases.Add(AddExpCase(
+            id++,
+            def,
             MakeState(level: 1, exp: 0, tp: 95),
             curve: new PartnerGrowthCurve(10, 30, 20, statGrowthBase, resistGrowthBase),
-            exp: 100, rngValues: ConstSeq(0, 60)));
+            exp: 100,
+            rngValues: ConstSeq(0, 60)));
 
         // multiple level-ups with mixed RNG
-        cases.Add(AddExpCase(id++, def,
+        cases.Add(AddExpCase(
+            id++,
+            def,
             MakeState(level: 5, exp: 0),
             curve: new PartnerGrowthCurve(10, 20, 15, [2, 2, 2, 2, 2, 2], [1, 1, 1, 1, 1, 1, 1]),
-            exp: 5000, rngValues: [
+            exp: 5000,
+            rngValues: [
                 3, 6, 2, 1, 3, 0, 2, 1, 2, 3, 1,
                 4, 5, 3, 0, 1, 2, 4, 3, 1, 2, 0,
                 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -383,10 +467,13 @@ public sealed class BattleGrowthVectorGenerator
         // varied expRate
         foreach (var rate in new[] { 5, 15, 20, 50 })
         {
-            cases.Add(AddExpCase(id++, def,
+            cases.Add(AddExpCase(
+                id++,
+                def,
                 MakeState(level: 1, exp: 0),
                 curve: new PartnerGrowthCurve(rate, 20, 10, [1, 1, 1, 1, 1, 1], [0, 0, 0, 0, 0, 0, 0]),
-                exp: 200, rngValues: ConstSeq(0, 60)));
+                exp: 200,
+                rngValues: ConstSeq(0, 60)));
         }
 
         // ---- GetDigimonExp cases ----
@@ -399,6 +486,7 @@ public sealed class BattleGrowthVectorGenerator
                 cases.Add(GetDigimonExpCase(id++, lv, 5, 5, exp, 1));
             }
         }
+
         // level >= 51
         foreach (var lv in new[] { 51, 60, 75, 99 })
         {
@@ -408,20 +496,29 @@ public sealed class BattleGrowthVectorGenerator
                 cases.Add(GetDigimonExpCase(id++, lv, 5, 7, exp, 1));
             }
         }
+
         // used variants
         foreach (var used in new[] { 0, 1, 2, 3, 4, 5 })
+        {
             cases.Add(GetDigimonExpCase(id++, 10, 5, 5, 100, used));
+        }
+
         foreach (var used in new[] { 0, 1, 2, 3, 4 })
+        {
             cases.Add(GetDigimonExpCase(id++, 10, 5, 3, 100, used));
+        }
+
         // level boundary at 50/51
         cases.Add(GetDigimonExpCase(id++, 50, 5, 5, 100, 1));
         cases.Add(GetDigimonExpCase(id++, 51, 5, 5, 100, 1));
+
         // exp = 0 → always clamp to 1
         foreach (var lv in new[] { 1, 50, 99 })
         {
             cases.Add(GetDigimonExpCase(id++, lv, 5, 5, 0, 1));
             cases.Add(GetDigimonExpCase(id++, lv, 5, 5, 0, 3));
         }
+
         // large exp
         foreach (var exp in new[] { 1000, 9999, 99999 })
         {
@@ -431,37 +528,50 @@ public sealed class BattleGrowthVectorGenerator
             cases.Add(GetDigimonExpCase(id++, 10, 5, 5, exp, 4));
             cases.Add(GetDigimonExpCase(id++, 60, 5, 5, exp, 1));
         }
+
         // used=2 truncation: n*6/10
         foreach (var exp in new[] { 1, 2, 3, 5, 7, 10, 11, 15, 17 })
+        {
             cases.Add(GetDigimonExpCase(id++, 1, 5, 5, exp, 2));
+        }
 
         // ---- AddDigimonExp cases ----
         const int expLv = 5;
+
         // level 0: need=0 → always level up
         foreach (var exp in new[] { 0, 1, 5, 10, 100 })
+        {
             cases.Add(AddDigimonExpCase(id++, expLv, 0, 0, exp));
+        }
+
         // level 1, need=10
         foreach (var (ee, ex) in new[] { (0, 9), (0, 10), (0, 11), (9, 1), (9, 0) })
             cases.Add(AddDigimonExpCase(id++, expLv, 1, ee, ex));
+
         // level 2, need=20
         cases.Add(AddDigimonExpCase(id++, expLv, 2, 18, 2));
         cases.Add(AddDigimonExpCase(id++, expLv, 2, 19, 0));
         cases.Add(AddDigimonExpCase(id++, expLv, 2, 19, 1));
+
         // expLevel boundary: 4→5 (need=40) and 5→6 (need=90)
         cases.Add(AddDigimonExpCase(id++, expLv, 4, 38, 2));
         cases.Add(AddDigimonExpCase(id++, expLv, 4, 39, 2));
         cases.Add(AddDigimonExpCase(id++, expLv, 5, 88, 2));
         cases.Add(AddDigimonExpCase(id++, expLv, 5, 89, 2));
         cases.Add(AddDigimonExpCase(id++, expLv, 6, 138, 2));
+
         // multiple level-ups
         cases.Add(AddDigimonExpCase(id++, expLv, 1, 0, 200));
         cases.Add(AddDigimonExpCase(id++, expLv, 0, 0, 200));
         cases.Add(AddDigimonExpCase(id++, expLv, 3, 0, 100));
+
         // entryLevel = 99 → no level-up, exp still added
         cases.Add(AddDigimonExpCase(id++, expLv, 99, 0, 50));
         cases.Add(AddDigimonExpCase(id++, expLv, 99, 0, 0));
+
         // entryLevel = 98 → levels to 99, stops
         cases.Add(AddDigimonExpCase(id++, expLv, 98, 0, 99999));
+
         // various expLevel values
         foreach (var el in new[] { 1, 2, 3, 5, 10 })
         {
@@ -469,31 +579,35 @@ public sealed class BattleGrowthVectorGenerator
             cases.Add(AddDigimonExpCase(id++, el, 3, 25, 15));
             cases.Add(AddDigimonExpCase(id++, el, 1, 5, 5));
         }
+
         // exp cap at 9999999
         cases.Add(AddDigimonExpCase(id++, expLv, 5, 9999990, 20));
         cases.Add(AddDigimonExpCase(id++, expLv, 5, 9999990, 100));
+
         // varied expLevel boundaries
         foreach (var el in new[] { 3, 7, 10, 20 })
         {
-            cases.Add(AddDigimonExpCase(id++, el, el - 1, 0, (el - 1) * 10 + 1));
-            cases.Add(AddDigimonExpCase(id++, el, el, 0, (el - 1) * 10 + 50 + 1));
+            cases.Add(AddDigimonExpCase(id++, el, el - 1, 0, ((el - 1) * 10) + 1));
+            cases.Add(AddDigimonExpCase(id++, el, el, 0, ((el - 1) * 10) + 50 + 1));
         }
 
         // ---- ExpShare cases ----
         foreach (var exp in new[] { 0, 1, 10, 11, 100, 101, 999, 9999 })
         {
             foreach (var fought in new[] { 0, 1, 2, 3, 4, 5 })
+            {
                 cases.Add(ExpShareCase(id++, exp, fought));
+            }
         }
 
         // Pad to reach 300 cases with GetDigimonExp variants
         while (cases.Count < 300)
         {
             int extra = cases.Count;
-            int lv = 1 + extra % 50;
-            int ex = 10 + extra % 100;
-            int used = 1 + extra % 3;
-            cases.Add(GetDigimonExpCase(id++, lv, 6, 3 + extra % 5, ex, used));
+            int lv = 1 + (extra % 50);
+            int ex = 10 + (extra % 100);
+            int used = 1 + (extra % 3);
+            cases.Add(GetDigimonExpCase(id++, lv, 6, 3 + (extra % 5), ex, used));
         }
 
         var root = new JsonObject
@@ -510,7 +624,8 @@ public sealed class BattleGrowthVectorGenerator
         // Write to the build output Vectors directory (same location as the test binary).
         var outPath = Path.Combine(
             Path.GetDirectoryName(typeof(BattleGrowthVectorGenerator).Assembly.Location)!,
-            "Vectors", "battle-growth.json");
+            "Vectors",
+            "battle-growth.json");
         Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
         File.WriteAllText(outPath, root.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
 

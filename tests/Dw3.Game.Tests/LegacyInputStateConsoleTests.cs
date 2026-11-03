@@ -1,12 +1,10 @@
+using Dw3Production.Simulation;
 using Xunit;
 
 namespace Dw3.Game.Tests;
 
-using Dw3Production.Simulation;
-
 public sealed class LegacyInputStateConsoleTests
 {
-
     [Fact]
     public void PreservesLegacyConsoleAssertions()
     {

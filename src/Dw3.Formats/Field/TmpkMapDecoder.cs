@@ -129,7 +129,7 @@ public static class TmpkMapDecoder
         {
             for (int x = 0; x < width; x++)
             {
-                cells[y * width + x] = ResolveCell(tables, x, y);
+                cells[(y * width) + x] = ResolveCell(tables, x, y);
             }
         }
 
@@ -152,7 +152,7 @@ public static class TmpkMapDecoder
     /// <returns>The one-byte cell value at (x, y).</returns>
     private static byte ResolveCell(TmpkResolveTables t, int x, int y)
     {
-        int index = t.Grid[y / 128 * t.TilesWide + x / 128] * 4;
+        int index = t.Grid[(y / 128 * t.TilesWide) + (x / 128)] * 4;
         if ((y & 0x40) != 0)
         {
             index += 2;
@@ -177,7 +177,7 @@ public static class TmpkMapDecoder
         }
 
         index = ReadUInt16(t.Cells8, index + ((x & 8) != 0 ? 1 : 0), "8-cell table");
-        int pixelOffset = checked(index * 64 + (y & 7) * 8 + (x & 7));
+        int pixelOffset = checked((index * 64) + ((y & 7) * 8) + (x & 7));
         return ReadByte(t.Pixels, pixelOffset, "cell pixel blocks");
     }
 

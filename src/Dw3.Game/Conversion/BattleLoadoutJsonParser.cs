@@ -36,10 +36,19 @@ internal static class BattleLoadoutJsonParser
             }
 
             int type = entry.GetProperty("type").GetInt32();
-            items.Add(new BattleItemData(id, id, names[id],
-                effectData.GetProperty("flags").GetInt32(), effectData.GetProperty("kind").GetInt32(),
-                effectData.GetProperty("amount").GetInt32(), entry.GetProperty("price").GetInt32(),
-                entry.GetProperty("sellPrice").GetInt32(), type, type + 70, effect, target));
+            items.Add(new BattleItemData(
+                id,
+                id,
+                names[id],
+                effectData.GetProperty("flags").GetInt32(),
+                effectData.GetProperty("kind").GetInt32(),
+                effectData.GetProperty("amount").GetInt32(),
+                entry.GetProperty("price").GetInt32(),
+                entry.GetProperty("sellPrice").GetInt32(),
+                type,
+                type + 70,
+                effect,
+                target));
         }
 
         if (items.Count != 29)
@@ -60,9 +69,12 @@ internal static class BattleLoadoutJsonParser
     /// <returns>The fully parsed <see cref="BattleTextData"/>.</returns>
     /// <exception cref="System.Text.Json.JsonException">A table count is wrong.</exception>
     internal static BattleTextData ParseBattleText(
-        List<IReadOnlyList<TextToken>> menu, List<IReadOnlyList<TextToken>> names,
-        List<IReadOnlyList<TextToken>> techniques, List<IReadOnlyList<TextToken>> skillInfo,
-        List<IReadOnlyList<TextToken>> itemInfo, List<IReadOnlyList<TextToken>> report)
+        List<IReadOnlyList<TextToken>> menu,
+        List<IReadOnlyList<TextToken>> names,
+        List<IReadOnlyList<TextToken>> techniques,
+        List<IReadOnlyList<TextToken>> skillInfo,
+        List<IReadOnlyList<TextToken>> itemInfo,
+        List<IReadOnlyList<TextToken>> report)
     {
         if (menu.Count != 145 || names.Count != 251 || techniques.Count != 444 || skillInfo.Count != 220 || itemInfo.Count != 403 || report.Count != 12)
         {
@@ -119,8 +131,13 @@ internal static class BattleLoadoutJsonParser
                 throw new JsonException($"HUD frame {id} lacks five palettes");
             }
 
-            frames.Add(id, new BattleHudFrame(id, rows, frame.GetProperty("w").GetInt32(), frame.GetProperty("h").GetInt32(),
-                frame.GetProperty("offsetX").GetInt32(), frame.GetProperty("offsetY").GetInt32()));
+            frames.Add(id, new BattleHudFrame(
+                id,
+                rows,
+                frame.GetProperty("w").GetInt32(),
+                frame.GetProperty("h").GetInt32(),
+                frame.GetProperty("offsetX").GetInt32(),
+                frame.GetProperty("offsetY").GetInt32()));
         }
 
         if (frames.Count != ids.Length || ids.Any(id => !frames.ContainsKey(id)))
@@ -132,8 +149,11 @@ internal static class BattleLoadoutJsonParser
         var hudCursor = new BattleHudCursor(
             resolver("battle/hud/" + cursor.GetProperty("path").GetString()!, "battle cursor"),
             resolver("battle/hud/" + cursor.GetProperty("offPath").GetString()!, "battle cursor off"),
-            cursor.GetProperty("w").GetInt32(), cursor.GetProperty("h").GetInt32(),
-            cursor.GetProperty("frames").GetInt32(), cursor.GetProperty("frameW").GetInt32(), cursor.GetProperty("frameH").GetInt32());
+            cursor.GetProperty("w").GetInt32(),
+            cursor.GetProperty("h").GetInt32(),
+            cursor.GetProperty("frames").GetInt32(),
+            cursor.GetProperty("frameW").GetInt32(),
+            cursor.GetProperty("frameH").GetInt32());
         return new BattleHudData(frames, hudCursor);
     }
 
@@ -151,8 +171,13 @@ internal static class BattleLoadoutJsonParser
             JsonElement frame = property.Value;
             string[] rows = [.. frame.GetProperty("clutRows").EnumerateArray().Select(row =>
                 resolver("battle/report/" + row.GetProperty("path").GetString()!, $"report frame {id}"))];
-            frames.Add(id, new BattleHudFrame(id, rows, frame.GetProperty("w").GetInt32(), frame.GetProperty("h").GetInt32(),
-                frame.GetProperty("offsetX").GetInt32(), frame.GetProperty("offsetY").GetInt32()));
+            frames.Add(id, new BattleHudFrame(
+                id,
+                rows,
+                frame.GetProperty("w").GetInt32(),
+                frame.GetProperty("h").GetInt32(),
+                frame.GetProperty("offsetX").GetInt32(),
+                frame.GetProperty("offsetY").GetInt32()));
         }
 
         int[][] animations = [.. root.GetProperty("animations").EnumerateArray().Select(BattleEncounterJsonParser.Ints)];
@@ -164,9 +189,16 @@ internal static class BattleLoadoutJsonParser
             throw new JsonException("battle report shape mismatch");
         }
 
-        return new BattleReportSprites(frames, animations,
-            new BattleHudFrame(10, arrowRows, arrow.GetProperty("w").GetInt32(), arrow.GetProperty("h").GetInt32(),
-                arrow.GetProperty("offsetX").GetInt32(), arrow.GetProperty("offsetY").GetInt32()));
+        return new BattleReportSprites(
+            frames,
+            animations,
+            new BattleHudFrame(
+                10,
+                arrowRows,
+                arrow.GetProperty("w").GetInt32(),
+                arrow.GetProperty("h").GetInt32(),
+                arrow.GetProperty("offsetX").GetInt32(),
+                arrow.GetProperty("offsetY").GetInt32()));
     }
 
     /// <summary>Parses the battle menu icons manifest into a <see cref="BattleMenuIconsData"/>.</summary>
@@ -202,12 +234,23 @@ internal static class BattleLoadoutJsonParser
         foreach (JsonElement entry in root.GetProperty("techniques").EnumerateArray())
         {
             var value = new TechData(
-                entry.GetProperty("id").GetInt32(), entry.GetProperty("mp").GetInt32(), entry.GetProperty("power").GetInt32(),
-                entry.GetProperty("icon").GetInt32(), entry.GetProperty("kind").GetInt32(), entry.GetProperty("accuracy").GetInt32(),
-                entry.GetProperty("element").GetInt32(), entry.GetProperty("elementPower").GetInt32(), entry.GetProperty("family").GetInt32(),
-                entry.GetProperty("effect").GetInt32(), entry.GetProperty("effectChance").GetInt32(), entry.GetProperty("effectPower").GetInt32(),
-                entry.GetProperty("scriptStage").GetInt32(), entry.GetProperty("scriptEffect").GetInt32(), entry.GetProperty("scriptSound").GetInt32(),
-                entry.GetProperty("script").GetInt32(), entry.GetProperty("hitCount").GetInt32());
+                entry.GetProperty("id").GetInt32(),
+                entry.GetProperty("mp").GetInt32(),
+                entry.GetProperty("power").GetInt32(),
+                entry.GetProperty("icon").GetInt32(),
+                entry.GetProperty("kind").GetInt32(),
+                entry.GetProperty("accuracy").GetInt32(),
+                entry.GetProperty("element").GetInt32(),
+                entry.GetProperty("elementPower").GetInt32(),
+                entry.GetProperty("family").GetInt32(),
+                entry.GetProperty("effect").GetInt32(),
+                entry.GetProperty("effectChance").GetInt32(),
+                entry.GetProperty("effectPower").GetInt32(),
+                entry.GetProperty("scriptStage").GetInt32(),
+                entry.GetProperty("scriptEffect").GetInt32(),
+                entry.GetProperty("scriptSound").GetInt32(),
+                entry.GetProperty("script").GetInt32(),
+                entry.GetProperty("hitCount").GetInt32());
             techs.Add(value.Id, value);
         }
 

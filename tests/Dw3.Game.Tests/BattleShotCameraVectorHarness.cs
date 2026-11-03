@@ -31,7 +31,11 @@ internal static class BattleShotCameraVectorHarness
 
         public CycledRng(int[] values)
         {
-            if (values.Length == 0) throw new ArgumentException("RNG value list must not be empty");
+            if (values.Length == 0)
+            {
+                throw new ArgumentException("RNG value list must not be empty");
+            }
+
             _values = values;
         }
 
@@ -85,7 +89,11 @@ internal static class BattleShotCameraVectorHarness
             {
                 Camera = new BattleShotCamera(rng, new BattleShotCameraViews
                 {
-                    GetEnemyView = () => { _current.Add("E"); return ToView(nextEnemyView()); },
+                    GetEnemyView = () =>
+                    {
+                        _current.Add("E");
+                        return ToView(nextEnemyView());
+                    },
                     GetFighterView = (slot, index) =>
                     {
                         _current.Add($"F{slot}:{index}");
@@ -93,22 +101,33 @@ internal static class BattleShotCameraVectorHarness
                     },
                 });
             }
+
             Snapshots.Add(Snapshot(Camera));
             Calls.Add(_current);
         }
 
         public BattleShotCamera Camera { get; }
+
         public List<string> Ops { get; } = [];
+
         public List<int[]> Snapshots { get; } = [];
+
         public List<List<string>> Calls { get; } = [];
+
         public int ThrowsAt { get; private set; } = -1;
+
         public string? Exception { get; private set; }
+
         public bool Failed => Exception is not null;
 
         /// <summary>Applies one operation and records its snapshot. Returns false once failed.</summary>
         public bool Apply(string op)
         {
-            if (Failed) throw new InvalidOperationException("session already failed");
+            if (Failed)
+            {
+                throw new InvalidOperationException("session already failed");
+            }
+
             Ops.Add(op);
             _current = [];
             try
@@ -122,6 +141,7 @@ internal static class BattleShotCameraVectorHarness
                 Exception = ex.GetType().Name;
                 return false;
             }
+
             Snapshots.Add(Snapshot(Camera));
             Calls.Add(_current);
             return true;
@@ -130,28 +150,53 @@ internal static class BattleShotCameraVectorHarness
         public Result ToResult() => new(Snapshots, Calls, ThrowsAt, Exception);
     }
 
-    public static Result Run(int[] rngValues, Func<int[]>? nextEnemyView, Func<int[]>? nextFighterView,
+    public static Result Run(
+        int[] rngValues,
+        Func<int[]>? nextEnemyView,
+        Func<int[]>? nextFighterView,
         IReadOnlyList<string> ops)
     {
         var session = new Session(rngValues, nextEnemyView, nextFighterView);
         foreach (var op in ops)
-            if (!session.Apply(op)) break;
+        {
+            if (!session.Apply(op))
+            {
+                break;
+            }
+        }
+
         return session.ToResult();
     }
 
     private static void ApplyOp(BattleShotCamera camera, string op)
     {
-        if (op == "1") camera.Step();
-        else if (op == "x") camera.Stop();
-        else if (op.StartsWith("s:", StringComparison.Ordinal)) camera.StepFrames(int.Parse(op[2..], System.Globalization.CultureInfo.InvariantCulture));
-        else throw new InvalidOperationException($"unknown vector op '{op}'");
+        if (op == "1")
+        {
+            camera.Step();
+        }
+        else if (op == "x")
+        {
+            camera.Stop();
+        }
+        else if (op.StartsWith("s:", StringComparison.Ordinal))
+        {
+            camera.StepFrames(int.Parse(op[2..], System.Globalization.CultureInfo.InvariantCulture));
+        }
+        else
+        {
+            throw new InvalidOperationException($"unknown vector op '{op}'");
+        }
     }
 
     public static int[] Snapshot(BattleShotCamera c)
     {
         var s = new int[20];
-        s[0] = c.List; s[1] = c.Shot; s[2] = c.Time; s[3] = c.Substate;
-        s[4] = c.PlayerVisible ? 1 : 0; s[5] = c.EnemyVisible ? 1 : 0;
+        s[0] = c.List;
+        s[1] = c.Shot;
+        s[2] = c.Time;
+        s[3] = c.Substate;
+        s[4] = c.PlayerVisible ? 1 : 0;
+        s[5] = c.EnemyVisible ? 1 : 0;
         FromView(c.View).CopyTo(s, 6);
         return s;
     }
@@ -160,7 +205,11 @@ internal static class BattleShotCameraVectorHarness
     {
         var a = node!.AsArray();
         var r = new int[a.Count];
-        for (var i = 0; i < a.Count; i++) r[i] = a[i]!.GetValue<int>();
+        for (var i = 0; i < a.Count; i++)
+        {
+            r[i] = a[i]!.GetValue<int>();
+        }
+
         return r;
     }
 }

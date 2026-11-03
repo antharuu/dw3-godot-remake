@@ -27,7 +27,9 @@ public sealed class BattleEnemyAiVectorTests
     {
         var functions = LoadCases().Select(c => c!["fn"]!.GetValue<string>()).ToHashSet();
         foreach (var fn in new[] { "TestEnemyCondition", "GetEnemyAction", "PickAction", "PickCounter", "ResolveSwitch", "DecisionFlags" })
+        {
             Assert.Contains(fn, functions);
+        }
     }
 
     [Fact]
@@ -39,8 +41,11 @@ public sealed class BattleEnemyAiVectorTests
             var actual = BattleEnemyAiVectorCodec.Evaluate(c!);
             var expected = c!["expected"]!;
             if (!JsonNode.DeepEquals(actual, expected))
+            {
                 errors.Add($"case {c["id"]} ({c["note"]}): expected {expected.ToJsonString()}, got {actual.ToJsonString()}");
+            }
         }
+
         Assert.True(errors.Count == 0, string.Join("\n", errors.Take(20)));
     }
 }

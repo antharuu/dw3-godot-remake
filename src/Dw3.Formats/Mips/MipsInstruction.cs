@@ -7,26 +7,37 @@ public enum MipsOperation
 {
     /// <summary>Any instruction the analysis does not interpret.</summary>
     Other,
+
     /// <summary><c>lui rt, imm</c>: loads the immediate into the upper half.</summary>
     Lui,
+
     /// <summary><c>addiu rt, rs, imm</c>: adds the sign-extended immediate.</summary>
     Addiu,
+
     /// <summary><c>ori rt, rs, imm</c>: ORs the zero-extended immediate.</summary>
     Ori,
+
     /// <summary><c>lw rt, imm(rs)</c>: loads a 32-bit word.</summary>
     Lw,
+
     /// <summary><c>sw rt, imm(rs)</c>: stores a 32-bit word.</summary>
     Sw,
+
     /// <summary><c>j target</c>: jumps inside the current 256 MiB segment.</summary>
     J,
+
     /// <summary><c>jal target</c>: calls inside the current 256 MiB segment, writes <c>$ra</c>.</summary>
     Jal,
+
     /// <summary><c>jr rs</c>: jumps to a register, a function return when <c>rs</c> is <c>$ra</c>.</summary>
     Jr,
+
     /// <summary><c>jalr rd, rs</c>: calls through a register.</summary>
     Jalr,
+
     /// <summary><c>addu rd, rs, rt</c>: 32-bit addition without overflow trap.</summary>
     Addu,
+
     /// <summary><c>or rd, rs, rt</c>: bitwise OR, the usual register copy idiom with <c>$zero</c>.</summary>
     Or,
 }
@@ -39,16 +50,22 @@ public readonly record struct MipsInstruction(int Offset, uint Word)
 {
     /// <summary>Gets primary opcode, bits 31..26.</summary>
     public int Opcode => (int)(Word >> 26);
+
     /// <summary>Gets first source register, bits 25..21.</summary>
     public int Rs => (int)((Word >> 21) & 31);
+
     /// <summary>Gets second source or I-type destination register, bits 20..16.</summary>
     public int Rt => (int)((Word >> 16) & 31);
+
     /// <summary>Gets r-type destination register, bits 15..11.</summary>
     public int Rd => (int)((Word >> 11) & 31);
+
     /// <summary>Gets r-type function code, bits 5..0.</summary>
     public int Function => (int)(Word & 63);
+
     /// <summary>Gets zero-extended 16-bit immediate.</summary>
     public ushort UnsignedImmediate => (ushort)Word;
+
     /// <summary>Gets sign-extended 16-bit immediate (also the load/store displacement).</summary>
     public short SignedImmediate => (short)Word;
 
@@ -77,6 +94,7 @@ public readonly record struct MipsInstruction(int Offset, uint Word)
     public bool HasDelaySlot => Opcode switch
     {
         0x00 => Function is 0x08 or 0x09,
+
         // REGIMM branches, j, jal, beq, bne, blez, bgtz.
         0x01 or 0x02 or 0x03 or 0x04 or 0x05 or 0x06 or 0x07 => true,
         _ => false,
@@ -96,13 +114,17 @@ public readonly record struct MipsInstruction(int Offset, uint Word)
             >= 0x20 and <= 0x2B => Rd,
             _ => null,
         },
+
         // bltzal/bgezal link through $ra.
         0x01 => (Rt & 0x10) != 0 ? 31 : null,
         0x03 => 31,
+
         // addi..lui.
         >= 0x08 and <= 0x0F => Rt,
+
         // mfc0/cfc0, mfc2/cfc2.
         0x10 or 0x12 => (Rs is 0x00 or 0x02) ? Rt : null,
+
         // lb..lwr.
         >= 0x20 and <= 0x26 => Rt,
         _ => null,
@@ -147,7 +169,7 @@ public readonly record struct MipsInstruction(int Offset, uint Word)
         var instructions = new MipsInstruction[(end - start) / sizeof(uint)];
         for (int index = 0; index < instructions.Length; index++)
         {
-            int offset = start + index * sizeof(uint);
+            int offset = start + (index * sizeof(uint));
             instructions[index] = new MipsInstruction(offset, BinaryPrimitives.ReadUInt32LittleEndian(code.Slice(offset, sizeof(uint))));
         }
 
@@ -160,7 +182,7 @@ public readonly record struct MipsInstruction(int Offset, uint Word)
     /// </summary>
     /// <param name="length">Total byte length of the buffer.</param>
     /// <returns>The largest multiple of 4 that is ≤ <paramref name="length"/>.</returns>
-    public static int WholeWordEnd(int length) => length - length % sizeof(uint);
+    public static int WholeWordEnd(int length) => length - (length % sizeof(uint));
 }
 
 /// <summary>An instruction stream or analysis result that cannot be decoded without guessing.</summary>

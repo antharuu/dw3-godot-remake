@@ -13,7 +13,11 @@ public sealed class DialogueDiagnosticProbeRunner(IDiagnosticProbeHost host)
         string? methodName = options.DialogueProbe ? "RunDialogueProbe"
             : options.IconProbe ? "RunIconProbe"
             : null;
-        if (methodName is null) return false;
+        if (methodName is null)
+        {
+            return false;
+        }
+
         _host.ScheduleProbe(methodName, ownsInput: true);
         return true;
     }

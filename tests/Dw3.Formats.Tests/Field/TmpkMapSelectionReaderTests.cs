@@ -149,10 +149,16 @@ public sealed class TmpkMapSelectionReaderTests
     }
 
     private static uint Move(int target, int source) => ((uint)source << 21) | ((uint)target << 11) | 0x21u;
+
     private static uint Addiu(int target, int source, short immediate) => 0x24000000u | ((uint)source << 21) | ((uint)target << 16) | (ushort)immediate;
+
     private static uint Lui(int target, ushort immediate) => 0x3C000000u | ((uint)target << 16) | immediate;
+
     private static uint Ori(int target, int source, ushort immediate) => 0x34000000u | ((uint)source << 21) | ((uint)target << 16) | immediate;
+
     private static uint Lw(int target, int source, ushort immediate) => 0x8C000000u | ((uint)source << 21) | ((uint)target << 16) | immediate;
+
     private static uint Sw(int source, int target, ushort immediate) => 0xAC000000u | ((uint)target << 21) | ((uint)source << 16) | immediate;
+
     private static uint Jalr(int source) => ((uint)source << 21) | (31u << 11) | 9u;
 }

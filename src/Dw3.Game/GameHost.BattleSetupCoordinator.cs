@@ -47,7 +47,13 @@ public partial class GameHost
                 Blocks = new int[12],
             };
             CopyBlocks(entry, setup);
-            BattleFlowController flow = BattleSetupFactory.BuildFlow(fighters, techs, encounters, encounterIndex, party, _host._battleNameIds,
+            BattleFlowController flow = BattleSetupFactory.BuildFlow(
+                fighters,
+                techs,
+                encounters,
+                encounterIndex,
+                party,
+                _host._battleNameIds,
                 new BattleTextCatalog(_host._battleTextData ?? throw new CacheResourceException("CACHE_RESOURCE_UNAVAILABLE", "battle text manifest unavailable")));
             _host._battleMenuCoordinator.WireCatalogs(flow);
             flow.Start(BattleState.InitFighters(setup, digimon: party[0]));

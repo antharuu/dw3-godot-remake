@@ -1,5 +1,5 @@
-using Godot;
 using Dw3Production.Conversion;
+using Godot;
 
 namespace Dw3Production.Presentation;
 
@@ -22,6 +22,7 @@ public sealed class CameraController
     {
         _camera = camera;
         _camera.Zoom = new Vector2(3f, 3f);
+
         // No engine smoothing: the source's exponential pan is applied manually in Apply,
         // so the camera stays clamped to the map instead of drifting off-map (black screen).
         _camera.PositionSmoothingEnabled = false;

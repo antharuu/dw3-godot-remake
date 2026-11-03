@@ -34,6 +34,7 @@ public sealed class SystemExtractorLauncher : IExtractorLauncher
             RedirectStandardOutput = true,
             UseShellExecute = false,
         };
+
         // The disc path is passed as a command-line argument; the game process
         // never calls File.Open or any equivalent on it.
         info.ArgumentList.Add("extract");
@@ -60,7 +61,11 @@ public sealed class SystemExtractorLauncher : IExtractorLauncher
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(repoRoot);
         string? env = System.Environment.GetEnvironmentVariable("DW3_EXTRACTOR");
-        if (!string.IsNullOrWhiteSpace(env)) return env;
+        if (!string.IsNullOrWhiteSpace(env))
+        {
+            return env;
+        }
+
         // Default: debug build produced by dotnet build Dw3.sln.
         return Path.Combine(repoRoot, "src", "Dw3.Extractor", "bin", "Debug", "net10.0", "Dw3.Extractor");
     }

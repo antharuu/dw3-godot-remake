@@ -15,10 +15,19 @@ public sealed class FieldcomDomainWriterTests : IDisposable
     {
         var cueImage = new FieldcomExtractedFrame(0x10, 1, 1, -8, -28, 0, -1, [255, 0, 0, 255]);
         var iconImage = new FieldcomExtractedFrame(0x23, 1, 1, 4, -36, 0, 2, [255, 0, 0, 255]);
-        var cue = new FieldcomCueDomain("AAA/DAT/FIELD/FIELDCOM.BIN", "abcd", 42, [cueImage],
-            [new FieldcomExitRow(0, 6)], [new FieldcomNamedSequence("inner-6", [new FieldcomFrameStep(0x10, 22)])],
+        var cue = new FieldcomCueDomain(
+            "AAA/DAT/FIELD/FIELDCOM.BIN",
+            "abcd",
+            42,
+            [cueImage],
+            [new FieldcomExitRow(0, 6)],
+            [new FieldcomNamedSequence("inner-6", [new FieldcomFrameStep(0x10, 22)])],
             [new FieldcomNamedSequence("opening", [new FieldcomFrameStep(0x10, 1)]), new FieldcomNamedSequence("closing", [new FieldcomFrameStep(0x10, 1)])]);
-        var icon = new FieldcomIconDomain("AAA/DAT/FIELD/FIELDCOM.BIN", "abcd", 42, [iconImage],
+        var icon = new FieldcomIconDomain(
+            "AAA/DAT/FIELD/FIELDCOM.BIN",
+            "abcd",
+            42,
+            [iconImage],
             [new FieldcomAnimation([new FieldcomFrameStep(0x23, 8)], 0)]);
 
         new DataPackWriter(_root).Write(Metadata(), context => FieldcomDomainWriter.Write(context, cue, icon));
@@ -53,12 +62,16 @@ public sealed class FieldcomDomainWriterTests : IDisposable
         // Release pooled connections before deletion; on Windows, the pool keeps
         // the file handle open past Dispose(), preventing Directory.Delete.
         SqliteConnection.ClearAllPools();
-        if (Directory.Exists(_root)) Directory.Delete(_root, recursive: true);
+        if (Directory.Exists(_root))
+        {
+            Directory.Delete(_root, recursive: true);
+        }
     }
 
     private static long Scalar(SqliteConnection connection, string sql)
     {
-        using SqliteCommand command = connection.CreateCommand(); command.CommandText = sql;
+        using SqliteCommand command = connection.CreateCommand();
+        command.CommandText = sql;
         return (long)command.ExecuteScalar()!;
     }
 

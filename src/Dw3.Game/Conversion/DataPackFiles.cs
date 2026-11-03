@@ -25,6 +25,7 @@ internal static class DataPackFiles
         {
             throw new CacheResourceException("CACHE_INVALID", $"{context} has an invalid path: {error.Message}");
         }
+
         return File.Exists(path)
             ? path
             : throw new CacheResourceException("CACHE_RESOURCE_UNAVAILABLE", $"{context} missing at {path}");

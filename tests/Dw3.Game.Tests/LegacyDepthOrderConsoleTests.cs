@@ -1,12 +1,10 @@
+using Dw3Production.Presentation;
 using Xunit;
 
 namespace Dw3.Game.Tests;
 
-using Dw3Production.Presentation;
-
 public sealed class LegacyDepthOrderConsoleTests
 {
-
     [Fact]
     public void PreservesLegacyConsoleAssertions()
     {
@@ -39,11 +37,14 @@ public sealed class LegacyDepthOrderConsoleTests
             (Item: "far-water", Priority: 245, Registration: SourceCallbackOrder.MapObjectRegistration),
         ]);
         var order = ordered.ToArray();
-        Check(order.SequenceEqual(["far-water", "player", "water-behind", "water-front"]),
+        Check(
+            order.SequenceEqual(["far-water", "player", "water-behind", "water-front"]),
             "callback painter order must be proportional Y with later actor registration first on an equal key");
-        Check(Array.IndexOf(order, "water-behind") < Array.IndexOf(order, "water-front"),
+        Check(
+            Array.IndexOf(order, "water-behind") < Array.IndexOf(order, "water-front"),
             "a lower sortY must draw before a higher sortY");
-        Check(Array.IndexOf(order, "player") < Array.IndexOf(order, "water-behind"),
+        Check(
+            Array.IndexOf(order, "player") < Array.IndexOf(order, "water-behind"),
             "equal player/object sort key must preserve reversed stable callback insertion");
     }
 

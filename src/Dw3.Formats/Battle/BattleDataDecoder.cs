@@ -46,20 +46,20 @@ public static class BattleDataDecoder
         const int statTiers = 6;
         const int statValuesPerTier = 9;
         const int resistanceCount = 8;
-        const int totalBytes = (levelCount + vitalCutsCount + vitalRandomCount + statTiers * statValuesPerTier + resistanceCount) * sizeof(int);
+        const int totalBytes = (levelCount + vitalCutsCount + vitalRandomCount + (statTiers * statValuesPerTier) + resistanceCount) * sizeof(int);
         EnsureRange(data, offset, totalBytes, "Growth tables");
         int[] levelExperience = ReadInt32Run(data, offset, levelCount);
-        int[] vitalCuts = ReadInt32Run(data, offset + levelCount * sizeof(int), vitalCutsCount);
-        int vitalRandomOffset = offset + (levelCount + vitalCutsCount) * sizeof(int);
+        int[] vitalCuts = ReadInt32Run(data, offset + (levelCount * sizeof(int)), vitalCutsCount);
+        int vitalRandomOffset = offset + ((levelCount + vitalCutsCount) * sizeof(int));
         int[] vitalRandom = ReadInt32Run(data, vitalRandomOffset, vitalRandomCount);
-        int statOffset = vitalRandomOffset + vitalRandomCount * sizeof(int);
+        int statOffset = vitalRandomOffset + (vitalRandomCount * sizeof(int));
         var statGains = new IReadOnlyList<int>[statTiers];
         for (int tier = 0; tier < statTiers; tier++)
         {
-            statGains[tier] = ReadInt32Run(data, statOffset + tier * statValuesPerTier * sizeof(int), statValuesPerTier);
+            statGains[tier] = ReadInt32Run(data, statOffset + (tier * statValuesPerTier * sizeof(int)), statValuesPerTier);
         }
 
-        int resistanceOffset = statOffset + statTiers * statValuesPerTier * sizeof(int);
+        int resistanceOffset = statOffset + (statTiers * statValuesPerTier * sizeof(int));
         int[] resistanceGains = ReadInt32Run(data, resistanceOffset, resistanceCount);
         return new BattleGrowthData(levelExperience, vitalCuts, vitalRandom, statGains, resistanceGains);
     }
@@ -77,8 +77,10 @@ public static class BattleDataDecoder
         EnsureRange(data, offset, ItemStride, "Item record");
         return new ItemRecord(
             BinaryPrimitives.ReadUInt32LittleEndian(data.Slice(offset, 4)),
-            ReadU16(data, offset + 4), ReadU16(data, offset + 6),
-            data[offset + 8], data[offset + 9]);
+            ReadU16(data, offset + 4),
+            ReadU16(data, offset + 6),
+            data[offset + 8],
+            data[offset + 9]);
     }
 
     /// <summary>
@@ -116,12 +118,18 @@ public static class BattleDataDecoder
             data.Slice(offset + 0x2C, 5).ToArray(),
             data.Slice(offset + 0x31, 6).ToArray(),
             data.Slice(offset + 0x37, 5).ToArray(),
-            data[offset + 0x3C], data[offset + 0x3D], data[offset + 0x3E],
-            data[offset + 0x3F], data[offset + 0x40], data[offset + 0x41], data[offset + 0x42],
+            data[offset + 0x3C],
+            data[offset + 0x3D],
+            data[offset + 0x3E],
+            data[offset + 0x3F],
+            data[offset + 0x40],
+            data[offset + 0x41],
+            data[offset + 0x42],
             data.Slice(offset + 0x43, 6).ToArray(),
             data.Slice(offset + 0x49, 7).ToArray(),
             data.Slice(offset + 0x50, 5).ToArray(),
-            data[offset + 0x55], data[offset + 0x56]);
+            data[offset + 0x55],
+            data[offset + 0x56]);
     }
 
     /// <summary>
@@ -137,11 +145,22 @@ public static class BattleDataDecoder
     {
         EnsureRange(data, offset, TechniqueStride, "Technique record");
         return new TechniqueRecord(
-            ReadU16(data, offset), ReadU16(data, offset + 2),
-            data[offset + 4], data[offset + 5], data[offset + 6], data[offset + 7],
-            data[offset + 8], data[offset + 9], data[offset + 10], data[offset + 11],
-            data[offset + 12], data[offset + 13], data[offset + 14], data[offset + 15],
-            data[offset + 16], data[offset + 17]);
+            ReadU16(data, offset),
+            ReadU16(data, offset + 2),
+            data[offset + 4],
+            data[offset + 5],
+            data[offset + 6],
+            data[offset + 7],
+            data[offset + 8],
+            data[offset + 9],
+            data[offset + 10],
+            data[offset + 11],
+            data[offset + 12],
+            data[offset + 13],
+            data[offset + 14],
+            data[offset + 15],
+            data[offset + 16],
+            data[offset + 17]);
     }
 
     /// <summary>
@@ -159,13 +178,20 @@ public static class BattleDataDecoder
         var actions = new BattleAction[4];
         for (int i = 0; i < actions.Length; i++)
         {
-            actions[i] = DecodeBattleAction(data, offset + 0x32 + i * 4);
+            actions[i] = DecodeBattleAction(data, offset + 0x32 + (i * 4));
         }
 
         return new BattleTableRecord(
-            ReadI16(data, offset), ReadI16(data, offset + 2), ReadI16(data, offset + 4), ReadI16(data, offset + 6),
-            ReadI16Run(data, offset + 8, 3), ReadI16Run(data, offset + 0x0E, 5), ReadI16Run(data, offset + 0x18, 12),
-            data[offset + 0x30], actions, DecodeBattleAction(data, offset + 0x42));
+            ReadI16(data, offset),
+            ReadI16(data, offset + 2),
+            ReadI16(data, offset + 4),
+            ReadI16(data, offset + 6),
+            ReadI16Run(data, offset + 8, 3),
+            ReadI16Run(data, offset + 0x0E, 5),
+            ReadI16Run(data, offset + 0x18, 12),
+            data[offset + 0x30],
+            actions,
+            DecodeBattleAction(data, offset + 0x42));
     }
 
     /// <summary>
@@ -218,10 +244,13 @@ public static class BattleDataDecoder
         short need0Level = ReadI16(data, offset + 6);
         short need1Index = ReadI16(data, offset + 8);
         short need1Level = ReadI16(data, offset + 10);
-        return new EvolutionRecord(digimonIndex, ResolveDigimonId(digimonIdsByIndex, digimonIndex),
-        [new EvolutionNeed(need0Index, ResolveDigimonId(digimonIdsByIndex, need0Index), need0Level),
+        return new EvolutionRecord(
+            digimonIndex,
+            ResolveDigimonId(digimonIdsByIndex, digimonIndex),
+            [new EvolutionNeed(need0Index, ResolveDigimonId(digimonIdsByIndex, need0Index), need0Level),
          new EvolutionNeed(need1Index, ResolveDigimonId(digimonIdsByIndex, need1Index), need1Level)],
-        ReadI16(data, offset + 12), ReadI16(data, offset + 14));
+            ReadI16(data, offset + 12),
+            ReadI16(data, offset + 14));
     }
 
     /// <summary>
@@ -301,7 +330,7 @@ public static class BattleDataDecoder
         var values = new int[count];
         for (int i = 0; i < count; i++)
         {
-            values[i] = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(offset + i * sizeof(int), sizeof(int)));
+            values[i] = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(offset + (i * sizeof(int)), sizeof(int)));
         }
 
         return values;
@@ -317,7 +346,7 @@ public static class BattleDataDecoder
         var values = new ushort[count];
         for (int i = 0; i < count; i++)
         {
-            values[i] = ReadU16(data, offset + i * 2);
+            values[i] = ReadU16(data, offset + (i * 2));
         }
 
         return values;
@@ -333,7 +362,7 @@ public static class BattleDataDecoder
         var values = new short[count];
         for (int i = 0; i < count; i++)
         {
-            values[i] = ReadI16(data, offset + i * 2);
+            values[i] = ReadI16(data, offset + (i * 2));
         }
 
         return values;

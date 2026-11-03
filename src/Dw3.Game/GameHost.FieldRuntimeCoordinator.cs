@@ -114,8 +114,13 @@ public partial class GameHost
                 npcRecords = records;
             }
 
-            _host._renderer.LoadZone(zone.Zone, _host._playerData, _host.ActionData, frame => _host.ResolvePlayerFrame(frame),
-                (set, frame) => _host.ResolveActionFrame(set, frame), npcRecords);
+            _host._renderer.LoadZone(
+                zone.Zone,
+                _host._playerData,
+                _host.ActionData,
+                frame => _host.ResolvePlayerFrame(frame),
+                (set, frame) => _host.ResolveActionFrame(set, frame),
+                npcRecords);
             _host._icon.Reset(_host._state.Position);
             _host._renderer.Present(_host._state, zone, _host._input.F3On);
         }

@@ -27,13 +27,21 @@ public sealed class BattleMotionMachineVectorTests
         Assert.True(cases.Count >= 300, $"Expected at least 300 vectors, got {cases.Count}");
         var codes = new HashSet<string>();
         foreach (var c in cases)
-            foreach (var o in c!["outcomes"]!.AsArray()) codes.Add(o!.GetValue<string>());
+        {
+            foreach (var o in c!["outcomes"]!.AsArray())
+            {
+                codes.Add(o!.GetValue<string>());
+            }
+        }
+
         foreach (var expected in new[]
                  {
                      "ok", "V:motion", "V:framesElapsed", "V:idleMotion", "E:InvalidOperationException",
                      "E:ArgumentOutOfRangeException", "E:*",
                  })
+        {
             Assert.Contains(expected, codes);
+        }
     }
 
     [Fact]
@@ -52,8 +60,11 @@ public sealed class BattleMotionMachineVectorTests
                 errors.Add($"[{id}] replay threw {ex.GetType().Name}: {ex.Message}");
             }
         }
+
         if (errors.Count > 0)
+        {
             Assert.Fail($"{errors.Count} mismatch(es):\n" + string.Join("\n", errors.Take(50)));
+        }
     }
 
     private static void Verify(JsonNode c, int id, List<string> errors)
@@ -84,6 +95,8 @@ public sealed class BattleMotionMachineVectorTests
         var e = expected is null ? null : BattleMotionMachineVectorHarness.Ints(expected);
         var same = e is null ? actual is null : actual is not null && e.SequenceEqual(actual);
         if (!same)
+        {
             errors.Add($"[{id}] {what}: got [{(actual is null ? "null" : string.Join(",", actual))}] expected [{(e is null ? "null" : string.Join(",", e))}]");
+        }
     }
 }

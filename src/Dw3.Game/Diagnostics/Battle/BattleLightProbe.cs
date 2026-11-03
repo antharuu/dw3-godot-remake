@@ -32,7 +32,8 @@ internal sealed class BattleLightProbe : BattleProbe
         Host.StartDebugBattle();
         ProbeRequirement.Require(Host.HasBattleRenderer && Host.HasActiveBattle, "F8 did not construct battle lighting");
         var renderer = Host.Renderer;
-        ProbeRequirement.Require(Host.RenderedPlayerId == Kotemon && renderer.StageBuilt && renderer.ModelCount == 2,
+        ProbeRequirement.Require(
+            Host.RenderedPlayerId == Kotemon && renderer.StageBuilt && renderer.ModelCount == 2,
             "light probe requires Kotemon, stage 18 and both decoded models");
         var frames = await CaptureFramesAsync(renderer, captureRoot);
         var psx = BattleComparisonImage.ToSourceSize(Host.LoadPsxReference("battle/11-command-menu-sel3.png"));
@@ -102,9 +103,13 @@ internal sealed class BattleLightProbe : BattleProbe
         var medianDelta = BattleMaskMetrics.RelativeDelta(psxStats.Q50, remakeStats.Q50);
         QuietLog.Info($"battle-light oracle phase=command-menu psx mean={psxStats.Mean:0.##} q10={psxStats.Q10:0.##} q50={psxStats.Q50:0.##} q90={psxStats.Q90:0.##} remake mean={remakeStats.Mean:0.##} q10={remakeStats.Q10:0.##} q50={remakeStats.Q50:0.##} q90={remakeStats.Q90:0.##} delta={meanDelta * 100f:0.##}%");
         if (meanDelta < .25f && medianDelta < .25f)
+        {
             QuietLog.Info($"battle-light oracle paired mean_delta={meanDelta * 100f:0.##}% median_delta={medianDelta * 100f:0.##}%");
+        }
         else
+        {
             GD.PushWarning($"WARN battle-light-oracle-unpaired phase=command-menu mean_delta={meanDelta * 100f:0.##}% median_delta={medianDelta * 100f:0.##}% psx_pixels={psxStats.Count} remake_pixels={remakeStats.Count}");
+        }
     }
 
     /// <summary>
@@ -120,7 +125,10 @@ internal sealed class BattleLightProbe : BattleProbe
         {
             for (var x = 18; x < 235; x++)
             {
-                if (IsWarmBody(image.GetPixel(x, y))) mask.SetPixel(x, y, Colors.White);
+                if (IsWarmBody(image.GetPixel(x, y)))
+                {
+                    mask.SetPixel(x, y, Colors.White);
+                }
             }
         }
 
@@ -149,7 +157,10 @@ internal sealed class BattleLightProbe : BattleProbe
         {
             for (var x = 0; x < mask.GetWidth(); x++)
             {
-                if (x >= 160 || y < 24 || y >= 220) mask.SetPixel(x, y, Colors.Black);
+                if (x >= 160 || y < 24 || y >= 220)
+                {
+                    mask.SetPixel(x, y, Colors.Black);
+                }
             }
         }
 
@@ -166,7 +177,10 @@ internal sealed class BattleLightProbe : BattleProbe
         {
             for (var x = 0; x < BattleMaskMetrics.Width; x++)
             {
-                if (BattleMaskMetrics.IsSelected(mask, x, y)) count++;
+                if (BattleMaskMetrics.IsSelected(mask, x, y))
+                {
+                    count++;
+                }
             }
         }
 
@@ -186,9 +200,16 @@ internal sealed class BattleLightProbe : BattleProbe
         {
             for (var x = 0; x < BattleMaskMetrics.Width; x++)
             {
-                if (!BattleMaskMetrics.IsSelected(mask, x, y)) continue;
+                if (!BattleMaskMetrics.IsSelected(mask, x, y))
+                {
+                    continue;
+                }
+
                 total++;
-                if (BattleMaskMetrics.Luminance(image.GetPixel(x, y)) < threshold) dark++;
+                if (BattleMaskMetrics.Luminance(image.GetPixel(x, y)) < threshold)
+                {
+                    dark++;
+                }
             }
         }
 
@@ -219,6 +240,7 @@ internal sealed class BattleLightProbe : BattleProbe
     {
         renderer.SetProbePose(10);
         renderer.SetNeutralLightsForProbe(false);
+
         // The player-turn presentation flow starts the main ShotCamera for the command menu. Its first
         // source shot is getEnemyView, distinct from the small partner-view camera 6/7.
         renderer.SetCommandMenuCamera();
@@ -228,11 +250,13 @@ internal sealed class BattleLightProbe : BattleProbe
         var stageLighting = renderer.StageLightSummary();
         var kuwagamonVertex = renderer.LightingVertexSummary(Kuwagamon);
         renderer.SetHudVisibleForProbe(false);
+
         // Preserve a separate active-fighter mask for the hard non-black invariant.
         renderer.SetModelVisibleForProbe(Kuwagamon, false);
         var activeModel = await CaptureAsync(captureRoot, "active-model.png");
         renderer.SetModelVisibleForProbe(Kuwagamon, true);
         renderer.SetModelVisibleForProbe(Kotemon, false);
+
         // This is the exact player-command camera 6. A zero mask is meaningful: the enemy is not
         // in the remake framebuffer, so this oracle is explicitly unpaired.
         var kuwagamonModel = await CaptureAsync(captureRoot, "kuwagamon-model.png");

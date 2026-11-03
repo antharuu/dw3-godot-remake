@@ -1,14 +1,12 @@
+using System.Numerics;
+using Dw3Production.Presentation;
+using Dw3Production.Simulation;
 using Xunit;
 
 namespace Dw3.Game.Tests;
 
-using System.Numerics;
-using Dw3Production.Simulation;
-using Dw3Production.Presentation;
-
 public sealed class LegacyBattleConsoleTests
 {
-
     [Fact]
     public void PreservesLegacyConsoleAssertions()
     {
@@ -86,36 +84,44 @@ public sealed class LegacyBattleConsoleTests
     {
         var player = BattleSceneMath.FighterPlacement(enemy: false, distance: 192, height: 0);
         var enemy = BattleSceneMath.FighterPlacement(enemy: true, distance: 1408, height: 0);
-        Check(player.Position.X == 0 && player.Position.Y == 0 && player.Position.Z == 20.75f,
+        Check(
+            player.Position.X == 0 && player.Position.Y == 0 && player.Position.Z == 20.75f,
             "Kotemon uses the source -0x1400-distance position converted to Godot Z");
-        Check(enemy.Position.X == 0 && enemy.Position.Y == 0 && enemy.Position.Z == -25.5f,
+        Check(
+            enemy.Position.X == 0 && enemy.Position.Y == 0 && enemy.Position.Z == -25.5f,
             "fighter 51 uses the source +0x1400+distance position converted to Godot Z");
-        Check(player.YawRadians == MathF.PI && enemy.YawRadians == 0,
+        Check(
+            player.YawRadians == MathF.PI && enemy.YawRadians == 0,
             "the player alone receives the source half-turn so both camps face each other");
     }
 
     private static void Ps1ProjectionDefinesVerticalFov()
     {
         var expected = 2f * MathF.Atan(120f / 280f) * 180f / MathF.PI;
-        Check(MathF.Abs(BattleSceneMath.VerticalFovDegrees(280) - expected) < 0.0001f,
+        Check(
+            MathF.Abs(BattleSceneMath.VerticalFovDegrees(280) - expected) < 0.0001f,
             "the vertical FOV derives from the PS1 240-line projection distance");
     }
 
     private static void PartnerViewProjectionAndCameraIndexMatchSource()
     {
         var expected = 2f * MathF.Atan(30f / 280f) * 180f / MathF.PI;
-        Check(MathF.Abs(BattleSceneMath.VerticalFovDegrees(280, 30f) - expected) < 0.0001f,
+        Check(
+            MathF.Abs(BattleSceneMath.VerticalFovDegrees(280, 30f) - expected) < 0.0001f,
             "partner view FOV uses its 60-pixel target half-height, not the 240-line screen");
-        Check(BattleSceneMath.PartnerCameraViewIndex(0) == 6,
+        Check(
+            BattleSceneMath.PartnerCameraViewIndex(0) == 6,
             "fighter_camera.c chooses view 6 when idleMotion is zero");
-        Check(BattleSceneMath.PartnerCameraViewIndex(1) == 7,
+        Check(
+            BattleSceneMath.PartnerCameraViewIndex(1) == 7,
             "fighter_camera.c chooses view 7 when idleMotion is non-zero");
     }
 
     private static void Ps1CameraViewCancelsSourceViewSigns()
     {
         var camera = BattleSceneMath.CameraPosition(-2432, 1920, 11136);
-        Check(camera == new System.Numerics.Vector3(-9.5f, 7.5f, 43.5f),
+        Check(
+            camera == new System.Numerics.Vector3(-9.5f, 7.5f, 43.5f),
             "GsRVIEW2 Y/Z negation and PS1-to-Godot Y/Z negation cancel for camera records");
     }
 
@@ -123,7 +129,11 @@ public sealed class LegacyBattleConsoleTests
     {
         var step = BattleSceneMath.StageFadeStep(60);
         var fade = 0;
-        for (var frame = 0; frame < 60; frame++) fade = BattleSceneMath.AdvanceStageFade(fade, step, 1);
+        for (var frame = 0; frame < 60; frame++)
+        {
+            fade = BattleSceneMath.AdvanceStageFade(fade, step, 1);
+        }
+
         Check(step == 68 && fade == 4080, $"stage fade after 60 frames step={step} fade={fade}");
         fade = BattleSceneMath.AdvanceStageFade(fade, step, 1);
         Check(fade == 0x1000, $"stage fade clamps at 0x1000 fade={fade}");
@@ -135,7 +145,8 @@ public sealed class LegacyBattleConsoleTests
         var identity = BattleSceneMath.Ps1BoneBasis(new Vector3(0, 0, 0), new Vector3(4096, 4096, 4096));
         Check(MaxElementDelta(identity, Matrix4x4.Identity) < 0.0001f, "identity PS1 bone transform stays identity");
         var scaled = BattleSceneMath.Ps1BoneBasis(new Vector3(0x123, 0x345, 0x567), new Vector3(4096, 2048, 8192));
-        Check(MathF.Abs(scaled.M11) > 0.01f && MathF.Abs(scaled.M22) > 0.01f && MathF.Abs(scaled.M33) > 0.01f,
+        Check(
+            MathF.Abs(scaled.M11) > 0.01f && MathF.Abs(scaled.M22) > 0.01f && MathF.Abs(scaled.M33) > 0.01f,
             "PS1 ZYX transform keeps all scaled basis axes");
     }
 
@@ -149,24 +160,30 @@ public sealed class LegacyBattleConsoleTests
 
     private static void Ps1HudUsesVerticalFitAndCentered4By3Area()
     {
-        Check(BattleHudLayout.Scale == 3 && BattleHudLayout.OffsetX == 160 && BattleHudLayout.OffsetY == 0,
+        Check(
+            BattleHudLayout.Scale == 3 && BattleHudLayout.OffsetX == 160 && BattleHudLayout.OffsetY == 0,
             "the battle HUD uses the shared 3x vertical-fit map with 160px 16:9 side margins");
-        Check(BattleHudLayout.ToViewport(0, 0) == (160, 0) && BattleHudLayout.ToViewport(320, 240) == (1120, 720),
+        Check(
+            BattleHudLayout.ToViewport(0, 0) == (160, 0) && BattleHudLayout.ToViewport(320, 240) == (1120, 720),
             "the PS1 screen maps exactly to viewport bounds at 3x");
-        Check(BattleHudLayout.FitsSourceRect(11, 188, 298, 40) && !BattleHudLayout.FitsSourceRect(11, 188, 310, 40),
+        Check(
+            BattleHudLayout.FitsSourceRect(11, 188, 298, 40) && !BattleHudLayout.FitsSourceRect(11, 188, 310, 40),
             "source HUD bounds reject an element that would be clipped at the PS1 edge");
     }
 
     private static void ShotCameraStartsWithTheSourceOpeningList()
     {
         var camera = new BattleShotCamera(new SeqShotRng(0), enemyCameraCount: 3);
-        Check(camera.List == 3 && camera.Shot == 0 && camera.Substate == 10 && camera.Time == 90,
+        Check(
+            camera.List == 3 && camera.Shot == 0 && camera.Substate == 10 && camera.Time == 90,
             "shot camera starts list 3 shot 0 as the enemy view for 90 PAL frames");
         camera.StepFrames(90);
-        Check(camera.List == 3 && camera.Shot == 1 && camera.Substate == 5 && camera.Time == 90,
+        Check(
+            camera.List == 3 && camera.Shot == 1 && camera.Substate == 5 && camera.Time == 90,
             "after 90 frames shot camera enters source substate 5");
         camera.Step();
-        Check(camera.View.RotationY == 0xE2,
+        Check(
+            camera.View.RotationY == 0xE2,
             "substate 5 adds 0xE3 then spins back one PAL frame");
     }
 
@@ -174,7 +191,8 @@ public sealed class LegacyBattleConsoleTests
     {
         var camera = new BattleShotCamera(new SeqShotRng(2), enemyCameraCount: 3);
         camera.StepFrames(180);
-        Check(camera.List == 2 && camera.Shot == 0 && camera.Substate == 1 && camera.Time == 1920,
+        Check(
+            camera.List == 2 && camera.Shot == 0 && camera.Substate == 1 && camera.Time == 1920,
             "at 180 frames list 3 selects its injected third successor list 2");
     }
 
@@ -183,7 +201,11 @@ public sealed class LegacyBattleConsoleTests
         var machine = new BattleMotionMachine(KotemonMotions());
         var expected = Enumerable.Range(10, 61).Append(0x8000).ToArray();
         Check(machine.Keyframes.SequenceEqual(expected), "Kotemon motion_1_steps expands to 10..70 then the 0x8000 loop sentinel");
-        for (var i = 0; i < 60; i++) machine.Step(1);
+        for (var i = 0; i < 60; i++)
+        {
+            machine.Step(1);
+        }
+
         Check(machine.Looping && machine.Keyframe == 0, $"motion 1 resolves its sentinel back to keyframe zero actual={machine.Keyframe} last={machine.Keyframes[^1]}");
         machine.Step(1);
         Check(machine.Frame == 10 && !machine.MotionDone, "idle resumes from frame 10 after the loop");
@@ -193,9 +215,17 @@ public sealed class LegacyBattleConsoleTests
     {
         var machine = new BattleMotionMachine(KotemonMotions());
         machine.SetMotion(3, restart: true);
-        for (var i = 0; i < 11; i++) machine.Step(1);
+        for (var i = 0; i < 11; i++)
+        {
+            machine.Step(1);
+        }
+
         Check(machine.Blending && machine.ToIdle && machine.BlendTarget == 10, "attack motion enters its source blend toward idle frame 10");
-        for (var i = 0; i < 40 && !machine.MotionDone; i++) machine.Step(1);
+        for (var i = 0; i < 40 && !machine.MotionDone; i++)
+        {
+            machine.Step(1);
+        }
+
         Check(machine.MotionDone, "attack reaches its source 0xffff terminal");
         machine.Step(1);
         Check(machine.Motion == 1 && !machine.MotionDone, "a completed idling model returns to motion 1");
@@ -207,39 +237,51 @@ public sealed class LegacyBattleConsoleTests
         // so a larger key draws first and a later primitive wins inside its equal-key bucket.
         var order = RenderOrderingTable.DrawOrder([5, 9, 5, 1]);
         Check(order.SequenceEqual([1, 2, 0, 3]), $"OT draw order={string.Join(",", order)}");
-        Check(RenderOrderingTable.DepthBucketCount == 0x1000 && RenderOrderingTable.DepthShift(RenderOrderingTable.DepthBucketShift) == 2,
+        Check(
+            RenderOrderingTable.DepthBucketCount == 0x1000 && RenderOrderingTable.DepthShift(RenderOrderingTable.DepthBucketShift) == 2,
             "otShift 12 selects 0x1000 buckets and projectMesh shifts Z by two");
-        Check(RenderOrderingTable.TriangleKey(400, 800, 1200, shift: 2) == RenderOrderingTable.TriangleKey(800, 800, 800, shift: 2),
+        Check(
+            RenderOrderingTable.TriangleKey(400, 800, 1200, shift: 2) == RenderOrderingTable.TriangleKey(800, 800, 800, shift: 2),
             "average Z key is order independent");
-        Check(RenderOrderingTable.TriangleKey(4096, 8192, 12288, shift: 2) == 2047,
+        Check(
+            RenderOrderingTable.TriangleKey(4096, 8192, 12288, shift: 2) == 2047,
             "AVSZ3 uses ZSF3 0x555 rather than an imprecise integer divide");
-        Check(RenderOrderingTable.QuadKey(4096, 4096, 4096, 4096, shift: 2) == 1024,
+        Check(
+            RenderOrderingTable.QuadKey(4096, 4096, 4096, 4096, shift: 2) == 1024,
             "AVSZ4 uses ZSF4 0x400");
-        Check(RenderOrderingTable.FacesCamera(new(0, 0), new(10, 0), new(0, 10)) != RenderOrderingTable.FacesCamera(new(0, 0), new(0, 10), new(10, 0)),
+        Check(
+            RenderOrderingTable.FacesCamera(new(0, 0), new(10, 0), new(0, 10)) != RenderOrderingTable.FacesCamera(new(0, 0), new(0, 10), new(10, 0)),
             "nclip sign flips with winding");
         Check(!RenderOrderingTable.FacesCamera(new(0, 0), new(0, 0), new(0, 10)), "nclip rejects coincident screen points");
-        Check(!RenderOrderingTable.FacesCamera(new(0, 0), new(10, 0), new(0, 10), new(10, 0)),
+        Check(
+            !RenderOrderingTable.FacesCamera(new(0, 0), new(10, 0), new(0, 10), new(10, 0)),
             "nclip rejects a quad whose fourth screen point coincides");
-        Check(RenderOrderingTable.WholeQuadIndices().SequenceEqual([0, 1, 2, 2, 1, 3]),
+        Check(
+            RenderOrderingTable.WholeQuadIndices().SequenceEqual([0, 1, 2, 2, 1, 3]),
             "a source quad remains one ordered primitive and emits its two triangles only after ordering");
     }
 
     private static void DialogueProbePinsArrowBlinkFrame()
     {
-        Check(DialogueRenderer.ProbeArrowBrightnessIndex(0) == 0,
+        Check(
+            DialogueRenderer.ProbeArrowBrightnessIndex(0) == 0,
             "a deterministic dialogue capture starts at the first arrow brightness");
-        Check(DialogueRenderer.ProbeArrowBrightnessIndex(3) == 3,
+        Check(
+            DialogueRenderer.ProbeArrowBrightnessIndex(3) == 3,
             "a deterministic dialogue capture can select every arrow brightness");
-        Check(DialogueRenderer.ProbeArrowBrightnessIndex(4) == 0,
+        Check(
+            DialogueRenderer.ProbeArrowBrightnessIndex(4) == 0,
             "the deterministic dialogue arrow brightness wraps after four frames");
         Assert.Throws<ArgumentOutOfRangeException>(() => DialogueRenderer.ProbeArrowBrightnessIndex(-1));
     }
 
     private static void BattleProbePinsHudAnimationFrame()
     {
-        Check(BattleRenderer.ProbeAnimationMilliseconds(0) == 0,
+        Check(
+            BattleRenderer.ProbeAnimationMilliseconds(0) == 0,
             "a deterministic battle capture starts at the first HUD animation frame");
-        Check(BattleRenderer.ProbeAnimationMilliseconds(11) == 176,
+        Check(
+            BattleRenderer.ProbeAnimationMilliseconds(11) == 176,
             "a deterministic battle capture maps the HUD animation frame to source milliseconds");
         Assert.Throws<ArgumentOutOfRangeException>(() => BattleRenderer.ProbeAnimationMilliseconds(-1));
     }
@@ -252,7 +294,6 @@ public sealed class LegacyBattleConsoleTests
     ];
 
     // ---- DamageCalculator: adjustDamage ----
-
     private static void AdjustDamageBaseValue()
     {
         int dmg = DamageCalculator.AdjustDamage(Tech(), Stats(), Stats(), 100, new ElementBoost(0, 0), -1);
@@ -269,7 +310,8 @@ public sealed class LegacyBattleConsoleTests
 
     private static void AdjustDamageDamageCut()
     {
-        var target = Stats(); target.DamageCut = 30;
+        var target = Stats();
+        target.DamageCut = 30;
         int dmg = DamageCalculator.AdjustDamage(Tech(), Stats(), target, 100, new ElementBoost(0, 0), -1);
         Check(dmg == 70, "damage cut subtracts from each hit");
     }
@@ -277,7 +319,8 @@ public sealed class LegacyBattleConsoleTests
     private static void AdjustDamageFiveTimesCap()
     {
         var tech = Tech(element: 2, elementPower: 10);
-        var target = Stats(); target.Resist[0] = 2;
+        var target = Stats();
+        target.Resist[0] = 2;
         int dmg = DamageCalculator.AdjustDamage(tech, Stats(), target, 100, new ElementBoost(0, 0), -1);
         Check(dmg == 500, "result is capped at 5x the base value");
     }
@@ -285,7 +328,8 @@ public sealed class LegacyBattleConsoleTests
     private static void AdjustDamage9999Cap()
     {
         var tech = Tech(element: 2, elementPower: 10);
-        var target = Stats(); target.Resist[0] = 1;
+        var target = Stats();
+        target.Resist[0] = 1;
         int dmg = DamageCalculator.AdjustDamage(tech, Stats(), target, 3000, new ElementBoost(0, 0), -1);
         Check(dmg == 9999, "EU/JP caps damage at 9999");
     }
@@ -293,14 +337,16 @@ public sealed class LegacyBattleConsoleTests
     private static void AdjustDamageElementResist()
     {
         var tech = Tech(element: 2, elementPower: 5);
-        var target = Stats(); target.Resist[0] = 10;
+        var target = Stats();
+        target.Resist[0] = 10;
         int dmg = DamageCalculator.AdjustDamage(tech, Stats(), target, 100, new ElementBoost(0, 0), -1);
         Check(dmg == 200, "elementPower * 2 / resist adds to the damage");
     }
 
     private static void AdjustDamageTripleHit()
     {
-        var user = Stats(); user.TripleHit = 1;
+        var user = Stats();
+        user.TripleHit = 1;
         int dmg = DamageCalculator.AdjustDamage(Tech(), user, Stats(), 100, new ElementBoost(0, 0), -1);
         Check(dmg == 40, "a plain technique under tripleHit deals 0.4 of the damage");
     }
@@ -338,7 +384,8 @@ public sealed class LegacyBattleConsoleTests
     private static void ComputeMagicDamageResistBranches()
     {
         var user = Stats(spirit: 50);
-        var target = Stats(spirit: 50); target.Resist[0] = 200;
+        var target = Stats(spirit: 50);
+        target.Resist[0] = 200;
         int dmg = DamageCalculator.ComputeMagicDamage(Tech(power: 100, element: 2), user, target, false, 0, new ElementBoost(0, 0), -1);
         Check(dmg == 75, "magic resist 200 lands in the 100..299 branch (125 - resist/4)%");
     }
@@ -346,7 +393,8 @@ public sealed class LegacyBattleConsoleTests
     private static void GetTurnDelayDeterministic()
     {
         Check(DamageCalculator.GetTurnDelay(100, 100) == 1000, "equal speeds give a delay of 1000");
-        Check(DamageCalculator.GetTurnDelay(200, 100) < DamageCalculator.GetTurnDelay(100, 100),
+        Check(
+            DamageCalculator.GetTurnDelay(200, 100) < DamageCalculator.GetTurnDelay(100, 100),
             "a faster side gets a smaller (sooner) delay");
     }
 
@@ -359,7 +407,6 @@ public sealed class LegacyBattleConsoleTests
     }
 
     // ---- InitFighters ----
-
     private static void InitFightersLoadsHpMp()
     {
         var setup = new BattleSetup();
@@ -373,10 +420,12 @@ public sealed class LegacyBattleConsoleTests
         var state = BattleState.InitFighters(setup, digimon: 999);
 
         Check(state.Players[0]!.Id == 999, "slot 0's id is the active digimon argument");
-        Check(state.Players[0]!.Hp == 100 && state.Players[0]!.MaxHp == 200 && state.Players[0]!.Mp == 30 && state.Players[0]!.MaxMp == 40,
+        Check(
+            state.Players[0]!.Hp == 100 && state.Players[0]!.MaxHp == 200 && state.Players[0]!.Mp == 30 && state.Players[0]!.MaxMp == 40,
             "partner HP/MP are loaded from the party seed");
         Check(state.Players[1]!.Id == 2 && state.Players[2]!.Id == 3, "partner slots 1 and 2 use their seed ids");
-        Check(state.Enemies[0]!.Id == 101 && state.Enemies[0]!.Hp == 50 && state.Enemies[0]!.MaxHp == 50,
+        Check(
+            state.Enemies[0]!.Id == 101 && state.Enemies[0]!.Hp == 50 && state.Enemies[0]!.MaxHp == 50,
             "enemy HP and max HP are both the setup value");
         Check(state.Enemies[0]!.Mp == 60 && state.Enemies[0]!.MaxMp == 60, "enemy MP and max MP are both the setup value");
         Check(state.Enemies[2]!.Id == 103, "all three enemies are loaded");
@@ -404,7 +453,6 @@ public sealed class LegacyBattleConsoleTests
     }
 
     // ---- Turn loop ----
-
     private static void AttackReducesHpExactly()
     {
         var state = SimpleBattle(new BattleFixture(PlayerAttack: 50, EnemyRawDefense: 10, EnemyHp: 500));
@@ -419,10 +467,23 @@ public sealed class LegacyBattleConsoleTests
         int playerTurns = 0, enemyTurns = 0;
         for (int i = 0; i < 6; i++)
         {
-            if (state.Outcome != BattleOutcome.None) break;
-            if (state.NextActor == BattleSide.Player) { state.PlayerAttack(zero, new NoRng()); playerTurns++; }
-            else { state.EnemyAttack(zero, new NoRng()); enemyTurns++; }
+            if (state.Outcome != BattleOutcome.None)
+            {
+                break;
+            }
+
+            if (state.NextActor == BattleSide.Player)
+            {
+                state.PlayerAttack(zero, new NoRng());
+                playerTurns++;
+            }
+            else
+            {
+                state.EnemyAttack(zero, new NoRng());
+                enemyTurns++;
+            }
         }
+
         Check(playerTurns > enemyTurns, "the faster player acts more often over six turns");
         Check(playerTurns + enemyTurns == 6, "the loop resolves six actions");
     }
@@ -555,7 +616,6 @@ public sealed class LegacyBattleConsoleTests
     }
 
     // ---- BattleEnemyAi (enemy_turn.c / counterattack.c) ----
-
     private static void EnemyConditionAlwaysAndChance()
     {
         Check(BattleEnemyAi.TestEnemyCondition(0, 0, Ctx(Enemy()), new NoRng()), "condition 0 always holds");
@@ -624,9 +684,11 @@ public sealed class LegacyBattleConsoleTests
 
     private static void EnemyConditionChargeBoostsTurns()
     {
-        var charged = Enemy(); charged.Charge = 1;
+        var charged = Enemy();
+        charged.Charge = 1;
         Check(BattleEnemyAi.TestEnemyCondition(14, 0, Ctx(charged), new NoRng()), "condition 14 holds when the enemy has charge");
-        var lowered = Enemy(); lowered.Boosts[1] = -1;
+        var lowered = Enemy();
+        lowered.Boosts[1] = -1;
         Check(BattleEnemyAi.TestEnemyCondition(16, 0, Ctx(lowered), new NoRng()), "condition 16 holds when the enemy's defense boost is lowered");
         Check(!BattleEnemyAi.TestEnemyCondition(15, 0, Ctx(Enemy()), new NoRng()), "condition 15 fails with no lowered attack boost");
         Check(BattleEnemyAi.TestEnemyCondition(18, 2, Ctx(Enemy(turns: 4)), new NoRng()), "condition 18 holds when the turn count is a multiple of the argument");
@@ -730,22 +792,27 @@ public sealed class LegacyBattleConsoleTests
         var slot1 = new BattleFighter { Id = 103, Hp = 1 };
         var dead = new BattleFighter { Id = 104, Hp = 0 };
         var row = new BattleFighter?[] { slot0, slot1, dead };
-        Check(BattleEnemyAi.ResolveSwitch(new EnemyDecision(EnemyActionKind.SwitchTo0, 0, 0), row, activeEnemy: 1, new NoRng()) == 0,
+        Check(
+            BattleEnemyAi.ResolveSwitch(new EnemyDecision(EnemyActionKind.SwitchTo0, 0, 0), row, activeEnemy: 1, new NoRng()) == 0,
             "a fixed switch to a living enemy resolves to that slot");
-        Check(BattleEnemyAi.ResolveSwitch(new EnemyDecision(EnemyActionKind.SwitchTo2, 0, 2), row, activeEnemy: 0, new NoRng()) == -1,
+        Check(
+            BattleEnemyAi.ResolveSwitch(new EnemyDecision(EnemyActionKind.SwitchTo2, 0, 2), row, activeEnemy: 0, new NoRng()) == -1,
             "a fixed switch to a dead enemy resolves to no switch");
-        Check(BattleEnemyAi.ResolveSwitch(new EnemyDecision(EnemyActionKind.SwitchTo0, 0, 0), row, activeEnemy: 0, new NoRng()) == -1,
+        Check(
+            BattleEnemyAi.ResolveSwitch(new EnemyDecision(EnemyActionKind.SwitchTo0, 0, 0), row, activeEnemy: 0, new NoRng()) == -1,
             "a switch to the already-active slot resolves to no switch");
-        Check(BattleEnemyAi.ResolveSwitch(new EnemyDecision(EnemyActionKind.SwitchToAny, 0, -1), row, activeEnemy: 0, new NoRng()) == 1,
+        Check(
+            BattleEnemyAi.ResolveSwitch(new EnemyDecision(EnemyActionKind.SwitchToAny, 0, -1), row, activeEnemy: 0, new NoRng()) == 1,
             "a switch-to-any with one other living enemy picks that slot");
-        Check(BattleEnemyAi.ResolveSwitch(new EnemyDecision(EnemyActionKind.SwitchToAny, 0, -1), row, activeEnemy: 2, new NoRng()) == 0,
+        Check(
+            BattleEnemyAi.ResolveSwitch(new EnemyDecision(EnemyActionKind.SwitchToAny, 0, -1), row, activeEnemy: 2, new NoRng()) == 0,
             "a switch-to-any with two living enemies picks the first on a roll of 0");
-        Check(BattleEnemyAi.ResolveSwitch(new EnemyDecision(EnemyActionKind.SwitchToAny, 0, -1), [slot0], activeEnemy: 0, new NoRng()) == -1,
+        Check(
+            BattleEnemyAi.ResolveSwitch(new EnemyDecision(EnemyActionKind.SwitchToAny, 0, -1), [slot0], activeEnemy: 0, new NoRng()) == -1,
             "a switch-to-any with no other living enemy resolves to no switch");
     }
 
     // ---- Fixtures ----
-
     private static BattleState SimpleBattle(BattleFixture? fixture = null)
     {
         var values = fixture ?? new BattleFixture();
@@ -779,8 +846,13 @@ public sealed class LegacyBattleConsoleTests
         return BattleState.InitFighters(setup, digimon: 999);
     }
 
-    private static BattleStats Stats(int attack = 0, int defense = 0, int spirit = 0, int wisdom = 0,
-        int speed = 0, int family = 0)
+    private static BattleStats Stats(
+        int attack = 0,
+        int defense = 0,
+        int spirit = 0,
+        int wisdom = 0,
+        int speed = 0,
+        int family = 0)
     {
         var s = new BattleStats();
         s.Stats[BattleStat.Attack] = attack;
@@ -839,8 +911,12 @@ public sealed class LegacyBattleConsoleTests
         Turns = turns,
     };
 
-    private static EnemyAiContext Ctx(BattleFighter enemy, BattleFighter? player = null,
-        BattleFighter?[]? enemies = null, int activeEnemy = 0, IReadOnlyCollection<int>? starters = null) => new()
+    private static EnemyAiContext Ctx(
+        BattleFighter enemy,
+        BattleFighter? player = null,
+        BattleFighter?[]? enemies = null,
+        int activeEnemy = 0,
+        IReadOnlyCollection<int>? starters = null) => new()
         {
             Enemy = enemy,
             ActivePlayer = player,

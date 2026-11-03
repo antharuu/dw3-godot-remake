@@ -19,7 +19,9 @@ public sealed class TalkBoxFrameDecoderTests
             Span<byte> record = table.AsSpan(layout * TalkBoxFrameDecoder.LayoutRecordBytes, TalkBoxFrameDecoder.LayoutRecordBytes);
             BinaryPrimitives.WriteInt32LittleEndian(record, 10 + layout);
             for (int field = 0; field < 14; field++)
-                BinaryPrimitives.WriteInt16LittleEndian(record[(4 + field * 2)..], (short)(layout * 100 - field));
+            {
+                BinaryPrimitives.WriteInt16LittleEndian(record[(4 + (field * 2))..], (short)((layout * 100) - field));
+            }
         }
 
         IReadOnlyList<TalkBoxLayoutRecord> layouts = TalkBoxFrameDecoder.ReadLayouts(table);
@@ -140,8 +142,12 @@ public sealed class TalkBoxFrameDecoderTests
         {
             int index = v >= 60 ? 14 : 11;
             ushort packed = (ushort)(index | (index << 4) | (index << 8) | (index << 12));
-            for (int word = 0xBC / 4; word <= 0xC7 / 4; word++) rows[v][word] = packed;
+            for (int word = 0xBC / 4; word <= 0xC7 / 4; word++)
+            {
+                rows[v][word] = packed;
+            }
         }
+
         return new HudTexturePage(rows);
     }
 
@@ -160,7 +166,11 @@ public sealed class TalkBoxFrameDecoderTests
     private static ushort[][] EmptyRows()
     {
         var rows = new ushort[HudTexturePage.PageHeight][];
-        for (int row = 0; row < rows.Length; row++) rows[row] = new ushort[HudTexturePage.PageWidthWords];
+        for (int row = 0; row < rows.Length; row++)
+        {
+            rows[row] = new ushort[HudTexturePage.PageWidthWords];
+        }
+
         return rows;
     }
 
@@ -168,27 +178,31 @@ public sealed class TalkBoxFrameDecoderTests
     // one 14-byte part, the 0xFF-terminated id list, and one frame record per id.
     private static byte[] BuildSheet(int[] frameIds, int frameCount, short frameRow, short abr)
     {
-        int header = 8 + 4 * frameIds.Length;
+        int header = 8 + (4 * frameIds.Length);
         int partsOffset = header;
         int idsOffset = partsOffset + 14;
         int frameOffset = idsOffset + frameIds.Length + 1;
         frameOffset += frameOffset % 2;
-        int frameBytes = 6 + 6 * frameCount;
-        byte[] body = new byte[frameOffset + frameBytes * frameIds.Length];
+        int frameBytes = 6 + (6 * frameCount);
+        byte[] body = new byte[frameOffset + (frameBytes * frameIds.Length)];
         BinaryPrimitives.WriteUInt32LittleEndian(body, (uint)partsOffset);
         BinaryPrimitives.WriteUInt32LittleEndian(body.AsSpan(4), (uint)idsOffset);
         short[] part = [0, 0, 4, 2, 0, 10, 0];
         for (int field = 0; field < part.Length; field++)
-            BinaryPrimitives.WriteInt16LittleEndian(body.AsSpan(partsOffset + field * 2), part[field]);
+        {
+            BinaryPrimitives.WriteInt16LittleEndian(body.AsSpan(partsOffset + (field * 2)), part[field]);
+        }
+
         for (int index = 0; index < frameIds.Length; index++)
         {
             body[idsOffset + index] = (byte)frameIds[index];
-            int at = frameOffset + index * frameBytes;
-            BinaryPrimitives.WriteUInt32LittleEndian(body.AsSpan(8 + index * 4), (uint)at);
+            int at = frameOffset + (index * frameBytes);
+            BinaryPrimitives.WriteUInt32LittleEndian(body.AsSpan(8 + (index * 4)), (uint)at);
             BinaryPrimitives.WriteInt16LittleEndian(body.AsSpan(at), (short)frameCount);
             BinaryPrimitives.WriteInt16LittleEndian(body.AsSpan(at + 2), frameRow);
             BinaryPrimitives.WriteInt16LittleEndian(body.AsSpan(at + 4), abr);
         }
+
         body[idsOffset + frameIds.Length] = 0xFF;
         byte[] sheet = new byte[4 + body.Length];
         BinaryPrimitives.WriteUInt32LittleEndian(sheet, 4);

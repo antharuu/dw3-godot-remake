@@ -20,17 +20,17 @@ public static class BattleHudLayout
     public const int Scale = 3;
 
     /// <summary>Left inset of the centered source rectangle, in viewport pixels.</summary>
-    public const int OffsetX = (ViewportWidth - SourceWidth * Scale) / 2;
+    public const int OffsetX = (ViewportWidth - (SourceWidth * Scale)) / 2;
 
     /// <summary>Top inset of the centered source rectangle, in viewport pixels.</summary>
-    public const int OffsetY = (ViewportHeight - SourceHeight * Scale) / 2;
+    public const int OffsetY = (ViewportHeight - (SourceHeight * Scale)) / 2;
 
     /// <summary>Maps an authored HUD position into the centered, integer-scaled battle viewport.</summary>
     /// <param name="sourceX">Horizontal source coordinate, in source pixels.</param>
     /// <param name="sourceY">Vertical source coordinate, in source pixels.</param>
     /// <returns>The physical viewport coordinate occupied by the source pixel.</returns>
     public static (int X, int Y) ToViewport(int sourceX, int sourceY) =>
-        (sourceX * Scale + OffsetX, sourceY * Scale + OffsetY);
+        ((sourceX * Scale) + OffsetX, (sourceY * Scale) + OffsetY);
 
     /// <summary>Expands an authored HUD size without changing its source-pixel aspect ratio.</summary>
     /// <param name="sourceWidth">Width in source pixels.</param>

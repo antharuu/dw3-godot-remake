@@ -32,7 +32,11 @@ public sealed class BattleDiagnosticProbeRunner(IDiagnosticProbeHost host)
     /// <returns><see langword="true"/> when the probe was scheduled.</returns>
     private bool TrySchedule(bool enabled, string methodName)
     {
-        if (!enabled) return false;
+        if (!enabled)
+        {
+            return false;
+        }
+
         _host.ScheduleProbe(methodName, ownsInput: true);
         return true;
     }

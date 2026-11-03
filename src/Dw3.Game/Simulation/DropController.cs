@@ -59,6 +59,7 @@ public sealed class DropController
         _climbSide = dir != 7 ? 0 : 1;
         _wallHeight = height << 8;
         _climbHeight = _wallHeight;
+
         // First step of the drop, applied on entry to avoid rendering one pre-drop frame.
         state.Position = new System.Numerics.Vector2(
             state.Position.X + (_climbSide != 0 ? SideShiftPixels : -SideShiftPixels),

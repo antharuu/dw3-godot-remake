@@ -28,6 +28,7 @@ public sealed class BattleShotCameraVectorGenerator
     {
         private readonly Random _random;
         private readonly bool _extreme;
+
         public List<int[]> Issued { get; } = [];
 
         public ViewSource(Random random, bool extreme)
@@ -39,7 +40,11 @@ public sealed class BattleShotCameraVectorGenerator
         public int[] Next()
         {
             var v = new int[14];
-            for (var i = 0; i < 14; i++) v[i] = Field(i);
+            for (var i = 0; i < 14; i++)
+            {
+                v[i] = Field(i);
+            }
+
             Issued.Add(v);
             return (int[])v.Clone();
         }
@@ -51,6 +56,7 @@ public sealed class BattleShotCameraVectorGenerator
                 int[] edges = [int.MaxValue, int.MinValue, int.MaxValue - 1, int.MinValue + 1, int.MaxValue - 0x13FF, int.MinValue + 0x13FF, -1, 0];
                 return edges[_random.Next(edges.Length)];
             }
+
             return i switch
             {
                 13 => _random.Next(1, 1024),                 // projection
@@ -64,10 +70,15 @@ public sealed class BattleShotCameraVectorGenerator
     private sealed class Builder
     {
         private readonly Random _random;
+
         public BattleShotCameraVectorHarness.Session Session { get; }
+
         public int[] Rng { get; }
+
         public ViewSource? Enemy { get; }
+
         public ViewSource? Fighter { get; }
+
         public string Family { get; }
 
         public Builder(Random random, string family, int[] rng, bool neutral, bool extreme)
@@ -80,7 +91,10 @@ public sealed class BattleShotCameraVectorGenerator
                 Enemy = new ViewSource(new Random(random.Next()), extreme);
                 Fighter = new ViewSource(new Random(random.Next()), extreme);
             }
-            Session = new BattleShotCameraVectorHarness.Session(rng, Enemy is null ? null : Enemy.Next,
+
+            Session = new BattleShotCameraVectorHarness.Session(
+                rng,
+                Enemy is null ? null : Enemy.Next,
                 Fighter is null ? null : Fighter.Next);
         }
 
@@ -90,9 +104,18 @@ public sealed class BattleShotCameraVectorGenerator
         public void WalkBoundary(int before, int after)
         {
             var bulk = Session.Camera.Time - before;
-            if (bulk > 0 && !Op($"s:{bulk}")) return;
+            if (bulk > 0 && !Op($"s:{bulk}"))
+            {
+                return;
+            }
+
             for (var i = 0; i < before + after; i++)
-                if (!Op("1")) return;
+            {
+                if (!Op("1"))
+                {
+                    return;
+                }
+            }
         }
 
         public JsonObject ToJson(int id)
@@ -120,6 +143,7 @@ public sealed class BattleShotCameraVectorGenerator
     }
 
     private static JsonArray Arr(int[] a) => [.. a.Select(v => (JsonNode)v).ToArray()];
+
     private static JsonArray Rows(IEnumerable<int[]> rows) => [.. rows.Select(r => (JsonNode)Arr(r)).ToArray()];
 
     private static int[] RandomRng(Random random, int maxLength = 5)
@@ -127,14 +151,20 @@ public sealed class BattleShotCameraVectorGenerator
         var n = random.Next(1, maxLength + 1);
         var v = new int[n];
         for (var i = 0; i < n; i++)
+        {
             v[i] = random.Next(4) == 0 ? random.Next(int.MinValue + 1, int.MaxValue) : RngPool[random.Next(RngPool.Length)];
+        }
+
         return v;
     }
 
     [Fact]
     public void GenerateBattleShotCameraVectors()
     {
-        if (Environment.GetEnvironmentVariable("GENERATE_VECTORS") != "1") return;
+        if (Environment.GetEnvironmentVariable("GENERATE_VECTORS") != "1")
+        {
+            return;
+        }
 
         var random = new Random(Seed);
         var cases = new List<JsonObject>();
@@ -145,7 +175,11 @@ public sealed class BattleShotCameraVectorGenerator
         {
             var b = new Builder(random, "boundary-walk", RandomRng(random), neutral: n % 10 == 0, extreme: false);
             var shots = random.Next(3, 8);
-            for (var s = 0; s < shots && !b.Session.Failed; s++) b.WalkBoundary(2, 2);
+            for (var s = 0; s < shots && !b.Session.Failed; s++)
+            {
+                b.WalkBoundary(2, 2);
+            }
+
             Add(b);
         }
 
@@ -154,10 +188,22 @@ public sealed class BattleShotCameraVectorGenerator
         {
             var b = new Builder(random, "per-frame", RandomRng(random), neutral: n % 8 == 0, extreme: false);
             var skipShots = random.Next(0, 9);
-            for (var s = 0; s < skipShots && !b.Session.Failed; s++) b.Op($"s:{b.Session.Camera.Time}");
+            for (var s = 0; s < skipShots && !b.Session.Failed; s++)
+            {
+                b.Op($"s:{b.Session.Camera.Time}");
+            }
+
             var offset = random.Next(0, 3) == 0 ? 0 : b.RandomInt(0, Math.Max(1, b.Session.Camera.Time - 12));
-            if (offset > 0) b.Op($"s:{offset}");
-            for (var i = 0; i < 12; i++) b.Op("1");
+            if (offset > 0)
+            {
+                b.Op($"s:{offset}");
+            }
+
+            for (var i = 0; i < 12; i++)
+            {
+                b.Op("1");
+            }
+
             Add(b);
         }
 
@@ -180,6 +226,7 @@ public sealed class BattleShotCameraVectorGenerator
                 };
                 b.Op(op);
             }
+
             Add(b);
         }
 
@@ -191,8 +238,12 @@ public sealed class BattleShotCameraVectorGenerator
             for (var s = 0; s < shots && !b.Session.Failed; s++)
             {
                 b.WalkBoundary(1, 2);
-                if (random.Next(4) == 0) b.Op("x");
+                if (random.Next(4) == 0)
+                {
+                    b.Op("x");
+                }
             }
+
             Add(b);
         }
 
@@ -209,8 +260,13 @@ public sealed class BattleShotCameraVectorGenerator
             foreach (var neutral in new[] { true, false })
             {
                 var b = new Builder(random, "rng-edge", rng, neutral, extreme: false);
+
                 // Opening list (two shots), then whole lists' worth of shots.
-                for (var s = 0; s < 9 && !b.Session.Failed; s++) b.Op($"s:{b.Session.Camera.Time}");
+                for (var s = 0; s < 9 && !b.Session.Failed; s++)
+                {
+                    b.Op($"s:{b.Session.Camera.Time}");
+                }
+
                 Add(b);
             }
         }
@@ -232,6 +288,7 @@ public sealed class BattleShotCameraVectorGenerator
             sb.Append("    ").Append(cases[i].ToJsonString());
             sb.Append(i + 1 < cases.Count ? ",\n" : "\n");
         }
+
         sb.Append("  ]\n}\n");
 
         var outPath = Environment.GetEnvironmentVariable("GENERATE_VECTORS_OUT") is { Length: > 0 } p

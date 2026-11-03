@@ -44,7 +44,7 @@ public static class StageSlotLocator
         {
             uint first = BinaryPrimitives.ReadUInt32LittleEndian(overlay.Slice(offset, sizeof(uint)));
             uint second = BinaryPrimitives.ReadUInt32LittleEndian(overlay.Slice(offset + sizeof(uint), sizeof(uint)));
-            uint third = BinaryPrimitives.ReadUInt32LittleEndian(overlay.Slice(offset + 2 * sizeof(uint), sizeof(uint)));
+            uint third = BinaryPrimitives.ReadUInt32LittleEndian(overlay.Slice(offset + (2 * sizeof(uint)), sizeof(uint)));
             if (!TryReadOverlayPointer(first, second, third, overlay.Length, out int tableOffset))
             {
                 continue;

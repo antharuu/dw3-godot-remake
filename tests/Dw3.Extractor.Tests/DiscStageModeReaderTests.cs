@@ -111,6 +111,7 @@ public sealed class DiscStageModeReaderTests
             BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(off + 4, 4), list[i].overlayIndex);
             BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(off + 8, 4), list[i].funcPtr);
         }
+
         return data;
     }
 }

@@ -33,7 +33,7 @@ public static class ProgressConditionDecoder
         int specialConditionsOffset,
         int specialConditionsLimit)
     {
-        if (progressRangesOffset < 0 || progressRangeCount < 0 || (long)progressRangesOffset + progressRangeCount * 2L > executable.Length)
+        if (progressRangesOffset < 0 || progressRangeCount < 0 || (long)progressRangesOffset + (progressRangeCount * 2L) > executable.Length)
         {
             throw new FormatException("progress-range table is outside its disc member.");
         }
@@ -46,7 +46,7 @@ public static class ProgressConditionDecoder
         var ranges = new NpcProgressRange[progressRangeCount];
         for (int index = 0; index < ranges.Length; index++)
         {
-            ranges[index] = new NpcProgressRange(executable[progressRangesOffset + index * 2], executable[progressRangesOffset + index * 2 + 1]);
+            ranges[index] = new NpcProgressRange(executable[progressRangesOffset + (index * 2)], executable[progressRangesOffset + (index * 2) + 1]);
         }
 
         var special = new Dictionary<int, int>();

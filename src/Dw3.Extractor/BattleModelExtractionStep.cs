@@ -48,11 +48,16 @@ internal static class BattleModelExtractionStep
 
             var fighters = new List<BattleModelExtraction>(table.Entries.Count);
             foreach (FighterModelEntry entry in table.Entries)
+            {
                 fighters.Add(ExtractFighter(table, entry, files, error));
+            }
 
-            new DataPackWriter(outputDirectory).Write(new DataPackMetadata(
+            new DataPackWriter(outputDirectory).Write(
+                new DataPackMetadata(
                 typeof(BattleModelExtractionStep).Assembly.GetName().Version?.ToString(3) ?? "0.1.0",
-                edition.BinSha1, edition.Label, DateTimeOffset.UtcNow),
+                edition.BinSha1,
+                edition.Label,
+                DateTimeOffset.UtcNow),
                 context => BattleModelDomainWriter.Write(context, fighters, EditionLabel));
             int failed = fighters.Count(fighter => !fighter.Outcome.IsDecoded);
             output.WriteLine($"{{\"event\":\"domain-complete\",\"domain\":\"{Domain}\",\"fighters\":{fighters.Count},\"failed\":{failed}}}");

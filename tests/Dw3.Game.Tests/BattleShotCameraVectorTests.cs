@@ -26,14 +26,23 @@ public sealed class BattleShotCameraVectorTests
     {
         var cases = LoadCases();
         Assert.True(cases.Count >= 300, $"Expected at least 300 vectors, got {cases.Count}");
+
         // Every reachable behaviour and both exception-free and failing paths are covered.
         var substates = new HashSet<int>();
         var failures = 0;
         foreach (var c in cases)
         {
-            foreach (var s in c!["snapshots"]!.AsArray()) substates.Add(s![3]!.GetValue<int>());
-            if (c["exception"] is not null) failures++;
+            foreach (var s in c!["snapshots"]!.AsArray())
+            {
+                substates.Add(s![3]!.GetValue<int>());
+            }
+
+            if (c["exception"] is not null)
+            {
+                failures++;
+            }
         }
+
         Assert.Equal([1, 3, 4, 5, 6, 7, 9, 10], [.. substates.OrderBy(v => v)]);
         Assert.True(failures > 0, "expected at least one failing-RNG scenario");
     }
@@ -54,8 +63,11 @@ public sealed class BattleShotCameraVectorTests
                 errors.Add($"[{id}] replay threw {ex.GetType().Name}: {ex.Message}");
             }
         }
+
         if (errors.Count > 0)
+        {
             Assert.Fail($"{errors.Count} mismatch(es):\n" + string.Join("\n", errors.Take(50)));
+        }
     }
 
     private static void Verify(JsonNode c, int id, List<string> errors)
@@ -84,11 +96,14 @@ public sealed class BattleShotCameraVectorTests
             errors.Add($"[{id}] snapshot count: got {r.Snapshots.Count} expected {snapshots.Count}");
             return;
         }
+
         for (var i = 0; i < snapshots.Count; i++)
         {
             var expected = BattleShotCameraVectorHarness.Ints(snapshots[i]);
             if (!expected.SequenceEqual(r.Snapshots[i]))
+            {
                 errors.Add($"[{id}] snapshot {i} after op '{(i == 0 ? "ctor" : ops[i - 1])}': got [{string.Join(",", r.Snapshots[i])}] expected [{string.Join(",", expected)}]");
+            }
         }
 
         var calls = c["calls"]!.AsArray();
@@ -96,10 +111,15 @@ public sealed class BattleShotCameraVectorTests
         {
             var expected = calls[i]!.AsArray().Select(x => x!.GetValue<string>()).ToArray();
             if (!expected.SequenceEqual(r.Calls[i]))
+            {
                 errors.Add($"[{id}] calls {i}: got [{string.Join(",", r.Calls[i])}] expected [{string.Join(",", expected)}]");
+            }
         }
+
         if (calls.Count != r.Calls.Count)
+        {
             errors.Add($"[{id}] call-group count: got {r.Calls.Count} expected {calls.Count}");
+        }
     }
 
     private static Func<int[]> Replay(JsonArray views, string name)
@@ -108,7 +128,10 @@ public sealed class BattleShotCameraVectorTests
         return () =>
         {
             if (index >= views.Count)
+            {
                 throw new InvalidOperationException($"{name} provider asked for view #{index + 1}, only {views.Count} recorded");
+            }
+
             return BattleShotCameraVectorHarness.Ints(views[index++]);
         };
     }

@@ -246,6 +246,7 @@ public sealed class BattleModelLayer : IDisposable
                 vertices.Add(polygon.Positions[corner]);
                 uvs.Add(polygon.Uvs[corner]);
                 uv2.Add(new Godot.Vector2(polygon.Page, polygon.Alpha));
+
                 // Texture2DArray layers are linear uploads whereas the prior ImageTexture path
                 // is source-colour decoded. Keep the source 2x PS1 modulation in the shader and
                 // compensate the upload-domain delta here, verified against the command-menu oracle.

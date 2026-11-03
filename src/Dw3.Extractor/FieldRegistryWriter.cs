@@ -20,7 +20,10 @@ public static class FieldRegistryWriter
         foreach (ExtractedFieldStage stage in stages)
         {
             if (!byMode.TryAdd(stage.Mode, stage.StageId))
+            {
                 throw new InvalidDataException($"Field mode 0x{stage.Mode:X4} is assigned to more than one stage.");
+            }
+
             InsertStage(context, stage);
         }
 
@@ -30,8 +33,15 @@ public static class FieldRegistryWriter
             {
                 StageSlot slot = stage.Slots[slotIndex];
                 if (slot.Type != 1)
+                {
                     continue;
-                InsertWarp(context, stage.StageId, slotIndex, slot,
+                }
+
+                InsertWarp(
+                    context,
+                    stage.StageId,
+                    slotIndex,
+                    slot,
                     byMode.TryGetValue(slot.Argument, out int destination) ? destination : null);
             }
         }

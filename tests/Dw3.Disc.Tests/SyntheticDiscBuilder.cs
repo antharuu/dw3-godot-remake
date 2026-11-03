@@ -38,14 +38,22 @@ internal static class SyntheticDiscBuilder
         // ── Directory records ──────────────────────────────────────────────
 
         // Root directory.  Pass the correct sizes after we know them.
-        byte[] subDir = MakeDirectory(SubDirLba, RootDirLba, 0,
+        byte[] subDir = MakeDirectory(
+            SubDirLba,
+            RootDirLba,
+            0,
             [MakeFileRecord("DATA.BIN;1", DataLba, DataContent.Length)]);
+
         // Now we know subDir.Length, so build root with correct subdir data length.
-        byte[] rootDir = MakeDirectory(RootDirLba, RootDirLba, 0,
+        byte[] rootDir = MakeDirectory(
+            RootDirLba,
+            RootDirLba,
+            0,
             [
                 MakeFileRecord("HELLO.TXT;1", HelloLba, HelloContent.Length),
                 MakeDirRecord("SUBDIR",       SubDirLba, subDir.Length),
             ]);
+
         // Patch dot-entry sizes now that we know the actual lengths.
         PatchU32(rootDir, 10, rootDir.Length);
         PatchU32(subDir, 10, subDir.Length);
@@ -73,7 +81,10 @@ internal static class SyntheticDiscBuilder
     /// dotSize / dotDotSize are set to <paramref name="ownSize"/> initially
     /// as initial values; callers patch offset 10 afterwards when real sizes are known.
     /// </summary>
-    private static byte[] MakeDirectory(int ownLba, int parentLba, int ownSize,
+    private static byte[] MakeDirectory(
+        int ownLba,
+        int parentLba,
+        int ownSize,
         IReadOnlyList<byte[]> extra)
     {
         byte[] dot = MakeSpecialDirRec(0x00, ownLba, ownSize);
@@ -134,7 +145,6 @@ internal static class SyntheticDiscBuilder
     }
 
     // ── Path table ─────────────────────────────────────────────────────────
-
     private static byte[] MakePathTable()
     {
         var buf = new List<byte>
@@ -160,7 +170,6 @@ internal static class SyntheticDiscBuilder
     }
 
     // ── PVD ────────────────────────────────────────────────────────────────
-
     private static byte[] MakePvd(int pathTabLba, int pathTabSize, int rootDirLba, int rootDirSize)
     {
         byte[] pvd = new byte[UDB];
@@ -171,12 +180,16 @@ internal static class SyntheticDiscBuilder
         pvd[4] = (byte)'0';
         pvd[5] = (byte)'1';
         pvd[6] = 1;
+
         // Volume Identifier at offset 40, space-padded to 32 bytes.
         Encoding.ASCII.GetBytes("SYNTH".PadRight(32)).CopyTo(pvd, 40);
+
         // Path table size (LE u32) at offset 132.
         LE32(pathTabSize).CopyTo(pvd, 132);
+
         // L-type path table LBA (LE u32) at offset 140.
         LE32(pathTabLba).CopyTo(pvd, 140);
+
         // Root directory record at offset 156 (the 34-byte dot record for the root dir).
         byte[] rootRec = MakeSpecialDirRec(0x00, rootDirLba, rootDirSize);
         rootRec.CopyTo(pvd, 156);
@@ -184,16 +197,14 @@ internal static class SyntheticDiscBuilder
     }
 
     // ── Sector write ───────────────────────────────────────────────────────
-
     private static void Write(byte[] bin, int lba, byte[] userData)
     {
-        int off = lba * Sec + UDO;
+        int off = (lba * Sec) + UDO;
         int copy = Math.Min(userData.Length, UDB);
         Array.Copy(userData, 0, bin, off, copy);
     }
 
     // ── Byte helpers ───────────────────────────────────────────────────────
-
     private static void PatchU32(byte[] buf, int offset, int value) =>
         LE32(value).CopyTo(buf, offset);
 

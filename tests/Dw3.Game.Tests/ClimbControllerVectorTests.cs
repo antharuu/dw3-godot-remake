@@ -22,7 +22,6 @@ public sealed class ClimbControllerVectorTests
 
     // ------------------------------------------------------------------ standard ClimbData
     // Must match the data used in the generator exactly.
-
     private static ClimbData StandardData()
     {
         var sequences = new Dictionary<int, ClimbSequence>
@@ -39,7 +38,6 @@ public sealed class ClimbControllerVectorTests
     }
 
     // ------------------------------------------------------------------ helpers
-
     private static InputState MakeInput(string label)
     {
         var inp = new InputState();
@@ -50,6 +48,7 @@ public sealed class ClimbControllerVectorTests
             case "None": inp.SetDirections(left: false, right: false, up: false, down: false); break;
             default: throw new ArgumentException($"Unknown input label: {label}");
         }
+
         return inp;
     }
 
@@ -66,31 +65,33 @@ public sealed class ClimbControllerVectorTests
                 r["offsetX"]!.GetValue<int>(),
                 r["offsetY"]!.GetValue<int>()));
         }
+
         var seq = new ClimbSequence(set, loops, recs);
         var seqDict = new Dictionary<int, ClimbSequence> { [set] = seq };
         return new ClimbData(seqDict);
     }
 
     // ------------------------------------------------------------------ count check
-
     [Fact]
     public void VectorCount_AtLeast300()
     {
-        Assert.True(File.Exists(VectorsPath),
+        Assert.True(
+            File.Exists(VectorsPath),
             $"Vectors file not found: {VectorsPath}");
 
         var doc = JsonNode.Parse(File.ReadAllText(VectorsPath))!;
         int count = doc["cases"]!.AsArray().Count;
-        Assert.True(count >= 300,
+        Assert.True(
+            count >= 300,
             $"Expected at least 300 vectors, got {count}");
     }
 
     // ------------------------------------------------------------------ main replay
-
     [Fact]
     public void AllVectorsMatchCurrentImplementation()
     {
-        Assert.True(File.Exists(VectorsPath),
+        Assert.True(
+            File.Exists(VectorsPath),
             $"Vectors file not found: {VectorsPath}");
 
         var doc = JsonNode.Parse(File.ReadAllText(VectorsPath))!;
@@ -126,11 +127,12 @@ public sealed class ClimbControllerVectorTests
         }
 
         if (errors.Count > 0)
+        {
             Assert.Fail($"{errors.Count} vector(s) failed:\n" + string.Join("\n", errors));
+        }
     }
 
     // ------------------------------------------------------------------ AnimSample verifier
-
     private static void VerifyAnimSample(JsonNode c, int id, List<string> errors)
     {
         var data = AnimSampleDataFromCase(c);
@@ -143,13 +145,23 @@ public sealed class ClimbControllerVectorTests
         int expOffsetX = c["expOffsetX"]!.GetValue<int>();
         int expOffsetY = c["expOffsetY"]!.GetValue<int>();
 
-        if (result.Frame != expFrame) errors.Add($"[{id}] AnimSample set={set} ticks={ticks}: Frame got {result.Frame} expected {expFrame}");
-        if (result.OffsetX != expOffsetX) errors.Add($"[{id}] AnimSample set={set} ticks={ticks}: OffsetX got {result.OffsetX} expected {expOffsetX}");
-        if (result.OffsetY != expOffsetY) errors.Add($"[{id}] AnimSample set={set} ticks={ticks}: OffsetY got {result.OffsetY} expected {expOffsetY}");
+        if (result.Frame != expFrame)
+        {
+            errors.Add($"[{id}] AnimSample set={set} ticks={ticks}: Frame got {result.Frame} expected {expFrame}");
+        }
+
+        if (result.OffsetX != expOffsetX)
+        {
+            errors.Add($"[{id}] AnimSample set={set} ticks={ticks}: OffsetX got {result.OffsetX} expected {expOffsetX}");
+        }
+
+        if (result.OffsetY != expOffsetY)
+        {
+            errors.Add($"[{id}] AnimSample set={set} ticks={ticks}: OffsetY got {result.OffsetY} expected {expOffsetY}");
+        }
     }
 
     // ------------------------------------------------------------------ ClimbSequence verifier
-
     private static void VerifyClimbSequence(JsonNode c, int id, List<string> errors)
     {
         string startMethod = c["startMethod"]!.GetValue<string>();
@@ -164,9 +176,13 @@ public sealed class ClimbControllerVectorTests
         ctrl.SetData(StandardData());
 
         if (startMethod == "Up")
+        {
             ctrl.StartClimbUp(state, dir, (int)x, (int)y, height);
+        }
         else if (startMethod == "Down")
+        {
             ctrl.StartClimbDown(state, dir, (int)x, (int)y, height);
+        }
         else
         {
             errors.Add($"[{id}] ClimbSequence unknown startMethod '{startMethod}'");
@@ -175,7 +191,11 @@ public sealed class ClimbControllerVectorTests
 
         foreach (var inp in inputArr)
         {
-            if (!state.ClimbActive) break;  // stop when the climb has ended
+            if (!state.ClimbActive)
+            {
+                break;  // stop when the climb has ended
+            }
+
             ctrl.Tick(state, MakeInput(inp!.GetValue<string>()));
         }
 
@@ -195,18 +215,69 @@ public sealed class ClimbControllerVectorTests
 
         string tag = $"[{id}] ClimbSequence start={startMethod} dir={dir} h={height}";
 
-        if (state.ClimbActive != expClimbActive) errors.Add($"{tag}: ClimbActive got {state.ClimbActive} expected {expClimbActive}");
-        if (state.ClimbHeight != expClimbHeight) errors.Add($"{tag}: ClimbHeight got {state.ClimbHeight} expected {expClimbHeight}");
-        if (state.ClimbSide != expClimbSide) errors.Add($"{tag}: ClimbSide got {state.ClimbSide} expected {expClimbSide}");
-        if (state.ClimbAnimationSet != expAnimSet) errors.Add($"{tag}: ClimbAnimationSet got {state.ClimbAnimationSet} expected {expAnimSet}");
-        if (state.ClimbAnimationTicks != expAnimTicks) errors.Add($"{tag}: ClimbAnimationTicks got {state.ClimbAnimationTicks} expected {expAnimTicks}");
-        if (state.AnimationDirection != expAnimDirection) errors.Add($"{tag}: AnimationDirection got {state.AnimationDirection} expected {expAnimDirection}");
-        if (state.Position.X != expPosX) errors.Add($"{tag}: Position.X got {state.Position.X} expected {expPosX}");
-        if (state.Position.Y != expPosY) errors.Add($"{tag}: Position.Y got {state.Position.Y} expected {expPosY}");
-        if (state.Facing != expFacing) errors.Add($"{tag}: Facing got {state.Facing} expected {expFacing}");
-        if (state.CameraSmoothingTicks != expCamSmoothing) errors.Add($"{tag}: CameraSmoothingTicks got {state.CameraSmoothingTicks} expected {expCamSmoothing}");
-        if (state.Offer != expOffer) errors.Add($"{tag}: Offer got {state.Offer} expected {expOffer}");
-        if (state.AnimationSet != expStateAnimSet) errors.Add($"{tag}: AnimationSet got {state.AnimationSet} expected {expStateAnimSet}");
-        if (state.AnimationTicks != expStateAnimTicks) errors.Add($"{tag}: AnimationTicks got {state.AnimationTicks} expected {expStateAnimTicks}");
+        if (state.ClimbActive != expClimbActive)
+        {
+            errors.Add($"{tag}: ClimbActive got {state.ClimbActive} expected {expClimbActive}");
+        }
+
+        if (state.ClimbHeight != expClimbHeight)
+        {
+            errors.Add($"{tag}: ClimbHeight got {state.ClimbHeight} expected {expClimbHeight}");
+        }
+
+        if (state.ClimbSide != expClimbSide)
+        {
+            errors.Add($"{tag}: ClimbSide got {state.ClimbSide} expected {expClimbSide}");
+        }
+
+        if (state.ClimbAnimationSet != expAnimSet)
+        {
+            errors.Add($"{tag}: ClimbAnimationSet got {state.ClimbAnimationSet} expected {expAnimSet}");
+        }
+
+        if (state.ClimbAnimationTicks != expAnimTicks)
+        {
+            errors.Add($"{tag}: ClimbAnimationTicks got {state.ClimbAnimationTicks} expected {expAnimTicks}");
+        }
+
+        if (state.AnimationDirection != expAnimDirection)
+        {
+            errors.Add($"{tag}: AnimationDirection got {state.AnimationDirection} expected {expAnimDirection}");
+        }
+
+        if (state.Position.X != expPosX)
+        {
+            errors.Add($"{tag}: Position.X got {state.Position.X} expected {expPosX}");
+        }
+
+        if (state.Position.Y != expPosY)
+        {
+            errors.Add($"{tag}: Position.Y got {state.Position.Y} expected {expPosY}");
+        }
+
+        if (state.Facing != expFacing)
+        {
+            errors.Add($"{tag}: Facing got {state.Facing} expected {expFacing}");
+        }
+
+        if (state.CameraSmoothingTicks != expCamSmoothing)
+        {
+            errors.Add($"{tag}: CameraSmoothingTicks got {state.CameraSmoothingTicks} expected {expCamSmoothing}");
+        }
+
+        if (state.Offer != expOffer)
+        {
+            errors.Add($"{tag}: Offer got {state.Offer} expected {expOffer}");
+        }
+
+        if (state.AnimationSet != expStateAnimSet)
+        {
+            errors.Add($"{tag}: AnimationSet got {state.AnimationSet} expected {expStateAnimSet}");
+        }
+
+        if (state.AnimationTicks != expStateAnimTicks)
+        {
+            errors.Add($"{tag}: AnimationTicks got {state.AnimationTicks} expected {expStateAnimTicks}");
+        }
     }
 }

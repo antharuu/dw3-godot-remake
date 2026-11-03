@@ -74,11 +74,13 @@ internal static class ActionExtractionStep
             byte[] archive = disc.ReadFile(entry);
             ActionDomain decoded = Decode(definition, archive, entry.IsoPath);
 
-            new DataPackWriter(outputDirectory).Write(new DataPackMetadata(
+            new DataPackWriter(outputDirectory).Write(
+                new DataPackMetadata(
                 typeof(ActionExtractionStep).Assembly.GetName().Version?.ToString(3) ?? "0.1.0",
                 edition.BinSha1,
                 edition.Label,
-                DateTimeOffset.UtcNow), context => ActionDomainWriter.Write(context, decoded));
+                DateTimeOffset.UtcNow),
+                context => ActionDomainWriter.Write(context, decoded));
             output.WriteLine($"{{\"event\":\"domain-complete\",\"domain\":\"{definition.Domain}\",\"sets\":{decoded.Sets.Count},\"frames\":{decoded.Frames.Count}}}");
             return 0;
         }
@@ -104,16 +106,23 @@ internal static class ActionExtractionStep
         int[] offsets = ActionArchiveDecoder.DecodeOffsetTable(archive, definition.AnimationSetEntry);
         IReadOnlyList<ActionAnimationSet> groups = ActionArchiveDecoder.DecodeSetTable(archive, offsets, definition.AnimationSetEntry);
         if (groups.Count == 0)
+        {
             throw new FormatException($"{definition.Domain} action archive contains no animation sets");
+        }
 
         var sequences = new Dictionary<int, ActionAnimationSequence>();
         foreach (ActionAnimationSet group in groups)
         {
             int firstSequence = group.SequenceIndices[0];
             if (group.SequenceIndices.Any(sequence => sequence != firstSequence))
+            {
                 throw new FormatException($"{definition.Domain} action set {group.SetId:X} maps directions to different sequences");
+            }
+
             if (!sequences.ContainsKey(firstSequence))
+            {
                 sequences.Add(firstSequence, ActionArchiveDecoder.DecodeSequence(archive, offsets, firstSequence, definition.AnimationSetEntry));
+            }
         }
 
         int[] frameIds = [.. sequences.Values.SelectMany(sequence => sequence.Records).Select(record => record.Frame).Distinct().Order()];
@@ -130,13 +139,24 @@ internal static class ActionExtractionStep
         foreach (ActionAnimationSet group in groups)
         {
             if (!definition.SetNames.TryGetValue(group.SetId, out string? name))
+            {
                 throw new FormatException($"{definition.Domain} action set {group.SetId:X} is not identified by its disc layout");
+            }
+
             ActionAnimationSequence sequence = sequences[group.SequenceIndices[0]];
             sets.Add(new ActionSet(group.SetId, name, sequence.Terminator, sequence.Records));
         }
 
-        return new ActionDomain(definition.Domain, definition.ManifestSchema, definition.FileId, definition.AnimationSetEntry,
-            archiveIsoPath, Convert.ToHexStringLower(SHA256.HashData(archive)), archive.Length, frames, sets);
+        return new ActionDomain(
+            definition.Domain,
+            definition.ManifestSchema,
+            definition.FileId,
+            definition.AnimationSetEntry,
+            archiveIsoPath,
+            Convert.ToHexStringLower(SHA256.HashData(archive)),
+            archive.Length,
+            frames,
+            sets);
     }
 
     /// <summary>

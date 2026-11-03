@@ -11,7 +11,6 @@ namespace Dw3.Formats.Tests.Battle;
 public sealed class BattleHudStageReportTests
 {
     // ── BattleStageDecoder ────────────────────────────────────────────────────
-
     [Fact]
     public void ParseRecord_ValidRecord_ReturnsCorrectFields()
     {
@@ -22,18 +21,27 @@ public sealed class BattleHudStageReportTests
 
         // model: file 0x70A, entry 0x1A → packed u32 = 0x070A001A
         BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(off + 0x00), 0x070A001A);
+
         // motions: file 0x70A, entry 0x00 → 0x070A0000
         BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(off + 0x04), 0x070A0000);
+
         // music: -1
         BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(off + 0x08), -1);
+
         // bgColor: R=0, G=70, B=199
-        data[off + 0x0C] = 0; data[off + 0x0D] = 70; data[off + 0x0E] = 199;
+        data[off + 0x0C] = 0;
+        data[off + 0x0D] = 70;
+        data[off + 0x0E] = 199;
+
         // light 0: dir=(0, 12800, 0), rgb=(128, 128, 128)
         int l0 = off + 0x18;
         BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(l0), 0);
         BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(l0 + 4), 12800);
         BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(l0 + 8), 0);
-        data[l0 + 12] = 128; data[l0 + 13] = 128; data[l0 + 14] = 128;
+        data[l0 + 12] = 128;
+        data[l0 + 13] = 128;
+        data[l0 + 14] = 128;
+
         // ambient: 76, 76, 76
         BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(off + 0x48), 76);
         BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(off + 0x4C), 76);
@@ -71,7 +79,6 @@ public sealed class BattleHudStageReportTests
     }
 
     // ── HudSpriteSheetParser.Parse ───────────────────────────────────────────
-
     [Fact]
     public void ParseSheet_TruncatedData_Throws()
     {
@@ -109,7 +116,11 @@ public sealed class BattleHudStageReportTests
     public void RenderFrame_PreservesNegativePartOffsets()
     {
         ushort[][] pixels = [.. Enumerable.Range(0, HudTexturePage.PageHeight).Select(_ => new ushort[HudTexturePage.PageWidthWords])];
-        for (int index = 0; index < 16; index++) pixels[0][index] = 0x7FFF;
+        for (int index = 0; index < 16; index++)
+        {
+            pixels[0][index] = 0x7FFF;
+        }
+
         pixels[10][0] = 0x1111;
         var pages = new[] { new HudTexturePage([.. pixels.Select(row => (IReadOnlyList<ushort>)row)]) };
         var parts = new[] { new HudSpritePart(0, 10, 4, 2, 0, 0, 0) };
@@ -125,7 +136,6 @@ public sealed class BattleHudStageReportTests
     }
 
     // ── HudRlenDecoder.Decompress ──────────────────────────────────────
-
     [Fact]
     public void DecompressRlen_BadMagic_Throws()
     {
@@ -159,7 +169,6 @@ public sealed class BattleHudStageReportTests
     }
 
     // ── HudColor.Ps1Channel ──────────────────────────────────────────
-
     [Theory]
     [InlineData(0, 0)]
     [InlineData(31, 255)]
@@ -172,7 +181,6 @@ public sealed class BattleHudStageReportTests
     }
 
     // ── BattleReportDecoder.ReadAnimations ────────────────────────────────────
-
     [Fact]
     public void ReadAnimations_ValidOverlay_ReturnsCorrectTable()
     {
@@ -180,6 +188,7 @@ public sealed class BattleHudStageReportTests
         int[,] result = BattleReportDecoder.ReadAnimations(overlay);
         Assert.Equal(8, result.GetLength(0));
         Assert.Equal(7, result.GetLength(1));
+
         // Spot-check row 0: (7, 8, 9, 10, 9, 8, -1)
         Assert.Equal(7, result[0, 0]);
         Assert.Equal(-1, result[0, 6]);
@@ -189,6 +198,7 @@ public sealed class BattleHudStageReportTests
     public void ReadAnimations_TruncatedOverlay_Throws()
     {
         byte[] overlay = BuildOverlayWithPinnedAnimations();
+
         // Shorten by 1 byte so the table doesn't fit.
         byte[] truncated = overlay[..^1];
         Assert.Throws<FormatException>(() => BattleReportDecoder.ReadAnimations(truncated));
@@ -214,12 +224,15 @@ public sealed class BattleHudStageReportTests
     {
         var rows = BattleReportDecoder.RequiredFrameRows;
         Assert.Equal(38, rows.Count);
+
         // Frames 0..0x1C (0..28) → 1 row
         Assert.Equal(1, rows[0]);
         Assert.Equal(1, rows[0x1C]);
+
         // Frames 0x1D..0x23 (29..35) → 11 rows
         Assert.Equal(11, rows[0x1D]);
         Assert.Equal(11, rows[0x23]);
+
         // Frames 0x24, 0x25 → 4 rows
         Assert.Equal(4, rows[0x24]);
         Assert.Equal(4, rows[0x25]);
@@ -270,7 +283,6 @@ public sealed class BattleHudStageReportTests
     }
 
     // ── helpers ───────────────────────────────────────────────────────────────
-
     private static byte[] BuildFourBitTim()
     {
         int pixelBytes = HudTexturePage.PageWidthWords * HudTexturePage.PageHeight * sizeof(ushort);
@@ -307,8 +319,13 @@ public sealed class BattleHudStageReportTests
         byte[] data = new byte[4 + bodySize];
         BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(4), (uint)partsOffset);
         BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(8), (uint)idsOffset);
+
         // Put 0xFF terminator at idsOffset (within sheet body).
-        if (4 + idsOffset < data.Length) data[4 + idsOffset] = 0xFF;
+        if (4 + idsOffset < data.Length)
+        {
+            data[4 + idsOffset] = 0xFF;
+        }
+
         return data;
     }
 
@@ -319,8 +336,13 @@ public sealed class BattleHudStageReportTests
         int partsOffset = 16, idsOffset = 20;
         BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(4), (uint)partsOffset);
         BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(8), (uint)idsOffset);
+
         // Fill ids area with 0x01 but never 0xFF.
-        for (int i = 4 + idsOffset; i < data.Length; i++) data[i] = 1;
+        for (int i = 4 + idsOffset; i < data.Length; i++)
+        {
+            data[i] = 1;
+        }
+
         return data;
     }
 
@@ -328,15 +350,16 @@ public sealed class BattleHudStageReportTests
     {
         // Layout: [skip4][partsOff4][idsOff4][frameOffsets...][partsTable][idList+0xFF][frameData]
         int numFrames = frameIds.Length;
-        int headerBytes = 8 + numFrames * 4; // partsOff + idsOff + frame offsets
+        int headerBytes = 8 + (numFrames * 4); // partsOff + idsOff + frame offsets
         int partsTableBytes = numParts * 14;
         int partsOff = headerBytes;
         int idsOff = partsOff + partsTableBytes;
         int idsBytes = numFrames + 1; // ids + 0xFF
         int frameDataStart = idsOff + idsBytes;
+
         // Each frame record: count(2) + frameRow(2) + abr(2) + 1 part(6) = 12 bytes
         int frameSize = 12;
-        int totalBody = frameDataStart + numFrames * frameSize;
+        int totalBody = frameDataStart + (numFrames * frameSize);
 
         byte[] data = new byte[4 + totalBody];
         _ = data.AsSpan(4); // body
@@ -346,29 +369,35 @@ public sealed class BattleHudStageReportTests
         // Frame offsets (pointing into body).
         for (int i = 0; i < numFrames; i++)
         {
-            BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(4 + 8 + i * 4), (uint)(frameDataStart + i * frameSize));
+            BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(4 + 8 + (i * 4)), (uint)(frameDataStart + (i * frameSize)));
         }
 
         // Parts table (numParts × 14 bytes, valid but zeroed — mode 0, w/h = 0).
         // Set width and height to 1 to pass validation.
         for (int p = 0; p < numParts; p++)
         {
-            int at = 4 + partsOff + p * 14;
+            int at = 4 + partsOff + (p * 14);
             BinaryPrimitives.WriteInt16LittleEndian(data.AsSpan(at + 4), 1); // width = 1
             BinaryPrimitives.WriteInt16LittleEndian(data.AsSpan(at + 6), 1); // height = 1
         }
 
         // Id list + terminator.
-        for (int i = 0; i < numFrames; i++) data[4 + idsOff + i] = (byte)frameIds[i];
+        for (int i = 0; i < numFrames; i++)
+        {
+            data[4 + idsOff + i] = (byte)frameIds[i];
+        }
+
         data[4 + idsOff + numFrames] = 0xFF;
 
         // Frame records: count=1, frameRow=0, abr=0, part=0, dx=0, dy=0.
         for (int i = 0; i < numFrames; i++)
         {
-            int at = 4 + frameDataStart + i * frameSize;
+            int at = 4 + frameDataStart + (i * frameSize);
             BinaryPrimitives.WriteInt16LittleEndian(data.AsSpan(at), 1);     // count=1
+
             // frameRow=0, abr=0, part=0, dx=0, dy=0 → all zeroed
         }
+
         return data;
     }
 
@@ -390,9 +419,14 @@ public sealed class BattleHudStageReportTests
         int size = 8 * 7 * 4;
         byte[] overlay = new byte[offset + size];
         for (int p = 0; p < 8; p++)
+        {
             for (int f = 0; f < 7; f++)
+            {
                 BinaryPrimitives.WriteInt32LittleEndian(
-                    overlay.AsSpan(offset + (p * 7 + f) * 4), PinnedAnimations[p, f]);
+                    overlay.AsSpan(offset + (((p * 7) + f) * 4)), PinnedAnimations[p, f]);
+            }
+        }
+
         return overlay;
     }
 }

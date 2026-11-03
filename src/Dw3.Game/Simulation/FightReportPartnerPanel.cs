@@ -88,8 +88,17 @@ internal sealed class FightReportPartnerPanel(FightReportPartner source)
         var slots = Enumerable.Range(0, 3)
             .Select(index => new FightReportSlotView(index < slotIds.Count ? slotIds[index] : -1, index < slotIds.Count, false, 0))
             .ToArray();
-        return new FightReportPartnerView(Source.PartyIndex, Source.PartnerId, Source.FighterId, Fade.Level, Selected,
-            CursorFrame, LevelBlinkFrame, ShownExp, AnimationFrame, slots);
+        return new FightReportPartnerView(
+            Source.PartyIndex,
+            Source.PartnerId,
+            Source.FighterId,
+            Fade.Level,
+            Selected,
+            CursorFrame,
+            LevelBlinkFrame,
+            ShownExp,
+            AnimationFrame,
+            slots);
     }
 
     /// <summary>Runs the current phase for one frame and returns the phase for the next frame.</summary>

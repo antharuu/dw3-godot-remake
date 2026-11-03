@@ -59,8 +59,13 @@ public sealed class NpcDiscAnalysisTests
         exe[33] = 0xFF;
 
         NpcDiscTables tables = NpcDiscTableDecoder.Decode(
-            field, fileEntriesOffset: 0, fileEntryCount: 2, widthsOffset: 40, widthCount: 2,
-            exe, new NpcProgressTableLocator(8, 2, 30, 40));
+            field,
+            fileEntriesOffset: 0,
+            fileEntryCount: 2,
+            widthsOffset: 40,
+            widthCount: 2,
+            exe,
+            new NpcProgressTableLocator(8, 2, 30, 40));
 
         Assert.Null(tables.FileEntries[0]);
         Assert.Equal(new NpcFileEntry(12, 7), tables.FileEntries[1]);
@@ -87,9 +92,13 @@ public sealed class NpcDiscAnalysisTests
     }
 
     private static uint Lui(int rt, uint value) => (0x0Fu << 26) | ((uint)rt << 16) | ((value + 0x8000u) >> 16);
+
     private static uint Addiu(int rt, int rs, uint value) => (0x09u << 26) | ((uint)rs << 21) | ((uint)rt << 16) | (value & 0xFFFF);
+
     private static uint Ori(int rt, int rs, uint value) => (0x0Du << 26) | ((uint)rs << 21) | ((uint)rt << 16) | (value & 0xFFFF);
+
     private static uint Sw(int rt, int rs, short offset) => (0x2Bu << 26) | ((uint)rs << 21) | ((uint)rt << 16) | (ushort)offset;
+
     private static void WriteInstruction(byte[] bytes, int offset, uint word) =>
         BinaryPrimitives.WriteUInt32LittleEndian(bytes.AsSpan(offset), word);
 }

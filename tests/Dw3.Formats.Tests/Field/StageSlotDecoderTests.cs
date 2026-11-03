@@ -16,7 +16,8 @@ public sealed class StageSlotDecoderTests
 
         IReadOnlyList<StageSlot> slots = StageSlotDecoder.Decode(overlay, 0);
 
-        Assert.Collection(slots,
+        Assert.Collection(
+            slots,
             slot => Assert.Equal(new StageSlot(0xffff, 1, 0x202, 776, 224, 1), slot),
             slot => Assert.Equal(new StageSlot(0x7007, 4, 9, 32, 48, 2), slot),
             slot => Assert.Equal(new StageSlot(0xffff, 0, 0, 0, 0, 0), slot));
@@ -37,10 +38,12 @@ public sealed class StageSlotDecoderTests
     {
         const int tableOffset = 0x40;
         byte[] overlay = new byte[0xA0];
+
         // lui v0, 0x800A ; addiu v0, v0, 0x5E20 ; sw v0, 0x14(sp).
         BinaryPrimitives.WriteUInt32LittleEndian(overlay.AsSpan(0), 0x3C02800Au);
         BinaryPrimitives.WriteUInt32LittleEndian(overlay.AsSpan(4), 0x24425E20u);
         BinaryPrimitives.WriteUInt32LittleEndian(overlay.AsSpan(8), 0xAFA20014u);
+
         // This is a referenced slot-shaped structure, but not the stageSlots
         // member assignment and must not be selected.
         BinaryPrimitives.WriteUInt32LittleEndian(overlay.AsSpan(12), 0x3C02800Au);
@@ -52,7 +55,8 @@ public sealed class StageSlotDecoderTests
 
         IReadOnlyList<StageSlot> slots = StageSlotLocator.LocateAndDecode(overlay);
 
-        Assert.Collection(slots,
+        Assert.Collection(
+            slots,
             slot => Assert.Equal(new StageSlot(0xffff, 1, 0x202, 776, 224, 1), slot),
             slot => Assert.Equal(new StageSlot(0xffff, 0, 0, 0, 0, 0), slot));
     }

@@ -49,7 +49,9 @@ public sealed class ExtractionController
     public void Extract(string discPath, string outputDirectory)
     {
         if (_state == ExtractionState.Extracting)
+        {
             throw new InvalidOperationException("Extraction is already in progress.");
+        }
 
         _state = ExtractionState.Extracting;
 
@@ -58,6 +60,7 @@ public sealed class ExtractionController
         while ((line = process.ReadLine()) is not null)
         {
             ProcessLine(line);
+
             // Stop reading if the error handler transitioned us out of Extracting.
             if (_state == ExtractionState.Error)
             {
@@ -67,7 +70,10 @@ public sealed class ExtractionController
         }
 
         int exitCode = process.WaitForExit();
-        if (_state == ExtractionState.Complete) return;
+        if (_state == ExtractionState.Complete)
+        {
+            return;
+        }
 
         // The extractor ended without a completion event.
         _state = ExtractionState.Error;
@@ -85,7 +91,11 @@ public sealed class ExtractionController
     /// <param name="json">Raw text line read from the extractor process stdout.</param>
     private void ProcessLine(string json)
     {
-        if (string.IsNullOrWhiteSpace(json)) return;
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return;
+        }
+
         try
         {
             using var doc = JsonDocument.Parse(json);

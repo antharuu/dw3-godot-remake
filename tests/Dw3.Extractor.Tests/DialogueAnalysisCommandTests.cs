@@ -42,7 +42,11 @@ public sealed class DialogueAnalysisCommandTests
     [Fact]
     public void ReportSummarisesStagesFailuresAndDetails()
     {
-        var actor = new StageActorDialogue(0, 0x80100040, new NpcActorEntry(0, 0x80100080, 3, 0, 5, 6, 2), 24,
+        var actor = new StageActorDialogue(
+            0,
+            0x80100040,
+            new NpcActorEntry(0, 0x80100080, 3, 0, 5, 6, 2),
+            24,
             [new FieldTalk([new NpcCondition(0x6001, 1)], [], 9)]);
         var result = new RomAnalysisResult(
             new ProgressConditionTables([new NpcProgressRange(1, 2)], 4, new Dictionary<int, int> { [7] = 0 }),

@@ -12,8 +12,12 @@ public sealed class TimDecoderTests
     /// Builds a minimal 4-bit (flags=0x08) or 8-bit (flags=0x09) TIM with a
     /// single CLUT row and a 1×1 image.
     /// </summary>
-    private static byte[] Build4Or8BitTim(bool is4Bit, ushort[] clutEntries, byte[] pixelData,
-        int widthWords, int height)
+    private static byte[] Build4Or8BitTim(
+        bool is4Bit,
+        ushort[] clutEntries,
+        byte[] pixelData,
+        int widthWords,
+        int height)
     {
         uint flags = is4Bit ? 0x08u : 0x09u;
         int numColors = is4Bit ? 16 : 256;
@@ -30,26 +34,39 @@ public sealed class TimDecoderTests
         int pos = 0;
 
         // TIM header
-        WriteU32Le(tim, pos, 0x00000010u); pos += 4; // magic
-        WriteU32Le(tim, pos, flags); pos += 4;        // flags
+        WriteU32Le(tim, pos, 0x00000010u);
+        pos += 4; // magic
+        WriteU32Le(tim, pos, flags);
+        pos += 4;        // flags
 
         // CLUT block
-        WriteU32Le(tim, pos, clutBlockLen); pos += 4;
-        WriteU16Le(tim, pos, 0); pos += 2;  // VRAM X
-        WriteU16Le(tim, pos, 0); pos += 2;  // VRAM Y
-        WriteU16Le(tim, pos, (ushort)numColors); pos += 2;
-        WriteU16Le(tim, pos, 1); pos += 2;  // 1 row
+        WriteU32Le(tim, pos, clutBlockLen);
+        pos += 4;
+        WriteU16Le(tim, pos, 0);
+        pos += 2;  // VRAM X
+        WriteU16Le(tim, pos, 0);
+        pos += 2;  // VRAM Y
+        WriteU16Le(tim, pos, (ushort)numColors);
+        pos += 2;
+        WriteU16Le(tim, pos, 1);
+        pos += 2;  // 1 row
         foreach (var w in clutEntries)
         {
-            WriteU16Le(tim, pos, w); pos += 2;
+            WriteU16Le(tim, pos, w);
+            pos += 2;
         }
 
         // Image block
-        WriteU32Le(tim, pos, imgBlockLen); pos += 4;
-        WriteU16Le(tim, pos, 0); pos += 2;           // VRAM X
-        WriteU16Le(tim, pos, 0); pos += 2;           // VRAM Y
-        WriteU16Le(tim, pos, (ushort)widthWords); pos += 2;
-        WriteU16Le(tim, pos, (ushort)height); pos += 2;
+        WriteU32Le(tim, pos, imgBlockLen);
+        pos += 4;
+        WriteU16Le(tim, pos, 0);
+        pos += 2;           // VRAM X
+        WriteU16Le(tim, pos, 0);
+        pos += 2;           // VRAM Y
+        WriteU16Le(tim, pos, (ushort)widthWords);
+        pos += 2;
+        WriteU16Le(tim, pos, (ushort)height);
+        pos += 2;
         Array.Copy(pixelData, 0, tim, pos, pixelData.Length);
 
         return tim;
@@ -59,22 +76,31 @@ public sealed class TimDecoderTests
     private static byte[] Build16BitTim(int width, int height, ushort[] pixels)
     {
         // No CLUT block; image block = 12-byte header + width*height*2 bytes
-        uint imgBlockLen = (uint)(12 + width * height * 2);
+        uint imgBlockLen = (uint)(12 + (width * height * 2));
         int totalLen = 8 + (int)imgBlockLen;
         var tim = new byte[totalLen];
         int pos = 0;
 
-        WriteU32Le(tim, pos, 0x00000010u); pos += 4;
-        WriteU32Le(tim, pos, 0x00000002u); pos += 4;
-        WriteU32Le(tim, pos, imgBlockLen); pos += 4;
-        WriteU16Le(tim, pos, 0); pos += 2;           // VRAM X
-        WriteU16Le(tim, pos, 0); pos += 2;           // VRAM Y
-        WriteU16Le(tim, pos, (ushort)width); pos += 2;
-        WriteU16Le(tim, pos, (ushort)height); pos += 2;
+        WriteU32Le(tim, pos, 0x00000010u);
+        pos += 4;
+        WriteU32Le(tim, pos, 0x00000002u);
+        pos += 4;
+        WriteU32Le(tim, pos, imgBlockLen);
+        pos += 4;
+        WriteU16Le(tim, pos, 0);
+        pos += 2;           // VRAM X
+        WriteU16Le(tim, pos, 0);
+        pos += 2;           // VRAM Y
+        WriteU16Le(tim, pos, (ushort)width);
+        pos += 2;
+        WriteU16Le(tim, pos, (ushort)height);
+        pos += 2;
         foreach (var w in pixels)
         {
-            WriteU16Le(tim, pos, w); pos += 2;
+            WriteU16Le(tim, pos, w);
+            pos += 2;
         }
+
         return tim;
     }
 
@@ -85,7 +111,6 @@ public sealed class TimDecoderTests
         BinaryPrimitives.WriteUInt16LittleEndian(arr.AsSpan(offset, 2), value);
 
     // ── 4-bit TIM ─────────────────────────────────────────────────────────
-
     [Fact]
     public void Decode4Bit_2x1_CorrectPixels()
     {
@@ -94,7 +119,8 @@ public sealed class TimDecoderTests
         var clut = new ushort[16];
         clut[0] = 0x0000;   // transparent
         clut[1] = 0x001F;   // R=31 → R=255, G=0, B=0, A=255
-                            // pixel byte: lo nibble=1, hi nibble=0 → pixel0=clut[1], pixel1=clut[0]
+
+        // pixel byte: lo nibble=1, hi nibble=0 → pixel0=clut[1], pixel1=clut[0]
         _ = Build4Or8BitTim(is4Bit: true, clut, pixelData: [0x01], widthWords: 1 /* 4px? no */, height: 1);
 
         // 2 pixels wide: widthWords=1, width=1*4=4 — too wide. Let's correct:
@@ -104,9 +130,12 @@ public sealed class TimDecoderTests
         var clut2 = new ushort[16];
         clut2[0] = 0x0000;   // transparent
         clut2[1] = 0x001F;   // R=255
-        var tim2 = Build4Or8BitTim(is4Bit: true, clut2,
+        var tim2 = Build4Or8BitTim(
+            is4Bit: true,
+            clut2,
             pixelData: [0x10, 0x00], // pixel0=idx0 (transparent), pixel1=idx1 (red), pixel2/3 transparent
-            widthWords: 1, height: 1); // 4×1
+            widthWords: 1,
+            height: 1); // 4×1
 
         var img = TimDecoder.Decode(tim2);
         Assert.Equal(4, img.Width);
@@ -133,29 +162,52 @@ public sealed class TimDecoderTests
         int numRows = 2;
         int clutDataBytes = numColors * numRows * 2;
         uint clutBlockLen = (uint)(12 + clutDataBytes);
-        // image block: 4 pixels wide (widthWords=1), 1 high, 2 bytes pixel data, block length = 12 + 2
 
+        // image block: 4 pixels wide (widthWords=1), 1 high, 2 bytes pixel data, block length = 12 + 2
         var tim = new List<byte>();
-        void AddU32(uint v) { var b = new byte[4]; BinaryPrimitives.WriteUInt32LittleEndian(b, v); tim.AddRange(b); }
-        void AddU16(ushort v) { var b = new byte[2]; BinaryPrimitives.WriteUInt16LittleEndian(b, v); tim.AddRange(b); }
+        void AddU32(uint v)
+        {
+            var b = new byte[4];
+            BinaryPrimitives.WriteUInt32LittleEndian(b, v);
+            tim.AddRange(b);
+        }
+
+        void AddU16(ushort v)
+        {
+            var b = new byte[2];
+            BinaryPrimitives.WriteUInt16LittleEndian(b, v);
+            tim.AddRange(b);
+        }
 
         AddU32(0x00000010u);   // magic
         AddU32(flags);          // flags
         AddU32(clutBlockLen);   // CLUT block length
-        AddU16(0); AddU16(0);   // VRAM X, Y
+        AddU16(0);
+        AddU16(0);   // VRAM X, Y
         AddU16((ushort)numColors);
         AddU16((ushort)numRows);
+
         // Row 0: all transparent
-        for (int i = 0; i < numColors; i++) AddU16(0x0000);
+        for (int i = 0; i < numColors; i++)
+        {
+            AddU16(0x0000);
+        }
+
         // Row 1: index 0 = white (R=31, G=31, B=31 → word = 0x7FFF, but 0x0000 is transparent)
         // Use word 0x7FFF (bit pattern: R=31, G=31, B=31, STP=0) for white
         AddU16(0x7FFF); // index 0 row 1 = white opaque
-        for (int i = 1; i < numColors; i++) AddU16(0x0000);
+        for (int i = 1; i < numColors; i++)
+        {
+            AddU16(0x0000);
+        }
+
         // Image block: 1 pixel (index 0), 4 wide, 1 high
         AddU32(14); // block length = 12 + 2 bytes of pixel data
-        AddU16(0); AddU16(0); // VRAM X, Y
+        AddU16(0);
+        AddU16(0); // VRAM X, Y
         AddU16(1); // words_per_line = 1 → width = 4
         AddU16(1); // height = 1
+
         // pixel data: 2 bytes for 4 pixels; all index 0
         tim.AddRange([0x00, 0x00]);
 
@@ -172,7 +224,6 @@ public sealed class TimDecoderTests
     }
 
     // ── 8-bit TIM ─────────────────────────────────────────────────────────
-
     [Fact]
     public void Decode8Bit_2x1_CorrectPixels()
     {
@@ -181,9 +232,12 @@ public sealed class TimDecoderTests
         clut[0] = 0x0000;   // transparent
         clut[1] = 0x03E0;   // G=31 → G=255, others 0, A=255
 
-        var tim = Build4Or8BitTim(is4Bit: false, clut,
+        var tim = Build4Or8BitTim(
+            is4Bit: false,
+            clut,
             pixelData: [0, 1], // pixel0 = index 0, pixel1 = index 1
-            widthWords: 1, height: 1); // 2×1
+            widthWords: 1,
+            height: 1); // 2×1
 
         var img = TimDecoder.Decode(tim);
         Assert.Equal(2, img.Width);
@@ -201,7 +255,6 @@ public sealed class TimDecoderTests
     }
 
     // ── 16-bit direct TIM ─────────────────────────────────────────────────
-
     [Fact]
     public void Decode16Bit_TransparentPixel_AlphaZero()
     {
@@ -231,6 +284,7 @@ public sealed class TimDecoderTests
         // R=1, G=0, B=0, STP=1 → word = 0x8001
         var tim = Build16BitTim(1, 1, pixels: [0x8001]);
         var img = TimDecoder.Decode(tim);
+
         // STP bit set but colour ≠ 0 → still opaque
         Assert.Equal(255, img.Pixels[3]);
     }
@@ -247,7 +301,6 @@ public sealed class TimDecoderTests
     }
 
     // ── Error cases ───────────────────────────────────────────────────────
-
     [Fact]
     public void Decode_WrongMagic_ThrowsFormatException()
     {
@@ -287,12 +340,12 @@ public sealed class TimDecoderTests
     {
         var clut = new ushort[16];
         var tim = Build4Or8BitTim(is4Bit: true, clut, pixelData: [0x00, 0x00], widthWords: 1, height: 1);
+
         // Only 1 CLUT row (index 0), request row 1
         Assert.Throws<FormatException>(() => TimDecoder.Decode(tim, clutRow: 1));
     }
 
     // ── Transparency and RGBA colour conversion ────────────────────────────
-
     [Fact]
     public void Decode16Bit_AllFiveChannelsMaxBlue_CorrectB()
     {

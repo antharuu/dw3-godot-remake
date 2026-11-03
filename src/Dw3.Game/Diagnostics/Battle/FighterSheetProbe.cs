@@ -64,7 +64,11 @@ internal sealed class FighterSheetProbe : BattleProbe
         const string prefix = "fighter-";
         const string suffix = "-model.json";
         var name = Path.GetFileName(path);
-        if (!name.StartsWith(prefix, StringComparison.Ordinal) || !name.EndsWith(suffix, StringComparison.Ordinal)) return int.MaxValue;
+        if (!name.StartsWith(prefix, StringComparison.Ordinal) || !name.EndsWith(suffix, StringComparison.Ordinal))
+        {
+            return int.MaxValue;
+        }
+
         return int.TryParse(name[prefix.Length..^suffix.Length], out var fighter) ? fighter : int.MaxValue;
     }
 
@@ -75,6 +79,7 @@ internal sealed class FighterSheetProbe : BattleProbe
     {
         using var document = JsonDocument.Parse(File.ReadAllText(path));
         var cameras = document.RootElement.GetProperty("cameras");
+
         // FighterInfoEnemy has three views, while FighterInfo has twelve.
         return cameras.GetArrayLength() == 3;
     }
@@ -85,7 +90,11 @@ internal sealed class FighterSheetProbe : BattleProbe
     /// <returns>The pulled-back view.</returns>
     private static BattleModel.BattleCameraView PullBack(BattleModel.BattleCameraView view, float factor)
     {
-        if (factor == 1f) return view;
+        if (factor == 1f)
+        {
+            return view;
+        }
+
         var pos = view.CamPos;
         var reference = view.CamRef;
         return new BattleModel.BattleCameraView(
@@ -111,7 +120,11 @@ internal sealed class FighterSheetProbe : BattleProbe
     /// <returns>A task completed after the background is saved.</returns>
     private async Task RenderStageBackgroundAsync(BattleRenderer renderer, string captureRoot)
     {
-        if (!renderer.StageBuilt) renderer.BuildStage(Host.ResolveBattleStagePath(SheetStage), SheetStage);
+        if (!renderer.StageBuilt)
+        {
+            renderer.BuildStage(Host.ResolveBattleStagePath(SheetStage), SheetStage);
+        }
+
         renderer.Show();
         renderer.SetLightFadeForProbe(1f);
         renderer.ClearModelsForSheet();
@@ -148,14 +161,26 @@ internal sealed class FighterSheetProbe : BattleProbe
     {
         renderer.BuildSingleModelForSheet(fighter.Path, fighter.Name, fighter.Id, fighter.Enemy);
         renderer.SetProbePose(0);
+
         // The sheet holds one model in slot zero even when it is placed at the enemy camp.
         var cameras = renderer.FighterCameras(enemy: false);
-        if (cameras.Count == 0) throw new InvalidOperationException("no source cameras");
+        if (cameras.Count == 0)
+        {
+            throw new InvalidOperationException("no source cameras");
+        }
+
         var view = cameras[ViewIndex];
-        if (view.Proj <= 0) throw new InvalidOperationException($"invalid source projection={view.Proj} view={ViewIndex}");
+        if (view.Proj <= 0)
+        {
+            throw new InvalidOperationException($"invalid source projection={view.Proj} view={ViewIndex}");
+        }
+
         foreach (var factor in PullBackFactors)
         {
-            if (await TryFrameAsync(renderer, captureRoot, fighter with { CameraCount = cameras.Count }, view, factor)) return;
+            if (await TryFrameAsync(renderer, captureRoot, fighter with { CameraCount = cameras.Count }, view, factor))
+            {
+                return;
+            }
         }
 
         throw new InvalidOperationException("no source camera framing contains whole fighter at x6.0");
@@ -177,6 +202,7 @@ internal sealed class FighterSheetProbe : BattleProbe
         var empty = await CaptureSourceSizeAsync();
         renderer.BuildSingleModelForSheet(fighter.Path, fighter.Name, fighter.Id, fighter.Enemy);
         renderer.SetProbePose(0);
+
         // The sheet never enters Present, so apply the settled stage light set (fade 1) to the
         // freshly built model instead of the black fade-0 state.
         renderer.SetLightFadeForProbe(1f);
@@ -184,8 +210,16 @@ internal sealed class FighterSheetProbe : BattleProbe
         Host.AdoptSheetFighter(fighter.Id);
         var image = await CaptureSourceSizeAsync();
         var bounds = FighterSheetBounds.Measure(image, empty);
-        if (bounds.TexturedPixels == 0) throw new InvalidOperationException("zero textured pixels after source placement");
-        if (bounds.TouchesFrame) return false;
+        if (bounds.TexturedPixels == 0)
+        {
+            throw new InvalidOperationException("zero textured pixels after source placement");
+        }
+
+        if (bounds.TouchesFrame)
+        {
+            return false;
+        }
+
         Save(empty, Path.Combine(captureRoot, $"fighter-{fighter.Id}-background.png"), $"background save failed fighter={fighter.Id}");
         var output = Path.Combine(captureRoot, $"fighter-{fighter.Id}.png");
         Save(image, output, $"save failed={output}");

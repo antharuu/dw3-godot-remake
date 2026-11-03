@@ -52,7 +52,7 @@ public sealed class FieldEncounterDecoderTests
     public void ResolveEnemyIndex_EnemyAtOffset_ReturnsCorrectIndex()
     {
         // Fighter at enemy 248: ptr = EnemiesAddr + 248 * 12
-        uint ptr = EnemiesAddr + 248u * 12u;
+        uint ptr = EnemiesAddr + (248u * 12u);
         int index = FieldEncounterDecoder.ResolveEnemyIndex(ptr);
         Assert.Equal(248, index);
     }
@@ -67,7 +67,7 @@ public sealed class FieldEncounterDecoderTests
     public void ResolveEnemyIndex_OutOfRangePointer_Throws()
     {
         // Past the last enemy
-        uint past = EnemiesAddr + 523u * 12u;
+        uint past = EnemiesAddr + (523u * 12u);
         Assert.Throws<FormatException>(() => FieldEncounterDecoder.ResolveEnemyIndex(past));
     }
 
@@ -83,12 +83,12 @@ public sealed class FieldEncounterDecoderTests
     {
         // Build a minimal FIELDSTG.PRO-sized buffer with known battle rates at the correct offset.
         int ratesOffset = (int)(BattleRatesAddr - FieldOverlayBase);
-        int bufferSize = ratesOffset + 6 * 4;
+        int bufferSize = ratesOffset + (6 * 4);
         byte[] data = new byte[bufferSize];
         int[] rates = [100, 3, 4, 6, 9, 18];
         for (int i = 0; i < 6; i++)
         {
-            BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(ratesOffset + i * 4), rates[i]);
+            BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(ratesOffset + (i * 4)), rates[i]);
         }
 
         IReadOnlyList<int> decoded = FieldEncounterDecoder.DecodeBattleRates(data);
@@ -126,19 +126,20 @@ public sealed class FieldEncounterDecoderTests
     public void DecodeAreaBattle_ReadAllFields()
     {
         const uint StageOverlayBase = 0x800A5DE0u;
+
         // Fabricated area battle: encounter=200, stage=18, music=0x60080000
         byte[] overlay = new byte[256];
         const int offset = 0x20;
         BinaryPrimitives.WriteInt32LittleEndian(overlay.AsSpan(offset), 200);
         BinaryPrimitives.WriteInt32LittleEndian(overlay.AsSpan(offset + 4), 18);
-        BinaryPrimitives.WriteInt32LittleEndian(overlay.AsSpan(offset + 8), unchecked((int)0x60080000u));
+        BinaryPrimitives.WriteInt32LittleEndian(overlay.AsSpan(offset + 8), unchecked(0x60080000));
 
         uint ptr = StageOverlayBase + offset;
         AreaBattle ab = FieldEncounterDecoder.DecodeAreaBattle(overlay, ptr, StageOverlayBase);
 
         Assert.Equal(200, ab.Encounter);
         Assert.Equal(18, ab.Stage);
-        Assert.Equal(unchecked((int)0x60080000u), ab.Music);
+        Assert.Equal(unchecked(0x60080000), ab.Music);
         Assert.Equal("MUSIC(2,0)", ab.MusicName);
     }
 
@@ -147,6 +148,7 @@ public sealed class FieldEncounterDecoderTests
     public void DecodeBattleList_CountOutOfRange_Throws()
     {
         const uint StageOverlayBase = 0x800A5DE0u;
+
         // BattleList with count=9 (outside [0, 5])
         byte[] overlay = new byte[256];
         const int offset = 0x40;
@@ -156,7 +158,7 @@ public sealed class FieldEncounterDecoderTests
         uint areaBase = StageOverlayBase + 0x60;
         for (int i = 0; i < 8; i++)
         {
-            BinaryPrimitives.WriteUInt32LittleEndian(overlay.AsSpan(offset + 4 + i * 4), areaBase);
+            BinaryPrimitives.WriteUInt32LittleEndian(overlay.AsSpan(offset + 4 + (i * 4)), areaBase);
         }
 
         uint ptr = StageOverlayBase + offset;
@@ -168,20 +170,21 @@ public sealed class FieldEncounterDecoderTests
     public void DecodeFieldBattles_ReadsSerialAndId()
     {
         const uint StageOverlayBase = 0x800A5DE0u;
+
         // Build a minimal valid FieldBattles + BattleList + AreaBattle tree.
         byte[] overlay = new byte[0x400];
 
         // AreaBattle at offset 0x100
         BinaryPrimitives.WriteInt32LittleEndian(overlay.AsSpan(0x100), 200);              // encounter
         BinaryPrimitives.WriteInt32LittleEndian(overlay.AsSpan(0x104), 18);               // stage
-        BinaryPrimitives.WriteInt32LittleEndian(overlay.AsSpan(0x108), unchecked((int)0x60080000u)); // music
+        BinaryPrimitives.WriteInt32LittleEndian(overlay.AsSpan(0x108), unchecked(0x60080000)); // music
 
         // 7 more AreaBattles at 0x10C..0x160 (reuse same slot)
         for (int i = 1; i < 8; i++)
         {
-            BinaryPrimitives.WriteInt32LittleEndian(overlay.AsSpan(0x100 + i * 12), 0);
-            BinaryPrimitives.WriteInt32LittleEndian(overlay.AsSpan(0x104 + i * 12), 0);
-            BinaryPrimitives.WriteInt32LittleEndian(overlay.AsSpan(0x108 + i * 12), unchecked((int)0x60040000u));
+            BinaryPrimitives.WriteInt32LittleEndian(overlay.AsSpan(0x100 + (i * 12)), 0);
+            BinaryPrimitives.WriteInt32LittleEndian(overlay.AsSpan(0x104 + (i * 12)), 0);
+            BinaryPrimitives.WriteInt32LittleEndian(overlay.AsSpan(0x108 + (i * 12)), unchecked(0x60040000));
         }
 
         // BattleList at offset 0x200: count=0, 8 pointers all pointing to 0x100
@@ -189,7 +192,7 @@ public sealed class FieldEncounterDecoderTests
         uint areaAddr = StageOverlayBase + 0x100;
         for (int i = 0; i < 8; i++)
         {
-            BinaryPrimitives.WriteUInt32LittleEndian(overlay.AsSpan(0x204 + i * 4), areaAddr + (uint)(i * 12));
+            BinaryPrimitives.WriteUInt32LittleEndian(overlay.AsSpan(0x204 + (i * 4)), areaAddr + (uint)(i * 12));
         }
 
         // FieldBattles at offset 0x300: serial=131, id=0, pad8=0, 4 pointers to BattleList
@@ -199,7 +202,7 @@ public sealed class FieldEncounterDecoderTests
         uint listAddr = StageOverlayBase + 0x200;
         for (int i = 0; i < 4; i++)
         {
-            BinaryPrimitives.WriteUInt32LittleEndian(overlay.AsSpan(0x30C + i * 4), listAddr);
+            BinaryPrimitives.WriteUInt32LittleEndian(overlay.AsSpan(0x30C + (i * 4)), listAddr);
         }
 
         uint fbAddr = StageOverlayBase + 0x300;

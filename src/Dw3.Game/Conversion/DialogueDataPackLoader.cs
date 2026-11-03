@@ -88,8 +88,13 @@ public sealed class DialogueDataPackLoader : IDisposable
         while (reader.Read())
         {
             int id = reader.GetInt32(0);
-            frames.Add(id, new DialogueFrame(id, DataPackFiles.Require(_pack, reader.GetString(5), $"talk-box frame={id}"),
-                reader.GetInt32(1), reader.GetInt32(2), reader.GetInt32(3), reader.GetInt32(4) != 0));
+            frames.Add(id, new DialogueFrame(
+                id,
+                DataPackFiles.Require(_pack, reader.GetString(5), $"talk-box frame={id}"),
+                reader.GetInt32(1),
+                reader.GetInt32(2),
+                reader.GetInt32(3),
+                reader.GetInt32(4) != 0));
         }
 
         foreach (int required in RequiredFrames)
@@ -113,9 +118,16 @@ public sealed class DialogueDataPackLoader : IDisposable
         using SqliteDataReader reader = command.ExecuteReader();
         if (reader.Read())
         {
-            panel = new PanelSpec(reader.GetInt32(0), reader.GetInt32(1), reader.GetInt32(2), reader.GetInt32(3) != 0,
-                reader.GetInt32(4), reader.GetInt32(5), DataPackFiles.Require(_pack, reader.GetString(6), "talk-box panel"),
-                reader.GetInt32(7), reader.GetInt32(8));
+            panel = new PanelSpec(
+                reader.GetInt32(0),
+                reader.GetInt32(1),
+                reader.GetInt32(2),
+                reader.GetInt32(3) != 0,
+                reader.GetInt32(4),
+                reader.GetInt32(5),
+                DataPackFiles.Require(_pack, reader.GetString(6), "talk-box panel"),
+                reader.GetInt32(7),
+                reader.GetInt32(8));
         }
 
         if (panel is null || reader.Read())
@@ -146,8 +158,17 @@ public sealed class DialogueDataPackLoader : IDisposable
             }
 
             Vec2I Pair(int column) => new(reader.GetInt32(column), reader.GetInt32(column + 1));
-            layouts.Add(new TalkBoxLayout(reader.GetInt32(1), Pair(2), Pair(4), Pair(6), Pair(8),
-                reader.GetInt32(10), reader.GetInt32(11), reader.GetInt32(12), reader.GetInt32(13), Pair(14)));
+            layouts.Add(new TalkBoxLayout(
+                reader.GetInt32(1),
+                Pair(2),
+                Pair(4),
+                Pair(6),
+                Pair(8),
+                reader.GetInt32(10),
+                reader.GetInt32(11),
+                reader.GetInt32(12),
+                reader.GetInt32(13),
+                Pair(14)));
         }
 
         if (layouts.Count != LayoutCount)
@@ -243,10 +264,14 @@ public sealed class DialogueDataPackLoader : IDisposable
         Dictionary<int, FontStyleData> styles = ReadFontStyles(lineHeights);
         FontStyleData dialogue = styles[DialogueStyle];
         string directory = ResolveFontDirectory();
-        return new FontData(dialogue.Glyphs, dialogue.Icons,
+        return new FontData(
+            dialogue.Glyphs,
+            dialogue.Icons,
             DataPackFiles.Require(_pack, "font/font-style-1-page-0.png", "dialogue font page 0"),
             DataPackFiles.Require(_pack, "font/font-style-1-page-1.png", "dialogue font page 1"),
-            dialogue.LineHeight, styles, directory);
+            dialogue.LineHeight,
+            styles,
+            directory);
     }
 
     /// <summary>Reads the line height in pixels of each font style from <c>font_styles</c>.</summary>
@@ -314,9 +339,16 @@ public sealed class DialogueDataPackLoader : IDisposable
         while (reader.Read())
         {
             metrics.Add(reader.GetInt32(0), new GlyphMetric(
-                reader.GetInt32(1), reader.GetInt32(2), reader.GetInt32(3), reader.GetInt32(4),
-                reader.GetInt32(5), reader.GetInt32(6), reader.GetInt32(7), reader.GetInt32(8),
-                reader.GetInt32(9), reader.GetInt32(10)));
+                reader.GetInt32(1),
+                reader.GetInt32(2),
+                reader.GetInt32(3),
+                reader.GetInt32(4),
+                reader.GetInt32(5),
+                reader.GetInt32(6),
+                reader.GetInt32(7),
+                reader.GetInt32(8),
+                reader.GetInt32(9),
+                reader.GetInt32(10)));
         }
 
         return metrics;

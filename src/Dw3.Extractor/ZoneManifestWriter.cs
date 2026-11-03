@@ -120,6 +120,7 @@ public static class ZoneManifestWriter
             }
 
             WriteCondition(writer, slot.Condition);
+
             // Write null when the mode has no known disc stage mapping (e.g. excluded or unreachable stages).
             if (stageModes is not null && stageModes.TryGetValue(slot.Argument, out int destStage))
             {
@@ -194,6 +195,7 @@ public static class ZoneManifestWriter
         writer.WriteStartObject("map_source");
         writer.WriteNumber("bytes", data.PackBytes);
         writer.WriteStartObject("header");
+
         // The legacy cache stores the packet header dimensions unless a TMPK map entry was
         // absent. In that fallback case its manifest builder reused the floor-map pixel
         // dimensions. Preserve that established cache contract for byte-for-byte semantics.

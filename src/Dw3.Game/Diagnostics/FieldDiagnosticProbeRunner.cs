@@ -46,7 +46,11 @@ public sealed class FieldDiagnosticProbeRunner(IDiagnosticProbeHost host)
     /// <returns><see langword="true"/> when the probe was scheduled.</returns>
     private bool TrySchedule(bool enabled, string methodName, bool ownsInput)
     {
-        if (!enabled) return false;
+        if (!enabled)
+        {
+            return false;
+        }
+
         _host.ScheduleProbe(methodName, ownsInput);
         return true;
     }

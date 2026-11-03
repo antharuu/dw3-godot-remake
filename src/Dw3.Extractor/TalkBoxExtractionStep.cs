@@ -46,9 +46,12 @@ internal static class TalkBoxExtractionStep
             byte[] texture = disc.ReadFile(Require(entries, TexturePath));
             TalkBoxDomain domain = Decode(executable, sheet, texture);
 
-            new DataPackWriter(outputDirectory).Write(new DataPackMetadata(
+            new DataPackWriter(outputDirectory).Write(
+                new DataPackMetadata(
                 typeof(TalkBoxExtractionStep).Assembly.GetName().Version?.ToString(3) ?? "0.1.0",
-                edition.BinSha1, edition.Label, DateTimeOffset.UtcNow),
+                edition.BinSha1,
+                edition.Label,
+                DateTimeOffset.UtcNow),
                 context => TalkBoxDomainWriter.Write(context, domain));
             output.WriteLine($"{{\"event\":\"domain-complete\",\"domain\":\"{Domain}\",\"frames\":{domain.Frames.Count},\"layouts\":{domain.Layouts.Count}}}");
             return 0;

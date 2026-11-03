@@ -18,7 +18,15 @@ public sealed class NpcDomainWriterTests : IDisposable
             "AAA/PRO/WSTAG200.PRO",
             "abc123",
             [new NpcExtractedActor(
-                0, 21, 3, 512, 768, 4, 24, false, true,
+                0,
+                21,
+                3,
+                512,
+                768,
+                4,
+                24,
+                false,
+                true,
                 [new NpcCondition(0x6004, 1)],
                 new NpcFileEntry(12, 7),
                 "AAA/DAT/FIELD/SPRT/NPC.BIN")]);
@@ -34,9 +42,11 @@ public sealed class NpcDomainWriterTests : IDisposable
         Assert.Equal(21, actor.GetProperty("id").GetInt32());
 
         using SqliteConnection connection = new DataPackReader(_root).OpenDatabase();
-        Assert.Equal("200|0|21|512|768|4|24|1", Row(connection,
+        Assert.Equal("200|0|21|512|768|4|24|1", Row(
+            connection,
             "SELECT stage_id, actor_index, actor_id, x, y, direction, width, snapshot_visible FROM npc_actors"));
-        Assert.Equal("200|0|0|24580|1", Row(connection,
+        Assert.Equal("200|0|0|24580|1", Row(
+            connection,
             "SELECT stage_id, actor_index, ordinal, code, value FROM npc_actor_conditions"));
     }
 
@@ -74,20 +84,24 @@ public sealed class NpcDomainWriterTests : IDisposable
 
         using SqliteConnection connection = new DataPackReader(_root).OpenDatabase();
 
-        string charRow = Row(connection,
+        string charRow = Row(
+            connection,
             "SELECT actor_id, stage_id, actor_index, archive_disc_path, archive_entry, frame_count " +
             "FROM npc_characters WHERE actor_id = 21");
         Assert.Equal("21|200|0|AAA/DAT/FIELD/SPRT/NPC_TEST.BIN|3|1", charRow);
 
-        string setRow = Row(connection,
+        string setRow = Row(
+            connection,
             "SELECT actor_id, stage_id, actor_index, set_id FROM npc_anim_sets");
         Assert.Equal("21|200|0|1", setRow);
 
-        string seqRow = Row(connection,
+        string seqRow = Row(
+            connection,
             "SELECT actor_id, stage_id, actor_index, seq_index, terminator FROM npc_sequences ORDER BY seq_index LIMIT 1");
         Assert.Equal("21|200|0|0|loop", seqRow);
 
-        string frameRow = Row(connection,
+        string frameRow = Row(
+            connection,
             "SELECT actor_id, stage_id, actor_index, frame_id, width, height FROM npc_frames");
         Assert.Equal("21|200|0|0|2|2", frameRow);
 
@@ -99,9 +113,12 @@ public sealed class NpcDomainWriterTests : IDisposable
     public void Dispose()
     {
         if (Directory.Exists(_root))
+        {
             // Release pooled connections before deletion; on Windows, the pool keeps
             // the file handle open past Dispose(), preventing Directory.Delete.
             SqliteConnection.ClearAllPools();
+        }
+
         Directory.Delete(_root, recursive: true);
     }
 
@@ -116,6 +133,9 @@ public sealed class NpcDomainWriterTests : IDisposable
     }
 
     private static DataPackMetadata Metadata() =>
-        new("test", "0123456789012345678901234567890123456789", "synthetic",
+        new(
+            "test",
+            "0123456789012345678901234567890123456789",
+            "synthetic",
             DateTimeOffset.Parse("2026-01-01T00:00:00Z", System.Globalization.CultureInfo.InvariantCulture));
 }

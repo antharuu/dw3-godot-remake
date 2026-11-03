@@ -67,13 +67,16 @@ public sealed class ZonePacketDecoderTests
     private static byte[] BuildPacketFile(int tileCount, int declaredPresent, int textureOffset, int spriteCount, short spriteWidth = 2)
     {
         const int sector = 2048;
-        byte[] file = new byte[sector + tileCount * sector];
+        byte[] file = new byte[sector + (tileCount * sector)];
         BinaryPrimitives.WriteInt32LittleEndian(file.AsSpan(0, 4), declaredPresent);
         BinaryPrimitives.WriteInt32LittleEndian(file.AsSpan(4, 4), tileCount);
         BinaryPrimitives.WriteInt32LittleEndian(file.AsSpan(8, 4), 1);
         BinaryPrimitives.WriteInt32LittleEndian(file.AsSpan(12, 4), sector);
         for (int index = 0; index < Math.Min(tileCount, declaredPresent); index++)
-            BinaryPrimitives.WriteUInt16LittleEndian(file.AsSpan(16 + index * 2, 2), 1);
+        {
+            BinaryPrimitives.WriteUInt16LittleEndian(file.AsSpan(16 + (index * 2), 2), 1);
+        }
+
         if (declaredPresent != 1 || tileCount != 1)
         {
             return file;
@@ -91,7 +94,8 @@ public sealed class ZonePacketDecoderTests
             BinaryPrimitives.WriteInt16LittleEndian(tile.Slice(16, 2), spriteWidth);
             BinaryPrimitives.WriteInt16LittleEndian(tile.Slice(18, 2), 1);
         }
-        int cursor = 8 + spriteCount * 12;
+
+        int cursor = 8 + (spriteCount * 12);
         BinaryPrimitives.WriteInt32LittleEndian(tile.Slice(cursor, 4), 0);
         BinaryPrimitives.WriteInt32LittleEndian(tile.Slice(cursor + 4, 4), 0);
         BuildTim8(tile.Slice(textureOffset));

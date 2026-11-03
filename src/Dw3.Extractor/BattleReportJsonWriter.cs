@@ -26,7 +26,10 @@ internal static class BattleReportJsonWriter
         List<(int Id, (string Path, int W, int H, int Ox, int Oy)[] Rows, (int Part, int Dx, int Dy)[] Parts)> frames,
         List<(string Path, int W, int H, int Ox, int Oy, IReadOnlyList<FieldFramePartMeta> Parts)> arrowRows,
         IReadOnlyList<FieldFramePartMeta> arrowPartsMeta,
-        int[,] animations, byte[] sheetArchive, byte[] textureArchive, byte[] overlay)
+        int[,] animations,
+        byte[] sheetArchive,
+        byte[] textureArchive,
+        byte[] overlay)
     {
         using var stream = new MemoryStream();
         using (var json = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true }))
@@ -66,7 +69,10 @@ internal static class BattleReportJsonWriter
         json.WriteNumber("file_id", BattleReportDecoder.TextureFileId);
         json.WriteString("sha256", Convert.ToHexStringLower(SHA256.HashData(textureArchive)));
         json.WriteNumber("bytes", textureArchive.Length);
-        json.WriteStartArray("vram"); json.WriteNumberValue(0x280); json.WriteNumberValue(0); json.WriteEndArray();
+        json.WriteStartArray("vram");
+        json.WriteNumberValue(0x280);
+        json.WriteNumberValue(0);
+        json.WriteEndArray();
         json.WriteEndObject();
         json.WriteStartObject("overlay");
         json.WriteString("path", BattleReportDecoder.OverlayDiscPath);
@@ -77,7 +83,10 @@ internal static class BattleReportJsonWriter
         json.WriteEndObject();
         json.WriteStartObject("arrow");
         json.WriteNumber("frame", BattleReportDecoder.ArrowFrameId);
-        json.WriteStartArray("vram"); json.WriteNumberValue(0x140); json.WriteNumberValue(0); json.WriteEndArray();
+        json.WriteStartArray("vram");
+        json.WriteNumberValue(0x140);
+        json.WriteNumberValue(0);
+        json.WriteEndArray();
         json.WriteNumber("clutRows", BattleReportDecoder.ArrowRows);
         json.WriteEndObject();
         json.WriteEndObject();
@@ -130,7 +139,10 @@ internal static class BattleReportJsonWriter
         {
             json.WriteStartArray();
             for (int f = 0; f < BattleReportDecoder.AnimationFrames; f++)
+            {
                 json.WriteNumberValue(animations[p, f]);
+            }
+
             json.WriteEndArray();
         }
 
@@ -159,8 +171,11 @@ internal static class BattleReportJsonWriter
         foreach (var (path, w, h, ox, oy, parts) in arrowRows)
         {
             json.WriteStartObject();
-            json.WriteString("path", path); json.WriteNumber("w", w); json.WriteNumber("h", h);
-            json.WriteNumber("offsetX", ox); json.WriteNumber("offsetY", oy);
+            json.WriteString("path", path);
+            json.WriteNumber("w", w);
+            json.WriteNumber("h", h);
+            json.WriteNumber("offsetX", ox);
+            json.WriteNumber("offsetY", oy);
             WriteFieldPartsArray(json, parts);
             json.WriteEndObject();
         }
@@ -196,8 +211,12 @@ internal static class BattleReportJsonWriter
         foreach (FieldFramePartMeta m in parts)
         {
             json.WriteStartObject();
-            json.WriteNumber("u", m.U); json.WriteNumber("v", m.V); json.WriteNumber("w", m.W); json.WriteNumber("h", m.H);
-            json.WriteNumber("dx", m.Dx); json.WriteNumber("dy", m.Dy);
+            json.WriteNumber("u", m.U);
+            json.WriteNumber("v", m.V);
+            json.WriteNumber("w", m.W);
+            json.WriteNumber("h", m.H);
+            json.WriteNumber("dx", m.Dx);
+            json.WriteNumber("dy", m.Dy);
             json.WriteBoolean("semi", m.Semi);
             json.WriteNumber("clutRow", m.ClutRow);
             json.WriteEndObject();

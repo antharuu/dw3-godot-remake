@@ -163,6 +163,7 @@ public sealed class InputAdapter
                 }
 
                 return;
+
             // Keyboard aliases for PSX L1/R1. PageUp/PageDown do not collide with exploration.
             case Key.Pageup:
                 if (pressed)

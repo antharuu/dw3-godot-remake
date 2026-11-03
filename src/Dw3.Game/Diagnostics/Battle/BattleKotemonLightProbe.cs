@@ -25,7 +25,8 @@ internal sealed class BattleKotemonLightProbe : BattleProbe
     {
         var captureRoot = Host.PrepareCaptureDirectory("probe/battle-kotemon-light");
         Host.StartDebugBattle();
-        ProbeRequirement.Require(Host.HasActiveBattle && Host.RenderedPlayerId == 383,
+        ProbeRequirement.Require(
+            Host.HasActiveBattle && Host.RenderedPlayerId == 383,
             "Kotemon light oracle requires F8 fighter 383");
         var renderer = Host.Renderer;
         renderer.SetProbePose(10);
@@ -144,8 +145,8 @@ internal sealed class BattleKotemonLightProbe : BattleProbe
     /// <param name="height">Relative height.</param>
     /// <returns>Integer source-pixel rectangle.</returns>
     private static Rect2I Relative(Rect2I box, float x, float y, float width, float height) => new(
-        Mathf.FloorToInt(box.Position.X + box.Size.X * x),
-        Mathf.FloorToInt(box.Position.Y + box.Size.Y * y),
+        Mathf.FloorToInt(box.Position.X + (box.Size.X * x)),
+        Mathf.FloorToInt(box.Position.Y + (box.Size.Y * y)),
         Mathf.Max(1, Mathf.CeilToInt(box.Size.X * width)),
         Mathf.Max(1, Mathf.CeilToInt(box.Size.Y * height)));
 
@@ -169,7 +170,10 @@ internal sealed class BattleKotemonLightProbe : BattleProbe
         {
             for (var x = Math.Max(0, region.Position.X); x < Math.Min(320, region.End.X); x++)
             {
-                if ((silhouette is null || silhouette.GetPixel(x, y).R >= .5f) && select(image.GetPixel(x, y))) mask.SetPixel(x, y, Colors.White);
+                if ((silhouette is null || silhouette.GetPixel(x, y).R >= .5f) && select(image.GetPixel(x, y)))
+                {
+                    mask.SetPixel(x, y, Colors.White);
+                }
             }
         }
 
@@ -199,7 +203,10 @@ internal sealed class BattleKotemonLightProbe : BattleProbe
         {
             for (var x = 0; x < 320; x++)
             {
-                if (source.GetPixel(x, y).R >= .5f) target.SetPixel(x, y, Colors.White);
+                if (source.GetPixel(x, y).R >= .5f)
+                {
+                    target.SetPixel(x, y, Colors.White);
+                }
             }
         }
     }
@@ -215,7 +222,11 @@ internal sealed class BattleKotemonLightProbe : BattleProbe
         {
             for (var x = 0; x < 320; x++)
             {
-                if (mask.GetPixel(x, y).R < .5f) continue;
+                if (mask.GetPixel(x, y).R < .5f)
+                {
+                    continue;
+                }
+
                 minimum = new Vector2I(Math.Min(minimum.X, x), Math.Min(minimum.Y, y));
                 maximum = new Vector2I(Math.Max(maximum.X, x), Math.Max(maximum.Y, y));
             }

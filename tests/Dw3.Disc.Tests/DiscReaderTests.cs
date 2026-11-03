@@ -16,12 +16,16 @@ public sealed class DiscReaderTests : IDisposable
 
     public void Dispose()
     {
-        try { Directory.Delete(_tmp, recursive: true); }
-        catch { /* best-effort */ }
+        try
+        {
+            Directory.Delete(_tmp, recursive: true);
+        }
+        catch
+        { /* best-effort */
+        }
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────
-
     private string WriteSyntheticDisc()
     {
         byte[] binBytes = SyntheticDiscBuilder.Build();
@@ -33,7 +37,6 @@ public sealed class DiscReaderTests : IDisposable
     }
 
     // ── CUE parsing ────────────────────────────────────────────────────────
-
     [Fact]
     public void CueMissing_ThrowsFormatInvalid()
     {
@@ -55,7 +58,8 @@ public sealed class DiscReaderTests : IDisposable
     public void CueMultipleFiles_ThrowsFormatInvalid()
     {
         string cue = Path.Combine(_tmp, "multi.cue");
-        File.WriteAllText(cue,
+        File.WriteAllText(
+            cue,
             "FILE \"a.bin\" BINARY\r\nTRACK 01 MODE2/2352\r\n" +
             "FILE \"b.bin\" BINARY\r\nTRACK 02 MODE2/2352\r\n");
         var ex = Assert.Throws<DiscSourceException>(() => DiscSource.Open(cue));
@@ -78,13 +82,13 @@ public sealed class DiscReaderTests : IDisposable
         string cue = Path.Combine(_tmp, "present.cue");
         File.WriteAllBytes(bin, new byte[1]);
         File.WriteAllText(cue, "FILE \"present.bin\" BINARY\r\nTRACK 01 MODE2/2352\r\n");
+
         // Should not throw on Open; the BIN is too small to read, but that's a later error.
         using var disc = DiscSource.Open(cue);
         Assert.NotNull(disc);
     }
 
     // ── Truncated / malformed BIN ──────────────────────────────────────────
-
     [Fact]
     public void TruncatedBin_ThrowsFormatInvalid()
     {
@@ -103,6 +107,7 @@ public sealed class DiscReaderTests : IDisposable
     {
         string bin = Path.Combine(_tmp, "zeros.bin");
         string cue = Path.Combine(_tmp, "zeros.cue");
+
         // 20 full-size sectors of zeros: no valid PVD.
         File.WriteAllBytes(bin, new byte[20 * Iso9660Reader.SectorBytes]);
         File.WriteAllText(cue, "FILE \"zeros.bin\" BINARY\r\nTRACK 01 MODE2/2352\r\n");
@@ -113,7 +118,6 @@ public sealed class DiscReaderTests : IDisposable
     }
 
     // ── Synthetic ISO9660 image ────────────────────────────────────────────
-
     [Fact]
     public void SyntheticDisc_VolumeIdIsSynth()
     {
@@ -154,6 +158,7 @@ public sealed class DiscReaderTests : IDisposable
         string cue = WriteSyntheticDisc();
         using var disc = DiscSource.Open(cue);
         var ex = Assert.Throws<DiscSourceException>(() => disc.IdentifyEdition());
+
         // The synthetic disc has wrong fingerprints — edition mismatch.
         Assert.Equal(DiscSourceException.EditionInvalid, ex.ErrorCode);
     }

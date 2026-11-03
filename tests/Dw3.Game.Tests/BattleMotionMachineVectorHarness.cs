@@ -55,6 +55,7 @@ internal static class BattleMotionMachineVectorHarness
             keyframes.Add(null);
             return new Result(outcomes, snapshots, keyframes);
         }
+
         outcomes.Add("ok");
         snapshots.Add(Snapshot(machine));
         var last = machine.Keyframes.ToArray();
@@ -79,12 +80,14 @@ internal static class BattleMotionMachineVectorHarness
                 keyframes.Add(null);
                 break;
             }
+
             outcomes.Add(code);
             snapshots.Add(Snapshot(machine));
             var now = machine.Keyframes.ToArray();
             keyframes.Add(now.SequenceEqual(last) ? null : now);
             last = now;
         }
+
         return new Result(outcomes, snapshots, keyframes);
     }
 

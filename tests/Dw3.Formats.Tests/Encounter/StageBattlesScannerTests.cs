@@ -25,9 +25,9 @@ public sealed class StageBattlesScannerTests
         // The overlay must be word-aligned; choose a size that fits the FieldBattles array
         // and some MIPS code at the start.
         // Layout: FieldBattles[] | padding | AreaBattles[0..n-1][8] | BattleLists[0..n-1]
-        int areaBase = battlesDataOffset + entryCount * 28 + 0x100;
-        int listBase = areaBase + entryCount * 8 * 12;  // after all entries' 8 AreaBattles
-        int dataEnd = listBase + entryCount * 36 + 0x100;
+        int areaBase = battlesDataOffset + (entryCount * 28) + 0x100;
+        int listBase = areaBase + (entryCount * 8 * 12);  // after all entries' 8 AreaBattles
+        int dataEnd = listBase + (entryCount * 36) + 0x100;
         int overlaySize = ((dataEnd + 3) / 4) * 4;
         byte[] overlay = new byte[overlaySize];
 
@@ -36,26 +36,27 @@ public sealed class StageBattlesScannerTests
         // Write entryCount valid FieldBattles entries at battlesDataOffset.
         for (int entry = 0; entry < entryCount; entry++)
         {
-            int fb = battlesDataOffset + entry * 28;
+            int fb = battlesDataOffset + (entry * 28);
 
             // Build 8 AreaBattles for this entry at areaBase + entry*8*12
-            int areaOff = areaBase + entry * 8 * 12;
+            int areaOff = areaBase + (entry * 8 * 12);
             for (int a = 0; a < 8; a++)
             {
-                int ao = areaOff + a * 12;
+                int ao = areaOff + (a * 12);
                 BinaryPrimitives.WriteInt32LittleEndian(overlay.AsSpan(ao), a);            // encounter
                 BinaryPrimitives.WriteInt32LittleEndian(overlay.AsSpan(ao + 4), entry);   // stage
-                BinaryPrimitives.WriteInt32LittleEndian(overlay.AsSpan(ao + 8),
-                    unchecked((int)0x60040000u)); // music MUSIC(1,0)
+                BinaryPrimitives.WriteInt32LittleEndian(
+                    overlay.AsSpan(ao + 8),
+                    unchecked(0x60040000)); // music MUSIC(1,0)
             }
 
             // Build a BattleList at listBase + entry*36
-            int blOff = listBase + entry * 36;
+            int blOff = listBase + (entry * 36);
             BinaryPrimitives.WriteInt32LittleEndian(overlay.AsSpan(blOff), 0); // count=0
             for (int a = 0; a < 8; a++)
             {
-                uint aPtr = OverlayBase + (uint)(areaOff + a * 12);
-                BinaryPrimitives.WriteUInt32LittleEndian(overlay.AsSpan(blOff + 4 + a * 4), aPtr);
+                uint aPtr = OverlayBase + (uint)(areaOff + (a * 12));
+                BinaryPrimitives.WriteUInt32LittleEndian(overlay.AsSpan(blOff + 4 + (a * 4)), aPtr);
             }
 
             // Write FieldBattles
@@ -64,7 +65,9 @@ public sealed class StageBattlesScannerTests
             BinaryPrimitives.WriteInt32LittleEndian(overlay.AsSpan(fb + 8), 0);           // pad8 = 0
             uint blPtr = OverlayBase + (uint)blOff;
             for (int a = 0; a < 4; a++)
-                BinaryPrimitives.WriteUInt32LittleEndian(overlay.AsSpan(fb + 12 + a * 4), blPtr);
+            {
+                BinaryPrimitives.WriteUInt32LittleEndian(overlay.AsSpan(fb + 12 + (a * 4)), blPtr);
+            }
         }
 
         // MIPS stub: lui + addiu to load FIELDSTG_state address, then sw to store the battles pointer.
@@ -81,8 +84,15 @@ public sealed class StageBattlesScannerTests
         int arrLower = unchecked((short)(arrayAddress & 0xFFFF));
 
         // Adjust for sign extension of addiu
-        if ((FieldStateAddress & 0x8000) != 0) fsUpper++;
-        if ((arrayAddress & 0x8000) != 0) arrUpper++;
+        if ((FieldStateAddress & 0x8000) != 0)
+        {
+            fsUpper++;
+        }
+
+        if ((arrayAddress & 0x8000) != 0)
+        {
+            arrUpper++;
+        }
 
         uint[] mips = [
             0x3C08_0000u | fsUpper,           // lui $t0, fsUpper
@@ -94,7 +104,9 @@ public sealed class StageBattlesScannerTests
             0x0000_0000u,                     // nop
         ];
         for (int i = 0; i < mips.Length; i++)
+        {
             BinaryPrimitives.WriteUInt32LittleEndian(overlay.AsSpan(i * 4), mips[i]);
+        }
 
         return (overlay, arrayAddress, entryCount);
     }
@@ -146,9 +158,20 @@ public sealed class StageBattlesScannerTests
         uint arrLow = (uint)(arrayAddress & 0xFFFF);
         uint e1Upper = elem1 >> 16;
         uint e1Low = (uint)(elem1 & 0xFFFF);
-        if ((FieldStateAddress & 0x8000) != 0) fsUpper++;
-        if ((arrayAddress & 0x8000) != 0) arrUpper++;
-        if ((elem1 & 0x8000) != 0) e1Upper++;
+        if ((FieldStateAddress & 0x8000) != 0)
+        {
+            fsUpper++;
+        }
+
+        if ((arrayAddress & 0x8000) != 0)
+        {
+            arrUpper++;
+        }
+
+        if ((elem1 & 0x8000) != 0)
+        {
+            e1Upper++;
+        }
 
         uint[] mips =
         [
@@ -184,6 +207,7 @@ public sealed class StageBattlesScannerTests
         // MIPS only stores addrB (= addrA+28) directly; addrA is materialised but not stored.
         int offsetA = 0x800;
         int offsetB = offsetA + FieldEncounterDecoder.FieldBattlesStride;
+
         // Build a 2-entry overlay so both addrA and addrB have valid FieldBattles data.
         var (overlay, addrA, _) = BuildOverlayWithBattles(offsetA, 2);
         uint addrB = addrA + FieldEncounterDecoder.FieldBattlesStride;
@@ -195,9 +219,20 @@ public sealed class StageBattlesScannerTests
         uint bLow = (uint)(addrB & 0xFFFF);
         uint aUpper = addrA >> 16;
         uint aLow = (uint)(addrA & 0xFFFF);
-        if ((FieldStateAddress & 0x8000) != 0) fsUpper++;
-        if ((addrB & 0x8000) != 0) bUpper++;
-        if ((addrA & 0x8000) != 0) aUpper++;
+        if ((FieldStateAddress & 0x8000) != 0)
+        {
+            fsUpper++;
+        }
+
+        if ((addrB & 0x8000) != 0)
+        {
+            bUpper++;
+        }
+
+        if ((addrA & 0x8000) != 0)
+        {
+            aUpper++;
+        }
 
         uint[] mips =
         [
@@ -228,6 +263,7 @@ public sealed class StageBattlesScannerTests
     {
         // An overlay that never stores to FIELDSTG_state.battles
         byte[] overlay = new byte[28];
+
         // nop-filled
         for (int i = 0; i < overlay.Length / 4; i++)
         {

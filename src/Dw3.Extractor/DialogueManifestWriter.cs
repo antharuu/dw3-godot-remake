@@ -74,7 +74,10 @@ internal static class DialogueManifestWriter
                 json.WriteNumber("width", actor.Width);
                 json.WriteStartArray("talks");
                 for (int talkIndex = 0; talkIndex < actor.Talks.Count; talkIndex++)
+                {
                     WriteTalk(json, actor.Talks[talkIndex], selected == talkIndex);
+                }
+
                 json.WriteEndArray();
                 json.WriteEndObject();
             }
@@ -122,7 +125,11 @@ internal static class DialogueManifestWriter
     internal static string ConditionKind(int code)
     {
         int group = (code >> 8) & 0xFE;
-        if (group is >= 0x00 and <= 0x40) return "flag";
+        if (group is >= 0x00 and <= 0x40)
+        {
+            return "flag";
+        }
+
         return group switch
         {
             0x60 => "progress",
@@ -144,7 +151,11 @@ internal static class DialogueManifestWriter
     internal static string ActionKind(int code)
     {
         int group = (code >> 8) & 0xFE;
-        if (group is >= 0x00 and <= 0x40) return "flag_set";
+        if (group is >= 0x00 and <= 0x40)
+        {
+            return "flag_set";
+        }
+
         return group switch
         {
             0x70 => "special",
@@ -171,7 +182,10 @@ internal static class DialogueManifestWriter
         json.WriteString("kind", talk.Actions.Count == 0 ? "simple" : "effect");
         json.WriteStartArray("families");
         foreach (string family in talk.Actions.Select(item => ActionKind(item.Code)).Distinct().Order(StringComparer.Ordinal))
+        {
             json.WriteStringValue(family);
+        }
+
         json.WriteEndArray();
         json.WriteBoolean("selected", selected);
         json.WriteEndObject();

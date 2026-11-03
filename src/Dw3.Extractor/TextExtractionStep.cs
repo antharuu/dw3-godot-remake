@@ -25,15 +25,19 @@ internal static class TextExtractionStep
 
     // SLES_039.36 disc path (EU disc, constant).
     private const string SlesDiscPath = "SLES_039.36";
+
     // CMFONTTM.BIN disc path.
     private const string CmfonttmDiscPath = "AAA/DAT/COUNTRY/CMFONTTM.BIN";
+
     // French talk text file paths: FSTALK00.BIN .. FSTALK09.BIN.
     private const int TalkFileCount = 10;
 
     // Atlas palette count (matches Python decoder FONT_CLUT_ROWS=8).
     private const int PaletteCount = 8;
+
     // Applied palette index for legacy dark-blue rendering.
     private const int LegacyPaletteIndex = 2;
+
     // Number of atlas pages per font (both pages from CMFONTTM).
     private const int PageCount = 2;
 
@@ -143,20 +147,51 @@ internal static class TextExtractionStep
         {
             int styleId = i + 1;
             FontStyleMetrics style = styles[i];
-            Insert(context, "INSERT INTO font_styles (style_id, line_height, glyph_count, icon_count) VALUES ($1,$2,$3,$4)",
-                styleId, style.LineHeight, style.Glyphs.Count, style.Icons.Count);
+            Insert(
+                context,
+                "INSERT INTO font_styles (style_id, line_height, glyph_count, icon_count) VALUES ($1,$2,$3,$4)",
+                styleId,
+                style.LineHeight,
+                style.Glyphs.Count,
+                style.Icons.Count);
             for (int j = 0; j < style.Glyphs.Count; j++)
             {
                 GlyphMetric g = style.Glyphs[j];
-                Insert(context, "INSERT INTO font_glyphs (style_id,code,page,u,v,clut_x,clut_y,width,height,dx,dy,advance) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)",
-                    styleId, j + GlyphCodeBase, g.Page, g.U, g.V, g.ClutX, g.ClutY, g.Width, g.Height, (int)g.Dx, (int)g.Dy, g.Advance);
+                Insert(
+                    context,
+                    "INSERT INTO font_glyphs (style_id,code,page,u,v,clut_x,clut_y,width,height,dx,dy,advance) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)",
+                    styleId,
+                    j + GlyphCodeBase,
+                    g.Page,
+                    g.U,
+                    g.V,
+                    g.ClutX,
+                    g.ClutY,
+                    g.Width,
+                    g.Height,
+                    (int)g.Dx,
+                    (int)g.Dy,
+                    g.Advance);
             }
 
             for (int j = 0; j < style.Icons.Count; j++)
             {
                 GlyphMetric ic = style.Icons[j];
-                Insert(context, "INSERT INTO font_icons (style_id,code,page,u,v,clut_x,clut_y,width,height,dx,dy,advance) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)",
-                    styleId, j + IconCodeBase, ic.Page, ic.U, ic.V, ic.ClutX, ic.ClutY, ic.Width, ic.Height, (int)ic.Dx, (int)ic.Dy, ic.Advance);
+                Insert(
+                    context,
+                    "INSERT INTO font_icons (style_id,code,page,u,v,clut_x,clut_y,width,height,dx,dy,advance) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)",
+                    styleId,
+                    j + IconCodeBase,
+                    ic.Page,
+                    ic.U,
+                    ic.V,
+                    ic.ClutX,
+                    ic.ClutY,
+                    ic.Width,
+                    ic.Height,
+                    (int)ic.Dx,
+                    (int)ic.Dy,
+                    ic.Advance);
             }
         }
     }
@@ -242,6 +277,7 @@ internal static class TextExtractionStep
         }
 
         metricsWriter.WriteEndObject();
+
         // Legacy top-level glyphs/icons for the existing dialogue renderer (style 1).
         WriteGlyphTable(metricsWriter, "glyphs", styles[0].Glyphs, GlyphCodeBase);
         WriteGlyphTable(metricsWriter, "icons", styles[0].Icons, IconCodeBase);
@@ -349,8 +385,12 @@ internal static class TextExtractionStep
             IReadOnlyList<IReadOnlyList<TextToken>> tableEntries = TextTableDecoder.DecodeFile(data);
 
             // Write to SQLite metadata.
-            Insert(context, "INSERT INTO text_files (file_index, disc_path, entry_count) VALUES ($1,$2,$3)",
-                fileIndex, discPath, tableEntries.Count);
+            Insert(
+                context,
+                "INSERT INTO text_files (file_index, disc_path, entry_count) VALUES ($1,$2,$3)",
+                fileIndex,
+                discPath,
+                tableEntries.Count);
 
             // Write token JSON.
             string jsonPath = $"text/talk{fileIndex:D2}.json";

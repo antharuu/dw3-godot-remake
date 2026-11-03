@@ -42,13 +42,17 @@ public sealed class SpriteFrameRendererTests
     public void RejectsInvalidPartCountsMissingPartsAndUnknownModes()
     {
         ObjectVram vram = SelfTestVram();
-        Assert.Equal("sprite frame part count invalid",
+        Assert.Equal(
+            "sprite frame part count invalid",
             Assert.Throws<FormatException>(() => SpriteFrameRenderer.Render([], Frame(0), vram, 0)).Message);
-        Assert.Equal("sprite frame references missing part",
+        Assert.Equal(
+            "sprite frame references missing part",
             Assert.Throws<FormatException>(() => SpriteFrameRenderer.Render([], Frame(0, (0, 0, 0)), vram, 0)).Message);
-        Assert.Equal("unsupported sprite texture mode",
+        Assert.Equal(
+            "unsupported sprite texture mode",
             Assert.Throws<FormatException>(() => SpriteFrameRenderer.Render([new SpritePart(0, 0, 1, 1, 0, 0, 2)], Frame(0, (0, 0, 0)), vram, 0)).Message);
-        Assert.Equal("sprite part bounds invalid",
+        Assert.Equal(
+            "sprite part bounds invalid",
             Assert.Throws<FormatException>(() => SpriteFrameRenderer.Render([new SpritePart(0, 255, 1, 2, 0, 0, 0)], Frame(0, (0, 0, 0)), vram, 0)).Message);
     }
 
@@ -56,7 +60,7 @@ public sealed class SpriteFrameRendererTests
     public void ShiftsThePaletteRowByFrameRowAndClutRow()
     {
         ObjectVram vram = SelfTestVram();
-        vram.Pages[0][64 * 3 + 1] = 0x7C00; // row 3, palette slot 1
+        vram.Pages[0][(64 * 3) + 1] = 0x7C00; // row 3, palette slot 1
         byte[] frame = Frame(abr: 0, frameRow: 1, (0, 0, 0));
 
         SpriteFrameImage image = SpriteFrameRenderer.Render([new SpritePart(0, 0, 1, 1, 0, 0, 0)], frame, vram, 2);
@@ -68,8 +72,10 @@ public sealed class SpriteFrameRendererTests
     public void ComposesPartsInReverseOrderSoTheFirstPartIsOnTopAndTransparentTexelsAreSkipped()
     {
         ObjectVram vram = SelfTestVram();
+
         // Page 0 row 1: texel 0 → index 1 (red), texel 1 → index 2 (palette word 0, transparent).
         vram.Pages[0][64] = 0x0021;
+
         // Page 2 row 0: texel 0 → index 3.
         vram.Pages[2][0] = 0x0003;
         vram.Pages[0][3] = 0x8005; // palette slot 3, STP set
@@ -80,6 +86,7 @@ public sealed class SpriteFrameRendererTests
         SpriteFrameImage image = SpriteFrameRenderer.Render([top, bottom], frame, vram, 0);
 
         Assert.Equal((3, 5, 3, 2), (image.OffsetX, image.OffsetY, image.Width, image.Height));
+
         // The top part (drawn last) covers (4,6) with red; its transparent texel leaves (5,6) to the bottom part.
         ushort[] expected =
         [
@@ -112,16 +119,17 @@ public sealed class SpriteFrameRendererTests
 
     private static byte[] Frame(short abr, short frameRow, params (short Part, short X, short Y)[] parts)
     {
-        byte[] frame = new byte[6 + 6 * parts.Length];
+        byte[] frame = new byte[6 + (6 * parts.Length)];
         BinaryPrimitives.WriteInt16LittleEndian(frame, (short)parts.Length);
         BinaryPrimitives.WriteInt16LittleEndian(frame.AsSpan(2), frameRow);
         BinaryPrimitives.WriteInt16LittleEndian(frame.AsSpan(4), abr);
         for (int index = 0; index < parts.Length; index++)
         {
-            BinaryPrimitives.WriteInt16LittleEndian(frame.AsSpan(6 + 6 * index), parts[index].Part);
-            BinaryPrimitives.WriteInt16LittleEndian(frame.AsSpan(8 + 6 * index), parts[index].X);
-            BinaryPrimitives.WriteInt16LittleEndian(frame.AsSpan(10 + 6 * index), parts[index].Y);
+            BinaryPrimitives.WriteInt16LittleEndian(frame.AsSpan(6 + (6 * index)), parts[index].Part);
+            BinaryPrimitives.WriteInt16LittleEndian(frame.AsSpan(8 + (6 * index)), parts[index].X);
+            BinaryPrimitives.WriteInt16LittleEndian(frame.AsSpan(10 + (6 * index)), parts[index].Y);
         }
+
         return frame;
     }
 }

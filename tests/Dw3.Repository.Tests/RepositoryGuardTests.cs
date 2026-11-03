@@ -38,6 +38,7 @@ public sealed class RepositoryGuardTests : IDisposable
             File.WriteAllText(full, content);
             Git(dir, $"add \"{path}\"");
         }
+
         Git(dir, "commit -m init --allow-empty");
         return dir;
     }
@@ -64,7 +65,6 @@ public sealed class RepositoryGuardTests : IDisposable
     // ─────────────────────────────────────────────────────────────────────
     // P1: forbidden-extension
     // ─────────────────────────────────────────────────────────────────────
-
     [Fact]
     public void ForbiddenExtension_DetectsDiscFile()
     {
@@ -84,7 +84,6 @@ public sealed class RepositoryGuardTests : IDisposable
     // ─────────────────────────────────────────────────────────────────────
     // P1: no-python
     // ─────────────────────────────────────────────────────────────────────
-
     [Fact]
     public void NoPython_DetectsPyFile()
     {
@@ -104,7 +103,6 @@ public sealed class RepositoryGuardTests : IDisposable
     // ─────────────────────────────────────────────────────────────────────
     // P1: forbidden-path
     // ─────────────────────────────────────────────────────────────────────
-
     [Fact]
     public void ForbiddenPath_DetectsAgentsMd()
     {
@@ -125,6 +123,7 @@ public sealed class RepositoryGuardTests : IDisposable
     public void ForbiddenPath_DetectsRomDirExceptReadme()
     {
         var repo = MakeRepo(("rom/disc.cue", "placeholder"), ("README.md", "ok"));
+
         // .cue triggers forbidden-extension and forbidden-path
         var v = RepositoryGuard.Check(repo);
         AssertViolation(v, "forbidden-path");
@@ -149,11 +148,11 @@ public sealed class RepositoryGuardTests : IDisposable
     // ─────────────────────────────────────────────────────────────────────
     // provenance.md: unreviewed-source
     // ─────────────────────────────────────────────────────────────────────
-
     [Fact]
     public void UnreviewedSource_DetectsFileAbsentFromAllowlist()
     {
         var repo = MakeRepo(("README.md", "ok"), ("src/Module.cs", "// ok"));
+
         // Allowlist only contains README.md — Module.cs is unreviewed.
         var allowlist = new HashSet<string> { "README.md" };
         var v = RepositoryGuard.Check(repo, allowlist);
@@ -172,7 +171,6 @@ public sealed class RepositoryGuardTests : IDisposable
     // ─────────────────────────────────────────────────────────────────────
     // provenance.md: personal-path
     // ─────────────────────────────────────────────────────────────────────
-
     [Fact]
     public void PersonalPath_DetectsUnixHomePath()
     {
@@ -192,7 +190,6 @@ public sealed class RepositoryGuardTests : IDisposable
     // ─────────────────────────────────────────────────────────────────────
     // provenance.md: email-address
     // ─────────────────────────────────────────────────────────────────────
-
     [Fact]
     public void EmailAddress_DetectsEmail()
     {
@@ -212,7 +209,6 @@ public sealed class RepositoryGuardTests : IDisposable
     // ─────────────────────────────────────────────────────────────────────
     // provenance.md: internal-identifier
     // ─────────────────────────────────────────────────────────────────────
-
     [Fact]
     public void InternalIdentifier_DetectsOwnerName()
     {
@@ -242,7 +238,6 @@ public sealed class RepositoryGuardTests : IDisposable
     // ─────────────────────────────────────────────────────────────────────
     // provenance.md: decomp-dependency
     // ─────────────────────────────────────────────────────────────────────
-
     [Fact]
     public void DecompDependency_DetectsDecompRoot()
     {
@@ -262,7 +257,6 @@ public sealed class RepositoryGuardTests : IDisposable
     // ─────────────────────────────────────────────────────────────────────
     // provenance.md: decomp-source-citation
     // ─────────────────────────────────────────────────────────────────────
-
     [Fact]
     public void DecompSourceCitation_DetectsSourcePath()
     {
@@ -283,7 +277,6 @@ public sealed class RepositoryGuardTests : IDisposable
     // ─────────────────────────────────────────────────────────────────────
     // provenance.md: translation-claim
     // ─────────────────────────────────────────────────────────────────────
-
     [Fact]
     public void TranslationClaim_DetectsTranscriptionWord()
     {
@@ -305,7 +298,6 @@ public sealed class RepositoryGuardTests : IDisposable
     // ─────────────────────────────────────────────────────────────────────
     // provenance.md: hex-payload
     // ─────────────────────────────────────────────────────────────────────
-
     [Fact]
     public void HexPayload_DetectsDenseByteSequence()
     {
@@ -329,7 +321,6 @@ public sealed class RepositoryGuardTests : IDisposable
     // ─────────────────────────────────────────────────────────────────────
     // provenance.md: game-text-fixture
     // ─────────────────────────────────────────────────────────────────────
-
     [Fact]
     public void GameTextFixture_DetectsArchiveNameNearAssertion()
     {
@@ -353,7 +344,6 @@ public sealed class RepositoryGuardTests : IDisposable
     // ─────────────────────────────────────────────────────────────────────
     // provenance.md: suspicious-generated-payload
     // ─────────────────────────────────────────────────────────────────────
-
     [Fact]
     public void SuspiciousGeneratedPayload_DetectsOutputJson()
     {
@@ -373,7 +363,6 @@ public sealed class RepositoryGuardTests : IDisposable
     // ─────────────────────────────────────────────────────────────────────
     // provenance.md: media-or-capture (path rule)
     // ─────────────────────────────────────────────────────────────────────
-
     [Fact]
     public void MediaOrCapture_DetectsTrackedImageFile()
     {
@@ -393,7 +382,6 @@ public sealed class RepositoryGuardTests : IDisposable
     // ─────────────────────────────────────────────────────────────────────
     // provenance.md: media-or-capture (text rule)
     // ─────────────────────────────────────────────────────────────────────
-
     [Fact]
     public void MediaOrCaptureText_DetectsContactSheetReference()
     {
@@ -414,7 +402,6 @@ public sealed class RepositoryGuardTests : IDisposable
     // ─────────────────────────────────────────────────────────────────────
     // P1: architecture — Dw3.Game must not reference Dw3.Disc or Dw3.Formats
     // ─────────────────────────────────────────────────────────────────────
-
     [Fact]
     public void Architecture_DetectsDiscReferenceInCsproj()
     {
@@ -451,13 +438,17 @@ public sealed class RepositoryGuardTests : IDisposable
     // ─────────────────────────────────────────────────────────────────────
     // IDisposable: clean up temp directories
     // ─────────────────────────────────────────────────────────────────────
-
     public void Dispose()
     {
         foreach (var dir in _tempDirs)
         {
-            try { Directory.Delete(dir, recursive: true); }
-            catch { /* best-effort */ }
+            try
+            {
+                Directory.Delete(dir, recursive: true);
+            }
+            catch
+            { /* best-effort */
+            }
         }
     }
 }

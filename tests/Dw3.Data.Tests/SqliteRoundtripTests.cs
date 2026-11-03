@@ -55,6 +55,8 @@ public sealed class SqliteRoundtripTests : IDisposable
         // the file handle open past Dispose(), preventing File.Delete.
         SqliteConnection.ClearAllPools();
         if (File.Exists(_dbPath))
+        {
             File.Delete(_dbPath);
+        }
     }
 }

@@ -96,7 +96,7 @@ public static class NpcStageActorScanner
         {
             for (int index = 0; index <= MaximumActors; index++)
             {
-                int entryOffset = checked(offset + index * 4);
+                int entryOffset = checked(offset + (index * 4));
                 if (entryOffset + 4 > overlay.Length)
                 {
                     return false;

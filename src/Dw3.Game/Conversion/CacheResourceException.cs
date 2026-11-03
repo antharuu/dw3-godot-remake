@@ -10,5 +10,8 @@ public sealed class CacheResourceException : Exception
     /// </summary>
     /// <param name="code">Machine-readable error code prepended to the exception message (e.g. CACHE_RESOURCE_UNAVAILABLE).</param>
     /// <param name="detail">Human-readable description of the specific failure, appended after the code.</param>
-    public CacheResourceException(string code, string detail) : base($"{code}: {detail}") { }
+    public CacheResourceException(string code, string detail)
+        : base($"{code}: {detail}")
+    {
+    }
 }

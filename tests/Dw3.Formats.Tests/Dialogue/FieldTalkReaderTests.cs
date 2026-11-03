@@ -18,8 +18,12 @@ public sealed class FieldTalkReaderTests
         DialogueFixtures.U32(overlay, 0x1C, 0);
         DialogueFixtures.U32(overlay, 0x20, 0);
         DialogueFixtures.U32(overlay, 0x24, 12);
-        DialogueFixtures.U16(overlay, 0x80, 0x6004); DialogueFixtures.U16(overlay, 0x82, 1); DialogueFixtures.U16(overlay, 0x84, 0xFFFF);
-        DialogueFixtures.U16(overlay, 0x90, 0x0105); DialogueFixtures.U16(overlay, 0x92, 2); DialogueFixtures.U16(overlay, 0x94, 0xFFFF);
+        DialogueFixtures.U16(overlay, 0x80, 0x6004);
+        DialogueFixtures.U16(overlay, 0x82, 1);
+        DialogueFixtures.U16(overlay, 0x84, 0xFFFF);
+        DialogueFixtures.U16(overlay, 0x90, 0x0105);
+        DialogueFixtures.U16(overlay, 0x92, 2);
+        DialogueFixtures.U16(overlay, 0x94, 0xFFFF);
 
         IReadOnlyList<FieldTalk> talks = FieldTalkReader.Read(overlay, Load + 0x10, Load);
 

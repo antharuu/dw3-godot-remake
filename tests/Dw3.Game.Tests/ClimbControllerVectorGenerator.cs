@@ -44,7 +44,6 @@ public sealed class ClimbControllerVectorGenerator
     }
 
     // ------------------------------------------------------------------ helpers
-
     private static InputState MakeInput(string label)
     {
         var inp = new InputState();
@@ -55,21 +54,28 @@ public sealed class ClimbControllerVectorGenerator
             case "None": inp.SetDirections(left: false, right: false, up: false, down: false); break;
             default: throw new ArgumentException($"Unknown input label: {label}");
         }
+
         return inp;
     }
 
     private static JsonArray ToInputArray(IEnumerable<string> inputs)
     {
         var arr = new JsonArray();
-        foreach (var s in inputs) arr.Add(s);
+        foreach (var s in inputs)
+        {
+            arr.Add(s);
+        }
+
         return arr;
     }
 
     // ------------------------------------------------------------------ AnimSample case builder
-
     private static JsonObject AnimSampleCase(
-        int id, int set, int ticks,
-        bool loops, IReadOnlyList<ClimbRecord> records)
+        int id,
+        int set,
+        int ticks,
+        bool loops,
+        IReadOnlyList<ClimbRecord> records)
     {
         // Build inline ClimbData for this case only.
         var seqDict = new Dictionary<int, ClimbSequence>
@@ -106,9 +112,13 @@ public sealed class ClimbControllerVectorGenerator
     }
 
     // ------------------------------------------------------------------ ClimbSequence case builder
-
     private static JsonObject ClimbSequenceCase(
-        int id, string startMethod, int dir, float x, float y, int height,
+        int id,
+        string startMethod,
+        int dir,
+        float x,
+        float y,
+        int height,
         string[] inputs)
     {
         var state = new GameState { Position = new Vector2(x, y) };
@@ -116,13 +126,21 @@ public sealed class ClimbControllerVectorGenerator
         ctrl.SetData(StandardData());
 
         if (startMethod == "Up")
+        {
             ctrl.StartClimbUp(state, dir, (int)x, (int)y, height);
+        }
         else
+        {
             ctrl.StartClimbDown(state, dir, (int)x, (int)y, height);
+        }
 
         foreach (var label in inputs)
         {
-            if (!state.ClimbActive) break;  // stop when the climb has ended
+            if (!state.ClimbActive)
+            {
+                break;  // stop when the climb has ended
+            }
+
             ctrl.Tick(state, MakeInput(label));
         }
 
@@ -156,7 +174,11 @@ public sealed class ClimbControllerVectorGenerator
     private static string[] Repeat(string label, int count)
     {
         var arr = new string[count];
-        for (int i = 0; i < count; i++) arr[i] = label;
+        for (int i = 0; i < count; i++)
+        {
+            arr[i] = label;
+        }
+
         return arr;
     }
 
@@ -165,12 +187,13 @@ public sealed class ClimbControllerVectorGenerator
         => Repeat(label, maxTicks); // The controller stops writing when inactive; the test just runs all ticks.
 
     // ------------------------------------------------------------------ generator
-
     [Fact]
     public void GenerateClimbControllerVectors()
     {
         if (Environment.GetEnvironmentVariable("GENERATE_VECTORS") != "1")
+        {
             return;
+        }
 
         var cases = new JsonArray();
         int id = 1;
@@ -181,7 +204,6 @@ public sealed class ClimbControllerVectorGenerator
 
         // Standard animation data (inline per case for self-containment).
         // We test all 7 animation sets with 21 tick values each = 147 cases.
-
         var stdSets = new (int Set, bool Loops, ClimbRecord[] Records)[]
         {
             (0x1A, true,  [new ClimbRecord(0, 6, -21, -32), new ClimbRecord(1, 6, -21, -32)]),
@@ -209,7 +231,6 @@ public sealed class ClimbControllerVectorGenerator
         // ============================================================
         // Section B: ClimbSequence cases — full traversals
         // ============================================================
-
         int[] heights = [1, 2, 4, 8, 16, 32, 64, 128];
         int[] dirs = [0, 3, 5, 6];
 
@@ -220,7 +241,13 @@ public sealed class ClimbControllerVectorGenerator
             foreach (var d in dirs)
             {
                 int maxT = h + 20;
-                cases.Add(ClimbSequenceCase(id++, "Up", d, 100f, 100f, h,
+                cases.Add(ClimbSequenceCase(
+                    id++,
+                    "Up",
+                    d,
+                    100f,
+                    100f,
+                    h,
                     RunUntilDone("Up", maxT)));
             }
         }
@@ -232,7 +259,13 @@ public sealed class ClimbControllerVectorGenerator
             foreach (var d in dirs)
             {
                 int maxT = h + 20;
-                cases.Add(ClimbSequenceCase(id++, "Down", d, 100f, 100f, h,
+                cases.Add(ClimbSequenceCase(
+                    id++,
+                    "Down",
+                    d,
+                    100f,
+                    100f,
+                    h,
                     RunUntilDone("Down", maxT)));
             }
         }
@@ -246,7 +279,13 @@ public sealed class ClimbControllerVectorGenerator
         {
             foreach (var d in dirs)
             {
-                cases.Add(ClimbSequenceCase(id++, "Up", d, 50f, 80f, h,
+                cases.Add(ClimbSequenceCase(
+                    id++,
+                    "Up",
+                    d,
+                    50f,
+                    80f,
+                    h,
                     Repeat("Up", 5)));
             }
         }
@@ -256,7 +295,13 @@ public sealed class ClimbControllerVectorGenerator
         {
             foreach (var d in dirs)
             {
-                cases.Add(ClimbSequenceCase(id++, "Up", d, 200f, 300f, h,
+                cases.Add(ClimbSequenceCase(
+                    id++,
+                    "Up",
+                    d,
+                    200f,
+                    300f,
+                    h,
                     Repeat("Up", 15)));
             }
         }
@@ -266,7 +311,13 @@ public sealed class ClimbControllerVectorGenerator
         {
             foreach (var d in dirs)
             {
-                cases.Add(ClimbSequenceCase(id++, "Down", d, 150f, 200f, h,
+                cases.Add(ClimbSequenceCase(
+                    id++,
+                    "Down",
+                    d,
+                    150f,
+                    200f,
+                    h,
                     Repeat("Down", 5)));
             }
         }
@@ -280,16 +331,33 @@ public sealed class ClimbControllerVectorGenerator
         {
             foreach (var d in dirs)
             {
-                cases.Add(ClimbSequenceCase(id++, "Up", d, 0f, 0f, h,
+                cases.Add(ClimbSequenceCase(
+                    id++,
+                    "Up",
+                    d,
+                    0f,
+                    0f,
+                    h,
                     Repeat("None", 20)));
             }
         }
 
         // Mixed Up/Down/None: 8 ticks up, 4 none, 4 down: 4 heights × 2 dirs = 8 cases.
         var mixedInputs = new string[16];
-        for (int i = 0; i < 8; i++) mixedInputs[i] = "Up";
-        for (int i = 8; i < 12; i++) mixedInputs[i] = "None";
-        for (int i = 12; i < 16; i++) mixedInputs[i] = "Down";
+        for (int i = 0; i < 8; i++)
+        {
+            mixedInputs[i] = "Up";
+        }
+
+        for (int i = 8; i < 12; i++)
+        {
+            mixedInputs[i] = "None";
+        }
+
+        for (int i = 12; i < 16; i++)
+        {
+            mixedInputs[i] = "Down";
+        }
 
         foreach (var h in new[] { 8, 32, 64, 128 })
         {
@@ -304,7 +372,13 @@ public sealed class ClimbControllerVectorGenerator
         {
             foreach (var d in new[] { 3, 6 })
             {
-                cases.Add(ClimbSequenceCase(id++, "Down", d, 100f, 100f, h,
+                cases.Add(ClimbSequenceCase(
+                    id++,
+                    "Down",
+                    d,
+                    100f,
+                    100f,
+                    h,
                     Repeat("Up", 20)));
             }
         }
@@ -312,7 +386,6 @@ public sealed class ClimbControllerVectorGenerator
         // ============================================================
         // Pad to reach 300 if needed (extra AnimSample with additional tick values).
         // ============================================================
-
         int[] extraTicks = [17, 18, 19, 21, 22, 23, 24, 25, 30, 40, 60, 75, 200, 500];
         int padIdx = 0;
         while (cases.Count < 300)
@@ -326,7 +399,6 @@ public sealed class ClimbControllerVectorGenerator
         // ============================================================
         // Write output file.
         // ============================================================
-
         var root = new JsonObject
         {
             ["metadata"] = new JsonObject
@@ -346,7 +418,8 @@ public sealed class ClimbControllerVectorGenerator
 
         var outPath = Path.Combine(
             Path.GetDirectoryName(typeof(ClimbControllerVectorGenerator).Assembly.Location)!,
-            "Vectors", "climb-controller.json");
+            "Vectors",
+            "climb-controller.json");
         Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
         File.WriteAllText(outPath, root.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
 

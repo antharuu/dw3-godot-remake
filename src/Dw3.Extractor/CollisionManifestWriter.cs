@@ -23,6 +23,7 @@ public static class CollisionManifestWriter
 
         using var json = new Utf8JsonWriter(new TextWriterStream(output), new JsonWriterOptions { Indented = true });
         json.WriteStartObject();
+
         // Write actors before schema to match baseline alphabetical order.
         json.WriteStartObject("actors");
         foreach (var (stage, stageActors) in actors.OrderBy(kv => kv.Key, StringComparer.Ordinal))

@@ -64,15 +64,18 @@ internal static class CollisionExtractionStep
                 {
                     decoded[actorName] = FieldActorDecoder.Decode(overlay, actorAddress, OverlayLoadBase);
                 }
+
                 actors[stageName] = decoded;
             }
 
             var writer = new DataPackWriter(outputDirectory);
-            writer.Write(new DataPackMetadata(
+            writer.Write(
+                new DataPackMetadata(
                 typeof(CollisionExtractionStep).Assembly.GetName().Version?.ToString(3) ?? "0.1.0",
                 disc.IdentifyEdition().BinSha1,
                 disc.IdentifyEdition().Label,
-                DateTimeOffset.UtcNow), context =>
+                DateTimeOffset.UtcNow),
+                context =>
             {
                 string manifestPath = context.GetImagePath("collision/collision-manifest.json");
                 Directory.CreateDirectory(Path.GetDirectoryName(manifestPath)!);

@@ -166,7 +166,9 @@ internal static class FieldAnimationParser
             list.Add(new WaterFrame(
                 DataPackFiles.Require(pack, reader.GetString(5), $"water opaque zone={zone}"),
                 DataPackFiles.Require(pack, reader.GetString(6), $"water STP zone={zone}"),
-                reader.GetInt32(2), reader.GetInt32(3), reader.GetInt32(4)));
+                reader.GetInt32(2),
+                reader.GetInt32(3),
+                reader.GetInt32(4)));
         }
 
         return frames;
@@ -236,9 +238,21 @@ internal static class FieldAnimationParser
             throw Invalid($"water object zone={ZoneId(stage)} has no zone record");
         }
 
-        objects.Add(new WaterObject(index, reader.GetInt32(2), reader.GetInt32(3), reader.GetInt32(4), reader.GetInt32(5),
-            reader.GetInt32(6), reader.GetInt32(7), reader.GetInt32(8), reader.GetInt32(9), reader.GetInt32(10),
-            reader.GetInt32(11), reader.GetInt32(12), reader.GetInt32(13), list));
+        objects.Add(new WaterObject(
+            index,
+            reader.GetInt32(2),
+            reader.GetInt32(3),
+            reader.GetInt32(4),
+            reader.GetInt32(5),
+            reader.GetInt32(6),
+            reader.GetInt32(7),
+            reader.GetInt32(8),
+            reader.GetInt32(9),
+            reader.GetInt32(10),
+            reader.GetInt32(11),
+            reader.GetInt32(12),
+            reader.GetInt32(13),
+            list));
     }
 
     /// <summary>Creates a command on the given connection with <c>$domain</c> bound.</summary>

@@ -26,12 +26,19 @@ public static class BattleModelDomainWriter
         {
             BattleModelExtraction fighter = fighters[ordinal];
             if (fighter.Outcome.Reference is { } reference && fighter.Model is { } model)
+            {
                 WriteDecoded(context, ordinal, reference, model, fighter, edition);
+            }
             else
+            {
                 WriteFailed(context, ordinal, fighter.Outcome);
+            }
         }
-        File.WriteAllText(context.GetImagePath($"{ModelsDirectory}/decode-report.json"),
-            BattleModelJsonWriter.WriteReport([.. fighters.Select(fighter => fighter.Outcome)],
+
+        File.WriteAllText(
+            context.GetImagePath($"{ModelsDirectory}/decode-report.json"),
+            BattleModelJsonWriter.WriteReport(
+                [.. fighters.Select(fighter => fighter.Outcome)],
                 fighters.Count(fighter => fighter.Payload?.Metadata.Face.Parts.Count > 0)));
     }
 
@@ -51,16 +58,40 @@ public static class BattleModelDomainWriter
         File.WriteAllText(context.GetImagePath(manifest), fighter.Payload is { } payload
             ? BattleModelJsonWriter.WriteModel(reference, payload, edition)
             : BattleModelJsonWriter.WriteModel(reference, model, edition));
-        Insert(context,
+        Insert(
+            context,
             "INSERT INTO battle_models (fighter_id,entry_ordinal,record_index,kind,status,reason,is_enemy,model_file,model_entry,motion_file,motion_entry,texture_entry,bone_count,mesh_count,disc_path,sha256,manifest_path) VALUES ($1,$2,$3,$4,'decoded',NULL,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)",
-            reference.FighterId, ordinal, reference.Index, reference.Kind, reference.IsEnemy ? 1 : 0, reference.ModelFile, reference.ModelEntry,
-            reference.MotionFile, reference.MotionEntry, model.TextureEntry, model.BoneCount, model.Meshes.Count,
-            (object?)fighter.DiscPath ?? DBNull.Value, (object?)fighter.Sha256 ?? DBNull.Value, manifest);
+            reference.FighterId,
+            ordinal,
+            reference.Index,
+            reference.Kind,
+            reference.IsEnemy ? 1 : 0,
+            reference.ModelFile,
+            reference.ModelEntry,
+            reference.MotionFile,
+            reference.MotionEntry,
+            model.TextureEntry,
+            model.BoneCount,
+            model.Meshes.Count,
+            (object?)fighter.DiscPath ?? DBNull.Value,
+            (object?)fighter.Sha256 ?? DBNull.Value,
+            manifest);
         foreach (BattleModelBone bone in model.Bones)
-            Insert(context, "INSERT INTO battle_model_bones (fighter_id,bone,parent,mesh_entry,key_entry) VALUES ($1,$2,$3,$4,$5)",
-                reference.FighterId, bone.Index, (object?)bone.Parent ?? DBNull.Value, (object?)bone.MeshEntry ?? DBNull.Value, (object?)bone.KeyEntry ?? DBNull.Value);
+        {
+            Insert(
+                context,
+                "INSERT INTO battle_model_bones (fighter_id,bone,parent,mesh_entry,key_entry) VALUES ($1,$2,$3,$4,$5)",
+                reference.FighterId,
+                bone.Index,
+                (object?)bone.Parent ?? DBNull.Value,
+                (object?)bone.MeshEntry ?? DBNull.Value,
+                (object?)bone.KeyEntry ?? DBNull.Value);
+        }
+
         if (fighter.Payload is { } full)
+        {
             WriteAssets(context, reference.FighterId, full);
+        }
     }
 
     /// <summary>
@@ -77,22 +108,38 @@ public static class BattleModelDomainWriter
             string relative = $"{ModelsDirectory}/fighter-{fighterId}-texture-{texture.Key}.png";
             File.WriteAllBytes(context.GetImagePath(relative), PngEncoder.Encode(texture.Width, texture.Height, texture.Rgba));
             context.RegisterImage($"battle/models/fighter-{fighterId}-texture-{texture.Key}.png");
-            Insert(context, "INSERT INTO battle_model_textures (fighter_id,texture_key,mode,page,clut_x,clut_y,transparent_pixels,stp_pixels,image_path) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)",
-                fighterId, texture.Key, texture.Mode, texture.Page, (object?)texture.ClutX ?? DBNull.Value, (object?)texture.ClutY ?? DBNull.Value, texture.TransparentPixels, texture.StpPixels, relative);
+            Insert(
+                context,
+                "INSERT INTO battle_model_textures (fighter_id,texture_key,mode,page,clut_x,clut_y,transparent_pixels,stp_pixels,image_path) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)",
+                fighterId,
+                texture.Key,
+                texture.Mode,
+                texture.Page,
+                (object?)texture.ClutX ?? DBNull.Value,
+                (object?)texture.ClutY ?? DBNull.Value,
+                texture.TransparentPixels,
+                texture.StpPixels,
+                relative);
         }
+
         foreach ((int bone, BattleBoneTracks tracks) in payload.Tracks)
             for (int track = 0; track < tracks.All.Count; track++)
+            {
                 for (int ordinal = 0; ordinal < tracks.All[track].Count; ordinal++)
                 {
                     BattleTrackKey key = tracks.All[track][ordinal];
                     Insert(context, "INSERT INTO battle_model_track_keys (fighter_id,bone,track,ordinal,frame,x,y,z) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)", fighterId, bone, track, ordinal, key.Frame, key.X, key.Y, key.Z);
                 }
+            }
+
         for (int motion = 0; motion < payload.Motions.Count; motion++)
+        {
             for (int ordinal = 0; ordinal < payload.Motions[motion].Count; ordinal++)
             {
                 BattleMotionStep step = payload.Motions[motion][ordinal];
                 Insert(context, "INSERT INTO battle_model_motion_steps (fighter_id,motion,ordinal,step_index,count,frame,end_frame) VALUES ($1,$2,$3,$4,$5,$6,$7)", fighterId, motion, ordinal, step.Index, step.Count, step.Frame, step.EndFrame);
             }
+        }
     }
 
     /// <summary>
@@ -102,8 +149,14 @@ public static class BattleModelDomainWriter
     /// <param name="ordinal">The zero-based position of this fighter in the fighter table.</param>
     /// <param name="outcome">The failed outcome carrying the fighter entry and failure reason.</param>
     private static void WriteFailed(DataPackWriteContext context, int ordinal, BattleModelOutcome outcome) =>
-        Insert(context, "INSERT INTO battle_models (fighter_id,entry_ordinal,record_index,kind,status,reason) VALUES ($1,$2,$3,$4,'failed',$5)",
-            outcome.Entry.FighterId, ordinal, outcome.Entry.Index, outcome.Entry.Kind, outcome.Reason!);
+        Insert(
+            context,
+            "INSERT INTO battle_models (fighter_id,entry_ordinal,record_index,kind,status,reason) VALUES ($1,$2,$3,$4,'failed',$5)",
+            outcome.Entry.FighterId,
+            ordinal,
+            outcome.Entry.Index,
+            outcome.Entry.Kind,
+            outcome.Reason!);
 
     /// <summary>
     /// Executes a parameterised INSERT command against the current pack transaction.
@@ -117,7 +170,10 @@ public static class BattleModelDomainWriter
         command.Transaction = context.Transaction;
         command.CommandText = sql;
         for (int i = 0; i < values.Length; i++)
+        {
             command.Parameters.AddWithValue($"${i + 1}", values[i]);
+        }
+
         command.ExecuteNonQuery();
     }
 }

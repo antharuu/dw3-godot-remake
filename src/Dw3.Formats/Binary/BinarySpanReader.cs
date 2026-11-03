@@ -35,8 +35,11 @@ public sealed class BinarySpanReader
     public byte ReadU8(int offset)
     {
         if ((uint)offset >= (uint)_data.Length)
+        {
             throw new FormatException(
                 $"u8 read at 0x{offset:X} is outside buffer (length {_data.Length})");
+        }
+
         return _data[offset];
     }
 
@@ -47,8 +50,11 @@ public sealed class BinarySpanReader
     public ushort ReadU16(int offset)
     {
         if (offset < 0 || offset + 2 > _data.Length)
+        {
             throw new FormatException(
                 $"u16 read at 0x{offset:X} would exceed buffer (length {_data.Length})");
+        }
+
         return BinaryPrimitives.ReadUInt16LittleEndian(_data.AsSpan(offset, 2));
     }
 
@@ -59,8 +65,11 @@ public sealed class BinarySpanReader
     public uint ReadU32(int offset)
     {
         if (offset < 0 || offset + 4 > _data.Length)
+        {
             throw new FormatException(
                 $"u32 read at 0x{offset:X} would exceed buffer (length {_data.Length})");
+        }
+
         return BinaryPrimitives.ReadUInt32LittleEndian(_data.AsSpan(offset, 4));
     }
 
@@ -71,8 +80,11 @@ public sealed class BinarySpanReader
     public int ReadI32(int offset)
     {
         if (offset < 0 || offset + 4 > _data.Length)
+        {
             throw new FormatException(
                 $"i32 read at 0x{offset:X} would exceed buffer (length {_data.Length})");
+        }
+
         return BinaryPrimitives.ReadInt32LittleEndian(_data.AsSpan(offset, 4));
     }
 
@@ -83,8 +95,11 @@ public sealed class BinarySpanReader
     public short ReadI16(int offset)
     {
         if (offset < 0 || offset + 2 > _data.Length)
+        {
             throw new FormatException(
                 $"i16 read at 0x{offset:X} would exceed buffer (length {_data.Length})");
+        }
+
         return BinaryPrimitives.ReadInt16LittleEndian(_data.AsSpan(offset, 2));
     }
 
@@ -98,8 +113,11 @@ public sealed class BinarySpanReader
     public byte[] Slice(int offset, int length)
     {
         if (offset < 0 || length < 0 || (long)offset + length > _data.Length)
+        {
             throw new FormatException(
                 $"slice [0x{offset:X}..0x{offset + length:X}) is outside buffer (length {_data.Length})");
+        }
+
         return _data.AsSpan(offset, length).ToArray();
     }
 }

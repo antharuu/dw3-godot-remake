@@ -1,6 +1,6 @@
-using Godot;
 using Dw3Production.Conversion;
 using Dw3Production.Simulation;
+using Godot;
 
 namespace Dw3Production.Presentation;
 
@@ -162,6 +162,7 @@ public sealed class FieldRenderer : IDisposable
         foreach (var layer in zone.Layers)
         {
             var sprite = new Sprite2D { Texture = _textureCache.TextureFor(layer.Path), Centered = false };
+
             // Apply the source stream layer modulate to the depth-11 (background) sprite.
             // In the field-layer record contract, FIELDSTG_spriteDepths[2]=11 always uses FIELDSTG_state.spriteColor
             // (i==2 condition), giving each stage its ambient tint.
@@ -217,6 +218,7 @@ public sealed class FieldRenderer : IDisposable
         }
 
         PresentCalls++;
+
         // Climbing swaps the frame source to the climb archive and lifts the sprite by
         // climbHeight/256 pixels while the shadow stays at the foot (source drawActor:
         // tile.y = (pos.y - climbHeight) >> 8, shadow at pos.y/256 - 8).
@@ -234,7 +236,7 @@ public sealed class FieldRenderer : IDisposable
         _cameraController.Apply(_zone, _player.Position, cameraSmooth);
         PresentCue(state);
         var visibleSize = GetViewportWorldSize();
-        var viewport = new Rect2(_camera.Position - visibleSize / 2f, visibleSize);
+        var viewport = new Rect2(_camera.Position - (visibleSize / 2f), visibleSize);
         _diagnosticOverlay.Update(zone, state, f3On, (float)Engine.GetFramesPerSecond(), (float)deltaSeconds, viewport);
     }
 
@@ -264,6 +266,7 @@ public sealed class FieldRenderer : IDisposable
 
         var climbSample = ClimbAnimation.Sample(climbData, state.ClimbAnimationSet, state.ClimbAnimationTicks);
         player.Texture = _textureCache.TextureFor(framePath(state.ClimbAnimationSet, climbSample.Frame));
+
         // The source mirrors the frame offset for dir >= 5 (drawActor: x = -(frameWidth + x)).
         // The climb frames carry an asymmetric anchor (-21), unlike the player's symmetric -16,
         // so the raw offset must be mirrored here or the sprite lands 10 px too far left.
@@ -271,7 +274,7 @@ public sealed class FieldRenderer : IDisposable
         var climbOffsetX = climbFlipH ? -(player.Texture.GetWidth() + climbSample.OffsetX) : climbSample.OffsetX;
         player.Offset = new Vector2(climbOffsetX, climbSample.OffsetY);
         player.FlipH = climbFlipH;
-        player.Position = new Vector2(state.Position.X, state.Position.Y - state.ClimbHeight / 256f);
+        player.Position = new Vector2(state.Position.X, state.Position.Y - (state.ClimbHeight / 256f));
         if (_playerShadow is not null)
         {
             _playerShadow.Visible = true;
@@ -325,6 +328,7 @@ public sealed class FieldRenderer : IDisposable
         }
 
         var depths = _waterLayer.ActiveDepths().ToHashSet();
+
         // Depth 4 always carries the player and every NPC, so sort it even when a zone
         // has no depth-4 map object (the actor and object callback lists are independent).
         depths.Add(4);
@@ -371,7 +375,7 @@ public sealed class FieldRenderer : IDisposable
     private Rect2 GetViewportRect()
     {
         var size = GetViewportWorldSize();
-        return new Rect2(_camera.Position - size / 2f, size);
+        return new Rect2(_camera.Position - (size / 2f), size);
     }
 
     /// <summary>Calculates the visible viewport size in world coordinates.</summary>

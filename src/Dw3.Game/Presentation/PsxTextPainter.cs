@@ -177,8 +177,14 @@ public sealed class PsxTextPainter
     /// <param name="palette">Palette row used by glyphs.</param>
     /// <param name="style">Font style identifier.</param>
     /// <param name="tokenLimit">Maximum number of tokens drawn.</param>
-    private void DrawTokens(IReadOnlyList<TextToken> tokens, IReadOnlyList<IReadOnlyList<TextToken>> substitutions,
-        Vector2 origin, ref Vector2 cursor, int palette, int style, int tokenLimit)
+    private void DrawTokens(
+        IReadOnlyList<TextToken> tokens,
+        IReadOnlyList<IReadOnlyList<TextToken>> substitutions,
+        Vector2 origin,
+        ref Vector2 cursor,
+        int palette,
+        int style,
+        int tokenLimit)
     {
         if (_font is null || palette is < 0 or > 7)
         {
@@ -206,8 +212,14 @@ public sealed class PsxTextPainter
     /// <param name="style">Font style identifier.</param>
     /// <param name="tokenLimit">Remaining reveal budget.</param>
     /// <returns>Number of glyph tokens drawn.</returns>
-    private int DrawToken(TextToken token, IReadOnlyList<IReadOnlyList<TextToken>> substitutions,
-        Vector2 origin, ref Vector2 cursor, int palette, int style, int tokenLimit)
+    private int DrawToken(
+        TextToken token,
+        IReadOnlyList<IReadOnlyList<TextToken>> substitutions,
+        Vector2 origin,
+        ref Vector2 cursor,
+        int palette,
+        int style,
+        int tokenLimit)
     {
         if (token.IsControl)
         {
@@ -244,8 +256,14 @@ public sealed class PsxTextPainter
     /// <param name="palette">Palette row used by glyphs.</param>
     /// <param name="style">Font style identifier.</param>
     /// <param name="tokenLimit">Remaining reveal budget.</param>
-    private void ApplyControl(TextToken token, IReadOnlyList<IReadOnlyList<TextToken>> substitutions,
-        Vector2 origin, ref Vector2 cursor, int palette, int style, int tokenLimit)
+    private void ApplyControl(
+        TextToken token,
+        IReadOnlyList<IReadOnlyList<TextToken>> substitutions,
+        Vector2 origin,
+        ref Vector2 cursor,
+        int palette,
+        int style,
+        int tokenLimit)
     {
         if (token.Command == 1)
         {

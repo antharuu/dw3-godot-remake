@@ -80,7 +80,8 @@ internal sealed class BattleModelProbe : BattleProbe
     {
         var kotemonPasses = renderer.SurfacePasses(Kotemon);
         var stagePasses = renderer.SurfacePasses(-1);
-        ProbeRequirement.Require(kotemonPasses.Opaque > 0 && kotemonPasses.Translucent == 0,
+        ProbeRequirement.Require(
+            kotemonPasses.Opaque > 0 && kotemonPasses.Translucent == 0,
             $"Kotemon 383 surfaces must all be opaque opaque={kotemonPasses.Opaque} translucent={kotemonPasses.Translucent}");
         QuietLog.Info($"battle-model passes fighter=383 opaque={kotemonPasses.Opaque} translucent={kotemonPasses.Translucent} stage-opaque={stagePasses.Opaque} stage-translucent={stagePasses.Translucent}");
     }
@@ -104,12 +105,14 @@ internal sealed class BattleModelProbe : BattleProbe
         var legacy = await CaptureAsync(captureRoot, "kotemon-legacy-all-bones.png");
         var legacyPixels = LeftHalfBright(legacy);
         renderer.SetProbePose(IdleFrame);
-        ProbeRequirement.Require(renderer.BoneVisible(Kotemon, 16) && !renderer.BoneVisible(Kotemon, 21) && !renderer.BoneVisible(Kotemon, 23),
+        ProbeRequirement.Require(
+            renderer.BoneVisible(Kotemon, 16) && !renderer.BoneVisible(Kotemon, 21) && !renderer.BoneVisible(Kotemon, 23),
             "Kotemon idle frame 10 must show saber bone 16 only");
         var kotemon = await CaptureAsync(captureRoot, "kotemon-idle.png");
         var kotemonPixels = LeftHalfBright(kotemon);
         var saberDifference = BattlePixelMetrics.CountDifferent(legacy, kotemon, 790, 930);
-        ProbeRequirement.Require(kotemonPixels > 1000 && saberDifference > 0,
+        ProbeRequirement.Require(
+            kotemonPixels > 1000 && saberDifference > 0,
             $"Kotemon source mask must retain textured body and change saber region pixels={saberDifference} before={legacyPixels} after={kotemonPixels}");
         QuietLog.Info($"battle-model bones {renderer.BoneVisibility(Kotemon)} visible_sabre=16 frame={IdleFrame} saber_region_diff={saberDifference} pixels-before={legacyPixels} pixels-after={kotemonPixels}");
     }
@@ -124,7 +127,8 @@ internal sealed class BattleModelProbe : BattleProbe
         var noCullPixels = LeftHalfBright(await CaptureAsync(captureRoot, "kotemon-nocull.png"));
         renderer.SetCullModeForProbe(BaseMaterial3D.CullModeEnum.Back);
         var culledPixels = LeftHalfBright(await CaptureAsync(captureRoot, "kotemon-cull-back.png"));
-        ProbeRequirement.Require(culledPixels > 1000 && culledPixels * 4 > noCullPixels,
+        ProbeRequirement.Require(
+            culledPixels > 1000 && culledPixels * 4 > noCullPixels,
             $"back culling removed the visible Kotemon body no-cull={noCullPixels} back={culledPixels}");
         QuietLog.Info($"battle-model culling fighter=383 mode=Back textured-no-cull={noCullPixels} textured-back={culledPixels} orientation=correct");
     }

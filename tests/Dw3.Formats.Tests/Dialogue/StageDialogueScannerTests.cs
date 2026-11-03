@@ -45,9 +45,12 @@ public sealed class StageDialogueScannerTests
     public void ConstantTextStoreIsNotALanguageRelativeSelector()
     {
         DialogueRomLayout layout = DialogueFixtures.Layout;
-        byte[] overlay = DialogueFixtures.Overlay(0x80,
-            Lui(S0, layout.FieldStateAddress), AddiuLow(S0, S0, layout.FieldStateAddress),
-            Addiu(V0, Zero, 0x2A), Sw(V0, S0, layout.TextFileFieldOffset));
+        byte[] overlay = DialogueFixtures.Overlay(
+            0x80,
+            Lui(S0, layout.FieldStateAddress),
+            AddiuLow(S0, S0, layout.FieldStateAddress),
+            Addiu(V0, Zero, 0x2A),
+            Sw(V0, S0, layout.TextFileFieldOffset));
 
         Assert.Throws<MipsDecodeException>(() => StageDialogueScanner.Scan(overlay, layout));
     }

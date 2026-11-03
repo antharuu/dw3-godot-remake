@@ -10,7 +10,11 @@ public sealed class StorageDiagnosticProbeRunner(IDiagnosticProbeHost host)
     /// <returns><see langword="true"/> when the probe was started.</returns>
     public bool TryDispatch(HostStartupOptions options)
     {
-        if (!options.SqliteProbe) return false;
+        if (!options.SqliteProbe)
+        {
+            return false;
+        }
+
         _host.ScheduleProbe("RunSqliteProbe", ownsInput: true);
         return true;
     }

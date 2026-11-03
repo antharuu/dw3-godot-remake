@@ -48,7 +48,6 @@ public static class DiscStageModeReader
     private const string FieldStgIsoPath = "AAA/PRO/FIELDSTG.PRO";
 
     // ── Entry layout in FIELDSTG_stages ──────────────────────────────────
-
     private const int FieldStgStagesFileOffset = (int)(FieldStgStagesRamAddress - FieldStgLoadAddress);
 
     // ── Public API ────────────────────────────────────────────────────────
@@ -96,6 +95,7 @@ public static class DiscStageModeReader
         foreach (var entry in entries)
         {
             string name = Path.GetFileName(entry.IsoPath);
+
             // Match WSTAG###.PRO (three digits, uppercase).
             if (name.StartsWith("WSTAG", StringComparison.Ordinal) &&
                 name.EndsWith(".PRO", StringComparison.Ordinal) &&
@@ -104,6 +104,7 @@ public static class DiscStageModeReader
                 map[entry.Lba] = name;
             }
         }
+
         return map;
     }
 
@@ -117,32 +118,44 @@ public static class DiscStageModeReader
     /// <returns>The complete FILE_SECTORS LBA table as an int32 array.</returns>
     /// <exception cref="InvalidDataException">WSTAG200.PRO is absent, the verification offset is out of range,
     /// or the stored LBA does not match the disc directory LBA.</exception>
-    private static int[] ReadFileSectors(byte[] slesData, Dictionary<int, string> lbaToStageName,
+    private static int[] ReadFileSectors(
+        byte[] slesData,
+        Dictionary<int, string> lbaToStageName,
         IReadOnlyList<DiscFileEntry> entries)
     {
         _ = lbaToStageName;
+
         // The FILE_SECTORS array is a flat int32[] at a known offset in SLES_039.36.
         // We verify by checking that FILE_SECTORS[466] equals the LBA of WSTAG200.PRO.
         int verificationLba = entries
             .FirstOrDefault(e => string.Equals(e.IsoPath, "AAA/PRO/WSTAG200.PRO", StringComparison.Ordinal))
             ?.Lba ?? 0;
         if (verificationLba == 0)
+        {
             throw new InvalidDataException("WSTAG200.PRO is absent from the disc; cannot verify FILE_SECTORS base.");
+        }
 
-        int verificationOffset = FileSectorsBaseOffset + VerificationOverlayIndex * sizeof(int);
+        int verificationOffset = FileSectorsBaseOffset + (VerificationOverlayIndex * sizeof(int));
         if (verificationOffset + sizeof(int) > slesData.Length)
+        {
             throw new InvalidDataException($"FILE_SECTORS verification offset 0x{verificationOffset:X} is out of {SlesIsoPath} range.");
+        }
 
         int storedLba = BinaryPrimitives.ReadInt32LittleEndian(slesData.AsSpan(verificationOffset, sizeof(int)));
         if (storedLba != verificationLba)
+        {
             throw new InvalidDataException(
                 $"FILE_SECTORS[{VerificationOverlayIndex}] = {storedLba} but WSTAG200.PRO LBA = {verificationLba}; disc or offset mismatch.");
+        }
 
         // The array length is determined by available data; cap at a safe maximum.
         int maxEntries = (slesData.Length - FileSectorsBaseOffset) / sizeof(int);
         var result = new int[maxEntries];
         for (int i = 0; i < maxEntries; i++)
-            result[i] = BinaryPrimitives.ReadInt32LittleEndian(slesData.AsSpan(FileSectorsBaseOffset + i * sizeof(int), sizeof(int)));
+        {
+            result[i] = BinaryPrimitives.ReadInt32LittleEndian(slesData.AsSpan(FileSectorsBaseOffset + (i * sizeof(int)), sizeof(int)));
+        }
+
         return result;
     }
 
@@ -153,9 +166,12 @@ public static class DiscStageModeReader
     /// <param name="entryCount">The number of entries in the FIELDSTG stages table; defaults to the EU value.</param>
     /// <param name="tableOffset">The byte offset of the FIELDSTG stages table; defaults to the EU value.</param>
     /// <returns>A dictionary mapping each stage mode to its stage id.</returns>
-    internal static IReadOnlyDictionary<ushort, int> ParseStageModes(byte[] fieldStgData,
-        IReadOnlyList<int> fileSectors, Dictionary<int, string> lbaToStageName,
-        int entryCount = FieldStgStagesEntryCount, int tableOffset = FieldStgStagesFileOffset) =>
+    internal static IReadOnlyDictionary<ushort, int> ParseStageModes(
+        byte[] fieldStgData,
+        IReadOnlyList<int> fileSectors,
+        Dictionary<int, string> lbaToStageName,
+        int entryCount = FieldStgStagesEntryCount,
+        int tableOffset = FieldStgStagesFileOffset) =>
         ParseStageRegistry(fieldStgData, fileSectors, lbaToStageName, entryCount, tableOffset)
             .ToDictionary(stage => stage.Mode, stage => stage.StageId);
 
@@ -170,9 +186,12 @@ public static class DiscStageModeReader
     /// <param name="tableOffset">Byte offset of the FIELDSTG stages table in the overlay; defaults to the EU value.</param>
     /// <returns>All resolved field stages in the order they appear in FIELDSTG_stages.</returns>
     /// <exception cref="InvalidDataException">The FIELDSTG stage registry is malformed or a stage filename cannot be parsed.</exception>
-    internal static IReadOnlyList<DiscFieldStage> ParseStageRegistry(byte[] fieldStgData,
-        IReadOnlyList<int> fileSectors, Dictionary<int, string> lbaToStageName,
-        int entryCount = FieldStgStagesEntryCount, int tableOffset = FieldStgStagesFileOffset)
+    internal static IReadOnlyList<DiscFieldStage> ParseStageRegistry(
+        byte[] fieldStgData,
+        IReadOnlyList<int> fileSectors,
+        Dictionary<int, string> lbaToStageName,
+        int entryCount = FieldStgStagesEntryCount,
+        int tableOffset = FieldStgStagesFileOffset)
     {
         IReadOnlyList<FieldStageTableEntry> rawEntries;
         try
@@ -188,21 +207,36 @@ public static class DiscStageModeReader
         foreach (FieldStageTableEntry raw in rawEntries)
         {
             if (raw.OverlayFileId >= fileSectors.Count)
+            {
                 continue;
+            }
+
             int lba = fileSectors[raw.OverlayFileId];
             if (lba <= 0 || !lbaToStageName.TryGetValue(lba, out string? stageName))
+            {
                 continue;
+            }
+
             if (!stageName.StartsWith("WSTAG", StringComparison.Ordinal) ||
                 !stageName.EndsWith(".PRO", StringComparison.Ordinal) ||
                 stageName.Length != "WSTAG000.PRO".Length)
+            {
                 continue;
+            }
 
             ReadOnlySpan<char> digits = stageName.AsSpan("WSTAG".Length, 3);
-            if (!int.TryParse(digits, System.Globalization.NumberStyles.None,
-                System.Globalization.CultureInfo.InvariantCulture, out int stageNumber))
+            if (!int.TryParse(
+                digits,
+                System.Globalization.NumberStyles.None,
+                System.Globalization.CultureInfo.InvariantCulture,
+                out int stageNumber))
+            {
                 throw new InvalidDataException($"Malformed field overlay filename in disc registry: {stageName}");
+            }
+
             result.Add(new DiscFieldStage(raw.Mode, stageNumber, raw.OverlayFileId, raw.InitializerAddress));
         }
+
         return result;
     }
 

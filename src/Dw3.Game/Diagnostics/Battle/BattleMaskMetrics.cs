@@ -35,7 +35,10 @@ internal static class BattleMaskMetrics
         {
             for (var x = 0; x < Width; x++)
             {
-                if (ChannelDistance(model.GetPixel(x, y), stage.GetPixel(x, y)) > .08f) mask.SetPixel(x, y, Colors.White);
+                if (ChannelDistance(model.GetPixel(x, y), stage.GetPixel(x, y)) > .08f)
+                {
+                    mask.SetPixel(x, y, Colors.White);
+                }
             }
         }
 
@@ -55,7 +58,10 @@ internal static class BattleMaskMetrics
         {
             for (var x = 0; x < Width; x++)
             {
-                if (IsSelected(mask, x, y)) values.Add(Luminance(image.GetPixel(x, y)));
+                if (IsSelected(mask, x, y))
+                {
+                    values.Add(Luminance(image.GetPixel(x, y)));
+                }
             }
         }
 
@@ -102,7 +108,11 @@ internal static class BattleMaskMetrics
     private static string Histogram(IEnumerable<float> values)
     {
         var bins = new int[8];
-        foreach (var value in values) bins[Math.Min(7, (int)(value / 32f))]++;
+        foreach (var value in values)
+        {
+            bins[Math.Min(7, (int)(value / 32f))]++;
+        }
+
         return string.Join(',', bins);
     }
 }

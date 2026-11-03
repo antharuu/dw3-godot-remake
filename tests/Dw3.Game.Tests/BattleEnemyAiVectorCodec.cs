@@ -14,13 +14,18 @@ internal static class BattleEnemyAiVectorCodec
     internal sealed class CountingRng : IBattleRng
     {
         private readonly int[] _values;
+
         public int Calls { get; private set; }
+
         public CountingRng(int[] values) => _values = values;
 
         public int NextValue()
         {
             if (Calls >= _values.Length)
+            {
                 throw new InvalidOperationException($"random sequence exhausted after {Calls} values");
+            }
+
             return _values[Calls++];
         }
     }
@@ -131,8 +136,10 @@ internal static class BattleEnemyAiVectorCodec
             {
                 case "TestEnemyCondition":
                     output["result"] = BattleEnemyAi.TestEnemyCondition(
-                        c["condition"]!.GetValue<int>(), c["arg"]!.GetValue<int>(),
-                        ContextFromJson(c["ctx"]!), rng);
+                        c["condition"]!.GetValue<int>(),
+                        c["arg"]!.GetValue<int>(),
+                        ContextFromJson(c["ctx"]!),
+                        rng);
                     break;
                 case "GetEnemyAction":
                     output["decision"] = DecisionToJson(BattleEnemyAi.GetEnemyAction(
@@ -144,17 +151,20 @@ internal static class BattleEnemyAiVectorCodec
                         output["decision"] = DecisionToJson(BattleEnemyAi.PickAction(ctx.Enemy, ctx, rng));
                         break;
                     }
+
                 case "PickCounter":
                     {
                         var ctx = ContextFromJson(c["ctx"]!);
                         output["decision"] = DecisionToJson(BattleEnemyAi.PickCounter(ctx.Enemy, ctx, rng));
                         break;
                     }
+
                 case "ResolveSwitch":
                     output["slot"] = BattleEnemyAi.ResolveSwitch(
                         DecisionFromJson(c["decision"]!),
                         [.. c["enemies"]!.AsArray().Select(SlotFromJson)],
-                        c["activeEnemy"]!.GetValue<int>(), rng);
+                        c["activeEnemy"]!.GetValue<int>(),
+                        rng);
                     break;
                 case "DecisionFlags":
                     {
@@ -168,6 +178,7 @@ internal static class BattleEnemyAiVectorCodec
                         };
                         break;
                     }
+
                 default:
                     throw new InvalidDataException($"unknown vector function '{fn}'");
             }
@@ -176,6 +187,7 @@ internal static class BattleEnemyAiVectorCodec
         {
             output = new JsonObject { ["throws"] = e.GetType().Name };
         }
+
         output["rngCalls"] = rng.Calls;
         return output;
     }

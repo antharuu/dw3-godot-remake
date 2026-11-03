@@ -50,6 +50,7 @@ public sealed class DiagnosticProbeFamilyRunnerTests
     private sealed class RecordingProbeHost : IDiagnosticProbeHost
     {
         public string? MethodName { get; private set; }
+
         public bool OwnsInput { get; private set; }
 
         public void RunInputProbeAndQuit() => throw new InvalidOperationException();

@@ -52,9 +52,12 @@ internal static class BattleReportExtractionStep
                 ?? throw new InvalidDataException($"Required disc member missing: {ReportOverlayPath}");
             byte[] overlay = disc.ReadFile(overlayEntry);
 
-            new DataPackWriter(outputDirectory).Write(new DataPackMetadata(
+            new DataPackWriter(outputDirectory).Write(
+                new DataPackMetadata(
                 typeof(BattleReportExtractionStep).Assembly.GetName().Version?.ToString(3) ?? "0.1.0",
-                edition.BinSha1, edition.Label, DateTimeOffset.UtcNow),
+                edition.BinSha1,
+                edition.Label,
+                DateTimeOffset.UtcNow),
                 context =>
                 {
                     Directory.CreateDirectory(context.GetImagePath(OutputSubdir));
@@ -81,23 +84,15 @@ internal static class BattleReportExtractionStep
     /// <param name="menuSheet">The CMFONTCS sheet archive (file 0x286), carrying the arrow frame.</param>
     /// <param name="menuTexture">The CMFONTTM texture archive (file 0x287), carrying the arrow palette.</param>
     /// <param name="overlay">The STFGTREP.PRO overlay bytes containing the animation table.</param>
-    private static void WriteReportDomain(DataPackWriteContext context,
-        byte[] sheetArchive, byte[] textureArchive, byte[] menuSheet, byte[] menuTexture, byte[] overlay)
+    private static void WriteReportDomain(
+        DataPackWriteContext context,
+        byte[] sheetArchive,
+        byte[] textureArchive,
+        byte[] menuSheet,
+        byte[] menuTexture,
+        byte[] overlay)
     {
-        // STFGTREP sheet archive: first u32 must be 4 (one-entry pointer), then the sheet body.
-        if (sheetArchive.Length < 8)
-            throw new FormatException("Report sheet archive is too short.");
-        uint outerPtr = System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(sheetArchive.AsSpan());
-        if (outerPtr != 4)
-            throw new FormatException($"Report sheet archive outer pointer is {outerPtr}, expected 4.");
-        // The sheet body starts at byte 0 (including the 4-byte outer pointer as the archive skip).
-        var (reportParts, reportIds, reportOffsets) = HudSpriteSheetParser.Parse(sheetArchive);
-
-        // Verify all required frame ids are present.
-        var idSet = new HashSet<int>(reportIds);
-        int missingFrameId = BattleReportDecoder.RequiredFrameRows.Keys.FirstOrDefault(id => !idSet.Contains(id), -1);
-        if (missingFrameId >= 0)
-            throw new FormatException($"STFGTREP sheet lacks required frame id {missingFrameId}.");
+        var (reportParts, reportIds, reportOffsets) = ParseReportSheet(sheetArchive);
 
         // Build report texture pages (file 0x7A0, model-archive format with 4-byte outer skip).
         IReadOnlyList<HudTexturePage> reportPages = HudTexturePageDecoder.BuildReportTexturePages(textureArchive);
@@ -110,39 +105,129 @@ internal static class BattleReportExtractionStep
         // Read and validate the STFGTREP_animations table from the overlay.
         int[,] animations = BattleReportDecoder.ReadAnimations(overlay);
 
+        var frameRecords = WriteReportFrames(context, reportParts, sheetArchive, reportIds, reportOffsets, reportPages);
+        var (arrowRows, arrowPartsMeta) = WriteArrowFrames(context, menuPartsArr, menuSheet, menuOffsets[arrowPos], menuPages);
+
+        string reportJson = BattleReportJsonWriter.Build(frameRecords, arrowRows, arrowPartsMeta, animations, sheetArchive, textureArchive, overlay);
+        File.WriteAllText(context.GetImagePath($"{OutputSubdir}/report.json"), reportJson, new System.Text.UTF8Encoding(false));
+        WriteMenuIcons(context, menuPartsArr, menuSheet, menuIds, menuOffsets, menuPages);
+    }
+
+    /// <summary>
+    /// Checks the STFGTREP sheet archive header and parses its sprite sheet, so that every frame the
+    /// report screen draws is known to exist before anything is rendered.
+    /// </summary>
+    /// <param name="sheetArchive">The STFGTREP sheet archive: a one-entry pointer table whose first u32 is 4, then the sheet body.</param>
+    /// <returns>The sprite parts, the frame ids in sheet order and the per-frame offsets into the sheet body.</returns>
+    /// <exception cref="FormatException">The archive is shorter than 8 bytes, its outer pointer is not 4, or a required frame id is missing.</exception>
+    private static (IReadOnlyList<HudSpritePart> Parts, IReadOnlyList<int> Ids, IReadOnlyList<int> Offsets) ParseReportSheet(byte[] sheetArchive)
+    {
+        if (sheetArchive.Length < 8)
+        {
+            throw new FormatException("Report sheet archive is too short.");
+        }
+
+        uint outerPtr = System.Buffers.Binary.BinaryPrimitives.ReadUInt32LittleEndian(sheetArchive.AsSpan());
+        if (outerPtr != 4)
+        {
+            throw new FormatException($"Report sheet archive outer pointer is {outerPtr}, expected 4.");
+        }
+
+        // The sheet body starts at byte 0 (including the 4-byte outer pointer as the archive skip).
+        var (reportParts, reportIds, reportOffsets) = HudSpriteSheetParser.Parse(sheetArchive);
+
+        var idSet = new HashSet<int>(reportIds);
+        int missingFrameId = BattleReportDecoder.RequiredFrameRows.Keys.FirstOrDefault(id => !idSet.Contains(id), -1);
+        if (missingFrameId >= 0)
+        {
+            throw new FormatException($"STFGTREP sheet lacks required frame id {missingFrameId}.");
+        }
+
+        return (reportParts, reportIds, reportOffsets);
+    }
+
+    /// <summary>
+    /// Renders every required STFGTREP frame once per CLUT row (the row count varies per frame) and
+    /// writes each rendering as <c>frame-XX-clutN.png</c> under the battle-report image folder.
+    /// </summary>
+    /// <param name="context">The data pack write context that owns the image folder.</param>
+    /// <param name="parts">The sprite parts of the STFGTREP sheet.</param>
+    /// <param name="sheetArchive">The STFGTREP sheet archive; frame offsets are relative to byte 4.</param>
+    /// <param name="ids">The frame ids in sheet order.</param>
+    /// <param name="offsets">The per-frame offsets into the sheet body, parallel to <paramref name="ids"/>.</param>
+    /// <param name="pages">The STFGTREP texture pages.</param>
+    /// <returns>One record per required frame: its id, the written CLUT rows and the part layout of row 0.</returns>
+    private static List<(int Id, (string Path, int W, int H, int Ox, int Oy)[] Rows, (int Part, int Dx, int Dy)[] Parts)> WriteReportFrames(
+        DataPackWriteContext context,
+        IReadOnlyList<HudSpritePart> parts,
+        byte[] sheetArchive,
+        IReadOnlyList<int> ids,
+        IReadOnlyList<int> offsets,
+        IReadOnlyList<HudTexturePage> pages)
+    {
         ReadOnlySpan<byte> reportBody = sheetArchive.AsSpan(4);
         var positions = new Dictionary<int, int>();
-        for (int i = 0; i < reportIds.Count; i++) positions[reportIds[i]] = i;
+        for (int i = 0; i < ids.Count; i++)
+        {
+            positions[ids[i]] = i;
+        }
 
-        // Render all STFGTREP frames (variable CLUT row counts per frame).
         var frameRecords = new List<(int Id, (string Path, int W, int H, int Ox, int Oy)[] Rows, (int Part, int Dx, int Dy)[] Parts)>();
         foreach (var (frameId, rowCount) in BattleReportDecoder.RequiredFrameRows)
         {
             int pos = positions[frameId];
             var clutRows = new List<(string Path, int W, int H, int Ox, int Oy)>();
-            (int Part, int Dx, int Dy)[]? partsMeta = null;
+            (int Part, int Dx, int Dy)[] partsMeta = [];
             for (int row = 0; row < rowCount; row++)
             {
                 var (rgba, w, h, ox, oy, _, meta) = HudFrameRenderer.RenderFrameWithMeta(
-                    reportParts, reportBody, reportOffsets[pos], reportPages, row);
-                if (row == 0) partsMeta = [.. meta];
+                    parts, reportBody, offsets[pos], pages, row);
+                if (row == 0)
+                {
+                    partsMeta = [.. meta];
+                }
+
                 string name = $"frame-{frameId:X2}-clut{row}.png";
                 string rel = $"{OutputSubdir}/{name}";
                 File.WriteAllBytes(context.GetImagePath(rel), PngEncoder.Encode(w, h, rgba));
                 context.RegisterImage(rel);
                 clutRows.Add((name, w, h, ox, oy));
             }
-            frameRecords.Add((frameId, [.. clutRows], partsMeta!));
+
+            frameRecords.Add((frameId, [.. clutRows], partsMeta));
         }
 
-        // Render the arrow frame (MESSAGE_ARROW_FRAME = 10) from the menu sheet, 5 CLUT rows.
+        return frameRecords;
+    }
+
+    /// <summary>
+    /// Renders the message arrow (frame 10 of the CMFONTCS menu sheet) once per palette row and writes
+    /// each rendering as <c>arrow-clutN.png</c>; the five rows are the colours the arrow blinks through.
+    /// </summary>
+    /// <param name="context">The data pack write context that owns the image folder.</param>
+    /// <param name="parts">The sprite parts of the CMFONTCS sheet.</param>
+    /// <param name="menuSheet">The CMFONTCS sheet archive; frame offsets are relative to byte 4.</param>
+    /// <param name="arrowOffset">The offset of the arrow frame in the sheet body.</param>
+    /// <param name="pages">The CMFONTTM texture pages.</param>
+    /// <returns>The written rows with their size, origin and parts, and the part layout of row 0.</returns>
+    private static (List<(string Path, int W, int H, int Ox, int Oy, IReadOnlyList<FieldFramePartMeta> Parts)> Rows, IReadOnlyList<FieldFramePartMeta> Parts) WriteArrowFrames(
+        DataPackWriteContext context,
+        IReadOnlyList<HudSpritePart> parts,
+        byte[] menuSheet,
+        int arrowOffset,
+        IReadOnlyList<HudTexturePage> pages)
+    {
         var arrowRows = new List<(string Path, int W, int H, int Ox, int Oy, IReadOnlyList<FieldFramePartMeta> Parts)>();
         ReadOnlySpan<byte> menuBody = menuSheet.AsSpan(4);
-        IReadOnlyList<FieldFramePartMeta>? arrowPartsMeta = null;
+        IReadOnlyList<FieldFramePartMeta> arrowPartsMeta = [];
         for (int row = 0; row < BattleReportDecoder.ArrowRows; row++)
         {
-            var (rgba, w, h, meta, _) = HudFrameRenderer.RenderFieldFrame(menuPartsArr, menuBody, menuOffsets[arrowPos], menuPages, row);
-            if (row == 0) arrowPartsMeta = meta;
+            var (rgba, w, h, meta, _) = HudFrameRenderer.RenderFieldFrame(parts, menuBody, arrowOffset, pages, row);
+            if (row == 0)
+            {
+                arrowPartsMeta = meta;
+            }
+
             string name = $"arrow-clut{row}.png";
             string rel = $"{OutputSubdir}/{name}";
             File.WriteAllBytes(context.GetImagePath(rel), PngEncoder.Encode(w, h, rgba));
@@ -152,9 +237,7 @@ internal static class BattleReportExtractionStep
             arrowRows.Add((name, w, h, ox, oy, meta));
         }
 
-        string reportJson = BattleReportJsonWriter.Build(frameRecords, arrowRows, arrowPartsMeta!, animations, sheetArchive, textureArchive, overlay);
-        File.WriteAllText(context.GetImagePath($"{OutputSubdir}/report.json"), reportJson, new System.Text.UTF8Encoding(false));
-        WriteMenuIcons(context, menuPartsArr, menuSheet, menuIds, menuOffsets, menuPages);
+        return (arrowRows, arrowPartsMeta);
     }
 
     /// <summary>
@@ -167,8 +250,13 @@ internal static class BattleReportExtractionStep
     /// <param name="ids">The ordered frame id list from the CMFONTCS sheet.</param>
     /// <param name="offsets">Per-frame byte offsets within the sheet body.</param>
     /// <param name="pages">The menu texture pages decoded from CMFONTTM.</param>
-    private static void WriteMenuIcons(DataPackWriteContext context, IReadOnlyList<HudSpritePart> parts, byte[] sheet,
-        IReadOnlyList<int> ids, IReadOnlyList<int> offsets, IReadOnlyList<HudTexturePage> pages)
+    private static void WriteMenuIcons(
+        DataPackWriteContext context,
+        IReadOnlyList<HudSpritePart> parts,
+        byte[] sheet,
+        IReadOnlyList<int> ids,
+        IReadOnlyList<int> offsets,
+        IReadOnlyList<HudTexturePage> pages)
     {
         const string directory = "battle/menu-icons";
         int[] required = [10, 57, 58, 59, 60, 61, 95, 97];
@@ -184,21 +272,46 @@ internal static class BattleReportExtractionStep
             for (int row = 0; row < rowCount; row++)
             {
                 var (rgba, w, h, meta, _) = HudFrameRenderer.RenderFieldFrame(parts, body, offsets[position], pages, row);
-                width = w; height = h; ox = meta.Min(part => part.Dx); oy = meta.Min(part => part.Dy);
+                width = w;
+                height = h;
+                ox = meta.Min(part => part.Dx);
+                oy = meta.Min(part => part.Dy);
                 string relative = $"{directory}/frame-{id}-clut{row}.png";
                 File.WriteAllBytes(context.GetImagePath(relative), PngEncoder.Encode(w, h, rgba));
-                context.RegisterImage(relative); paths[row] = relative;
+                context.RegisterImage(relative);
+                paths[row] = relative;
             }
+
             frames.Add(id, (paths, width, height, ox, oy));
         }
+
+        File.WriteAllBytes(context.GetImagePath($"{directory}/manifest.json"), BuildMenuIconManifest(frames));
+    }
+
+    /// <summary>
+    /// Serialises the menu icon manifest read by the battle menu: per frame its size, origin offset and
+    /// the PNG of each CLUT row, plus the message arrow placement (frame 10 drawn at screen pixel
+    /// (291, 208), advancing one palette row every 4 frames).
+    /// </summary>
+    /// <param name="frames">The written icon frames keyed by sheet frame id, in the order they were rendered.</param>
+    /// <returns>The UTF-8 JSON bytes of <c>manifest.json</c>, schema <c>m6-battle-menu-icons-v1</c>.</returns>
+    private static byte[] BuildMenuIconManifest(Dictionary<int, (string[] Paths, int W, int H, int Ox, int Oy)> frames)
+    {
         using var stream = new MemoryStream();
         using (var json = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true }))
         {
-            json.WriteStartObject(); json.WriteString("schema", "m6-battle-menu-icons-v1"); json.WriteStartObject("frames");
+            json.WriteStartObject();
+            json.WriteString("schema", "m6-battle-menu-icons-v1");
+            json.WriteStartObject("frames");
             foreach (var (id, frame) in frames)
             {
-                json.WriteStartObject(id.ToString(CultureInfo.InvariantCulture)); json.WriteNumber("w", frame.W); json.WriteNumber("h", frame.H);
-                json.WriteStartArray("offset"); json.WriteNumberValue(frame.Ox); json.WriteNumberValue(frame.Oy); json.WriteEndArray();
+                json.WriteStartObject(id.ToString(CultureInfo.InvariantCulture));
+                json.WriteNumber("w", frame.W);
+                json.WriteNumber("h", frame.H);
+                json.WriteStartArray("offset");
+                json.WriteNumberValue(frame.Ox);
+                json.WriteNumberValue(frame.Oy);
+                json.WriteEndArray();
                 json.WriteNumber("clutFrames", frame.Paths.Length);
                 json.WriteStartArray("paths");
                 foreach (string path in frame.Paths)
@@ -209,10 +322,19 @@ internal static class BattleReportExtractionStep
                 json.WriteEndArray();
                 json.WriteEndObject();
             }
-            json.WriteEndObject(); json.WriteStartObject("messageArrow"); json.WriteNumber("frame", 10);
-            json.WriteStartArray("position"); json.WriteNumberValue(291); json.WriteNumberValue(208); json.WriteEndArray();
-            json.WriteNumber("timeStep", 4); json.WriteEndObject(); json.WriteEndObject();
+
+            json.WriteEndObject();
+            json.WriteStartObject("messageArrow");
+            json.WriteNumber("frame", 10);
+            json.WriteStartArray("position");
+            json.WriteNumberValue(291);
+            json.WriteNumberValue(208);
+            json.WriteEndArray();
+            json.WriteNumber("timeStep", 4);
+            json.WriteEndObject();
+            json.WriteEndObject();
         }
-        File.WriteAllBytes(context.GetImagePath($"{directory}/manifest.json"), stream.ToArray());
+
+        return stream.ToArray();
     }
 }

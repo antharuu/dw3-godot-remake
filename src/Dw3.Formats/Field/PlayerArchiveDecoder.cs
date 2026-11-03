@@ -159,7 +159,7 @@ public static class PlayerArchiveDecoder
 
         while (cursor < wordCount)
         {
-            ushort setId = BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(start + cursor * 2, 2));
+            ushort setId = BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(start + (cursor * 2), 2));
             if (setId == 0)
             {
                 return groups;
@@ -174,7 +174,7 @@ public static class PlayerArchiveDecoder
             var seqIndices = new int[5];
             for (int d = 0; d < 5; d++)
             {
-                seqIndices[d] = BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(start + (cursor + 1 + d) * 2, 2));
+                seqIndices[d] = BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(start + ((cursor + 1 + d) * 2), 2));
             }
 
             groups.Add(new PlayerAnimSetGroup(setId, seqIndices));
@@ -233,7 +233,7 @@ public static class PlayerArchiveDecoder
 
         while (cursor < wordCount)
         {
-            int duration = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(start + cursor * 4, 4));
+            int duration = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(start + (cursor * 4), 4));
 
             if (TryReadTerminator(duration, cursor, wordCount, records, index, out PlayerAnimSequence termSequence))
             {
@@ -264,7 +264,7 @@ public static class PlayerArchiveDecoder
             for (int x = 0; x < width; x++)
             {
                 // RGBA layout: R at [i*4], G at [i*4+1], B at [i*4+2], A at [i*4+3]
-                byte alpha = pixels[(y * width + x) * 4 + 3];
+                byte alpha = pixels[(((y * width) + x) * 4) + 3];
                 if (alpha > 0)
                 {
                     UpdateBounds(x, y, ref minX, ref maxX, ref minY, ref maxY);
@@ -378,7 +378,7 @@ public static class PlayerArchiveDecoder
     /// <returns>A decoded PlayerAnimRecord with duration, frame, and draw offsets.</returns>
     private static PlayerAnimRecord ReadFrameRecord(ReadOnlySpan<byte> data, int start, int cursor, int wordCount, int frameCount, int seqIndex)
     {
-        int duration = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(start + cursor * 4, 4));
+        int duration = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(start + (cursor * 4), 4));
         if (duration <= 0)
         {
             throw new FormatException(
@@ -391,9 +391,9 @@ public static class PlayerArchiveDecoder
                 $"Sequence {seqIndex} at cursor {cursor}: truncated frame record (need 4 words, {wordCount - cursor} remain).");
         }
 
-        int frame = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(start + (cursor + 1) * 4, 4));
-        int offsetX = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(start + (cursor + 2) * 4, 4));
-        int offsetY = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(start + (cursor + 3) * 4, 4));
+        int frame = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(start + ((cursor + 1) * 4), 4));
+        int offsetX = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(start + ((cursor + 2) * 4), 4));
+        int offsetY = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(start + ((cursor + 3) * 4), 4));
 
         if (frame < 0 || frame >= frameCount)
         {

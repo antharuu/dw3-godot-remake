@@ -229,6 +229,7 @@ public static class BattleSetupFactory
         }
 
         var result = new List<BattleTechnique>();
+
         // Skill slot 0 is the basic attack, not a
         // Technique-menu entry. The slice has no PartnerEntry save slots yet, so entries
         // 1..6 provide its recovered menu pool (the test team uses its signature at slot 6).
@@ -260,8 +261,13 @@ public static class BattleSetupFactory
     /// <returns>A flow controller ready for <see cref="BattleFlowController.Start"/>. A missing basic attack is an empty technique.</returns>
     /// <exception cref="InvalidOperationException">The encounter is not in the data.</exception>
     public static BattleFlowController BuildFlow(
-        FighterData fighters, TechniqueData techs, EncounterData encounters, int encounterIndex,
-        IReadOnlyList<int> partyDigimonIds, IReadOnlyDictionary<int, int> nameIds, BattleTextCatalog text)
+        FighterData fighters,
+        TechniqueData techs,
+        EncounterData encounters,
+        int encounterIndex,
+        IReadOnlyList<int> partyDigimonIds,
+        IReadOnlyDictionary<int, int> nameIds,
+        BattleTextCatalog text)
     {
         var entry = encounters.Encounters.FirstOrDefault(candidate => candidate.Index == encounterIndex)
             ?? throw new InvalidOperationException($"encounter {encounterIndex} not in the manifest");

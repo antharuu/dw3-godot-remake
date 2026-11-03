@@ -61,20 +61,30 @@ internal sealed class DiscNpcActorTableSource : INpcActorTableSource
         byte[] executable = disc.ReadFile(Require(entries, ExecutablePath));
         byte[] fieldStg = disc.ReadFile(Require(entries, FieldStgPath));
         NpcDiscTables tables = NpcDiscTableDecoder.Decode(
-            fieldStg, FileEntriesOffset, FileEntryCount, WidthsOffset, WidthCount,
-            executable, new NpcProgressTableLocator(ProgressRangesOffset, ProgressRangeCount, SpecialConditionsOffset, SpecialConditionsLimit));
+            fieldStg,
+            FileEntriesOffset,
+            FileEntryCount,
+            WidthsOffset,
+            WidthCount,
+            executable,
+            new NpcProgressTableLocator(ProgressRangesOffset, ProgressRangeCount, SpecialConditionsOffset, SpecialConditionsLimit));
 
         var lbaToPath = entries
             .GroupBy(entry => entry.Lba)
             .ToDictionary(group => group.Key, group => group.First().IsoPath);
-        if (FileSectorsOffset + FileSectorCount * 4 > executable.Length)
+        if (executable.Length < FileSectorsOffset + (FileSectorCount * 4))
+        {
             throw new InvalidDataException("Disc executable file-sector table is truncated.");
+        }
+
         var filePaths = new Dictionary<int, string>();
         for (int fileNumber = 0; fileNumber < FileSectorCount; fileNumber++)
         {
-            int lba = BinaryPrimitives.ReadInt32LittleEndian(executable.AsSpan(FileSectorsOffset + fileNumber * 4, 4));
+            int lba = BinaryPrimitives.ReadInt32LittleEndian(executable.AsSpan(FileSectorsOffset + (fileNumber * 4), 4));
             if (lba > 0 && lbaToPath.TryGetValue(lba, out string? path))
+            {
                 filePaths[fileNumber] = path;
+            }
         }
 
         IReadOnlyList<DiscFieldStage> registry = DiscStageModeReader.BuildRegistry(disc, entries);
@@ -88,6 +98,7 @@ internal sealed class DiscNpcActorTableSource : INpcActorTableSource
                 overlay, OverlayLoadBase, FieldStateAddress);
             actors[stageId] = [.. addresses.Select((address, index) => new NpcActorReference(address, index))];
         }
+
         return new DiscNpcActorTableSource(tables, actors, filePaths, stageIds);
     }
 
@@ -100,7 +111,10 @@ internal sealed class DiscNpcActorTableSource : INpcActorTableSource
     public (int FileNumber, int ArchiveEntry)? GetActorSpriteEntry(int actorId)
     {
         if (actorId < 0 || actorId >= _tables.FileEntries.Count || _tables.FileEntries[actorId] is not NpcFileEntry entry)
+        {
             return null;
+        }
+
         return (entry.FileNumber, entry.ArchiveEntry);
     }
 

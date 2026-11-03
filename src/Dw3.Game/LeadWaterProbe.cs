@@ -1,7 +1,7 @@
-using Godot;
-using Dw3Production.Presentation;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using Dw3Production.Presentation;
+using Godot;
 
 /// <summary>
 /// Standalone Godot scene that synthesises a 2×1 pixel texture per ABR blend mode
@@ -27,8 +27,9 @@ public partial class LeadWaterProbe : Node2D
             var texture = ImageTexture.CreateFromImage(test);
             foreach (var abr in new[] { 0, 1, 2, 3 })
             {
-                AddChild(new Sprite2D { Texture = texture, Centered = false, Position = new Vector2(20 + abr * 80, 20), Scale = new Vector2(25, 25), Material = (ShaderMaterial)method.Invoke(renderer, [abr])! });
+                AddChild(new Sprite2D { Texture = texture, Centered = false, Position = new Vector2(20 + (abr * 80), 20), Scale = new Vector2(25, 25), Material = (ShaderMaterial)method.Invoke(renderer, [abr])! });
             }
+
             await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
             await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
             var image = GetViewport().GetTexture().GetImage();
@@ -45,14 +46,18 @@ public partial class LeadWaterProbe : Node2D
             };
             foreach (var abr in new[] { 0, 1, 2, 3 })
             {
-                var foreground = image.GetPixel(20 + abr * 80 + 10, 30);
-                var transparent = image.GetPixel(20 + abr * 80 + 35, 30);
+                var foreground = image.GetPixel(20 + (abr * 80) + 10, 30);
+                var transparent = image.GetPixel(20 + (abr * 80) + 35, 30);
                 var transparentPass = Math.Abs(transparent.R - background.R) < 0.012 && Math.Abs(transparent.G - background.G) < 0.012 && Math.Abs(transparent.B - background.B) < 0.012;
                 var expected = expectedForeground[abr];
                 var foregroundPass = Math.Abs(foreground.R - expected.R) < 0.025 && Math.Abs(foreground.G - expected.G) < 0.025 && Math.Abs(foreground.B - expected.B) < 0.025;
                 GD.Print($"LEAD_MASK_TEST abr={abr} transparent_texel={transparent} expected_background={background} transparent_pass={transparentPass} foreground={foreground} expected_foreground={expected} foreground_pass={foregroundPass}");
-                if (!transparentPass || !foregroundPass) failures++;
+                if (!transparentPass || !foregroundPass)
+                {
+                    failures++;
+                }
             }
+
             GetTree().Quit(failures == 0 ? 0 : 1);
         }
         catch (Exception error)

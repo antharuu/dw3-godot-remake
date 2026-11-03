@@ -132,14 +132,14 @@ public sealed class SonarConcordanceTests
         }
 
         Assert.True(total >= 30, $"Need at least 30 comparable entries; got {total}.");
-        Assert.True(mismatches.Count <= total * 0.10,
+        Assert.True(
+            mismatches.Count <= total * 0.10,
             $"{mismatches.Count}/{total} mismatches exceed 10% tolerance.");
     }
 
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
-
     private static string FindRepoRoot()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
@@ -175,6 +175,7 @@ public sealed class SonarConcordanceTests
                 }
 
                 var msg = result.GetProperty("message").GetProperty("text").GetString() ?? string.Empty;
+
                 // Only count methods (threshold=0), skip properties (threshold=3).
                 // Method message: "Refactor this method ... from N to the 0 ..."
                 if (!msg.Contains("to the 0 ", StringComparison.Ordinal))

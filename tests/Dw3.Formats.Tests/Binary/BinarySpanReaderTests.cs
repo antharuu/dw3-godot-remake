@@ -6,7 +6,6 @@ namespace Dw3.Formats.Tests.Binary;
 public sealed class BinarySpanReaderTests
 {
     // ── ReadU8 ────────────────────────────────────────────────────────────
-
     [Fact]
     public void ReadU8_ReturnsCorrectByte()
     {
@@ -31,7 +30,6 @@ public sealed class BinarySpanReaderTests
     }
 
     // ── ReadU16 ───────────────────────────────────────────────────────────
-
     [Fact]
     public void ReadU16_LittleEndian()
     {
@@ -50,6 +48,7 @@ public sealed class BinarySpanReaderTests
     public void ReadU16_PartiallyOutOfRange_ThrowsFormatException()
     {
         var r = new BinarySpanReader([0x01, 0x02]);
+
         // Needs 2 bytes at offset 1 but only 1 is available
         var ex = Assert.Throws<FormatException>(() => r.ReadU16(1));
         Assert.Contains("0x1", ex.Message);
@@ -63,7 +62,6 @@ public sealed class BinarySpanReaderTests
     }
 
     // ── ReadU32 ───────────────────────────────────────────────────────────
-
     [Fact]
     public void ReadU32_LittleEndian()
     {
@@ -87,7 +85,6 @@ public sealed class BinarySpanReaderTests
     }
 
     // ── ReadI32 ───────────────────────────────────────────────────────────
-
     [Fact]
     public void ReadI32_NegativeValue()
     {
@@ -103,7 +100,6 @@ public sealed class BinarySpanReaderTests
     }
 
     // ── ReadI16 ───────────────────────────────────────────────────────────
-
     [Fact]
     public void ReadI16_NegativeValue()
     {
@@ -119,7 +115,6 @@ public sealed class BinarySpanReaderTests
     }
 
     // ── Slice ─────────────────────────────────────────────────────────────
-
     [Fact]
     public void Slice_ReturnsCopy()
     {
@@ -143,7 +138,6 @@ public sealed class BinarySpanReaderTests
     }
 
     // ── Length and null guard ─────────────────────────────────────────────
-
     [Fact]
     public void Length_ReflectsBufferSize()
     {

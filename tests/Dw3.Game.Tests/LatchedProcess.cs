@@ -29,5 +29,7 @@ internal sealed class LatchedProcess(ManualResetEventSlim started, ManualResetEv
 
     public int WaitForExit() => 0;
 
-    public void Dispose() { }
+    public void Dispose()
+    {
+    }
 }

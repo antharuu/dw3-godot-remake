@@ -1,7 +1,7 @@
 using System.Globalization;
-using Godot;
 using Dw3Production.Conversion;
 using Dw3Production.Simulation;
+using Godot;
 
 namespace Dw3Production.Presentation;
 
@@ -187,7 +187,7 @@ public sealed partial class FightReportRenderer : IDisposable
             _text.DrawWindow(3, 96, y + 57, partner.ShownExp.ToString(CultureInfo.InvariantCulture), true, 0);
             if (partner.Selected)
             {
-                DrawFrame(0x24 + partner.CursorFrame % 2, 19, y + 43);
+                DrawFrame(0x24 + (partner.CursorFrame % 2), 19, y + 43);
             }
         }
 

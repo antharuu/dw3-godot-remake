@@ -25,20 +25,25 @@ public sealed class RealRepositoryTests
         {
             // .git is a directory in a normal clone and a file in a worktree.
             var git = Path.Combine(dir, ".git");
-            if (Directory.Exists(git) || File.Exists(git)) return dir;
+            if (Directory.Exists(git) || File.Exists(git))
+            {
+                return dir;
+            }
+
             dir = Path.GetDirectoryName(dir);
         }
+
         throw new InvalidOperationException("Cannot locate the repository root (.git/).");
     }
 
     // ─────────────────────────────────────────────────────────────────────
     // Allowlist integrity
     // ─────────────────────────────────────────────────────────────────────
-
     [Fact]
     public void PublicAllowlist_Exists()
     {
-        Assert.True(File.Exists(AllowlistPath),
+        Assert.True(
+            File.Exists(AllowlistPath),
             $"tools/public-allowlist.txt not found at {AllowlistPath}");
     }
 
@@ -52,7 +57,6 @@ public sealed class RealRepositoryTests
     // ─────────────────────────────────────────────────────────────────────
     // Full guard in public-files mode
     // ─────────────────────────────────────────────────────────────────────
-
     [Fact]
     public void RealRepo_PublicFilesMode_HasNoViolations()
     {
@@ -90,7 +94,8 @@ public sealed class RealRepositoryTests
         if (contentViolations.Count > 0 || unexpectedUnreviewed.Count > 0)
         {
             var all = contentViolations.Concat(unexpectedUnreviewed).ToList();
-            var report = string.Join("\n",
+            var report = string.Join(
+                "\n",
                 all.Select(v => $"  [{v.Rule}] {v.Path}: {v.Note}"));
             Assert.Fail(
                 $"{all.Count} provenance violation(s) found in public files:\n{report}");
@@ -100,14 +105,14 @@ public sealed class RealRepositoryTests
     // ─────────────────────────────────────────────────────────────────────
     // Architecture: Dw3.Game isolation
     // ─────────────────────────────────────────────────────────────────────
-
     [Fact]
     public void GameProject_DoesNotReferenceDiscOrFormats()
     {
         var violations = RepositoryGuard.CheckGameArchitecture(RepoRoot);
         if (violations.Count > 0)
         {
-            var report = string.Join("\n",
+            var report = string.Join(
+                "\n",
                 violations.Select(v => $"  [{v.Rule}] {v.Path}: {v.Note}"));
             Assert.Fail($"Dw3.Game architecture violation(s):\n{report}");
         }
@@ -116,7 +121,6 @@ public sealed class RealRepositoryTests
     // ─────────────────────────────────────────────────────────────────────
     // No Python files in public scope
     // ─────────────────────────────────────────────────────────────────────
-
     [Fact]
     public void NoPythonFilesTracked_InPublicScope()
     {

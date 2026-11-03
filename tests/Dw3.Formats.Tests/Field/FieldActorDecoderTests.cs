@@ -1,5 +1,5 @@
-using Xunit;
 using Dw3.Formats.Field;
+using Xunit;
 
 namespace Dw3.Formats.Tests.Field;
 
@@ -21,7 +21,6 @@ public sealed class FieldActorDecoderTests
     // Total: 18 bytes used of the 20-byte record.
     // actor widths come from the disc's actor-width table; only the
     // three known width IDs in the two supported stages are accepted.
-
     [Fact]
     public void DecodesActorRecordAtKnownAddress()
     {

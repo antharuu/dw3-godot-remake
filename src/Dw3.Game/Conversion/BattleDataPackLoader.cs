@@ -72,7 +72,10 @@ public sealed class BattleDataPackLoader : IDisposable
 
             return BattleEncounterJsonParser.ParseEncounters(root);
         }
-        catch (CacheResourceException) { throw; }
+        catch (CacheResourceException)
+        {
+            throw;
+        }
         catch (Exception error) when (error is IOException or JsonException or InvalidOperationException or FormatException)
         {
             throw Invalid($"encounter manifest invalid: {error.Message}");
@@ -89,7 +92,10 @@ public sealed class BattleDataPackLoader : IDisposable
             using JsonDocument document = ReadBattleJson();
             return BattleEncounterJsonParser.ParseFighters(document.RootElement);
         }
-        catch (CacheResourceException) { throw; }
+        catch (CacheResourceException)
+        {
+            throw;
+        }
         catch (Exception error) when (error is IOException or JsonException or InvalidOperationException or FormatException)
         {
             throw Invalid($"fighter data invalid: {error.Message}");
@@ -112,7 +118,10 @@ public sealed class BattleDataPackLoader : IDisposable
 
             return BattleEncounterJsonParser.ParseDigivolutions(root);
         }
-        catch (CacheResourceException) { throw; }
+        catch (CacheResourceException)
+        {
+            throw;
+        }
         catch (Exception error) when (error is IOException or JsonException or InvalidOperationException or FormatException)
         {
             throw Invalid($"digivolution data invalid: {error.Message}");
@@ -130,7 +139,10 @@ public sealed class BattleDataPackLoader : IDisposable
             var names = LoadTextTable("battle/text/fsitmnam.json", "item names");
             return BattleLoadoutJsonParser.ParseBattleItems(document.RootElement, names);
         }
-        catch (CacheResourceException) { throw; }
+        catch (CacheResourceException)
+        {
+            throw;
+        }
         catch (Exception error) when (error is IOException or JsonException or InvalidOperationException or FormatException)
         {
             throw Invalid($"battle item data invalid: {error.Message}");
@@ -147,7 +159,10 @@ public sealed class BattleDataPackLoader : IDisposable
             using JsonDocument document = ReadBattleJson();
             return BattleEncounterJsonParser.ParseRewards(document.RootElement);
         }
-        catch (CacheResourceException) { throw; }
+        catch (CacheResourceException)
+        {
+            throw;
+        }
         catch (Exception error) when (error is IOException or JsonException or InvalidOperationException or FormatException)
         {
             throw Invalid($"battle reward data invalid: {error.Message}");
@@ -169,7 +184,10 @@ public sealed class BattleDataPackLoader : IDisposable
             var report = LoadTextTable("battle/text/fsfgtrpt.json", "battle report text");
             return BattleLoadoutJsonParser.ParseBattleText(menu, names, techniques, skillInfo, itemInfo, report);
         }
-        catch (CacheResourceException) { throw; }
+        catch (CacheResourceException)
+        {
+            throw;
+        }
         catch (Exception error) when (error is IOException or JsonException or InvalidOperationException or FormatException)
         {
             throw Invalid($"battle text data invalid: {error.Message}");
@@ -192,7 +210,10 @@ public sealed class BattleDataPackLoader : IDisposable
 
             return BattleLoadoutJsonParser.ParseBattleHud(root, RequireFile);
         }
-        catch (CacheResourceException) { throw; }
+        catch (CacheResourceException)
+        {
+            throw;
+        }
         catch (Exception error) when (error is IOException or JsonException or InvalidOperationException or FormatException)
         {
             throw Invalid($"battle HUD invalid: {error.Message}");
@@ -215,7 +236,10 @@ public sealed class BattleDataPackLoader : IDisposable
 
             return BattleLoadoutJsonParser.ParseBattleReportSprites(root, RequireFile);
         }
-        catch (CacheResourceException) { throw; }
+        catch (CacheResourceException)
+        {
+            throw;
+        }
         catch (Exception error) when (error is IOException or JsonException or InvalidOperationException or FormatException)
         {
             throw Invalid($"battle report sprites invalid: {error.Message}");
@@ -238,7 +262,10 @@ public sealed class BattleDataPackLoader : IDisposable
 
             return BattleLoadoutJsonParser.ParseBattleMenuIcons(root, RequireFile);
         }
-        catch (CacheResourceException) { throw; }
+        catch (CacheResourceException)
+        {
+            throw;
+        }
         catch (Exception error) when (error is IOException or JsonException or InvalidOperationException or FormatException)
         {
             throw Invalid($"battle menu icons invalid: {error.Message}");
@@ -255,7 +282,10 @@ public sealed class BattleDataPackLoader : IDisposable
             using JsonDocument document = ReadBattleJson();
             return BattleLoadoutJsonParser.ParseTechs(document.RootElement);
         }
-        catch (CacheResourceException) { throw; }
+        catch (CacheResourceException)
+        {
+            throw;
+        }
         catch (Exception error) when (error is IOException or JsonException or InvalidOperationException or FormatException)
         {
             throw Invalid($"technique data invalid: {error.Message}");

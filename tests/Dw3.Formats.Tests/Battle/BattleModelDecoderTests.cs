@@ -13,7 +13,6 @@ namespace Dw3.Formats.Tests.Battle;
 public sealed class BattleModelDecoderTests
 {
     // ── Fighter model table ─────────────────────────────────────────────────
-
     private static byte[] FighterTable()
     {
         // Header: base address, entries offset, partner table offset, enemy table offset.
@@ -25,10 +24,10 @@ public sealed class BattleModelDecoderTests
         WriteEntry(data, 0x10, 501, 1, 0x05);
         WriteEntry(data, 0x14, 77, 2, FighterModelTable.EnemyKindMinimum);
         WriteEntry(data, 0x18, 0, 0, 0);
-        WriteU32(data, 0x40 + 1 * FighterModelTable.PartnerStride, (12u << 16) | 3);
-        WriteU32(data, 0x40 + 1 * FighterModelTable.PartnerStride + 4, (12u << 16) | 9);
-        WriteU32(data, 0x100 + 2 * FighterModelTable.EnemyStride, (40u << 16) | 0x21);
-        WriteU32(data, 0x100 + 2 * FighterModelTable.EnemyStride + 4, (41u << 16) | 0x22);
+        WriteU32(data, 0x40 + (1 * FighterModelTable.PartnerStride), (12u << 16) | 3);
+        WriteU32(data, 0x40 + (1 * FighterModelTable.PartnerStride) + 4, (12u << 16) | 9);
+        WriteU32(data, 0x100 + (2 * FighterModelTable.EnemyStride), (40u << 16) | 0x21);
+        WriteU32(data, 0x100 + (2 * FighterModelTable.EnemyStride) + 4, (41u << 16) | 0x22);
         return data;
     }
 
@@ -62,7 +61,6 @@ public sealed class BattleModelDecoderTests
     }
 
     // ── Archive offset table ────────────────────────────────────────────────
-
     [Fact]
     public void Archive_KeepsSparseEntriesAsEmptyRangesAndEndsTheLastAtTheFileEnd()
     {
@@ -85,7 +83,10 @@ public sealed class BattleModelDecoderTests
     public void Archive_RejectsMalformedOffsetTables(uint[] offsets)
     {
         byte[] data = new byte[0x40];
-        for (int i = 0; i < offsets.Length; i++) WriteU32(data, i * 4, offsets[i]);
+        for (int i = 0; i < offsets.Length; i++)
+        {
+            WriteU32(data, i * 4, offsets[i]);
+        }
 
         Assert.Throws<FormatException>(() => ModelArchive.ReadBounds(data));
     }
@@ -97,15 +98,29 @@ public sealed class BattleModelDecoderTests
     {
         var bytes = new List<byte>(new byte[24]);
         int verticesAt = bytes.Count;
-        bytes.AddRange(I16(vertexCount)); bytes.AddRange(new byte[4]);
-        for (int i = 0; i < vertexCount; i++) { bytes.AddRange(I16(i)); bytes.AddRange(I16(-i)); bytes.AddRange(I16(i * 2)); }
+        bytes.AddRange(I16(vertexCount));
+        bytes.AddRange(new byte[4]);
+        for (int i = 0; i < vertexCount; i++)
+        {
+            bytes.AddRange(I16(i));
+            bytes.AddRange(I16(-i));
+            bytes.AddRange(I16(i * 2));
+        }
+
         int normalsAt = 0;
         if (normalCount > 0)
         {
             normalsAt = bytes.Count;
-            bytes.AddRange(I16(normalCount)); bytes.AddRange(new byte[4]);
-            for (int i = 0; i < normalCount; i++) { bytes.AddRange(I16(4096)); bytes.AddRange(I16(0)); bytes.AddRange(I16(-i)); }
+            bytes.AddRange(I16(normalCount));
+            bytes.AddRange(new byte[4]);
+            for (int i = 0; i < normalCount; i++)
+            {
+                bytes.AddRange(I16(4096));
+                bytes.AddRange(I16(0));
+                bytes.AddRange(I16(-i));
+            }
         }
+
         int commandsAt = bytes.Count;
         bytes.AddRange(commands);
         int boundsAt = bytes.Count;
@@ -142,6 +157,7 @@ public sealed class BattleModelDecoderTests
         MeshPolygon polygon = Assert.Single(mesh.Polygons);
         Assert.Equal([0, 1, 2, 3], polygon.Indices);
         Assert.Null(polygon.NormalIndices);
+
         // u = (byte + u base) & 0xFF where the u base word is bytes 1..2 of the texture command.
         Assert.Equal([new MeshUv(0x08, 0x20), new MeshUv(0x11, 0x22), new MeshUv(0x13, 0x24), new MeshUv(0x15, 0x26)], polygon.Uvs);
         Assert.Equal(new MeshTextureState(0x0210, 0x02, 0x20, 0x30, 0x40, 0), polygon.Texture);
@@ -149,7 +165,7 @@ public sealed class BattleModelDecoderTests
         Assert.True(polygon.Quad && polygon.Textured);
         Assert.False(polygon.Lit || polygon.Gouraud || polygon.Flag0xA || polygon.Flag0xB);
         Assert.Equal(2, polygon.Abr);
-        Assert.Equal(24 + 6 + 4 * 6, mesh.CommandOffset);
+        Assert.Equal(24 + 6 + (4 * 6), mesh.CommandOffset);
         Assert.Equal(mesh.CommandOffset + commands.Length, mesh.BoundsOffset);
     }
 
@@ -247,6 +263,7 @@ public sealed class BattleModelDecoderTests
             WriteU32(offsets, i * 4, (uint)data.Count);
             data.AddRange(entries[i]);
         }
+
         byte[] result = [.. data];
         offsets.CopyTo(result, 0);
         return result;
@@ -263,7 +280,7 @@ public sealed class BattleModelDecoderTests
             [new BattleModelBone(0, null, null, null), new BattleModelBone(1, 0, 2, 4), new BattleModelBone(2, 1, 3, 5)],
             model.Bones);
         Assert.Equal([1, 2], model.Meshes.Select(mesh => mesh.Bone));
-        Assert.Equal(model.Meshes[0].EntryOffset + 24 + 6 + 3 * 6, model.Meshes[0].CommandOffset);
+        Assert.Equal(model.Meshes[0].EntryOffset + 24 + 6 + (3 * 6), model.Meshes[0].CommandOffset);
     }
 
     [Fact]
@@ -277,7 +294,6 @@ public sealed class BattleModelDecoderTests
     }
 
     // ── JSON projection ─────────────────────────────────────────────────────
-
     [Fact]
     public void Json_WritesTheStructuralModelManifest()
     {
@@ -322,7 +338,6 @@ public sealed class BattleModelDecoderTests
     }
 
     // ── Helpers ─────────────────────────────────────────────────────────────
-
     private static void WriteU32(byte[] data, int offset, uint value) => BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(offset), value);
 
     private static void WriteEntry(byte[] data, int offset, short id, byte index, byte kind)

@@ -20,14 +20,14 @@ public sealed class ActionArchiveDecoderTests
         ushort[] setWords = [0x16, 2, 2, 2, 2, 2, 0];
         for (int index = 0; index < setWords.Length; index++)
         {
-            BinaryPrimitives.WriteUInt16LittleEndian(data.AsSpan(40 + index * 2, 2), setWords[index]);
+            BinaryPrimitives.WriteUInt16LittleEndian(data.AsSpan(40 + (index * 2), 2), setWords[index]);
         }
 
         // Entry 2: one record then an end terminator.
         int[] sequence = [6, 3, -16, -28, -1];
         for (int index = 0; index < sequence.Length; index++)
         {
-            BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(64 + index * 4, 4), sequence[index]);
+            BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(64 + (index * 4), 4), sequence[index]);
         }
 
         IReadOnlyList<ActionAnimationSet> sets = ActionArchiveDecoder.DecodeSetTable(data, offsets, 1);

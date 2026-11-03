@@ -27,7 +27,7 @@ public static class FieldStageTableDecoder
             throw new ArgumentOutOfRangeException(nameof(tableOffset));
         }
 
-        if ((long)tableOffset + (long)maximumRecords * RecordBytes > data.Length)
+        if ((long)tableOffset + ((long)maximumRecords * RecordBytes) > data.Length)
         {
             throw new FormatException("Field-stage table extends outside FIELDSTG.PRO.");
         }
@@ -36,7 +36,7 @@ public static class FieldStageTableDecoder
         var modes = new HashSet<ushort>();
         for (int index = 0; index < maximumRecords; index++)
         {
-            int offset = tableOffset + index * RecordBytes;
+            int offset = tableOffset + (index * RecordBytes);
             int rawMode = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(offset, 4));
             int overlayFileId = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(offset + 4, 4));
             uint initializerAddress = BinaryPrimitives.ReadUInt32LittleEndian(data.Slice(offset + 8, 4));

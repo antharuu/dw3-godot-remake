@@ -34,29 +34,32 @@ public sealed class FieldcomSpriteDecoderTests
     public void RejectsFramesReferencingUnavailablePartsOrPages()
     {
         FieldcomVram vram = FieldcomVramDecoder.Decode([Rlen(Page(0, 0, 0))]);
-        Assert.Equal("FIELDCOM sprite frame references missing part",
+        Assert.Equal(
+            "FIELDCOM sprite frame references missing part",
             Assert.Throws<FormatException>(() => FieldcomSpriteCompositor.Compose([], Frame((0, 0, 0)), vram)).Message);
-        Assert.Equal("FIELDCOM 4-bit sprite references unavailable VRAM page",
+        Assert.Equal(
+            "FIELDCOM 4-bit sprite references unavailable VRAM page",
             Assert.Throws<FormatException>(() => FieldcomSpriteCompositor.Compose([new SpritePart(256, 0, 1, 1, 0, 0, 0)], Frame((0, 0, 0)), vram)).Message);
     }
 
     private static byte[] Frame(params (short Part, short X, short Y)[] parts)
     {
-        byte[] frame = new byte[6 + parts.Length * 6];
+        byte[] frame = new byte[6 + (parts.Length * 6)];
         BinaryPrimitives.WriteInt16LittleEndian(frame, (short)parts.Length);
         BinaryPrimitives.WriteInt16LittleEndian(frame.AsSpan(4), -1);
         for (int index = 0; index < parts.Length; index++)
         {
-            BinaryPrimitives.WriteInt16LittleEndian(frame.AsSpan(6 + index * 6), parts[index].Part);
-            BinaryPrimitives.WriteInt16LittleEndian(frame.AsSpan(8 + index * 6), parts[index].X);
-            BinaryPrimitives.WriteInt16LittleEndian(frame.AsSpan(10 + index * 6), parts[index].Y);
+            BinaryPrimitives.WriteInt16LittleEndian(frame.AsSpan(6 + (index * 6)), parts[index].Part);
+            BinaryPrimitives.WriteInt16LittleEndian(frame.AsSpan(8 + (index * 6)), parts[index].X);
+            BinaryPrimitives.WriteInt16LittleEndian(frame.AsSpan(10 + (index * 6)), parts[index].Y);
         }
+
         return frame;
     }
 
     private static byte[] Page(ushort packed, ushort palette1, ushort palette2)
     {
-        byte[] data = new byte[20 + 64 * 256 * 2];
+        byte[] data = new byte[20 + (64 * 256 * 2)];
         BinaryPrimitives.WriteUInt32LittleEndian(data, 0x10);
         BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(4), 2);
         BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(8), (uint)(data.Length - 8));
@@ -70,7 +73,7 @@ public sealed class FieldcomSpriteDecoderTests
 
     private static byte[] Rlen(byte[] decoded)
     {
-        var output = new List<byte>(12 + decoded.Length + decoded.Length / 127 + 1);
+        var output = new List<byte>(12 + decoded.Length + (decoded.Length / 127) + 1);
         output.AddRange(BitConverter.GetBytes(8));
         output.AddRange(new byte[4]);
         output.AddRange("RLEN"u8.ToArray());
@@ -82,6 +85,7 @@ public sealed class FieldcomSpriteDecoderTests
             output.AddRange(decoded.AsSpan(index, count).ToArray());
             index += count;
         }
+
         output.Add(0);
         return [.. output];
     }

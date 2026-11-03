@@ -111,18 +111,24 @@ internal static class BattleEncounterJsonParser
     /// <returns>The enemies in file order, so an array position matches the <c>index</c> field written by the extractor.</returns>
     private static BattleEnemy[] ParseEnemies(JsonElement element) =>
         [.. element.EnumerateArray().Select(e => new BattleEnemy(
-            e.GetProperty("index").GetInt32(), e.GetProperty("fighter").GetInt32(),
-            e.GetProperty("level").GetInt32(), e.GetProperty("hp").GetInt32(),
-            e.GetProperty("mp").GetInt32(), e.GetProperty("strength").GetInt32()))];
+            e.GetProperty("index").GetInt32(),
+            e.GetProperty("fighter").GetInt32(),
+            e.GetProperty("level").GetInt32(),
+            e.GetProperty("hp").GetInt32(),
+            e.GetProperty("mp").GetInt32(),
+            e.GetProperty("strength").GetInt32()))];
 
     /// <summary>Maps the <c>encounters</c> array to encounter records: the enemy table indices, the fighter id of each enemy, the ambush chance, the encounter kind and the block flags.</summary>
     /// <param name="element">The <c>encounters</c> JSON array.</param>
     /// <returns>The encounters in file order.</returns>
     private static EncounterEntry[] ParseEncounterList(JsonElement element) =>
         [.. element.EnumerateArray().Select(e => new EncounterEntry(
-            e.GetProperty("index").GetInt32(), Ints(e.GetProperty("enemyIndices")),
+            e.GetProperty("index").GetInt32(),
+            Ints(e.GetProperty("enemyIndices")),
             [.. e.GetProperty("enemies").EnumerateArray().Select(en => en.GetProperty("fighter").GetInt32())],
-            e.GetProperty("ambushChance").GetInt32(), e.GetProperty("kind").GetInt32(), Ints(e.GetProperty("blocks"))))];
+            e.GetProperty("ambushChance").GetInt32(),
+            e.GetProperty("kind").GetInt32(),
+            Ints(e.GetProperty("blocks"))))];
 
     /// <summary>Builds the per-stage encounter tables keyed by stage name, each one taken from the field overlay that owns the stage.</summary>
     /// <param name="stagesElement">The <c>stages</c> JSON object, one property per stage name.</param>
@@ -191,7 +197,9 @@ internal static class BattleEncounterJsonParser
     private static EncounterBattleList ParseBattleList(JsonElement area)
     {
         var battles = area.GetProperty("battles").EnumerateArray().Select(b => new EncounterAreaBattle(
-            b.GetProperty("encounter").GetInt32(), b.GetProperty("stage").GetInt32(), b.GetProperty("music").GetInt32(),
+            b.GetProperty("encounter").GetInt32(),
+            b.GetProperty("stage").GetInt32(),
+            b.GetProperty("music").GetInt32(),
             b.GetProperty("musicName").GetString() ?? throw new JsonException("battle music name missing"))).ToArray();
         return new EncounterBattleList(area.GetProperty("count").GetInt32(), battles);
     }
@@ -200,21 +208,42 @@ internal static class BattleEncounterJsonParser
     /// <param name="e">One element of the Digimon array.</param>
     /// <returns>The Digimon record with <c>Placeholder</c> set to <see langword="false"/>, since every entry read from the pack is real data.</returns>
     private static DigimonData ParseDigimon(JsonElement e) =>
-        new(e.GetProperty("id").GetInt32(), Ints(e.GetProperty("battleStats")), Ints(e.GetProperty("resistances")),
-            Ints(e.GetProperty("skills")), e.GetProperty("pairTechnique").GetInt32(), Ints(e.GetProperty("statusResistances")),
-            Ints(e.GetProperty("skillLevels")), Ints(e.GetProperty("knownLevels")), e.GetProperty("experienceLevel").GetInt32(),
-            e.GetProperty("pairPartner").GetInt32(), e.GetProperty("experienceRate").GetInt32(), e.GetProperty("hp").GetInt32(),
-            e.GetProperty("mp").GetInt32(), e.GetProperty("hpGrowth").GetInt32(), e.GetProperty("mpGrowth").GetInt32(),
-            Ints(e.GetProperty("statGrowth")), Ints(e.GetProperty("resistGrowth")), Ints(e.GetProperty("blastForms")),
-            e.GetProperty("nameId").GetInt32(), e.GetProperty("family").GetInt32(), false);
+        new(
+            e.GetProperty("id").GetInt32(),
+            Ints(e.GetProperty("battleStats")),
+            Ints(e.GetProperty("resistances")),
+            Ints(e.GetProperty("skills")),
+            e.GetProperty("pairTechnique").GetInt32(),
+            Ints(e.GetProperty("statusResistances")),
+            Ints(e.GetProperty("skillLevels")),
+            Ints(e.GetProperty("knownLevels")),
+            e.GetProperty("experienceLevel").GetInt32(),
+            e.GetProperty("pairPartner").GetInt32(),
+            e.GetProperty("experienceRate").GetInt32(),
+            e.GetProperty("hp").GetInt32(),
+            e.GetProperty("mp").GetInt32(),
+            e.GetProperty("hpGrowth").GetInt32(),
+            e.GetProperty("mpGrowth").GetInt32(),
+            Ints(e.GetProperty("statGrowth")),
+            Ints(e.GetProperty("resistGrowth")),
+            Ints(e.GetProperty("blastForms")),
+            e.GetProperty("nameId").GetInt32(),
+            e.GetProperty("family").GetInt32(),
+            false);
 
     /// <summary>Maps one fighter table entry: dropped item and its chance, name id, techniques, stats, resistances, family, the scripted AI actions and the counter action.</summary>
     /// <param name="e">One element of the fighter table array.</param>
     /// <returns>The fighter table record.</returns>
     private static BattleTableEntry ParseTableEntry(JsonElement e) =>
-        new(e.GetProperty("id").GetInt32(), e.GetProperty("item").GetInt32(), e.GetProperty("itemChance").GetInt32(),
-            e.GetProperty("nameId").GetInt32(), Ints(e.GetProperty("techniques")), Ints(e.GetProperty("stats")),
-            Ints(e.GetProperty("resistances")), e.GetProperty("family").GetInt32(),
+        new(
+            e.GetProperty("id").GetInt32(),
+            e.GetProperty("item").GetInt32(),
+            e.GetProperty("itemChance").GetInt32(),
+            e.GetProperty("nameId").GetInt32(),
+            Ints(e.GetProperty("techniques")),
+            Ints(e.GetProperty("stats")),
+            Ints(e.GetProperty("resistances")),
+            e.GetProperty("family").GetInt32(),
             [.. e.GetProperty("actions").EnumerateArray().Select(ParseBattleAction)],
             ParseBattleAction(e.GetProperty("counter")));
 
@@ -222,10 +251,13 @@ internal static class BattleEncounterJsonParser
     /// <param name="e">One element of the digivolution array.</param>
     /// <returns>The digivolution record.</returns>
     private static DigivolutionEntry ParseEvolution(JsonElement e) =>
-        new(e.GetProperty("digimonIndex").GetInt32(), e.GetProperty("digimonId").GetInt32(),
+        new(
+            e.GetProperty("digimonIndex").GetInt32(),
+            e.GetProperty("digimonId").GetInt32(),
             [.. e.GetProperty("needs").EnumerateArray().Select(n => new EvolutionNeed(
                 n.GetProperty("digimonIndex").GetInt32(), n.GetProperty("digimonId").GetInt32(), n.GetProperty("level").GetInt32()))],
-            e.GetProperty("stat").GetInt32(), e.GetProperty("value").GetInt32());
+            e.GetProperty("stat").GetInt32(),
+            e.GetProperty("value").GetInt32());
 
     /// <summary>Maps an AI action triple: target selector, trigger condition code and its argument, as read from a fighter table entry.</summary>
     /// <param name="e">An action object with <c>target</c>, <c>condition</c> and <c>conditionArgument</c>.</param>

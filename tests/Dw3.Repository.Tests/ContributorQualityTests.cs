@@ -38,7 +38,8 @@ public sealed class ContributorQualityTests
                 part => part is "bin" or "obj" or ".godot"))
             .Sum(CountPostfixNullForgivingOperators);
 
-        Assert.True(count <= 64,
+        Assert.True(
+            count <= 64,
             $"Expected at most 64 postfix null-forgiving operators in Dw3.Game, found {count}.");
     }
 

@@ -49,7 +49,9 @@ public sealed class FieldDiagnosticProbeRunnerTests
     private sealed class RecordingProbeHost : IDiagnosticProbeHost
     {
         public string? MethodName { get; private set; }
+
         public bool OwnsInput { get; private set; }
+
         public bool InputProbeRan { get; private set; }
 
         public void RunInputProbeAndQuit() => InputProbeRan = true;

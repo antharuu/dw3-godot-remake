@@ -11,7 +11,6 @@ public sealed class PngEncoderTests
     private static readonly byte[] PngSignature = [137, 80, 78, 71, 13, 10, 26, 10];
 
     // ── PNG signature ─────────────────────────────────────────────────────
-
     [Fact]
     public void Encode_ProducesValidPngSignature()
     {
@@ -21,7 +20,6 @@ public sealed class PngEncoderTests
     }
 
     // ── IHDR chunk ────────────────────────────────────────────────────────
-
     [Fact]
     public void Encode_1x1_IhdrHasCorrectDimensions()
     {
@@ -49,7 +47,6 @@ public sealed class PngEncoderTests
     }
 
     // ── Round-trip RGBA via IDAT decompression ────────────────────────────
-
     [Fact]
     public void Encode_RoundTrip_PreservesPixels()
     {
@@ -84,7 +81,6 @@ public sealed class PngEncoderTests
     }
 
     // ── Error cases ───────────────────────────────────────────────────────
-
     [Fact]
     public void Encode_ZeroWidth_ThrowsArgumentOutOfRangeException()
     {
@@ -106,11 +102,11 @@ public sealed class PngEncoderTests
     }
 
     // ── IEND presence ─────────────────────────────────────────────────────
-
     [Fact]
     public void Encode_EndsWithIendChunk()
     {
         var png = PngEncoder.Encode(1, 1, [0, 0, 0, 255]);
+
         // IEND chunk = 4 (len=0) + 4 (type) + 0 (data) + 4 (CRC) = 12 bytes at end
         Assert.True(png.Length >= 12);
         int iendStart = png.Length - 12;
@@ -119,7 +115,6 @@ public sealed class PngEncoderTests
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────
-
     private static (string Type, byte[] Data) ReadChunk(byte[] png, int offset)
     {
         uint length = BinaryPrimitives.ReadUInt32BigEndian(png.AsSpan(offset, 4));
@@ -143,9 +138,15 @@ public sealed class PngEncoderTests
             uint length = BinaryPrimitives.ReadUInt32BigEndian(png.AsSpan(offset, 4));
             string type = Encoding.ASCII.GetString(png, offset + 4, 4);
             if (type == "IDAT")
+            {
                 idat.Write(png, offset + 8, (int)length);
+            }
+
             if (type == "IEND")
+            {
                 break;
+            }
+
             offset += 12 + (int)length;
         }
 
@@ -162,8 +163,9 @@ public sealed class PngEncoderTests
         {
             int filterType = raw[y * (stride + 1)];
             Assert.Equal(0, filterType); // we only write filter type 0
-            raw.AsSpan(y * (stride + 1) + 1, stride).CopyTo(result.AsSpan(y * stride, stride));
+            raw.AsSpan((y * (stride + 1)) + 1, stride).CopyTo(result.AsSpan(y * stride, stride));
         }
+
         return result;
     }
 }

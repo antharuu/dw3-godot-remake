@@ -28,7 +28,7 @@ public static class StageSlotDecoder
         var slots = new List<StageSlot>();
         for (int index = 0; index < MaximumRecords; index++)
         {
-            int offset = checked(tableOffset + index * RecordBytes);
+            int offset = checked(tableOffset + (index * RecordBytes));
             if (offset < 0 || offset + RecordBytes > overlay.Length)
             {
                 throw new FormatException($"StageSlot table is truncated at record {index}.");

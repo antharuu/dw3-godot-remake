@@ -33,15 +33,19 @@ public sealed class TalkBoxDomainWriterTests : IDisposable
     [Fact]
     public void RejectsIncompleteLayoutTable()
     {
-        var domain = new TalkBoxDomain([new TalkBoxFrameImage(3, 1, 1, 1, true, [1, 2, 3, 255])],
-            new TalkBoxPanelImage(1, 1, 9, 8, 7, 0x45, 0x2C57, [9, 8, 7, 255]), [Layout(3)]);
+        var domain = new TalkBoxDomain(
+            [new TalkBoxFrameImage(3, 1, 1, 1, true, [1, 2, 3, 255])],
+            new TalkBoxPanelImage(1, 1, 9, 8, 7, 0x45, 0x2C57, [9, 8, 7, 255]),
+            [Layout(3)]);
         Assert.ThrowsAny<Exception>(() => new DataPackWriter(_root).Write(Metadata(), context => TalkBoxDomainWriter.Write(context, domain)));
     }
 
     [Fact]
     public void RejectsMissingFrames()
     {
-        var domain = new TalkBoxDomain([], new TalkBoxPanelImage(1, 1, 9, 8, 7, 0x45, 0x2C57, [9, 8, 7, 255]),
+        var domain = new TalkBoxDomain(
+            [],
+            new TalkBoxPanelImage(1, 1, 9, 8, 7, 0x45, 0x2C57, [9, 8, 7, 255]),
             [Layout(3), Layout(5), Layout(4), Layout(6)]);
         Assert.ThrowsAny<Exception>(() => new DataPackWriter(_root).Write(Metadata(), context => TalkBoxDomainWriter.Write(context, domain)));
     }
@@ -51,7 +55,10 @@ public sealed class TalkBoxDomainWriterTests : IDisposable
         // Release pooled connections before deletion; on Windows, the pool keeps
         // the file handle open past Dispose(), preventing Directory.Delete.
         SqliteConnection.ClearAllPools();
-        if (Directory.Exists(_root)) Directory.Delete(_root, recursive: true);
+        if (Directory.Exists(_root))
+        {
+            Directory.Delete(_root, recursive: true);
+        }
     }
 
     private static TalkBoxLayoutRecord Layout(int sprite) =>

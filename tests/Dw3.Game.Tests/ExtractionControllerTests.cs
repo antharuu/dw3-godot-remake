@@ -12,7 +12,6 @@ public sealed class ExtractionControllerTests
     // ---------------------------------------------------------------------------
     // Helpers
     // ---------------------------------------------------------------------------
-
     private static ExtractionController Build(IEnumerable<string> lines, int exitCode = 0)
     {
         var launcher = new FakeLauncher(lines, exitCode);
@@ -31,7 +30,6 @@ public sealed class ExtractionControllerTests
     // ---------------------------------------------------------------------------
     // Initial state
     // ---------------------------------------------------------------------------
-
     [Fact]
     public void InitialStateIsIdle()
     {
@@ -42,7 +40,6 @@ public sealed class ExtractionControllerTests
     // ---------------------------------------------------------------------------
     // Happy path: progress → complete
     // ---------------------------------------------------------------------------
-
     [Fact]
     public void ExtractingStateWhileRunning()
     {
@@ -113,7 +110,6 @@ public sealed class ExtractionControllerTests
     // ---------------------------------------------------------------------------
     // Error path
     // ---------------------------------------------------------------------------
-
     [Fact]
     public void ErrorEventFiredAndStateIsError()
     {
@@ -166,7 +162,6 @@ public sealed class ExtractionControllerTests
     // The controller itself does not throw; the caller (GameHost) catches
     // DataPackException before showing the screen. This test covers the contract.
     // ---------------------------------------------------------------------------
-
     [Fact]
     public void NonJsonDiagnosticLinesAreIgnored()
     {
@@ -193,6 +188,7 @@ public sealed class ExtractionControllerTests
         var lines = new[]
         {
             Error("DISC_READ_FAILED", "sector error"),
+
             // These lines must not be processed after error:
             Progress("collision", 2, 3),
             Complete(3),

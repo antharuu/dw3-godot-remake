@@ -32,13 +32,15 @@ internal sealed class BattleInputProbe : BattleProbe
         Host.StartDebugBattle();
         ProbeRequirement.Require(Host.HasActiveBattle, "F8 did not start a battle");
         var inputFlow = Host.Flow;
-        ProbeRequirement.Require(inputFlow.Phase == BattleFlowPhase.PlayerCommand && !inputFlow.MessageVisible,
+        ProbeRequirement.Require(
+            inputFlow.Phase == BattleFlowPhase.PlayerCommand && !inputFlow.MessageVisible,
             "PlayerCommand retained an action message window");
         var fighterData = Host.FighterData ?? throw new InvalidOperationException("fighter data unavailable");
         var enemyNameId = fighterData.BattleTable.Single(entry => entry.Id == 51).NameId;
         var activePlayer = inputFlow.State.ActivePlayerFighter ?? throw new InvalidOperationException("active player unavailable");
         var partnerNameId = fighterData.Digimon[activePlayer.Id].NameId;
-        ProbeRequirement.Require(Host.NameLine(51).Tokens.SequenceEqual(Host.BattleText().DigimonByNameId(enemyNameId).Tokens)
+        ProbeRequirement.Require(
+            Host.NameLine(51).Tokens.SequenceEqual(Host.BattleText().DigimonByNameId(enemyNameId).Tokens)
             && Host.NameLine(activePlayer.Id).Tokens.SequenceEqual(Host.BattleText().DigimonByNameId(partnerNameId).Tokens),
             $"HUD names do not use nameId enemy=51:{enemyNameId} partner={activePlayer.Id}:{partnerNameId}");
         QuietLog.Info($"battle-input nameId PASS enemy=51:{enemyNameId} partner={activePlayer.Id}:{partnerNameId} messageVisible=false");
@@ -48,12 +50,15 @@ internal sealed class BattleInputProbe : BattleProbe
         // Three source submenus use their own layouts, not the root command list. Input only.
         InjectBattleKey(Key.S);
         InjectBattleKey(Key.Enter);
-        ProbeRequirement.Require(Host.Menu.Menu == BattleMenuKind.Technique && Host.Menu.Cursor == 0 && Host.Menu.Lines.Count > 0,
+        ProbeRequirement.Require(
+            Host.Menu.Menu == BattleMenuKind.Technique && Host.Menu.Cursor == 0 && Host.Menu.Lines.Count > 0,
             $"tech menu did not open at source line 0 menu={Host.Menu.Menu} lines={Host.Menu.Lines.Count}");
         RequireSubmenuText(Host.Menu.View, "technique");
-        ProbeRequirement.Require(Host.Menu.View.Lines[0].Icon >= 0 && Host.Menu.View.Lines[0].Cost >= 0,
+        ProbeRequirement.Require(
+            Host.Menu.View.Lines[0].Icon >= 0 && Host.Menu.View.Lines[0].Cost >= 0,
             "tech first line lacks source icon/cost metadata");
-        ProbeRequirement.Require(Host.Menu.View.Lines[0].DescriptionText is { } techDescription && techDescription != BattleTextLine.Missing && techDescription.Tokens.Count > 0,
+        ProbeRequirement.Require(
+            Host.Menu.View.Lines[0].DescriptionText is { } techDescription && techDescription != BattleTextLine.Missing && techDescription.Tokens.Count > 0,
             "tech first line lacks SKLINF token description");
         var techMenu = await BattleProbeCapture.CaptureAsync(Host, captureRoot, "submenu-tech.png");
         RequireRenderedSubmenuLines(techMenu, Host.Menu.View, "technique", 0x2A, 0x45, 0xE);
@@ -61,16 +66,20 @@ internal sealed class BattleInputProbe : BattleProbe
         RequireBattleFramePixels(techMenu, "0x29", 0xA3, 0x21, 96, 39);
         RequireBattleFramePixels(techMenu, "0x31", 0xB, 0xBC, 296, 38);
         var (techIconX, techIconY) = BattleHudLayout.ToViewport(0x1D, 0x45);
-        ProbeRequirement.Require(BattlePixelMetrics.CountBright(techMenu, new Rect2(techIconX, techIconY, 12 * BattleHudLayout.Scale, 14 * BattleHudLayout.Scale)) > 0,
+        ProbeRequirement.Require(
+            BattlePixelMetrics.CountBright(techMenu, new Rect2(techIconX, techIconY, 12 * BattleHudLayout.Scale, 14 * BattleHudLayout.Scale)) > 0,
             "tech menu CMFONTCS icon rectangle has no nonzero pixels");
         foreach (var (x, y) in new[] { (0x1A, 0x9F), (0x80, 0x9F), (0xAC, 0x3A), (0xD8, 0x3A), (0xD9, 0x3A), (0xFB, 0x3A) })
         {
             var (screenX, screenY) = BattleHudLayout.ToViewport(x, y);
-            ProbeRequirement.Require(BattlePixelMetrics.CountBright(techMenu, new Rect2(screenX, screenY, 28 * BattleHudLayout.Scale, 12 * BattleHudLayout.Scale)) > 0,
+            ProbeRequirement.Require(
+                BattlePixelMetrics.CountBright(techMenu, new Rect2(screenX, screenY, 28 * BattleHudLayout.Scale, 12 * BattleHudLayout.Scale)) > 0,
                 $"tech source stat window lacks glyphs x=0x{x:X} y=0x{y:X}");
         }
+
         var techStatus = Host.Menu.View.StatusText ?? throw new InvalidOperationException("tech source status text unavailable");
-        ProbeRequirement.Require(techStatus.Header.Debug == "MFIGHT entry=13" && techStatus.Separator?.Debug == "MFIGHT entry=16"
+        ProbeRequirement.Require(
+            techStatus.Header.Debug == "MFIGHT entry=13" && techStatus.Separator?.Debug == "MFIGHT entry=16"
             && Host.Menu.View.PreviousPageText?.Debug == "MFIGHT entry=17" && Host.Menu.View.NextPageText?.Debug == "MFIGHT entry=18"
             && Host.Menu.View.Lines[0].CostLabelText?.Debug == "MFIGHT entry=13",
             "tech status labels use MFIGHT 0x11/0x12/0xD/0x10");
@@ -82,21 +91,29 @@ internal sealed class BattleInputProbe : BattleProbe
             var listed = BattleSetupFactory.PlayerTechniques(fighterData, Host.TechData!, digimonId, Host.BattleText());
             var expected = decoded.Skills.Skip(1).Where(raw => (raw & BattleSetupFactory.SkillIdMask) != 0)
                 .Select(BattleSetupFactory.SkillId).ToArray();
-            ProbeRequirement.Require(listed.Select(tech => tech.Id).SequenceEqual(expected),
+            ProbeRequirement.Require(
+                listed.Select(tech => tech.Id).SequenceEqual(expected),
                 $"team {digimonId} techniques use SKILL_ID expected=[{string.Join(',', expected)}]");
             foreach (var technique in listed)
             {
-                ProbeRequirement.Require(technique.Text is { } name && name != BattleTextLine.Missing && name.Tokens.Count > 1,
+                ProbeRequirement.Require(
+                    technique.Text is { } name && name != BattleTextLine.Missing && name.Tokens.Count > 1,
                     $"team {digimonId} technique {technique.Id} has sourced non-single-glyph SKLNAM");
                 QuietLog.Info($"battle-tech-menu tech={technique.Id} name={technique.Text!.Debug} cost={technique.Tech.Mp} power={technique.Tech.Power} team={digimonId}");
             }
         }
+
         InjectBattleKey(Key.X);
         ProbeRequirement.Require(Host.Menu.Menu == BattleMenuKind.Root, "Triangle from technique did not return to root");
 
-        for (var i = 0; i < 2; i++) InjectBattleKey(Key.S);
+        for (var i = 0; i < 2; i++)
+        {
+            InjectBattleKey(Key.S);
+        }
+
         InjectBattleKey(Key.Enter);
-        ProbeRequirement.Require(Host.Menu.Menu == BattleMenuKind.Digivolve && Host.Menu.Cursor == 0 && Host.Menu.Lines.Count > 0,
+        ProbeRequirement.Require(
+            Host.Menu.Menu == BattleMenuKind.Digivolve && Host.Menu.Cursor == 0 && Host.Menu.Lines.Count > 0,
             $"digivolve menu did not open at source line 0 menu={Host.Menu.Menu} lines={Host.Menu.Lines.Count}");
         RequireSubmenuText(Host.Menu.View, "digivolve");
         var digivolveMenu = await BattleProbeCapture.CaptureAsync(Host, captureRoot, "submenu-digivolve.png");
@@ -106,24 +123,36 @@ internal sealed class BattleInputProbe : BattleProbe
         InjectBattleKey(Key.X);
         ProbeRequirement.Require(Host.Menu.Menu == BattleMenuKind.Root, "Triangle from digivolve did not return to root");
 
-        for (var i = 0; i < 4; i++) InjectBattleKey(Key.S);
+        for (var i = 0; i < 4; i++)
+        {
+            InjectBattleKey(Key.S);
+        }
+
         InjectBattleKey(Key.Enter);
-        ProbeRequirement.Require(Host.Menu.Menu == BattleMenuKind.Item && Host.Menu.Cursor == 0 && Host.Menu.Lines.Count > 0,
+        ProbeRequirement.Require(
+            Host.Menu.Menu == BattleMenuKind.Item && Host.Menu.Cursor == 0 && Host.Menu.Lines.Count > 0,
             $"item menu did not open at source line 0 menu={Host.Menu.Menu} lines={Host.Menu.Lines.Count}");
         RequireSubmenuText(Host.Menu.View, "item");
         var itemStatus = Host.Menu.View.StatusText ?? throw new InvalidOperationException("item source status text unavailable");
         ProbeRequirement.Require(itemStatus.Header.Debug == "MFIGHT entry=12", "item quantity label uses MFIGHT 0xC");
         ProbeRequirement.Require(Host.Menu.View.Lines[0].Quantity > 0, "item first line lacks a positive source stock quantity");
-        ProbeRequirement.Require(Host.Menu.View.Lines[0].DescriptionText is { } itemDescription && itemDescription != BattleTextLine.Missing && itemDescription.Tokens.Count > 0,
+        ProbeRequirement.Require(
+            Host.Menu.View.Lines[0].DescriptionText is { } itemDescription && itemDescription != BattleTextLine.Missing && itemDescription.Tokens.Count > 0,
             "item first line lacks ITMINF token description");
         var itemMenuInitial = await BattleProbeCapture.CaptureAsync(Host, captureRoot, "submenu-item.png");
         RequireRenderedSubmenuLines(itemMenuInitial, Host.Menu.View, "item", 0x2A, 0x45, 0xE);
         RequireBattleFramePixels(itemMenuInitial, "0x27", 8, 0x3E, 154, 113);
-        for (var i = 0; i < 10; i++) InjectBattleKey(Key.S);
-        ProbeRequirement.Require(Host.Menu.Cursor <= 6 && Host.Menu.First == 0,
+        for (var i = 0; i < 10; i++)
+        {
+            InjectBattleKey(Key.S);
+        }
+
+        ProbeRequirement.Require(
+            Host.Menu.Cursor <= 6 && Host.Menu.First == 0,
             $"item Down x10 must clamp on source page cursor={Host.Menu.Cursor} first={Host.Menu.First}");
         InjectBattleKey(Key.Pagedown);
-        ProbeRequirement.Require(Host.Menu.Cursor == 0 && Host.Menu.First == 7 && Host.Menu.View.Lines.Count == 7,
+        ProbeRequirement.Require(
+            Host.Menu.Cursor == 0 && Host.Menu.First == 7 && Host.Menu.View.Lines.Count == 7,
             $"item PAD_R1 page did not advance source first={Host.Menu.First} cursor={Host.Menu.Cursor}");
         QuietLog.Info($"battle-menu scroll first={Host.Menu.First} cursor={Host.Menu.Cursor} source=PAD_R1-page");
         var itemMenu = await BattleProbeCapture.CaptureAsync(Host, captureRoot, "submenu-item-scrolled.png");
@@ -132,7 +161,8 @@ internal sealed class BattleInputProbe : BattleProbe
         RequireBattleFramePixels(itemMenu, "0x31", 0xB, 0xBC, 296, 38);
         var (itemIconX, itemIconY) = BattleHudLayout.ToViewport(0x1D, 0x45);
         ProbeRequirement.Require(Host.Menu.View.Lines[0].Icon >= 0, "item page first line lacks source category frame metadata");
-        ProbeRequirement.Require(BattlePixelMetrics.CountBright(itemMenu, new Rect2(itemIconX, itemIconY, 12 * BattleHudLayout.Scale, 14 * BattleHudLayout.Scale)) > 0,
+        ProbeRequirement.Require(
+            BattlePixelMetrics.CountBright(itemMenu, new Rect2(itemIconX, itemIconY, 12 * BattleHudLayout.Scale, 14 * BattleHudLayout.Scale)) > 0,
             "item menu CMFONTCS icon rectangle has no nonzero pixels");
         InjectBattleKey(Key.X);
         ProbeRequirement.Require(Host.Menu.Menu == BattleMenuKind.Root, "Triangle from item did not return to root");
@@ -145,14 +175,20 @@ internal sealed class BattleInputProbe : BattleProbe
         Host.Renderer.Present(waiting);
         var messageArrow = await BattleProbeCapture.CaptureAsync(Host, captureRoot, "message-arrow.png");
         var (arrowX, arrowY) = BattleHudLayout.ToViewport(0x123, 0xD0);
-        ProbeRequirement.Require(BattlePixelMetrics.CountBright(messageArrow, new Rect2(arrowX, arrowY, 16 * BattleHudLayout.Scale, 16 * BattleHudLayout.Scale)) > 0,
+        ProbeRequirement.Require(
+            BattlePixelMetrics.CountBright(messageArrow, new Rect2(arrowX, arrowY, 16 * BattleHudLayout.Scale, 16 * BattleHudLayout.Scale)) > 0,
             "message wait arrow rectangle has no nonzero pixels");
 
         // Bas x3 reaches the source root command index 3 (Changement), then Cross opens it.
-        for (var i = 0; i < 3; i++) InjectBattleKey(Key.S);
+        for (var i = 0; i < 3; i++)
+        {
+            InjectBattleKey(Key.S);
+        }
+
         ProbeRequirement.Require(Host.Menu.Cursor == 3, $"root switch cursor={Host.Menu.Cursor}, expected=3");
         InjectBattleKey(Key.Enter);
-        ProbeRequirement.Require(Host.Menu.Menu == BattleMenuKind.Switch && Host.Menu.Lines.Count == 2,
+        ProbeRequirement.Require(
+            Host.Menu.Menu == BattleMenuKind.Switch && Host.Menu.Lines.Count == 2,
             $"battle-menu open=Switch lines={Host.Menu.Lines.Count} menu={Host.Menu.Menu}");
         var switchList = await BattleProbeCapture.CaptureAsync(Host, captureRoot, "switch-list.png");
         RequireBattleFramePixels(switchList, "0x2F-line-0", 16, 77, 186, 31);
@@ -178,7 +214,11 @@ internal sealed class BattleInputProbe : BattleProbe
         InjectBattleKey(Key.X);
         ProbeRequirement.Require(Host.Menu.Menu == BattleMenuKind.Root, "Triangle from partner list did not return to root");
 
-        for (var i = 0; i < 3; i++) InjectBattleKey(Key.S);
+        for (var i = 0; i < 3; i++)
+        {
+            InjectBattleKey(Key.S);
+        }
+
         InjectBattleKey(Key.Enter);
         InjectBattleKey(Key.Enter);
         InjectBattleKey(Key.Enter);
@@ -188,7 +228,8 @@ internal sealed class BattleInputProbe : BattleProbe
         ProbeRequirement.Require(switchedFlow.Phase == BattleFlowPhase.EnemyTurn, $"switch did not spend turn phase={switchedFlow.Phase}");
         Host.Input.Handle(new InputEventKey { Keycode = Key.Enter, Pressed = false });
         Host.TickTestSimulation();
-        ProbeRequirement.Require(switchedFlow.State.ActivePlayerFighter?.Id == 373 && Host.RenderedPlayerId == 373,
+        ProbeRequirement.Require(
+            switchedFlow.State.ActivePlayerFighter?.Id == 373 && Host.RenderedPlayerId == 373,
             $"switch did not render Renamon active={switchedFlow.State.ActivePlayerFighter?.Id} rendered={Host.RenderedPlayerId}");
         var after = await BattleProbeCapture.CaptureAsync(Host, captureRoot, "switch-after-renamon.png");
         var changed = BattlePixelMetrics.CountRgbChanges(before, after, new Rect2(0, 0, before.GetWidth() / 2, before.GetHeight()));
@@ -203,7 +244,8 @@ internal sealed class BattleInputProbe : BattleProbe
     {
         foreach (var (line, index) in menu.Lines.Select((line, index) => (line, index)))
         {
-            ProbeRequirement.Require(line.Text is { } text && text != BattleTextLine.Missing && text.Tokens.Count > 1,
+            ProbeRequirement.Require(
+                line.Text is { } text && text != BattleTextLine.Missing && text.Tokens.Count > 1,
                 $"{surface} line={index} is empty or a single glyph debug={line.Text?.Debug}");
         }
     }
@@ -219,8 +261,9 @@ internal sealed class BattleInputProbe : BattleProbe
     {
         foreach (var (_, index) in menu.Lines.Select((line, index) => (line, index)))
         {
-            var (screenX, screenY) = BattleHudLayout.ToViewport(x, y + index * step);
-            ProbeRequirement.Require(BattlePixelMetrics.CountBright(image, new Rect2(screenX, screenY, 120 * BattleHudLayout.Scale, 12 * BattleHudLayout.Scale)) > 10,
+            var (screenX, screenY) = BattleHudLayout.ToViewport(x, y + (index * step));
+            ProbeRequirement.Require(
+                BattlePixelMetrics.CountBright(image, new Rect2(screenX, screenY, 120 * BattleHudLayout.Scale, 12 * BattleHudLayout.Scale)) > 10,
                 $"{surface} line={index} has no rendered text pixels");
         }
     }

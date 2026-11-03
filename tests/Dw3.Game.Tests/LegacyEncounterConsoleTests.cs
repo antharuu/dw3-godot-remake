@@ -1,12 +1,10 @@
+using Dw3Production.Simulation;
 using Xunit;
 
 namespace Dw3.Game.Tests;
 
-using Dw3Production.Simulation;
-
 public sealed class LegacyEncounterConsoleTests
 {
-
     [Fact]
     public void PreservesLegacyConsoleAssertions()
     {
@@ -35,8 +33,12 @@ public sealed class LegacyEncounterConsoleTests
             Check(controller.BattleSteps is >= 0 and <= 1279, $"roll value=0x{value:X3} yields in-range steps");
             seen.Add(controller.BattleSteps);
         }
+
         for (var steps = 0; steps <= 1279; steps++)
+        {
             Check(seen.Contains(steps), $"steps value {steps} is reachable by the two branches (no gap)");
+        }
+
         Check(seen.Count == 1280, "roll covers exactly the 1280 distinct step values");
     }
 
@@ -146,11 +148,16 @@ public sealed class LegacyEncounterConsoleTests
         var areas = new BattleList[4];
         for (var area = 0; area < 4; area++)
         {
-            var baseEncounter = encounterBase + area * 8;
+            var baseEncounter = encounterBase + (area * 8);
             var battles = new AreaBattle[8];
-            for (var slot = 0; slot < 8; slot++) battles[slot] = new AreaBattle(baseEncounter + slot, 0, 0);
+            for (var slot = 0; slot < 8; slot++)
+            {
+                battles[slot] = new AreaBattle(baseEncounter + slot, 0, 0);
+            }
+
             areas[area] = new BattleList(count, battles);
         }
+
         return areas;
     }
 

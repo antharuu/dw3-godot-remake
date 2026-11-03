@@ -90,7 +90,7 @@ public static class TimDecoder
             Flags16BitDirect => Decode16Bit(data),
             _ => throw new FormatException(
                 $"Unsupported TIM flags 0x{flags:X8}. " +
-                $"Supported: 0x08 (4-bit+CLUT), 0x09 (8-bit+CLUT), 0x02 (16-bit direct).")
+                $"Supported: 0x08 (4-bit+CLUT), 0x09 (8-bit+CLUT), 0x02 (16-bit direct)."),
         };
     }
 
@@ -109,7 +109,7 @@ public static class TimDecoder
         }
 
         uint clutBlockLen = BinaryPrimitives.ReadUInt32LittleEndian(data[8..12]);
-        if (clutBlockLen < 12 || (long)8 + clutBlockLen > data.Length)
+        if (clutBlockLen < 12 || 8L + clutBlockLen > data.Length)
         {
             throw new FormatException(
                 $"4-bit TIM CLUT block length {clutBlockLen} is invalid");
@@ -129,7 +129,7 @@ public static class TimDecoder
             throw new FormatException("4-bit TIM CLUT has no rows");
         }
 
-        if (20 + numColors * numRows * 2 > 8 + (int)clutBlockLen)
+        if (20 + (numColors * numRows * 2) > 8 + (int)clutBlockLen)
         {
             throw new FormatException(
                 "4-bit TIM CLUT palette data exceeds declared CLUT block length");
@@ -141,7 +141,7 @@ public static class TimDecoder
                 $"CLUT row {clutRow} is out of range (0..{numRows - 1})");
         }
 
-        int paletteOffset = 20 + clutRow * numColors * 2;
+        int paletteOffset = 20 + (clutRow * numColors * 2);
         var palette = ReadPalette(data, paletteOffset, numColors);
 
         // Image block immediately after CLUT block
@@ -149,9 +149,11 @@ public static class TimDecoder
         var (width, height, pixelData) = ReadImageBlock(data, imgBase, widthMultiplier: 4);
 
         if (pixelData.Length != width * height / 2)
+        {
             throw new FormatException(
                 $"4-bit TIM pixel data is {pixelData.Length} bytes, " +
                 $"expected {width * height / 2} for {width}x{height}");
+        }
 
         // Expand nibble-packed pixels (low nibble = left pixel)
         var pixels = new byte[width * height * 4];
@@ -181,7 +183,7 @@ public static class TimDecoder
         }
 
         uint clutBlockLen = BinaryPrimitives.ReadUInt32LittleEndian(data[8..12]);
-        if (clutBlockLen < 12 || (long)8 + clutBlockLen > data.Length)
+        if (clutBlockLen < 12 || 8L + clutBlockLen > data.Length)
         {
             throw new FormatException(
                 $"8-bit TIM CLUT block length {clutBlockLen} is invalid");
@@ -201,7 +203,7 @@ public static class TimDecoder
             throw new FormatException("8-bit TIM CLUT has no rows");
         }
 
-        if (20 + numColors * numRows * 2 > 8 + (int)clutBlockLen)
+        if (20 + (numColors * numRows * 2) > 8 + (int)clutBlockLen)
         {
             throw new FormatException(
                 "8-bit TIM CLUT palette data exceeds declared CLUT block length");
@@ -213,7 +215,7 @@ public static class TimDecoder
                 $"CLUT row {clutRow} is out of range (0..{numRows - 1})");
         }
 
-        int paletteOffset = 20 + clutRow * numColors * 2;
+        int paletteOffset = 20 + (clutRow * numColors * 2);
         var palette = ReadPalette(data, paletteOffset, numColors);
 
         int imgBase = 8 + (int)clutBlockLen;
@@ -247,9 +249,11 @@ public static class TimDecoder
 
         int wordCount = width * height;
         if (pixelData.Length != wordCount * 2)
+        {
             throw new FormatException(
                 $"16-bit TIM pixel data is {pixelData.Length} bytes, " +
                 $"expected {wordCount * 2} for {width}x{height}");
+        }
 
         var pixels = new byte[wordCount * 4];
         for (int i = 0; i < wordCount; i++)
@@ -275,27 +279,35 @@ public static class TimDecoder
         ReadOnlySpan<byte> data, int imgBase, int widthMultiplier)
     {
         if (imgBase < 0 || imgBase + 12 > data.Length)
+        {
             throw new FormatException(
                 $"TIM image block header at 0x{imgBase:X} exceeds buffer");
+        }
 
         uint imgBlockLen = BinaryPrimitives.ReadUInt32LittleEndian(data[imgBase..(imgBase + 4)]);
         if (imgBlockLen < 12 || (long)imgBase + imgBlockLen > data.Length)
+        {
             throw new FormatException(
                 $"TIM image block length {imgBlockLen} at 0x{imgBase:X} is invalid");
+        }
 
         int wordsPerLine = BinaryPrimitives.ReadUInt16LittleEndian(data[(imgBase + 8)..(imgBase + 10)]);
         int height = BinaryPrimitives.ReadUInt16LittleEndian(data[(imgBase + 10)..(imgBase + 12)]);
 
         if (wordsPerLine == 0 || height == 0)
+        {
             throw new FormatException(
                 $"TIM image block at 0x{imgBase:X} has zero dimensions ({wordsPerLine} words x {height})");
+        }
 
         int width = wordsPerLine * widthMultiplier;
         int pixelDataLen = (int)imgBlockLen - 12;
 
         if (pixelDataLen < 0)
+        {
             throw new FormatException(
                 $"TIM image block at 0x{imgBase:X} has no pixel data");
+        }
 
         return (width, height, data[(imgBase + 12)..(imgBase + 12 + pixelDataLen)].ToArray());
     }
@@ -311,7 +323,7 @@ public static class TimDecoder
         var palette = new (byte R, byte G, byte B, byte A)[count];
         for (int i = 0; i < count; i++)
         {
-            ushort word = BinaryPrimitives.ReadUInt16LittleEndian(data[(offset + i * 2)..(offset + i * 2 + 2)]);
+            ushort word = BinaryPrimitives.ReadUInt16LittleEndian(data[(offset + (i * 2))..(offset + (i * 2) + 2)]);
             palette[i] = Rgba5551.ToRgba(word);
         }
 

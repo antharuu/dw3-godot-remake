@@ -102,8 +102,12 @@ public partial class GameHost
         /// <param name="enabled">Optional enabled-state predicate.</param>
         /// <param name="line">Optional row presentation factory.</param>
         /// <param name="statusText">Optional status text.</param>
-        public void OpenSubmenu(BattleMenuKind kind, IReadOnlyList<(int Arg, BattleTextLine Text)> entries, Func<int, bool>? enabled = null,
-            Func<int, BattleTextLine, BattleMenuLine>? line = null, BattleMenuStatusText? statusText = null)
+        public void OpenSubmenu(
+            BattleMenuKind kind,
+            IReadOnlyList<(int Arg, BattleTextLine Text)> entries,
+            Func<int, bool>? enabled = null,
+            Func<int, BattleTextLine, BattleMenuLine>? line = null,
+            BattleMenuStatusText? statusText = null)
         {
             if (entries.Count == 0)
             {
@@ -119,8 +123,12 @@ public partial class GameHost
             }
 
             BattleTextCatalog textCatalog = _host.BattleText();
-            _host._battleMenu.Open(kind, lines, previousPageText: kind is BattleMenuKind.Technique or BattleMenuKind.Item ? textCatalog.MenuEntry(0x11) : null,
-                nextPageText: kind is BattleMenuKind.Technique or BattleMenuKind.Item ? textCatalog.MenuEntry(0x12) : null, statusText: statusText);
+            _host._battleMenu.Open(
+                kind,
+                lines,
+                previousPageText: kind is BattleMenuKind.Technique or BattleMenuKind.Item ? textCatalog.MenuEntry(0x11) : null,
+                nextPageText: kind is BattleMenuKind.Technique or BattleMenuKind.Item ? textCatalog.MenuEntry(0x12) : null,
+                statusText: statusText);
             QuietLog.Info($"battle-menu open={kind} lines={lines.Count}");
         }
 
@@ -198,8 +206,11 @@ public partial class GameHost
         /// <param name="flow">Active battle flow.</param>
         private void OpenTechniqueMenu(BattleFlowController flow)
         {
-            OpenSubmenu(BattleMenuKind.Technique, flow.PlayerTechniques.Select(technique => (technique.Id, technique.Text ?? BattleTextLine.Missing)).ToList(),
-                line: (id, text) => BuildTechniqueLine(flow, id, text), statusText: TechniqueStatusText(flow.State.ActivePlayerFighter!));
+            OpenSubmenu(
+                BattleMenuKind.Technique,
+                flow.PlayerTechniques.Select(technique => (technique.Id, technique.Text ?? BattleTextLine.Missing)).ToList(),
+                line: (id, text) => BuildTechniqueLine(flow, id, text),
+                statusText: TechniqueStatusText(flow.State.ActivePlayerFighter!));
         }
 
         /// <summary>Builds one technique row with its affordability and description.</summary>
@@ -213,15 +224,23 @@ public partial class GameHost
             BattleFighter fighter = flow.State.ActivePlayerFighter!;
             bool enabled = fighter.Temporary || fighter.Mp >= technique.Tech.Mp;
             BattleTextCatalog catalog = _host.BattleText();
-            return new BattleMenuLine(text.Debug, enabled, text, Icon: technique.Tech.Icon + 0x37, Cost: technique.Tech.Mp,
-                DescriptionText: enabled ? catalog.SkillInfo(id) : catalog.MenuEntry(0x54), CostLabelText: catalog.MenuEntry(0xD));
+            return new BattleMenuLine(
+                text.Debug,
+                enabled,
+                text,
+                Icon: technique.Tech.Icon + 0x37,
+                Cost: technique.Tech.Mp,
+                DescriptionText: enabled ? catalog.SkillInfo(id) : catalog.MenuEntry(0x54),
+                CostLabelText: catalog.MenuEntry(0xD));
         }
 
         /// <summary>Opens the available digivolution forms for the active partner.</summary>
         /// <param name="flow">Active battle flow.</param>
         private void OpenDigivolutionMenu(BattleFlowController flow)
         {
-            OpenSubmenu(BattleMenuKind.Digivolve, flow.PlayerDigivolutions.Select(id => (id, _host.NameLine(id))).ToList(),
+            OpenSubmenu(
+                BattleMenuKind.Digivolve,
+                flow.PlayerDigivolutions.Select(id => (id, _host.NameLine(id))).ToList(),
                 line: (id, text) => new BattleMenuLine(text.Debug, id != flow.State.ActivePlayerFighter!.Id, text));
         }
 
@@ -238,7 +257,10 @@ public partial class GameHost
                 }
             }
 
-            OpenSubmenu(BattleMenuKind.Item, entries, line: (id, text) => BuildItemLine(flow, id, text),
+            OpenSubmenu(
+                BattleMenuKind.Item,
+                entries,
+                line: (id, text) => BuildItemLine(flow, id, text),
                 statusText: new BattleMenuStatusText(_host.BattleText().MenuEntry(0xC)));
         }
 

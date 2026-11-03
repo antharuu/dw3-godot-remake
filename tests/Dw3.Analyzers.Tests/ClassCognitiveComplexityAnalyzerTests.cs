@@ -31,7 +31,6 @@ public sealed class ClassCognitiveComplexityAnalyzerTests
     // -------------------------------------------------------------------------
     // Individual constructs
     // -------------------------------------------------------------------------
-
     [Fact]
     public async Task EmptyMethod_ZeroComplexity()
     {
@@ -249,7 +248,6 @@ public class C
     // -------------------------------------------------------------------------
     // Partial classes
     // -------------------------------------------------------------------------
-
     [Fact]
     public async Task PartialClass_SumsAcrossDeclarations()
     {
@@ -268,7 +266,6 @@ public partial class C
     // -------------------------------------------------------------------------
     // Nested types
     // -------------------------------------------------------------------------
-
     [Fact]
     public async Task NestedType_NotCountedInParent()
     {
@@ -288,7 +285,6 @@ public class Outer
     // -------------------------------------------------------------------------
     // Threshold trigger
     // -------------------------------------------------------------------------
-
     [Fact]
     public async Task ExceedsDefaultThreshold_EmitsDw3001()
     {
@@ -326,7 +322,6 @@ public class EdgeComplexity
     // -------------------------------------------------------------------------
     // Configurable threshold
     // -------------------------------------------------------------------------
-
     [Fact]
     public async Task ConfigurableThreshold_ZeroFiresOnComplexityOne()
     {

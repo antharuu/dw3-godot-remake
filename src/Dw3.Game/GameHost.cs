@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using Godot;
 using Dw3.Data;
 using Dw3Production.Conversion;
 using Dw3Production.Diagnostics;
@@ -10,6 +9,7 @@ using Dw3Production.Presentation;
 using Dw3Production.Scene;
 using Dw3Production.Simulation;
 using Dw3Production.Startup;
+using Godot;
 using NumericsVector2 = System.Numerics.Vector2;
 
 namespace Dw3Production;
@@ -32,7 +32,6 @@ namespace Dw3Production;
 /// </remarks>
 public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverHost, IFieldTickHost, IBattleTickHost, IInteractiveFrameHost
 {
-
     #region Composition state
 
     private const int DebugBattleEncounter = 200;
@@ -80,6 +79,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     private Dictionary<int, Texture2D>? _frameTextures;
     private Texture2D? _panelTexture;
     private int _dialogueBoxWidth;
+
     // Explicit test-only driver. Interactive sessions never set this flag and never receive
     // injected input, repositioning, or an automatic route.
     private bool _testDriverActive;
@@ -103,6 +103,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     private int _lastBattleEncounter = -1;
     private int[] _lastBattleEnemyIds = [];
     private Dictionary<int, int> _battleNameIds = [];
+
     // The battle menu's press-edge state, so the cursor advances once per key press, not
     // once per frame while a key is held. Reset on battle start.
     private bool _battlePrevUp;
@@ -112,11 +113,13 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     private int _battleRenderedEnemyId = -1;
     private bool _battlePlayerCameraActive;
     private readonly List<int> _battleSubmenuArgs = [];
+
     // switch_in_the battle presentation flow keeps the selected party member while its second page chooses the
     // incoming form and then Changement/Technique de paire.
     private int _battleSwitchPartner = -1;
     private int _battlePendingChangeMotion;
     private bool _battleSwitchForced;
+
     // The diagnostic on-screen notice for a failed battle load, plus its last text (the
     // probe asserts both the ERROR log and the notice).
     private Label? _battleNoticeLabel;
@@ -132,6 +135,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     private IReadOnlyList<PartnerGrowthState>? _partyGrowth;
     private BattleReportView? _battleReport;
     private bool _battleResolved;
+
     // The title screen shown on defeat (MODE_TITLE): a terminal modal state, distinct from the
     // field, that the probe asserts.
     private CanvasLayer? _titleScreen;
@@ -458,7 +462,9 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     {
         try
         {
-            EnterBattle(BuildEncounterBattle(record.Battle.Encounter), record.Battle.Encounter,
+            EnterBattle(
+                BuildEncounterBattle(record.Battle.Encounter),
+                record.Battle.Encounter,
                 $"walk encounter={record.Battle.Encounter} kind={record.Kind}");
         }
         catch (Exception error)
@@ -520,10 +526,15 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
             _battleRenderer = new BattleRenderer(this);
             var playerId = flow.State.Players[0]?.Id ?? 0;
             var enemyId = flow.State.Enemies.FirstOrDefault(enemy => enemy is not null)?.Id ?? 0;
-            _battleRenderer.BuildModels(ResolveBattleModelPath(playerId), ResolveBattleModelPath(enemyId),
-                $"fighter-{playerId}", $"fighter-{enemyId}", enemyId);
+            _battleRenderer.BuildModels(
+                ResolveBattleModelPath(playerId),
+                ResolveBattleModelPath(enemyId),
+                $"fighter-{playerId}",
+                $"fighter-{enemyId}",
+                enemyId);
             _battleRenderedPlayerId = playerId;
             _battleRenderedEnemyId = enemyId;
+
             // The decoded battle-HUD sprites (HP-bar window frames, technique gauge,
             // cursor) from the disc, drawn instead of the flat procedural panel.
             _battleRenderer.SetHud(BattleLoader.LoadBattleHud());
@@ -533,11 +544,15 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
             _fightReportRenderer = new FightReportRenderer(this);
             _fightReportRenderer.Configure(BattleLoader.LoadBattleReportSprites(), font);
         }
+
         // The fight stage background resolved from the validated data pack.
         // Built once per renderer; a later battle with a different stage is a gap for the
         // F8 single-encounter test path.
         if (!_battleRenderer.StageBuilt)
+        {
             _battleRenderer.BuildStage(ResolveBattleStagePath(ResolveBattleStage(encounter)), ResolveBattleStage(encounter));
+        }
+
         RefreshBattlePresentationModels();
         _battleRenderer.RestartEntranceFade();
         _battleRenderer.SetOpeningCamera();
@@ -565,6 +580,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
             _battleNoticeLabel.Text = _battleNoticeText;
             _battleNoticeLabel.Visible = true;
         }
+
         QuietLog.Info("battle-load-failed return-to-field");
     }
 
@@ -584,6 +600,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
         _fightReportInput = null;
         _battleResolved = false;
         _state.BattleActive = false;
+
         // The battle never moves the player, so a win or a flight returns to the field at the
         // previous position. A defeat reaches the title screen (MODE_TITLE), not the field, as
         // the battle report layout contract/the battle presentation flow request MODE_TITLE on BATTLE_LOST.
@@ -704,7 +721,10 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     private FightReportController BuildFightReportController(BattleFlowController flow)
     {
         if (flow.Outcome != BattleOutcome.Won || _fightReportInput is null)
+        {
             throw new InvalidOperationException("fight report requested without a resolved victory input");
+        }
+
         _log.Warn("report-partner-slots-unavailable", "report-partner-slots-unavailable");
         return new FightReportController(_fightReportInput);
     }
@@ -721,7 +741,10 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     private BattleReward ResolveReward(int encounter)
     {
         if (_rewardsData is null || encounter < 0 || encounter >= _rewardsData.Rewards.Count)
+        {
             return new BattleReward(0, 0, 0);
+        }
+
         var entry = _rewardsData.Rewards[encounter];
         return new BattleReward(entry.DigimonExp, entry.Exp, entry.Money);
     }
@@ -735,7 +758,10 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     private Conversion.DigimonData DigimonFor(int slot)
     {
         if (_partyDigimonIds is null || slot < 0 || slot >= _partyDigimonIds.Count || _fighterData is null)
+        {
             throw new InvalidOperationException($"test team slot {slot} has no resolved digimon");
+        }
+
         return _fighterData.Digimon[_partyDigimonIds[slot]];
     }
 
@@ -753,9 +779,16 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     /// <returns>The decoded name line for the fighter, or a missing-name sentinel when the id is unknown.</returns>
     private BattleTextLine NameLine(int fighterId)
     {
-        if (_battleNameIds.TryGetValue(fighterId, out var nameId)) return BattleText().DigimonByNameId(nameId);
+        if (_battleNameIds.TryGetValue(fighterId, out var nameId))
+        {
+            return BattleText().DigimonByNameId(nameId);
+        }
+
         if (_fighterData?.Digimon.TryGetValue(fighterId, out var digimon) == true)
+        {
             return BattleText().DigimonByNameId(digimon.NameId);
+        }
+
         var enemy = _fighterData?.BattleTable.FirstOrDefault(entry => entry.Id == fighterId);
         return enemy is null ? BattleTextLine.Missing : BattleText().DigimonByNameId(enemy.NameId);
     }
@@ -937,7 +970,10 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     private void SetTestHeldDirection(SemanticDirection direction)
     {
         foreach (var key in new[] { Key.Q, Key.D, Key.Z, Key.S })
+        {
             _input.Handle(new InputEventKey { Keycode = key, Pressed = false });
+        }
+
         foreach (var key in direction switch
         {
             SemanticDirection.Up => new[] { Key.Z },
@@ -950,7 +986,9 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
             SemanticDirection.UpLeft => [Key.Z, Key.Q],
             _ => [],
         })
+        {
             _input.Handle(new InputEventKey { Keycode = key, Pressed = true });
+        }
     }
 
     /// <summary>
@@ -994,7 +1032,10 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     private FieldZone ResolveTarget(string zoneId)
     {
         if (_options.WarpProbeMissingTarget)
+        {
             throw new CacheResourceException("CACHE_RESOURCE_UNAVAILABLE", $"zone={zoneId} forced unavailable for probe");
+        }
+
         return GetOrLoadZone(zoneId);
     }
 

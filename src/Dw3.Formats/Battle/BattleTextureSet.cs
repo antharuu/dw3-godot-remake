@@ -13,7 +13,9 @@ public sealed class BattleTextureSet
     /// <param name="textures">Decoded textures, indexed by their key.</param>
     /// <param name="vram">Layout of the local VRAM the textures were cut from.</param>
     /// <param name="keys">Texture key of every decoded combination.</param>
-    internal BattleTextureSet(IReadOnlyList<BattleTexture> textures, BattleTextureVram vram,
+    internal BattleTextureSet(
+        IReadOnlyList<BattleTexture> textures,
+        BattleTextureVram vram,
         IReadOnlyDictionary<BattleTextureCombination, int> keys)
         => (Textures, Vram, _keys) = (textures, vram, keys);
 

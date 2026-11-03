@@ -19,7 +19,7 @@ public sealed class RlenDecoderTests
             (byte)(targetSize & 0xFF),
             (byte)((targetSize >> 8) & 0xFF),
             (byte)((targetSize >> 16) & 0xFF),
-            (byte)((targetSize >> 24) & 0xFF)
+            (byte)((targetSize >> 24) & 0xFF),
         };
         stream.AddRange(commands);
         stream.Add(0); // terminator
@@ -27,7 +27,6 @@ public sealed class RlenDecoderTests
     }
 
     // ── IsRlen ────────────────────────────────────────────────────────────
-
     [Fact]
     public void IsRlen_ValidMagic_ReturnsTrue()
     {
@@ -48,7 +47,6 @@ public sealed class RlenDecoderTests
     }
 
     // ── Empty stream (zero target size) ───────────────────────────────────
-
     [Fact]
     public void Decompress_EmptyStream_ReturnsEmptyArray()
     {
@@ -58,7 +56,6 @@ public sealed class RlenDecoderTests
     }
 
     // ── Literal run ───────────────────────────────────────────────────────
-
     [Fact]
     public void Decompress_LiteralRun_CopiesVerbatim()
     {
@@ -73,12 +70,16 @@ public sealed class RlenDecoderTests
     {
         // Command 0x7F = literal run of 127 bytes
         var payload = new byte[127];
-        for (int i = 0; i < 127; i++) payload[i] = (byte)i;
+        for (int i = 0; i < 127; i++)
+        {
+            payload[i] = (byte)i;
+        }
+
         var stream = new List<byte>
         {
             (byte)'R', (byte)'L', (byte)'E', (byte)'N',
             127, 0, 0, 0,  // target = 127
-            0x7F // literal 127
+            0x7F, // literal 127
         };
         stream.AddRange(payload);
         stream.Add(0); // terminator
@@ -87,7 +88,6 @@ public sealed class RlenDecoderTests
     }
 
     // ── Repeat run ────────────────────────────────────────────────────────
-
     [Fact]
     public void Decompress_RepeatRun_FillsRepeatedByte()
     {
@@ -106,7 +106,6 @@ public sealed class RlenDecoderTests
     }
 
     // ── Mixed literal + repeat ────────────────────────────────────────────
-
     [Fact]
     public void Decompress_Mixed_ProducesCorrectOutput()
     {
@@ -117,7 +116,6 @@ public sealed class RlenDecoderTests
     }
 
     // ── DecompressIfNeeded ────────────────────────────────────────────────
-
     [Fact]
     public void DecompressIfNeeded_Rlen_ReturnsDecompressedAndTrue()
     {
@@ -137,7 +135,6 @@ public sealed class RlenDecoderTests
     }
 
     // ── Error cases ───────────────────────────────────────────────────────
-
     [Fact]
     public void Decompress_BadMagic_ThrowsFormatException()
     {
@@ -162,6 +159,7 @@ public sealed class RlenDecoderTests
         byte[] bad = [(byte)'R', (byte)'L', (byte)'E', (byte)'N', 2, 0, 0, 0,
             0x01, 0xAB]; // literal 1 byte, target=2 — decoder needs more but hits EOF
         var ex = Assert.Throws<FormatException>(() => RlenDecoder.Decompress(bad));
+
         // Either "terminator" or "no terminator" message is acceptable
         Assert.True(
             ex.Message.Contains("terminator", StringComparison.OrdinalIgnoreCase) ||

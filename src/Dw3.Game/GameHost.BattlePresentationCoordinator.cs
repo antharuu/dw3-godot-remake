@@ -34,8 +34,12 @@ public partial class GameHost
                 return;
             }
 
-            _host._battleRenderer.BuildModels(_host.ResolveBattleModelPath(playerId), _host.ResolveBattleModelPath(enemyId),
-                $"fighter-{playerId}", $"fighter-{enemyId}", enemyId);
+            _host._battleRenderer.BuildModels(
+                _host.ResolveBattleModelPath(playerId),
+                _host.ResolveBattleModelPath(enemyId),
+                $"fighter-{playerId}",
+                $"fighter-{enemyId}",
+                enemyId);
             ApplyPendingChangeMotion(playerId);
             _host._battleRenderedPlayerId = playerId;
             _host._battleRenderedEnemyId = enemyId;

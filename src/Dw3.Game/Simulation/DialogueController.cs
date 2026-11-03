@@ -210,7 +210,8 @@ public sealed class DialogueController
                 if (!_effectReported && _talk!.Kind == "effect")
                 {
                     _effectReported = true;
-                    warn($"dialogue-effect-not-applied:{_zoneId}:{_actor!.Id}",
+                    warn(
+                        $"dialogue-effect-not-applied:{_zoneId}:{_actor!.Id}",
                         $"dialogue-effect-not-applied zone={_zoneId} actor={_actor.Id} families=[{string.Join(",", _talk.Families)}]");
                 }
 

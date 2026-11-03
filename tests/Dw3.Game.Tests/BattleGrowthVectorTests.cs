@@ -20,12 +20,13 @@ public sealed class BattleGrowthVectorTests
         AppContext.BaseDirectory, "Vectors", "battle-growth.json");
 
     // ------------------------------------------------------------------ helpers
-
     private sealed class SeqRng : IBattleRng
     {
         private readonly int[] _v;
         private int _i;
+
         public SeqRng(params int[] v) => _v = v;
+
         // Returns 0 if the sequence is empty (safe fallback).
         public int NextValue() => _v.Length == 0 ? 0 : _v[_i++ % _v.Length];
     }
@@ -33,7 +34,9 @@ public sealed class BattleGrowthVectorTests
     private sealed class ConstRng : IBattleRng
     {
         private readonly int _v;
+
         public ConstRng(int v) => _v = v;
+
         public int NextValue() => _v;
     }
 
@@ -41,7 +44,11 @@ public sealed class BattleGrowthVectorTests
     {
         var arr = node!.AsArray();
         var r = new int[arr.Count];
-        for (int i = 0; i < arr.Count; i++) r[i] = arr[i]!.GetValue<int>();
+        for (int i = 0; i < arr.Count; i++)
+        {
+            r[i] = arr[i]!.GetValue<int>();
+        }
+
         return r;
     }
 
@@ -49,7 +56,11 @@ public sealed class BattleGrowthVectorTests
     {
         var outer = node!.AsArray();
         var r = new int[outer.Count][];
-        for (int i = 0; i < outer.Count; i++) r[i] = ToIntArray(outer[i]);
+        for (int i = 0; i < outer.Count; i++)
+        {
+            r[i] = ToIntArray(outer[i]);
+        }
+
         return r;
     }
 
@@ -76,25 +87,26 @@ public sealed class BattleGrowthVectorTests
     }
 
     // ------------------------------------------------------------------ count check
-
     [Fact]
     public void VectorCount_AtLeast300()
     {
-        Assert.True(File.Exists(VectorsPath),
+        Assert.True(
+            File.Exists(VectorsPath),
             $"Vectors file not found: {VectorsPath}");
 
         var doc = JsonNode.Parse(File.ReadAllText(VectorsPath))!;
         int count = doc["cases"]!.AsArray().Count;
-        Assert.True(count >= 300,
+        Assert.True(
+            count >= 300,
             $"Expected at least 300 vectors, got {count}");
     }
 
     // ------------------------------------------------------------------ main replay
-
     [Fact]
     public void AllVectorsMatchCurrentImplementation()
     {
-        Assert.True(File.Exists(VectorsPath),
+        Assert.True(
+            File.Exists(VectorsPath),
             $"Vectors file not found: {VectorsPath}");
 
         var doc = JsonNode.Parse(File.ReadAllText(VectorsPath))!;
@@ -142,11 +154,12 @@ public sealed class BattleGrowthVectorTests
         }
 
         if (errors.Count > 0)
+        {
             Assert.Fail($"{errors.Count} vector(s) failed:\n" + string.Join("\n", errors));
+        }
     }
 
     // ------------------------------------------------------------------ per-method verifiers
-
     private static void VerifyRaiseStats(JsonNode c, int id, List<string> errors)
     {
         var tables = TablesFromCase(c);
@@ -175,15 +188,30 @@ public sealed class BattleGrowthVectorTests
         int[] expRes = ToIntArray(c["outResistances"]);
 
         if (state.MaxHp != expMaxHp)
+        {
             errors.Add($"[{id}] RaiseStats MaxHp: got {state.MaxHp} expected {expMaxHp}");
+        }
+
         if (state.MaxMp != expMaxMp)
+        {
             errors.Add($"[{id}] RaiseStats MaxMp: got {state.MaxMp} expected {expMaxMp}");
+        }
+
         for (int i = 0; i < 6; i++)
+        {
             if (state.BattleStats[i] != expBs[i])
+            {
                 errors.Add($"[{id}] RaiseStats BattleStats[{i}]: got {state.BattleStats[i]} expected {expBs[i]}");
+            }
+        }
+
         for (int i = 0; i < 7; i++)
+        {
             if (state.Resistances[i] != expRes[i])
+            {
                 errors.Add($"[{id}] RaiseStats Resistances[{i}]: got {state.Resistances[i]} expected {expRes[i]}");
+            }
+        }
     }
 
     private static void VerifyAddExp(JsonNode c, int id, List<string> errors)
@@ -221,18 +249,51 @@ public sealed class BattleGrowthVectorTests
         int[] expBs = ToIntArray(c["outBattleStats"]);
         int[] expRes = ToIntArray(c["outResistances"]);
 
-        if (leveled != expLeveled) errors.Add($"[{id}] AddExp leveled: got {leveled} expected {expLeveled}");
-        if (state.Level != expLevel) errors.Add($"[{id}] AddExp Level: got {state.Level} expected {expLevel}");
-        if (state.Exp != expExp) errors.Add($"[{id}] AddExp Exp: got {state.Exp} expected {expExp}");
-        if (state.Tp != expTp) errors.Add($"[{id}] AddExp Tp: got {state.Tp} expected {expTp}");
-        if (state.MaxHp != expMaxHp) errors.Add($"[{id}] AddExp MaxHp: got {state.MaxHp} expected {expMaxHp}");
-        if (state.MaxMp != expMaxMp) errors.Add($"[{id}] AddExp MaxMp: got {state.MaxMp} expected {expMaxMp}");
+        if (leveled != expLeveled)
+        {
+            errors.Add($"[{id}] AddExp leveled: got {leveled} expected {expLeveled}");
+        }
+
+        if (state.Level != expLevel)
+        {
+            errors.Add($"[{id}] AddExp Level: got {state.Level} expected {expLevel}");
+        }
+
+        if (state.Exp != expExp)
+        {
+            errors.Add($"[{id}] AddExp Exp: got {state.Exp} expected {expExp}");
+        }
+
+        if (state.Tp != expTp)
+        {
+            errors.Add($"[{id}] AddExp Tp: got {state.Tp} expected {expTp}");
+        }
+
+        if (state.MaxHp != expMaxHp)
+        {
+            errors.Add($"[{id}] AddExp MaxHp: got {state.MaxHp} expected {expMaxHp}");
+        }
+
+        if (state.MaxMp != expMaxMp)
+        {
+            errors.Add($"[{id}] AddExp MaxMp: got {state.MaxMp} expected {expMaxMp}");
+        }
+
         for (int i = 0; i < 6; i++)
+        {
             if (state.BattleStats[i] != expBs[i])
+            {
                 errors.Add($"[{id}] AddExp BattleStats[{i}]: got {state.BattleStats[i]} expected {expBs[i]}");
+            }
+        }
+
         for (int i = 0; i < 7; i++)
+        {
             if (state.Resistances[i] != expRes[i])
+            {
                 errors.Add($"[{id}] AddExp Resistances[{i}]: got {state.Resistances[i]} expected {expRes[i]}");
+            }
+        }
     }
 
     private static void VerifyGetDigimonExp(JsonNode c, int id, List<string> errors)
@@ -246,7 +307,9 @@ public sealed class BattleGrowthVectorTests
 
         int got = GrowthCalculator.GetDigimonExp(level, digimonExpLevel, entryLevel, exp, used);
         if (got != expected)
+        {
             errors.Add($"[{id}] GetDigimonExp(lv={level},expLv={digimonExpLevel},entry={entryLevel},exp={exp},used={used}): got {got} expected {expected}");
+        }
     }
 
     private static void VerifyAddDigimonExp(JsonNode c, int id, List<string> errors)
@@ -261,9 +324,20 @@ public sealed class BattleGrowthVectorTests
 
         bool leveled = GrowthCalculator.AddDigimonExp(expLevel, ref entryLevel, ref entryExp, exp);
 
-        if (leveled != expLeveled) errors.Add($"[{id}] AddDigimonExp leveled: got {leveled} expected {expLeveled}");
-        if (entryLevel != expEntryLevel) errors.Add($"[{id}] AddDigimonExp entryLevel: got {entryLevel} expected {expEntryLevel}");
-        if (entryExp != expEntryExp) errors.Add($"[{id}] AddDigimonExp entryExp: got {entryExp} expected {expEntryExp}");
+        if (leveled != expLeveled)
+        {
+            errors.Add($"[{id}] AddDigimonExp leveled: got {leveled} expected {expLeveled}");
+        }
+
+        if (entryLevel != expEntryLevel)
+        {
+            errors.Add($"[{id}] AddDigimonExp entryLevel: got {entryLevel} expected {expEntryLevel}");
+        }
+
+        if (entryExp != expEntryExp)
+        {
+            errors.Add($"[{id}] AddDigimonExp entryExp: got {entryExp} expected {expEntryExp}");
+        }
     }
 
     private static void VerifyExpShare(JsonNode c, int id, List<string> errors)
@@ -274,6 +348,8 @@ public sealed class BattleGrowthVectorTests
 
         int got = GrowthCalculator.ExpShare(rewardExp, fought);
         if (got != expected)
+        {
             errors.Add($"[{id}] ExpShare(exp={rewardExp},fought={fought}): got {got} expected {expected}");
+        }
     }
 }

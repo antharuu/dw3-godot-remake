@@ -96,7 +96,7 @@ internal sealed class BattleFaceAnimator
         }
 
         _time += framesElapsed;
-        var cycle = _time % 18 / 6;
+        var cycle = (_time % 18) / 6;
         foreach (var part in _parts)
         {
             CopyPart(part, part.Index < 2 ? eyes : cycle);

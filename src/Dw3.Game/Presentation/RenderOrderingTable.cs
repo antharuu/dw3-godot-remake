@@ -58,7 +58,7 @@ public static class RenderOrderingTable
             return false;
         }
 
-        var signedArea = (b.X - a.X) * (c.Y - a.Y) - (c.X - a.X) * (b.Y - a.Y);
+        var signedArea = ((b.X - a.X) * (c.Y - a.Y)) - ((c.X - a.X) * (b.Y - a.Y));
         return signedArea > 0;
     }
 

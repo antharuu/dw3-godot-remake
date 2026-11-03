@@ -1,15 +1,13 @@
-using Xunit;
-
-namespace Dw3.Game.Tests;
-
 using System.Text.Json;
 using Dw3.Data;
 using Dw3Production.Conversion;
 using Microsoft.Data.Sqlite;
+using Xunit;
+
+namespace Dw3.Game.Tests;
 
 public sealed class LegacyBattleDataConsoleTests
 {
-
     [Fact]
     public void PreservesLegacyConsoleAssertions()
     {
@@ -38,7 +36,10 @@ public sealed class LegacyBattleDataConsoleTests
             // Release pooled connections before deletion; on Windows, the pool keeps
             // the file handle open past Dispose(), preventing Directory.Delete.
             SqliteConnection.ClearAllPools();
-            if (Directory.Exists(root)) Directory.Delete(root, recursive: true);
+            if (Directory.Exists(root))
+            {
+                Directory.Delete(root, recursive: true);
+            }
         }
     }
 
@@ -71,6 +72,7 @@ public sealed class LegacyBattleDataConsoleTests
         return new
         {
             schema = SyntheticDataPackFixture.EncounterSchema,
+
             // The loader verifies this protocol tag, it is not input data recovered from a disc.
             edition = SyntheticDataPackFixture.SupportedEncounterEdition,
             battleRates = new[] { 1 },
@@ -157,7 +159,11 @@ public sealed class LegacyBattleDataConsoleTests
     private static void WriteHud(DataPackWriteContext context)
     {
         string[] rows = [.. Enumerable.Range(0, 5).Select(index => $"frame-1-{index}.png")];
-        foreach (string row in rows) WriteFile(context, $"battle/hud/{row}", "x");
+        foreach (string row in rows)
+        {
+            WriteFile(context, $"battle/hud/{row}", "x");
+        }
+
         WriteFile(context, "battle/hud/cursor.png", "x");
         WriteFile(context, "battle/hud/cursor-off.png", "x");
         WriteJson(context, "battle/hud/hud.json", new
@@ -172,7 +178,11 @@ public sealed class LegacyBattleDataConsoleTests
     private static void WriteReport(DataPackWriteContext context)
     {
         string[] rows = [.. Enumerable.Range(0, 5).Select(index => $"arrow-{index}.png")];
-        foreach (string row in rows) WriteFile(context, $"battle/report/{row}", "x");
+        foreach (string row in rows)
+        {
+            WriteFile(context, $"battle/report/{row}", "x");
+        }
+
         WriteFile(context, "battle/report/frame.png", "x");
         WriteJson(context, "battle/report/report.json", new
         {
@@ -193,6 +203,7 @@ public sealed class LegacyBattleDataConsoleTests
             WriteFile(context, $"battle/menu-icons/{path}", "x");
             frames[id.ToString(System.Globalization.CultureInfo.InvariantCulture)] = new { w = 1, h = 1, offset = new[] { 0, 0 }, paths = new[] { path } };
         }
+
         WriteJson(context, "battle/menu-icons/manifest.json", new { schema = SyntheticDataPackFixture.BattleMenuIconSchema, frames, messageArrow = new { frame = 10, position = new List<int> { 0, 0 }, timeStep = 4 } });
     }
 
@@ -209,8 +220,15 @@ public sealed class LegacyBattleDataConsoleTests
 
     private static bool ThrowsCacheError(Action action, string code)
     {
-        try { action(); return false; }
-        catch (CacheResourceException error) { return error.Message.Contains(code, StringComparison.Ordinal); }
+        try
+        {
+            action();
+            return false;
+        }
+        catch (CacheResourceException error)
+        {
+            return error.Message.Contains(code, StringComparison.Ordinal);
+        }
     }
 
     private static void Check(bool condition, string name)

@@ -23,7 +23,14 @@ public sealed class ZoneManifestWriterTests
         var stageModes = new Dictionary<ushort, int> { [0x202] = 205 };
         var tileRecords = new List<ZoneTileRecord>
         {
-            new ZoneTileRecord(0, Present: true, Rlen: false, DecodedBytes: 100, TimOffset: 40, TimWidth: 128, TimHeight: 128,
+            new ZoneTileRecord(
+                0,
+                Present: true,
+                Rlen: false,
+                DecodedBytes: 100,
+                TimOffset: 40,
+                TimWidth: 128,
+                TimHeight: 128,
                 Sprites: [new ZoneSpriteRecord(0, 0, 0, 0, 0, 128, 128)]),
         };
         var data = new ZoneManifestData(

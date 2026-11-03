@@ -22,8 +22,8 @@ public sealed record Occupant(string Name, Vector2 Position, int Width)
         var halfWidth = Width / 2f;
         var left = Position.X - halfWidth;
         var right = Position.X + halfWidth;
-        var top = Position.Y - halfWidth / 2f;
-        var bottom = Position.Y + halfWidth / 2f;
+        var top = Position.Y - (halfWidth / 2f);
+        var bottom = Position.Y + (halfWidth / 2f);
         if (position.X < left || position.X > right || position.Y < top || position.Y > bottom)
         {
             return false;
@@ -45,7 +45,7 @@ public sealed record Occupant(string Name, Vector2 Position, int Width)
             dy = halfH - (dy - halfH);
         }
 
-        return dx >= halfW - dy * (width / height);
+        return dx >= halfW - (dy * (width / height));
     }
 
     /// <summary>
@@ -88,6 +88,6 @@ public sealed record Occupant(string Name, Vector2 Position, int Width)
         }
 
         var t = Math.Clamp(Vector2.Dot(point - segmentA, ab) / lengthSq, 0f, 1f);
-        return Vector2.Distance(point, segmentA + ab * t);
+        return Vector2.Distance(point, segmentA + (ab * t));
     }
 }

@@ -22,19 +22,22 @@ public sealed class DamageCalculatorVectorTests
     [Fact]
     public void VectorCount_AtLeast300()
     {
-        Assert.True(File.Exists(VectorsPath),
+        Assert.True(
+            File.Exists(VectorsPath),
             $"Vectors file not found: {VectorsPath}");
 
         var doc = JsonNode.Parse(File.ReadAllText(VectorsPath))!;
         int count = doc["cases"]!.AsArray().Count;
-        Assert.True(count >= 300,
+        Assert.True(
+            count >= 300,
             $"Expected at least 300 vectors, got {count}");
     }
 
     [Fact]
     public void AllVectorsMatchCurrentImplementation()
     {
-        Assert.True(File.Exists(VectorsPath),
+        Assert.True(
+            File.Exists(VectorsPath),
             $"Vectors file not found: {VectorsPath}");
 
         var doc = JsonNode.Parse(File.ReadAllText(VectorsPath))!;
@@ -103,14 +106,14 @@ public sealed class DamageCalculatorVectorTests
 #pragma warning restore CA1031
         }
 
-        Assert.True(errors.Count == 0,
+        Assert.True(
+            errors.Count == 0,
             $"{errors.Count} vector(s) failed:\n" + string.Join("\n", errors));
     }
 
     // ─────────────────────────────────────────────────────────────────────
     // Per-function verifiers
     // ─────────────────────────────────────────────────────────────────────
-
     private static void VerifyGetElementBoost(JsonNode c, int id, List<string> errors)
     {
         int value = I(c, "value");
@@ -121,8 +124,10 @@ public sealed class DamageCalculatorVectorTests
 
         int actual = DamageCalculator.GetElementBoost(value, element, new ElementBoost(boostElem, boostAmount));
         if (actual != expected)
+        {
             errors.Add($"[id={id}] GetElementBoost(value={value},element={element}," +
                        $"boostElement={boostElem},boostAmount={boostAmount}) = {actual}, expected {expected}");
+        }
     }
 
     private static void VerifyGetTurnDelay(JsonNode c, int id, List<string> errors)
@@ -133,7 +138,9 @@ public sealed class DamageCalculatorVectorTests
 
         int actual = DamageCalculator.GetTurnDelay(ownSpeed, otherSpeed);
         if (actual != expected)
+        {
             errors.Add($"[id={id}] GetTurnDelay(own={ownSpeed},other={otherSpeed}) = {actual}, expected {expected}");
+        }
     }
 
     private static void VerifyTestRunAway(JsonNode c, int id, List<string> errors)
@@ -156,9 +163,11 @@ public sealed class DamageCalculatorVectorTests
 
         bool actual = RunAwayRules.TestRunAway(runAttempts, atk, def, block, atkFlags, rngValue);
         if (actual != expected)
+        {
             errors.Add($"[id={id}] TestRunAway(attempts={runAttempts},atkLvl={atkLevel}," +
                        $"defLvl={defLevel},atkSpd={atkSpeed},defSpd={defSpeed}," +
                        $"bonus={bonus},block={block},flags=0x{atkFlags:X},rng={rngValue}) = {actual}, expected {expected}");
+        }
     }
 
     private static void VerifyTestEnemyRunAway(JsonNode c, int id, List<string> errors)
@@ -177,8 +186,10 @@ public sealed class DamageCalculatorVectorTests
 
         bool actual = RunAwayRules.TestEnemyRunAway(atk, def, atkFlags, rngValue);
         if (actual != expected)
+        {
             errors.Add($"[id={id}] TestEnemyRunAway(atkSpd={atkSpeed},defSpd={defSpeed}," +
                        $"guard={runAwayGuard},flags=0x{atkFlags:X},rng={rngValue}) = {actual}, expected {expected}");
+        }
     }
 
     private static void VerifyComputeDamage(JsonNode c, int id, List<string> errors)
@@ -195,8 +206,10 @@ public sealed class DamageCalculatorVectorTests
 
         int actual = DamageCalculator.ComputeDamage(tech, user, target, enemy, str, new ElementBoost(bElem, bAmt), crit);
         if (actual != exp)
+        {
             errors.Add($"[id={id}] ComputeDamage(power={tech.Power},atkAtk={user.Stats[BattleStat.Attack]}," +
                        $"defDef={target.Stats[BattleStat.Defense]},enemy={enemy},str={str},crit={crit}) = {actual}, expected {exp}");
+        }
     }
 
     private static void VerifyComputeMagicDamage(JsonNode c, int id, List<string> errors)
@@ -215,9 +228,12 @@ public sealed class DamageCalculatorVectorTests
 
         var target = new BattleStats { Family = I(c, "targetFamily"), DamageCut = I(c, "targetDamageCut") };
         target.Stats[BattleStat.Spirit] = I(c, "targetSpirit");
-        target.Resist[0] = I(c, "targetResist0"); target.Resist[1] = I(c, "targetResist1");
-        target.Resist[2] = I(c, "targetResist2"); target.Resist[3] = I(c, "targetResist3");
-        target.Resist[4] = I(c, "targetResist4"); target.Resist[5] = I(c, "targetResist5");
+        target.Resist[0] = I(c, "targetResist0");
+        target.Resist[1] = I(c, "targetResist1");
+        target.Resist[2] = I(c, "targetResist2");
+        target.Resist[3] = I(c, "targetResist3");
+        target.Resist[4] = I(c, "targetResist4");
+        target.Resist[5] = I(c, "targetResist5");
         target.Resist[6] = I(c, "targetResist6");
 
         bool enemy = B(c, "enemyAttacker");
@@ -229,9 +245,11 @@ public sealed class DamageCalculatorVectorTests
 
         int actual = DamageCalculator.ComputeMagicDamage(tech, user, target, enemy, str, new ElementBoost(bElem, bAmt), crit);
         if (actual != exp)
+        {
             errors.Add($"[id={id}] ComputeMagicDamage(power={tech.Power},elem={tech.Element}," +
                        $"userSpirit={user.Stats[BattleStat.Spirit]},targetSpirit={target.Stats[BattleStat.Spirit]}," +
                        $"enemy={enemy},str={str},crit={crit}) = {actual}, expected {exp}");
+        }
     }
 
     private static void VerifyComputeCounterDamage(JsonNode c, int id, List<string> errors)
@@ -260,9 +278,12 @@ public sealed class DamageCalculatorVectorTests
 
         var target = new BattleStats { Family = I(c, "targetFamily"), DamageCut = I(c, "targetDamageCut") };
         target.Stats[BattleStat.Defense] = I(c, "targetDefense");
-        target.Resist[0] = I(c, "targetResist0"); target.Resist[1] = I(c, "targetResist1");
-        target.Resist[2] = I(c, "targetResist2"); target.Resist[3] = I(c, "targetResist3");
-        target.Resist[4] = I(c, "targetResist4"); target.Resist[5] = I(c, "targetResist5");
+        target.Resist[0] = I(c, "targetResist0");
+        target.Resist[1] = I(c, "targetResist1");
+        target.Resist[2] = I(c, "targetResist2");
+        target.Resist[3] = I(c, "targetResist3");
+        target.Resist[4] = I(c, "targetResist4");
+        target.Resist[5] = I(c, "targetResist5");
         target.Resist[6] = I(c, "targetResist6");
 
         int recv = I(c, "receivedDamage");
@@ -274,18 +295,25 @@ public sealed class DamageCalculatorVectorTests
 
         int actual = DamageCalculator.ComputeCounterDamage(tech, user, target, recv, new ElementBoost(bElem, bAmt), crit, special);
         if (actual != exp)
+        {
             errors.Add($"[id={id}] ComputeCounterDamage(recv={recv},effectPower={tech.EffectPower},special={special}) = {actual}, expected {exp}");
+        }
     }
 
     private static void VerifyComputeEnemyStats(JsonNode c, int id, List<string> errors)
     {
         var entry = new BattleStats { Family = I(c, "entryFamily") };
-        entry.Stats[0] = I(c, "entryAttack"); entry.Stats[1] = I(c, "entryDefense");
-        entry.Stats[2] = I(c, "entrySpirit"); entry.Stats[3] = I(c, "entryWisdom");
+        entry.Stats[0] = I(c, "entryAttack");
+        entry.Stats[1] = I(c, "entryDefense");
+        entry.Stats[2] = I(c, "entrySpirit");
+        entry.Stats[3] = I(c, "entryWisdom");
         entry.Stats[4] = I(c, "entrySpeed");
-        entry.Resist[0] = I(c, "entryResist0"); entry.Resist[1] = I(c, "entryResist1");
-        entry.Resist[2] = I(c, "entryResist2"); entry.Resist[3] = I(c, "entryResist3");
-        entry.Resist[4] = I(c, "entryResist4"); entry.Resist[5] = I(c, "entryResist5");
+        entry.Resist[0] = I(c, "entryResist0");
+        entry.Resist[1] = I(c, "entryResist1");
+        entry.Resist[2] = I(c, "entryResist2");
+        entry.Resist[3] = I(c, "entryResist3");
+        entry.Resist[4] = I(c, "entryResist4");
+        entry.Resist[5] = I(c, "entryResist5");
         entry.Resist[6] = I(c, "entryResist6");
 
         int level = I(c, "level");
@@ -300,16 +328,46 @@ public sealed class DamageCalculatorVectorTests
 
         var result = DamageCalculator.ComputeEnemyStats(entry, level, strength);
 
-        if (result.Level != level) errors.Add($"[id={id}] ComputeEnemyStats: Level={result.Level}, expected {level}");
-        if (result.Family != expFam) errors.Add($"[id={id}] ComputeEnemyStats: Family={result.Family}, expected {expFam}");
-        if (result.Stats[0] != expAtk) errors.Add($"[id={id}] ComputeEnemyStats: Attack={result.Stats[0]}, expected {expAtk}");
-        if (result.Stats[1] != expDef) errors.Add($"[id={id}] ComputeEnemyStats: Defense={result.Stats[1]}, expected {expDef}");
-        if (result.Stats[2] != expSpr) errors.Add($"[id={id}] ComputeEnemyStats: Spirit={result.Stats[2]}, expected {expSpr}");
-        if (result.Stats[3] != expWis) errors.Add($"[id={id}] ComputeEnemyStats: Wisdom={result.Stats[3]}, expected {expWis}");
-        if (result.Stats[4] != expSpd) errors.Add($"[id={id}] ComputeEnemyStats: Speed={result.Stats[4]}, expected {expSpd}");
+        if (result.Level != level)
+        {
+            errors.Add($"[id={id}] ComputeEnemyStats: Level={result.Level}, expected {level}");
+        }
+
+        if (result.Family != expFam)
+        {
+            errors.Add($"[id={id}] ComputeEnemyStats: Family={result.Family}, expected {expFam}");
+        }
+
+        if (result.Stats[0] != expAtk)
+        {
+            errors.Add($"[id={id}] ComputeEnemyStats: Attack={result.Stats[0]}, expected {expAtk}");
+        }
+
+        if (result.Stats[1] != expDef)
+        {
+            errors.Add($"[id={id}] ComputeEnemyStats: Defense={result.Stats[1]}, expected {expDef}");
+        }
+
+        if (result.Stats[2] != expSpr)
+        {
+            errors.Add($"[id={id}] ComputeEnemyStats: Spirit={result.Stats[2]}, expected {expSpr}");
+        }
+
+        if (result.Stats[3] != expWis)
+        {
+            errors.Add($"[id={id}] ComputeEnemyStats: Wisdom={result.Stats[3]}, expected {expWis}");
+        }
+
+        if (result.Stats[4] != expSpd)
+        {
+            errors.Add($"[id={id}] ComputeEnemyStats: Speed={result.Stats[4]}, expected {expSpd}");
+        }
+
         // Resist is copied verbatim; verify a spot check (resist[0])
         if (result.Resist[0] != I(c, "entryResist0"))
+        {
             errors.Add($"[id={id}] ComputeEnemyStats: Resist[0]={result.Resist[0]}, expected {I(c, "entryResist0")}");
+        }
     }
 
     private static void VerifyRollCritical(JsonNode c, int id, List<string> errors)
@@ -342,8 +400,10 @@ public sealed class DamageCalculatorVectorTests
 
         bool actual = CriticalHitRules.RollCritical(tech, atk, def, atkF, defF, rng);
         if (actual != expected)
+        {
             errors.Add($"[id={id}] RollCritical(techFam={tech.Family},techEffect={tech.Effect}," +
                        $"atkCritBonus={atk.CriticalBonus},defFam={def.Family},rng={rng}) = {actual}, expected {expected}");
+        }
     }
 
     private static void VerifyRollMagicCritical(JsonNode c, int id, List<string> errors)
@@ -355,9 +415,12 @@ public sealed class DamageCalculatorVectorTests
             Family = I(c, "techFamily"),
         };
         var def = new BattleStats { Family = I(c, "defFamily") };
-        def.Resist[0] = I(c, "defResist0"); def.Resist[1] = I(c, "defResist1");
-        def.Resist[2] = I(c, "defResist2"); def.Resist[3] = I(c, "defResist3");
-        def.Resist[4] = I(c, "defResist4"); def.Resist[5] = I(c, "defResist5");
+        def.Resist[0] = I(c, "defResist0");
+        def.Resist[1] = I(c, "defResist1");
+        def.Resist[2] = I(c, "defResist2");
+        def.Resist[3] = I(c, "defResist3");
+        def.Resist[4] = I(c, "defResist4");
+        def.Resist[5] = I(c, "defResist5");
         def.Resist[6] = I(c, "defResist6");
 
         var defF = new BattleFighter
@@ -373,14 +436,15 @@ public sealed class DamageCalculatorVectorTests
 
         bool actual = CriticalHitRules.RollMagicCritical(tech, def, defF, rng);
         if (actual != expected)
+        {
             errors.Add($"[id={id}] RollMagicCritical(elem={tech.Element},elemPow={tech.ElementPower}," +
                        $"resist={def.Resist[tech.Element - BattleConst.ElementFirst]},rng={rng}) = {actual}, expected {expected}");
+        }
     }
 
     // ─────────────────────────────────────────────────────────────────────
     // Helpers to build BattleStats from JSON field prefixes
     // ─────────────────────────────────────────────────────────────────────
-
     private static TechData ReadTech(JsonNode c) => new()
     {
         Power = I(c, "techPower"),
@@ -423,9 +487,12 @@ public sealed class DamageCalculatorVectorTests
         t.Stats[BattleStat.Attack] = I(c, "targetAttack");
         t.Stats[BattleStat.Defense] = I(c, "targetDefense");
         t.Stats[BattleStat.Spirit] = I(c, "targetSpirit");
-        t.Resist[0] = I(c, "targetResist0"); t.Resist[1] = I(c, "targetResist1");
-        t.Resist[2] = I(c, "targetResist2"); t.Resist[3] = I(c, "targetResist3");
-        t.Resist[4] = I(c, "targetResist4"); t.Resist[5] = I(c, "targetResist5");
+        t.Resist[0] = I(c, "targetResist0");
+        t.Resist[1] = I(c, "targetResist1");
+        t.Resist[2] = I(c, "targetResist2");
+        t.Resist[3] = I(c, "targetResist3");
+        t.Resist[4] = I(c, "targetResist4");
+        t.Resist[5] = I(c, "targetResist5");
         t.Resist[6] = I(c, "targetResist6");
         return t;
     }
@@ -433,7 +500,7 @@ public sealed class DamageCalculatorVectorTests
     // ─────────────────────────────────────────────────────────────────────
     // JSON helpers
     // ─────────────────────────────────────────────────────────────────────
-
     private static int I(JsonNode c, string k) => c[k]!.GetValue<int>();
+
     private static bool B(JsonNode c, string k) => c[k]!.GetValue<bool>();
 }

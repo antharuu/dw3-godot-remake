@@ -13,7 +13,6 @@ public sealed class FontAtlasDecoderTests
     // Each TIM is a minimal 4-bit TIM (magic 0x10, flags 0x02) with a 2×2 image.
     // The CLUT must sit at the right position for page 0 to avoid the "too small" error.
     // We use 256×256 pages (words=64, height=256) so the CLUT fits.
-
     private const int PageWidth = 256;
     private const int PageHeight = 256;
     private const int WordsPerLine = PageWidth / 4; // 64 words = 128 bytes per row
@@ -27,6 +26,7 @@ public sealed class FontAtlasDecoderTests
         BinaryPrimitives.WriteUInt32LittleEndian(tim.AsSpan(0), 0x10u);  // magic
         BinaryPrimitives.WriteUInt32LittleEndian(tim.AsSpan(4), 0x02u);  // flags
         BinaryPrimitives.WriteUInt32LittleEndian(tim.AsSpan(8), (uint)(12 + pixels.Length)); // blockLen
+
         // vram_x, vram_y at [12..15] = 0
         BinaryPrimitives.WriteUInt16LittleEndian(tim.AsSpan(16), (ushort)WordsPerLine); // words
         BinaryPrimitives.WriteUInt16LittleEndian(tim.AsSpan(18), (ushort)PageHeight);   // height
@@ -34,6 +34,7 @@ public sealed class FontAtlasDecoderTests
 
         // Wrap in RLEN as a raw literal stream (just literal copy of all bytes).
         int outputSize = tim.Length;
+
         // RLEN header: "RLEN" + u32 outputSize
         // Commands: for each chunk of up to 127 bytes, emit literal run cmd (1..127) followed by bytes.
         var rlen = new List<byte>
@@ -45,7 +46,7 @@ public sealed class FontAtlasDecoderTests
             (byte)(outputSize & 0xFF),
             (byte)((outputSize >> 8) & 0xFF),
             (byte)((outputSize >> 16) & 0xFF),
-            (byte)((outputSize >> 24) & 0xFF)
+            (byte)((outputSize >> 24) & 0xFF),
         };
         int pos = 0;
         while (pos < tim.Length)
@@ -55,6 +56,7 @@ public sealed class FontAtlasDecoderTests
             rlen.AddRange(tim[pos..(pos + chunk)]);
             pos += chunk;
         }
+
         rlen.Add(0x00); // RLEN terminator
         return [.. rlen];
     }
@@ -62,10 +64,12 @@ public sealed class FontAtlasDecoderTests
     private static byte[] BuildValidArchive()
     {
         var pixels = new byte[PixelBytes];
+
         // Place a known CLUT value at palette row 2, col 1 in the pixel-as-halfwords space.
         // ClutColumnX=48, ClutRowY=232. Halfword at (row*wordsPerLine + col) * 2 where col is within 48..63.
         // Put a non-zero word (non-transparent) at row 232, col 48.
-        int bytePos = (232 * WordsPerLine + 48) * 2;
+        int bytePos = ((232 * WordsPerLine) + 48) * 2;
+
         // Write a non-zero 15-bit BGR word (e.g., pure red 0x001F) for palette entry 0 of row 0.
         BinaryPrimitives.WriteUInt16LittleEndian(pixels.AsSpan(bytePos), 0x001F); // entry 0 of row 0
 
@@ -79,10 +83,19 @@ public sealed class FontAtlasDecoderTests
         int offset1 = tableSize + page0.Length; // page1 after page0
 
         var file = new List<byte>();
+
         // FILE_CACHE header (4 bytes, ignored)
         file.AddRange([0, 0, 0, 0]);
+
         // Offset table (relative to bodyBase=4)
-        void WriteU32(int v) { file.Add((byte)(v & 0xFF)); file.Add((byte)((v >> 8) & 0xFF)); file.Add((byte)((v >> 16) & 0xFF)); file.Add((byte)((v >> 24) & 0xFF)); }
+        void WriteU32(int v)
+        {
+            file.Add((byte)(v & 0xFF));
+            file.Add((byte)((v >> 8) & 0xFF));
+            file.Add((byte)((v >> 16) & 0xFF));
+            file.Add((byte)((v >> 24) & 0xFF));
+        }
+
         WriteU32(offset0);
         WriteU32(offset1);
         WriteU32(0); // terminator
@@ -115,7 +128,9 @@ public sealed class FontAtlasDecoderTests
         var atlas = FontAtlasDecoder.Decode(archive, "deadbeef");
         Assert.Equal(8, atlas.Palettes.Count);
         foreach (var row in atlas.Palettes)
+        {
             Assert.Equal(16, row.Count);
+        }
     }
 
     [Fact]
@@ -150,7 +165,14 @@ public sealed class FontAtlasDecoderTests
         // Archive with only 1 page.
         byte[] page0 = BuildRlenPage(new byte[PixelBytes]);
         var file = new List<byte> { 0, 0, 0, 0 }; // FILE_CACHE header
-        void WriteU32(int v) { file.Add((byte)(v & 0xFF)); file.Add((byte)((v >> 8) & 0xFF)); file.Add((byte)((v >> 16) & 0xFF)); file.Add((byte)((v >> 24) & 0xFF)); }
+        void WriteU32(int v)
+        {
+            file.Add((byte)(v & 0xFF));
+            file.Add((byte)((v >> 8) & 0xFF));
+            file.Add((byte)((v >> 16) & 0xFF));
+            file.Add((byte)((v >> 24) & 0xFF));
+        }
+
         int tableSize = 2 * 4; // one entry + terminator
         WriteU32(tableSize); // offset to page0
         WriteU32(0);         // terminator
@@ -175,6 +197,8 @@ public sealed class FontAtlasDecoderTests
         var rgba = FontAtlasDecoder.RenderPage(page, palette);
         Assert.Equal(4 * 4, rgba.Length);
         for (int i = 0; i < rgba.Length; i += 4)
+        {
             Assert.Equal(0, rgba[i + 3]); // alpha 0
+        }
     }
 }

@@ -31,7 +31,7 @@ public static class FieldcomSpriteCompositor
         int count = BinaryPrimitives.ReadInt16LittleEndian(frame);
         int row = BinaryPrimitives.ReadInt16LittleEndian(frame[2..]);
         int abr = BinaryPrimitives.ReadInt16LittleEndian(frame[4..]);
-        if (count <= 0 || count > MaximumParts || frame.Length < 6 + count * 6)
+        if (count <= 0 || count > MaximumParts || frame.Length < 6 + (count * 6))
         {
             throw new FormatException("FIELDCOM sprite frame part count is invalid");
         }
@@ -53,7 +53,7 @@ public static class FieldcomSpriteCompositor
         var placed = new (int X, int Y, int Width, int Height, ushort[] Words)[count];
         for (int index = 0; index < count; index++)
         {
-            int partIndex = BinaryPrimitives.ReadInt16LittleEndian(frame[(6 + index * 6)..]);
+            int partIndex = BinaryPrimitives.ReadInt16LittleEndian(frame[(6 + (index * 6))..]);
             if (partIndex < 0 || partIndex >= parts.Count)
             {
                 throw new FormatException("FIELDCOM sprite frame references missing part");
@@ -61,8 +61,8 @@ public static class FieldcomSpriteCompositor
 
             SpritePart part = parts[partIndex];
             placed[index] = (
-                BinaryPrimitives.ReadInt16LittleEndian(frame[(8 + index * 6)..]),
-                BinaryPrimitives.ReadInt16LittleEndian(frame[(10 + index * 6)..]),
+                BinaryPrimitives.ReadInt16LittleEndian(frame[(8 + (index * 6))..]),
+                BinaryPrimitives.ReadInt16LittleEndian(frame[(10 + (index * 6))..]),
                 part.Width,
                 part.Height,
                 Sample(part, vram, row));
@@ -114,10 +114,10 @@ public static class FieldcomSpriteCompositor
         {
             for (int x = 0; x < part.Width; x++)
             {
-                ushort word = part.Words[y * part.Width + x];
+                ushort word = part.Words[(y * part.Width) + x];
                 if (word != 0)
                 {
-                    words[(part.Y - minY + y) * width + part.X - minX + x] = word;
+                    words[((part.Y - minY + y) * width) + part.X - minX + x] = word;
                 }
             }
         }
@@ -166,9 +166,9 @@ public static class FieldcomSpriteCompositor
             for (int x = 0; x < part.Width; x++)
             {
                 int u = localU + x;
-                ushort packed = page[(part.V + y) * PageWords + u / 4];
+                ushort packed = page[((part.V + y) * PageWords) + (u / 4)];
                 int paletteIndex = (packed >> ((u & 3) * 4)) & 15;
-                result[y * part.Width + x] = page[paletteRow * PageWords + part.ClutX + paletteIndex];
+                result[(y * part.Width) + x] = page[(paletteRow * PageWords) + part.ClutX + paletteIndex];
             }
         }
 

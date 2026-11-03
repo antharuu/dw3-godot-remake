@@ -1,5 +1,5 @@
-using Xunit;
 using Dw3Production;
+using Xunit;
 
 namespace Dw3.Game.Tests;
 
@@ -10,7 +10,6 @@ namespace Dw3.Game.Tests;
 public sealed class HostStartupOptionsTests
 {
     // ── Defaults ─────────────────────────────────────────────────────────────
-
     [Fact]
     public void AllProbeFlagsDefaultToFalse()
     {
@@ -79,7 +78,6 @@ public sealed class HostStartupOptionsTests
     }
 
     // ── Probe flag parsing ────────────────────────────────────────────────────
-
     [Fact]
     public void DialogueProbeParsedFromEnv()
     {
@@ -127,7 +125,6 @@ public sealed class HostStartupOptionsTests
     }
 
     // ── Probe only activates on exactly "1" ──────────────────────────────────
-
     [Theory]
     [InlineData("true")]
     [InlineData("yes")]
@@ -141,7 +138,6 @@ public sealed class HostStartupOptionsTests
     }
 
     // ── String override parsing ───────────────────────────────────────────────
-
     [Fact]
     public void CaptureDirParsedFromEnv()
     {
@@ -221,7 +217,6 @@ public sealed class HostStartupOptionsTests
     }
 
     // ── FromEnvironment() smoke test ─────────────────────────────────────────
-
     [Fact]
     public void FromEnvironmentDoesNotThrow()
     {
@@ -231,7 +226,6 @@ public sealed class HostStartupOptionsTests
     }
 
     // ── Multiple flags simultaneously ─────────────────────────────────────────
-
     [Fact]
     public void MultipleProbesCanBeActiveAtOnce()
     {

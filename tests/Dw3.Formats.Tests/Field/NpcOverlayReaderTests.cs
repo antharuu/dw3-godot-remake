@@ -11,7 +11,6 @@ public sealed class NpcOverlayReaderTests
     private const uint LoadBase = 0x800A5DE0u;
 
     // --- ReadActorEntry ---
-
     [Fact]
     public void ReadActorEntry_ValidRecord_DecodesAllFields()
     {
@@ -74,7 +73,6 @@ public sealed class NpcOverlayReaderTests
     }
 
     // --- ReadConditionList ---
-
     [Fact]
     public void ReadConditionList_NullPtr_ReturnsEmpty()
     {
@@ -87,6 +85,7 @@ public sealed class NpcOverlayReaderTests
     public void ReadConditionList_SingleEntry_DecodesCorrectly()
     {
         byte[] overlay = new byte[256];
+
         // Condition at offset 100: code=0x6004, value=1, then 0xFFFF terminator
         uint ptr = LoadBase + 100;
         BinaryPrimitives.WriteUInt16LittleEndian(overlay.AsSpan(100), 0x6004);
@@ -105,6 +104,7 @@ public sealed class NpcOverlayReaderTests
     {
         byte[] overlay = new byte[256];
         uint ptr = LoadBase + 50;
+
         // Two conditions
         BinaryPrimitives.WriteUInt16LittleEndian(overlay.AsSpan(50), 0x6001);
         BinaryPrimitives.WriteUInt16LittleEndian(overlay.AsSpan(52), 0);
@@ -137,13 +137,13 @@ public sealed class NpcOverlayReaderTests
     }
 
     // --- ReadStageSlots ---
-
     [Fact]
     public void ReadStageSlots_EmptyTable_ReturnsEmpty()
     {
         byte[] overlay = new byte[256];
         uint address = LoadBase + 40;
         int off = 40;
+
         // First record: type=0 → terminates immediately
         // 24 bytes of zero at off (conditions u16×4 = 8, then type=0 u16 first in next 8×u16 block)
         // The slot layout: [+0..+7] = 4×u16 conditions, [+8..+23] = 8×u16 (type,arg,x,y,dir,hide,place,place_arg)
@@ -160,6 +160,7 @@ public sealed class NpcOverlayReaderTests
     {
         byte[] overlay = new byte[256];
         uint address = LoadBase;
+
         // Slot 0: conditions = (1,0,2,0), type=9, arg=3, x=100, y=200, dir=1
         BinaryPrimitives.WriteUInt16LittleEndian(overlay.AsSpan(0), 1);   // cond[0]
         BinaryPrimitives.WriteUInt16LittleEndian(overlay.AsSpan(2), 0);
@@ -170,6 +171,7 @@ public sealed class NpcOverlayReaderTests
         BinaryPrimitives.WriteUInt16LittleEndian(overlay.AsSpan(12), 100); // x
         BinaryPrimitives.WriteUInt16LittleEndian(overlay.AsSpan(14), 200); // y
         BinaryPrimitives.WriteUInt16LittleEndian(overlay.AsSpan(16), 1);  // direction
+
         // Terminator slot at offset 24: type=0
         BinaryPrimitives.WriteUInt16LittleEndian(overlay.AsSpan(24 + 8), 0); // type=0
 
@@ -188,11 +190,12 @@ public sealed class NpcOverlayReaderTests
     {
         byte[] overlay = new byte[48]; // only 2 slots worth, no terminator
         uint address = LoadBase;
+
         // Two non-zero type slots, no room for terminator
         BinaryPrimitives.WriteUInt16LittleEndian(overlay.AsSpan(8), 1);   // type=1 in slot 0
         BinaryPrimitives.WriteUInt16LittleEndian(overlay.AsSpan(32), 1);  // type=1 in slot 1
-        // No terminator fits
 
+        // No terminator fits
         Assert.Throws<FormatException>(() =>
             NpcOverlayReader.ReadStageSlots(overlay, address, LoadBase));
     }

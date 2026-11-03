@@ -385,7 +385,9 @@ public sealed class DataPackTests : IDisposable
         // the file handle open past Dispose(), preventing Directory.Delete.
         SqliteConnection.ClearAllPools();
         if (Directory.Exists(_root))
+        {
             Directory.Delete(_root, recursive: true);
+        }
     }
 
     private static void InsertMeta(SqliteConnection connection, int schemaVersion, string edition)

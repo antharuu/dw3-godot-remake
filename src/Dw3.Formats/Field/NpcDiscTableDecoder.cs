@@ -36,7 +36,7 @@ public static class NpcDiscTableDecoder
         var entries = new NpcFileEntry?[fileEntryCount];
         for (int index = 0; index < entries.Length; index++)
         {
-            uint packed = BinaryPrimitives.ReadUInt32LittleEndian(fieldStg.Slice(fileEntriesOffset + index * 4, 4));
+            uint packed = BinaryPrimitives.ReadUInt32LittleEndian(fieldStg.Slice(fileEntriesOffset + (index * 4), 4));
             if (packed != 0)
             {
                 entries[index] = new NpcFileEntry((int)(packed >> 16), (int)(packed & 0xFFFF));

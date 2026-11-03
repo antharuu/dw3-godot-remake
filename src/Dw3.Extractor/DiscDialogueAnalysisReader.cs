@@ -31,6 +31,7 @@ internal static class DiscDialogueAnalysisReader
         DialogueRomLayout layout = DialogueRomLayout.Sles03936;
         PsxExecutable executable = PsxExecutable.Parse(disc.ReadFile(Require(entries, ExecutablePath)));
         IReadOnlyList<int> widths = layout.ReadActorWidths(disc.ReadFile(Require(entries, FieldStgPath)));
+
         // Zero-length members may share an LBA with the next file; the first directory entry wins.
         IReadOnlyDictionary<int, string> pathByLba = entries
             .GroupBy(entry => entry.Lba)

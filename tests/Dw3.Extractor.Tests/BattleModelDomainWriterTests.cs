@@ -1,8 +1,8 @@
-using Microsoft.Data.Sqlite;
 using System.Buffers.Binary;
 using System.Text.Json;
 using Dw3.Data;
 using Dw3.Formats.Battle;
+using Microsoft.Data.Sqlite;
 using Xunit;
 
 namespace Dw3.Extractor.Tests;
@@ -32,7 +32,8 @@ public sealed class BattleModelDomainWriterTests : IDisposable
         Assert.Equal(1, report.RootElement.GetProperty("failed").GetInt32());
 
         using SqliteConnection connection = new DataPackReader(_root).OpenDatabase();
-        Assert.Equal("501|0|1|5|decoded||0|12|0|13|7|1|2|1|AAA/DAT/TEST/MODEL.BIN|ab12|battle/models/fighter-501-model.json",
+        Assert.Equal(
+            "501|0|1|5|decoded||0|12|0|13|7|1|2|1|AAA/DAT/TEST/MODEL.BIN|ab12|battle/models/fighter-501-model.json",
             Row(connection, "SELECT fighter_id, entry_ordinal, record_index, kind, status, reason, is_enemy, model_file, model_entry, motion_file, motion_entry, texture_entry, bone_count, mesh_count, disc_path, sha256, manifest_path FROM battle_models WHERE fighter_id = 501"));
         Assert.Equal("77|1|failed|bone 1: broken", Row(connection, "SELECT fighter_id, entry_ordinal, status, reason FROM battle_models WHERE fighter_id = 77"));
         Assert.Equal("501|1|0|2|4", Row(connection, "SELECT fighter_id, bone, parent, mesh_entry, key_entry FROM battle_model_bones WHERE bone = 1"));
@@ -42,9 +43,12 @@ public sealed class BattleModelDomainWriterTests : IDisposable
     public void Dispose()
     {
         if (Directory.Exists(_root))
+        {
             // Release pooled connections before deletion; on Windows, the pool keeps
             // the file handle open past Dispose(), preventing Directory.Delete.
             SqliteConnection.ClearAllPools();
+        }
+
         Directory.Delete(_root, recursive: true);
     }
 
@@ -65,6 +69,7 @@ public sealed class BattleModelDomainWriterTests : IDisposable
         WriteU32(descriptor, 12, 2);
         WriteU32(descriptor, 16, 4);
         byte[][] entries = [descriptor, [1, 2, 3, 4], mesh, new byte[8]];
+
         // Five slots: the key entry number 4 must exist in the archive table.
         var data = new List<byte>(new byte[5 * 4]);
         var table = new byte[5 * 4];
@@ -73,6 +78,7 @@ public sealed class BattleModelDomainWriterTests : IDisposable
             WriteU32(table, i * 4, (uint)data.Count);
             data.AddRange(entries[i]);
         }
+
         WriteU32(table, 16, (uint)data.Count);
         data.AddRange(new byte[8]);
         byte[] result = [.. data];

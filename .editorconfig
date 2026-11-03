@@ -78,6 +78,8 @@ dotnet_diagnostic.SA1602.severity = none
 dotnet_diagnostic.SA1611.severity = none
 dotnet_diagnostic.SA1615.severity = none
 dotnet_diagnostic.SA1618.severity = none
+# Test names read as sentences (Method_Condition_Result), the one naming exemption of the code rules.
+dotnet_diagnostic.CA1707.severity = none
 
 # DW3001: custom class cognitive complexity analyser (tools/Dw3.Analyzers).
 # Limit the total cognitive complexity of a class so each type can be understood without jumping between files.

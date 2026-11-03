@@ -45,7 +45,10 @@ public sealed class MipsCallArgumentReaderTests
     {
         var bytes = new byte[words.Length * sizeof(uint)];
         for (int index = 0; index < words.Length; index++)
+        {
             BitConverter.GetBytes(words[index]).CopyTo(bytes, index * sizeof(uint));
+        }
+
         return bytes;
     }
 

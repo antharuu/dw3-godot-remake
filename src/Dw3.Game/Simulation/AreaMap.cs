@@ -50,6 +50,6 @@ public sealed class AreaMap
     {
         var x = Math.Clamp((int)position.X, 0, Width - 1);
         var y = Math.Clamp((int)position.Y, 0, Height - 1);
-        return _cells[y * Width + x];
+        return _cells[(y * Width) + x];
     }
 }

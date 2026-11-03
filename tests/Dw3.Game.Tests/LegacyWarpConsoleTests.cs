@@ -1,15 +1,12 @@
+using System.Numerics;
+using Dw3Production.Conversion;
+using Dw3Production.Simulation;
 using Xunit;
 
 namespace Dw3.Game.Tests;
 
-using System.Numerics;
-
-using Dw3Production.Conversion;
-using Dw3Production.Simulation;
-
 public sealed class LegacyWarpConsoleTests
 {
-
     [Fact]
     public void PreservesLegacyConsoleAssertions()
     {
@@ -69,9 +66,14 @@ public sealed class LegacyWarpConsoleTests
     private static void AdmitsEverySourceNearDirectionFromActualM1Triggers()
     {
         foreach (var facing in new[] { 2, 3, 4 })
+        {
             Check(OffersRawM1Exit(0x64, facing), $"S200 raw 0x64 admits source facing={facing}");
+        }
+
         foreach (var facing in new[] { 6, 7, 0 })
+        {
             Check(OffersRawM1Exit(0xE1, facing), $"S235 raw 0xE1 admits source facing={facing}");
+        }
     }
 
     private static bool OffersRawM1Exit(byte raw, int actorFacing)
@@ -138,7 +140,11 @@ public sealed class LegacyWarpConsoleTests
         input.PressAction();
         RunUntilRearm(warp, state, input, () => current, target => s235, zone => current = zone, logs);
         Check(warp.CommitCount == 1 && warp.State == WarpState.Rearm, "held action reaches rearm after one commit");
-        for (var i = 0; i < 5; i++) Tick(warp, state, input, current, target => s235, zone => current = zone, logs);
+        for (var i = 0; i < 5; i++)
+        {
+            Tick(warp, state, input, current, target => s235, zone => current = zone, logs);
+        }
+
         Check(warp.CommitCount == 1 && warp.State == WarpState.Rearm, "held action cannot re-fire before release");
     }
 
@@ -151,7 +157,11 @@ public sealed class LegacyWarpConsoleTests
         var logs = new List<string>();
         Tick(warp, state, input, s200, _ => throw new CacheResourceException("CACHE_RESOURCE_UNAVAILABLE", "synthetic missing target"), _ => throw new InvalidOperationException("scene must not swap"), logs);
         input.PressAction();
-        for (var i = 0; i < 3; i++) Tick(warp, state, input, s200, _ => throw new CacheResourceException("CACHE_RESOURCE_UNAVAILABLE", "synthetic missing target"), _ => throw new InvalidOperationException("scene must not swap"), logs);
+        for (var i = 0; i < 3; i++)
+        {
+            Tick(warp, state, input, s200, _ => throw new CacheResourceException("CACHE_RESOURCE_UNAVAILABLE", "synthetic missing target"), _ => throw new InvalidOperationException("scene must not swap"), logs);
+        }
+
         Check(state.ZoneId == "S200" && state.Position == Vector2.Zero && warp.CommitCount == 0, "unavailable target leaves prior scene state intact");
         Check(logs.Any(line => line.Contains("CACHE_RESOURCE_UNAVAILABLE zone=S235", StringComparison.Ordinal)), "unavailable target names destination in diagnostic");
     }
@@ -176,13 +186,13 @@ public sealed class LegacyWarpConsoleTests
         Tick(warp, state, new InputState(), new FieldZone(zone, floor, triggers, []), _ => throw new InvalidOperationException(), _ => { }, []);
         Check(warp.State == WarpState.Offer, "player at distance=2 with admitted facing fires Offer without explicit admission phase");
         Check(state.OfferedTriggerDirection == 3, "OfferedTriggerDirection records source trigger direction for cue");
+
         // Player at 2.01 units away should NOT offer (just outside radius).
         state = new GameState { ZoneId = "M1", Position = new Vector2(0.99f, 0), Facing = 3 };
         warp = new WarpController();
         Tick(warp, state, new InputState(), new FieldZone(zone, floor, triggers, []), _ => throw new InvalidOperationException(), _ => { }, []);
         Check(warp.State == WarpState.Idle, "player at distance=2.01 does not offer (just outside radius)");
     }
-
 
     private static void OffersGatedExitAsUnevaluatedWithWarning()
     {
@@ -198,14 +208,17 @@ public sealed class LegacyWarpConsoleTests
         var logs = new List<string>();
         Tick(warp, state, new InputState(), new FieldZone(zone, floor, triggers, []), _ => throw new InvalidOperationException(), _ => { }, logs);
         Check(warp.State == WarpState.Offer && state.Offer, "gated SLOT_EXIT offers normally");
-        Check(logs.Any(line => line.StartsWith("exit-condition-not-enforced:", StringComparison.Ordinal)
+        Check(
+            logs.Any(line => line.StartsWith("exit-condition-not-enforced:", StringComparison.Ordinal)
                                && line.Contains("zone=M1", StringComparison.Ordinal)
                                && line.Contains("slot=1", StringComparison.Ordinal)
                                && line.Contains("condition=0x7007", StringComparison.Ordinal)),
             "gated SLOT_EXIT logs exit-condition-not-enforced with raw condition");
+
         // First occurrence only: a second tick in Offer state must not duplicate the warning.
         Tick(warp, state, new InputState(), new FieldZone(zone, floor, triggers, []), _ => throw new InvalidOperationException(), _ => { }, logs);
-        Check(logs.Count(line => line.StartsWith("exit-condition-not-enforced:", StringComparison.Ordinal)) == 1,
+        Check(
+            logs.Count(line => line.StartsWith("exit-condition-not-enforced:", StringComparison.Ordinal)) == 1,
             "gated SLOT_EXIT warning logs once per zone:slot");
     }
 
@@ -222,7 +235,8 @@ public sealed class LegacyWarpConsoleTests
         var logs = new List<string>();
         Tick(warp, state, new InputState(), new FieldZone(zone, floor, triggers, []), _ => throw new InvalidOperationException(), _ => { }, logs);
         Check(warp.State == WarpState.Idle && !state.Offer, "gated non-physical slot does not offer");
-        Check(logs.Any(line => line.Contains("suppressed-dispatch", StringComparison.Ordinal) && line.Contains("exit-unimplemented", StringComparison.Ordinal)),
+        Check(
+            logs.Any(line => line.Contains("suppressed-dispatch", StringComparison.Ordinal) && line.Contains("exit-unimplemented", StringComparison.Ordinal)),
             "gated non-physical slot logs suppressed-dispatch with unimplemented reason");
     }
 
@@ -247,11 +261,10 @@ public sealed class LegacyWarpConsoleTests
         input.PressAction();
         TickClimb(new FieldZone(zone, floor, triggers, []));
         Check(warp.State == WarpState.Idle && !state.Offer, "climb dispatch returns the trigger to idle");
-        Check(dispatched.Count == 1 && dispatched[0].Item1 == climbSlot && dispatched[0].Item2 == 3,
+        Check(
+            dispatched.Count == 1 && dispatched[0].Item1 == climbSlot && dispatched[0].Item2 == 3,
             "cross press dispatches the climb slot with its trigger direction");
     }
-
-
 
     private static FieldZone Zone(string id, int slot, string destination, int x, int y, int facing, int triggerFacing)
     {
@@ -261,7 +274,11 @@ public sealed class LegacyWarpConsoleTests
 
     private static void RunUntilRearm(WarpController warp, GameState state, InputState input, Func<FieldZone> current, Func<string, FieldZone> load, Action<FieldZone> apply, List<string> logs)
     {
-        for (var i = 0; i < 12 && warp.State != WarpState.Rearm; i++) Tick(warp, state, input, current(), load, apply, logs);
+        for (var i = 0; i < 12 && warp.State != WarpState.Rearm; i++)
+        {
+            Tick(warp, state, input, current(), load, apply, logs);
+        }
+
         Check(warp.State == WarpState.Rearm, "warp reaches Rearm in bounded ticks");
     }
 

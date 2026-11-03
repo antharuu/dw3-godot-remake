@@ -40,8 +40,11 @@ public sealed class BattleModelAssetsTests
     public void Tracks_DecodeThreeOrderedKeyStreamsAndRejectMissingTracks()
     {
         byte[] entry = Concat(
-            U32(12), U32(28), U32(36),
-            Key(0, 1, 2, 3), Key(5, 4, 5, 6),
+            U32(12),
+            U32(28),
+            U32(36),
+            Key(0, 1, 2, 3),
+            Key(5, 4, 5, 6),
             Key(0, 7, 8, 9),
             Key(0, 4096, 4096, 4096));
 
@@ -59,9 +62,13 @@ public sealed class BattleModelAssetsTests
     public void Motions_DecodeEveryOffsetRegionThroughItsTerminator()
     {
         byte[] entry = Concat(
-            U32(12), U32(28), U32(0),
-            Step(0, 1, 10, 10), Step(0x7FFF, 0, 0, 0),
-            Step(2, 3, 20, 22), Step(0x7FFF, 0, 0, 0));
+            U32(12),
+            U32(28),
+            U32(0),
+            Step(0, 1, 10, 10),
+            Step(0x7FFF, 0, 0, 0),
+            Step(2, 3, 20, 22),
+            Step(0x7FFF, 0, 0, 0));
 
         IReadOnlyList<IReadOnlyList<BattleMotionStep>> motions = BattleAnimationDecoder.DecodeMotions(entry, 0, entry.Length);
 
@@ -87,17 +94,26 @@ public sealed class BattleModelAssetsTests
         WriteU32(data, 8, 0x40);
         WriteU32(data, 12, 0x200);
         BinaryPrimitives.WriteInt16LittleEndian(data.AsSpan(0x10), 501);
-        data[0x12] = 0; data[0x13] = 1;
+        data[0x12] = 0;
+        data[0x13] = 1;
         int record = 0x40;
         WriteU32(data, record + 0x0C, 0x80090200);
         BinaryPrimitives.WriteInt16LittleEndian(data.AsSpan(record + 0x10), 192);
         BinaryPrimitives.WriteInt16LittleEndian(data.AsSpan(record + 0x18), 64);
         BinaryPrimitives.WriteInt16LittleEndian(data.AsSpan(record + 0x1A), -10);
-        BinaryPrimitives.WriteInt16LittleEndian(data.AsSpan(record + 0x1A + 12 * 6), 20);
-        BinaryPrimitives.WriteInt16LittleEndian(data.AsSpan(record + 0x1A + 24 * 6), 280);
+        BinaryPrimitives.WriteInt16LittleEndian(data.AsSpan(record + 0x1A + (12 * 6)), 20);
+        BinaryPrimitives.WriteInt16LittleEndian(data.AsSpan(record + 0x1A + (24 * 6)), 280);
         data[0x200..0x20A].CopyTo(data.AsSpan(0x200));
-        data[0x200] = 4; data[0x201] = 5; data[0x202] = 6; data[0x203] = 7;
-        data[0x204] = 8; data[0x205] = 9; data[0x206] = 10; data[0x207] = 11; data[0x208] = 12; data[0x209] = 13;
+        data[0x200] = 4;
+        data[0x201] = 5;
+        data[0x202] = 6;
+        data[0x203] = 7;
+        data[0x204] = 8;
+        data[0x205] = 9;
+        data[0x206] = 10;
+        data[0x207] = 11;
+        data[0x208] = 12;
+        data[0x209] = 13;
         data[0x20A] = 0xFF;
 
         FighterModelTable table = FighterModelTable.Parse(data);
@@ -116,14 +132,14 @@ public sealed class BattleModelAssetsTests
     {
         const int words = 64;
         const int height = 256;
-        byte[] tim = new byte[20 + words * height * 2];
+        byte[] tim = new byte[20 + (words * height * 2)];
         WriteU32(tim, 0, 0x10);
         WriteU32(tim, 4, 2);
-        WriteU32(tim, 8, (uint)(12 + words * height * 2));
+        WriteU32(tim, 8, (uint)(12 + (words * height * 2)));
         BinaryPrimitives.WriteUInt16LittleEndian(tim.AsSpan(16), words);
         BinaryPrimitives.WriteUInt16LittleEndian(tim.AsSpan(18), height);
         BinaryPrimitives.WriteUInt16LittleEndian(tim.AsSpan(20), 0x3210);
-        int palette = 20 + 255 * words * 2;
+        int palette = 20 + (255 * words * 2);
         BinaryPrimitives.WriteUInt16LittleEndian(tim.AsSpan(palette + 0), 0);
         BinaryPrimitives.WriteUInt16LittleEndian(tim.AsSpan(palette + 2), 0x001F);
         BinaryPrimitives.WriteUInt16LittleEndian(tim.AsSpan(palette + 4), 0x83E0);
@@ -132,9 +148,24 @@ public sealed class BattleModelAssetsTests
     }
 
     private static byte[] Key(short frame, short x, short y, short z) => Concat(I16(x), I16(y), I16(z), I16(frame));
+
     private static byte[] Step(short index, short count, short frame, short end) => Concat(I16(index), I16(count), I16(frame), I16(end));
-    private static byte[] I16(int value) { byte[] b = new byte[2]; BinaryPrimitives.WriteInt16LittleEndian(b, (short)value); return b; }
-    private static byte[] U32(uint value) { byte[] b = new byte[4]; WriteU32(b, 0, value); return b; }
+
+    private static byte[] I16(int value)
+    {
+        byte[] b = new byte[2];
+        BinaryPrimitives.WriteInt16LittleEndian(b, (short)value);
+        return b;
+    }
+
+    private static byte[] U32(uint value)
+    {
+        byte[] b = new byte[4];
+        WriteU32(b, 0, value);
+        return b;
+    }
+
     private static void WriteU32(byte[] data, int offset, uint value) => BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(offset), value);
+
     private static byte[] Concat(params byte[][] parts) => [.. parts.SelectMany(part => part)];
 }

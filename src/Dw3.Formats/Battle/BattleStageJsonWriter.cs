@@ -21,8 +21,12 @@ public static class BattleStageJsonWriter
     /// <param name="modelSha256">SHA-256 hex digest of the raw model file bytes.</param>
     /// <returns>Indented JSON string conforming to the <c>dw3-battle-model-v8</c> schema for a fight stage.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="info"/> or <paramref name="payload"/> is null.</exception>
-    public static string WriteStageModel(BattleStageInfo info, BattleModelPayload payload,
-        string edition, string stagePrefix, string modelSha256)
+    public static string WriteStageModel(
+        BattleStageInfo info,
+        BattleModelPayload payload,
+        string edition,
+        string stagePrefix,
+        string modelSha256)
     {
         ArgumentNullException.ThrowIfNull(info);
         ArgumentNullException.ThrowIfNull(payload);

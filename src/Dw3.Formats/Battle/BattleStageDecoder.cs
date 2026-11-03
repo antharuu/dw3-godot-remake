@@ -58,7 +58,7 @@ public static class BattleStageDecoder
         var lights = new BattleStageLightEntry[3];
         for (int i = 0; i < 3; i++)
         {
-            int at = offset + OffLights + i * 0x10;
+            int at = offset + OffLights + (i * 0x10);
             int vx = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(at));
             int vy = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(at + 4));
             int vz = BinaryPrimitives.ReadInt32LittleEndian(data.AsSpan(at + 8));
@@ -73,8 +73,13 @@ public static class BattleStageDecoder
 
         return new BattleStageInfo(
             stageId,
-            (int)(model >> 16), (int)(model & 0xFFFF),
-            (int)(motions >> 16), (int)(motions & 0xFFFF),
-            music, bgColor, lights, ambient);
+            (int)(model >> 16),
+            (int)(model & 0xFFFF),
+            (int)(motions >> 16),
+            (int)(motions & 0xFFFF),
+            music,
+            bgColor,
+            lights,
+            ambient);
     }
 }

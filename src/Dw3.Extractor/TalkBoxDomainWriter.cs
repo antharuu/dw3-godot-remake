@@ -31,27 +31,90 @@ public static class TalkBoxDomainWriter
             throw new ArgumentException($"The talk box needs {TalkBoxFrameDecoder.LayoutCount} layouts, got {domain.Layouts.Count}.", nameof(domain));
         }
 
-        foreach (TalkBoxFrameImage frame in domain.Frames.OrderBy(frame => frame.FrameId))
+        WriteFrames(context, domain.Frames);
+        WritePanel(context, domain.Panel);
+        WriteLayouts(context, domain.Layouts);
+    }
+
+    /// <summary>
+    /// Writes each frame sprite as <c>frame-N.png</c> and one <c>talk_box_frames</c> row per frame,
+    /// in ascending frame id so the table order does not depend on the sheet order.
+    /// </summary>
+    /// <param name="context">Write context providing the database, transaction, and image-path resolver.</param>
+    /// <param name="frames">The decoded frame sprites; <c>semi</c> is stored as 0 or 1.</param>
+    private static void WriteFrames(DataPackWriteContext context, IReadOnlyList<TalkBoxFrameImage> frames)
+    {
+        foreach (TalkBoxFrameImage frame in frames.OrderBy(frame => frame.FrameId))
         {
             string relative = WriteImage(context, $"frame-{frame.FrameId}.png", frame.Width, frame.Height, frame.Rgba);
-            Insert(context, "INSERT INTO talk_box_frames (frame_id,width,height,clut_frames,semi,image_path) VALUES ($1,$2,$3,$4,$5,$6)",
-                frame.FrameId, frame.Width, frame.Height, frame.ClutFrames, frame.Semi ? 1 : 0, relative);
+            Insert(
+                context,
+                "INSERT INTO talk_box_frames (frame_id,width,height,clut_frames,semi,image_path) VALUES ($1,$2,$3,$4,$5,$6)",
+                frame.FrameId,
+                frame.Width,
+                frame.Height,
+                frame.ClutFrames,
+                frame.Semi ? 1 : 0,
+                relative);
         }
+    }
 
-        TalkBoxPanelImage panel = domain.Panel;
+    /// <summary>
+    /// Writes the translucent text panel as <c>panel.png</c> and its single <c>talk_box_panel</c> row.
+    /// The panel is always drawn semi-transparent, so <c>semi</c> is stored as 1.
+    /// </summary>
+    /// <param name="context">Write context providing the database, transaction, and image-path resolver.</param>
+    /// <param name="panel">The decoded panel: fill colour, texture page and CLUT of the source sprite, and rendered pixels.</param>
+    private static void WritePanel(DataPackWriteContext context, TalkBoxPanelImage panel)
+    {
         string panelPath = WriteImage(context, "panel.png", panel.Width, panel.Height, panel.Rgba);
-        Insert(context, "INSERT INTO talk_box_panel (red,green,blue,semi,texture_page,clut,width,height,image_path) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)",
-            panel.Red, panel.Green, panel.Blue, 1, panel.TexturePage, panel.Clut, panel.Width, panel.Height, panelPath);
+        Insert(
+            context,
+            "INSERT INTO talk_box_panel (red,green,blue,semi,texture_page,clut,width,height,image_path) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)",
+            panel.Red,
+            panel.Green,
+            panel.Blue,
+            1,
+            panel.TexturePage,
+            panel.Clut,
+            panel.Width,
+            panel.Height,
+            panelPath);
+    }
 
-        for (int index = 0; index < domain.Layouts.Count; index++)
+    /// <summary>
+    /// Inserts one <c>talk_box_layouts</c> row per box layout, keyed by its index in the layout table
+    /// (0 to <see cref="TalkBoxFrameDecoder.LayoutCount"/> - 1); every coordinate is in screen pixels.
+    /// </summary>
+    /// <param name="context">Write context providing the database and transaction.</param>
+    /// <param name="layouts">The decoded layouts, in table order.</param>
+    private static void WriteLayouts(DataPackWriteContext context, IReadOnlyList<TalkBoxLayoutRecord> layouts)
+    {
+        for (int index = 0; index < layouts.Count; index++)
         {
-            TalkBoxLayoutRecord layout = domain.Layouts[index];
-            Insert(context, """
+            TalkBoxLayoutRecord layout = layouts[index];
+            Insert(
+                context,
+                """
                 INSERT INTO talk_box_layouts (layout,sprite,sprite_x,sprite_y,sprite0_x,sprite0_y,panel_x,panel_y,sprite2_x,sprite2_y,name_x,name_y,text_x,text_y,arrow_x,arrow_y)
                 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
                 """,
-                index, layout.Sprite, layout.SpriteX, layout.SpriteY, layout.Sprite0X, layout.Sprite0Y, layout.PanelX, layout.PanelY,
-                layout.Sprite2X, layout.Sprite2Y, layout.NameX, layout.NameY, layout.TextX, layout.TextY, layout.ArrowX, layout.ArrowY);
+                index,
+                layout.Sprite,
+                layout.SpriteX,
+                layout.SpriteY,
+                layout.Sprite0X,
+                layout.Sprite0Y,
+                layout.PanelX,
+                layout.PanelY,
+                layout.Sprite2X,
+                layout.Sprite2Y,
+                layout.NameX,
+                layout.NameY,
+                layout.TextX,
+                layout.TextY,
+                layout.ArrowX,
+                layout.ArrowY);
         }
     }
 

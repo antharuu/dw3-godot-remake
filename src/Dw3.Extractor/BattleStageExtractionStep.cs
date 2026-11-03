@@ -45,9 +45,12 @@ internal static class BattleStageExtractionStep
             // Read the FightStageInfo file (FILE_FIGHT_STAGES = 0x1CB).
             (_, byte[] stagesData) = files.Read(BattleStageDecoder.FightStageFileId);
 
-            new DataPackWriter(outputDirectory).Write(new DataPackMetadata(
+            new DataPackWriter(outputDirectory).Write(
+                new DataPackMetadata(
                 typeof(BattleStageExtractionStep).Assembly.GetName().Version?.ToString(3) ?? "0.1.0",
-                edition.BinSha1, edition.Label, DateTimeOffset.UtcNow),
+                edition.BinSha1,
+                edition.Label,
+                DateTimeOffset.UtcNow),
                 context =>
                 {
                     string imagesDir = context.GetImagePath(OutputSubdir);
@@ -71,6 +74,7 @@ internal static class BattleStageExtractionStep
                             failed++;
                         }
                     }
+
                     output.WriteLine($"{{\"event\":\"domain-progress\",\"domain\":\"{Domain}\",\"decoded\":{decoded},\"failed\":{failed}}}");
                 });
 

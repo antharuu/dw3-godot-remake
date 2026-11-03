@@ -7,7 +7,16 @@ namespace Dw3.Formats.Tests.Field;
 public sealed class StageDescriptorReaderTests
 {
     // Register numbers used by the fabricated instruction streams.
-    private const int V0 = 2, V1 = 3, S1 = 17, Ra = 31;
+    private const int V0 = 2;
+
+    // Register numbers used by the fabricated instruction streams.
+    private const int V1 = 3;
+
+    // Register numbers used by the fabricated instruction streams.
+    private const int S1 = 17;
+
+    // Register numbers used by the fabricated instruction streams.
+    private const int Ra = 31;
 
     [Fact]
     public void RecoversObjectTablePointerAndSheetEntryFromDescriptorStores()
@@ -99,16 +108,24 @@ public sealed class StageDescriptorReaderTests
 
     private static byte[] Assemble(uint[] words)
     {
-        byte[] bytes = new byte[words.Length * 4 + 0x40];
+        byte[] bytes = new byte[(words.Length * 4) + 0x40];
         for (int index = 0; index < words.Length; index++)
+        {
             BinaryPrimitives.WriteUInt32LittleEndian(bytes.AsSpan(index * 4), words[index]);
+        }
+
         return bytes;
     }
 
     private static uint Lui(int rt, ushort value) => (15u << 26) | ((uint)rt << 16) | value;
+
     private static uint Ori(int rt, int rs, ushort value) => (13u << 26) | ((uint)rs << 21) | ((uint)rt << 16) | value;
+
     private static uint Addiu(int rt, int rs, short value) => (9u << 26) | ((uint)rs << 21) | ((uint)rt << 16) | (ushort)value;
+
     private static uint Sw(int rt, int baseRegister, short offset) => (43u << 26) | ((uint)baseRegister << 21) | ((uint)rt << 16) | (ushort)offset;
+
     private static uint Jr(int rs) => ((uint)rs << 21) | 8;
+
     private static uint Jal(uint target) => (3u << 26) | (target & 0x03FFFFFF);
 }

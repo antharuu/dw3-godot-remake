@@ -111,6 +111,21 @@ internal static class NpcExtractionStep
         }
     }
 
+    /// <summary>
+    /// Finds the single disc file whose ISO path matches exactly (ordinal, case-sensitive, as the
+    /// file table spells it, for example <c>AAA/PRO/WSTAG200.PRO</c>).
+    /// </summary>
+    /// <param name="entries">The full disc file listing.</param>
+    /// <param name="isoPath">The ISO 9660 path to look up, without leading slash or version suffix.</param>
+    /// <param name="missingMessage">The error text reported, followed by the path, when the file is absent.</param>
+    /// <returns>The matching file entry.</returns>
+    /// <exception cref="InvalidDataException">No entry has this path, which means the disc is not the supported one.</exception>
+    private static DiscFileEntry RequireEntry(IReadOnlyList<DiscFileEntry> entries, string isoPath, string missingMessage)
+    {
+        return entries.SingleOrDefault(e => string.Equals(e.IsoPath, isoPath, StringComparison.Ordinal))
+            ?? throw new InvalidDataException($"{missingMessage}: {isoPath}");
+    }
+
     /// <summary>Extracts all actors from one stage's field overlay and returns the zone with decoded character counts.</summary>
     /// <param name="disc">Open disc source for reading the stage overlay bytes.</param>
     /// <param name="entries">Full disc file listing for resolving overlay and archive paths.</param>
@@ -126,14 +141,7 @@ internal static class NpcExtractionStep
         DataPackWriteContext context)
     {
         string proPath = $"AAA/PRO/WSTAG{stageId}.PRO";
-        DiscFileEntry? proEntry = entries.SingleOrDefault(e =>
-            string.Equals(e.IsoPath, proPath, StringComparison.Ordinal));
-        if (proEntry is null)
-        {
-            throw new InvalidDataException($"Required NPC stage overlay is absent: {proPath}");
-        }
-
-        byte[] overlay = disc.ReadFile(proEntry);
+        byte[] overlay = disc.ReadFile(RequireEntry(entries, proPath, "Required NPC stage overlay is absent"));
         int characters = 0;
         int visible = 0;
         var extractedActors = new List<NpcExtractedActor>();
@@ -149,8 +157,16 @@ internal static class NpcExtractionStep
             var packedEntry = tableSource.GetActorSpriteEntry(actor.ActorId);
             (string? archivePath, NpcFileEntry? fileEntry) = ResolveActorArchive(tableSource, packedEntry);
             extractedActors.Add(new NpcExtractedActor(
-                actorReference.Index, actor.ActorId, actor.Image, actor.X, actor.Y, actor.Direction,
-                width, isPlayerLead, actorVisible, conditions,
+                actorReference.Index,
+                actor.ActorId,
+                actor.Image,
+                actor.X,
+                actor.Y,
+                actor.Direction,
+                width,
+                isPlayerLead,
+                actorVisible,
+                conditions,
                 fileEntry,
                 archivePath));
 
@@ -165,17 +181,14 @@ internal static class NpcExtractionStep
                 continue;
             }
 
-            DiscFileEntry? archiveFile = entries.SingleOrDefault(e =>
-                string.Equals(e.IsoPath, archivePath, StringComparison.Ordinal));
-            if (archiveFile is null)
-            {
-                throw new InvalidDataException($"NPC archive is absent from disc: {archivePath}");
-            }
-
-            byte[] archiveBytes = disc.ReadFile(archiveFile);
+            byte[] archiveBytes = disc.ReadFile(RequireEntry(entries, archivePath, "NPC archive is absent from disc"));
             NpcExtractedCharacter character = DecodeCharacter(
-                archiveBytes, archivePath, packedEntry.Value.ArchiveEntry,
-                actor.ActorId, stageId, actorReference.Index);
+                archiveBytes,
+                archivePath,
+                packedEntry.Value.ArchiveEntry,
+                actor.ActorId,
+                stageId,
+                actorReference.Index);
             NpcDomainWriter.Write(context, character);
             characters++;
         }
@@ -270,8 +283,16 @@ internal static class NpcExtractionStep
         string sha256 = Convert.ToHexStringLower(SHA256.HashData(archiveBytes));
 
         return new NpcExtractedCharacter(
-            actorId, stageId, actorIndex,
-            ManifestSchema, discPath, sha256, archiveBytes.Length, archiveEntry,
-            frames, sets, sequences);
+            actorId,
+            stageId,
+            actorIndex,
+            ManifestSchema,
+            discPath,
+            sha256,
+            archiveBytes.Length,
+            archiveEntry,
+            frames,
+            sets,
+            sequences);
     }
 }

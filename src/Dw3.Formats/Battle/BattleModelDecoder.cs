@@ -134,7 +134,8 @@ public static class BattleModelDecoder
 
         // Fight stages carry no fighter metadata (no cameras, geometry or face animation).
         var emptyMetadata = new BattleFighterMetadata(
-            [], new BattleGeometry(0, 0),
+            [],
+            new BattleGeometry(0, 0),
             new BattleFace(new BattleFaceSource(0, 0, 0, 0, string.Empty), []));
         return new BattleModelPayload(structure, tracks, textures, motions, emptyMetadata);
     }

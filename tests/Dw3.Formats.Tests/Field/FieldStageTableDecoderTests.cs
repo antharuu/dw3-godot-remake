@@ -53,6 +53,7 @@ public sealed class FieldStageTableDecoderTests
             BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(offset + 4, 4), entries[index].Overlay);
             BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(offset + 8, 4), entries[index].Initializer);
         }
+
         return data;
     }
 }

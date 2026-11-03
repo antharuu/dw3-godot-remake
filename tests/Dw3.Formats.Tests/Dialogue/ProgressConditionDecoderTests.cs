@@ -9,10 +9,17 @@ public sealed class ProgressConditionDecoderTests
     public void CountsRecordsWithTerminatorAndKeepsOnlyRangeChecks()
     {
         byte[] exe = new byte[32];
-        exe[0] = 4; exe[1] = 0x31; exe[2] = 1;   // range check -> range 1
-        exe[3] = 5; exe[4] = 0x20; exe[5] = 9;   // other family, argument not a range index
+        exe[0] = 4;
+        exe[1] = 0x31;
+        exe[2] = 1;   // range check -> range 1
+        exe[3] = 5;
+        exe[4] = 0x20;
+        exe[5] = 9;   // other family, argument not a range index
         exe[6] = 0xFF;                           // terminator
-        exe[20] = 1; exe[21] = 3; exe[22] = 6; exe[23] = 8;
+        exe[20] = 1;
+        exe[21] = 3;
+        exe[22] = 6;
+        exe[23] = 8;
 
         ProgressConditionTables tables = ProgressConditionDecoder.Decode(exe, 20, 2, 0, 20);
 
@@ -26,7 +33,8 @@ public sealed class ProgressConditionDecoderTests
     public void RejectsMissingTerminator()
     {
         byte[] exe = new byte[32];
-        exe[0] = 4; exe[1] = 0x20;
+        exe[0] = 4;
+        exe[1] = 0x20;
 
         Assert.Throws<FormatException>(() => ProgressConditionDecoder.Decode(exe, 20, 2, 0, 9));
     }
@@ -35,7 +43,10 @@ public sealed class ProgressConditionDecoderTests
     public void RejectsRangeCheckBeyondTheRangeTable()
     {
         byte[] exe = new byte[32];
-        exe[0] = 4; exe[1] = 0x30; exe[2] = 2; exe[3] = 0xFF;
+        exe[0] = 4;
+        exe[1] = 0x30;
+        exe[2] = 2;
+        exe[3] = 0xFF;
 
         Assert.Throws<FormatException>(() => ProgressConditionDecoder.Decode(exe, 20, 2, 0, 20));
     }

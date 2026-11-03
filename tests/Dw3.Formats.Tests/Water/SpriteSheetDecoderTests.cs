@@ -15,7 +15,8 @@ public sealed class SpriteSheetDecoderTests
         Assert.Equal("89abcdef"u8.ToArray(), SpriteSheetDecoder.ReadArchiveEntry(archive, 1).ToArray());
         FormatException error = Assert.Throws<FormatException>(() => SpriteSheetDecoder.ReadArchiveEntry(archive, 2));
         Assert.Equal("sprite sheet archive offsets invalid", error.Message);
-        Assert.Equal("sprite sheet archive offset table truncated",
+        Assert.Equal(
+            "sprite sheet archive offset table truncated",
             Assert.Throws<FormatException>(() => SpriteSheetDecoder.ReadArchiveEntry(archive, 6)).Message);
     }
 
@@ -79,7 +80,7 @@ public sealed class SpriteSheetDecoderTests
     /// <summary>Lays out header, one frame-offset slot per id, part records, ids, then frame bodies.</summary>
     internal static byte[] BuildSheet(short[][] parts, byte[] frameIds, byte[][] frames)
     {
-        int partsOffset = 8 + 4 * frameIds.Length;
+        int partsOffset = 8 + (4 * frameIds.Length);
         int partBytes = parts.Length * 14;
         int idsOffset = partsOffset + partBytes + (partBytes % 4 == 0 ? 0 : 2);
         int framesOffset = idsOffset + frameIds.Length + 1;
@@ -92,15 +93,27 @@ public sealed class SpriteSheetDecoderTests
             buffer.AddRange(U32(cursor));
             cursor += frame.Length;
         }
+
         foreach (short[] part in parts)
+        {
             foreach (short value in part)
+            {
                 buffer.AddRange(BitConverter.GetBytes(value));
+            }
+        }
+
         while (buffer.Count < idsOffset)
+        {
             buffer.Add(0);
+        }
+
         buffer.AddRange(frameIds);
         buffer.Add(0xFF);
         foreach (byte[] frame in frames)
+        {
             buffer.AddRange(frame);
+        }
+
         return [.. buffer];
     }
 

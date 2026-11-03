@@ -30,7 +30,7 @@ public sealed class SimClock
         var requested = (int)Math.Floor((_debt + 1e-12) / StepSeconds);
         LastDroppedTicks = Math.Max(0, requested - MaxTicksPerFrame);
         var emitted = Math.Min(requested, MaxTicksPerFrame);
-        _debt = LastDroppedTicks > 0 ? 0 : _debt - emitted * StepSeconds;
+        _debt = LastDroppedTicks > 0 ? 0 : _debt - (emitted * StepSeconds);
         return emitted;
     }
 }

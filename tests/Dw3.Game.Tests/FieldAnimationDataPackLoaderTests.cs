@@ -115,18 +115,31 @@ public sealed class FieldAnimationDataPackLoaderTests : IDisposable
             {
                 Execute(context, "INSERT INTO fieldcom_domains VALUES ('cue','FIELDCOM','aa',1),('icon','FIELDCOM','aa',1)");
                 foreach (int frame in CueFrames)
+                {
                     Execute(context, $"INSERT INTO fieldcom_frames VALUES ('cue',{frame},16,16,-8,-29,0,-1,'{Image(context, $"cue/frame-{frame:X2}.png")}')");
+                }
+
                 int[] rowFrames = [0x10, 0x0E, 0x0C, 0x12, 0x45];
                 for (int row = 6; row <= 10; row++)
                 {
-                    if (row == skipCueRow) continue;
+                    if (row == skipCueRow)
+                    {
+                        continue;
+                    }
+
                     int first = rowFrames[row - 6];
                     Execute(context, $"INSERT INTO cue_sequences VALUES ('inner','row-{first:X2}',0,{first},22,{row}),('inner','row-{first:X2}',1,{first + 1},22,{row})");
                 }
+
                 Execute(context, "INSERT INTO cue_sequences VALUES ('pop','opening',0,50,1,NULL)");
                 for (int frame = 0x23; frame <= 0x31; frame++)
+                {
                     if (frame != skipIconFrame)
+                    {
                         Execute(context, $"INSERT INTO fieldcom_frames VALUES ('icon',{frame},16,16,4,-36,0,-1,'{Image(context, $"icon/frame-{frame:X2}.png")}')");
+                    }
+                }
+
                 Execute(context, $"INSERT INTO icon_animations VALUES (0,0),(1,{iconLoopTarget})");
                 Execute(context, "INSERT INTO icon_animation_steps VALUES (0,0,35,8),(1,0,35,3),(1,1,36,4)");
 
@@ -137,7 +150,11 @@ public sealed class FieldAnimationDataPackLoaderTests : IDisposable
                 Execute(context, "INSERT INTO action_records VALUES ('climb',26,0,5,2,-3,4)");
                 for (int set = 0x16; set <= 0x19; set++)
                 {
-                    if (set == skipDropSet) continue;
+                    if (set == skipDropSet)
+                    {
+                        continue;
+                    }
+
                     Execute(context, $"INSERT INTO action_sets VALUES ('drop',{set},'DROP','{(set == 0x16 ? "end" : "loop")}')");
                     Execute(context, $"INSERT INTO action_records VALUES ('drop',{set},0,2,1,0,0)");
                 }
@@ -145,7 +162,9 @@ public sealed class FieldAnimationDataPackLoaderTests : IDisposable
                 Execute(context, "INSERT INTO water_zones VALUES (200,'a','b','c',1)");
                 Execute(context, "INSERT INTO water_objects VALUES (200,3,1,0,64,2,71,2,0,3,6,0,1048,211,246,0,1)");
                 if (waterFrames)
+                {
                     Execute(context, $"INSERT INTO water_object_frames VALUES (200,3,0,71,0,1,2,1,'{Image(context, "water/S200/object-003-opaque.png")}','{Image(context, "water/S200/object-003-stp.png")}')");
+                }
             });
     }
 
@@ -171,6 +190,9 @@ public sealed class FieldAnimationDataPackLoaderTests : IDisposable
         // Release pooled connections before deletion; on Windows, the pool keeps
         // the file handle open past Dispose(), preventing Directory.Delete.
         SqliteConnection.ClearAllPools();
-        if (Directory.Exists(_root)) Directory.Delete(_root, true);
+        if (Directory.Exists(_root))
+        {
+            Directory.Delete(_root, true);
+        }
     }
 }

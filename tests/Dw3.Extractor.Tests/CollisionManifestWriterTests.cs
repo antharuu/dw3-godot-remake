@@ -1,7 +1,7 @@
 using System.Text;
 using System.Text.Json;
-using Xunit;
 using Dw3.Formats.Field;
+using Xunit;
 
 namespace Dw3.Extractor.Tests;
 

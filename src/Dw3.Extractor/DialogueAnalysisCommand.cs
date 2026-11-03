@@ -45,6 +45,7 @@ internal static class DialogueAnalysisCommand
                     return 2;
             }
         }
+
         if (string.IsNullOrWhiteSpace(cuePath))
         {
             error.WriteLine("Usage: Dw3.Extractor analyze-dialogue --disc <path/to/disc.cue> [--details]");
@@ -87,10 +88,17 @@ internal static class DialogueAnalysisCommand
             $"progress_ranges={result.Progress.Ranges.Count} special_records={result.Progress.SpecialRecordCount} " +
             $"progress_specials={result.Progress.SpecialProgressRanges.Count}");
         foreach (StageAnalysisException failure in result.Failures)
+        {
             output.WriteLine($"failed {failure.Message}");
+        }
+
         if (details)
+        {
             foreach (StageDialogueAnalysis stage in result.Stages)
+            {
                 output.WriteLine(StageJson(stage));
+            }
+        }
     }
 
     /// <summary>
@@ -112,9 +120,14 @@ internal static class DialogueAnalysisCommand
             json.WriteString("textFile", stage.TextFile.IsoPath);
             json.WriteNumber("talkFile", stage.TextFile.TalkIndex);
             if (stage.ActorListAddress is uint list)
+            {
                 json.WriteString("actorList", $"0x{list:X8}");
+            }
             else
+            {
                 json.WriteNull("actorList");
+            }
+
             json.WriteStartArray("actors");
             foreach (StageActorDialogue actor in stage.Actors)
             {
@@ -136,12 +149,15 @@ internal static class DialogueAnalysisCommand
                     WritePairs(json, "actions", talk.Actions);
                     json.WriteEndObject();
                 }
+
                 json.WriteEndArray();
                 json.WriteEndObject();
             }
+
             json.WriteEndArray();
             json.WriteEndObject();
         }
+
         return System.Text.Encoding.UTF8.GetString(buffer.ToArray());
     }
 
@@ -162,6 +178,7 @@ internal static class DialogueAnalysisCommand
             json.WriteNumberValue(pair.Value);
             json.WriteEndArray();
         }
+
         json.WriteEndArray();
     }
 }

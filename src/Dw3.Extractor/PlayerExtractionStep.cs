@@ -32,6 +32,7 @@ internal static class PlayerExtractionStep
     private const int FileNumber = 0x187;   // 391
     private const int ActorWidthPx = 0x20;    // 32
     private const int HalfWidthPx = 0x10;    // 16
+
     // FIELDSTG_drawActor: draw offset applied to every player frame.
     private const int AnchorOffsetX = -16;
     private const int AnchorOffsetY = -28;
@@ -71,11 +72,13 @@ internal static class PlayerExtractionStep
             string archiveSha256 = ComputeSha256Hex(archiveBytes);
 
             var writer = new DataPackWriter(outputDirectory);
-            writer.Write(new DataPackMetadata(
+            writer.Write(
+                new DataPackMetadata(
                 typeof(PlayerExtractionStep).Assembly.GetName().Version?.ToString(3) ?? "0.1.0",
                 edition.BinSha1,
                 edition.Label,
-                DateTimeOffset.UtcNow), context =>
+                DateTimeOffset.UtcNow),
+                context =>
             {
                 WritePlayerDomain(context, archiveBytes, archiveSha256, archiveEntry.IsoPath);
             });
@@ -204,6 +207,7 @@ internal static class PlayerExtractionStep
                 foreach (PlayerAnimRecord record in seq.Records)
                 {
                     FrameInfo fi = frameInfos[record.Frame];
+
                     // Compute foot_ground_contact using the Python formula (includes off-by-one):
                     //   contact_x = offset_x + (left + right_excl + 1) / 2.0
                     //   contact_y = offset_y + lower_excl + 1
@@ -356,7 +360,8 @@ internal static class PlayerExtractionStep
         }
 
         w.WriteEndArray();
-        w.WriteString("note",
+        w.WriteString(
+            "note",
             "FIELDSTG_drawActor draws the whole 32x32 TIM with its top-left at (tile + offset); " +
             "the player's ground contact is the bottom-centre of the visible pixels, not the TIM's bottom edge.");
         w.WriteStartArray("offset");

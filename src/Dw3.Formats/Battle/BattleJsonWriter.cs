@@ -24,16 +24,18 @@ public static class BattleJsonWriter
         IReadOnlyList<BattleTableRecord> enemyTable,
         IReadOnlyList<(ItemRecord Item, ItemEffect? Effect)> items,
         IReadOnlyList<BattleReward> rewards,
-        BattleGrowthData growth) => JsonSerializer.Serialize(new
-        {
-            schema = "m9b-battle-v2",
-            digimon = digimon.Select(ProjectDigimon),
-            techniques = techniques.Select(ProjectTechnique),
-            enemyTable = enemyTable.Select(ProjectEnemy),
-            items = items.Select(ProjectItem),
-            rewards = rewards.Select((value, index) => new { id = index, value.DigimonExperience, value.Experience, value.Money }),
-            growth = new { growth.LevelExperience, growth.VitalCuts, growth.VitalRandom, growth.StatGains, growth.ResistanceGains },
-        }, Options);
+        BattleGrowthData growth) => JsonSerializer.Serialize(
+            new
+            {
+                schema = "m9b-battle-v2",
+                digimon = digimon.Select(ProjectDigimon),
+                techniques = techniques.Select(ProjectTechnique),
+                enemyTable = enemyTable.Select(ProjectEnemy),
+                items = items.Select(ProjectItem),
+                rewards = rewards.Select((value, index) => new { id = index, value.DigimonExperience, value.Experience, value.Money }),
+                growth = new { growth.LevelExperience, growth.VitalCuts, growth.VitalRandom, growth.StatGains, growth.ResistanceGains },
+            },
+            Options);
 
     /// <summary>
     /// Serialises the digivolution table for all partners to a JSON document with schema key <c>m9b-digivolution-v2</c>.
@@ -42,24 +44,26 @@ public static class BattleJsonWriter
     /// <param name="digimon">Decoded creature table, used to resolve base creature ids by partner index.</param>
     /// <param name="partners">Evolution records per partner, in partner-index order.</param>
     /// <returns>Indented camelCase JSON string conforming to the <c>m9b-digivolution-v2</c> schema.</returns>
-    public static string WriteDigivolution(IReadOnlyList<DigimonRecord> digimon, IReadOnlyList<IReadOnlyList<EvolutionRecord>> partners) => JsonSerializer.Serialize(new
-    {
-        schema = "m9b-digivolution-v2",
-        partners = partners.Select((records, partner) => new
+    public static string WriteDigivolution(IReadOnlyList<DigimonRecord> digimon, IReadOnlyList<IReadOnlyList<EvolutionRecord>> partners) => JsonSerializer.Serialize(
+        new
         {
-            partner,
-            baseId = digimon[partner].Id,
-            evolutions = records.Select((value, ordinal) => new
+            schema = "m9b-digivolution-v2",
+            partners = partners.Select((records, partner) => new
             {
-                ordinal,
-                value.DigimonIndex,
-                value.DigimonId,
-                needs = value.Needs.Select(need => new { need.DigimonIndex, need.DigimonId, need.Level }),
-                value.Stat,
-                value.Value,
+                partner,
+                baseId = digimon[partner].Id,
+                evolutions = records.Select((value, ordinal) => new
+                {
+                    ordinal,
+                    value.DigimonIndex,
+                    value.DigimonId,
+                    needs = value.Needs.Select(need => new { need.DigimonIndex, need.DigimonId, need.Level }),
+                    value.Stat,
+                    value.Value,
+                }),
             }),
-        }),
-    }, Options);
+        },
+        Options);
 
     /// <summary>Projects one creature record; <c>index</c> is its one-based position in the creature table.</summary>
     /// <param name="value">Creature record.</param>

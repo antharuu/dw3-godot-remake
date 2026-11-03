@@ -15,10 +15,14 @@ public sealed class RomAnalysisTests
         DialogueRomLayout layout = DialogueFixtures.Layout;
         byte[] exe = DialogueFixtures.Executable(0x200);
         int specials = DialogueFixtures.ExeOffset(layout.SpecialConditionsAddress);
-        exe[specials] = 7; exe[specials + 1] = 0x30; exe[specials + 2] = 2; exe[specials + 3] = 0xFF;
+        exe[specials] = 7;
+        exe[specials + 1] = 0x30;
+        exe[specials + 2] = 2;
+        exe[specials + 3] = 0xFF;
         int ranges = DialogueFixtures.ExeOffset(layout.ProgressRangesAddress);
-        exe[ranges + 4] = 3; exe[ranges + 5] = 5;
-        DialogueFixtures.U32(exe, DialogueFixtures.ExeOffset(layout.FileSectorsAddress) + 9 * 4, 2009);
+        exe[ranges + 4] = 3;
+        exe[ranges + 5] = 5;
+        DialogueFixtures.U32(exe, DialogueFixtures.ExeOffset(layout.FileSectorsAddress) + (9 * 4), 2009);
         PsxExecutable parsed = PsxExecutable.Parse(exe);
         var paths = new Dictionary<int, string> { [2009] = "AAA/DAT/COUNTRY/XYZ/XSTALK04.BIN" };
         return (parsed, DiscFileTable.Read(parsed, layout.FileSectorsAddress, layout.FileSectorCount, paths));
@@ -35,7 +39,11 @@ public sealed class RomAnalysisTests
         byte[] bad = DialogueFixtures.Overlay(0x40, Jr(Ra), Nop);
 
         RomAnalysisResult result = RomAnalysis.Analyze(
-            exe, DialogueFixtures.Layout, files, "XYZ", [0, 0, 0, 0, 0, 40],
+            exe,
+            DialogueFixtures.Layout,
+            files,
+            "XYZ",
+            [0, 0, 0, 0, 0, 40],
             [new StageOverlay(0x301, 401, good), new StageOverlay(0x302, 402, bad)]);
 
         StageDialogueAnalysis stage = Assert.Single(result.Stages);

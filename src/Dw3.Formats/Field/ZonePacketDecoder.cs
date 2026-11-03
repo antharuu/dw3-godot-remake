@@ -41,7 +41,7 @@ public static class ZonePacketDecoder
             throw new FormatException("Field packet header has more present tiles than grid cells.");
         }
 
-        if (packetFile.Length != checked(SectorSize + tileCount * packetBytes))
+        if (packetFile.Length != checked(SectorSize + (tileCount * packetBytes)))
         {
             throw new FormatException("Field packet file length does not match its header.");
         }
@@ -58,7 +58,7 @@ public static class ZonePacketDecoder
         int actualPresent = 0;
         for (int tile = 0; tile < tileCount; tile++)
         {
-            sizes[tile] = BinaryPrimitives.ReadUInt16LittleEndian(packetFile.Slice(16 + tile * 2, 2));
+            sizes[tile] = BinaryPrimitives.ReadUInt16LittleEndian(packetFile.Slice(16 + (tile * 2), 2));
             if (sizes[tile] == 0)
             {
                 tileRecords.Add(new ZoneTileRecord(tile, Present: false));
@@ -66,7 +66,7 @@ public static class ZonePacketDecoder
             }
 
             actualPresent++;
-            ReadOnlySpan<byte> rawPacket = packetFile.Slice(SectorSize + tile * packetBytes, packetBytes);
+            ReadOnlySpan<byte> rawPacket = packetFile.Slice(SectorSize + (tile * packetBytes), packetBytes);
             var (decodedImages, record) = DecodeTileWithMetadata(rawPacket, tile);
             tileRecords.Add(record);
             foreach (var (depth, image) in decodedImages)
@@ -146,7 +146,7 @@ public static class ZonePacketDecoder
         var layer = new RgbaCanvas(TileSize, TileSize);
         for (int index = 0; index < count; index++)
         {
-            int offset = cursor + index * 12;
+            int offset = cursor + (index * 12);
             short x = BinaryPrimitives.ReadInt16LittleEndian(packet.AsSpan(offset, 2));
             short y = BinaryPrimitives.ReadInt16LittleEndian(packet.AsSpan(offset + 2, 2));
             short u = BinaryPrimitives.ReadInt16LittleEndian(packet.AsSpan(offset + 4, 2));
@@ -181,7 +181,7 @@ public static class ZonePacketDecoder
         var pixels = new byte[checked(width * height * 4)];
         for (int row = 0; row < height; row++)
         {
-            texture.Pixels.AsSpan(((y + row) * texture.Width + x) * 4, width * 4).CopyTo(pixels.AsSpan(row * width * 4));
+            texture.Pixels.AsSpan((((y + row) * texture.Width) + x) * 4, width * 4).CopyTo(pixels.AsSpan(row * width * 4));
         }
 
         return pixels;

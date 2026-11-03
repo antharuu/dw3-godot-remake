@@ -20,8 +20,11 @@ public sealed class BattleMotionMachineVectorGenerator
     private sealed class Scenario(string family, int[][][] motions, int idle, List<string> ops)
     {
         public string Family { get; } = family;
+
         public int[][][] Motions { get; } = motions;
+
         public int Idle { get; } = idle;
+
         public List<string> Ops { get; } = ops;
     }
 
@@ -36,7 +39,11 @@ public sealed class BattleMotionMachineVectorGenerator
         {
             var count = r.Next(1, 11);
             var blend = steps.Count > 0 && r.Next(10) < 4;
-            if (s == 0 && r.Next(6) == 0) blend = true; // a leading blend must use source "current pose"
+            if (s == 0 && r.Next(6) == 0)
+            {
+                blend = true; // a leading blend must use source "current pose"
+            }
+
             if (blend)
             {
                 var index = steps.Count == 0 || r.Next(4) == 0 ? 0 : steps.Count;
@@ -48,12 +55,17 @@ public sealed class BattleMotionMachineVectorGenerator
                 var endFrame = r.Next(3) == 0 ? r.Next(1, 300) : Math.Max(1, frame + count - 1);
                 steps.Add([steps.Count, count, frame, endFrame]);
             }
+
             keyframes += steps[^1][1];
             lastWasBlend = blend;
         }
 
         var kind = forcedTerminator ?? r.Next(7);
-        if (kind == 2 && !allowIdleTarget) kind = 3;
+        if (kind == 2 && !allowIdleTarget)
+        {
+            kind = 3;
+        }
+
         var pos = steps.Count;
         int[] terminator = kind switch
         {
@@ -65,10 +77,19 @@ public sealed class BattleMotionMachineVectorGenerator
             5 => [pos, 0, 0x8000 | r.Next(1, 0x8000), r.Next(0, 300)],          // blended hold
             _ => [pos, 0, 0x8000, 0],                                           // loop to entry 0
         };
+
         // A blend run right before a 0x7FFF end marker needs a successor; give it a real one.
-        if (kind == 0 && lastWasBlend) steps.Add([pos, r.Next(1, 4), r.Next(0, 300), 7]);
+        if (kind == 0 && lastWasBlend)
+        {
+            steps.Add([pos, r.Next(1, 4), r.Next(0, 300), 7]);
+        }
+
         steps.Add(terminator);
-        if (r.Next(5) == 0) steps.Add([r.Next(0, 9), r.Next(0, 9), r.Next(0, 300), r.Next(0, 300)]); // ignored tail
+        if (r.Next(5) == 0)
+        {
+            steps.Add([r.Next(0, 9), r.Next(0, 9), r.Next(0, 300), r.Next(0, 300)]); // ignored tail
+        }
+
         return [.. steps];
     }
 
@@ -77,7 +98,10 @@ public sealed class BattleMotionMachineVectorGenerator
         var n = r.Next(min, max);
         var table = new int[n][][];
         for (var i = 0; i < n; i++)
+        {
             table[i] = RandomMotion(r, i < 2 && r.Next(3) > 0 ? 1 : null);
+        }
+
         return table;
     }
 
@@ -102,7 +126,11 @@ public sealed class BattleMotionMachineVectorGenerator
     private static List<string> RandomOps(Random r, int motionCount, int length)
     {
         var ops = new List<string>();
-        for (var i = 0; i < length; i++) ops.Add(RandomOp(r, motionCount));
+        for (var i = 0; i < length; i++)
+        {
+            ops.Add(RandomOp(r, motionCount));
+        }
+
         return ops;
     }
 
@@ -117,8 +145,13 @@ public sealed class BattleMotionMachineVectorGenerator
 
         // Interpolation boundaries: run lengths whose 4096-scaled ratios reach 0.
         foreach (var count in new[] { 1, 2, 3, 7, 4095, 4096, 4097, 5000 })
-            yield return new("edge-interp", [idle, [[0, 2, 5, 6], [1, count, 0, 0], [2, 2, 80, 81], [3, 0, 0xFFFF, 0]]], 0,
+        {
+            yield return new(
+                "edge-interp",
+                [idle, [[0, 2, 5, 6], [1, count, 0, 0], [2, 2, 80, 81], [3, 0, 0xFFFF, 0]]],
+                0,
                 [.. Ops("m:2:1"), .. Repeat("s:1", 8), "s:3000", "s:1", "s:1500", "s:1", "s:1", "s:1", "s:1"]);
+        }
 
         // Frames carrying bit 15 (negative or >= 0x8000) are read as blends; reaching 0xFFFF finishes.
         yield return new("edge-bit15", [[[0, 6, -3, 2], [1, 0, 0x8000, 1]]], 0, Repeat("s:1", 12));
@@ -145,34 +178,59 @@ public sealed class BattleMotionMachineVectorGenerator
         yield return new("edge-hold", [[[0, 3, 40, 42], [End, 9, 9, 9], [0, 0, 0xFFFF, 0]]], 0, [.. Repeat("s:1", 6), "s:50"]);
 
         // Blend sources: current pose (index 0), previous run end frame, unchanged target keeps source.
-        yield return new("edge-source", [idle, [[0, 2, 0, 0], [0, 3, 30, 32], [2, 2, 0, 0], [3, 0, 30, 0], [4, 0, 0xFFFF, 0]]], 0,
+        yield return new(
+            "edge-source",
+            [idle, [[0, 2, 0, 0], [0, 3, 30, 32], [2, 2, 0, 0], [3, 0, 30, 0], [4, 0, 0xFFFF, 0]]],
+            0,
             [.. Ops("m:2:1"), .. Repeat("s:1", 12)]);
         yield return new("edge-source", [[[0, 3, 0, 0], [1, 0, 0, 0]]], 0, Repeat("s:1", 6));
         yield return new("edge-source", [[[0, 3, 5, 7], [1, 3, 9, 0], [2, 0, 0, 0]]], 0, Repeat("s:1", 8));
 
         // Idle return: the motion's -1 target is the first frame of motion 1 or 2 per idle selection.
-        yield return new("edge-idle", [idle, idle2, [[0, 3, 100, 102], [1, 3, 0, 0], [2, 0, -1, 0]]], 0,
+        yield return new(
+            "edge-idle",
+            [idle, idle2, [[0, 3, 100, 102], [1, 3, 0, 0], [2, 0, -1, 0]]],
+            0,
             [.. Ops("m:3:1"), .. Repeat("s:1", 10), "i:1", "s:1", "s:1"]);
-        yield return new("edge-idle", [idle, idle2, [[0, 3, 100, 102], [1, 3, 0, 0], [2, 0, -1, 0]]], 1,
+        yield return new(
+            "edge-idle",
+            [idle, idle2, [[0, 3, 100, 102], [1, 3, 0, 0], [2, 0, -1, 0]]],
+            1,
             [.. Ops("m:3:1"), .. Repeat("s:1", 10)]);
-        yield return new("edge-idle", [idle, idle2, [[0, 3, 100, 102], [1, 3, 0, 0], [2, 0, -1, 0]]], 0,
+        yield return new(
+            "edge-idle",
+            [idle, idle2, [[0, 3, 100, 102], [1, 3, 0, 0], [2, 0, -1, 0]]],
+            0,
             [.. Ops("i:1", "m:3:1", "i:0"), .. Repeat("s:1", 10)]);
-        yield return new("edge-idle", [idle, idle2, [[0, 3, 100, 102], [1, 3, 0, 0], [2, 0, -1, 0]]], 0,
+        yield return new(
+            "edge-idle",
+            [idle, idle2, [[0, 3, 100, 102], [1, 3, 0, 0], [2, 0, -1, 0]]],
+            0,
             [.. Ops("m:2:1", "m:3:1"), .. Repeat("s:1", 10)]);
+
         // Only one motion: the second idle frame defaults to 0.
         yield return new("edge-idle", [[[0, 2, 7, 8], [1, 2, 0, 0], [2, 0, -1, 0]]], 0, [.. Ops("i:1", "m:1:1"), .. Repeat("s:1", 8)]);
+
         // Motion 1 finishing toward idle returns to itself only through the no-restart rule: it stays done.
         yield return new("edge-idle", [[[0, 2, 7, 8], [1, 2, 0, 0], [2, 0, -1, 0]], idle2], 0, Repeat("s:1", 9));
         yield return new("edge-idle", [idle, [[0, 2, 7, 8], [1, 2, 0, 0], [2, 0, -1, 0]]], 1, Repeat("s:1", 9));
+
         // A finish without idle target stays finished forever.
         yield return new("edge-idle", [idle, [[0, 3, 7, 9], [1, 0, 0xFFFF, 0]]], 0, [.. Ops("m:2:1"), .. Repeat("s:1", 6), "s:9", "m:2:0", "m:2:1", "s:1"]);
+
         // Idle frame of an empty first step list is 0.
         yield return new("edge-idle", [idle, [], [[0, 2, 9, 10], [1, 2, 0, 0], [2, 0, -1, 0]]], 1, Repeat("s:1", 1));
-        yield return new("edge-idle", [idle, [[End, 0, 0, 0]], [[0, 2, 9, 10], [1, 2, 0, 0], [2, 0, -1, 0]]], 0,
+        yield return new(
+            "edge-idle",
+            [idle, [[End, 0, 0, 0]], [[0, 2, 9, 10], [1, 2, 0, 0], [2, 0, -1, 0]]],
+            0,
             [.. Ops("i:1", "m:3:1"), .. Repeat("s:1", 7)]);
 
         // SetMotion rules.
-        yield return new("edge-setmotion", [idle, idle2, [[0, 5, 60, 64], [1, 0, 0xFFFF, 0]]], 0,
+        yield return new(
+            "edge-setmotion",
+            [idle, idle2, [[0, 5, 60, 64], [1, 0, 0xFFFF, 0]]],
+            0,
             Ops("s:1", "s:1", "m:1:0", "m:1:1", "s:2", "m:3:0", "s:1", "m:3:0", "s:1", "m:3:1", "m:2:0", "m:1:0", "m:0:0", "m:4:1", "m:-5:1", "m:2:0"));
         yield return new("edge-setmotion", [idle, idle2], 1, Ops("s:1", "m:2:0", "m:1:0", "i:1", "m:2:1", "i:0", "m:1:1"));
 
@@ -207,6 +265,7 @@ public sealed class BattleMotionMachineVectorGenerator
 
         // SetIdleMotion validation.
         yield return new("edge-idlearg", [idle, idle2], 0, Ops("i:2", "i:-1", "i:1", "i:0", "i:2147483647", "i:-2147483648"));
+
         // Single-entry keyframe list: the first Step reads past the end.
         yield return new("edge-single", [[[0, 1, 5, 5], [End, 0, 0, 0]]], 0, Ops("s:0"));
     }
@@ -214,7 +273,10 @@ public sealed class BattleMotionMachineVectorGenerator
     [Fact]
     public void GenerateBattleMotionMachineVectors()
     {
-        if (Environment.GetEnvironmentVariable("GENERATE_VECTORS") != "1") return;
+        if (Environment.GetEnvironmentVariable("GENERATE_VECTORS") != "1")
+        {
+            return;
+        }
 
         var random = new Random(Seed);
         var scenarios = new List<Scenario>();
@@ -232,14 +294,23 @@ public sealed class BattleMotionMachineVectorGenerator
         {
             var table = new[] { RandomMotion(random, 1), RandomMotion(random, random.Next(2) == 0 ? 1 : 6), RandomMotion(random, 2) };
             var ops = new List<string>();
-            if (random.Next(3) == 0) ops.Add($"i:{random.Next(2)}");
-            if (random.Next(3) == 0) ops.Add($"m:{random.Next(1, 3)}:{random.Next(2)}");
+            if (random.Next(3) == 0)
+            {
+                ops.Add($"i:{random.Next(2)}");
+            }
+
+            if (random.Next(3) == 0)
+            {
+                ops.Add($"m:{random.Next(1, 3)}:{random.Next(2)}");
+            }
+
             ops.Add("m:3:1");
             for (var i = 0; i < 70; i++)
             {
                 var roll = random.Next(12);
                 ops.Add(roll switch { 0 => $"i:{random.Next(2)}", 1 => "s:0", 2 => $"s:{random.Next(2, 5)}", _ => "s:1" });
             }
+
             scenarios.Add(new("idle-return", table, random.Next(2), ops));
         }
 
@@ -249,7 +320,10 @@ public sealed class BattleMotionMachineVectorGenerator
             var table = new[] { RandomMotion(random, random.Next(2) == 0 ? 1 : 6) };
             var ops = new List<string>();
             for (var i = 0; i < 60; i++)
+            {
                 ops.Add(random.Next(5) == 0 ? $"s:{random.Next(0, 12)}" : "s:1");
+            }
+
             scenarios.Add(new("loop", table, 0, ops));
         }
 
@@ -288,6 +362,7 @@ public sealed class BattleMotionMachineVectorGenerator
             sb.Append("    ").Append(obj.ToJsonString());
             sb.Append(i + 1 < scenarios.Count ? ",\n" : "\n");
         }
+
         sb.Append("  ]\n}\n");
 
         var outPath = Environment.GetEnvironmentVariable("GENERATE_VECTORS_OUT") is { Length: > 0 } p

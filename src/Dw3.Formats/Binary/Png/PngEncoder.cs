@@ -52,8 +52,10 @@ public static class PngEncoder
 
         int expected = checked(width * height * 4);
         if (rgbaPixels.Length != expected)
+        {
             throw new ArgumentException(
                 $"rgbaPixels length {rgbaPixels.Length} does not match {width}x{height}*4={expected}");
+        }
 
         using var png = new MemoryStream(expected + 256);
         png.Write(Signature);

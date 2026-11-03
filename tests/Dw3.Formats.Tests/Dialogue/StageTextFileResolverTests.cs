@@ -13,9 +13,10 @@ public sealed class StageTextFileResolverTests
         foreach ((int fileId, string path) in files)
         {
             int lba = 1000 + fileId;
-            DialogueFixtures.U32(exe, DialogueFixtures.ExeOffset(DialogueFixtures.Layout.FileSectorsAddress) + fileId * 4, (uint)lba);
+            DialogueFixtures.U32(exe, DialogueFixtures.ExeOffset(DialogueFixtures.Layout.FileSectorsAddress) + (fileId * 4), (uint)lba);
             paths[lba] = path;
         }
+
         DiscFileTable table = DiscFileTable.Read(
             PsxExecutable.Parse(exe), DialogueFixtures.Layout.FileSectorsAddress, DialogueFixtures.Layout.FileSectorCount, paths);
         return new StageTextFileResolver(table, 3, "XYZ");

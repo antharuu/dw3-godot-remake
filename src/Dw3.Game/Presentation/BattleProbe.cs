@@ -80,8 +80,14 @@ public sealed partial class BattleProbe : Node2D
         _state.SetFacing(1);
         _state.AnimationSet = 1;
         _state.AnimationDirection = 1;
-        _fieldRenderer.LoadZone(zone, player, _actionData, fieldLoader.PlayerFramePath, (set, frame) =>
-            set is >= 0x16 and <= 0x19 ? loader.DropFramePath(frame) : loader.ClimbFramePath(frame), null);
+        _fieldRenderer.LoadZone(
+            zone,
+            player,
+            _actionData,
+            fieldLoader.PlayerFramePath,
+            (set, frame) =>
+            set is >= 0x16 and <= 0x19 ? loader.DropFramePath(frame) : loader.ClimbFramePath(frame),
+            null);
         _fieldRenderer.Present(_state, _zone, f3On: false);
     }
 
@@ -132,7 +138,7 @@ public sealed partial class BattleProbe : Node2D
         {
             for (var x = 0; x < zone.Width; x++)
             {
-                cells[y * zone.Width + x] = (byte)image.GetPixel(x, y).R8;
+                cells[(y * zone.Width) + x] = (byte)image.GetPixel(x, y).R8;
             }
         }
 
@@ -155,7 +161,7 @@ public sealed partial class BattleProbe : Node2D
         {
             for (var x = 0; x < zone.Width; x++)
             {
-                cells[y * zone.Width + x] = (byte)image.GetPixel(x, y).R8;
+                cells[(y * zone.Width) + x] = (byte)image.GetPixel(x, y).R8;
             }
         }
 
@@ -218,7 +224,13 @@ public sealed partial class BattleProbe : Node2D
         setup.Stage = 18; // encounter 200 -> fight stage 18 (the S815 "Gunslinger 2F" background)
         var state = BattleState.InitFighters(setup, digimon: 3);
 
-        var flow = BattleSetupFactory.BuildFlow(fighters, techs, encounters, 200, [3], nameIds,
+        var flow = BattleSetupFactory.BuildFlow(
+            fighters,
+            techs,
+            encounters,
+            200,
+            [3],
+            nameIds,
             new BattleTextCatalog(loader.LoadBattleText()));
         flow.Start(state);
         return (flow, state);
@@ -412,7 +424,7 @@ public sealed partial class BattleProbe : Node2D
         {
             for (var x = xMin; x < xMax; x++)
             {
-                var index = (y * width + x) * bytesPerPixel;
+                var index = ((y * width) + x) * bytesPerPixel;
                 if (data[index] + data[index + 1] + data[index + 2] > 120)
                 {
                     count++;
@@ -441,7 +453,7 @@ public sealed partial class BattleProbe : Node2D
         {
             for (var x = xMin; x < xMax; x++)
             {
-                var index = (y * width + x) * bytesPerPixel;
+                var index = ((y * width) + x) * bytesPerPixel;
                 if (Math.Abs(ad[index] - bd[index]) + Math.Abs(ad[index + 1] - bd[index + 1]) + Math.Abs(ad[index + 2] - bd[index + 2]) > 30)
                 {
                     count++;
@@ -474,6 +486,6 @@ public sealed partial class BattleProbe : Node2D
 
         /// <summary>Advances and returns the next deterministic pseudo-random value.</summary>
         /// <returns>Next value in the sequence.</returns>
-        public int NextValue() => _value = (_value * 1103515245 + 12345) & 0x7FFFFFFF;
+        public int NextValue() => _value = ((_value * 1103515245) + 12345) & 0x7FFFFFFF;
     }
 }

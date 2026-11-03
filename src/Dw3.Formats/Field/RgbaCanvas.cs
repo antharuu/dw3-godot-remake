@@ -51,14 +51,14 @@ internal sealed class RgbaCanvas
         {
             for (int column = 0; column < clippedWidth; column++)
             {
-                int sourceOffset = (row * source.Width + column) * 4;
+                int sourceOffset = ((row * source.Width) + column) * 4;
                 byte alpha = source.Pixels[sourceOffset + 3];
                 if (alpha == 0)
                 {
                     continue;
                 }
 
-                int targetOffset = ((y + row) * Width + x + column) * 4;
+                int targetOffset = (((y + row) * Width) + x + column) * 4;
                 source.Pixels.AsSpan(sourceOffset, 4).CopyTo(Pixels.AsSpan(targetOffset, 4));
             }
         }

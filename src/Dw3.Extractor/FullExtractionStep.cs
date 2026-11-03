@@ -103,7 +103,9 @@ internal static class FullExtractionStep
         finally
         {
             if (Directory.Exists(scratchDirectory))
+            {
                 Directory.Delete(scratchDirectory, recursive: true);
+            }
         }
     }
 
@@ -140,7 +142,9 @@ internal static class FullExtractionStep
             string sourceDirectory = Path.Combine(scratchDirectory, domain.Name, "data");
             string sourceDatabase = Path.Combine(sourceDirectory, "dw3.sqlite");
             if (!File.Exists(sourceDatabase))
+            {
                 throw new InvalidDataException($"The {domain.Name} extraction step did not produce a data pack.");
+            }
 
             MergeDatabase(context, sourceDatabase);
             CopyDomainFiles(context, sourceDirectory);
@@ -166,11 +170,15 @@ internal static class FullExtractionStep
             tableQuery.CommandText = "SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT IN ('meta', 'pack_images') AND name NOT LIKE 'sqlite_%' ORDER BY name";
             using SqliteDataReader tableReader = tableQuery.ExecuteReader();
             while (tableReader.Read())
+            {
                 tables.Add(tableReader.GetString(0));
+            }
         }
 
         foreach (string table in tables)
+        {
             CopyRows(context, source, table);
+        }
     }
 
     /// <summary>
@@ -194,14 +202,20 @@ internal static class FullExtractionStep
             columnQuery.Parameters.AddWithValue("$tableName", table);
             using SqliteDataReader columnReader = columnQuery.ExecuteReader();
             while (columnReader.Read())
+            {
                 columns.Add(columnReader.GetString(0));
+            }
         }
 
         if (columns.Count == 0)
+        {
             throw new InvalidDataException($"Domain pack table {table} has no columns.");
+        }
 
         foreach (string col in columns)
+        {
             ValidateIdentifier(col);
+        }
 
         string columnList = string.Join(", ", columns.Select(QuoteIdentifier));
         string parameterList = string.Join(", ", Enumerable.Range(0, columns.Count).Select(index => $"$p{index}"));
@@ -215,7 +229,10 @@ internal static class FullExtractionStep
         {
             destination.Parameters.Clear();
             for (int index = 0; index < columns.Count; index++)
+            {
                 destination.Parameters.AddWithValue($"$p{index}", rows.IsDBNull(index) ? DBNull.Value : rows.GetValue(index));
+            }
+
             destination.ExecuteNonQuery();
         }
     }
@@ -254,7 +271,10 @@ internal static class FullExtractionStep
         {
             string relativePath = Path.GetRelativePath(sourceDirectory, sourcePath).Replace(Path.DirectorySeparatorChar, '/');
             if (string.Equals(relativePath, "dw3.sqlite", StringComparison.Ordinal) || relativePath.StartsWith("dw3.sqlite-", StringComparison.Ordinal))
+            {
                 continue;
+            }
+
             string destinationPath = context.GetImagePath(relativePath);
             Directory.CreateDirectory(Path.GetDirectoryName(destinationPath)!);
             File.Copy(sourcePath, destinationPath, overwrite: true);
@@ -279,13 +299,18 @@ internal static class FullExtractionStep
         using SqliteDataReader reader = query.ExecuteReader();
         var paths = new List<string>();
         while (reader.Read())
+        {
             paths.Add(reader.GetString(0));
+        }
 
         foreach (string relativePath in paths)
         {
             string sourcePath = Path.Combine(sourceDirectory, relativePath.Replace('/', Path.DirectorySeparatorChar));
             if (!File.Exists(sourcePath))
+            {
                 throw new InvalidDataException($"Domain pack image is missing: {relativePath}.");
+            }
+
             string destinationPath = context.GetImagePath(relativePath);
             Directory.CreateDirectory(Path.GetDirectoryName(destinationPath)!);
             File.Copy(sourcePath, destinationPath, overwrite: true);
@@ -313,7 +338,9 @@ internal static class FullExtractionStep
         foreach (char c in name)
         {
             if (!char.IsLetterOrDigit(c) && c != '_')
+            {
                 throw new InvalidDataException($"Identifier '{name}' contains an unsafe character '{c}'.");
+            }
         }
     }
 }

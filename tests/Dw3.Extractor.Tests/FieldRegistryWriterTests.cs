@@ -14,7 +14,12 @@ public sealed class FieldRegistryWriterTests : IDisposable
     {
         var stages = new[]
         {
-            new ExtractedFieldStage(200, 0x200, 17, "loadable", null,
+            new ExtractedFieldStage(
+                200,
+                0x200,
+                17,
+                "loadable",
+                null,
                 [new StageSlot(ushort.MaxValue, 1, 0x201, 12, 34, 5)]),
             new ExtractedFieldStage(202, 0x201, 23, "error", "missing terrain packet", []),
         };
@@ -54,9 +59,12 @@ public sealed class FieldRegistryWriterTests : IDisposable
     public void Dispose()
     {
         if (Directory.Exists(_root))
+        {
             // Release pooled connections before deletion; on Windows, the pool keeps
             // the file handle open past Dispose(), preventing Directory.Delete.
             SqliteConnection.ClearAllPools();
+        }
+
         Directory.Delete(_root, recursive: true);
     }
 

@@ -30,8 +30,16 @@ public sealed class BattleMenuController
     public IReadOnlyList<BattleMenuLine> Lines { get; private set; } = [];
 
     /// <summary>Gets the visible source page and relative cursor for presentation.</summary>
-    public BattleMenuView View => new(Menu, Cursor, First, PageSize, PageCount,
-        [.. Lines.Skip(First).Take(PageSize)], PreviousPageText, NextPageText, StatusText);
+    public BattleMenuView View => new(
+        Menu,
+        Cursor,
+        First,
+        PageSize,
+        PageCount,
+        [.. Lines.Skip(First).Take(PageSize)],
+        PreviousPageText,
+        NextPageText,
+        StatusText);
 
     /// <summary>Gets or sets the label drawn next to the previous page hint (L1), null for menus without pages.</summary>
     private BattleTextLine? PreviousPageText { get; set; }
@@ -49,8 +57,13 @@ public sealed class BattleMenuController
     /// <param name="previousPageText">Label of the L1 page hint, or null.</param>
     /// <param name="nextPageText">Label of the R1 page hint, or null.</param>
     /// <param name="statusText">Status block shown beside the menu, or null.</param>
-    public void Open(BattleMenuKind menu, IReadOnlyList<BattleMenuLine> lines, int cursor = 0,
-        BattleTextLine? previousPageText = null, BattleTextLine? nextPageText = null, BattleMenuStatusText? statusText = null)
+    public void Open(
+        BattleMenuKind menu,
+        IReadOnlyList<BattleMenuLine> lines,
+        int cursor = 0,
+        BattleTextLine? previousPageText = null,
+        BattleTextLine? nextPageText = null,
+        BattleMenuStatusText? statusText = null)
     {
         Menu = menu;
         Lines = lines;

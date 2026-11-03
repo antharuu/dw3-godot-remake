@@ -1,5 +1,5 @@
-using Godot;
 using Dw3Production.Conversion;
+using Godot;
 
 namespace Dw3Production.Presentation;
 
@@ -219,7 +219,7 @@ public sealed partial class DialogueRenderer : IDisposable
             var panelY = _boxOrigin.Y + _layout.Panel.Y;
             _panelRect = new Rect2(panelX, panelY, _boxWidth, BoxHeight);
             BoxScreenRect = new Rect2(
-                panelX * WorldScale + SourceCenterX,
+                (panelX * WorldScale) + SourceCenterX,
                 panelY * WorldScale,
                 _boxWidth * WorldScale,
                 BoxHeight * WorldScale);

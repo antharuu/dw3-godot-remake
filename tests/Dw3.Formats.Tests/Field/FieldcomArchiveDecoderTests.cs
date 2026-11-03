@@ -12,7 +12,10 @@ public sealed class FieldcomArchiveDecoderTests
         byte[] archive = new byte[32];
         int[] offsets = [16, 20, 24, 28];
         for (int index = 0; index < offsets.Length; index++)
+        {
             BinaryPrimitives.WriteUInt32LittleEndian(archive.AsSpan(index * 4, 4), (uint)offsets[index]);
+        }
+
         archive[16] = 0xA1;
         archive[20] = 0xB2;
         archive[24] = 0xC3;

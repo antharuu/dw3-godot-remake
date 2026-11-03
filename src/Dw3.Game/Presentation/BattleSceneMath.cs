@@ -31,14 +31,14 @@ public static class BattleSceneMath
     /// <param name="palFrames">Elapsed frame count. Negative values contribute no progress.</param>
     /// <returns>The updated fade amount, capped at 4096.</returns>
     public static int AdvanceStageFade(int fade, int step, int palFrames) =>
-        Math.Min(0x1000, fade + step * Math.Max(0, palFrames));
+        Math.Min(0x1000, fade + (step * Math.Max(0, palFrames)));
 
     /// <summary>Interpolates one signed fixed-point vector component with a 12-bit blend fraction.</summary>
     /// <param name="from">Component value at blend fraction zero.</param>
     /// <param name="to">Component value at blend fraction 4096.</param>
     /// <param name="t">12-bit blend fraction. Values outside the usual 0..4096 range extrapolate.</param>
     /// <returns>The truncated integer interpolation result.</returns>
-    public static int LerpFixed(int from, int to, int t) => from + ((to - from) * t >> 12);
+    public static int LerpFixed(int from, int to, int t) => from + (((to - from) * t) >> 12);
 
     /// <summary>Builds the bone orientation and scale matrix from 4096-units-per-turn rotations and 12-bit scales.</summary>
     /// <param name="rotationFixed">X, Y, and Z rotations expressed in 4096 units per full turn.</param>

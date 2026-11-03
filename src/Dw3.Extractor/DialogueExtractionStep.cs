@@ -28,7 +28,9 @@ internal static class DialogueExtractionStep
             RomAnalysisResult analysis = DiscDialogueAnalysisReader.Read(disc, entries);
             StageAnalysisException[] unexpected = [.. analysis.Failures.Where(failure => failure.Mode != 0x210)];
             if (unexpected.Length != 0)
+            {
                 throw new FormatException(string.Join(Environment.NewLine, unexpected.Select(item => item.Message)));
+            }
 
             StageDialogueAnalysis[] stages = [.. analysis.Stages
                 .Where(DialogueDomainWriter.IsDialogueZone)

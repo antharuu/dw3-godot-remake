@@ -37,6 +37,7 @@ public static class RepositoryGuard
         new Regex(@"^docs/M\d+[_-]",        RegexOptions.IgnoreCase),
         new Regex(@"^_reference/",           RegexOptions.IgnoreCase),
         new Regex(@"^\.env\.local$",         RegexOptions.IgnoreCase),
+
         // rom/ is only allowed for rom/README.md
         new Regex(@"^rom/(?!README\.md$)",   RegexOptions.IgnoreCase),
     ];
@@ -47,18 +48,21 @@ public static class RepositoryGuard
 
     // ── Suspicious generated-payload path rule (provenance.md rule: suspicious-generated-payload) ──
     private static readonly Regex SuspiciousPayloadPathPattern =
-        new Regex(@"(?:^|/)(?:cache|output|results?|fixtures?|goldens?)/.*\.(?:json|csv|txt|md)$",
-                  RegexOptions.IgnoreCase);
+        new Regex(
+            @"(?:^|/)(?:cache|output|results?|fixtures?|goldens?)/.*\.(?:json|csv|txt|md)$",
+            RegexOptions.IgnoreCase);
 
     // ── Text content rules (provenance.md section 5 concrete rules) ──
     // Each entry: (rule-name, compiled regex, human note).
     // Rules are applied only to files in the public allowlist when running in public mode.
     private static readonly (string Name, Regex Pattern, string Note)[] ContentRules =
     [
+
         // Rule: personal-path — absolute Unix/Windows/macOS home-directory paths.
         ("personal-path",
-         new Regex(@"/home/[A-Za-z0-9_.\-]+/|/Users/[A-Za-z0-9_.\-]+/|[A-Za-z]:\\Users\\|~/(?:Projects|\.hermes)/",
-                   RegexOptions.IgnoreCase),
+         new Regex(
+             @"/home/[A-Za-z0-9_.\-]+/|/Users/[A-Za-z0-9_.\-]+/|[A-Za-z]:\\Users\\|~/(?:Projects|\.hermes)/",
+             RegexOptions.IgnoreCase),
          "Absolute local home path found"),
 
         // Rule: email-address — accidental contact leakage (requires valid TLD).
@@ -69,28 +73,32 @@ public static class RepositoryGuard
         // Rule: internal-identifier — owner/machine names and internal process labels.
         // Exception: this guard file and its tests necessarily contain the rule patterns.
         ("internal-identifier",
-         new Regex(@"\b(?:antho|antharuu|doroth[e\xE9]e|kanban|C[0-9]-0[0-9]+|TASK-0[0-9]+)\b",
-                   RegexOptions.IgnoreCase),
+         new Regex(
+             @"\b(?:antho|antharuu|doroth[e\xE9]e|kanban|C[0-9]-0[0-9]+|TASK-0[0-9]+)\b",
+             RegexOptions.IgnoreCase),
          "Internal identifier (owner/machine/process) found"),
 
         // Rule: decomp-dependency — references to the decompilation repository or its environment.
         ("decomp-dependency",
-         new Regex(@"dw3_decomp|DW3_DECOMP_ROOT|decomp_root|ReGame\-Labs|_reference/dw3_decomp|config/eu/stages/wstag\d+\.txt",
-                   RegexOptions.IgnoreCase),
+         new Regex(
+             @"dw3_decomp|DW3_DECOMP_ROOT|decomp_root|ReGame\-Labs|_reference/dw3_decomp|config/eu/stages/wstag\d+\.txt",
+             RegexOptions.IgnoreCase),
          "Decompilation repository reference found"),
 
         // Rule: decomp-source-citation — source file paths (src/…/…c) or decompiled symbol names.
         ("decomp-source-citation",
-         new Regex(@"(?:src|include)/[A-Za-z0-9_./\-]+\.(?:c|h)\b|\bfunc_8[0-9A-Fa-f]{7}\b|\bD_8[0-9A-Fa-f]{7}\b",
-                   RegexOptions.IgnoreCase),
+         new Regex(
+             @"(?:src|include)/[A-Za-z0-9_./\-]+\.(?:c|h)\b|\bfunc_8[0-9A-Fa-f]{7}\b|\bD_8[0-9A-Fa-f]{7}\b",
+             RegexOptions.IgnoreCase),
          "Decompilation source file path or symbol found"),
 
         // Rule: translation-claim — phrases that indicate mechanical source transcription.
         // Note: "verbatim" alone is not included because it has legitimate technical uses
         // (e.g. "copy bytes verbatim"). Only explicit transcription claims are matched.
         ("translation-claim",
-         new Regex(@"\b(?:transcribed|transcription|faithful reconstruction|exact integer order|mirrors? the source)\b",
-                   RegexOptions.IgnoreCase),
+         new Regex(
+             @"\b(?:transcribed|transcription|faithful reconstruction|exact integer order|mirrors? the source)\b",
+             RegexOptions.IgnoreCase),
          "Source-transcription claim found"),
 
         // Rule: hex-payload — dense 0x-prefixed byte sequences suggesting embedded raw data.
@@ -106,8 +114,9 @@ public static class RepositoryGuard
         // Note: generic "assert" is intentionally excluded to avoid false positives on
         // Assert.Throws and similar structural assertions; only direct equality matters.
         ("game-text-fixture",
-         new Regex(@"(?:FSTALK|FSFGTRPT|FSMFIGHT|FSDIGNAM|FSSKLNAM|FSITMNAM).{0,40}\.Equal\b",
-                   RegexOptions.IgnoreCase | RegexOptions.Singleline),
+         new Regex(
+             @"(?:FSTALK|FSFGTRPT|FSMFIGHT|FSDIGNAM|FSSKLNAM|FSITMNAM).{0,40}\.Equal\b",
+             RegexOptions.IgnoreCase | RegexOptions.Singleline),
          "Game text archive name adjacent to equality assertion (potential embedded game content)"),
 
         // Rule: media-or-capture (text) — source comments or documentation that reference
@@ -125,6 +134,7 @@ public static class RepositoryGuard
     // This list is the "explicit and commented exceptions" required by the publication plan.
     private static readonly HashSet<(string, string)> Exemptions = new(
     [
+
         // The guard implementation contains every regex pattern as a string literal.
         ("tests/Dw3.Repository.Tests/RepositoryGuard.cs", "personal-path"),
         ("tests/Dw3.Repository.Tests/RepositoryGuard.cs", "email-address"),
@@ -135,6 +145,7 @@ public static class RepositoryGuard
         ("tests/Dw3.Repository.Tests/RepositoryGuard.cs", "hex-payload"),
         ("tests/Dw3.Repository.Tests/RepositoryGuard.cs", "game-text-fixture"),
         ("tests/Dw3.Repository.Tests/RepositoryGuard.cs", "media-or-capture"),
+
         // The unit test file contains fabricated violation strings used in red/green tests.
         ("tests/Dw3.Repository.Tests/RepositoryGuardTests.cs", "personal-path"),
         ("tests/Dw3.Repository.Tests/RepositoryGuardTests.cs", "email-address"),
@@ -145,29 +156,38 @@ public static class RepositoryGuard
         ("tests/Dw3.Repository.Tests/RepositoryGuardTests.cs", "hex-payload"),
         ("tests/Dw3.Repository.Tests/RepositoryGuardTests.cs", "game-text-fixture"),
         ("tests/Dw3.Repository.Tests/RepositoryGuardTests.cs", "media-or-capture"),
+
         // The real-repo integration test may reference rule names and exemption paths.
         ("tests/Dw3.Repository.Tests/RealRepositoryTests.cs", "internal-identifier"),
         ("tests/Dw3.Repository.Tests/RealRepositoryTests.cs", "decomp-source-citation"),
+
         // The HUD extraction step has a required disc frame-ID array (format knowledge, not
         // game content): 0x0B, 0x1E, 0x33…  All values are ROM-structure selectors, not
         // decoded game output.
         ("src/Dw3.Extractor/BattleHudExtractionStep.cs", "hex-payload"),
+
         // The field animation loader uses the same disc cue-frame selector array.
         ("src/Dw3.Game/Conversion/FieldAnimationDataPackLoader.cs", "hex-payload"),
+
         // The field animation test mirrors the production selector array as a synthetic fixture.
         ("tests/Dw3.Game.Tests/FieldAnimationDataPackLoaderTests.cs", "hex-payload"),
+
         // TIM decoder unit tests use fabricated malformed TIM headers (all zeros / minimal header).
         ("tests/Dw3.Formats.Tests/Binary/Tim/TimDecoderTests.cs", "hex-payload"),
+
         // RLEN decoder unit tests use a fabricated all-zero run as a malformed-input probe.
         ("tests/Dw3.Formats.Tests/Binary/RlenDecoderTests.cs", "hex-payload"),
+
         // BattleRenderer probe builds a contact sheet of fighter sprites for comparison;
         // this is a local diagnostic tool, not a retained game-derived capture file.
         ("src/Dw3.Game/Presentation/BattleRenderer.cs", "media-or-capture"),
+
         // Community files legitimately contain the project owner's GitHub username as a public handle.
         // These are not internal identifiers but the public repository identity.
         ("LICENSE.md", "internal-identifier"),
         ("README.md", "internal-identifier"),
         (".github/ISSUE_TEMPLATE/config.yml", "internal-identifier"),
+
         // The DW3001 analyser help link contains the public GitHub repository URL (antharuu/dw3-remake).
         // This is a public reference, not an internal identifier.
         ("tools/Dw3.Analyzers/ClassCognitiveComplexityAnalyzer.cs", "internal-identifier"),
@@ -208,7 +228,9 @@ public static class RepositoryGuard
             // provenance.md: every tracked public file must be reviewed and listed.
             if (publicAllowlist != null && !publicAllowlist.Contains(file))
             {
-                violations.Add(new Violation(file, "unreviewed-source",
+                violations.Add(new Violation(
+                    file,
+                    "unreviewed-source",
                     "File is tracked but absent from the public allowlist"));
             }
         }
@@ -245,13 +267,17 @@ public static class RepositoryGuard
             var rel = Rel(repoRoot, csproj);
             if (Regex.IsMatch(content, @"Dw3\.Disc", RegexOptions.IgnoreCase))
             {
-                violations.Add(new Violation(rel, "architecture",
+                violations.Add(new Violation(
+                    rel,
+                    "architecture",
                     "Dw3.Game project must not reference Dw3.Disc"));
             }
 
             if (Regex.IsMatch(content, @"Dw3\.Formats", RegexOptions.IgnoreCase))
             {
-                violations.Add(new Violation(rel, "architecture",
+                violations.Add(new Violation(
+                    rel,
+                    "architecture",
                     "Dw3.Game project must not reference Dw3.Formats"));
             }
         }
@@ -264,7 +290,9 @@ public static class RepositoryGuard
             var rel = Rel(repoRoot, cs);
             if (discExtInString.IsMatch(content))
             {
-                violations.Add(new Violation(rel, "architecture",
+                violations.Add(new Violation(
+                    rel,
+                    "architecture",
                     "Dw3.Game source contains a .cue/.bin disc file extension reference"));
             }
         }
@@ -312,14 +340,18 @@ public static class RepositoryGuard
         var ext = Path.GetExtension(file);
         if (!string.IsNullOrEmpty(ext) && ForbiddenExtensions.Contains(ext))
         {
-            violations.Add(new Violation(file, "forbidden-extension",
+            violations.Add(new Violation(
+                file,
+                "forbidden-extension",
                 $"Extension '{ext}' identifies a disc or PSX proprietary format"));
         }
 
         // P1: Python files must not be tracked in the public repository.
         if (ext.Equals(".py", StringComparison.OrdinalIgnoreCase))
         {
-            violations.Add(new Violation(file, "no-python",
+            violations.Add(new Violation(
+                file,
+                "no-python",
                 "Python file must not be tracked in the public repository"));
         }
 
@@ -328,7 +360,9 @@ public static class RepositoryGuard
         {
             if (pattern.IsMatch(file))
             {
-                violations.Add(new Violation(file, "forbidden-path",
+                violations.Add(new Violation(
+                    file,
+                    "forbidden-path",
                     $"Path matches internal-only pattern '{pattern}'"));
                 break; // one violation per file per path check is enough
             }
@@ -337,14 +371,18 @@ public static class RepositoryGuard
         // provenance.md: media or image file must not be tracked.
         if (MediaPathPattern.IsMatch(file))
         {
-            violations.Add(new Violation(file, "media-or-capture",
+            violations.Add(new Violation(
+                file,
+                "media-or-capture",
                 "Media or image file must not be tracked"));
         }
 
         // provenance.md: suspicious generated-payload path.
         if (SuspiciousPayloadPathPattern.IsMatch(file))
         {
-            violations.Add(new Violation(file, "suspicious-generated-payload",
+            violations.Add(new Violation(
+                file,
+                "suspicious-generated-payload",
                 "Generated-payload path requires explicit allowlisting"));
         }
     }
@@ -357,7 +395,8 @@ public static class RepositoryGuard
     {
         foreach (var file in files)
         {
-            var fullPath = Path.Combine(repoRoot,
+            var fullPath = Path.Combine(
+                repoRoot,
                 file.Replace('/', Path.DirectorySeparatorChar));
             if (!File.Exists(fullPath))
             {

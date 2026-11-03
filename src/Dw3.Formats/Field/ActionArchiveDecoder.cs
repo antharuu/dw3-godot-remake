@@ -75,7 +75,7 @@ public static class ActionArchiveDecoder
         int words = (data.Length - start) / sizeof(ushort);
         for (int cursor = 0; cursor < words;)
         {
-            ushort id = BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(start + cursor * sizeof(ushort), sizeof(ushort)));
+            ushort id = BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(start + (cursor * sizeof(ushort)), sizeof(ushort)));
             if (id == 0)
             {
                 return result;
@@ -89,7 +89,7 @@ public static class ActionArchiveDecoder
             var sequences = new int[5];
             for (int direction = 0; direction < sequences.Length; direction++)
             {
-                sequences[direction] = BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(start + (cursor + direction + 1) * sizeof(ushort), sizeof(ushort)));
+                sequences[direction] = BinaryPrimitives.ReadUInt16LittleEndian(data.Slice(start + ((cursor + direction + 1) * sizeof(ushort)), sizeof(ushort)));
             }
 
             result.Add(new ActionAnimationSet(id, sequences));
@@ -150,7 +150,7 @@ public static class ActionArchiveDecoder
     private static bool TryReadFrame(ReadOnlySpan<byte> data, int start, int cursor, int words, int frameCount, out ActionAnimationRecord record)
     {
         record = default!;
-        int duration = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(start + cursor * sizeof(int), sizeof(int)));
+        int duration = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(start + (cursor * sizeof(int)), sizeof(int)));
         if (duration is 0 or -1)
         {
             return false;
@@ -161,14 +161,14 @@ public static class ActionArchiveDecoder
             throw new FormatException("action sequence has an invalid or truncated frame record");
         }
 
-        int frame = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(start + (cursor + 1) * sizeof(int), sizeof(int)));
+        int frame = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(start + ((cursor + 1) * sizeof(int)), sizeof(int)));
         if (frame < 0 || frame >= frameCount)
         {
             throw new FormatException("action sequence frame index outside archive range");
         }
 
-        int offsetX = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(start + (cursor + 2) * sizeof(int), sizeof(int)));
-        int offsetY = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(start + (cursor + 3) * sizeof(int), sizeof(int)));
+        int offsetX = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(start + ((cursor + 2) * sizeof(int)), sizeof(int)));
+        int offsetY = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(start + ((cursor + 3) * sizeof(int)), sizeof(int)));
         record = new ActionAnimationRecord(duration, frame, offsetX, offsetY);
         return true;
     }
@@ -182,7 +182,7 @@ public static class ActionArchiveDecoder
     /// <returns>The completed sequence with its loop or end terminator.</returns>
     private static ActionAnimationSequence BuildTerminator(ReadOnlySpan<byte> data, int start, int cursor, int words, List<ActionAnimationRecord> records)
     {
-        int duration = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(start + cursor * sizeof(int), sizeof(int)));
+        int duration = BinaryPrimitives.ReadInt32LittleEndian(data.Slice(start + (cursor * sizeof(int)), sizeof(int)));
         if (cursor != words - 1)
         {
             throw new FormatException("action sequence terminator is not final");

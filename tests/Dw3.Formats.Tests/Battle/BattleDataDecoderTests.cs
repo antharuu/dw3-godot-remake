@@ -12,7 +12,10 @@ public sealed class BattleDataDecoderTests
         byte[] bytes = new byte[BattleDataDecoder.DigimonStride];
         BinaryPrimitives.WriteUInt16LittleEndian(bytes, 383);
         for (int i = 0; i < 6; i++)
-            BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(2 + i * 2), (ushort)(10 + i));
+        {
+            BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(2 + (i * 2)), (ushort)(10 + i));
+        }
+
         BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(0x2A), 77);
         bytes[0x3C] = 9;
         bytes[0x55] = 21;
@@ -34,7 +37,10 @@ public sealed class BattleDataDecoderTests
         byte[] bytes = new byte[BattleDataDecoder.TechniqueStride];
         BinaryPrimitives.WriteUInt16LittleEndian(bytes, 19);
         BinaryPrimitives.WriteUInt16LittleEndian(bytes.AsSpan(2), 88);
-        for (int i = 0; i < 14; i++) bytes[4 + i] = (byte)(i + 1);
+        for (int i = 0; i < 14; i++)
+        {
+            bytes[4 + i] = (byte)(i + 1);
+        }
 
         TechniqueRecord record = BattleDataDecoder.DecodeTechnique(bytes, 0);
 

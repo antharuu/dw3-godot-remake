@@ -25,7 +25,7 @@ public sealed class StageObjectDecoderTests
         Assert.Equal([(1, 0), (1, 1)], set.Objects[1].Frames.Select(frame => (frame.FrameId, frame.ClutRow)));
         Assert.Equal(0x1111, set.Objects[1].Frames[0].Image.Words[0]);
         Assert.Equal(0x2222, set.Objects[1].Frames[1].Image.Words[0]);
-        Assert.Equal(0x800A5DE0u + TableOffset + 3 * 18, set.Objects[1].Tile.SourceAddress);
+        Assert.Equal(0x800A5DE0u + TableOffset + (3 * 18), set.Objects[1].Tile.SourceAddress);
     }
 
     [Fact]
@@ -59,16 +59,22 @@ public sealed class StageObjectDecoderTests
             0xAE220010u,                       // sw v0, 0x10(s1)
             0x03E00008u, 0,                    // jr ra ; nop
         ];
-        byte[] overlay = new byte[(TableOffset + 18 * (tiles.Length + 1) + 3) / 4 * 4];
+        byte[] overlay = new byte[(TableOffset + (18 * (tiles.Length + 1)) + 3) / 4 * 4];
         for (int index = 0; index < code.Length; index++)
+        {
             BinaryPrimitives.WriteUInt32LittleEndian(overlay.AsSpan(index * 4), code[index]);
+        }
+
         for (int index = 0; index < tiles.Length; index++)
         {
             var tile = tiles[index];
-            StageTileDecoderTests.WriteTile(overlay, TableOffset + 18 * index,
+            StageTileDecoderTests.WriteTile(
+                overlay,
+                TableOffset + (18 * index),
                 [tile.Visible, tile.Anim, 1, 0, tile.Frame, tile.Cycle, tile.First, tile.Last, 0, 0],
                 [0, 0, 0, 0]);
         }
+
         return overlay;
     }
 

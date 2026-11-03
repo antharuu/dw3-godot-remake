@@ -54,6 +54,7 @@ public sealed class EncounterController
     public void RollBattleSteps()
     {
         var value = _rng.Draw() % 2304;
+
         // Under 0x100 the raw value is the countdown (0..255); otherwise (value + 0x100) / 2
         // yields 256..1279. The two branches meet at 256 with no gap and no overlap, so the
         // countdown always lands in 0..1279 (raw values under 0x100, or 0x100 to 0x4FF).

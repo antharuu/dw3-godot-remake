@@ -55,13 +55,16 @@ internal static class WaterExtractionStep
                 }
             }
 
-            new DataPackWriter(outputDirectory).Write(new DataPackMetadata(
+            new DataPackWriter(outputDirectory).Write(
+                new DataPackMetadata(
                 typeof(WaterExtractionStep).Assembly.GetName().Version?.ToString(3) ?? "0.1.0",
                 edition.BinSha1,
                 edition.Label,
-                DateTimeOffset.UtcNow), context => WaterDomainWriter.Write(context, zones, skipped));
+                DateTimeOffset.UtcNow),
+                context => WaterDomainWriter.Write(context, zones, skipped));
             int frames = zones.Sum(zone => zone.Objects.Objects.Sum(item => item.Frames.Count));
-            output.WriteLine(string.Create(CultureInfo.InvariantCulture,
+            output.WriteLine(string.Create(
+                CultureInfo.InvariantCulture,
                 $"{{\"event\":\"domain-complete\",\"domain\":\"{DomainName}\",\"stages\":{zones.Count},\"skipped\":{skipped.Count},\"frames\":{frames}}}"));
             return 0;
         }

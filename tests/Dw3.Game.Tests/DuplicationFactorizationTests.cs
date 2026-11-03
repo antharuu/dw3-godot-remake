@@ -1,5 +1,5 @@
-using Xunit;
 using Dw3Production.Simulation;
+using Xunit;
 
 namespace Dw3.Game.Tests;
 
@@ -22,7 +22,6 @@ public sealed class DuplicationFactorizationTests
     // -------------------------------------------------------------------------
     // F1 — InputState.DirectionFrom
     // -------------------------------------------------------------------------
-
     [Theory]
     [InlineData(true, false, false, false, SemanticDirection.Up)]
     [InlineData(true, false, false, true, SemanticDirection.UpRight)]
@@ -82,7 +81,6 @@ public sealed class DuplicationFactorizationTests
     // -------------------------------------------------------------------------
     // F2 — GameState.RestoreFieldControl
     // -------------------------------------------------------------------------
-
     [Fact]
     public void RestoreFieldControl_ClearsClimbAndAnimation()
     {
