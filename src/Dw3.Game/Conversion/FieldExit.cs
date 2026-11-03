@@ -1,6 +1,6 @@
 namespace Dw3Production.Conversion;
 
-/// <summary>A disc-decoded SLOT_EXIT (Type 0 or 1): the destination zone, spawn position and
+/// <summary>A disc-decoded exit slot (slot type 0 or 1): the destination zone, spawn position and
 /// optional story condition that gates the transition until progress reaches the required state.</summary>
 public sealed record FieldExit(int Slot, string Destination, int X, int Y, int Facing, int? Condition = null, string ConditionStatus = "unconditional")
 {

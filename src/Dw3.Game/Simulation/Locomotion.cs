@@ -102,8 +102,8 @@ public static class Locomotion
         var mirror = (cell & 0x10) != 0;
         var effective = mirror ? MirrorDirections[sourceDirection] : sourceDirection;
         var vector = DirectionVectors[row, effective];
-        // The source passes the complete 8.8 actor speed to getWalkStep for RUN and
-        // one quarter for WALK. Convert its 50 Hz PAL task cadence to M1's fixed 60 Hz.
+        // The original walk step uses the complete 8.8 actor speed for RUN and
+        // one quarter for WALK. Convert its 50 Hz PAL task cadence to the fixed 60 Hz tick.
         var scale = state.IsRunning ? SourceRunWorldUnitsPerSimulationTick : SourceWalkWorldUnitsPerSimulationTick;
         var step = new Vector2(vector.X * scale * (mirror ? -1 : 1) / 4096f, vector.Y * scale / 4096f);
         var meta = new FloorMeta(cell, row, mirror, sourceDirection);

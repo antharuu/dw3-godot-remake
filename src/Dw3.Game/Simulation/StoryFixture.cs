@@ -4,7 +4,7 @@ namespace Dw3Production.Simulation;
 
 /// <summary>
 /// Test-time fixture that preloads the exploration story progress so that the warp
-/// state machine admits gated zones during integration probes. GENJI_BEATEN is the
+/// state machine admits gated zones during integration probes. The Genji-beaten value is the
 /// minimum progress value that opens all story-gated exits in Asuka City.
 /// </summary>
 public static class StoryFixture

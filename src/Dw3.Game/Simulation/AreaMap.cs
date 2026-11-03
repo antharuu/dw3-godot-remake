@@ -4,8 +4,8 @@ namespace Dw3Production.Simulation;
 
 /// <summary>
 /// Immutable byte grid of battle area cells for one field zone. Each cell holds the
-/// battle area index (1..4), or 0 for "no area". Mirrors FIELD_MAP_AREAS in the source
-/// map layout. The lookup truncates the fixed-point position with &gt;&gt; 8 (floor).
+/// battle area index (1..4), or 0 for "no area". Mirrors the battle area layer of the
+/// stage map on the disc. The lookup truncates the fixed-point position with &gt;&gt; 8 (floor).
 /// </summary>
 public sealed class AreaMap
 {
@@ -42,7 +42,7 @@ public sealed class AreaMap
 
     /// <summary>
     /// The battle area (1..4) at the actor's tile, or 0 (no area). Mirrors
-    /// FIELDSTG_getMapCell(FIELD_MAP_AREAS): the fixed-point tile is truncated with &gt;&gt; 8.
+    /// the original map cell lookup: the fixed-point tile is truncated with &gt;&gt; 8.
     /// </summary>
     /// <param name="position">World position; fractional parts are truncated (floor) to get the tile.</param>
     /// <returns>Battle area index 1..4, or 0 for no area.</returns>

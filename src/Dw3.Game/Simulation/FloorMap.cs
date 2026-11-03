@@ -5,7 +5,7 @@ namespace Dw3Production.Simulation;
 /// <summary>
 /// Immutable byte grid of walkable floor cells for one field zone. Cell 0 is void; any
 /// non-zero value is a classified slope row (low nibble) with an optional mirror flag
-/// (bit 4). Mirrors FIELD_MAP_FLOOR in the source map layout; lookup truncates the
+/// (bit 4). Mirrors the floor layer of the stage map on the disc; lookup truncates the
 /// fixed-point position with &gt;&gt; 8 (floor).
 /// </summary>
 public sealed class FloorMap
@@ -50,7 +50,7 @@ public sealed class FloorMap
 
     /// <summary>
     /// Returns the raw floor byte at the tile containing <paramref name="position"/>.
-    /// Truncates fractional parts (floor) to get the tile index, matching FIELDSTG_getMapCell.
+    /// Truncates fractional parts (floor) to get the tile index, matching the original map cell lookup.
     /// </summary>
     /// <param name="position">World position; must be within the map bounds.</param>
     /// <returns>The raw floor cell byte (0 = void, non-zero = classified slope).</returns>

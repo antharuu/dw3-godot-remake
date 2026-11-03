@@ -5,7 +5,7 @@ namespace Dw3Production.Simulation;
 /// <summary>
 /// Immutable byte grid of warp trigger cells for one field zone. Each cell encodes
 /// a slot index (bits 4..0) and a source facing direction (bits 7..5). Cell 0 means
-/// no trigger. Mirrors FIELD_MAP_TRIGGERS in the source map layout.
+/// no trigger. Mirrors the trigger layer of the stage map on the disc.
 /// </summary>
 public sealed class TriggerMap
 {

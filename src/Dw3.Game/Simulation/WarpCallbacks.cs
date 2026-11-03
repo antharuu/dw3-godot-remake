@@ -12,8 +12,8 @@ namespace Dw3Production.Simulation;
 /// <param name="ApplyScene">Commits the loaded zone as the current scene.</param>
 /// <param name="Info">Logs an informational line (warp state transitions).</param>
 /// <param name="Warn">Logs a warning; first argument is the key, second is the message.</param>
-/// <param name="StartClimb">Dispatches a SLOT_CLIMB_UP or SLOT_CLIMB_DOWN action.</param>
-/// <param name="StartDrop">Dispatches a SLOT_DROP action; null when drops are not supported.</param>
+/// <param name="StartClimb">Dispatches a climb-up or climb-down slot (slot types 2 and 3) with its trigger direction.</param>
+/// <param name="StartDrop">Dispatches a drop slot (slot type 4) with its trigger direction; null when drops are not supported.</param>
 public sealed record WarpCallbacks(
     Func<string, FieldZone> LoadTarget,
     Action<FieldZone> ApplyScene,
