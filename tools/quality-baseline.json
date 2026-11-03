@@ -4,7 +4,7 @@
     "linePercent": {
       "Dw3.Data": 96.53,
       "Dw3.Disc": 93.13,
-      "Dw3.Extractor": 41.05,
+      "Dw3.Extractor": 41.11,
       "Dw3.Formats": 80.77
     }
   },
@@ -94,18 +94,6 @@
       "count": 1
     },
     {
-      "rule": "S1075",
-      "project": "Dw3.Disc",
-      "folder": ".",
-      "count": 1
-    },
-    {
-      "rule": "S108",
-      "project": "Dw3.Data",
-      "folder": ".",
-      "count": 2
-    },
-    {
       "rule": "S108",
       "project": "Dw3.Game.Tests",
       "folder": ".",
@@ -190,12 +178,6 @@
       "count": 4
     },
     {
-      "rule": "S2737",
-      "project": "Dw3.Data",
-      "folder": ".",
-      "count": 2
-    },
-    {
       "rule": "S3011",
       "project": "Dw3.Game",
       "folder": ".",
@@ -212,12 +194,6 @@
       "project": "Dw3.Extractor",
       "folder": ".",
       "count": 2
-    },
-    {
-      "rule": "S3267",
-      "project": "Dw3.Disc",
-      "folder": ".",
-      "count": 1
     },
     {
       "rule": "S3267",
@@ -286,12 +262,6 @@
       "count": 5
     },
     {
-      "rule": "S3376",
-      "project": "Dw3.Data",
-      "folder": ".",
-      "count": 4
-    },
-    {
       "rule": "S3398",
       "project": "Dw3.Game.Tests",
       "folder": ".",
@@ -337,12 +307,6 @@
       "rule": "S3973",
       "project": "Dw3.Game",
       "folder": "Diagnostics",
-      "count": 1
-    },
-    {
-      "rule": "S6444",
-      "project": "Dw3.Disc",
-      "folder": ".",
       "count": 1
     },
     {
@@ -416,12 +380,6 @@
       "project": "Dw3.Analyzers.Tests",
       "folder": ".",
       "count": 1
-    },
-    {
-      "rule": "SA1116",
-      "project": "Dw3.Disc",
-      "folder": ".",
-      "count": 22
     },
     {
       "rule": "SA1116",
@@ -500,12 +458,6 @@
       "project": "Dw3.Repository.Tests",
       "folder": ".",
       "count": 12
-    },
-    {
-      "rule": "SA1117",
-      "project": "Dw3.Disc",
-      "folder": ".",
-      "count": 3
     },
     {
       "rule": "SA1117",
@@ -611,12 +563,6 @@
     },
     {
       "rule": "SA1118",
-      "project": "Dw3.Disc",
-      "folder": ".",
-      "count": 1
-    },
-    {
-      "rule": "SA1118",
       "project": "Dw3.Disc.Tests",
       "folder": ".",
       "count": 1
@@ -713,18 +659,6 @@
     },
     {
       "rule": "SA1201",
-      "project": "Dw3.Data",
-      "folder": ".",
-      "count": 1
-    },
-    {
-      "rule": "SA1201",
-      "project": "Dw3.Disc",
-      "folder": ".",
-      "count": 1
-    },
-    {
-      "rule": "SA1201",
       "project": "Dw3.Extractor",
       "folder": ".",
       "count": 2
@@ -800,12 +734,6 @@
       "project": "Dw3.Analyzers",
       "folder": ".",
       "count": 2
-    },
-    {
-      "rule": "SA1202",
-      "project": "Dw3.Data",
-      "folder": ".",
-      "count": 1
     },
     {
       "rule": "SA1202",
@@ -926,12 +854,6 @@
       "project": "Dw3.Analyzers.Tests",
       "folder": ".",
       "count": 1
-    },
-    {
-      "rule": "SA1204",
-      "project": "Dw3.Data",
-      "folder": ".",
-      "count": 2
     },
     {
       "rule": "SA1204",
@@ -1091,12 +1013,6 @@
     },
     {
       "rule": "SA1407",
-      "project": "Dw3.Disc",
-      "folder": ".",
-      "count": 1
-    },
-    {
-      "rule": "SA1407",
       "project": "Dw3.Disc.Tests",
       "folder": ".",
       "count": 1
@@ -1231,12 +1147,6 @@
       "rule": "SA1414",
       "project": "Dw3.Formats",
       "folder": "Field",
-      "count": 2
-    },
-    {
-      "rule": "SA1501",
-      "project": "Dw3.Data",
-      "folder": ".",
       "count": 2
     },
     {
@@ -1610,18 +1520,6 @@
       "project": "Dw3.Analyzers.Tests",
       "folder": ".",
       "count": 1
-    },
-    {
-      "rule": "SA1515",
-      "project": "Dw3.Data",
-      "folder": ".",
-      "count": 3
-    },
-    {
-      "rule": "SA1515",
-      "project": "Dw3.Disc",
-      "folder": ".",
-      "count": 3
     },
     {
       "rule": "SA1515",
