@@ -25,6 +25,13 @@ public sealed class BattleModel
     private readonly BattleModelLighting _lighting = new();
     private bool _painterLayerActive;
 
+    /// <summary>Initializes a new instance of the <see cref="BattleModel"/> class after every decoded component has been validated and built.</summary>
+    /// <param name="root">Scene node that owns the model hierarchy.</param>
+    /// <param name="skeleton">Bone hierarchy and animation tracks for the model.</param>
+    /// <param name="face">Texture-page animator for facial regions.</param>
+    /// <param name="motions">Recovered motion command streams indexed by motion number.</param>
+    /// <param name="motion">State machine that advances the selected motion stream.</param>
+    /// <param name="meshes">Built mesh surfaces and their retained source metadata.</param>
     private BattleModel(Node3D root, BattleSkeleton skeleton, BattleFaceAnimator face, List<List<List<int>>> motions, BattleMotionMachine motion, BattleMeshBuilder meshes)
     {
         Root = root;
@@ -47,14 +54,19 @@ public sealed class BattleModel
         remove => _face.PageChanged -= value;
     }
 
+    /// <summary>Gets the optional stage background colour recovered with a fight-stage model.</summary>
     public Color? StageBgColor { get; private set; }
 
+    /// <summary>Gets the root node containing bones and mesh instances for this model.</summary>
     public Node3D Root { get; }
 
+    /// <summary>Gets a value indicating whether the model root is currently visible to the battle viewport.</summary>
     public bool Visible => Root.Visible;
 
+    /// <summary>Gets the number of decoded bones in the hierarchy.</summary>
     public int BoneCount { get; }
 
+    /// <summary>Gets the number of mesh instances emitted from the model geometry.</summary>
     public int MeshCount { get; }
 
     /// <summary>Gets polygons whose source 0x9 command disabled new UV loading but which still
@@ -70,16 +82,22 @@ public sealed class BattleModel
     /// for a fight stage (which has no fighter camera).</summary>
     public IReadOnlyList<BattleCameraView> Cameras { get; private set; } = [];
 
+    /// <summary>Gets the fighter identifier embedded in a fighter model, or zero for a stage.</summary>
     public int FighterId { get; private set; }
 
+    /// <summary>Gets the recovered placement distance in source coordinate units.</summary>
     public int Distance { get; private set; }
 
+    /// <summary>Gets the recovered placement height in source coordinate units.</summary>
     public int Height { get; private set; }
 
+    /// <summary>Gets the motion state machine, when the model contains an animation stream.</summary>
     public BattleMotionMachine? Motion { get; }
 
+    /// <summary>Gets stage directional lights and ambient colour when this model is a battle stage.</summary>
     public BattleLightSet? StageLights { get; private set; }
 
+    /// <summary>Gets the number of independently animated face regions.</summary>
     public int FacePartCount => _face.PartCount;
 
     /// <summary>Gets bone indices which the source scale threshold currently suppresses.</summary>
@@ -91,6 +109,10 @@ public sealed class BattleModel
     /// <summary>Loads a battle-model conversion from <paramref name="jsonPath"/>, building the
     /// model hierarchy as a child of <paramref name="parent"/>. The texture images live beside
     /// the JSON. Rejects a missing file, wrong format or a changed motion-1 invariant.</summary>
+    /// <param name="parent">Scene node that receives the new model root.</param>
+    /// <param name="jsonPath">Path to the extracted model JSON and sibling texture images.</param>
+    /// <returns>A fully built model with its initial face texture applied.</returns>
+    /// <exception cref="InvalidOperationException">The extracted model contract is missing or invalid.</exception>
     public static BattleModel Load(Node3D parent, string jsonPath)
     {
         if (!File.Exists(jsonPath))
@@ -132,34 +154,45 @@ public sealed class BattleModel
         return model;
     }
 
-    /// <summary>Whether a surface is drawn in Godot's opaque pass (depth written). Every
+    /// <summary>Determines whether a surface is drawn in Godot's opaque pass with depth writes. Every
     /// non-ABR primitive is opaque on the PS1: only CLUT word 0x0000 is cut out.</summary>
+    /// <param name="material">Material whose blend and cutout state is inspected.</param>
+    /// <returns><see langword="true"/> when the material belongs to the opaque pass.</returns>
     public static bool IsOpaqueMaterial(ShaderMaterial material) => BattlePs1Material.IsOpaque(material);
 
-    /// <summary>PS1 libgs/GTE uses Y down and Z forward. Godot uses Y up and looks down -Z.
+    /// <summary>Converts a source-space position to Godot coordinates. PS1 libgs/GTE uses Y down and Z forward. Godot uses Y up and looks down -Z.
     /// The two sign changes preserve handedness and face winding.</summary>
+    /// <param name="value">Position expressed in source fixed coordinate units.</param>
+    /// <returns>The position converted to Godot world units.</returns>
     public static Vector3 Ps1Position(Vector3 value) =>
         new Vector3(value.X, -value.Y, -value.Z) / BattleSceneMath.Ps1UnitsPerGodotUnit;
 
-    /// <summary>Binds the current GsSetFlatLight/SetBackColor state. Every pose rebuilds only
+    /// <summary>Binds the current directional and ambient light state. Every pose rebuilds only
     /// its vertex colours: texture page, source UVs, flat polygons and Gouraud sharing stay intact.</summary>
+    /// <param name="lights">Stage lights to apply, or <see langword="null"/> to clear them.</param>
     public void SetLighting(BattleLightSet? lights)
     {
         _lighting.LightSet = lights;
         RefreshLighting();
     }
 
-    /// <summary>the decoded mesh contract setColor(mode 1): non-lit primitive command colours are replaced.
+    /// <summary>Applies the model-colour path for non-lit primitives. A non-null colour replaces their command colours.
     /// A null colour restores the normal colorMode 0 path.</summary>
+    /// <param name="color">Replacement colour, or <see langword="null"/> to restore per-primitive colours.</param>
     public void SetModelColor(Color? color)
     {
         _lighting.ModelColor = color;
         RefreshLighting();
     }
 
+    /// <summary>Gets a compact diagnostic description of the latest lit-vertex calculation.</summary>
+    /// <returns>A stable summary of lighting inputs and resulting vertex colours.</returns>
     public string LightingVertexSummary() => _lighting.VertexSummary;
 
     /// <summary>Transforms one retained source vertex through its live bone hierarchy.</summary>
+    /// <param name="bone">Zero-based bone index that owns the vertex.</param>
+    /// <param name="local">Vertex position in the bone's local source space.</param>
+    /// <returns>The vertex position in the model's current world space.</returns>
     public Vector3 WorldPosition(int bone, Vector3 local) => _skeleton.WorldPosition(bone, local);
 
     /// <summary>
@@ -167,6 +200,7 @@ public sealed class BattleModel
     /// Quads remain four-corner primitives even though the existing Godot surface expands them
     /// to two triangles. Colours are those calculated by the latest RefreshLighting call.
     /// </summary>
+    /// <returns>Source-order primitives retaining their original corner grouping and current colours.</returns>
     public IEnumerable<SourcePolygon> EnumeratePolygons()
     {
         foreach (var state in _sourcePolygons.Where(polygon => polygon.Bone != 0).OrderBy(polygon => polygon.Bone).ThenBy(polygon => polygon.Command))
@@ -182,29 +216,45 @@ public sealed class BattleModel
         }
     }
 
-    /// <summary>Every mutable 256x256 tpage currently used by this model.</summary>
+    /// <summary>Enumerates every mutable 256 by 256 texture page currently used by this model.</summary>
+    /// <returns>Texture-page keys paired with their writable images.</returns>
     public IEnumerable<(int TextureKey, Image Image)> EnumerateTexturePages() => _face.Pages;
 
+    /// <summary>Gets the number of face texture texels changed since the model was loaded.</summary>
+    /// <returns>The accumulated count of modified face-page texels.</returns>
     public int FaceChangedTexels() => _face.ChangedTexels();
 
+    /// <summary>Gets a diagnostic summary of the current face-animation state.</summary>
+    /// <returns>A stable description including this model's fighter identifier.</returns>
     public string FaceSummary() => _face.Summary(FighterId);
 
+    /// <summary>Sets the face blink countdown for a deterministic visual probe.</summary>
+    /// <param name="timer">Countdown expressed in source animation frames.</param>
     public void SetFaceBlinkTimerForProbe(int timer) => _face.SetBlinkTimer(timer);
 
+    /// <summary>Supplies deterministic random values to the face animator during a visual probe.</summary>
+    /// <param name="random">Callback that provides the next source-range random value.</param>
     public void SetFaceRandomForProbe(Func<int> random) => _face.SetRandom(random);
 
     /// <summary>Poses the hierarchy at a source frame. This is the same local construction as
     /// the decoded mesh contract: ZYX rotation, fixed-point scale (/4096), translation, then parent composition
     /// through the Godot hierarchy. A source-negligible scale hides that bone and its mesh.</summary>
+    /// <param name="frame">Source animation frame to sample.</param>
     public void Pose(int frame)
     {
         _skeleton.Pose(frame);
         RefreshLighting();
     }
 
+    /// <summary>Selects a one-based source motion in the model's motion state machine.</summary>
+    /// <param name="motion">One-based recovered motion number.</param>
+    /// <param name="restart">Whether to reset the selected motion to its first step.</param>
+    /// <exception cref="InvalidOperationException">The model has no motion state machine.</exception>
     public void SetMotion(int motion, bool restart) => (Motion ?? throw new InvalidOperationException("motion state unavailable")).SetMotion(motion, restart);
 
     /// <summary>Advances PAL frames and applies poseBones or blendBone to this hierarchy.</summary>
+    /// <param name="framesElapsed">Number of PAL animation frames to advance.</param>
+    /// <exception cref="InvalidOperationException">The model has no motion state machine.</exception>
     public void Step(int framesElapsed)
     {
         var state = Motion ?? throw new InvalidOperationException("motion state unavailable");
@@ -223,6 +273,8 @@ public sealed class BattleModel
     }
 
     /// <summary>Whether a particular source bone is visible after the most recent pose.</summary>
+    /// <param name="index">Zero-based bone index to inspect.</param>
+    /// <returns><see langword="true"/> when the bone survived the latest scale threshold.</returns>
     public bool IsBoneVisible(int index) => _skeleton.IsVisible(index);
 
     /// <summary>Probe-only legacy comparison: restores all bones to identity scale and visible.
@@ -230,6 +282,7 @@ public sealed class BattleModel
     public void ShowAllBonesForProbe() => _skeleton.ShowAll();
 
     /// <summary>Probe-only visibility toggle for the model's rendered mesh instances.</summary>
+    /// <param name="visible">Whether the model surfaces should be visible in the probe capture.</param>
     public void SetVisibleForProbe(bool visible)
     {
         Root.Visible = visible;
@@ -241,6 +294,7 @@ public sealed class BattleModel
 
     /// <summary>Moves opaque and PSX ABR-0 primitives to BattleModelLayer. Later ABR modes
     /// stay on their existing Godot surfaces until their source blend equations are implemented.</summary>
+    /// <param name="active">Whether opaque and ABR-0 primitives are delegated to the ordering layer.</param>
     public void SetPainterLayerActive(bool active)
     {
         _painterLayerActive = active;
@@ -251,6 +305,7 @@ public sealed class BattleModel
     }
 
     /// <summary>Probe-only culling comparison. Production materials are always restored to Back.</summary>
+    /// <param name="mode">Cull mode to apply to every model surface.</param>
     public void SetCullModeForProbe(BaseMaterial3D.CullModeEnum mode)
     {
         var cullBack = mode == BaseMaterial3D.CullModeEnum.Back;
@@ -267,10 +322,13 @@ public sealed class BattleModel
     /// <summary>Compares ApplyPose's converted Godot basis and scale with the explicit
     /// the decoded mesh contract sequence RotMatrixZYX_gte, ScaleMatrix, then C=diag(1,-1,-1).
     /// The values cover the three principal axes and a non-commuting mixed rotation.</summary>
+    /// <returns>The greatest component difference between the two transform constructions.</returns>
     public float RotationOracleMaxDiff() => _skeleton.RotationOracleMaxDiff();
 
     /// <summary>Compares the Godot screen winding of every emitted source triangle to its source
     /// normal facing test. Both predicates use the active bone's world transform.</summary>
+    /// <param name="camera">Active camera used to project surface triangles.</param>
+    /// <returns>Total inspected triangles and how many have matching winding predicates.</returns>
     public (int Total, int Agree) WindingAgreement(Camera3D camera)
     {
         var total = 0;
@@ -298,6 +356,8 @@ public sealed class BattleModel
 
     /// <summary>The ordered keyframe numbers a motion plays (the non-blend steps of
     /// FIGHTSTG_setMotion), for posing an attack/technique/idle at a real keyframe.</summary>
+    /// <param name="motionIndex">Zero-based index in the recovered motion list.</param>
+    /// <returns>Keyframe numbers for non-blend steps, or an empty list for an invalid index.</returns>
     public IReadOnlyList<int> MotionKeyframes(int motionIndex)
     {
         var frames = new List<int>();
@@ -328,15 +388,24 @@ public sealed class BattleModel
         return frames;
     }
 
+    /// <summary>Recalculates lit vertex colours after a pose or lighting-state change.</summary>
     private void RefreshLighting() => _lighting.Refresh(_litSurfaces, _skeleton, FighterId);
 
+    /// <summary>Advances face animation with the currently selected motion number.</summary>
+    /// <param name="framesElapsed">Number of PAL animation frames to advance.</param>
     private void UpdateFace(int framesElapsed) => _face.Update(framesElapsed, Motion?.Motion ?? 1);
 
     /// <summary>One decoded fighter camera view.</summary>
     public readonly record struct BattleCameraView(int[] CamPos, int[] CamRef, int Proj);
 
+    /// <summary>One directional light from a recovered battle-stage lighting set.</summary>
+    /// <param name="Direction">Light direction in source-derived model coordinates.</param>
+    /// <param name="Rgb">Linear RGB intensity applied by the vertex-lighting pass.</param>
     public readonly record struct BattleLight(Vector3 Direction, Color Rgb);
 
+    /// <summary>Directional lights and ambient contribution used to shade a battle scene.</summary>
+    /// <param name="Lights">Ordered directional light records from the stage conversion.</param>
+    /// <param name="Ambient">RGB ambient contribution added to every lit vertex.</param>
     public readonly record struct BattleLightSet(IReadOnlyList<BattleLight> Lights, Color Ambient);
 
     /// <summary>One source primitive in the decoded mesh contract order, retaining its un-split quad and the
