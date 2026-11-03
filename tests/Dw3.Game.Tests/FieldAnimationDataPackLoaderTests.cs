@@ -104,7 +104,7 @@ public sealed class FieldAnimationDataPackLoaderTests : IDisposable
     {
         BuildPack();
         File.Delete(Path.Combine(_root, "data", "icon", "frame-23.png"));
-        Assert.Throws<DataPackCorrupt>(() => new FieldAnimationDataPackLoader(new DataPackReader(_root)));
+        Assert.Throws<DataPackCorruptException>(() => new FieldAnimationDataPackLoader(new DataPackReader(_root)));
     }
 
     private void BuildPack(int skipDropSet = -1, int skipIconFrame = -1, int iconLoopTarget = 1, int skipCueRow = -1, bool waterFrames = true)

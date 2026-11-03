@@ -54,7 +54,7 @@ public sealed class FieldDataPackLoaderTests : IDisposable
         BuildPack();
         File.Delete(Path.Combine(_root, "data", "zones", "S200", "trigger-cells.png"));
 
-        DataPackCorrupt error = Assert.Throws<DataPackCorrupt>(() => new FieldDataPackLoader(new DataPackReader(_root)));
+        DataPackCorruptException error = Assert.Throws<DataPackCorruptException>(() => new FieldDataPackLoader(new DataPackReader(_root)));
 
         Assert.Contains("trigger", error.Message, StringComparison.OrdinalIgnoreCase);
     }

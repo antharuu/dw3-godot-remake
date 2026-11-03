@@ -24,7 +24,7 @@ public sealed class DataPackTests : IDisposable
     [Fact]
     public void ReaderRejectsMissingPack()
     {
-        Assert.Throws<DataPackMissing>(() => new DataPackReader(_root).OpenDatabase());
+        Assert.Throws<DataPackMissingException>(() => new DataPackReader(_root).OpenDatabase());
     }
 
     [Fact]
@@ -32,7 +32,7 @@ public sealed class DataPackTests : IDisposable
     {
         Directory.CreateDirectory(Path.Combine(_root, "data"));
 
-        var exception = Assert.Throws<DataPackIncomplete>(() => new DataPackReader(_root).OpenDatabase());
+        var exception = Assert.Throws<DataPackIncompleteException>(() => new DataPackReader(_root).OpenDatabase());
 
         Assert.Contains("database", exception.Message, StringComparison.OrdinalIgnoreCase);
     }
@@ -51,7 +51,7 @@ public sealed class DataPackTests : IDisposable
             command.ExecuteNonQuery();
         }
 
-        Assert.Throws<DataPackSchemaMismatch>(() => new DataPackReader(_root).OpenDatabase());
+        Assert.Throws<DataPackSchemaMismatchException>(() => new DataPackReader(_root).OpenDatabase());
     }
 
     [Fact]
@@ -79,7 +79,7 @@ public sealed class DataPackTests : IDisposable
         });
         File.Delete(Path.Combine(_root, "data", "images", "field", "1.png"));
 
-        Assert.Throws<DataPackCorrupt>(() => new DataPackReader(_root).OpenDatabase());
+        Assert.Throws<DataPackCorruptException>(() => new DataPackReader(_root).OpenDatabase());
     }
 
     [Fact]
@@ -135,7 +135,7 @@ public sealed class DataPackTests : IDisposable
     {
         CreateRawPack(DataPackSchema.Create);
 
-        var exception = Assert.Throws<DataPackIncomplete>(() => new DataPackReader(_root).OpenDatabase());
+        var exception = Assert.Throws<DataPackIncompleteException>(() => new DataPackReader(_root).OpenDatabase());
 
         Assert.Contains("completion metadata", exception.Message, StringComparison.Ordinal);
     }
@@ -149,7 +149,7 @@ public sealed class DataPackTests : IDisposable
             InsertMeta(connection, DataPackSchema.Version, edition: " ");
         });
 
-        var exception = Assert.Throws<DataPackIncomplete>(() => new DataPackReader(_root).OpenDatabase());
+        var exception = Assert.Throws<DataPackIncompleteException>(() => new DataPackReader(_root).OpenDatabase());
 
         Assert.Contains("incomplete metadata", exception.Message, StringComparison.Ordinal);
     }
@@ -164,7 +164,7 @@ public sealed class DataPackTests : IDisposable
             InsertMeta(connection, DataPackSchema.Version, edition: "second");
         });
 
-        var exception = Assert.Throws<DataPackCorrupt>(() => new DataPackReader(_root).OpenDatabase());
+        var exception = Assert.Throws<DataPackCorruptException>(() => new DataPackReader(_root).OpenDatabase());
 
         Assert.Contains("more than one metadata record", exception.Message, StringComparison.Ordinal);
     }
@@ -174,7 +174,7 @@ public sealed class DataPackTests : IDisposable
     {
         CreateRawPack(connection => Execute(connection, "CREATE TABLE unrelated (id INTEGER)"));
 
-        var exception = Assert.Throws<DataPackIncomplete>(() => new DataPackReader(_root).OpenDatabase());
+        var exception = Assert.Throws<DataPackIncompleteException>(() => new DataPackReader(_root).OpenDatabase());
 
         Assert.Contains("metadata table", exception.Message, StringComparison.Ordinal);
         Assert.IsType<SqliteException>(exception.InnerException);
@@ -189,7 +189,7 @@ public sealed class DataPackTests : IDisposable
             InsertMeta(connection, DataPackSchema.Version, edition: "test-edition");
         });
 
-        var exception = Assert.Throws<DataPackIncomplete>(() => new DataPackReader(_root).OpenDatabase());
+        var exception = Assert.Throws<DataPackIncompleteException>(() => new DataPackReader(_root).OpenDatabase());
 
         Assert.Contains("image manifest", exception.Message, StringComparison.Ordinal);
     }
@@ -210,7 +210,7 @@ public sealed class DataPackTests : IDisposable
             command.ExecuteNonQuery();
         });
 
-        var exception = Assert.Throws<DataPackCorrupt>(() => new DataPackReader(_root).OpenDatabase());
+        var exception = Assert.Throws<DataPackCorruptException>(() => new DataPackReader(_root).OpenDatabase());
 
         Assert.IsType<ArgumentException>(exception.InnerException);
     }
@@ -222,7 +222,7 @@ public sealed class DataPackTests : IDisposable
         Directory.CreateDirectory(data);
         File.WriteAllBytes(Path.Combine(data, "dw3.sqlite"), [.. Enumerable.Repeat((byte)0x5A, 4096)]);
 
-        var exception = Assert.Throws<DataPackCorrupt>(() => new DataPackReader(_root).OpenDatabase());
+        var exception = Assert.Throws<DataPackCorruptException>(() => new DataPackReader(_root).OpenDatabase());
 
         Assert.IsType<SqliteException>(exception.InnerException);
     }

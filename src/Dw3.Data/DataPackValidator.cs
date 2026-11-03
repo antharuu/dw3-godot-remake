@@ -15,21 +15,21 @@ internal static class DataPackValidator
     /// </summary>
     /// <param name="dataDirectory">Absolute path of the directory containing <c>dw3.sqlite</c>.</param>
     /// <param name="expectedSchemaVersion">Schema version this runtime requires; checked against the <c>meta</c> row.</param>
-    /// <exception cref="DataPackMissing">Thrown when <paramref name="dataDirectory"/> does not exist.</exception>
-    /// <exception cref="DataPackIncomplete">Thrown when the database file is absent or the <c>meta</c> table is missing or incomplete.</exception>
-    /// <exception cref="DataPackSchemaMismatch">Thrown when the pack schema version differs from <paramref name="expectedSchemaVersion"/>.</exception>
-    /// <exception cref="DataPackCorrupt">Thrown when the SQLite integrity check fails, the metadata count is wrong, or an image file is missing.</exception>
+    /// <exception cref="DataPackMissingException">Thrown when <paramref name="dataDirectory"/> does not exist.</exception>
+    /// <exception cref="DataPackIncompleteException">Thrown when the database file is absent or the <c>meta</c> table is missing or incomplete.</exception>
+    /// <exception cref="DataPackSchemaMismatchException">Thrown when the pack schema version differs from <paramref name="expectedSchemaVersion"/>.</exception>
+    /// <exception cref="DataPackCorruptException">Thrown when the SQLite integrity check fails, the metadata count is wrong, or an image file is missing.</exception>
     internal static void Validate(string dataDirectory, int expectedSchemaVersion)
     {
         if (!Directory.Exists(dataDirectory))
         {
-            throw new DataPackMissing("No extracted data pack is available.");
+            throw new DataPackMissingException("No extracted data pack is available.");
         }
 
         string databasePath = Path.Combine(dataDirectory, "dw3.sqlite");
         if (!File.Exists(databasePath))
         {
-            throw new DataPackIncomplete("The extracted data pack has no database.");
+            throw new DataPackIncompleteException("The extracted data pack has no database.");
         }
 
         try
@@ -51,16 +51,16 @@ internal static class DataPackValidator
         }
         catch (SqliteException exception)
         {
-            throw new DataPackCorrupt("The data-pack database is corrupt.", exception);
+            throw new DataPackCorruptException("The data-pack database is corrupt.", exception);
         }
     }
 
     /// <summary>
-    /// Runs the SQLite <c>PRAGMA quick_check</c> and raises <see cref="DataPackCorrupt"/>
+    /// Runs the SQLite <c>PRAGMA quick_check</c> and raises <see cref="DataPackCorruptException"/>
     /// if the database reports any structural problem.
     /// </summary>
     /// <param name="connection">Open read-only connection to the pack database.</param>
-    /// <exception cref="DataPackCorrupt">Thrown when the integrity check returns a result other than <c>ok</c>.</exception>
+    /// <exception cref="DataPackCorruptException">Thrown when the integrity check returns a result other than <c>ok</c>.</exception>
     private static void VerifyDatabaseIntegrity(SqliteConnection connection)
     {
         using SqliteCommand command = connection.CreateCommand();
@@ -68,7 +68,7 @@ internal static class DataPackValidator
         string result = command.ExecuteScalar() as string ?? string.Empty;
         if (!string.Equals(result, "ok", StringComparison.OrdinalIgnoreCase))
         {
-            throw new DataPackCorrupt("The data-pack database integrity check failed.");
+            throw new DataPackCorruptException("The data-pack database integrity check failed.");
         }
     }
 
@@ -78,9 +78,9 @@ internal static class DataPackValidator
     /// </summary>
     /// <param name="connection">Open read-only connection to the pack database.</param>
     /// <param name="expectedSchemaVersion">Schema version this runtime requires.</param>
-    /// <exception cref="DataPackIncomplete">Thrown when the <c>meta</c> table is absent, has no rows, or contains blank fields.</exception>
-    /// <exception cref="DataPackSchemaMismatch">Thrown when the stored schema version differs from <paramref name="expectedSchemaVersion"/>.</exception>
-    /// <exception cref="DataPackCorrupt">Thrown when the <c>meta</c> table contains more than one row.</exception>
+    /// <exception cref="DataPackIncompleteException">Thrown when the <c>meta</c> table is absent, has no rows, or contains blank fields.</exception>
+    /// <exception cref="DataPackSchemaMismatchException">Thrown when the stored schema version differs from <paramref name="expectedSchemaVersion"/>.</exception>
+    /// <exception cref="DataPackCorruptException">Thrown when the <c>meta</c> table contains more than one row.</exception>
     private static void VerifyMetadata(SqliteConnection connection, int expectedSchemaVersion)
     {
         try
@@ -90,31 +90,31 @@ internal static class DataPackValidator
             using SqliteDataReader reader = command.ExecuteReader();
             if (!reader.Read())
             {
-                throw new DataPackIncomplete("The extracted data pack has no completion metadata.");
+                throw new DataPackIncompleteException("The extracted data pack has no completion metadata.");
             }
 
             int schemaVersion = reader.GetInt32(0);
             if (schemaVersion != expectedSchemaVersion)
             {
-                throw new DataPackSchemaMismatch($"The data pack uses schema version {schemaVersion}, but this runtime requires version {expectedSchemaVersion}.");
+                throw new DataPackSchemaMismatchException($"The data pack uses schema version {schemaVersion}, but this runtime requires version {expectedSchemaVersion}.");
             }
 
             for (int column = 1; column < reader.FieldCount; column++)
             {
                 if (reader.IsDBNull(column) || string.IsNullOrWhiteSpace(reader.GetString(column)))
                 {
-                    throw new DataPackIncomplete("The extracted data pack has incomplete metadata.");
+                    throw new DataPackIncompleteException("The extracted data pack has incomplete metadata.");
                 }
             }
 
             if (reader.Read())
             {
-                throw new DataPackCorrupt("The data pack contains more than one metadata record.");
+                throw new DataPackCorruptException("The data pack contains more than one metadata record.");
             }
         }
         catch (SqliteException exception)
         {
-            throw new DataPackIncomplete("The extracted data pack is missing its metadata table.", exception);
+            throw new DataPackIncompleteException("The extracted data pack is missing its metadata table.", exception);
         }
     }
 
@@ -124,8 +124,8 @@ internal static class DataPackValidator
     /// </summary>
     /// <param name="connection">Open read-only connection to the pack database.</param>
     /// <param name="dataDirectory">Absolute path of the directory containing the extracted image files.</param>
-    /// <exception cref="DataPackIncomplete">Thrown when the <c>pack_images</c> table is absent.</exception>
-    /// <exception cref="DataPackCorrupt">Thrown when a registered image path is invalid or the corresponding file is missing.</exception>
+    /// <exception cref="DataPackIncompleteException">Thrown when the <c>pack_images</c> table is absent.</exception>
+    /// <exception cref="DataPackCorruptException">Thrown when a registered image path is invalid or the corresponding file is missing.</exception>
     private static void VerifyImages(SqliteConnection connection, string dataDirectory)
     {
         try
@@ -143,23 +143,23 @@ internal static class DataPackValidator
                 }
                 catch (ArgumentException exception)
                 {
-                    throw new DataPackCorrupt("The data pack contains an invalid image path.", exception);
+                    throw new DataPackCorruptException("The data pack contains an invalid image path.", exception);
                 }
 
                 string imagePath = Path.Combine(dataDirectory, normalizedPath.Replace('/', Path.DirectorySeparatorChar));
                 if (!File.Exists(imagePath))
                 {
-                    throw new DataPackCorrupt($"The data pack references a missing image: {normalizedPath}.");
+                    throw new DataPackCorruptException($"The data pack references a missing image: {normalizedPath}.");
                 }
             }
         }
-        catch (DataPackCorrupt)
+        catch (DataPackCorruptException)
         {
             throw;
         }
         catch (SqliteException exception)
         {
-            throw new DataPackIncomplete("The extracted data pack is missing its image manifest.", exception);
+            throw new DataPackIncompleteException("The extracted data pack is missing its image manifest.", exception);
         }
     }
 }

@@ -55,10 +55,10 @@ public sealed class DataPackReader
     /// Validates the active pack and returns an open SQLite connection in read-only mode.
     /// </summary>
     /// <returns>An open read-only connection. The caller owns and must dispose it.</returns>
-    /// <exception cref="DataPackMissing">Thrown when no active pack exists.</exception>
-    /// <exception cref="DataPackIncomplete">Thrown when required pack metadata is absent.</exception>
-    /// <exception cref="DataPackSchemaMismatch">Thrown when the pack schema is unsupported.</exception>
-    /// <exception cref="DataPackCorrupt">Thrown when database or image integrity validation fails.</exception>
+    /// <exception cref="DataPackMissingException">Thrown when no active pack exists.</exception>
+    /// <exception cref="DataPackIncompleteException">Thrown when required pack metadata is absent.</exception>
+    /// <exception cref="DataPackSchemaMismatchException">Thrown when the pack schema is unsupported.</exception>
+    /// <exception cref="DataPackCorruptException">Thrown when database or image integrity validation fails.</exception>
     public SqliteConnection OpenDatabase()
     {
         string dataDirectory = Path.Combine(_rootDirectory, DataDirectoryName);
@@ -77,7 +77,7 @@ public sealed class DataPackReader
         }
         catch (SqliteException exception)
         {
-            throw new DataPackCorrupt("The data-pack database could not be opened read-only.", exception);
+            throw new DataPackCorruptException("The data-pack database could not be opened read-only.", exception);
         }
     }
 }
