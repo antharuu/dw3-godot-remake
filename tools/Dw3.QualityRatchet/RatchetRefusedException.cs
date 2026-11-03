@@ -1,7 +1,7 @@
 namespace Dw3.QualityRatchet;
 
 /// <summary>
-/// Raised when the update command would raise a violation count or lower a coverage floor.
+/// Raised when the update command would raise a violation count, or when coverage is below the minimum.
 /// </summary>
 public sealed class RatchetRefusedException : Exception
 {

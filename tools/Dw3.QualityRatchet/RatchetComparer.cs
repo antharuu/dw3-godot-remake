@@ -64,26 +64,25 @@ internal static class RatchetComparer
     }
 
     /// <summary>
-    /// Compares the line coverage of every library the baseline ratchets.
+    /// Checks the line coverage of every listed library against the absolute minimum.
+    /// Coverage above the minimum is not a finding: nothing is recorded, so there is nothing to lock in.
     /// </summary>
     /// <param name="recorded">The coverage section of the baseline.</param>
     /// <param name="coverage">The merged coverage.</param>
-    /// <returns>The coverage differences in library order.</returns>
+    /// <returns>One finding per library that is missing from the reports or below the minimum, in library order.</returns>
     private static IEnumerable<RatchetFinding> CompareCoverage(CoverageBaseline recorded, CoverageReport coverage)
     {
-        foreach ((string library, double floor) in recorded.LinePercent.OrderBy(entry => entry.Key, StringComparer.Ordinal))
+        double minimum = recorded.MinimumPercent;
+        foreach (string library in recorded.Libraries.Order(StringComparer.Ordinal))
         {
             double? actual = coverage.LinePercent(library);
-            RatchetFinding? finding = actual switch
+            if (actual is null)
             {
-                null => new RatchetFinding(RatchetFindingKind.CoverageMissing, library, floor, double.NaN),
-                _ when actual < floor => new RatchetFinding(RatchetFindingKind.CoverageDropped, library, floor, actual.Value),
-                _ when actual > floor => new RatchetFinding(RatchetFindingKind.CoverageRaised, library, floor, actual.Value),
-                _ => null,
-            };
-            if (finding is not null)
+                yield return new RatchetFinding(RatchetFindingKind.CoverageMissing, library, minimum, double.NaN);
+            }
+            else if (actual < minimum)
             {
-                yield return finding;
+                yield return new RatchetFinding(RatchetFindingKind.CoverageBelowMinimum, library, minimum, actual.Value);
             }
         }
     }

@@ -6,7 +6,7 @@ namespace Dw3.QualityRatchet;
 internal enum RatchetMode
 {
     /// <summary>
-    /// Fails when a count went up or a coverage floor was crossed.
+    /// Fails when a count went up or a library is below the coverage minimum.
     /// </summary>
     Check,
 

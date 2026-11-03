@@ -1,8 +1,8 @@
 namespace Dw3.QualityRatchet;
 
 /// <summary>
-/// Builds the next baseline from a measurement: violation counts can only go down and coverage floors
-/// can only go up.
+/// Builds the next baseline from a measurement: violation counts can only go down. The coverage section
+/// is an absolute minimum and is carried over unchanged.
 /// </summary>
 internal static class BaselineTightener
 {
@@ -28,7 +28,7 @@ internal static class BaselineTightener
                 .Where(entry => entry.Value > 0)
                 .Select(entry => new BaselineViolation(entry.Key.Rule, entry.Key.Project, entry.Key.Folder, entry.Value)),
         ];
-        return new QualityBaseline(RaiseCoverage(baseline.Coverage, measurement.Coverage), violations);
+        return new QualityBaseline(baseline.Coverage, violations);
     }
 
     /// <summary>
@@ -45,25 +45,5 @@ internal static class BaselineTightener
                 .Except(after.Violations.Select(entry => entry.Rule), StringComparer.Ordinal)
                 .Order(StringComparer.Ordinal),
         ];
-    }
-
-    /// <summary>
-    /// Raises each coverage floor to the measured coverage. Without a measurement the floors stay.
-    /// </summary>
-    /// <param name="recorded">The current coverage section.</param>
-    /// <param name="coverage">The merged coverage, or null.</param>
-    /// <returns>The new coverage section.</returns>
-    private static CoverageBaseline RaiseCoverage(CoverageBaseline recorded, CoverageReport? coverage)
-    {
-        if (coverage is null)
-        {
-            return recorded;
-        }
-
-        var floors = recorded.LinePercent.ToDictionary(
-            entry => entry.Key,
-            entry => Math.Max(entry.Value, coverage.LinePercent(entry.Key) ?? entry.Value),
-            StringComparer.Ordinal);
-        return recorded with { LinePercent = floors };
     }
 }

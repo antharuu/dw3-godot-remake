@@ -16,12 +16,12 @@ internal enum RatchetFindingKind
     NewViolationPair,
 
     /// <summary>
-    /// The line coverage of a library went below its floor.
+    /// The line coverage of a library is below the minimum of the baseline.
     /// </summary>
-    CoverageDropped,
+    CoverageBelowMinimum,
 
     /// <summary>
-    /// A ratcheted library is absent from the coverage reports.
+    /// A listed library is absent from the coverage reports.
     /// </summary>
     CoverageMissing,
 
@@ -29,9 +29,4 @@ internal enum RatchetFindingKind
     /// A recorded count went down.
     /// </summary>
     CountDecreased,
-
-    /// <summary>
-    /// The line coverage of a library went above its floor.
-    /// </summary>
-    CoverageRaised,
 }

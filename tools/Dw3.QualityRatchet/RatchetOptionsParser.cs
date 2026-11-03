@@ -12,8 +12,8 @@ internal static class RatchetOptionsParser
     /// </summary>
     public const string Usage = """
         Usage: dotnet run --project tools/Dw3.QualityRatchet -- <check|update|init> [options]
-          check                  fail when a violation count goes up or a coverage floor is crossed
-          update                 write lower counts and higher coverage into the baseline, refuse anything else
+          check                  fail when a violation count goes up or a library is below the coverage minimum
+          update                 write lower counts into the baseline, refuse anything else
           init                   create the baseline from the current measurement (only when none exists)
         Options:
           --repo <dir>           repository root (default: nearest parent folder holding Dw3.sln)
@@ -22,8 +22,8 @@ internal static class RatchetOptionsParser
           --merged-coverage <f>  merged Cobertura output (default: artifacts/quality/coverage.cobertura.xml)
           --baseline <file>      baseline (default: tools/quality-baseline.json)
           --require-coverage     fail when no Cobertura report is found
-          --libraries <a,b>      init: libraries whose line coverage is ratcheted
-          --coverage-target <n>  init: target line coverage in percent (default: 80)
+          --libraries <a,b>      init: libraries whose line coverage is checked
+          --coverage-target <n>  init: minimum line coverage in percent (default: 80)
         """;
 
     /// <summary>

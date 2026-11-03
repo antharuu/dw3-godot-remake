@@ -1,12 +1,12 @@
 {
   "coverage": {
-    "targetPercent": 80,
-    "linePercent": {
-      "Dw3.Data": 97.18,
-      "Dw3.Disc": 94.38,
-      "Dw3.Extractor": 87.33,
-      "Dw3.Formats": 84.5
-    }
+    "minimumPercent": 80,
+    "libraries": [
+      "Dw3.Data",
+      "Dw3.Disc",
+      "Dw3.Extractor",
+      "Dw3.Formats"
+    ]
   },
   "violations": [
     {

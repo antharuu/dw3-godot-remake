@@ -7,7 +7,7 @@ namespace Dw3.QualityRatchet;
 /// </summary>
 /// <param name="Kind">The kind of difference.</param>
 /// <param name="Subject">The violation key or the library name.</param>
-/// <param name="Baseline">The recorded count or coverage floor.</param>
+/// <param name="Baseline">The recorded count, or the coverage minimum.</param>
 /// <param name="Actual">The measured count or coverage, NaN when the coverage is missing.</param>
 internal sealed record RatchetFinding(RatchetFindingKind Kind, string Subject, double Baseline, double Actual)
 {
@@ -16,7 +16,7 @@ internal sealed record RatchetFinding(RatchetFindingKind Kind, string Subject, d
     /// </summary>
     public bool IsRegression => Kind is RatchetFindingKind.CountIncreased
         or RatchetFindingKind.NewViolationPair
-        or RatchetFindingKind.CoverageDropped
+        or RatchetFindingKind.CoverageBelowMinimum
         or RatchetFindingKind.CoverageMissing;
 
     /// <summary>
@@ -30,8 +30,8 @@ internal sealed record RatchetFinding(RatchetFindingKind Kind, string Subject, d
             RatchetFindingKind.NewViolationPair => $"new {Subject}: {Count(Actual)}",
             RatchetFindingKind.CountIncreased or RatchetFindingKind.CountDecreased =>
                 $"{Subject}: {Count(Baseline)} -> {Count(Actual)}",
-            RatchetFindingKind.CoverageMissing => $"coverage {Subject}: {Percent(Baseline)} -> no report",
-            _ => $"coverage {Subject}: {Percent(Baseline)} -> {Percent(Actual)}",
+            RatchetFindingKind.CoverageMissing => $"coverage {Subject}: no report (minimum {Percent(Baseline)})",
+            _ => $"coverage {Subject}: {Percent(Actual)} is below the {Percent(Baseline)} minimum",
         };
     }
 

@@ -1,10 +1,10 @@
 namespace Dw3.QualityRatchet;
 
 /// <summary>
-/// The content of tools/quality-baseline.json: the ceiling of every violation count and the floor of
-/// the line coverage of every ratcheted library.
+/// The content of tools/quality-baseline.json: the ceiling of every violation count and the absolute
+/// line coverage minimum of the checked libraries.
 /// </summary>
-/// <param name="Coverage">The coverage floors and target.</param>
+/// <param name="Coverage">The coverage minimum and the libraries it applies to.</param>
 /// <param name="Violations">The violation ceilings, one entry per rule, project and folder.</param>
 internal sealed record QualityBaseline(CoverageBaseline Coverage, IReadOnlyList<BaselineViolation> Violations)
 {

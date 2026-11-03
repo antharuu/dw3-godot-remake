@@ -11,7 +11,7 @@ namespace Dw3.QualityRatchet;
 /// <param name="BaselinePath">The baseline file.</param>
 /// <param name="RequireCoverage">Whether a missing Cobertura report is an error rather than a skipped check.</param>
 /// <param name="Libraries">The libraries whose coverage the init command ratchets.</param>
-/// <param name="CoverageTarget">The coverage target the init command records.</param>
+/// <param name="CoverageTarget">The coverage minimum the init command records.</param>
 internal sealed record RatchetOptions(
     RatchetMode Mode,
     string SolutionPath,

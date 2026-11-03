@@ -10,7 +10,7 @@ public sealed class RatchetCommandTests : IDisposable
 {
     private const string TwoComplexMethodsBaseline = """
         {
-          "coverage": { "targetPercent": 80, "linePercent": { "Dw3.Data": 50 } },
+          "coverage": { "minimumPercent": 50, "libraries": [ "Dw3.Data" ] },
           "violations": [
             { "rule": "S3776", "project": "Dw3.Data", "folder": "Reading", "count": 2 }
           ]
@@ -148,7 +148,7 @@ public sealed class RatchetCommandTests : IDisposable
     }
 
     [Fact]
-    public void CheckFailsWhenCoverageDrops()
+    public void CheckFailsWhenCoverageIsBelowTheMinimum()
     {
         _repository.WriteSarif("Dw3.Data", ("S3776", "Reading/A.cs", 10), ("S3776", "Reading/B.cs", 20));
         _repository.WriteCobertura("run", "Dw3.Data", "Reader.cs", (1, 0), (2, 0), (3, 0), (4, 1));
@@ -156,11 +156,23 @@ public sealed class RatchetCommandTests : IDisposable
         int exitCode = Run("check");
 
         Assert.Equal(1, exitCode);
-        Assert.Contains("coverage Dw3.Data: 50.00% -> 25.00%", _error.ToString(), StringComparison.Ordinal);
+        Assert.Contains("coverage Dw3.Data: 25.00% is below the 50.00% minimum", _error.ToString(), StringComparison.Ordinal);
     }
 
     [Fact]
-    public void UpdateRaisesTheCoverageFloor()
+    public void CheckPassesWhenCoverageFallsButStaysAtTheMinimum()
+    {
+        _repository.WriteSarif("Dw3.Data", ("S3776", "Reading/A.cs", 10), ("S3776", "Reading/B.cs", 20));
+        _repository.WriteCobertura("run", "Dw3.Data", "Reader.cs", (1, 1), (2, 1), (3, 0), (4, 0));
+
+        int exitCode = Run("check", "--require-coverage");
+
+        Assert.Equal(0, exitCode);
+        Assert.Contains("coverage Dw3.Data: 50.00% (minimum 50%)", _output.ToString(), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void UpdateNeverRecordsTheMeasuredCoverage()
     {
         _repository.WriteSarif("Dw3.Data", ("S3776", "Reading/A.cs", 10), ("S3776", "Reading/B.cs", 20));
         _repository.WriteCobertura("run", "Dw3.Data", "Reader.cs", (1, 1), (2, 1), (3, 1), (4, 0));
@@ -170,8 +182,9 @@ public sealed class RatchetCommandTests : IDisposable
         Assert.Equal(0, exitCode);
         using JsonDocument baseline = JsonDocument.Parse(File.ReadAllText(_repository.BaselinePath));
         JsonElement coverage = baseline.RootElement.GetProperty("coverage");
-        Assert.Equal(75.0, coverage.GetProperty("linePercent").GetProperty("Dw3.Data").GetDouble());
-        Assert.Equal(80.0, coverage.GetProperty("targetPercent").GetDouble());
+        Assert.Equal(50.0, coverage.GetProperty("minimumPercent").GetDouble());
+        Assert.Equal(["Dw3.Data"], coverage.GetProperty("libraries").EnumerateArray().Select(library => library.GetString()));
+        Assert.False(coverage.TryGetProperty("linePercent", out _));
     }
 
     [Fact]
@@ -243,7 +256,7 @@ public sealed class RatchetCommandTests : IDisposable
         File.Delete(_repository.BaselinePath);
         _repository.WriteSarif("Dw3.Data", ("S138", "Reading/A.cs", 10));
 
-        int exitCode = Run("init", "--libraries", "Dw3.Data", "--coverage-target", "80");
+        int exitCode = Run("init", "--libraries", "Dw3.Data", "--coverage-target", "50");
 
         Assert.Equal(0, exitCode);
         Assert.Equal(1, BaselineCount("S138", "Dw3.Data", "Reading"));

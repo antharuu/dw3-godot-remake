@@ -50,9 +50,11 @@ Each compilation writes its diagnostics to `artifacts/quality/sarif/<project>.sa
 `tools/Dw3.QualityRatchet` counts the violations per rule, project and top-level folder of
 the project (for example `S3776 Dw3.Game/Simulation`) and compares them with
 `tools/quality-baseline.json`. It fails when a count goes up, when a rule appears in a
-project folder where the baseline does not list it, or when the line coverage of a library
-drops below its recorded floor. CI runs it on Linux after the tests, so a pull request that
-adds a violation fails.
+project folder where the baseline does not list it, or when the line coverage of one of the
+libraries listed in the baseline is below the absolute minimum (`minimumPercent`, 80). The
+minimum is never derived from a measurement: adding braces or splitting a line changes the
+number of measured lines, and a recorded floor would turn that into a false regression.
+CI runs it on Linux after the tests, so a pull request that adds a violation fails.
 
 ### Run it locally
 
@@ -79,8 +81,8 @@ When you fix violations or add tests, lock the improvement in:
 dotnet run --project tools/Dw3.QualityRatchet -- update
 ```
 
-`update` only lowers counts and raises coverage floors. If any count went up or any coverage
-went down, it refuses, prints what regressed and leaves the baseline untouched. When a rule
+`update` only lowers counts, it never writes coverage. If any count went up or a library is
+below the coverage minimum, it refuses, prints what regressed and leaves the baseline untouched. When a rule
 reaches zero everywhere, `update` says so: remove that identifier from `QualityRatchetedRules`
 in the same pull request. Commit `tools/quality-baseline.json` with the fix.
 

@@ -167,16 +167,17 @@ internal sealed class RatchetCommand
         }
 
         QualityMeasurement measurement = Measure(options, required: true);
-        var floors = options.Libraries.ToDictionary(
-            library => library,
-            library => measurement.Coverage!.LinePercent(library)
-                ?? throw new QualityInputException($"No coverage measured for {library}. {CoverageMeasurer.RunTestsHint}"),
-            StringComparer.Ordinal);
+        string? unmeasured = options.Libraries.FirstOrDefault(library => measurement.Coverage!.LinePercent(library) is null);
+        if (unmeasured is not null)
+        {
+            throw new QualityInputException($"No coverage measured for {unmeasured}. {CoverageMeasurer.RunTestsHint}");
+        }
+
         List<BaselineViolation> violations =
         [
             .. measurement.Violations.Select(entry => new BaselineViolation(entry.Key.Rule, entry.Key.Project, entry.Key.Folder, entry.Value)),
         ];
-        var baseline = new QualityBaseline(new CoverageBaseline(options.CoverageTarget, floors), violations);
+        var baseline = new QualityBaseline(new CoverageBaseline(options.CoverageTarget, options.Libraries), violations);
         Directory.CreateDirectory(Path.GetDirectoryName(options.BaselinePath)!);
         BaselineFile.Save(options.BaselinePath, baseline);
         WriteSummary("Baseline created", baseline, measurement);
@@ -203,10 +204,10 @@ internal sealed class RatchetCommand
     }
 
     /// <summary>
-    /// Writes the totals of a measurement and the coverage of each ratcheted library.
+    /// Writes the totals of a measurement and the coverage of each listed library.
     /// </summary>
     /// <param name="title">The first words of the summary line.</param>
-    /// <param name="baseline">The baseline the coverage floors come from.</param>
+    /// <param name="baseline">The baseline the coverage minimum and libraries come from.</param>
     /// <param name="measurement">The measurement.</param>
     private void WriteSummary(string title, QualityBaseline baseline, QualityMeasurement measurement)
     {
@@ -217,12 +218,11 @@ internal sealed class RatchetCommand
             return;
         }
 
-        foreach ((string library, double floor) in baseline.Coverage.LinePercent.OrderBy(entry => entry.Key, StringComparer.Ordinal))
+        string minimum = baseline.Coverage.MinimumPercent.ToString("0.##", CultureInfo.InvariantCulture);
+        foreach (string library in baseline.Coverage.Libraries.Order(StringComparer.Ordinal))
         {
             string actual = (measurement.Coverage.LinePercent(library) ?? 0).ToString("0.00", CultureInfo.InvariantCulture);
-            string target = baseline.Coverage.TargetPercent.ToString("0.##", CultureInfo.InvariantCulture);
-            string recorded = floor.ToString("0.00", CultureInfo.InvariantCulture);
-            _output.WriteLine($"  coverage {library}: {actual}% (floor {recorded}%, target {target}%)");
+            _output.WriteLine($"  coverage {library}: {actual}% (minimum {minimum}%)");
         }
     }
 }

@@ -49,24 +49,27 @@ internal static class BaselineFile
     public static void Save(string path, QualityBaseline baseline)
     {
         var ordered = new QualityBaseline(
-            new CoverageBaseline(
-                baseline.Coverage.TargetPercent,
-                new SortedDictionary<string, double>(baseline.Coverage.LinePercent.ToDictionary(), StringComparer.Ordinal)),
+            baseline.Coverage with { Libraries = [.. baseline.Coverage.Libraries.Order(StringComparer.Ordinal)] },
             [.. baseline.Violations.OrderBy(entry => entry.Key, ViolationKeyComparer.Instance)]);
         File.WriteAllText(path, JsonSerializer.Serialize(ordered, Options) + "\n");
     }
 
     /// <summary>
-    /// Rejects a baseline with missing sections, negative counts or duplicate keys.
+    /// Rejects a baseline with missing sections, a minimum outside 0 to 100, negative counts or duplicate keys.
     /// </summary>
     /// <param name="baseline">The deserialized baseline, null for a JSON null document.</param>
     /// <param name="path">The path of the baseline file, for error messages.</param>
     /// <returns>The validated baseline.</returns>
     private static QualityBaseline Validate(QualityBaseline? baseline, string path)
     {
-        if (baseline?.Coverage?.LinePercent is null || baseline.Violations is null)
+        if (baseline?.Coverage?.Libraries is null || baseline.Violations is null)
         {
-            throw new QualityInputException($"Baseline {path} needs a coverage section with linePercent and a violations list.");
+            throw new QualityInputException($"Baseline {path} needs a coverage section with minimumPercent and libraries, and a violations list.");
+        }
+
+        if (baseline.Coverage.MinimumPercent is < 0 or > 100)
+        {
+            throw new QualityInputException($"Baseline {path}: minimumPercent must lie between 0 and 100.");
         }
 
         BaselineViolation? negative = baseline.Violations.FirstOrDefault(entry => entry.Count < 0);
