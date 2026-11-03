@@ -14,13 +14,10 @@ namespace Dw3.Extractor;
 internal static class FullExtractionStep
 {
     /// <summary>
-    /// Describes one extraction domain: a short name and the function that runs it.
-    /// The function receives the disc opener (each step opens and disposes its own handle) and a
-    /// scratch output directory; it returns 0 on success and a non-zero exit code on failure.
+    /// The production domains in the order they run. The order matters only for progress
+    /// reporting and for which failure is reported first; each domain writes its own scratch pack.
     /// </summary>
-    private sealed record Domain(string Name, Func<Func<IDiscSource>, string, int> Run);
-
-    private static readonly IReadOnlyList<Domain> Domains =
+    internal static readonly IReadOnlyList<ExtractionDomain> Domains =
     [
         new("zones", (openDisc, output) => ZoneExtractionStep.Extract(openDisc, output, "zones", TextWriter.Null, TextWriter.Null)),
         new("collision", (openDisc, output) => CollisionExtractionStep.Extract(openDisc, output, "collision", TextWriter.Null, TextWriter.Null)),
@@ -44,24 +41,34 @@ internal static class FullExtractionStep
         new("battle-report", (openDisc, output) => BattleReportExtractionStep.Extract(openDisc, output, TextWriter.Null, TextWriter.Null)),
     ];
 
-    /// <summary>
-    /// Runs every domain in <see cref="Domains"/> in registration order, writing each to a scratch
-    /// sub-directory, then merges all per-domain data packs into a single pack at
-    /// <paramref name="outputDirectory"/> and removes the scratch tree.
-    /// </summary>
+    /// <summary>Runs every production domain of <see cref="Domains"/> and merges their packs.</summary>
     /// <param name="openDisc">Opens a fresh disc handle; called once per domain step and once more to stamp the merged pack with the edition.</param>
     /// <param name="outputDirectory">Root directory for the final merged data pack.</param>
     /// <param name="output">Receives one JSON progress line per completed domain, and a final completion line.</param>
     /// <returns>0 on success, or the non-zero exit code returned by the first failing domain.</returns>
-    internal static int Extract(Func<IDiscSource> openDisc, string outputDirectory, TextWriter output)
+    internal static int Extract(Func<IDiscSource> openDisc, string outputDirectory, TextWriter output) =>
+        Extract(openDisc, outputDirectory, output, Domains);
+
+    /// <summary>
+    /// Runs <paramref name="domains"/> in order, writing each to a scratch sub-directory
+    /// <c>.extracting-&lt;guid&gt;/&lt;name&gt;</c> of <paramref name="outputDirectory"/>, then merges all
+    /// per-domain data packs into a single pack at <paramref name="outputDirectory"/>. The scratch tree
+    /// is removed on success and on failure, so a failed run leaves the previous pack untouched.
+    /// </summary>
+    /// <param name="openDisc">Opens a fresh disc handle; passed to every domain and called once more to stamp the merged pack with the edition.</param>
+    /// <param name="outputDirectory">Root directory for the final merged data pack.</param>
+    /// <param name="output">Receives one JSON progress line per completed domain, and a final completion or error line.</param>
+    /// <param name="domains">The domains to run; each must leave a data pack under its scratch directory.</param>
+    /// <returns>0 on success, the exit code of the first failing domain, or 1 when the disc or the merge fails.</returns>
+    internal static int Extract(Func<IDiscSource> openDisc, string outputDirectory, TextWriter output, IReadOnlyList<ExtractionDomain> domains)
     {
         string scratchDirectory = Path.Combine(Path.GetFullPath(outputDirectory), $".extracting-{Guid.NewGuid():N}");
         try
         {
             Directory.CreateDirectory(scratchDirectory);
-            for (int index = 0; index < Domains.Count; index++)
+            for (int index = 0; index < domains.Count; index++)
             {
-                Domain domain = Domains[index];
+                ExtractionDomain domain = domains[index];
                 string domainOutput = Path.Combine(scratchDirectory, domain.Name);
                 int exitCode = domain.Run(openDisc, domainOutput);
                 if (exitCode != 0)
@@ -70,7 +77,7 @@ internal static class FullExtractionStep
                     return exitCode;
                 }
 
-                output.WriteLine(JsonSerializer.Serialize(new { step = domain.Name, done = index + 1, total = Domains.Count }));
+                output.WriteLine(JsonSerializer.Serialize(new { step = domain.Name, done = index + 1, total = domains.Count }));
             }
 
             using (var disc = openDisc())
@@ -82,10 +89,10 @@ internal static class FullExtractionStep
                         edition.BinSha1,
                         edition.Label,
                         DateTimeOffset.UtcNow),
-                    context => MergeDomainPacks(context, scratchDirectory));
+                    context => MergeDomainPacks(context, scratchDirectory, domains));
             }
 
-            output.WriteLine(JsonSerializer.Serialize(new { @event = "complete", domains = Domains.Count }));
+            output.WriteLine(JsonSerializer.Serialize(new { @event = "complete", domains = domains.Count }));
             return 0;
         }
         catch (Exception exception) when (exception is DiscSourceException or InvalidDataException or FormatException or IOException or ArgumentException or SqliteException)
@@ -117,7 +124,9 @@ internal static class FullExtractionStep
     /// </summary>
     /// <param name="context">The write context for the merged destination pack.</param>
     /// <param name="scratchDirectory">Root of the scratch tree whose sub-directories contain per-domain data packs.</param>
-    private static void MergeDomainPacks(DataPackWriteContext context, string scratchDirectory)
+    /// <param name="domains">The domains whose scratch packs are merged, in run order; a later row replaces an earlier one with the same key.</param>
+    /// <exception cref="InvalidDataException">A domain left no <c>dw3.sqlite</c>, or one of its images is missing.</exception>
+    private static void MergeDomainPacks(DataPackWriteContext context, string scratchDirectory, IReadOnlyList<ExtractionDomain> domains)
     {
         using (SqliteCommand deferForeignKeys = context.Database.CreateCommand())
         {
@@ -126,7 +135,7 @@ internal static class FullExtractionStep
             deferForeignKeys.ExecuteNonQuery();
         }
 
-        foreach (Domain domain in Domains)
+        foreach (ExtractionDomain domain in domains)
         {
             string sourceDirectory = Path.Combine(scratchDirectory, domain.Name, "data");
             string sourceDatabase = Path.Combine(sourceDirectory, "dw3.sqlite");

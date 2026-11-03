@@ -932,3 +932,7 @@ src/Dw3.Disc/IDiscSource.cs
 src/Dw3.Extractor/EngineFileReader.cs
 tests/Dw3.Extractor.Tests/FabricatedDisc.cs
 tests/Dw3.Extractor.Tests/ExtractionStepFailureTests.cs
+src/Dw3.Extractor/ExtractionDomain.cs
+tests/Dw3.Extractor.Tests/Fabricate.cs
+tests/Dw3.Extractor.Tests/FullExtractionStepTests.cs
+tests/Dw3.Extractor.Tests/BattleExtractionStepTests.cs
