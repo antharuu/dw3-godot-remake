@@ -45,10 +45,6 @@ internal static class DataPackValidator
             VerifyMetadata(connection, expectedSchemaVersion);
             VerifyImages(connection, dataDirectory);
         }
-        catch (DataPackException)
-        {
-            throw;
-        }
         catch (SqliteException exception)
         {
             throw new DataPackCorruptException("The data-pack database is corrupt.", exception);
@@ -152,10 +148,6 @@ internal static class DataPackValidator
                     throw new DataPackCorruptException($"The data pack references a missing image: {normalizedPath}.");
                 }
             }
-        }
-        catch (DataPackCorruptException)
-        {
-            throw;
         }
         catch (SqliteException exception)
         {

@@ -10,6 +10,18 @@ public sealed class DataPackReader
     private const string DataDirectoryName = "data";
     private readonly string _rootDirectory;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="DataPackReader"/> class for the active data
+    /// directory below the supplied root, resolving the path to an absolute form.
+    /// </summary>
+    /// <param name="rootDirectory">Parent directory containing the active <c>data</c> sub-directory.</param>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="rootDirectory"/> is null, empty, or whitespace.</exception>
+    public DataPackReader(string rootDirectory)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(rootDirectory);
+        _rootDirectory = Path.GetFullPath(rootDirectory);
+    }
+
     /// <summary>Gets the validated pack's active data directory.</summary>
     public string DataDirectory => Path.Combine(_rootDirectory, DataDirectoryName);
 
@@ -37,18 +49,6 @@ public sealed class DataPackReader
         }
 
         return resolved;
-    }
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="DataPackReader"/> class for the active data
-    /// directory below the supplied root, resolving the path to an absolute form.
-    /// </summary>
-    /// <param name="rootDirectory">Parent directory containing the active <c>data</c> sub-directory.</param>
-    /// <exception cref="ArgumentException">Thrown when <paramref name="rootDirectory"/> is null, empty, or whitespace.</exception>
-    public DataPackReader(string rootDirectory)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(rootDirectory);
-        _rootDirectory = Path.GetFullPath(rootDirectory);
     }
 
     /// <summary>

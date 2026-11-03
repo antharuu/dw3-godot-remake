@@ -40,6 +40,7 @@ public sealed class DataPackWriter
         {
             Directory.CreateDirectory(stagingDirectory);
             string databasePath = Path.Combine(stagingDirectory, "dw3.sqlite");
+
             // Pooling=False ensures the write connection truly closes its native file handle on
             // Dispose() rather than returning it to the connection pool.  Without this flag the
             // pool can keep the handle open past Dispose(), preventing Directory.Move on Windows.
@@ -55,6 +56,7 @@ public sealed class DataPackWriter
             }
 
             DataPackValidator.Validate(stagingDirectory, DataPackSchema.Version);
+
             // Release any pooled SQLite connections that may hold a native file handle
             // on the staging database before renaming the directory. On Windows, an open
             // handle prevents Directory.Move even after the SqliteConnection is disposed,
@@ -73,51 +75,6 @@ public sealed class DataPackWriter
             }
 
             throw;
-        }
-    }
-
-    /// <summary>
-    /// Atomically replaces the active data directory with <paramref name="stagingDirectory"/>,
-    /// preserving a backup copy of the previous active directory until the rename succeeds.
-    /// The backup is removed on success; orphaned backups are cleaned up on the next construction.
-    /// </summary>
-    /// <param name="stagingDirectory">Validated staging directory to promote to the active location.</param>
-    private void Promote(string stagingDirectory)
-    {
-        string activeDirectory = Path.Combine(_rootDirectory, DataDirectoryName);
-        string? previousDirectory = null;
-        try
-        {
-            if (Directory.Exists(activeDirectory))
-            {
-                previousDirectory = Path.Combine(_rootDirectory, $"data.previous-{Guid.NewGuid():N}");
-                // Use the same retry logic as staging→active: on Windows, Defender or an
-                // antivirus may briefly hold a handle on a file inside the active directory
-                // even after ClearAllPools().  An exponential back-off lets the handle
-                // release before the rename is attempted again.
-                MoveWithRetry(activeDirectory, previousDirectory);
-            }
-
-            MoveWithRetry(stagingDirectory, activeDirectory);
-        }
-        catch
-        {
-            if (previousDirectory is not null && Directory.Exists(previousDirectory) && !Directory.Exists(activeDirectory))
-            {
-                Directory.Move(previousDirectory, activeDirectory);
-            }
-
-            throw;
-        }
-
-        if (previousDirectory is not null && Directory.Exists(previousDirectory))
-        {
-            // Best-effort: if an open reader holds a native handle on a file inside the previous
-            // directory, Directory.Delete throws IOException or UnauthorizedAccessException on
-            // Windows.  The pack has already been promoted successfully at this point, so a
-            // cleanup failure is non-critical.  Orphaned data.previous-* directories are removed
-            // on the next DataPackWriter construction via RemoveOrphanedDirectories().
-            TryDeleteDirectory(previousDirectory);
         }
     }
 
@@ -153,29 +110,7 @@ public sealed class DataPackWriter
     }
 
     /// <summary>
-    /// Deletes orphaned staging (<c>data.staging-*</c>) and superseded previous-pack
-    /// (<c>data.previous-*</c>) directories below the root.
-    /// Failures are silently swallowed because cleanup is best-effort and will be retried
-    /// on the next <see cref="DataPackWriter"/> construction.
-    /// </summary>
-    private void RemoveOrphanedDirectories()
-    {
-        // Remove incomplete staging directories left by interrupted extractions.
-        foreach (string directory in Directory.EnumerateDirectories(_rootDirectory, "data.staging-*", SearchOption.TopDirectoryOnly))
-        {
-            TryDeleteDirectory(directory);
-        }
-
-        // Remove superseded previous-pack directories whose cleanup was deferred because
-        // an open reader held a file handle at promotion time (Windows only).
-        foreach (string directory in Directory.EnumerateDirectories(_rootDirectory, "data.previous-*", SearchOption.TopDirectoryOnly))
-        {
-            TryDeleteDirectory(directory);
-        }
-    }
-
-    /// <summary>
-    /// Attempts to recursively delete a directory, silently swallowing transient failures.
+    /// Attempts to recursively delete a directory, tracing transient failures without propagating them.
     /// A failed deletion is not a correctness issue: the directory will be retried on the
     /// next <see cref="DataPackWriter"/> construction via <see cref="RemoveOrphanedDirectories"/>.
     /// </summary>
@@ -186,8 +121,14 @@ public sealed class DataPackWriter
         {
             Directory.Delete(directory, recursive: true);
         }
-        catch (IOException) { }
-        catch (UnauthorizedAccessException) { }
+        catch (IOException ex)
+        {
+            System.Diagnostics.Trace.TraceWarning($"Failed to delete staging directory: {ex.Message}");
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            System.Diagnostics.Trace.TraceWarning($"Failed to delete staging directory: {ex.Message}");
+        }
     }
 
     /// <summary>
@@ -224,6 +165,74 @@ public sealed class DataPackWriter
         if (string.IsNullOrWhiteSpace(metadata.ExtractorVersion) || string.IsNullOrWhiteSpace(metadata.DiscSha1) || string.IsNullOrWhiteSpace(metadata.Edition))
         {
             throw new ArgumentException("Data-pack metadata fields must be non-empty.", nameof(metadata));
+        }
+    }
+
+    /// <summary>
+    /// Atomically replaces the active data directory with <paramref name="stagingDirectory"/>,
+    /// preserving a backup copy of the previous active directory until the rename succeeds.
+    /// The backup is removed on success; orphaned backups are cleaned up on the next construction.
+    /// </summary>
+    /// <param name="stagingDirectory">Validated staging directory to promote to the active location.</param>
+    private void Promote(string stagingDirectory)
+    {
+        string activeDirectory = Path.Combine(_rootDirectory, DataDirectoryName);
+        string? previousDirectory = null;
+        try
+        {
+            if (Directory.Exists(activeDirectory))
+            {
+                previousDirectory = Path.Combine(_rootDirectory, $"data.previous-{Guid.NewGuid():N}");
+
+                // Use the same retry logic as staging→active: on Windows, Defender or an
+                // antivirus may briefly hold a handle on a file inside the active directory
+                // even after ClearAllPools().  An exponential back-off lets the handle
+                // release before the rename is attempted again.
+                MoveWithRetry(activeDirectory, previousDirectory);
+            }
+
+            MoveWithRetry(stagingDirectory, activeDirectory);
+        }
+        catch
+        {
+            if (previousDirectory is not null && Directory.Exists(previousDirectory) && !Directory.Exists(activeDirectory))
+            {
+                Directory.Move(previousDirectory, activeDirectory);
+            }
+
+            throw;
+        }
+
+        if (previousDirectory is not null && Directory.Exists(previousDirectory))
+        {
+            // Best-effort: if an open reader holds a native handle on a file inside the previous
+            // directory, Directory.Delete throws IOException or UnauthorizedAccessException on
+            // Windows.  The pack has already been promoted successfully at this point, so a
+            // cleanup failure is non-critical.  Orphaned data.previous-* directories are removed
+            // on the next DataPackWriter construction via RemoveOrphanedDirectories().
+            TryDeleteDirectory(previousDirectory);
+        }
+    }
+
+    /// <summary>
+    /// Deletes orphaned staging (<c>data.staging-*</c>) and superseded previous-pack
+    /// (<c>data.previous-*</c>) directories below the root.
+    /// Failures are silently swallowed because cleanup is best-effort and will be retried
+    /// on the next <see cref="DataPackWriter"/> construction.
+    /// </summary>
+    private void RemoveOrphanedDirectories()
+    {
+        // Remove incomplete staging directories left by interrupted extractions.
+        foreach (string directory in Directory.EnumerateDirectories(_rootDirectory, "data.staging-*", SearchOption.TopDirectoryOnly))
+        {
+            TryDeleteDirectory(directory);
+        }
+
+        // Remove superseded previous-pack directories whose cleanup was deferred because
+        // an open reader held a file handle at promotion time (Windows only).
+        foreach (string directory in Directory.EnumerateDirectories(_rootDirectory, "data.previous-*", SearchOption.TopDirectoryOnly))
+        {
+            TryDeleteDirectory(directory);
         }
     }
 }

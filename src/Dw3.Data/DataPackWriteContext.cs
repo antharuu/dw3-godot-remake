@@ -55,18 +55,6 @@ public sealed class DataPackWriteContext
     }
 
     /// <summary>
-    /// Resolves a relative image path to an absolute path inside the staging directory,
-    /// after normalizing separators and rejecting path-escaping segments.
-    /// </summary>
-    /// <param name="relativePath">Slash-separated path beneath the pack root.</param>
-    /// <returns>The absolute path inside the current staging directory.</returns>
-    private string ResolveRelativePath(string relativePath)
-    {
-        string normalizedPath = NormalizeRelativePath(relativePath);
-        return Path.Combine(_stagingDirectory, normalizedPath.Replace('/', Path.DirectorySeparatorChar));
-    }
-
-    /// <summary>
     /// Normalizes a pack-relative image path to forward slashes, rejecting absolute paths,
     /// path-traversal sequences, empty segments, and backslash-only representations.
     /// Called by both <see cref="ResolveRelativePath"/> and <see cref="RegisterImage"/>.
@@ -87,5 +75,17 @@ public sealed class DataPackWriteContext
         }
 
         return normalizedPath;
+    }
+
+    /// <summary>
+    /// Resolves a relative image path to an absolute path inside the staging directory,
+    /// after normalizing separators and rejecting path-escaping segments.
+    /// </summary>
+    /// <param name="relativePath">Slash-separated path beneath the pack root.</param>
+    /// <returns>The absolute path inside the current staging directory.</returns>
+    private string ResolveRelativePath(string relativePath)
+    {
+        string normalizedPath = NormalizeRelativePath(relativePath);
+        return Path.Combine(_stagingDirectory, normalizedPath.Replace('/', Path.DirectorySeparatorChar));
     }
 }
