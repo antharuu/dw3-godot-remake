@@ -94,6 +94,7 @@ public sealed class BattleRenderer : IDisposable
     /// <summary>Gets a value indicating whether true once at least one battle model is built and the scene is showing.</summary>
     public bool Built { get; private set; }
 
+    /// <summary>Gets a value indicating whether the battle canvas is currently visible.</summary>
     public bool Visible => _layer.Visible;
 
     /// <summary>Gets a value indicating whether true once a decoded fight stage is loaded and drawn as the background.</summary>
@@ -103,22 +104,31 @@ public sealed class BattleRenderer : IDisposable
     public int ModelCount => _fighters.Models.Count;
 
     /// <summary>Maps a deterministic HUD frame to its source animation milliseconds.</summary>
+    /// <param name="frame">Non-negative frame number to convert.</param>
+    /// <returns>The source-clock time represented by <paramref name="frame"/>.</returns>
     public static ulong ProbeAnimationMilliseconds(int frame) => (ulong)ValidateProbeAnimationFrame(frame) * 16UL;
 
+    /// <summary>Makes the battle canvas visible.</summary>
     public void Show() => _layer.Visible = true;
 
+    /// <summary>Hides the battle canvas without releasing its loaded scene.</summary>
     public void Hide() => _layer.Visible = false;
 
     /// <summary>Probe-only HUD suppression for a model/stage-only framebuffer comparison.</summary>
+    /// <param name="visible">Whether the HUD should be included in the capture.</param>
     public void SetHudVisibleForProbe(bool visible) => _hud.Visible = visible;
 
     /// <summary>Probe oracle for the source HUD mapping and command cursor bounds.</summary>
+    /// <returns>A description of the verified HUD layout.</returns>
     public static string AssertHudLayout() => BattleHudNode.AssertLayout();
 
     /// <summary>Loads the decoded fight stage (the battle background) for the encounter's
     /// <paramref name="stageId"/> and poses it statically. Returns false (and logs) when the
     /// JSON is absent or invalid; the dark floor then stays as the background, never silently
     /// presented as the real stage.</summary>
+    /// <param name="stageJsonPath">Path to the extracted stage model document.</param>
+    /// <param name="stageId">Identifier used to report a stage loading failure.</param>
+    /// <returns><see langword="true"/> when the stage is ready to render, otherwise <see langword="false"/>.</returns>
     public bool BuildStage(string stageJsonPath, int stageId)
     {
         try
@@ -152,6 +162,11 @@ public sealed class BattleRenderer : IDisposable
     /// The enemy model comes from the disc model decoder (same EXP-300 chain, parameterised per
     /// fighter); if its archive is not decodable a clearly distinct capsule stands in and is
     /// explicitly logged, never silently presented as the real model.</summary>
+    /// <param name="playerModelJsonPath">Path to the active player's extracted model document.</param>
+    /// <param name="enemyModelJsonPath">Path to the opponent's extracted model document.</param>
+    /// <param name="playerLabel">Display label assigned to the player model node.</param>
+    /// <param name="enemyLabel">Display label assigned to the opponent model node.</param>
+    /// <param name="enemyFighterId">Identifier of the opponent represented by the model.</param>
     public void BuildModels(string playerModelJsonPath, string enemyModelJsonPath, string playerLabel, string enemyLabel, int enemyFighterId)
     {
         ClearModels();
@@ -181,6 +196,10 @@ public sealed class BattleRenderer : IDisposable
     /// <summary>Builds exactly one source fighter for the offline contact sheet. It uses the same
     /// loader, idle pose, stage lighting and source camera as presentation, but removes the
     /// opponent and HUD so every tile remains an inspectable fighter render.</summary>
+    /// <param name="modelJsonPath">Path to the extracted fighter model document.</param>
+    /// <param name="label">Display label assigned to the fighter model node.</param>
+    /// <param name="fighterId">Identifier of the fighter represented by the model.</param>
+    /// <param name="enemy">Whether to place the fighter on the opponent side.</param>
     public void BuildSingleModelForSheet(string modelJsonPath, string label, int fighterId, bool enemy)
     {
         ClearModels();
@@ -202,12 +221,16 @@ public sealed class BattleRenderer : IDisposable
 
     /// <summary>Opaque pixels in the dedicated 100x60 source render target. This is deliberately
     /// independent from the main framebuffer, whose stage lies behind the thumbnail rectangle.</summary>
+    /// <returns>The number of opaque pixels in the partner view target.</returns>
     public int PartnerViewOpaquePixels() => _partnerView.OpaquePixels();
 
     /// <summary>Writes the raw 100x60 target for visual probe evidence.</summary>
+    /// <param name="path">Destination path for the image file.</param>
+    /// <returns>The engine result of saving the render target.</returns>
     public Error SavePartnerView(string path) => _partnerView.Save(path);
 
     /// <summary>Probe-only visibility toggle for the independent 0x1009 partner model.</summary>
+    /// <param name="visible">Whether the partner model should be rendered.</param>
     public void SetPartnerModelVisibleForProbe(bool visible)
     {
         var model = _partnerView.Model ?? throw new InvalidOperationException("partner view model is not built");
@@ -215,15 +238,20 @@ public sealed class BattleRenderer : IDisposable
     }
 
     /// <summary>Poses every built model at <paramref name="frame"/> (for the probe's distinct-pose proof).</summary>
+    /// <param name="frame">Source pose frame applied to every built fighter.</param>
     public void PoseAll(int frame) => _fighters.PoseAll(frame);
 
     /// <summary>Source scale-threshold status for an actual decoded model, used by the offscreen
     /// regression probe rather than inferred from its final pixels.</summary>
+    /// <param name="fighterId">Identifier of the fighter to inspect.</param>
+    /// <returns>A diagnostic string listing bones hidden by the scale threshold.</returns>
     public string BoneVisibility(int fighterId) =>
         $"fighter={fighterId} hidden=[{string.Join(",", _fighters.Require(fighterId).HiddenBones)}]";
 
     /// <summary>Probe: (opaque, translucent) surface counts for a fighter, or for the stage
     /// when <paramref name="fighterId"/> is negative.</summary>
+    /// <param name="fighterId">Fighter identifier, or a negative value for the stage.</param>
+    /// <returns>The counts of opaque and translucent surfaces.</returns>
     public (int Opaque, int Translucent) SurfacePasses(int fighterId)
     {
         var model = fighterId < 0 ? _stage : _fighters.Find(fighterId);
@@ -237,20 +265,38 @@ public sealed class BattleRenderer : IDisposable
     }
 
     /// <summary>Whether an actual decoded bone survived the source scale threshold.</summary>
+    /// <param name="fighterId">Identifier of the fighter that owns the bone.</param>
+    /// <param name="bone">Zero-based bone index to inspect.</param>
+    /// <returns><see langword="true"/> when the requested bone is visible.</returns>
     public bool BoneVisible(int fighterId, int bone) => _fighters.Find(fighterId)?.IsBoneVisible(bone) == true;
 
-    /// <summary>Maximum matrix/scale difference between ApplyPose and the explicit PS1 ZYX oracle.</summary>
+    /// <summary>Reports the maximum matrix and scale difference against the pose oracle.</summary>
+    /// <returns>The greatest difference, or positive infinity when no model is built.</returns>
     public float RotationOracleMaxDiff() => ModelCount == 0 ? float.PositiveInfinity : _fighters.Models.Max(model => model.RotationOracleMaxDiff());
 
     /// <summary>Screen-winding versus source-normal agreement for a decoded fighter.</summary>
+    /// <param name="fighterId">Identifier of the fighter to evaluate.</param>
+    /// <returns>The total sampled faces and the number whose winding agrees.</returns>
     public (int Total, int Agree) WindingAgreement(int fighterId) => _fighters.Require(fighterId).WindingAgreement(_camera);
 
+    /// <summary>Describes the face-animation diagnostic state for a fighter.</summary>
+    /// <param name="fighterId">Identifier of the fighter to inspect.</param>
+    /// <returns>A textual summary of the face animation state.</returns>
     public string FaceSummary(int fighterId) => _fighters.Require(fighterId).FaceSummary();
 
+    /// <summary>Counts face texture texels changed for a fighter.</summary>
+    /// <param name="fighterId">Identifier of the fighter to inspect.</param>
+    /// <returns>The changed texture-texel count.</returns>
     public int FaceChangedTexels(int fighterId) => _fighters.Require(fighterId).FaceChangedTexels();
 
+    /// <summary>Supplies a deterministic random value to a fighter's probe-only face update.</summary>
+    /// <param name="fighterId">Identifier of the fighter to update.</param>
+    /// <param name="randomValue">Fixed random value returned during the update.</param>
     public void SetFaceRandomForProbe(int fighterId, int randomValue) => _fighters.Require(fighterId).SetFaceRandomForProbe(() => randomValue);
 
+    /// <summary>Sets and advances a fighter's probe-only face blink timer.</summary>
+    /// <param name="fighterId">Identifier of the fighter to update.</param>
+    /// <param name="timer">Blink timer value to apply before stepping the fighter.</param>
     public void SetFaceBlinkTimerForProbe(int fighterId, int timer)
     {
         var model = _fighters.Require(fighterId);
@@ -267,6 +313,8 @@ public sealed class BattleRenderer : IDisposable
     }
 
     /// <summary>Probe-only visibility toggle for one decoded fighter in a framebuffer mask.</summary>
+    /// <param name="fighterId">Identifier of the fighter whose visibility changes.</param>
+    /// <param name="visible">Whether the fighter should be rendered.</param>
     public void SetModelVisibleForProbe(int fighterId, bool visible)
     {
         _fighters.SetVisibleForProbe(fighterId, visible);
@@ -278,6 +326,7 @@ public sealed class BattleRenderer : IDisposable
 
     /// <summary>Holds a deterministic source frame across an offscreen capture. Ordinary battle
     /// presentation keeps its time-driven pose path because this is only called by a probe.</summary>
+    /// <param name="frame">Source pose frame to hold during the capture.</param>
     public void SetProbePose(int frame)
     {
         PoseAll(frame);
@@ -285,21 +334,30 @@ public sealed class BattleRenderer : IDisposable
     }
 
     /// <summary>Pins HUD animation to a deterministic 16 ms source frame for an offscreen probe.</summary>
+    /// <param name="frame">Frame to pin, or <see langword="null"/> to resume normal animation.</param>
     public void SetProbeAnimationFrame(int? frame) =>
         _hud.SetProbeAnimationMilliseconds(frame is { } pinned ? ProbeAnimationMilliseconds(pinned) : null);
 
     /// <summary>Probe-only culling baseline. Callers must restore Back before leaving the probe.</summary>
+    /// <param name="mode">Cull mode to apply to every fighter surface.</param>
     public void SetCullModeForProbe(BaseMaterial3D.CullModeEnum mode) => _fighters.SetCullModeForProbe(mode);
 
     /// <summary>Poses every built model at motion <paramref name="motionIndex"/>'s keyframe
     /// <paramref name="frameInMotion"/> (for the probe's attack-pose proof).</summary>
+    /// <param name="motionIndex">Zero-based motion index to pose.</param>
+    /// <param name="frameInMotion">Frame within the selected motion.</param>
     public void PoseMotionAll(int motionIndex, int frameInMotion) => _fighters.PoseMotionAll(motionIndex, frameInMotion);
 
     /// <summary>Requests a one-based source motion for the active player model.</summary>
+    /// <param name="motion">One-based motion number to select.</param>
+    /// <param name="restart">Whether selection resets the motion to its first frame.</param>
     public void SetPlayerMotion(int motion, bool restart = true) => _fighters.Player?.SetMotion(motion, restart);
 
     /// <summary>Requests a recovered source motion only when the selected model carries it.
     /// A missing motion is surfaced to the host log rather than substituted with a guess.</summary>
+    /// <param name="motion">One-based motion number to select.</param>
+    /// <param name="restart">Whether selection resets the motion to its first frame.</param>
+    /// <returns><see langword="true"/> when the active player has the requested motion.</returns>
     public bool TrySetPlayerMotion(int motion, bool restart = true)
     {
         if (_fighters.Player is not { } player || player.Motions.Count < motion)
@@ -312,9 +370,12 @@ public sealed class BattleRenderer : IDisposable
     }
 
     /// <summary>Requests one-based source motion numbers for all real fighter models.</summary>
+    /// <param name="motion">One-based motion number to select.</param>
+    /// <param name="restart">Whether selection resets each motion to its first frame.</param>
     public void SetMotionAll(int motion, bool restart = true) => _fighters.SetMotionAll(motion, restart);
 
     /// <summary>Maps 60 Hz presentation time to the source PAL 50 Hz clock without drift.</summary>
+    /// <param name="delta">Elapsed presentation time in seconds.</param>
     public void StepMotions(float delta)
     {
         var elapsed = _motionClock.Advance(delta);
@@ -334,7 +395,8 @@ public sealed class BattleRenderer : IDisposable
         ApplyEntranceFade();
     }
 
-    /// <summary>Probe-only comparison against the same pose with GsSetFlatLight and BackColor neutralised.</summary>
+    /// <summary>Probe-only comparison against the same pose with lighting and background neutralised.</summary>
+    /// <param name="neutral">Whether to apply neutral lighting instead of the stage light set.</param>
     public void SetNeutralLightsForProbe(bool neutral)
     {
         if (neutral)
@@ -352,12 +414,15 @@ public sealed class BattleRenderer : IDisposable
 
     /// <summary>Recreates a measured point of the source entrance fade for a visual oracle.
     /// Production always advances this value in Present.</summary>
+    /// <param name="fade">Entrance-fade fraction to reproduce.</param>
     public void SetLightFadeForProbe(float fade)
     {
         _entranceFade.SetFraction(fade);
         ApplyEntranceFade();
     }
 
+    /// <summary>Describes the loaded stage light set for diagnostics.</summary>
+    /// <returns>The light directions and colours, including the ambient colour.</returns>
     public string StageLightSummary()
     {
         if (_stageLights is not { } set)
@@ -371,11 +436,16 @@ public sealed class BattleRenderer : IDisposable
 
     /// <summary>One decoded lit vertex after the same GTE-style lighting calculation used by
     /// the visible mesh. This is diagnostic evidence, never a rendering shortcut.</summary>
+    /// <param name="fighterId">Identifier of the fighter that provides the diagnostic vertex.</param>
+    /// <returns>A description of the selected vertex lighting result.</returns>
     public string LightingVertexSummary(int fighterId) => _fighters.Require(fighterId).LightingVertexSummary();
 
     /// <summary>Sets the battle camera to a decoded source view, fading from where it is.
     /// The view's GsRVIEW2 sign change and the world-coordinate conversion cancel, so
     /// decoded camPos/camRef map directly at the shared /256 scale.</summary>
+    /// <param name="view">Decoded view parameters to apply.</param>
+    /// <param name="frames">Number of presentation frames used for the transition.</param>
+    /// <param name="snap">Whether to apply the view immediately.</param>
     public void SetSourceCamera(BattleModel.BattleCameraView view, int frames = 60, bool snap = false)
     {
         var position = BattleSceneMath.CameraPosition(view.CamPos[0], view.CamPos[1], view.CamPos[2]);
@@ -394,6 +464,8 @@ public sealed class BattleRenderer : IDisposable
 
     /// <summary>Applies a complete composed camera view before it is set as the reference view.
     /// This is the path used by the player command shot camera.</summary>
+    /// <param name="view">Composed camera view to apply.</param>
+    /// <param name="snap">Whether to apply the view immediately.</param>
     public void SetSourceCamera(SourceBattleCameraView view, bool snap = true)
     {
         var position = BattleSceneMath.ComposeCameraPosition(view, reference: false);
@@ -409,6 +481,7 @@ public sealed class BattleRenderer : IDisposable
 
     /// <summary>The battle camera's interpolation: advances the fade and applies the
     /// interpolated view. Called every presented frame.</summary>
+    /// <param name="delta">Elapsed presentation time in seconds.</param>
     public void StepCamera(float delta)
     {
         _cameraFade.Step(delta);
@@ -417,21 +490,28 @@ public sealed class BattleRenderer : IDisposable
 
     /// <summary>Loads the decoded battle-HUD frames (HP-bar caps, background, technique gauge,
     /// cursor) so the HUD draws the real disc sprites instead of a flat panel.</summary>
+    /// <param name="hud">Extracted sprites and layout data used by the battle HUD.</param>
     public void SetHud(BattleHudData hud) => _hud.SetHud(hud);
 
-    /// <summary>Binds the CMFONTCS Technique/Item icons and message continuation arrow.</summary>
+    /// <summary>Binds the technique and item icons plus the message continuation arrow.</summary>
+    /// <param name="icons">Extracted icon atlas data used by menu elements.</param>
     public void SetMenuIcons(BattleMenuIconsData icons) => _hud.SetMenuIcons(icons);
 
     /// <summary>Uses the decoded CMFONTTM atlas already used by DialogueRenderer. The HUD
-    /// recolours the atlas pages per CLUT row itself, so it takes only the font data.</summary>
+    /// recolours the atlas pages per palette row itself, so it takes only the font data.</summary>
+    /// <param name="font">Extracted font atlas used to draw HUD text.</param>
     public void SetFont(FontData font) => _hud.SetFont(font);
 
     /// <summary>The decoded camera views of the player's (enemy: false) or enemy's (enemy: true)
     /// model, for the source camera. Empty when that model was not built.</summary>
+    /// <param name="enemy">Whether to return the opponent's cameras instead of the player's.</param>
+    /// <returns>The requested fighter's decoded camera views.</returns>
     public IReadOnlyList<BattleModel.BattleCameraView> FighterCameras(bool enemy) =>
         (enemy ? _fighters.Enemy : _fighters.Player)?.Cameras ?? [];
 
-    /// <summary>Source polygons whose 0x9 command leaves residual textured primitive state.</summary>
+    /// <summary>Counts polygons that retain textured primitive state.</summary>
+    /// <param name="fighterId">Identifier of the fighter to inspect.</param>
+    /// <returns>The number of untextured polygons that retain textured state.</returns>
     public int UntexturedPolygonCount(int fighterId) => _fighters.Find(fighterId)?.UntexturedPolygonCount ?? 0;
 
     /// <summary>The battle presentation starts on the enemy view: the source reads the enemy's
@@ -456,8 +536,11 @@ public sealed class BattleRenderer : IDisposable
         ApplyShotVisibility();
     }
 
+    /// <summary>Describes the active command shot camera for diagnostics.</summary>
+    /// <returns>A textual summary of the shot camera state.</returns>
     public string ShotCameraSummary() => _commandCamera.Summary();
 
+    /// <summary>Advances the command shot camera and applies its next view when available.</summary>
     public void StepShotCamera()
     {
         if (_commandCamera.Step() is not { } view)
@@ -469,6 +552,7 @@ public sealed class BattleRenderer : IDisposable
         ApplyShotVisibility();
     }
 
+    /// <summary>Stops the command shot camera and restores both fighters' visibility.</summary>
     public void StopShotCamera()
     {
         _commandCamera.Stop();
@@ -476,13 +560,18 @@ public sealed class BattleRenderer : IDisposable
     }
 
     /// <summary>Offscreen acceptance oracle for a source battle view (see <see cref="BattleGeometryOracle"/>).</summary>
+    /// <param name="focusedFighterId">Optional fighter expected to occupy the shot focus.</param>
+    /// <returns>A description of the geometry assertion result.</returns>
     public string AssertOpeningGeometry(int? focusedFighterId = null) =>
         BattleGeometryOracle.AssertOpening(_fighters.Models, _stage, _camera, focusedFighterId);
 
     /// <summary>Sets the white-flash overlay level (0 = off, 1 = full white).</summary>
+    /// <param name="level">Flash opacity before clamping to the valid range.</param>
     public void SetFlash(float level) => _flash.Color = new Color(1, 1, 1, Mathf.Clamp(level, 0f, 1f));
 
     /// <summary>Shows or hides the hit spark on the struck fighter.</summary>
+    /// <param name="onEnemy">Whether the spark should target the opponent instead of the player.</param>
+    /// <param name="show">Whether the spark should be visible.</param>
     public void ShowHitSpark(bool onEnemy, bool show)
     {
         if ((onEnemy ? _fighters.Enemy : _fighters.Player) is { } model)
@@ -493,6 +582,8 @@ public sealed class BattleRenderer : IDisposable
         _hitSpark.Visible = show;
     }
 
+    /// <summary>Presents the current battle view and advances its camera, lighting, model, and HUD state.</summary>
+    /// <param name="view">Current battle state, or <see langword="null"/> when no battle is active.</param>
     public void Present(BattleView? view)
     {
         // Advance and apply the battle camera's interpolation each presented frame.
@@ -534,9 +625,15 @@ public sealed class BattleRenderer : IDisposable
         _layer.QueueFree();
     }
 
+    /// <summary>Determines whether an exception represents an expected model loading failure.</summary>
+    /// <param name="error">Exception raised while loading a model document.</param>
+    /// <returns><see langword="true"/> when callers may use the model fallback path.</returns>
     private static bool IsModelLoadError(Exception error) =>
         error is InvalidOperationException or FileNotFoundException or System.Text.Json.JsonException;
 
+    /// <summary>Extracts a fighter identifier from a model document path.</summary>
+    /// <param name="path">Model document path whose file name may contain an identifier.</param>
+    /// <returns>The parsed identifier, or <c>-1</c> when the file name has another shape.</returns>
     private static int ParseFighterId(string path)
     {
         const string prefix = "fighter-";
@@ -550,12 +647,17 @@ public sealed class BattleRenderer : IDisposable
         return int.TryParse(name[prefix.Length..^suffix.Length], out var fighter) ? fighter : -1;
     }
 
+    /// <summary>Validates a non-negative probe animation frame.</summary>
+    /// <param name="frame">Frame number to validate.</param>
+    /// <returns>The validated frame number.</returns>
     private static int ValidateProbeAnimationFrame(int frame)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(frame);
         return frame;
     }
 
+    /// <summary>Creates the viewport camera with the default battle framing.</summary>
+    /// <returns>A configured current camera for the battle viewport.</returns>
     private static Camera3D CreateCamera() => new()
     {
         Position = new Vector3(0, 6.5f, 22f),
@@ -604,6 +706,7 @@ public sealed class BattleRenderer : IDisposable
         Visible = false,
     };
 
+    /// <summary>Hides UI and transient effects that do not belong in a model contact sheet.</summary>
     private void HideOverlaysForSheet()
     {
         _hud.Visible = false;
@@ -613,6 +716,11 @@ public sealed class BattleRenderer : IDisposable
 
     /// <summary>Loads one decoded battle model at a side; returns false (and logs nothing here)
     /// when the JSON is absent or invalid, so the caller can fall back to a capsule.</summary>
+    /// <param name="jsonPath">Path to the extracted model document.</param>
+    /// <param name="label">Display label assigned to the model node.</param>
+    /// <param name="fighterId">Identifier of the fighter represented by the model.</param>
+    /// <param name="enemy">Whether the model is placed as an opponent.</param>
+    /// <returns><see langword="true"/> when the model was loaded and added.</returns>
     private bool TryAddModel(string jsonPath, string label, int fighterId, bool enemy)
     {
         try
@@ -639,6 +747,11 @@ public sealed class BattleRenderer : IDisposable
         }
     }
 
+    /// <summary>Adds a visible fallback capsule when a fighter model cannot be loaded.</summary>
+    /// <param name="fighterId">Identifier of the fighter represented by the fallback.</param>
+    /// <param name="label">Display label assigned to the fallback node.</param>
+    /// <param name="enemy">Whether the fallback is placed as an opponent.</param>
+    /// <param name="color">Unshaded colour assigned to the capsule.</param>
     private void AddPlaceholder(int fighterId, string label, bool enemy, Color color)
     {
         var instance = new MeshInstance3D
@@ -657,6 +770,7 @@ public sealed class BattleRenderer : IDisposable
         _placeholders.Add(instance);
     }
 
+    /// <summary>Releases current fighter models and fallback capsules from the scene.</summary>
     private void ClearModels()
     {
         _modelLayer.Clear();
@@ -682,6 +796,7 @@ public sealed class BattleRenderer : IDisposable
         }
     }
 
+    /// <summary>Applies the stage light set at the current entrance-fade fraction.</summary>
     private void ApplyStageLights()
     {
         if (_stageLights is not { } source)
@@ -703,6 +818,7 @@ public sealed class BattleRenderer : IDisposable
         _environment.Environment.BackgroundColor = _entranceFade.Background(_stage?.StageBgColor ?? Colors.Black);
     }
 
+    /// <summary>Applies the interpolated camera state to the battle viewport camera.</summary>
     private void ApplyCamera()
     {
         _camera.Position = _cameraFade.Position;
@@ -710,6 +826,7 @@ public sealed class BattleRenderer : IDisposable
         _camera.Fov = BattleSceneMath.VerticalFovDegrees(Math.Max(1, (int)MathF.Round(_cameraFade.Projection)));
     }
 
+    /// <summary>Applies fighter visibility required by the active command shot.</summary>
     private void ApplyShotVisibility()
     {
         if (_commandCamera.Shot is { } shot)
@@ -730,6 +847,7 @@ public sealed class BattleRenderer : IDisposable
         }
     }
 
+    /// <summary>Logs ordering statistics only when their values changed.</summary>
     private void LogOrdering()
     {
         (int Polygons, int Culled, int AbrUnsorted) ordering = (_modelLayer.PolygonCount, _modelLayer.CulledCount, _modelLayer.AbrUnsortedCount);
