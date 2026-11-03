@@ -12,7 +12,9 @@ namespace Dw3.Extractor.Tests;
 /// </summary>
 public sealed class BattleAssetStepsTests : IDisposable
 {
-    private static readonly int[] HudFrameIds = [0, 1, 0xB, 0x1E, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x3A, 0x40];
+    // The frame ids the HUD step requires (two bar caps, background, gauge and the eight blink
+    // frames 51..58), plus frame 64, which no rule names.
+    private static readonly int[] HudFrameIds = [0, 1, 11, 30, .. Enumerable.Range(51, 8), 64];
     private static readonly int[] MenuFrameIds = [10, 57, 58, 59, 60, 61, 95, 97];
 
     private readonly string _root = Path.Combine(Path.GetTempPath(), $"dw3-battle-assets-{Guid.NewGuid():N}");
