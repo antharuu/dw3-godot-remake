@@ -10,6 +10,20 @@ public sealed class BattleTextCatalog
     /// <param name="data">The battle text tables decoded from the disc.</param>
     public BattleTextCatalog(BattleTextData data) => _data = data;
 
+    /// <summary>Wraps an arbitrary token stream in a <see cref="BattleTextLine"/> with a debug label.</summary>
+    /// <param name="tokens">The token stream to wrap.</param>
+    /// <param name="debug">The debug description for probe logs.</param>
+    /// <returns>A new <see cref="BattleTextLine"/> with no substitutions.</returns>
+    public static BattleTextLine Tokens(IReadOnlyList<TextToken> tokens, string debug) => new(tokens, [], debug);
+
+    /// <summary>Converts an integer to a sequence of glyph tokens using digit codes 4–13.</summary>
+    /// <param name="value">The integer to convert.</param>
+    /// <returns>A read-only list of glyph tokens representing the decimal digits.</returns>
+    public static IReadOnlyList<TextToken> Number(int value)
+    {
+        return [.. value.ToString(System.Globalization.CultureInfo.InvariantCulture).Select(character => new TextToken("g", 4 + character - '0', 0, []))];
+    }
+
     /// <summary>Returns the battle text line for a menu command index.</summary>
     /// <param name="command">The zero-based command index in the battle menu.</param>
     /// <returns>The resolved <see cref="BattleTextLine"/>, or <see cref="BattleTextLine.Missing"/>.</returns>
@@ -55,12 +69,6 @@ public sealed class BattleTextCatalog
     public BattleTextLine Report(string key, params IReadOnlyList<TextToken>[] substitutions) => _data.ReportTemplates.TryGetValue(key, out var entry)
         ? new BattleTextLine(_data.Report[entry], substitutions, $"FGTRPT {key}") : BattleTextLine.Missing;
 
-    /// <summary>Wraps an arbitrary token stream in a <see cref="BattleTextLine"/> with a debug label.</summary>
-    /// <param name="tokens">The token stream to wrap.</param>
-    /// <param name="debug">The debug description for probe logs.</param>
-    /// <returns>A new <see cref="BattleTextLine"/> with no substitutions.</returns>
-    public static BattleTextLine Tokens(IReadOnlyList<TextToken> tokens, string debug) => new(tokens, [], debug);
-
     /// <summary>Builds a two-part battle message line for the given key and substitutions.</summary>
     /// <param name="key">The message template key (e.g. "technique", "digivolve").</param>
     /// <param name="substitutions">The actor and action substitutions.</param>
@@ -84,20 +92,6 @@ public sealed class BattleTextCatalog
         return new BattleTextLine(_data.Menu[0x16], [actor], $"MFIGHT entry=22 message={key}", second, type);
     }
 
-    /// <summary>Converts an integer to a sequence of glyph tokens using digit codes 4–13.</summary>
-    /// <param name="value">The integer to convert.</param>
-    /// <returns>A read-only list of glyph tokens representing the decimal digits.</returns>
-    public static IReadOnlyList<TextToken> Number(int value)
-    {
-        return [.. value.ToString(System.Globalization.CultureInfo.InvariantCulture).Select(character => new TextToken("g", 4 + character - '0', 0, []))];
-    }
-
-    /// <summary>Looks up a line of the battle menu text table, tagging it with a debug label for the probe logs.</summary>
-    /// <param name="entry">Entry index in the menu table.</param>
-    /// <param name="debug">Label recorded on the line for diagnostics.</param>
-    /// <returns>The line, or <see cref="BattleTextLine.Missing"/> when the index is out of range.</returns>
-    private BattleTextLine FromMenu(int entry, string debug) => From(_data.Menu, entry, debug);
-
     /// <summary>Looks up one entry of a text table without throwing, so a pack with a short table still renders the rest of the battle.</summary>
     /// <param name="table">Token lines of a text table.</param>
     /// <param name="entry">Entry index. Any value outside 0..Count-1 is accepted.</param>
@@ -105,4 +99,10 @@ public sealed class BattleTextCatalog
     /// <returns>The line without substitutions, or <see cref="BattleTextLine.Missing"/> when the index is out of range.</returns>
     private static BattleTextLine From(IReadOnlyList<IReadOnlyList<TextToken>> table, int entry, string debug) =>
         entry >= 0 && entry < table.Count ? new BattleTextLine(table[entry], [], debug) : BattleTextLine.Missing;
+
+    /// <summary>Looks up a line of the battle menu text table, tagging it with a debug label for the probe logs.</summary>
+    /// <param name="entry">Entry index in the menu table.</param>
+    /// <param name="debug">Label recorded on the line for diagnostics.</param>
+    /// <returns>The line, or <see cref="BattleTextLine.Missing"/> when the index is out of range.</returns>
+    private BattleTextLine FromMenu(int entry, string debug) => From(_data.Menu, entry, debug);
 }

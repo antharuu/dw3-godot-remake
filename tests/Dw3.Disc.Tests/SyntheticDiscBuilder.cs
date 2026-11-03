@@ -16,20 +16,29 @@ namespace Dw3.Disc.Tests;
 /// </summary>
 internal static class SyntheticDiscBuilder
 {
+    public static readonly byte[] HelloContent = Encoding.ASCII.GetBytes("hello world");
+
+    public static readonly byte[] DataContent = [0x01, 0x02, 0x03, 0x04];
+
     private const int Sec = Iso9660Reader.SectorBytes;
+
     private const int UDO = Iso9660Reader.UserDataOffset;
+
     private const int UDB = Iso9660Reader.UserDataBytes;
 
     private const int PvdLba = 16;
-    private const int PTabLba = 17;
-    private const int RootDirLba = 18;
-    private const int SubDirLba = 19;
-    private const int HelloLba = 20;
-    private const int DataLba = 21;
-    private const int TotalSecs = 22;
 
-    public static readonly byte[] HelloContent = Encoding.ASCII.GetBytes("hello world");
-    public static readonly byte[] DataContent = [0x01, 0x02, 0x03, 0x04];
+    private const int PTabLba = 17;
+
+    private const int RootDirLba = 18;
+
+    private const int SubDirLba = 19;
+
+    private const int HelloLba = 20;
+
+    private const int DataLba = 21;
+
+    private const int TotalSecs = 22;
 
     public static byte[] Build()
     {

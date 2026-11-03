@@ -15,26 +15,9 @@ public sealed class RealRepositoryTests
 {
     // Walk up from the test output directory to find the repo root (.git/).
     private static readonly string RepoRoot = FindRepoRoot();
+
     private static readonly string AllowlistPath =
         Path.Combine(RepoRoot, "tools", "public-allowlist.txt");
-
-    private static string FindRepoRoot()
-    {
-        var dir = AppContext.BaseDirectory;
-        while (dir is not null)
-        {
-            // .git is a directory in a normal clone and a file in a worktree.
-            var git = Path.Combine(dir, ".git");
-            if (Directory.Exists(git) || File.Exists(git))
-            {
-                return dir;
-            }
-
-            dir = Path.GetDirectoryName(dir);
-        }
-
-        throw new InvalidOperationException("Cannot locate the repository root (.git/).");
-    }
 
     // ─────────────────────────────────────────────────────────────────────
     // Allowlist integrity
@@ -134,5 +117,23 @@ public sealed class RealRepositoryTests
             .ToList();
 
         Assert.Empty(pythonInPublic);
+    }
+
+    private static string FindRepoRoot()
+    {
+        var dir = AppContext.BaseDirectory;
+        while (dir is not null)
+        {
+            // .git is a directory in a normal clone and a file in a worktree.
+            var git = Path.Combine(dir, ".git");
+            if (Directory.Exists(git) || File.Exists(git))
+            {
+                return dir;
+            }
+
+            dir = Path.GetDirectoryName(dir);
+        }
+
+        throw new InvalidOperationException("Cannot locate the repository root (.git/).");
     }
 }

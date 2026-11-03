@@ -35,8 +35,8 @@
     <!-- DW3001: custom class cognitive complexity analyser (new; baseline violations ratcheted at introduction). -->
     <QualityRatchetedRules>$(QualityRatchetedRules);DW3001</QualityRatchetedRules>
     <!-- StyleCop spacing, readability and ordering rules. -->
-    <QualityRatchetedRules>$(QualityRatchetedRules);SA1118;SA1124</QualityRatchetedRules>
-    <QualityRatchetedRules>$(QualityRatchetedRules);SA1201;SA1202;SA1203;SA1204;SA1214;SA1313;SA1316</QualityRatchetedRules>
+    <QualityRatchetedRules>$(QualityRatchetedRules);SA1118</QualityRatchetedRules>
+    <QualityRatchetedRules>$(QualityRatchetedRules);SA1313;SA1316</QualityRatchetedRules>
     <!-- StyleCop maintainability and layout rules. -->
     <QualityRatchetedRules>$(QualityRatchetedRules);SA1401;SA1414</QualityRatchetedRules>
     <!-- StyleCop documentation rules. -->

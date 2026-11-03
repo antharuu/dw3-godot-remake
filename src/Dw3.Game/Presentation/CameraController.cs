@@ -7,9 +7,13 @@ namespace Dw3Production.Presentation;
 public sealed class CameraController
 {
     private const float ViewWidth = 1280f / 3f;
+
     private const float ViewHeight = 720f / 3f;
+
     private readonly Camera2D _camera;
+
     private Vector2 _pan;
+
     private bool _initialized;
 
     /// <summary>
@@ -26,6 +30,20 @@ public sealed class CameraController
         // No engine smoothing: the source's exponential pan is applied manually in Apply,
         // so the camera stays clamped to the map instead of drifting off-map (black screen).
         _camera.PositionSmoothingEnabled = false;
+    }
+
+    /// <summary>Calculates the camera center, clamping the player target to the visible map rectangle.</summary>
+    /// <param name="mapWidth">Map width in world pixels.</param>
+    /// <param name="mapHeight">Map height in world pixels.</param>
+    /// <param name="playerPosition">Unclamped player center in world pixels.</param>
+    /// <returns>A center that shows no area outside the map unless the map is smaller than the viewport.</returns>
+    public static Vector2 PositionFor(int mapWidth, int mapHeight, Vector2 playerPosition)
+    {
+        var halfWidth = ViewWidth / 2f;
+        var halfHeight = ViewHeight / 2f;
+        var x = mapWidth <= ViewWidth ? mapWidth / 2f : Mathf.Clamp(playerPosition.X, halfWidth, mapWidth - halfWidth);
+        var y = mapHeight <= ViewHeight ? mapHeight / 2f : Mathf.Clamp(playerPosition.Y, halfHeight, mapHeight - halfHeight);
+        return new Vector2(x, y);
     }
 
     /// <summary>Applies map limits and moves the camera to the player immediately or through quarter-distance panning.</summary>
@@ -58,19 +76,5 @@ public sealed class CameraController
 
         _camera.Position = _pan;
         _camera.MakeCurrent();
-    }
-
-    /// <summary>Calculates the camera center, clamping the player target to the visible map rectangle.</summary>
-    /// <param name="mapWidth">Map width in world pixels.</param>
-    /// <param name="mapHeight">Map height in world pixels.</param>
-    /// <param name="playerPosition">Unclamped player center in world pixels.</param>
-    /// <returns>A center that shows no area outside the map unless the map is smaller than the viewport.</returns>
-    public static Vector2 PositionFor(int mapWidth, int mapHeight, Vector2 playerPosition)
-    {
-        var halfWidth = ViewWidth / 2f;
-        var halfHeight = ViewHeight / 2f;
-        var x = mapWidth <= ViewWidth ? mapWidth / 2f : Mathf.Clamp(playerPosition.X, halfWidth, mapWidth - halfWidth);
-        var y = mapHeight <= ViewHeight ? mapHeight / 2f : Mathf.Clamp(playerPosition.Y, halfHeight, mapHeight - halfHeight);
-        return new Vector2(x, y);
     }
 }

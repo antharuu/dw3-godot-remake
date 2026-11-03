@@ -110,26 +110,6 @@ public sealed class BattleFlowController
         return true;
     }
 
-    /// <summary>Consumes one of <paramref name="itemId"/> from the bag and applies its effect
-    /// only when the item is in the catalogue, the stock is positive and the battle state accepts the effect.</summary>
-    /// <param name="itemId">Item id picked in the Item submenu.</param>
-    /// <returns><see langword="true"/> when the item was used and the stock decremented.</returns>
-    private bool UseItem(int itemId)
-    {
-        if (!Items.TryGetValue(itemId, out var item) || !ItemStock.TryGetValue(itemId, out var count) || count <= 0)
-        {
-            return false;
-        }
-
-        if (!State.PlayerItem(item))
-        {
-            return false;
-        }
-
-        ItemStock[itemId] = count - 1;
-        return true;
-    }
-
     /// <summary>Resolves the enemy's turn: it decides its action from its battle table
     /// (attack/technique/switch/run-away; its counter-attack fires inside the player's hit) and
     /// executes it, then advances the phase. Does nothing outside the enemy's turn.</summary>
@@ -168,6 +148,36 @@ public sealed class BattleFlowController
         ];
     }
 
+    /// <summary>Force-ends the battle with the given outcome: the test driver sets the battle's result directly,
+    /// so a defeat can be exercised without a contrived fight. Production reaches Ended through
+    /// <see cref="AdvancePhase"/> after the outcome check fires.</summary>
+    /// <param name="outcome">Outcome written to the battle state.</param>
+    public void EndBattle(BattleOutcome outcome)
+    {
+        State.Outcome = outcome;
+        Phase = BattleFlowPhase.Ended;
+    }
+
+    /// <summary>Consumes one of <paramref name="itemId"/> from the bag and applies its effect
+    /// only when the item is in the catalogue, the stock is positive and the battle state accepts the effect.</summary>
+    /// <param name="itemId">Item id picked in the Item submenu.</param>
+    /// <returns><see langword="true"/> when the item was used and the stock decremented.</returns>
+    private bool UseItem(int itemId)
+    {
+        if (!Items.TryGetValue(itemId, out var item) || !ItemStock.TryGetValue(itemId, out var count) || count <= 0)
+        {
+            return false;
+        }
+
+        if (!State.PlayerItem(item))
+        {
+            return false;
+        }
+
+        ItemStock[itemId] = count - 1;
+        return true;
+    }
+
     /// <summary>Moves to the next phase after a spent turn: <see cref="BattleFlowPhase.Ended"/> with a won or lost message once an outcome exists, otherwise the turn of whichever side the state schedules next. The message is cleared when the player gets the menu back.</summary>
     private void AdvancePhase()
     {
@@ -191,16 +201,6 @@ public sealed class BattleFlowController
         {
             ClearMessage();
         }
-    }
-
-    /// <summary>Force-ends the battle with the given outcome: the test driver sets the battle's result directly,
-    /// so a defeat can be exercised without a contrived fight. Production reaches Ended through
-    /// <see cref="AdvancePhase"/> after the outcome check fires.</summary>
-    /// <param name="outcome">Outcome written to the battle state.</param>
-    public void EndBattle(BattleOutcome outcome)
-    {
-        State.Outcome = outcome;
-        Phase = BattleFlowPhase.Ended;
     }
 
     /// <summary>The basic attack; refused without a message when no hit can land.</summary>

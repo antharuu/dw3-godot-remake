@@ -106,6 +106,18 @@ internal static class BattleEncounterJsonParser
         return new RewardsData(rewards, tables);
     }
 
+    /// <summary>Maps an AI action triple: target selector, trigger condition code and its argument, as read from a fighter table entry.</summary>
+    /// <param name="e">An action object with <c>target</c>, <c>condition</c> and <c>conditionArgument</c>.</param>
+    /// <returns>The action record.</returns>
+    internal static BattleAction ParseBattleAction(JsonElement e) =>
+        new(e.GetProperty("target").GetInt32(), e.GetProperty("condition").GetInt32(), e.GetProperty("conditionArgument").GetInt32());
+
+    /// <summary>Copies a JSON array of 32-bit integers into a new array.</summary>
+    /// <param name="element">A JSON array whose elements are all integers.</param>
+    /// <returns>A new array, empty when the JSON array is empty.</returns>
+    /// <exception cref="InvalidOperationException">An element is not a number.</exception>
+    internal static int[] Ints(JsonElement element) => [.. element.EnumerateArray().Select(v => v.GetInt32())];
+
     /// <summary>Maps the <c>enemies</c> array, one object per enemy slot of the encounter table, to enemy records carrying level, HP, MP and strength as stored on the disc.</summary>
     /// <param name="element">The <c>enemies</c> JSON array.</param>
     /// <returns>The enemies in file order, so an array position matches the <c>index</c> field written by the extractor.</returns>
@@ -258,16 +270,4 @@ internal static class BattleEncounterJsonParser
                 n.GetProperty("digimonIndex").GetInt32(), n.GetProperty("digimonId").GetInt32(), n.GetProperty("level").GetInt32()))],
             e.GetProperty("stat").GetInt32(),
             e.GetProperty("value").GetInt32());
-
-    /// <summary>Maps an AI action triple: target selector, trigger condition code and its argument, as read from a fighter table entry.</summary>
-    /// <param name="e">An action object with <c>target</c>, <c>condition</c> and <c>conditionArgument</c>.</param>
-    /// <returns>The action record.</returns>
-    internal static BattleAction ParseBattleAction(JsonElement e) =>
-        new(e.GetProperty("target").GetInt32(), e.GetProperty("condition").GetInt32(), e.GetProperty("conditionArgument").GetInt32());
-
-    /// <summary>Copies a JSON array of 32-bit integers into a new array.</summary>
-    /// <param name="element">A JSON array whose elements are all integers.</param>
-    /// <returns>A new array, empty when the JSON array is empty.</returns>
-    /// <exception cref="InvalidOperationException">An element is not a number.</exception>
-    internal static int[] Ints(JsonElement element) => [.. element.EnumerateArray().Select(v => v.GetInt32())];
 }

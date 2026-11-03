@@ -15,285 +15,6 @@ namespace Dw3.Game.Tests;
 /// </summary>
 public sealed class FightReportControllerVectorGenerator
 {
-    // ------------------------------------------------------------------ helpers
-
-    /// <summary>Build a FightReportPartner with invented values.</summary>
-    private static FightReportPartner Partner(
-        int partyIndex,
-        int partnerId,
-        int fighterId,
-        (int Before, int After) levels,
-        int expBefore,
-        int expGained,
-        int[] slotIds)
-        => new(partyIndex, partnerId, fighterId, levels.Before, expBefore, expGained, levels.After, slotIds);
-
-    /// <summary>Serialize a FightReportPartner to JSON input fields.</summary>
-    private static JsonObject PartnerToJson(FightReportPartner p)
-        => new()
-        {
-            ["partyIndex"] = p.PartyIndex,
-            ["partnerId"] = p.PartnerId,
-            ["fighterId"] = p.FighterId,
-            ["levelBefore"] = p.LevelBefore,
-            ["expBefore"] = p.ExpBefore,
-            ["expGained"] = p.ExpGained,
-            ["levelAfter"] = p.LevelAfter,
-            ["slotDigimonIds"] = IntArrayToJson([.. p.SlotDigimonIds]),
-        };
-
-    private static JsonArray IntArrayToJson(int[] arr)
-    {
-        var a = new JsonArray();
-        foreach (var v in arr)
-        {
-            a.Add(v);
-        }
-
-        return a;
-    }
-
-    private static JsonArray StringArrayToJson(IEnumerable<string> strs)
-    {
-        var a = new JsonArray();
-        foreach (var s in strs)
-        {
-            a.Add(s);
-        }
-
-        return a;
-    }
-
-    /// <summary>Serialize FightReportSlotView list (exactly 3 entries) to JSON.</summary>
-    private static JsonArray SlotsToJson(IReadOnlyList<FightReportSlotView> slots)
-    {
-        var a = new JsonArray();
-        foreach (var s in slots)
-        {
-            a.Add(new JsonObject
-            {
-                ["digimonId"] = s.DigimonId,
-                ["visible"] = s.Visible,
-                ["expApplied"] = s.ExpApplied,
-                ["blinkFrame"] = s.BlinkFrame,
-            });
-        }
-
-        return a;
-    }
-
-    private static JsonObject? MessageToJson(FightReportMessage? m)
-    {
-        if (m is null)
-        {
-            return null;
-        }
-
-        var subs = new JsonArray();
-        foreach (var v in m.Substitutions)
-        {
-            subs.Add(v);
-        }
-
-        return new JsonObject
-        {
-            ["entry"] = m.Entry,
-            ["substitutions"] = subs,
-            ["tokensRevealed"] = m.TokensRevealed,
-            ["tokenCount"] = m.TokenCount,
-            ["arrowVisible"] = m.ArrowVisible,
-            ["arrowFrame"] = m.ArrowFrame,
-        };
-    }
-
-    private static JsonObject ViewToJson(FightReportView v)
-    {
-        var partners = new JsonArray();
-        foreach (var p in v.Partners)
-        {
-            partners.Add(new JsonObject
-            {
-                ["partyIndex"] = p.PartyIndex,
-                ["partnerId"] = p.PartnerId,
-                ["fighterId"] = p.FighterId,
-                ["fade"] = p.Fade,
-                ["selected"] = p.Selected,
-                ["cursorFrame"] = p.CursorFrame,
-                ["levelBlinkFrame"] = p.LevelBlinkFrame,
-                ["shownExp"] = p.ShownExp,
-                ["animationFrame"] = p.AnimationFrame,
-                ["slots"] = SlotsToJson(p.Slots),
-            });
-        }
-
-        var o = new JsonObject
-        {
-            ["headerFade"] = v.HeaderFade,
-            ["footerFade"] = v.FooterFade,
-            ["bgScroll"] = v.BgScroll,
-            ["partners"] = partners,
-            ["exitFade"] = v.ExitFade,
-            ["done"] = v.Done,
-        };
-        var msg = MessageToJson(v.Message);
-        o["message"] = msg is null ? null : msg;
-        return o;
-    }
-
-    // ------------------------------------------------------------------ case builders
-
-    // Build a RollStep vector.
-    private static JsonObject RollStepCase(int id, int targetExp)
-    {
-        int result = FightReportController.RollStep(targetExp);
-        return new JsonObject
-        {
-            ["id"] = id,
-            ["fn"] = "RollStep",
-            ["targetExp"] = targetExp,
-            ["expected"] = result,
-        };
-    }
-
-    /// <summary>
-    /// Build a StepSequence vector: construct a controller, run stepCount frames,
-    /// pressing Cross on every frame where frameNumber % crossEvery == 0 (when crossEvery > 0).
-    /// Records the final View and Logs.
-    /// </summary>
-    private static JsonObject StepCase(
-        int id,
-        FightReportInput input,
-        int stepCount,
-        int crossEvery,      // 0 = never, positive = press on multiples of this
-        string label = "")
-    {
-        var ctrl = new FightReportController(input);
-        for (int frame = 1; frame <= stepCount; frame++)
-        {
-            bool cross = crossEvery > 0 && frame % crossEvery == 0;
-            ctrl.Step(cross);
-        }
-
-        var inputPartners = new JsonArray();
-        foreach (var p in input.Partners)
-        {
-            inputPartners.Add(PartnerToJson(p));
-        }
-
-        JsonObject? tokenCounts = null;
-        if (input.MessageTokenCounts is not null)
-        {
-            tokenCounts = [];
-            foreach (var kv in input.MessageTokenCounts)
-            {
-                tokenCounts[kv.Key.ToString(System.Globalization.CultureInfo.InvariantCulture)] = kv.Value;
-            }
-        }
-
-        var o = new JsonObject
-        {
-            ["id"] = id,
-            ["fn"] = "StepSequence",
-            ["label"] = label,
-            ["input"] = new JsonObject
-            {
-                ["partners"] = inputPartners,
-                ["money"] = input.Money,
-                ["item"] = input.Item,
-                ["messageTokenCounts"] = tokenCounts is null ? null : tokenCounts,
-            },
-            ["stepCount"] = stepCount,
-            ["crossEvery"] = crossEvery,
-        };
-
-        var view = ViewToJson(ctrl.View);
-        foreach (var (k, v) in view)
-            o["out_" + k] = v?.DeepClone();
-
-        o["out_logs"] = StringArrayToJson(ctrl.Logs);
-
-        return o;
-    }
-
-    // ------------------------------------------------------------------ standard inputs
-
-    // Single partner, exp=4, no level up, money=50, item=0.
-    private static FightReportInput InputA() => new(
-        [Partner(0, 1, 383, (25, 25), 0, 4, [])],
-        Money: 50,
-        Item: 0);
-
-    // Single partner, exp=4, level up 25→26, money=50, item=0.
-    private static FightReportInput InputB() => new(
-        [Partner(0, 1, 383, (25, 26), 0, 4, [])],
-        Money: 50,
-        Item: 0);
-
-    // Single partner, exp=0 (skipped), money=100, item=0.
-    private static FightReportInput InputC() => new(
-        [Partner(0, 1, 383, (25, 25), 0, 0, [])],
-        Money: 100,
-        Item: 0);
-
-    // Single partner, exp=100, no level up, money=0, item=0.
-    private static FightReportInput InputD() => new(
-        [Partner(0, 1, 383, (25, 25), 0, 100, [])],
-        Money: 0,
-        Item: 0);
-
-    // Single partner, exp=4, money=50, item=3.
-    private static FightReportInput InputE() => new(
-        [Partner(0, 1, 383, (25, 25), 0, 4, [])],
-        Money: 50,
-        Item: 3);
-
-    // Two partners, both with exp, money=100, item=0.
-    private static FightReportInput InputF() => new(
-        [
-            Partner(0, 1, 383, (25, 25), 0,  4, []),
-            Partner(1, 2, 400, (30, 30), 50, 10, [201, 202]),
-        ],
-        Money: 100,
-        Item: 0);
-
-    // Two partners: first exp=0 (skipped), second exp=10, money=50, item=0.
-    private static FightReportInput InputG() => new(
-        [
-            Partner(0, 1, 383, (25,  25), 0, 0, []),
-            Partner(1, 2, 400, (20, 21), 0, 10, [201]),
-        ],
-        Money: 50,
-        Item: 0);
-
-    // Three partners, mixed: one skipped, one level up, one normal.
-    private static FightReportInput InputH() => new(
-        [
-            Partner(0, 1, 383, (25,  25), 0,  0, []),
-            Partner(1, 2, 400, (30,  31), 50, 8, [201]),
-            Partner(2, 3, 450, (15,  15), 0,  4, [301, 302, 303]),
-        ],
-        Money: 200,
-        Item: 7);
-
-    // Single partner, 3 slot digimons, exp=50, no level up.
-    private static FightReportInput InputI() => new(
-        [Partner(0, 1, 383, (25, 25), 0, 50, [101, 102, 103])],
-        Money: 75,
-        Item: 0);
-
-    // Single partner, custom token counts (3 tokens for entry 2).
-    private static FightReportInput InputJ() => new(
-        [Partner(0, 1, 383, (25, 25), 0, 4, [])],
-        Money: 50,
-        Item: 0,
-        MessageTokenCounts: new Dictionary<int, int> { { 2, 3 }, { 10, 2 } });
-
-    // Single partner, high exp (999990), no level up.
-    private static FightReportInput InputK() => new(
-        [Partner(0, 1, 383, (50, 50), 500000, 250, [101])],
-        Money: 9999,
-        Item: 0);
-
     // ------------------------------------------------------------------ generator
     [Fact]
     public void GenerateFightReportControllerVectors()
@@ -580,4 +301,283 @@ public sealed class FightReportControllerVectorGenerator
 
         Assert.True(cases.Count >= 300, $"Generated {cases.Count} vectors, need at least 300.");
     }
+
+    // ------------------------------------------------------------------ helpers
+
+    /// <summary>Build a FightReportPartner with invented values.</summary>
+    private static FightReportPartner Partner(
+        int partyIndex,
+        int partnerId,
+        int fighterId,
+        (int Before, int After) levels,
+        int expBefore,
+        int expGained,
+        int[] slotIds)
+        => new(partyIndex, partnerId, fighterId, levels.Before, expBefore, expGained, levels.After, slotIds);
+
+    /// <summary>Serialize a FightReportPartner to JSON input fields.</summary>
+    private static JsonObject PartnerToJson(FightReportPartner p)
+        => new()
+        {
+            ["partyIndex"] = p.PartyIndex,
+            ["partnerId"] = p.PartnerId,
+            ["fighterId"] = p.FighterId,
+            ["levelBefore"] = p.LevelBefore,
+            ["expBefore"] = p.ExpBefore,
+            ["expGained"] = p.ExpGained,
+            ["levelAfter"] = p.LevelAfter,
+            ["slotDigimonIds"] = IntArrayToJson([.. p.SlotDigimonIds]),
+        };
+
+    private static JsonArray IntArrayToJson(int[] arr)
+    {
+        var a = new JsonArray();
+        foreach (var v in arr)
+        {
+            a.Add(v);
+        }
+
+        return a;
+    }
+
+    private static JsonArray StringArrayToJson(IEnumerable<string> strs)
+    {
+        var a = new JsonArray();
+        foreach (var s in strs)
+        {
+            a.Add(s);
+        }
+
+        return a;
+    }
+
+    /// <summary>Serialize FightReportSlotView list (exactly 3 entries) to JSON.</summary>
+    private static JsonArray SlotsToJson(IReadOnlyList<FightReportSlotView> slots)
+    {
+        var a = new JsonArray();
+        foreach (var s in slots)
+        {
+            a.Add(new JsonObject
+            {
+                ["digimonId"] = s.DigimonId,
+                ["visible"] = s.Visible,
+                ["expApplied"] = s.ExpApplied,
+                ["blinkFrame"] = s.BlinkFrame,
+            });
+        }
+
+        return a;
+    }
+
+    private static JsonObject? MessageToJson(FightReportMessage? m)
+    {
+        if (m is null)
+        {
+            return null;
+        }
+
+        var subs = new JsonArray();
+        foreach (var v in m.Substitutions)
+        {
+            subs.Add(v);
+        }
+
+        return new JsonObject
+        {
+            ["entry"] = m.Entry,
+            ["substitutions"] = subs,
+            ["tokensRevealed"] = m.TokensRevealed,
+            ["tokenCount"] = m.TokenCount,
+            ["arrowVisible"] = m.ArrowVisible,
+            ["arrowFrame"] = m.ArrowFrame,
+        };
+    }
+
+    private static JsonObject ViewToJson(FightReportView v)
+    {
+        var partners = new JsonArray();
+        foreach (var p in v.Partners)
+        {
+            partners.Add(new JsonObject
+            {
+                ["partyIndex"] = p.PartyIndex,
+                ["partnerId"] = p.PartnerId,
+                ["fighterId"] = p.FighterId,
+                ["fade"] = p.Fade,
+                ["selected"] = p.Selected,
+                ["cursorFrame"] = p.CursorFrame,
+                ["levelBlinkFrame"] = p.LevelBlinkFrame,
+                ["shownExp"] = p.ShownExp,
+                ["animationFrame"] = p.AnimationFrame,
+                ["slots"] = SlotsToJson(p.Slots),
+            });
+        }
+
+        var o = new JsonObject
+        {
+            ["headerFade"] = v.HeaderFade,
+            ["footerFade"] = v.FooterFade,
+            ["bgScroll"] = v.BgScroll,
+            ["partners"] = partners,
+            ["exitFade"] = v.ExitFade,
+            ["done"] = v.Done,
+        };
+        var msg = MessageToJson(v.Message);
+        o["message"] = msg is null ? null : msg;
+        return o;
+    }
+
+    // ------------------------------------------------------------------ case builders
+
+    // Build a RollStep vector.
+    private static JsonObject RollStepCase(int id, int targetExp)
+    {
+        int result = FightReportController.RollStep(targetExp);
+        return new JsonObject
+        {
+            ["id"] = id,
+            ["fn"] = "RollStep",
+            ["targetExp"] = targetExp,
+            ["expected"] = result,
+        };
+    }
+
+    /// <summary>
+    /// Build a StepSequence vector: construct a controller, run stepCount frames,
+    /// pressing Cross on every frame where frameNumber % crossEvery == 0 (when crossEvery > 0).
+    /// Records the final View and Logs.
+    /// </summary>
+    private static JsonObject StepCase(
+        int id,
+        FightReportInput input,
+        int stepCount,
+        int crossEvery,      // 0 = never, positive = press on multiples of this
+        string label = "")
+    {
+        var ctrl = new FightReportController(input);
+        for (int frame = 1; frame <= stepCount; frame++)
+        {
+            bool cross = crossEvery > 0 && frame % crossEvery == 0;
+            ctrl.Step(cross);
+        }
+
+        var inputPartners = new JsonArray();
+        foreach (var p in input.Partners)
+        {
+            inputPartners.Add(PartnerToJson(p));
+        }
+
+        JsonObject? tokenCounts = null;
+        if (input.MessageTokenCounts is not null)
+        {
+            tokenCounts = [];
+            foreach (var kv in input.MessageTokenCounts)
+            {
+                tokenCounts[kv.Key.ToString(System.Globalization.CultureInfo.InvariantCulture)] = kv.Value;
+            }
+        }
+
+        var o = new JsonObject
+        {
+            ["id"] = id,
+            ["fn"] = "StepSequence",
+            ["label"] = label,
+            ["input"] = new JsonObject
+            {
+                ["partners"] = inputPartners,
+                ["money"] = input.Money,
+                ["item"] = input.Item,
+                ["messageTokenCounts"] = tokenCounts is null ? null : tokenCounts,
+            },
+            ["stepCount"] = stepCount,
+            ["crossEvery"] = crossEvery,
+        };
+
+        var view = ViewToJson(ctrl.View);
+        foreach (var (k, v) in view)
+            o["out_" + k] = v?.DeepClone();
+
+        o["out_logs"] = StringArrayToJson(ctrl.Logs);
+
+        return o;
+    }
+
+    // ------------------------------------------------------------------ standard inputs
+
+    // Single partner, exp=4, no level up, money=50, item=0.
+    private static FightReportInput InputA() => new(
+        [Partner(0, 1, 383, (25, 25), 0, 4, [])],
+        Money: 50,
+        Item: 0);
+
+    // Single partner, exp=4, level up 25→26, money=50, item=0.
+    private static FightReportInput InputB() => new(
+        [Partner(0, 1, 383, (25, 26), 0, 4, [])],
+        Money: 50,
+        Item: 0);
+
+    // Single partner, exp=0 (skipped), money=100, item=0.
+    private static FightReportInput InputC() => new(
+        [Partner(0, 1, 383, (25, 25), 0, 0, [])],
+        Money: 100,
+        Item: 0);
+
+    // Single partner, exp=100, no level up, money=0, item=0.
+    private static FightReportInput InputD() => new(
+        [Partner(0, 1, 383, (25, 25), 0, 100, [])],
+        Money: 0,
+        Item: 0);
+
+    // Single partner, exp=4, money=50, item=3.
+    private static FightReportInput InputE() => new(
+        [Partner(0, 1, 383, (25, 25), 0, 4, [])],
+        Money: 50,
+        Item: 3);
+
+    // Two partners, both with exp, money=100, item=0.
+    private static FightReportInput InputF() => new(
+        [
+            Partner(0, 1, 383, (25, 25), 0,  4, []),
+            Partner(1, 2, 400, (30, 30), 50, 10, [201, 202]),
+        ],
+        Money: 100,
+        Item: 0);
+
+    // Two partners: first exp=0 (skipped), second exp=10, money=50, item=0.
+    private static FightReportInput InputG() => new(
+        [
+            Partner(0, 1, 383, (25,  25), 0, 0, []),
+            Partner(1, 2, 400, (20, 21), 0, 10, [201]),
+        ],
+        Money: 50,
+        Item: 0);
+
+    // Three partners, mixed: one skipped, one level up, one normal.
+    private static FightReportInput InputH() => new(
+        [
+            Partner(0, 1, 383, (25,  25), 0,  0, []),
+            Partner(1, 2, 400, (30,  31), 50, 8, [201]),
+            Partner(2, 3, 450, (15,  15), 0,  4, [301, 302, 303]),
+        ],
+        Money: 200,
+        Item: 7);
+
+    // Single partner, 3 slot digimons, exp=50, no level up.
+    private static FightReportInput InputI() => new(
+        [Partner(0, 1, 383, (25, 25), 0, 50, [101, 102, 103])],
+        Money: 75,
+        Item: 0);
+
+    // Single partner, custom token counts (3 tokens for entry 2).
+    private static FightReportInput InputJ() => new(
+        [Partner(0, 1, 383, (25, 25), 0, 4, [])],
+        Money: 50,
+        Item: 0,
+        MessageTokenCounts: new Dictionary<int, int> { { 2, 3 }, { 10, 2 } });
+
+    // Single partner, high exp (999990), no level up.
+    private static FightReportInput InputK() => new(
+        [Partner(0, 1, 383, (50, 50), 500000, 250, [101])],
+        Money: 9999,
+        Item: 0);
 }

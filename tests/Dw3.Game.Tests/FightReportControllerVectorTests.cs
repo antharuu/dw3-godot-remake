@@ -18,57 +18,6 @@ public sealed class FightReportControllerVectorTests
     private static readonly string VectorsPath = Path.Combine(
         AppContext.BaseDirectory, "Vectors", "fight-report-controller.json");
 
-    // ------------------------------------------------------------------ helpers
-    private static int[] ToIntArray(JsonNode? node)
-    {
-        var arr = node!.AsArray();
-        var r = new int[arr.Count];
-        for (int i = 0; i < arr.Count; i++)
-        {
-            r[i] = arr[i]!.GetValue<int>();
-        }
-
-        return r;
-    }
-
-    private static FightReportPartner PartnerFromJson(JsonNode n)
-        => new(
-            n["partyIndex"]!.GetValue<int>(),
-            n["partnerId"]!.GetValue<int>(),
-            n["fighterId"]!.GetValue<int>(),
-            n["levelBefore"]!.GetValue<int>(),
-            n["expBefore"]!.GetValue<int>(),
-            n["expGained"]!.GetValue<int>(),
-            n["levelAfter"]!.GetValue<int>(),
-            ToIntArray(n["slotDigimonIds"]));
-
-    private static FightReportInput InputFromJson(JsonNode c)
-    {
-        var partnersNode = c["input"]!["partners"]!.AsArray();
-        var partners = new List<FightReportPartner>();
-        foreach (var pn in partnersNode)
-        {
-            partners.Add(PartnerFromJson(pn!));
-        }
-
-        Dictionary<int, int>? tokenCounts = null;
-        var tcNode = c["input"]!["messageTokenCounts"];
-        if (tcNode is JsonObject tcObj)
-        {
-            tokenCounts = [];
-            foreach (var kv in tcObj)
-            {
-                tokenCounts[int.Parse(kv.Key, System.Globalization.CultureInfo.InvariantCulture)] = kv.Value!.GetValue<int>();
-            }
-        }
-
-        return new FightReportInput(
-            partners,
-            c["input"]!["money"]!.GetValue<int>(),
-            c["input"]!["item"]!.GetValue<int>(),
-            tokenCounts);
-    }
-
     // ------------------------------------------------------------------ count check
     [Fact]
     public void FightReportControllerVectorCount_AtLeast300()
@@ -126,6 +75,57 @@ public sealed class FightReportControllerVectorTests
         {
             Assert.Fail($"{errors.Count} vector(s) failed:\n" + string.Join("\n", errors.Take(30)));
         }
+    }
+
+    // ------------------------------------------------------------------ helpers
+    private static int[] ToIntArray(JsonNode? node)
+    {
+        var arr = node!.AsArray();
+        var r = new int[arr.Count];
+        for (int i = 0; i < arr.Count; i++)
+        {
+            r[i] = arr[i]!.GetValue<int>();
+        }
+
+        return r;
+    }
+
+    private static FightReportPartner PartnerFromJson(JsonNode n)
+        => new(
+            n["partyIndex"]!.GetValue<int>(),
+            n["partnerId"]!.GetValue<int>(),
+            n["fighterId"]!.GetValue<int>(),
+            n["levelBefore"]!.GetValue<int>(),
+            n["expBefore"]!.GetValue<int>(),
+            n["expGained"]!.GetValue<int>(),
+            n["levelAfter"]!.GetValue<int>(),
+            ToIntArray(n["slotDigimonIds"]));
+
+    private static FightReportInput InputFromJson(JsonNode c)
+    {
+        var partnersNode = c["input"]!["partners"]!.AsArray();
+        var partners = new List<FightReportPartner>();
+        foreach (var pn in partnersNode)
+        {
+            partners.Add(PartnerFromJson(pn!));
+        }
+
+        Dictionary<int, int>? tokenCounts = null;
+        var tcNode = c["input"]!["messageTokenCounts"];
+        if (tcNode is JsonObject tcObj)
+        {
+            tokenCounts = [];
+            foreach (var kv in tcObj)
+            {
+                tokenCounts[int.Parse(kv.Key, System.Globalization.CultureInfo.InvariantCulture)] = kv.Value!.GetValue<int>();
+            }
+        }
+
+        return new FightReportInput(
+            partners,
+            c["input"]!["money"]!.GetValue<int>(),
+            c["input"]!["item"]!.GetValue<int>(),
+            tokenCounts);
     }
 
     // ------------------------------------------------------------------ per-fn verifiers

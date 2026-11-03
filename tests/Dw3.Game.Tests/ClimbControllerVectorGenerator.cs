@@ -18,174 +18,6 @@ namespace Dw3.Game.Tests;
 /// </summary>
 public sealed class ClimbControllerVectorGenerator
 {
-    // ------------------------------------------------------------------ standard ClimbData
-
-    /// <summary>
-    /// Standard fabricated animation data used for all ClimbSequence test cases.
-    /// Set ids match the controller's animation set constants.
-    /// Durations are chosen to exercise the IsAnimDone transitions with known tick counts:
-    ///   GetOnWall (28) = 8 ticks total, GetOverEdge (30) = 4 ticks,
-    ///   ClimbOffTop (29) = 4 ticks, ClimbOffBottom (31) = 4 ticks.
-    /// Looping sets (Climb=32, ClimbUp=26, ClimbDown=27) cycle forever.
-    /// </summary>
-    private static ClimbData StandardData()
-    {
-        var sequences = new Dictionary<int, ClimbSequence>
-        {
-            [0x1A] = new(0x1A, true, [new ClimbRecord(0, 6, -21, -32), new ClimbRecord(1, 6, -21, -32)]),
-            [0x1B] = new(0x1B, true, [new ClimbRecord(1, 6, -21, -32)]),
-            [0x1C] = new(0x1C, false, [new ClimbRecord(0, 4, -17, -29), new ClimbRecord(1, 4, -17, -29)]),
-            [0x1D] = new(0x1D, false, [new ClimbRecord(0, 4, -21, -32)]),
-            [0x1E] = new(0x1E, false, [new ClimbRecord(0, 4, -25, -49)]),
-            [0x1F] = new(0x1F, false, [new ClimbRecord(0, 4, -20, -32)]),
-            [0x20] = new(0x20, true, [new ClimbRecord(0, 6, -21, -32)]),
-        };
-        return new ClimbData(sequences);
-    }
-
-    // ------------------------------------------------------------------ helpers
-    private static InputState MakeInput(string label)
-    {
-        var inp = new InputState();
-        switch (label)
-        {
-            case "Up": inp.SetDirections(left: false, right: false, up: true, down: false); break;
-            case "Down": inp.SetDirections(left: false, right: false, up: false, down: true); break;
-            case "None": inp.SetDirections(left: false, right: false, up: false, down: false); break;
-            default: throw new ArgumentException($"Unknown input label: {label}");
-        }
-
-        return inp;
-    }
-
-    private static JsonArray ToInputArray(IEnumerable<string> inputs)
-    {
-        var arr = new JsonArray();
-        foreach (var s in inputs)
-        {
-            arr.Add(s);
-        }
-
-        return arr;
-    }
-
-    // ------------------------------------------------------------------ AnimSample case builder
-    private static JsonObject AnimSampleCase(
-        int id,
-        int set,
-        int ticks,
-        bool loops,
-        IReadOnlyList<ClimbRecord> records)
-    {
-        // Build inline ClimbData for this case only.
-        var seqDict = new Dictionary<int, ClimbSequence>
-        {
-            [set] = new ClimbSequence(set, loops, records),
-        };
-        var data = new ClimbData(seqDict);
-        var result = ClimbAnimation.Sample(data, set, ticks);
-
-        var recordsJson = new JsonArray();
-        foreach (var r in records)
-        {
-            recordsJson.Add(new JsonObject
-            {
-                ["frame"] = r.Frame,
-                ["duration"] = r.Duration,
-                ["offsetX"] = r.OffsetX,
-                ["offsetY"] = r.OffsetY,
-            });
-        }
-
-        return new JsonObject
-        {
-            ["id"] = id,
-            ["fn"] = "AnimSample",
-            ["set"] = set,
-            ["loops"] = loops,
-            ["records"] = recordsJson,
-            ["ticks"] = ticks,
-            ["expFrame"] = result.Frame,
-            ["expOffsetX"] = result.OffsetX,
-            ["expOffsetY"] = result.OffsetY,
-        };
-    }
-
-    // ------------------------------------------------------------------ ClimbSequence case builder
-    private static JsonObject ClimbSequenceCase(
-        int id,
-        string startMethod,
-        int dir,
-        float x,
-        float y,
-        int height,
-        string[] inputs)
-    {
-        var state = new GameState { Position = new Vector2(x, y) };
-        var ctrl = new ClimbController();
-        ctrl.SetData(StandardData());
-
-        if (startMethod == "Up")
-        {
-            ctrl.StartClimbUp(state, dir, (int)x, (int)y, height);
-        }
-        else
-        {
-            ctrl.StartClimbDown(state, dir, (int)x, (int)y, height);
-        }
-
-        foreach (var label in inputs)
-        {
-            if (!state.ClimbActive)
-            {
-                break;  // stop when the climb has ended
-            }
-
-            ctrl.Tick(state, MakeInput(label));
-        }
-
-        return new JsonObject
-        {
-            ["id"] = id,
-            ["fn"] = "ClimbSequence",
-            ["startMethod"] = startMethod,
-            ["dir"] = dir,
-            ["x"] = x,
-            ["y"] = y,
-            ["height"] = height,
-            ["inputs"] = ToInputArray(inputs),
-            ["expClimbActive"] = state.ClimbActive,
-            ["expClimbHeight"] = state.ClimbHeight,
-            ["expClimbSide"] = state.ClimbSide,
-            ["expAnimSet"] = state.ClimbAnimationSet,
-            ["expAnimTicks"] = state.ClimbAnimationTicks,
-            ["expAnimDirection"] = state.AnimationDirection,
-            ["expPosX"] = state.Position.X,
-            ["expPosY"] = state.Position.Y,
-            ["expFacing"] = state.Facing,
-            ["expCameraSmoothing"] = state.CameraSmoothingTicks,
-            ["expOffer"] = state.Offer,
-            ["expStateAnimSet"] = state.AnimationSet,
-            ["expStateAnimTicks"] = state.AnimationTicks,
-        };
-    }
-
-    // Convenience: run exactly tickCount ticks all with the same input label.
-    private static string[] Repeat(string label, int count)
-    {
-        var arr = new string[count];
-        for (int i = 0; i < count; i++)
-        {
-            arr[i] = label;
-        }
-
-        return arr;
-    }
-
-    // Run ticks until ClimbActive becomes false OR maxTicks is reached.
-    private static string[] RunUntilDone(string label, int maxTicks)
-        => Repeat(label, maxTicks); // The controller stops writing when inactive; the test just runs all ticks.
-
     // ------------------------------------------------------------------ generator
     [Fact]
     public void GenerateClimbControllerVectors()
@@ -425,4 +257,172 @@ public sealed class ClimbControllerVectorGenerator
 
         Assert.True(cases.Count >= 300, $"Generated {cases.Count} vectors, need at least 300.");
     }
+
+    // ------------------------------------------------------------------ standard ClimbData
+
+    /// <summary>
+    /// Standard fabricated animation data used for all ClimbSequence test cases.
+    /// Set ids match the controller's animation set constants.
+    /// Durations are chosen to exercise the IsAnimDone transitions with known tick counts:
+    ///   GetOnWall (28) = 8 ticks total, GetOverEdge (30) = 4 ticks,
+    ///   ClimbOffTop (29) = 4 ticks, ClimbOffBottom (31) = 4 ticks.
+    /// Looping sets (Climb=32, ClimbUp=26, ClimbDown=27) cycle forever.
+    /// </summary>
+    private static ClimbData StandardData()
+    {
+        var sequences = new Dictionary<int, ClimbSequence>
+        {
+            [0x1A] = new(0x1A, true, [new ClimbRecord(0, 6, -21, -32), new ClimbRecord(1, 6, -21, -32)]),
+            [0x1B] = new(0x1B, true, [new ClimbRecord(1, 6, -21, -32)]),
+            [0x1C] = new(0x1C, false, [new ClimbRecord(0, 4, -17, -29), new ClimbRecord(1, 4, -17, -29)]),
+            [0x1D] = new(0x1D, false, [new ClimbRecord(0, 4, -21, -32)]),
+            [0x1E] = new(0x1E, false, [new ClimbRecord(0, 4, -25, -49)]),
+            [0x1F] = new(0x1F, false, [new ClimbRecord(0, 4, -20, -32)]),
+            [0x20] = new(0x20, true, [new ClimbRecord(0, 6, -21, -32)]),
+        };
+        return new ClimbData(sequences);
+    }
+
+    // ------------------------------------------------------------------ helpers
+    private static InputState MakeInput(string label)
+    {
+        var inp = new InputState();
+        switch (label)
+        {
+            case "Up": inp.SetDirections(left: false, right: false, up: true, down: false); break;
+            case "Down": inp.SetDirections(left: false, right: false, up: false, down: true); break;
+            case "None": inp.SetDirections(left: false, right: false, up: false, down: false); break;
+            default: throw new ArgumentException($"Unknown input label: {label}");
+        }
+
+        return inp;
+    }
+
+    private static JsonArray ToInputArray(IEnumerable<string> inputs)
+    {
+        var arr = new JsonArray();
+        foreach (var s in inputs)
+        {
+            arr.Add(s);
+        }
+
+        return arr;
+    }
+
+    // ------------------------------------------------------------------ AnimSample case builder
+    private static JsonObject AnimSampleCase(
+        int id,
+        int set,
+        int ticks,
+        bool loops,
+        IReadOnlyList<ClimbRecord> records)
+    {
+        // Build inline ClimbData for this case only.
+        var seqDict = new Dictionary<int, ClimbSequence>
+        {
+            [set] = new ClimbSequence(set, loops, records),
+        };
+        var data = new ClimbData(seqDict);
+        var result = ClimbAnimation.Sample(data, set, ticks);
+
+        var recordsJson = new JsonArray();
+        foreach (var r in records)
+        {
+            recordsJson.Add(new JsonObject
+            {
+                ["frame"] = r.Frame,
+                ["duration"] = r.Duration,
+                ["offsetX"] = r.OffsetX,
+                ["offsetY"] = r.OffsetY,
+            });
+        }
+
+        return new JsonObject
+        {
+            ["id"] = id,
+            ["fn"] = "AnimSample",
+            ["set"] = set,
+            ["loops"] = loops,
+            ["records"] = recordsJson,
+            ["ticks"] = ticks,
+            ["expFrame"] = result.Frame,
+            ["expOffsetX"] = result.OffsetX,
+            ["expOffsetY"] = result.OffsetY,
+        };
+    }
+
+    // ------------------------------------------------------------------ ClimbSequence case builder
+    private static JsonObject ClimbSequenceCase(
+        int id,
+        string startMethod,
+        int dir,
+        float x,
+        float y,
+        int height,
+        string[] inputs)
+    {
+        var state = new GameState { Position = new Vector2(x, y) };
+        var ctrl = new ClimbController();
+        ctrl.SetData(StandardData());
+
+        if (startMethod == "Up")
+        {
+            ctrl.StartClimbUp(state, dir, (int)x, (int)y, height);
+        }
+        else
+        {
+            ctrl.StartClimbDown(state, dir, (int)x, (int)y, height);
+        }
+
+        foreach (var label in inputs)
+        {
+            if (!state.ClimbActive)
+            {
+                break;  // stop when the climb has ended
+            }
+
+            ctrl.Tick(state, MakeInput(label));
+        }
+
+        return new JsonObject
+        {
+            ["id"] = id,
+            ["fn"] = "ClimbSequence",
+            ["startMethod"] = startMethod,
+            ["dir"] = dir,
+            ["x"] = x,
+            ["y"] = y,
+            ["height"] = height,
+            ["inputs"] = ToInputArray(inputs),
+            ["expClimbActive"] = state.ClimbActive,
+            ["expClimbHeight"] = state.ClimbHeight,
+            ["expClimbSide"] = state.ClimbSide,
+            ["expAnimSet"] = state.ClimbAnimationSet,
+            ["expAnimTicks"] = state.ClimbAnimationTicks,
+            ["expAnimDirection"] = state.AnimationDirection,
+            ["expPosX"] = state.Position.X,
+            ["expPosY"] = state.Position.Y,
+            ["expFacing"] = state.Facing,
+            ["expCameraSmoothing"] = state.CameraSmoothingTicks,
+            ["expOffer"] = state.Offer,
+            ["expStateAnimSet"] = state.AnimationSet,
+            ["expStateAnimTicks"] = state.AnimationTicks,
+        };
+    }
+
+    // Convenience: run exactly tickCount ticks all with the same input label.
+    private static string[] Repeat(string label, int count)
+    {
+        var arr = new string[count];
+        for (int i = 0; i < count; i++)
+        {
+            arr[i] = label;
+        }
+
+        return arr;
+    }
+
+    // Run ticks until ClimbActive becomes false OR maxTicks is reached.
+    private static string[] RunUntilDone(string label, int maxTicks)
+        => Repeat(label, maxTicks); // The controller stops writing when inactive; the test just runs all ticks.
 }

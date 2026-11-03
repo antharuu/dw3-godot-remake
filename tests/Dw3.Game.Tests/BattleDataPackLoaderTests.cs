@@ -20,16 +20,15 @@ public sealed class BattleDataPackLoaderTests : IDisposable
         Assert.Throws<CacheResourceException>(() => loader.ModelPath(51));
     }
 
-    private void BuildPack()
+    public void Dispose()
     {
-        new DataPackWriter(_root).Write(
-            new DataPackMetadata("test", "synthetic", SyntheticDataPackFixture.SyntheticEdition, DateTimeOffset.UnixEpoch),
-            context =>
-            {
-                Write(context, "battle/models/fighter-383-model.json", "{}");
-                Write(context, "battle/stages/stage-18-model.json", "{}");
-                Execute(context, "INSERT INTO battle_models (fighter_id,entry_ordinal,record_index,kind,status,manifest_path) VALUES (383,0,0,0,'decoded','battle/models/fighter-383-model.json')");
-            });
+        // Release pooled connections before deletion; on Windows, the pool keeps
+        // the file handle open past Dispose(), preventing Directory.Delete.
+        SqliteConnection.ClearAllPools();
+        if (Directory.Exists(_root))
+        {
+            Directory.Delete(_root, true);
+        }
     }
 
     private static void Write(DataPackWriteContext context, string relative, string content)
@@ -47,14 +46,15 @@ public sealed class BattleDataPackLoaderTests : IDisposable
         command.ExecuteNonQuery();
     }
 
-    public void Dispose()
+    private void BuildPack()
     {
-        // Release pooled connections before deletion; on Windows, the pool keeps
-        // the file handle open past Dispose(), preventing Directory.Delete.
-        SqliteConnection.ClearAllPools();
-        if (Directory.Exists(_root))
-        {
-            Directory.Delete(_root, true);
-        }
+        new DataPackWriter(_root).Write(
+            new DataPackMetadata("test", "synthetic", SyntheticDataPackFixture.SyntheticEdition, DateTimeOffset.UnixEpoch),
+            context =>
+            {
+                Write(context, "battle/models/fighter-383-model.json", "{}");
+                Write(context, "battle/stages/stage-18-model.json", "{}");
+                Execute(context, "INSERT INTO battle_models (fighter_id,entry_ordinal,record_index,kind,status,manifest_path) VALUES (383,0,0,0,'decoded','battle/models/fighter-383-model.json')");
+            });
     }
 }

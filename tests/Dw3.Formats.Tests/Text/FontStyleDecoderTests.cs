@@ -11,6 +11,7 @@ public sealed class FontStyleDecoderTests
     // TextStyleTableOffset = 0x3E574; descriptor for style 1 starts at 0x3E574 + 24 = 0x3E58C.
     // We build a minimal buffer just large enough, with three valid descriptors.
     private const int TableOffset = 0x3E574;
+
     private const int DescSize = 24;
 
     // Need 4 descriptors (0..3) + glyph/icon tables after them.
@@ -18,65 +19,19 @@ public sealed class FontStyleDecoderTests
 
     // For each style, 230 glyphs * 11 bytes + 114 icons * 11 bytes = 3784 bytes.
     private const int GlyphCount = 230;
+
     private const int IconCount = 114;
+
     private const int RecordSize = 11;
+
     private const int StyleDataSize = (GlyphCount * RecordSize) + (IconCount * RecordSize);
-
-    // Place each style's data right after the table.
-    private static int GlyphTableOffset(int styleIndex) => MinBufferBeforeData + (styleIndex * StyleDataSize);
-
-    private static int IconTableOffset(int styleIndex) => GlyphTableOffset(styleIndex) + (GlyphCount * RecordSize);
-
-    private static int TotalSize => MinBufferBeforeData + (3 * StyleDataSize);
 
     // Load address of SLES_039.36.
     private const uint LoadAddr = 0x80010000u;
+
     private const int ExeHeader = 0x800;
 
-    private static byte[] BuildValidExecutable()
-    {
-        var buf = new byte[TotalSize];
-        int[] lineHeights = [14, 11, 9];
-        for (int i = 0; i < 3; i++)
-        {
-            int styleNumber = i + 1; // descriptor at index (i+1)
-            int descOffset = TableOffset + (styleNumber * DescSize);
-
-            // blend = 0xFF, line_height = lineHeights[i]
-            buf[descOffset] = 0xFF;
-            buf[descOffset + 1] = (byte)(sbyte)lineHeights[i];
-
-            // glyphs_ptr: VA for GlyphTableOffset(i)
-            uint glyphVa = LoadAddr - ExeHeader + (uint)GlyphTableOffset(i);
-            BinaryPrimitives.WriteUInt32LittleEndian(buf.AsSpan(descOffset + 4), glyphVa);
-
-            // icons_ptr
-            uint iconVa = LoadAddr - ExeHeader + (uint)IconTableOffset(i);
-            BinaryPrimitives.WriteUInt32LittleEndian(buf.AsSpan(descOffset + 8), iconVa);
-
-            // glyph_count = 230, icon_count = 114
-            BinaryPrimitives.WriteInt16LittleEndian(buf.AsSpan(descOffset + 20), (short)GlyphCount);
-            BinaryPrimitives.WriteInt16LittleEndian(buf.AsSpan(descOffset + 22), (short)IconCount);
-
-            // Fill glyph data: glyph j has advance = (byte)(j & 0xFF), dx = (sbyte)(-1)
-            for (int j = 0; j < GlyphCount; j++)
-            {
-                int pos = GlyphTableOffset(i) + (j * RecordSize);
-                buf[pos] = (byte)styleNumber; // page
-                buf[pos + 7] = 0xFF; // dx = -1 (sbyte)
-                buf[pos + 9] = (byte)(j & 0xFF); // advance
-            }
-
-            // Fill icon data: icon j has advance = 0xA0 + j
-            for (int j = 0; j < IconCount; j++)
-            {
-                int pos = IconTableOffset(i) + (j * RecordSize);
-                buf[pos + 9] = (byte)((0xA0 + j) & 0xFF); // advance
-            }
-        }
-
-        return buf;
-    }
+    private static int TotalSize => MinBufferBeforeData + (3 * StyleDataSize);
 
     [Fact]
     public void Decode_ValidExecutable_ReturnsThreeStyles()
@@ -168,5 +123,55 @@ public sealed class FontStyleDecoderTests
         uint outOfRange = LoadAddr - ExeHeader + (uint)(TotalSize - 5);
         BinaryPrimitives.WriteUInt32LittleEndian(exe.AsSpan(descOffset + 4), outOfRange);
         Assert.Throws<FormatException>(() => FontStyleDecoder.Decode(exe));
+    }
+
+    // Place each style's data right after the table.
+    private static int GlyphTableOffset(int styleIndex) => MinBufferBeforeData + (styleIndex * StyleDataSize);
+
+    private static int IconTableOffset(int styleIndex) => GlyphTableOffset(styleIndex) + (GlyphCount * RecordSize);
+
+    private static byte[] BuildValidExecutable()
+    {
+        var buf = new byte[TotalSize];
+        int[] lineHeights = [14, 11, 9];
+        for (int i = 0; i < 3; i++)
+        {
+            int styleNumber = i + 1; // descriptor at index (i+1)
+            int descOffset = TableOffset + (styleNumber * DescSize);
+
+            // blend = 0xFF, line_height = lineHeights[i]
+            buf[descOffset] = 0xFF;
+            buf[descOffset + 1] = (byte)(sbyte)lineHeights[i];
+
+            // glyphs_ptr: VA for GlyphTableOffset(i)
+            uint glyphVa = LoadAddr - ExeHeader + (uint)GlyphTableOffset(i);
+            BinaryPrimitives.WriteUInt32LittleEndian(buf.AsSpan(descOffset + 4), glyphVa);
+
+            // icons_ptr
+            uint iconVa = LoadAddr - ExeHeader + (uint)IconTableOffset(i);
+            BinaryPrimitives.WriteUInt32LittleEndian(buf.AsSpan(descOffset + 8), iconVa);
+
+            // glyph_count = 230, icon_count = 114
+            BinaryPrimitives.WriteInt16LittleEndian(buf.AsSpan(descOffset + 20), (short)GlyphCount);
+            BinaryPrimitives.WriteInt16LittleEndian(buf.AsSpan(descOffset + 22), (short)IconCount);
+
+            // Fill glyph data: glyph j has advance = (byte)(j & 0xFF), dx = (sbyte)(-1)
+            for (int j = 0; j < GlyphCount; j++)
+            {
+                int pos = GlyphTableOffset(i) + (j * RecordSize);
+                buf[pos] = (byte)styleNumber; // page
+                buf[pos + 7] = 0xFF; // dx = -1 (sbyte)
+                buf[pos + 9] = (byte)(j & 0xFF); // advance
+            }
+
+            // Fill icon data: icon j has advance = 0xA0 + j
+            for (int j = 0; j < IconCount; j++)
+            {
+                int pos = IconTableOffset(i) + (j * RecordSize);
+                buf[pos + 9] = (byte)((0xA0 + j) & 0xFF); // advance
+            }
+        }
+
+        return buf;
     }
 }

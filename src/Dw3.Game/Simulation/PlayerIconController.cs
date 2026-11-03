@@ -18,13 +18,23 @@ public sealed class PlayerIconController
     public const float FollowSmoothing = 0.35f;
 
     private PlayerIconAnimation _animation = null!;
+
     private int _step;
+
     private int _time;          // accumulated source ticks within the current step
+
     private int _frame;         // current frame index (0x23..)
+
     private Vector2 _position;  // smooth anchor position
+
     private bool _positioned;
+
     private int _simulationSteps;
+
     private int _lastSourceTick;
+
+    /// <summary>Gets the current frame + smooth position. Valid after <see cref="SetAnimation"/>.</summary>
+    public IconView View => new(_frame, _position);
 
     /// <summary>
     /// Supplies the animation data for the connection indicator. Resets the controller
@@ -41,9 +51,6 @@ public sealed class PlayerIconController
         _simulationSteps = 0;
         _lastSourceTick = 0;
     }
-
-    /// <summary>Gets the current frame + smooth position. Valid after <see cref="SetAnimation"/>.</summary>
-    public IconView View => new(_frame, _position);
 
     /// <summary>Places the icon exactly on the player (spawn / warp), no glide-in.</summary>
     /// <param name="playerPosition">The player's current world position.</param>

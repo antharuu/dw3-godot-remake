@@ -12,24 +12,18 @@ namespace Dw3.Formats.Tests.Battle;
 /// </summary>
 public sealed class BattleModelDecoderTests
 {
-    // ── Fighter model table ─────────────────────────────────────────────────
-    private static byte[] FighterTable()
+    private static readonly byte[] TextureCommand = [0x01, 0x10, 0x02, 0x20, 0x30, 0x40, 0x00];
+
+    public static TheoryData<byte[], int, int> MalformedMeshes => new()
     {
-        // Header: base address, entries offset, partner table offset, enemy table offset.
-        byte[] data = new byte[0x200];
-        WriteU32(data, 0x00, 0x80090000);
-        WriteU32(data, 0x04, 0x10);
-        WriteU32(data, 0x08, 0x40);
-        WriteU32(data, 0x0C, 0x100);
-        WriteEntry(data, 0x10, 501, 1, 0x05);
-        WriteEntry(data, 0x14, 77, 2, FighterModelTable.EnemyKindMinimum);
-        WriteEntry(data, 0x18, 0, 0, 0);
-        WriteU32(data, 0x40 + (1 * FighterModelTable.PartnerStride), (12u << 16) | 3);
-        WriteU32(data, 0x40 + (1 * FighterModelTable.PartnerStride) + 4, (12u << 16) | 9);
-        WriteU32(data, 0x100 + (2 * FighterModelTable.EnemyStride), (40u << 16) | 0x21);
-        WriteU32(data, 0x100 + (2 * FighterModelTable.EnemyStride) + 4, (41u << 16) | 0x22);
-        return data;
-    }
+        { [.. TextureCommand, 0x91, 0x00, 0, 1, 2, 0, 0, 0, 0, 0, 0], 3, 0 },           // no 0xFF terminator
+        { [0x90, 0x00, 0, 1, 2, 0xFF], 3, 0 },                                             // untextured before any texture state
+        { [.. TextureCommand, 0x91, 0x00, 0, 1, 9, 0, 0, 0, 0, 0, 0, 0xFF], 3, 0 },        // vertex index out of range
+        { [0x06, 0xFF], 3, 0 },                                                             // unknown low command
+        { [.. TextureCommand, 0x91, 0xC1, 0x00, 0, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xFF], 3, 0 }, // lit without normals
+        { [.. TextureCommand, 0x91, 0xC1, 0x00, 0, 1, 2, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0xFF], 3, 2 }, // normal index out of range
+        { [0x91, 0x00, 0, 1, 2, 0, 0, 0, 0, 0, 0, 0xFF], 3, 0 },                           // textured without texture command
+    };
 
     [Fact]
     public void FighterTable_ListsEntriesUntilTheZeroIdTerminator()
@@ -90,50 +84,6 @@ public sealed class BattleModelDecoderTests
 
         Assert.Throws<FormatException>(() => ModelArchive.ReadBounds(data));
     }
-
-    // ── Mesh command stream ─────────────────────────────────────────────────
-
-    /// <summary>Builds a mesh archive entry: six offsets, vertices, optional normals, commands, bounds.</summary>
-    private static byte[] Mesh(int vertexCount, byte[] commands, int normalCount = 0)
-    {
-        var bytes = new List<byte>(new byte[24]);
-        int verticesAt = bytes.Count;
-        bytes.AddRange(I16(vertexCount));
-        bytes.AddRange(new byte[4]);
-        for (int i = 0; i < vertexCount; i++)
-        {
-            bytes.AddRange(I16(i));
-            bytes.AddRange(I16(-i));
-            bytes.AddRange(I16(i * 2));
-        }
-
-        int normalsAt = 0;
-        if (normalCount > 0)
-        {
-            normalsAt = bytes.Count;
-            bytes.AddRange(I16(normalCount));
-            bytes.AddRange(new byte[4]);
-            for (int i = 0; i < normalCount; i++)
-            {
-                bytes.AddRange(I16(4096));
-                bytes.AddRange(I16(0));
-                bytes.AddRange(I16(-i));
-            }
-        }
-
-        int commandsAt = bytes.Count;
-        bytes.AddRange(commands);
-        int boundsAt = bytes.Count;
-        bytes.AddRange(new byte[8]);
-        byte[] data = [.. bytes];
-        WriteU32(data, 0, (uint)verticesAt);
-        WriteU32(data, 4, (uint)normalsAt);
-        WriteU32(data, 8, (uint)commandsAt);
-        WriteU32(data, 20, (uint)boundsAt);
-        return data;
-    }
-
-    private static readonly byte[] TextureCommand = [0x01, 0x10, 0x02, 0x20, 0x30, 0x40, 0x00];
 
     [Fact]
     public void Mesh_DecodesTexturedQuadsAndSplitsThemIntoTwoTriangles()
@@ -206,17 +156,6 @@ public sealed class BattleModelDecoderTests
         Assert.True(decoded.Polygons[0].Lit);
     }
 
-    public static TheoryData<byte[], int, int> MalformedMeshes => new()
-    {
-        { [.. TextureCommand, 0x91, 0x00, 0, 1, 2, 0, 0, 0, 0, 0, 0], 3, 0 },           // no 0xFF terminator
-        { [0x90, 0x00, 0, 1, 2, 0xFF], 3, 0 },                                             // untextured before any texture state
-        { [.. TextureCommand, 0x91, 0x00, 0, 1, 9, 0, 0, 0, 0, 0, 0, 0xFF], 3, 0 },        // vertex index out of range
-        { [0x06, 0xFF], 3, 0 },                                                             // unknown low command
-        { [.. TextureCommand, 0x91, 0xC1, 0x00, 0, 1, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xFF], 3, 0 }, // lit without normals
-        { [.. TextureCommand, 0x91, 0xC1, 0x00, 0, 1, 2, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0xFF], 3, 2 }, // normal index out of range
-        { [0x91, 0x00, 0, 1, 2, 0, 0, 0, 0, 0, 0, 0xFF], 3, 0 },                           // textured without texture command
-    };
-
     [Theory]
     [MemberData(nameof(MalformedMeshes))]
     public void Mesh_RefusesMalformedCommandStreams(byte[] commands, int vertices, int normals)
@@ -236,37 +175,6 @@ public sealed class BattleModelDecoderTests
         byte[] noVertices = Mesh(3, [0xFF]);
         BinaryPrimitives.WriteInt16LittleEndian(noVertices.AsSpan(24), 0);
         Assert.Throws<FormatException>(() => BattleMeshDecoder.Decode(noVertices, 0, noVertices.Length, bone: 1));
-    }
-
-    // ── Model descriptor ────────────────────────────────────────────────────
-
-    /// <summary>
-    /// Archive with entries: 0 = descriptor, 1 = texture archive, 2/3 = meshes, 4/5 = key tracks.
-    /// </summary>
-    private static byte[] ModelFile(uint parentOfBone2 = 1, uint lastBone = 2, uint textureEntry = 1)
-    {
-        byte[] mesh = Mesh(3, [.. TextureCommand, 0x91, 0x00, 0, 1, 2, 0, 0, 0, 0, 0, 0, 0xFF]);
-        var entries = new List<byte[]>
-        {
-            Concat(U32(textureEntry), U32(lastBone), U32(0), U32(2), U32(4), U32(parentOfBone2), U32(3), U32(5)),
-            new byte[] { 1, 2, 3, 4 },
-            mesh,
-            mesh,
-            new byte[8],
-            new byte[8],
-        };
-        int header = entries.Count * 4;
-        var data = new List<byte>(new byte[header]);
-        byte[] offsets = new byte[header];
-        for (int i = 0; i < entries.Count; i++)
-        {
-            WriteU32(offsets, i * 4, (uint)data.Count);
-            data.AddRange(entries[i]);
-        }
-
-        byte[] result = [.. data];
-        offsets.CopyTo(result, 0);
-        return result;
     }
 
     [Fact]
@@ -335,6 +243,98 @@ public sealed class BattleModelDecoderTests
         Assert.Equal(12, root.GetProperty("fighters").GetProperty("501").GetProperty("model_file").GetInt32());
         Assert.Equal("failed", root.GetProperty("fighters").GetProperty("77").GetProperty("status").GetString());
         Assert.Equal("bone 1: broken", root.GetProperty("failures")[0].GetProperty("reason").GetString());
+    }
+
+    // ── Fighter model table ─────────────────────────────────────────────────
+    private static byte[] FighterTable()
+    {
+        // Header: base address, entries offset, partner table offset, enemy table offset.
+        byte[] data = new byte[0x200];
+        WriteU32(data, 0x00, 0x80090000);
+        WriteU32(data, 0x04, 0x10);
+        WriteU32(data, 0x08, 0x40);
+        WriteU32(data, 0x0C, 0x100);
+        WriteEntry(data, 0x10, 501, 1, 0x05);
+        WriteEntry(data, 0x14, 77, 2, FighterModelTable.EnemyKindMinimum);
+        WriteEntry(data, 0x18, 0, 0, 0);
+        WriteU32(data, 0x40 + (1 * FighterModelTable.PartnerStride), (12u << 16) | 3);
+        WriteU32(data, 0x40 + (1 * FighterModelTable.PartnerStride) + 4, (12u << 16) | 9);
+        WriteU32(data, 0x100 + (2 * FighterModelTable.EnemyStride), (40u << 16) | 0x21);
+        WriteU32(data, 0x100 + (2 * FighterModelTable.EnemyStride) + 4, (41u << 16) | 0x22);
+        return data;
+    }
+
+    // ── Mesh command stream ─────────────────────────────────────────────────
+
+    /// <summary>Builds a mesh archive entry: six offsets, vertices, optional normals, commands, bounds.</summary>
+    private static byte[] Mesh(int vertexCount, byte[] commands, int normalCount = 0)
+    {
+        var bytes = new List<byte>(new byte[24]);
+        int verticesAt = bytes.Count;
+        bytes.AddRange(I16(vertexCount));
+        bytes.AddRange(new byte[4]);
+        for (int i = 0; i < vertexCount; i++)
+        {
+            bytes.AddRange(I16(i));
+            bytes.AddRange(I16(-i));
+            bytes.AddRange(I16(i * 2));
+        }
+
+        int normalsAt = 0;
+        if (normalCount > 0)
+        {
+            normalsAt = bytes.Count;
+            bytes.AddRange(I16(normalCount));
+            bytes.AddRange(new byte[4]);
+            for (int i = 0; i < normalCount; i++)
+            {
+                bytes.AddRange(I16(4096));
+                bytes.AddRange(I16(0));
+                bytes.AddRange(I16(-i));
+            }
+        }
+
+        int commandsAt = bytes.Count;
+        bytes.AddRange(commands);
+        int boundsAt = bytes.Count;
+        bytes.AddRange(new byte[8]);
+        byte[] data = [.. bytes];
+        WriteU32(data, 0, (uint)verticesAt);
+        WriteU32(data, 4, (uint)normalsAt);
+        WriteU32(data, 8, (uint)commandsAt);
+        WriteU32(data, 20, (uint)boundsAt);
+        return data;
+    }
+
+    // ── Model descriptor ────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Archive with entries: 0 = descriptor, 1 = texture archive, 2/3 = meshes, 4/5 = key tracks.
+    /// </summary>
+    private static byte[] ModelFile(uint parentOfBone2 = 1, uint lastBone = 2, uint textureEntry = 1)
+    {
+        byte[] mesh = Mesh(3, [.. TextureCommand, 0x91, 0x00, 0, 1, 2, 0, 0, 0, 0, 0, 0, 0xFF]);
+        var entries = new List<byte[]>
+        {
+            Concat(U32(textureEntry), U32(lastBone), U32(0), U32(2), U32(4), U32(parentOfBone2), U32(3), U32(5)),
+            new byte[] { 1, 2, 3, 4 },
+            mesh,
+            mesh,
+            new byte[8],
+            new byte[8],
+        };
+        int header = entries.Count * 4;
+        var data = new List<byte>(new byte[header]);
+        byte[] offsets = new byte[header];
+        for (int i = 0; i < entries.Count; i++)
+        {
+            WriteU32(offsets, i * 4, (uint)data.Count);
+            data.AddRange(entries[i]);
+        }
+
+        byte[] result = [.. data];
+        offsets.CopyTo(result, 0);
+        return result;
     }
 
     // ── Helpers ─────────────────────────────────────────────────────────────

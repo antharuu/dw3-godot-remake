@@ -20,11 +20,11 @@ namespace Dw3.Formats.Binary.Png;
 /// </summary>
 public static class PngEncoder
 {
-    /// <summary>Gets the PNG file signature: 8 fixed bytes that identify every valid PNG file (RFC 2083 §12.12).</summary>
-    private static ReadOnlySpan<byte> Signature => [137, 80, 78, 71, 13, 10, 26, 10];
-
     // Pre-computed CRC-32 table (IEEE polynomial 0xEDB88320).
     private static readonly uint[] Crc32Table = BuildCrc32Table();
+
+    /// <summary>Gets the PNG file signature: 8 fixed bytes that identify every valid PNG file (RFC 2083 §12.12).</summary>
+    private static ReadOnlySpan<byte> Signature => [137, 80, 78, 71, 13, 10, 26, 10];
 
     /// <summary>
     /// Encodes RGBA pixels as PNG bytes.

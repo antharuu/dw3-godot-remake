@@ -10,6 +10,14 @@ namespace Dw3Production.Simulation;
 /// </summary>
 public sealed class WarpController
 {
+    // Intentional comfort adaptation: accept an exit cell within two world
+    // units when the short direct segment stays on non-void floor.
+
+    /// <summary>Warp-offer search radius in world units (comfort adaptation: two tiles).</summary>
+    public const float OfferRadiusWorldUnits = 2f;
+
+    private const int FadeTicks = 2;
+
     // Admission table: raw trigger direction and player facing are disc
     // directions (0=down, counter-clockwise). An exit offers only when facing
     // is within 45 degrees of its encoded direction.
@@ -25,21 +33,21 @@ public sealed class WarpController
         { true, false, false, false, false, false, true, true },
     };
 
-    // Intentional comfort adaptation: accept an exit cell within two world
-    // units when the short direct segment stays on non-void floor.
-
-    /// <summary>Warp-offer search radius in world units (comfort adaptation: two tiles).</summary>
-    public const float OfferRadiusWorldUnits = 2f;
-
-    private const int FadeTicks = 2;
-    private FieldExit? _pendingExit;
-    private Climb? _pendingClimb;
-    private Drop? _pendingDrop;
-    private int _pendingClimbDirection = -1;
-    private FieldZone? _pendingTarget;
-    private int _fadeRemaining;
-    private string? _reportedUnimplemented;
     private readonly HashSet<string> _reportedExitConditions = [];
+
+    private FieldExit? _pendingExit;
+
+    private Climb? _pendingClimb;
+
+    private Drop? _pendingDrop;
+
+    private int _pendingClimbDirection = -1;
+
+    private FieldZone? _pendingTarget;
+
+    private int _fadeRemaining;
+
+    private string? _reportedUnimplemented;
 
     /// <summary>Gets the current warp state.</summary>
     public WarpState State { get; private set; } = WarpState.Idle;
@@ -112,6 +120,144 @@ public sealed class WarpController
             default:
                 throw new InvalidOperationException($"Unhandled {nameof(WarpState)}: {State}");
         }
+    }
+
+    /// <summary>
+    /// Finds the trigger to offer: the nearest non-empty trigger cell within <see cref="OfferRadiusWorldUnits"/>
+    /// whose direction (bits 7..5) admits the player's facing, whose straight path from the player stays on floor,
+    /// and whose slot (bits 4..0) matches an exit, a climb or a drop, tried in that order.
+    /// </summary>
+    /// <param name="state">Player state. Its offered trigger direction is set on a match and reset to -1 otherwise.</param>
+    /// <param name="current">Zone the player is in.</param>
+    /// <param name="exit">Receives the matched exit, or null.</param>
+    /// <param name="climb">Receives the matched climb, or null.</param>
+    /// <param name="drop">Receives the matched drop, or null.</param>
+    /// <param name="climbDirection">Receives the trigger direction for a climb or drop, -1 otherwise.</param>
+    /// <returns><see langword="true"/> when one trigger matched.</returns>
+    private static bool TryOffer(GameState state, FieldZone current, out FieldExit? exit, out Climb? climb, out Drop? drop, out int climbDirection)
+    {
+        exit = null;
+        climb = null;
+        drop = null;
+        climbDirection = -1;
+        foreach (var candidate in current.Triggers.CellsWithin(state.Position, OfferRadiusWorldUnits)
+                     .Where(candidate => candidate.Raw != 0)
+                     .OrderBy(candidate => Vector2.DistanceSquared(state.Position, candidate.Position)))
+        {
+            var slot = candidate.Raw & 0x1F;
+            var triggerDirection = candidate.Raw >> 5;
+            if (!IsSourceFacingAdmitted(triggerDirection, state.Facing))
+            {
+                continue;
+            }
+
+            if (!FloorPathOpen(state.Position, candidate.Position, current.Floor))
+            {
+                continue;
+            }
+
+            if (MatchExit(current, slot, triggerDirection, state, ref exit))
+            {
+                return true;
+            }
+
+            if (MatchClimb(current, slot, triggerDirection, state, ref climb, ref climbDirection))
+            {
+                return true;
+            }
+
+            if (MatchDrop(current, slot, triggerDirection, state, ref drop, ref climbDirection))
+            {
+                return true;
+            }
+        }
+
+        state.OfferedTriggerDirection = -1;
+        return false;
+    }
+
+    /// <summary>Matches a trigger slot against the zone's exits.</summary>
+    /// <param name="current">Zone the player is in.</param>
+    /// <param name="slot">Slot number from the trigger cell, 0..31.</param>
+    /// <param name="triggerDirection">Direction from the trigger cell, 0..7.</param>
+    /// <param name="state">Player state that receives the offered trigger direction on a match.</param>
+    /// <param name="exit">Receives the matched exit; left unchanged otherwise.</param>
+    /// <returns><see langword="true"/> when an exit uses that slot.</returns>
+    private static bool MatchExit(FieldZone current, int slot, int triggerDirection, GameState state, ref FieldExit? exit)
+    {
+        var matched = current.Zone.Exits.FirstOrDefault(item => item.Slot == slot);
+        if (matched is null)
+        {
+            return false;
+        }
+
+        exit = matched;
+        state.OfferedTriggerDirection = triggerDirection;
+        return true;
+    }
+
+    /// <summary>Matches a trigger slot against the zone's climb slots.</summary>
+    /// <param name="current">Zone the player is in.</param>
+    /// <param name="slot">Slot number from the trigger cell, 0..31.</param>
+    /// <param name="triggerDirection">Direction from the trigger cell, 0..7, which becomes the climb direction.</param>
+    /// <param name="state">Player state that receives the offered trigger direction on a match.</param>
+    /// <param name="climb">Receives the matched climb; left unchanged otherwise.</param>
+    /// <param name="climbDirection">Receives the trigger direction on a match.</param>
+    /// <returns><see langword="true"/> when a climb uses that slot.</returns>
+    private static bool MatchClimb(FieldZone current, int slot, int triggerDirection, GameState state, ref Climb? climb, ref int climbDirection)
+    {
+        var matched = current.Zone.Climbs.FirstOrDefault(item => item.Slot == slot);
+        if (matched is null)
+        {
+            return false;
+        }
+
+        climb = matched;
+        climbDirection = triggerDirection;
+        state.OfferedTriggerDirection = triggerDirection;
+        return true;
+    }
+
+    /// <summary>Matches a trigger slot against the zone's drop slots. Zones without drop data never match.</summary>
+    /// <param name="current">Zone the player is in.</param>
+    /// <param name="slot">Slot number from the trigger cell, 0..31.</param>
+    /// <param name="triggerDirection">Direction from the trigger cell, 0..7, which becomes the drop direction.</param>
+    /// <param name="state">Player state that receives the offered trigger direction on a match.</param>
+    /// <param name="drop">Receives the matched drop; left unchanged otherwise.</param>
+    /// <param name="climbDirection">Receives the trigger direction on a match.</param>
+    /// <returns><see langword="true"/> when a drop uses that slot.</returns>
+    private static bool MatchDrop(FieldZone current, int slot, int triggerDirection, GameState state, ref Drop? drop, ref int climbDirection)
+    {
+        var matched = current.Zone.Drops?.FirstOrDefault(item => item.Slot == slot);
+        if (matched is null)
+        {
+            return false;
+        }
+
+        drop = matched;
+        climbDirection = triggerDirection;
+        state.OfferedTriggerDirection = triggerDirection;
+        return true;
+    }
+
+    /// <summary>Samples the straight segment between two points about once per pixel and checks that every sample lies on floor, so a trigger behind a wall is never offered.</summary>
+    /// <param name="start">Player position.</param>
+    /// <param name="end">Trigger cell position.</param>
+    /// <param name="floor">Floor map of the zone.</param>
+    /// <returns><see langword="false"/> when a sample is out of bounds or on a void cell.</returns>
+    private static bool FloorPathOpen(Vector2 start, Vector2 end, FloorMap floor)
+    {
+        var steps = Math.Max(1, (int)MathF.Ceiling(Vector2.Distance(start, end)));
+        for (var index = 0; index <= steps; index++)
+        {
+            var point = Vector2.Lerp(start, end, index / (float)steps);
+            if (!floor.Contains(point) || floor.CellAt(point) == 0)
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /// <summary>Looks for an admissible trigger around the player. A match records the pending exit, climb or drop and moves to Offer, otherwise an unimplemented trigger under the player is reported once.</summary>
@@ -281,144 +427,6 @@ public sealed class WarpController
         }
 
         warn($"exit-condition-not-enforced:{key}", $"exit-condition-not-enforced zone={current.Zone.Id} slot={exit.Slot} condition=0x{exit.Condition!.Value:X4}");
-    }
-
-    /// <summary>
-    /// Finds the trigger to offer: the nearest non-empty trigger cell within <see cref="OfferRadiusWorldUnits"/>
-    /// whose direction (bits 7..5) admits the player's facing, whose straight path from the player stays on floor,
-    /// and whose slot (bits 4..0) matches an exit, a climb or a drop, tried in that order.
-    /// </summary>
-    /// <param name="state">Player state. Its offered trigger direction is set on a match and reset to -1 otherwise.</param>
-    /// <param name="current">Zone the player is in.</param>
-    /// <param name="exit">Receives the matched exit, or null.</param>
-    /// <param name="climb">Receives the matched climb, or null.</param>
-    /// <param name="drop">Receives the matched drop, or null.</param>
-    /// <param name="climbDirection">Receives the trigger direction for a climb or drop, -1 otherwise.</param>
-    /// <returns><see langword="true"/> when one trigger matched.</returns>
-    private static bool TryOffer(GameState state, FieldZone current, out FieldExit? exit, out Climb? climb, out Drop? drop, out int climbDirection)
-    {
-        exit = null;
-        climb = null;
-        drop = null;
-        climbDirection = -1;
-        foreach (var candidate in current.Triggers.CellsWithin(state.Position, OfferRadiusWorldUnits)
-                     .Where(candidate => candidate.Raw != 0)
-                     .OrderBy(candidate => Vector2.DistanceSquared(state.Position, candidate.Position)))
-        {
-            var slot = candidate.Raw & 0x1F;
-            var triggerDirection = candidate.Raw >> 5;
-            if (!IsSourceFacingAdmitted(triggerDirection, state.Facing))
-            {
-                continue;
-            }
-
-            if (!FloorPathOpen(state.Position, candidate.Position, current.Floor))
-            {
-                continue;
-            }
-
-            if (MatchExit(current, slot, triggerDirection, state, ref exit))
-            {
-                return true;
-            }
-
-            if (MatchClimb(current, slot, triggerDirection, state, ref climb, ref climbDirection))
-            {
-                return true;
-            }
-
-            if (MatchDrop(current, slot, triggerDirection, state, ref drop, ref climbDirection))
-            {
-                return true;
-            }
-        }
-
-        state.OfferedTriggerDirection = -1;
-        return false;
-    }
-
-    /// <summary>Matches a trigger slot against the zone's exits.</summary>
-    /// <param name="current">Zone the player is in.</param>
-    /// <param name="slot">Slot number from the trigger cell, 0..31.</param>
-    /// <param name="triggerDirection">Direction from the trigger cell, 0..7.</param>
-    /// <param name="state">Player state that receives the offered trigger direction on a match.</param>
-    /// <param name="exit">Receives the matched exit; left unchanged otherwise.</param>
-    /// <returns><see langword="true"/> when an exit uses that slot.</returns>
-    private static bool MatchExit(FieldZone current, int slot, int triggerDirection, GameState state, ref FieldExit? exit)
-    {
-        var matched = current.Zone.Exits.FirstOrDefault(item => item.Slot == slot);
-        if (matched is null)
-        {
-            return false;
-        }
-
-        exit = matched;
-        state.OfferedTriggerDirection = triggerDirection;
-        return true;
-    }
-
-    /// <summary>Matches a trigger slot against the zone's climb slots.</summary>
-    /// <param name="current">Zone the player is in.</param>
-    /// <param name="slot">Slot number from the trigger cell, 0..31.</param>
-    /// <param name="triggerDirection">Direction from the trigger cell, 0..7, which becomes the climb direction.</param>
-    /// <param name="state">Player state that receives the offered trigger direction on a match.</param>
-    /// <param name="climb">Receives the matched climb; left unchanged otherwise.</param>
-    /// <param name="climbDirection">Receives the trigger direction on a match.</param>
-    /// <returns><see langword="true"/> when a climb uses that slot.</returns>
-    private static bool MatchClimb(FieldZone current, int slot, int triggerDirection, GameState state, ref Climb? climb, ref int climbDirection)
-    {
-        var matched = current.Zone.Climbs.FirstOrDefault(item => item.Slot == slot);
-        if (matched is null)
-        {
-            return false;
-        }
-
-        climb = matched;
-        climbDirection = triggerDirection;
-        state.OfferedTriggerDirection = triggerDirection;
-        return true;
-    }
-
-    /// <summary>Matches a trigger slot against the zone's drop slots. Zones without drop data never match.</summary>
-    /// <param name="current">Zone the player is in.</param>
-    /// <param name="slot">Slot number from the trigger cell, 0..31.</param>
-    /// <param name="triggerDirection">Direction from the trigger cell, 0..7, which becomes the drop direction.</param>
-    /// <param name="state">Player state that receives the offered trigger direction on a match.</param>
-    /// <param name="drop">Receives the matched drop; left unchanged otherwise.</param>
-    /// <param name="climbDirection">Receives the trigger direction on a match.</param>
-    /// <returns><see langword="true"/> when a drop uses that slot.</returns>
-    private static bool MatchDrop(FieldZone current, int slot, int triggerDirection, GameState state, ref Drop? drop, ref int climbDirection)
-    {
-        var matched = current.Zone.Drops?.FirstOrDefault(item => item.Slot == slot);
-        if (matched is null)
-        {
-            return false;
-        }
-
-        drop = matched;
-        climbDirection = triggerDirection;
-        state.OfferedTriggerDirection = triggerDirection;
-        return true;
-    }
-
-    /// <summary>Samples the straight segment between two points about once per pixel and checks that every sample lies on floor, so a trigger behind a wall is never offered.</summary>
-    /// <param name="start">Player position.</param>
-    /// <param name="end">Trigger cell position.</param>
-    /// <param name="floor">Floor map of the zone.</param>
-    /// <returns><see langword="false"/> when a sample is out of bounds or on a void cell.</returns>
-    private static bool FloorPathOpen(Vector2 start, Vector2 end, FloorMap floor)
-    {
-        var steps = Math.Max(1, (int)MathF.Ceiling(Vector2.Distance(start, end)));
-        for (var index = 0; index <= steps; index++)
-        {
-            var point = Vector2.Lerp(start, end, index / (float)steps);
-            if (!floor.Contains(point) || floor.CellAt(point) == 0)
-            {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     /// <summary>Loads the destination zone of the pending exit and checks that it has an exit back to the current zone. On success a two-tick fade starts, on a cache error the warp is abandoned with a warning and the machine releases.</summary>

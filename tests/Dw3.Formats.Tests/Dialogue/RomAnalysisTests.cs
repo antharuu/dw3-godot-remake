@@ -10,24 +10,6 @@ public sealed class RomAnalysisTests
 {
     private const uint Load = DialogueFixtures.OverlayLoad;
 
-    private static (PsxExecutable Exe, DiscFileTable Files) Executable()
-    {
-        DialogueRomLayout layout = DialogueFixtures.Layout;
-        byte[] exe = DialogueFixtures.Executable(0x200);
-        int specials = DialogueFixtures.ExeOffset(layout.SpecialConditionsAddress);
-        exe[specials] = 7;
-        exe[specials + 1] = 0x30;
-        exe[specials + 2] = 2;
-        exe[specials + 3] = 0xFF;
-        int ranges = DialogueFixtures.ExeOffset(layout.ProgressRangesAddress);
-        exe[ranges + 4] = 3;
-        exe[ranges + 5] = 5;
-        DialogueFixtures.U32(exe, DialogueFixtures.ExeOffset(layout.FileSectorsAddress) + (9 * 4), 2009);
-        PsxExecutable parsed = PsxExecutable.Parse(exe);
-        var paths = new Dictionary<int, string> { [2009] = "AAA/DAT/COUNTRY/XYZ/XSTALK04.BIN" };
-        return (parsed, DiscFileTable.Read(parsed, layout.FileSectorsAddress, layout.FileSectorCount, paths));
-    }
-
     [Fact]
     public void AnalysesStagesAndReportsEachFailureByMode()
     {
@@ -84,5 +66,23 @@ public sealed class RomAnalysisTests
         DiscFileTable files = DiscFileTable.Read(exe, layout.FileSectorsAddress, layout.FileSectorCount, new Dictionary<int, string>());
 
         Assert.Throws<FormatException>(() => RomAnalysis.Analyze(exe, layout, files, "XYZ", [1], []));
+    }
+
+    private static (PsxExecutable Exe, DiscFileTable Files) Executable()
+    {
+        DialogueRomLayout layout = DialogueFixtures.Layout;
+        byte[] exe = DialogueFixtures.Executable(0x200);
+        int specials = DialogueFixtures.ExeOffset(layout.SpecialConditionsAddress);
+        exe[specials] = 7;
+        exe[specials + 1] = 0x30;
+        exe[specials + 2] = 2;
+        exe[specials + 3] = 0xFF;
+        int ranges = DialogueFixtures.ExeOffset(layout.ProgressRangesAddress);
+        exe[ranges + 4] = 3;
+        exe[ranges + 5] = 5;
+        DialogueFixtures.U32(exe, DialogueFixtures.ExeOffset(layout.FileSectorsAddress) + (9 * 4), 2009);
+        PsxExecutable parsed = PsxExecutable.Parse(exe);
+        var paths = new Dictionary<int, string> { [2009] = "AAA/DAT/COUNTRY/XYZ/XSTALK04.BIN" };
+        return (parsed, DiscFileTable.Read(parsed, layout.FileSectorsAddress, layout.FileSectorCount, paths));
     }
 }

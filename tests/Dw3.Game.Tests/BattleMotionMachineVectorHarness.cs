@@ -23,15 +23,11 @@ namespace Dw3.Game.Tests;
 /// </summary>
 internal static class BattleMotionMachineVectorHarness
 {
-    public sealed record Result(List<string> Outcomes, List<int[]?> Snapshots, List<int[]?> Keyframes);
-
     public static int[] Snapshot(BattleMotionMachine m) =>
     [
         m.Motion, m.IdleMotion, m.Keyframe, m.Frame, m.Blend, B(m.Blending), B(m.MotionDone),
         B(m.ToIdle), m.BlendTarget, m.BlendSource, B(m.Looping),
     ];
-
-    private static int B(bool v) => v ? 1 : 0;
 
     public static int[][][] Motions(JsonNode? node) =>
         [.. node!.AsArray().Select(m => m!.AsArray().Select(s => Ints(s)).ToArray())];
@@ -91,6 +87,8 @@ internal static class BattleMotionMachineVectorHarness
         return new Result(outcomes, snapshots, keyframes);
     }
 
+    private static int B(bool v) => v ? 1 : 0;
+
     private static void Apply(BattleMotionMachine m, string op)
     {
         var p = op.Split(':');
@@ -118,4 +116,6 @@ internal static class BattleMotionMachineVectorHarness
         ArgumentOutOfRangeException { ParamName: "motion" } => "E:ArgumentOutOfRangeException",
         _ => "E:*",
     };
+
+    public sealed record Result(List<string> Outcomes, List<int[]?> Snapshots, List<int[]?> Keyframes);
 }

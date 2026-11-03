@@ -10,26 +10,6 @@ namespace Dw3.Game.Tests;
 /// </summary>
 internal static class BattleEnemyAiVectorCodec
 {
-    /// <summary>A scripted random source that also counts how many values were drawn.</summary>
-    internal sealed class CountingRng : IBattleRng
-    {
-        private readonly int[] _values;
-
-        public int Calls { get; private set; }
-
-        public CountingRng(int[] values) => _values = values;
-
-        public int NextValue()
-        {
-            if (Calls >= _values.Length)
-            {
-                throw new InvalidOperationException($"random sequence exhausted after {Calls} values");
-            }
-
-            return _values[Calls++];
-        }
-    }
-
     public static int[] Ints(JsonNode? node) =>
         node is null ? [] : [.. node.AsArray().Select(v => v!.GetValue<int>())];
 
@@ -190,5 +170,25 @@ internal static class BattleEnemyAiVectorCodec
 
         output["rngCalls"] = rng.Calls;
         return output;
+    }
+
+    /// <summary>A scripted random source that also counts how many values were drawn.</summary>
+    internal sealed class CountingRng : IBattleRng
+    {
+        private readonly int[] _values;
+
+        public CountingRng(int[] values) => _values = values;
+
+        public int Calls { get; private set; }
+
+        public int NextValue()
+        {
+            if (Calls >= _values.Length)
+            {
+                throw new InvalidOperationException($"random sequence exhausted after {Calls} values");
+            }
+
+            return _values[Calls++];
+        }
     }
 }

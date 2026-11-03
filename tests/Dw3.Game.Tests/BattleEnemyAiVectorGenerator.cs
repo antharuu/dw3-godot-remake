@@ -16,8 +16,45 @@ namespace Dw3.Game.Tests;
 public sealed class BattleEnemyAiVectorGenerator
 {
     private const int Seed = 33;
+
     private readonly JsonArray _cases = [];
+
     private readonly Random _random = new(Seed);
+
+    [Fact]
+    public void GenerateBattleEnemyAiVectors()
+    {
+        if (Environment.GetEnvironmentVariable("GENERATE_VECTORS") != "1")
+        {
+            return;
+        }
+
+        ConditionCases();
+        ActionKindCases();
+        PickActionCases();
+        PickCounterCases();
+        ResolveSwitchCases();
+
+        var root = new JsonObject
+        {
+            ["metadata"] = new JsonObject
+            {
+                ["seed"] = Seed,
+                ["count"] = _cases.Count,
+                ["note"] = "Fabricated vectors generated from the current BattleEnemyAi implementation. " +
+                           "All inputs are invented; no game values are embedded. 'rng' is the scripted " +
+                           "random sequence, 'expected.rngCalls' how many values were drawn.",
+            },
+            ["cases"] = _cases,
+        };
+        var outPath = Environment.GetEnvironmentVariable("GENERATE_VECTORS_OUT") is { Length: > 0 } p
+            ? p
+            : Path.Combine(AppContext.BaseDirectory, "Vectors", "battle-enemy-ai.json");
+        Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
+        File.WriteAllText(outPath, root.ToJsonString(new JsonSerializerOptions { WriteIndented = true }) + "\n");
+
+        Assert.True(_cases.Count >= 300, $"Generated {_cases.Count} vectors, need at least 300.");
+    }
 
     private static BattleFighter Enemy(
         EnemyStats? stats = null,
@@ -62,6 +99,10 @@ public sealed class BattleEnemyAiVectorGenerator
             StarterDigimonIds = starters ?? [],
         };
 
+    private static int HpShareForTest(int maxHp, int arg) => maxHp / 100 * (arg * 100 / 128);
+
+    private static BattleTableAction A(int target, int condition, int arg = 0) => new(target, condition, arg);
+
     private void Add(JsonObject input, string note)
     {
         input["id"] = _cases.Count + 1;
@@ -100,8 +141,6 @@ public sealed class BattleEnemyAiVectorGenerator
             ["rng"] = BattleEnemyAiVectorCodec.ToJson(rng),
         },
         note);
-
-    private static int HpShareForTest(int maxHp, int arg) => maxHp / 100 * (arg * 100 / 128);
 
     private void ConditionCases()
     {
@@ -266,8 +305,6 @@ public sealed class BattleEnemyAiVectorGenerator
         }
     }
 
-    private static BattleTableAction A(int target, int condition, int arg = 0) => new(target, condition, arg);
-
     private void PickActionCases()
     {
         Pick("PickAction", Ctx(enemy: Enemy(actions: [])), [], "empty table");
@@ -409,41 +446,6 @@ public sealed class BattleEnemyAiVectorGenerator
             activeEnemy: _random.Next(0, 3),
             encounter: (_random.Next(0, 4), _random.Next(0, 4), _random.Next(0, 4)),
             starters: [1, 3, 5]);
-    }
-
-    [Fact]
-    public void GenerateBattleEnemyAiVectors()
-    {
-        if (Environment.GetEnvironmentVariable("GENERATE_VECTORS") != "1")
-        {
-            return;
-        }
-
-        ConditionCases();
-        ActionKindCases();
-        PickActionCases();
-        PickCounterCases();
-        ResolveSwitchCases();
-
-        var root = new JsonObject
-        {
-            ["metadata"] = new JsonObject
-            {
-                ["seed"] = Seed,
-                ["count"] = _cases.Count,
-                ["note"] = "Fabricated vectors generated from the current BattleEnemyAi implementation. " +
-                           "All inputs are invented; no game values are embedded. 'rng' is the scripted " +
-                           "random sequence, 'expected.rngCalls' how many values were drawn.",
-            },
-            ["cases"] = _cases,
-        };
-        var outPath = Environment.GetEnvironmentVariable("GENERATE_VECTORS_OUT") is { Length: > 0 } p
-            ? p
-            : Path.Combine(AppContext.BaseDirectory, "Vectors", "battle-enemy-ai.json");
-        Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
-        File.WriteAllText(outPath, root.ToJsonString(new JsonSerializerOptions { WriteIndented = true }) + "\n");
-
-        Assert.True(_cases.Count >= 300, $"Generated {_cases.Count} vectors, need at least 300.");
     }
 
     private sealed record EnemyStats(int Hp = 50, int MaxHp = 100, int Mp = 10, int Charge = 0, int Turns = 0);

@@ -9,6 +9,7 @@ namespace Dw3.Game.Tests;
 public sealed class FieldAnimationDataPackLoaderTests : IDisposable
 {
     private static readonly int[] CueFrames = [0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12, 0x13, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x45, 0x46];
+
     private readonly string _root = Path.Combine(Path.GetTempPath(), $"dw3-field-anim-{Guid.NewGuid():N}");
 
     [Fact]
@@ -107,6 +108,34 @@ public sealed class FieldAnimationDataPackLoaderTests : IDisposable
         Assert.Throws<DataPackCorruptException>(() => new FieldAnimationDataPackLoader(new DataPackReader(_root)));
     }
 
+    public void Dispose()
+    {
+        // Release pooled connections before deletion; on Windows, the pool keeps
+        // the file handle open past Dispose(), preventing Directory.Delete.
+        SqliteConnection.ClearAllPools();
+        if (Directory.Exists(_root))
+        {
+            Directory.Delete(_root, true);
+        }
+    }
+
+    private static string Image(DataPackWriteContext context, string relative)
+    {
+        string path = context.GetImagePath(relative);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllBytes(path, [1, 2, 3]);
+        context.RegisterImage(relative);
+        return relative;
+    }
+
+    private static void Execute(DataPackWriteContext context, string sql)
+    {
+        using SqliteCommand command = context.Database.CreateCommand();
+        command.Transaction = context.Transaction;
+        command.CommandText = sql;
+        command.ExecuteNonQuery();
+    }
+
     private void BuildPack(int skipDropSet = -1, int skipIconFrame = -1, int iconLoopTarget = 1, int skipCueRow = -1, bool waterFrames = true)
     {
         new DataPackWriter(_root).Write(
@@ -166,33 +195,5 @@ public sealed class FieldAnimationDataPackLoaderTests : IDisposable
                     Execute(context, $"INSERT INTO water_object_frames VALUES (200,3,0,71,0,1,2,1,'{Image(context, "water/S200/object-003-opaque.png")}','{Image(context, "water/S200/object-003-stp.png")}')");
                 }
             });
-    }
-
-    private static string Image(DataPackWriteContext context, string relative)
-    {
-        string path = context.GetImagePath(relative);
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        File.WriteAllBytes(path, [1, 2, 3]);
-        context.RegisterImage(relative);
-        return relative;
-    }
-
-    private static void Execute(DataPackWriteContext context, string sql)
-    {
-        using SqliteCommand command = context.Database.CreateCommand();
-        command.Transaction = context.Transaction;
-        command.CommandText = sql;
-        command.ExecuteNonQuery();
-    }
-
-    public void Dispose()
-    {
-        // Release pooled connections before deletion; on Windows, the pool keeps
-        // the file handle open past Dispose(), preventing Directory.Delete.
-        SqliteConnection.ClearAllPools();
-        if (Directory.Exists(_root))
-        {
-            Directory.Delete(_root, true);
-        }
     }
 }

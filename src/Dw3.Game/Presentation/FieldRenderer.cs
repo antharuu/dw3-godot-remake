@@ -12,29 +12,53 @@ namespace Dw3Production.Presentation;
 public sealed class FieldRenderer : IDisposable
 {
     private readonly Node2D _root;
+
     private readonly Dictionary<int, Node2D> _depthRoots = [];
+
     private readonly Camera2D _camera;
+
     private readonly CameraController _cameraController;
+
     private readonly DiagnosticOverlay _diagnosticOverlay;
+
     private readonly FieldTextureCache _textureCache;
+
     private readonly FieldWaterLayer _waterLayer;
+
     private readonly FieldNpcLayer _npcLayer;
+
     private readonly WaterData _water;
-    private Sprite2D? _player;
-    private Sprite2D? _cuePop;
-    private Sprite2D? _cueInner;
-    private Sprite2D? _iconSprite;
+
     private readonly PlayerIconData _iconData;
+
     private readonly ExitCue _cue;
+
     private readonly ExitCueState _cueState;
+
+    private Sprite2D? _player;
+
+    private Sprite2D? _cuePop;
+
+    private Sprite2D? _cueInner;
+
+    private Sprite2D? _iconSprite;
+
     private int _localSimulationSteps;
+
     private int _lastSourceTick;
+
     private ExitCueSnapshot _cueSnapshot = new(ExitCuePhase.Hidden, 0, null, 0);
+
     private Sprite2D? _playerShadow;
+
     private Zone? _zone;
+
     private PlayerData? _playerData;
+
     private ClimbData? _climbData;
+
     private Func<int, string>? _framePath;
+
     private Func<int, int, string>? _climbFramePath;
 
     /// <summary>
@@ -69,14 +93,6 @@ public sealed class FieldRenderer : IDisposable
         _npcLayer = new FieldNpcLayer(_textureCache);
     }
 
-    /// <summary>Releases Godot resources owned by this renderer.</summary>
-    public void Dispose()
-    {
-        _waterLayer.Dispose();
-        _textureCache.Dispose();
-        _diagnosticOverlay.Dispose();
-    }
-
     /// <summary>Gets image decode operations performed by the texture cache.</summary>
     public int ImageDecodes => _textureCache.ImageDecodes;
 
@@ -106,6 +122,20 @@ public sealed class FieldRenderer : IDisposable
     /// so lower-SortY items draw last (wrong order) — used to confirm regression sensitivity.
     /// </summary>
     public bool TestReverseCallbackOrder { get; set; }
+
+    /// <summary>Gets the current state of the field exit cue.</summary>
+    public ExitCueSnapshot CueSnapshot => _cueSnapshot;
+
+    /// <summary>Gets the current outer exit-cue frame when the cue is visible.</summary>
+    public CueFrame? CurrentCuePopFrame => _cueSnapshot.Visible ? _cue.Frames[_cueSnapshot.PopFrame] : null;
+
+    /// <summary>Releases Godot resources owned by this renderer.</summary>
+    public void Dispose()
+    {
+        _waterLayer.Dispose();
+        _textureCache.Dispose();
+        _diagnosticOverlay.Dispose();
+    }
 
     /// <summary>
     /// Replaces field-scene render nodes for <paramref name="zone"/>. Queued children belong to the
@@ -154,33 +184,6 @@ public sealed class FieldRenderer : IDisposable
         _localSimulationSteps = 0;
         _lastSourceTick = 0;
     }
-
-    /// <summary>Creates terrain sprites for every layer in a zone.</summary>
-    /// <param name="zone">Zone whose layers are rendered.</param>
-    private void LoadZoneLayers(Zone zone)
-    {
-        foreach (var layer in zone.Layers)
-        {
-            var sprite = new Sprite2D { Texture = _textureCache.TextureFor(layer.Path), Centered = false };
-
-            // Apply the source stream layer modulate to the depth-11 (background) sprite.
-            // In the field-layer record contract, FIELDSTG_spriteDepths[2]=11 always uses FIELDSTG_state.spriteColor
-            // (i==2 condition), giving each stage its ambient tint.
-            // S200: stageColor=(0x54,0x67,0x96) makes the grey canal tiles appear blue.
-            if (layer.SourceDepth == 11 && zone.Depth11Modulate is { } mod)
-            {
-                sprite.Modulate = new Color(mod.R, mod.G, mod.B);
-            }
-
-            DepthRoot(layer.SourceDepth).AddChild(sprite);
-        }
-    }
-
-    /// <summary>Gets the current state of the field exit cue.</summary>
-    public ExitCueSnapshot CueSnapshot => _cueSnapshot;
-
-    /// <summary>Gets the current outer exit-cue frame when the cue is visible.</summary>
-    public CueFrame? CurrentCuePopFrame => _cueSnapshot.Visible ? _cue.Frames[_cueSnapshot.PopFrame] : null;
 
     /// <summary>Advances presentation-only water, NPC, and exit-cue state from simulation state.</summary>
     /// <param name="state">Current field simulation state.</param>
@@ -238,6 +241,27 @@ public sealed class FieldRenderer : IDisposable
         var visibleSize = GetViewportWorldSize();
         var viewport = new Rect2(_camera.Position - (visibleSize / 2f), visibleSize);
         _diagnosticOverlay.Update(zone, state, f3On, (float)Engine.GetFramesPerSecond(), (float)deltaSeconds, viewport);
+    }
+
+    /// <summary>Creates terrain sprites for every layer in a zone.</summary>
+    /// <param name="zone">Zone whose layers are rendered.</param>
+    private void LoadZoneLayers(Zone zone)
+    {
+        foreach (var layer in zone.Layers)
+        {
+            var sprite = new Sprite2D { Texture = _textureCache.TextureFor(layer.Path), Centered = false };
+
+            // Apply the source stream layer modulate to the depth-11 (background) sprite.
+            // In the field-layer record contract, FIELDSTG_spriteDepths[2]=11 always uses FIELDSTG_state.spriteColor
+            // (i==2 condition), giving each stage its ambient tint.
+            // S200: stageColor=(0x54,0x67,0x96) makes the grey canal tiles appear blue.
+            if (layer.SourceDepth == 11 && zone.Depth11Modulate is { } mod)
+            {
+                sprite.Modulate = new Color(mod.R, mod.G, mod.B);
+            }
+
+            DepthRoot(layer.SourceDepth).AddChild(sprite);
+        }
     }
 
     /// <summary>Chooses the walking or climbing presentation for the player sprite.</summary>

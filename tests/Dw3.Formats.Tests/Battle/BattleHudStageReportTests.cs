@@ -10,6 +10,18 @@ namespace Dw3.Formats.Tests.Battle;
 /// </summary>
 public sealed class BattleHudStageReportTests
 {
+    private static readonly int[,] PinnedAnimations =
+    {
+        { 7, 8, 9, 10, 9, 8, -1 },
+        { 14, 15, 16, 15, -1, -1, -1 },
+        { 11, 12, 13, 12, -1, -1, -1 },
+        { 3, 4, 5, 6, 5, 4, -1 },
+        { 25, 26, 27, 28, 27, 26, -1 },
+        { 0, 1, 2, 1, -1, -1, -1 },
+        { 17, 18, 19, 20, 19, 18, -1 },
+        { 21, 22, 23, 24, 23, 22, -1 },
+    };
+
     // ── BattleStageDecoder ────────────────────────────────────────────────────
     [Fact]
     public void ParseRecord_ValidRecord_ReturnsCorrectFields()
@@ -400,18 +412,6 @@ public sealed class BattleHudStageReportTests
 
         return data;
     }
-
-    private static readonly int[,] PinnedAnimations =
-    {
-        { 7, 8, 9, 10, 9, 8, -1 },
-        { 14, 15, 16, 15, -1, -1, -1 },
-        { 11, 12, 13, 12, -1, -1, -1 },
-        { 3, 4, 5, 6, 5, 4, -1 },
-        { 25, 26, 27, 28, 27, 26, -1 },
-        { 0, 1, 2, 1, -1, -1, -1 },
-        { 17, 18, 19, 20, 19, 18, -1 },
-        { 21, 22, 23, 24, 23, 22, -1 },
-    };
 
     private static byte[] BuildOverlayWithPinnedAnimations()
     {

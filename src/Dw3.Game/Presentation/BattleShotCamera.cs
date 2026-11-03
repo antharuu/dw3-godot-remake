@@ -4,6 +4,7 @@ namespace Dw3Production.Presentation;
 public sealed class BattleShotCamera
 {
     private const int TurnUnits = 4096;
+
     private const int SideDistance = 5120;
 
     private static readonly (int Duration, int Behavior)[][] ShotLists =
@@ -23,8 +24,11 @@ public sealed class BattleShotCamera
     ];
 
     private readonly IShotCameraRng _rng;
+
     private readonly BattleShotCameraViews _views;
+
     private bool _firstFrame = true;
+
     private int _orbitYaw;
 
     /// <summary>Initializes a new instance of the <see cref="BattleShotCamera"/> class using caller-supplied random and view providers.</summary>
@@ -121,6 +125,19 @@ public sealed class BattleShotCamera
         View = _views.GetEnemyView();
     }
 
+    /// <summary>Wraps a turn-unit angle into the non-negative full-turn range.</summary>
+    /// <param name="angle">Angle in turn units.</param>
+    /// <returns>The wrapped angle.</returns>
+    private static int WrapTurn(int angle)
+    {
+        var wrapped = angle % TurnUnits;
+        return wrapped < 0 ? wrapped + TurnUnits : wrapped;
+    }
+
+    /// <summary>Creates the neutral view used by isolated camera tests.</summary>
+    /// <returns>A neutral camera view.</returns>
+    private static SourceBattleCameraView NeutralView() => new() { Projection = 280 };
+
     /// <summary>Applies the current shot behavior to the camera view.</summary>
     private void ApplyBehavior()
     {
@@ -210,17 +227,4 @@ public sealed class BattleShotCamera
         View.Vpz = unchecked(View.Vpz - SideDistance);
         View.Vrz = unchecked(View.Vrz - SideDistance);
     }
-
-    /// <summary>Wraps a turn-unit angle into the non-negative full-turn range.</summary>
-    /// <param name="angle">Angle in turn units.</param>
-    /// <returns>The wrapped angle.</returns>
-    private static int WrapTurn(int angle)
-    {
-        var wrapped = angle % TurnUnits;
-        return wrapped < 0 ? wrapped + TurnUnits : wrapped;
-    }
-
-    /// <summary>Creates the neutral view used by isolated camera tests.</summary>
-    /// <returns>A neutral camera view.</returns>
-    private static SourceBattleCameraView NeutralView() => new() { Projection = 280 };
 }

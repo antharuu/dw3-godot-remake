@@ -80,6 +80,9 @@ public sealed class InputState
     /// <summary>Gets a value indicating whether the debug battle key F8 was pressed since the last <see cref="ConsumeF8Pressed"/>.</summary>
     public bool F8Pressed { get; private set; }
 
+    /// <summary>Gets the direction formed by the four held flags, <see cref="SemanticDirection.None"/> when they cancel out.</summary>
+    public SemanticDirection Direction => DirectionFrom(HeldUp, HeldDown, HeldLeft, HeldRight);
+
     /// <summary>
     /// Maps four directional booleans to a <see cref="SemanticDirection"/>.
     /// Shared by <see cref="Direction"/> and by <c>GameHost.DirectionToward</c> to avoid
@@ -103,9 +106,6 @@ public sealed class InputState
             (true, false, true, false) => SemanticDirection.UpLeft,
             _ => SemanticDirection.None,
         };
-
-    /// <summary>Gets the direction formed by the four held flags, <see cref="SemanticDirection.None"/> when they cancel out.</summary>
-    public SemanticDirection Direction => DirectionFrom(HeldUp, HeldDown, HeldLeft, HeldRight);
 
     /// <summary>Replaces the four held direction flags at once, so the direction never passes through a half-updated state during a tick.</summary>
     /// <param name="left">Left is held.</param>

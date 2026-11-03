@@ -11,24 +11,52 @@ namespace Dw3Production.Simulation;
 public sealed class DropController
 {
     private const int FallStep = 0x300;
+
     private const int FarFallThreshold = 0x1800;
+
     private const int SideShiftPixels = 16;
+
     private const int AnimDropOff = 0x16;
+
     private const int AnimFall = 0x17;
+
     private const int AnimFallFar = 0x18;
+
     private const int AnimLand = 0x19;
 
     private ClimbData? _data;
+
     private DropSubstate _substate;
+
     private int _climbHeight;
+
     private int _wallHeight;
+
     private int _climbSide;
+
     private int _direction;
+
     private int _animSet;
+
     private int _animTicks;
 
     /// <summary>Gets a value indicating whether a drop holds the actor. While true, field movement is ignored and only <see cref="Tick"/> moves it.</summary>
     public bool IsActive => _substate != DropSubstate.None;
+
+    /// <summary>Gets a value indicating whether the current one-shot animation has played all its records. Always false for looping or missing sets.</summary>
+    private bool IsAnimDone
+    {
+        get
+        {
+            if (_data is null || !_data.Sequences.TryGetValue(_animSet, out var sequence) || sequence.Loops)
+            {
+                return false;
+            }
+
+            var total = sequence.Records.Sum(record => record.Duration);
+            return _animTicks >= total;
+        }
+    }
 
     /// <summary>Supplies the drop animation sets 0x16..0x19 (drop off, fall, long fall, land) from the action archive.</summary>
     /// <param name="data">Drop animation sets keyed by set id.</param>
@@ -144,21 +172,6 @@ public sealed class DropController
             _ => throw new ArgumentOutOfRangeException(nameof(next)),
         };
         _animTicks = 0;
-    }
-
-    /// <summary>Gets a value indicating whether the current one-shot animation has played all its records. Always false for looping or missing sets.</summary>
-    private bool IsAnimDone
-    {
-        get
-        {
-            if (_data is null || !_data.Sequences.TryGetValue(_animSet, out var sequence) || sequence.Loops)
-            {
-                return false;
-            }
-
-            var total = sequence.Records.Sum(record => record.Duration);
-            return _animTicks >= total;
-        }
     }
 
     /// <summary>Publishes the climb fields to the game state so the renderer draws the falling sprite at its height offset.</summary>

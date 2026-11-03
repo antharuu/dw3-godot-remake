@@ -24,24 +24,6 @@ internal static class BattleShotCameraVectorHarness
         "RotationX", "RotationY", "RotationZ", "Rz", "Projection",
     ];
 
-    public sealed class CycledRng : IShotCameraRng
-    {
-        private readonly int[] _values;
-        private int _index;
-
-        public CycledRng(int[] values)
-        {
-            if (values.Length == 0)
-            {
-                throw new ArgumentException("RNG value list must not be empty");
-            }
-
-            _values = values;
-        }
-
-        public int NextRoll() => _values[_index++ % _values.Length];
-    }
-
     public static SourceBattleCameraView ToView(int[] f) => new()
     {
         Vpx = f[0],
@@ -65,6 +47,87 @@ internal static class BattleShotCameraVectorHarness
         v.Vpx, v.Vpy, v.Vpz, v.Vrx, v.Vry, v.Vrz, v.Tx, v.Ty, v.Tz,
         v.RotationX, v.RotationY, v.RotationZ, v.Rz, v.Projection,
     ];
+
+    public static Result Run(
+        int[] rngValues,
+        Func<int[]>? nextEnemyView,
+        Func<int[]>? nextFighterView,
+        IReadOnlyList<string> ops)
+    {
+        var session = new Session(rngValues, nextEnemyView, nextFighterView);
+        foreach (var op in ops)
+        {
+            if (!session.Apply(op))
+            {
+                break;
+            }
+        }
+
+        return session.ToResult();
+    }
+
+    public static int[] Snapshot(BattleShotCamera c)
+    {
+        var s = new int[20];
+        s[0] = c.List;
+        s[1] = c.Shot;
+        s[2] = c.Time;
+        s[3] = c.Substate;
+        s[4] = c.PlayerVisible ? 1 : 0;
+        s[5] = c.EnemyVisible ? 1 : 0;
+        FromView(c.View).CopyTo(s, 6);
+        return s;
+    }
+
+    public static int[] Ints(JsonNode? node)
+    {
+        var a = node!.AsArray();
+        var r = new int[a.Count];
+        for (var i = 0; i < a.Count; i++)
+        {
+            r[i] = a[i]!.GetValue<int>();
+        }
+
+        return r;
+    }
+
+    private static void ApplyOp(BattleShotCamera camera, string op)
+    {
+        if (op == "1")
+        {
+            camera.Step();
+        }
+        else if (op == "x")
+        {
+            camera.Stop();
+        }
+        else if (op.StartsWith("s:", StringComparison.Ordinal))
+        {
+            camera.StepFrames(int.Parse(op[2..], System.Globalization.CultureInfo.InvariantCulture));
+        }
+        else
+        {
+            throw new InvalidOperationException($"unknown vector op '{op}'");
+        }
+    }
+
+    public sealed class CycledRng : IShotCameraRng
+    {
+        private readonly int[] _values;
+        private int _index;
+
+        public CycledRng(int[] values)
+        {
+            if (values.Length == 0)
+            {
+                throw new ArgumentException("RNG value list must not be empty");
+            }
+
+            _values = values;
+        }
+
+        public int NextRoll() => _values[_index++ % _values.Length];
+    }
 
     public sealed record Result(List<int[]> Snapshots, List<List<string>> Calls, int ThrowsAt, string? Exception);
 
@@ -148,68 +211,5 @@ internal static class BattleShotCameraVectorHarness
         }
 
         public Result ToResult() => new(Snapshots, Calls, ThrowsAt, Exception);
-    }
-
-    public static Result Run(
-        int[] rngValues,
-        Func<int[]>? nextEnemyView,
-        Func<int[]>? nextFighterView,
-        IReadOnlyList<string> ops)
-    {
-        var session = new Session(rngValues, nextEnemyView, nextFighterView);
-        foreach (var op in ops)
-        {
-            if (!session.Apply(op))
-            {
-                break;
-            }
-        }
-
-        return session.ToResult();
-    }
-
-    private static void ApplyOp(BattleShotCamera camera, string op)
-    {
-        if (op == "1")
-        {
-            camera.Step();
-        }
-        else if (op == "x")
-        {
-            camera.Stop();
-        }
-        else if (op.StartsWith("s:", StringComparison.Ordinal))
-        {
-            camera.StepFrames(int.Parse(op[2..], System.Globalization.CultureInfo.InvariantCulture));
-        }
-        else
-        {
-            throw new InvalidOperationException($"unknown vector op '{op}'");
-        }
-    }
-
-    public static int[] Snapshot(BattleShotCamera c)
-    {
-        var s = new int[20];
-        s[0] = c.List;
-        s[1] = c.Shot;
-        s[2] = c.Time;
-        s[3] = c.Substate;
-        s[4] = c.PlayerVisible ? 1 : 0;
-        s[5] = c.EnemyVisible ? 1 : 0;
-        FromView(c.View).CopyTo(s, 6);
-        return s;
-    }
-
-    public static int[] Ints(JsonNode? node)
-    {
-        var a = node!.AsArray();
-        var r = new int[a.Count];
-        for (var i = 0; i < a.Count; i++)
-        {
-            r[i] = a[i]!.GetValue<int>();
-        }
-
-        return r;
     }
 }

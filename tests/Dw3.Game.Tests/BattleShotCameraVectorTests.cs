@@ -15,12 +15,6 @@ public sealed class BattleShotCameraVectorTests
     private static readonly string VectorsPath =
         Path.Combine(AppContext.BaseDirectory, "Vectors", "battle-shot-camera.json");
 
-    private static JsonArray LoadCases()
-    {
-        Assert.True(File.Exists(VectorsPath), $"Vectors file not found: {VectorsPath}");
-        return JsonNode.Parse(File.ReadAllText(VectorsPath))!["cases"]!.AsArray();
-    }
-
     [Fact]
     public void VectorCount_AtLeast300()
     {
@@ -68,6 +62,12 @@ public sealed class BattleShotCameraVectorTests
         {
             Assert.Fail($"{errors.Count} mismatch(es):\n" + string.Join("\n", errors.Take(50)));
         }
+    }
+
+    private static JsonArray LoadCases()
+    {
+        Assert.True(File.Exists(VectorsPath), $"Vectors file not found: {VectorsPath}");
+        return JsonNode.Parse(File.ReadAllText(VectorsPath))!["cases"]!.AsArray();
     }
 
     private static void Verify(JsonNode c, int id, List<string> errors)

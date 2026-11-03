@@ -116,6 +116,38 @@ public sealed class DialogueDataPackLoaderTests : IDisposable
         Assert.Throws<CacheResourceException>(() => loader.LoadDialogueFrame());
     }
 
+    public void Dispose()
+    {
+        // Release pooled connections before deletion; on Windows, the pool keeps
+        // the file handle open past Dispose(), preventing Directory.Delete.
+        SqliteConnection.ClearAllPools();
+        if (Directory.Exists(_root))
+        {
+            Directory.Delete(_root, true);
+        }
+    }
+
+    private static string File(DataPackWriteContext context, string relative, string content, bool register = true)
+    {
+        string path = context.GetImagePath(relative);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        System.IO.File.WriteAllText(path, content);
+        if (register)
+        {
+            context.RegisterImage(relative);
+        }
+
+        return relative;
+    }
+
+    private static void Execute(DataPackWriteContext context, string sql)
+    {
+        using SqliteCommand command = context.Database.CreateCommand();
+        command.Transaction = context.Transaction;
+        command.CommandText = sql;
+        command.ExecuteNonQuery();
+    }
+
     private void BuildPack(int textEntryCount = 1, string? textJson = null, int style2LineHeight = 11, int skipFrame = -1, int layouts = 4)
     {
         new DataPackWriter(_root).Write(
@@ -166,37 +198,5 @@ public sealed class DialogueDataPackLoaderTests : IDisposable
                     Execute(context, $"INSERT INTO talk_box_layouts VALUES ({layout},{sprites[layout]},-16,-16,-26,-74,-10,-74,125,-74,-20,-71,-20,-58,125,-38)");
                 }
             });
-    }
-
-    private static string File(DataPackWriteContext context, string relative, string content, bool register = true)
-    {
-        string path = context.GetImagePath(relative);
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        System.IO.File.WriteAllText(path, content);
-        if (register)
-        {
-            context.RegisterImage(relative);
-        }
-
-        return relative;
-    }
-
-    private static void Execute(DataPackWriteContext context, string sql)
-    {
-        using SqliteCommand command = context.Database.CreateCommand();
-        command.Transaction = context.Transaction;
-        command.CommandText = sql;
-        command.ExecuteNonQuery();
-    }
-
-    public void Dispose()
-    {
-        // Release pooled connections before deletion; on Windows, the pool keeps
-        // the file handle open past Dispose(), preventing Directory.Delete.
-        SqliteConnection.ClearAllPools();
-        if (Directory.Exists(_root))
-        {
-            Directory.Delete(_root, true);
-        }
     }
 }

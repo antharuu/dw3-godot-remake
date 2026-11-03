@@ -14,16 +14,22 @@ namespace Dw3.Extractor;
 internal static class TalkBoxExtractionStep
 {
     private const string Domain = "talk-box";
+
     private const string ExecutablePath = "SLES_039.36";
+
     private const string SheetPath = "AAA/DAT/COUNTRY/CMFONTCS.BIN";
+
     private const string TexturePath = "AAA/DAT/COUNTRY/CMFONTTM.BIN";
+
     private const uint LayoutTableAddress = 0x8004DCF4;
+
+    private const int ArrowFrame = 7;
+
+    private const int ArrowClutFrames = 4;
 
     // Sheet frames the talk box draws: 0 and 2 are the edges, 3..6 the four corner sprites,
     // 7 the "next" arrow. The arrow blinks through four consecutive CLUT rows.
     private static readonly int[] FrameIds = [0, 2, 3, 4, 5, 6, 7];
-    private const int ArrowFrame = 7;
-    private const int ArrowClutFrames = 4;
 
     /// <summary>
     /// Opens the disc through <paramref name="openDisc"/>, reads SLES_039.36, CMFONTCS.BIN and CMFONTTM.BIN,

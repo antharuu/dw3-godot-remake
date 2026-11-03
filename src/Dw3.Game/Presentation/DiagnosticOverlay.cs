@@ -9,10 +9,15 @@ namespace Dw3Production.Presentation;
 public sealed partial class DiagnosticOverlay : IDisposable
 {
     private const float HudIntervalSeconds = 0.25f;
+
     private readonly DebugGeometry _world;
+
     private readonly CanvasLayer _hud;
+
     private readonly Label _label;
+
     private GeometryCache? _cache;
+
     private float _hudAge = HudIntervalSeconds;
 
     /// <summary>
@@ -41,14 +46,6 @@ public sealed partial class DiagnosticOverlay : IDisposable
         root.AddChild(_hud);
     }
 
-    /// <summary>Releases Godot resources owned by this overlay.</summary>
-    public void Dispose()
-    {
-        _label.Dispose();
-        _hud.Dispose();
-        _world.Dispose();
-    }
-
     /// <summary>Gets the count of cached geometry builds for loaded field zones.</summary>
     public int GeometryBuilds { get; private set; }
 
@@ -61,6 +58,14 @@ public sealed partial class DiagnosticOverlay : IDisposable
     /// <summary>Gets or sets optional diagnostic-mode marker prepended to the HUD line (e.g. the DEC-019
     /// DW3_START_ZONE selection). Null in a normal interactive session.</summary>
     public string? DiagnosticBadge { get; set; }
+
+    /// <summary>Releases Godot resources owned by this overlay.</summary>
+    public void Dispose()
+    {
+        _label.Dispose();
+        _hud.Dispose();
+        _world.Dispose();
+    }
 
     /// <summary>Updates diagnostic geometry and HUD content for the current field frame.</summary>
     /// <param name="zone">Field zone supplying collision and trigger geometry.</param>
@@ -99,6 +104,19 @@ public sealed partial class DiagnosticOverlay : IDisposable
     /// <summary>Caches classified field geometry for a single immutable zone.</summary>
     private sealed class GeometryCache
     {
+        /// <summary>Classifies a floor cell for diagnostic rendering.</summary>
+        private enum FloorClass
+        {
+            /// <summary>Marks a cell that admits normal movement.</summary>
+            Walkable,
+
+            /// <summary>Marks a cell that blocks movement.</summary>
+            Blocked,
+
+            /// <summary>Marks a cell with an unclassified movement value.</summary>
+            Unknown,
+        }
+
         /// <summary>Gets the field zone represented by this cache.</summary>
         public required FieldZone Zone { get; init; }
 
@@ -219,19 +237,6 @@ public sealed partial class DiagnosticOverlay : IDisposable
             }
         }
 
-        /// <summary>Classifies a floor cell for diagnostic rendering.</summary>
-        private enum FloorClass
-        {
-            /// <summary>Marks a cell that admits normal movement.</summary>
-            Walkable,
-
-            /// <summary>Marks a cell that blocks movement.</summary>
-            Blocked,
-
-            /// <summary>Marks a cell with an unclassified movement value.</summary>
-            Unknown,
-        }
-
         /// <summary>Maps one encoded floor cell to a diagnostic class.</summary>
         /// <param name="cell">Encoded floor-cell value.</param>
         /// <returns>The matching diagnostic class.</returns>
@@ -251,8 +256,14 @@ public sealed partial class DiagnosticOverlay : IDisposable
     /// <summary>Draws cached diagnostic shapes that intersect the current viewport.</summary>
     private sealed partial class DebugGeometry : Node2D
     {
+        private static readonly Color PlayerCollisionColor = new(1f, 1f, 0f);
+
+        private static readonly Color SourceDiamondColor = new(1f, 1f, 1f, 0.7f);
+
         private GeometryCache? _cache;
+
         private Rect2 _viewport;
+
         private Vector2 _playerPosition;
 
         /// <summary>Updates cached drawing inputs and requests redraw when they changed.</summary>
@@ -312,9 +323,6 @@ public sealed partial class DiagnosticOverlay : IDisposable
                 }
             }
         }
-
-        private static readonly Color PlayerCollisionColor = new(1f, 1f, 0f);
-        private static readonly Color SourceDiamondColor = new(1f, 1f, 1f, 0.7f);
 
         /// <summary>Draws the active player collision circle and reference outline without changing simulation state.</summary>
         /// <param name="position">Player position in world coordinates.</param>

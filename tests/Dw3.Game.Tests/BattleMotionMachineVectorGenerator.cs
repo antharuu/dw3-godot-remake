@@ -15,17 +15,111 @@ namespace Dw3.Game.Tests;
 public sealed class BattleMotionMachineVectorGenerator
 {
     private const int Seed = 20261101;
+
     private const int End = 0x7FFF;
 
-    private sealed class Scenario(string family, int[][][] motions, int idle, List<string> ops)
+    [Fact]
+    public void GenerateBattleMotionMachineVectors()
     {
-        public string Family { get; } = family;
+        if (Environment.GetEnvironmentVariable("GENERATE_VECTORS") != "1")
+        {
+            return;
+        }
 
-        public int[][][] Motions { get; } = motions;
+        var random = new Random(Seed);
+        var scenarios = new List<Scenario>();
 
-        public int Idle { get; } = idle;
+        // 1. Random well-formed tables, random interleavings of every operation.
+        for (var n = 0; n < 160; n++)
+        {
+            var table = RandomTable(random);
+            var idle = table.Length >= 2 && random.Next(4) == 0 ? 1 : 0;
+            scenarios.Add(new("random-play", table, idle, RandomOps(random, table.Length, random.Next(15, 41))));
+        }
 
-        public List<string> Ops { get; } = ops;
+        // 2. Idle return: an action ending on a -1 target, played to completion and beyond.
+        for (var n = 0; n < 60; n++)
+        {
+            var table = new[] { RandomMotion(random, 1), RandomMotion(random, random.Next(2) == 0 ? 1 : 6), RandomMotion(random, 2) };
+            var ops = new List<string>();
+            if (random.Next(3) == 0)
+            {
+                ops.Add($"i:{random.Next(2)}");
+            }
+
+            if (random.Next(3) == 0)
+            {
+                ops.Add($"m:{random.Next(1, 3)}:{random.Next(2)}");
+            }
+
+            ops.Add("m:3:1");
+            for (var i = 0; i < 70; i++)
+            {
+                var roll = random.Next(12);
+                ops.Add(roll switch { 0 => $"i:{random.Next(2)}", 1 => "s:0", 2 => $"s:{random.Next(2, 5)}", _ => "s:1" });
+            }
+
+            scenarios.Add(new("idle-return", table, random.Next(2), ops));
+        }
+
+        // 3. Looping motions driven through many cycles with mixed elapsed counts.
+        for (var n = 0; n < 50; n++)
+        {
+            var table = new[] { RandomMotion(random, random.Next(2) == 0 ? 1 : 6) };
+            var ops = new List<string>();
+            for (var i = 0; i < 60; i++)
+            {
+                ops.Add(random.Next(5) == 0 ? $"s:{random.Next(0, 12)}" : "s:1");
+            }
+
+            scenarios.Add(new("loop", table, 0, ops));
+        }
+
+        // 4. Hand-picked bounds and failure paths.
+        scenarios.AddRange(Edges());
+
+        var sb = new StringBuilder();
+        sb.Append("{\n  \"metadata\": ");
+        sb.Append(new JsonObject
+        {
+            ["seed"] = Seed,
+            ["count"] = scenarios.Count,
+            ["note"] = "Fabricated vectors generated from the current BattleMotionMachine implementation. All inputs are invented; no game values are embedded.",
+            ["snapshotLayout"] = "Motion, IdleMotion, Keyframe, Frame, Blend, Blending, MotionDone, ToIdle, BlendTarget, BlendSource, Looping",
+            ["ops"] = "\"s:N\" = Step(N), \"m:M:R\" = SetMotion(M, restart: R == 1), \"i:K\" = SetIdleMotion(K)",
+            ["outcomes"] = "index 0 = constructor; \"ok\"; \"V:param\" = ArgumentOutOfRangeException(param), state unchanged, continue; \"E:type\" = stop with that exception type; \"E:*\" = stop with any exception",
+            ["keyframes"] = "full keyframe list after the constructor, then only when it changed (null otherwise)",
+        }.ToJsonString());
+        sb.Append(",\n  \"cases\": [\n");
+        for (var i = 0; i < scenarios.Count; i++)
+        {
+            var s = scenarios[i];
+            var r = BattleMotionMachineVectorHarness.Run(s.Motions, s.Idle, s.Ops);
+            var executed = s.Ops.Take(r.Outcomes.Count - 1).ToList();
+            var obj = new JsonObject
+            {
+                ["id"] = i + 1,
+                ["family"] = s.Family,
+                ["motions"] = new JsonArray(s.Motions.Select(m => (JsonNode)new JsonArray(m.Select(st => (JsonNode)Arr(st)).ToArray())).ToArray()),
+                ["idle"] = s.Idle,
+                ["ops"] = new JsonArray(executed.Select(o => (JsonNode)o).ToArray()),
+                ["outcomes"] = new JsonArray(r.Outcomes.Select(o => (JsonNode)o).ToArray()),
+                ["snapshots"] = new JsonArray([.. r.Snapshots.Select(v => v is null ? null : (JsonNode)Arr(v))]),
+                ["keyframes"] = new JsonArray([.. r.Keyframes.Select(v => v is null ? null : (JsonNode)Arr(v))]),
+            };
+            sb.Append("    ").Append(obj.ToJsonString());
+            sb.Append(i + 1 < scenarios.Count ? ",\n" : "\n");
+        }
+
+        sb.Append("  ]\n}\n");
+
+        var outPath = Environment.GetEnvironmentVariable("GENERATE_VECTORS_OUT") is { Length: > 0 } p
+            ? p
+            : Path.Combine(AppContext.BaseDirectory, "Vectors", "battle-motion-machine.json");
+        Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
+        File.WriteAllText(outPath, sb.ToString());
+
+        Assert.True(scenarios.Count >= 300, $"Generated {scenarios.Count} vectors, need at least 300.");
     }
 
     /// <summary>Builds one well-formed motion: explicit and blended runs, then a terminator.</summary>
@@ -270,109 +364,16 @@ public sealed class BattleMotionMachineVectorGenerator
         yield return new("edge-single", [[[0, 1, 5, 5], [End, 0, 0, 0]]], 0, Ops("s:0"));
     }
 
-    [Fact]
-    public void GenerateBattleMotionMachineVectors()
-    {
-        if (Environment.GetEnvironmentVariable("GENERATE_VECTORS") != "1")
-        {
-            return;
-        }
-
-        var random = new Random(Seed);
-        var scenarios = new List<Scenario>();
-
-        // 1. Random well-formed tables, random interleavings of every operation.
-        for (var n = 0; n < 160; n++)
-        {
-            var table = RandomTable(random);
-            var idle = table.Length >= 2 && random.Next(4) == 0 ? 1 : 0;
-            scenarios.Add(new("random-play", table, idle, RandomOps(random, table.Length, random.Next(15, 41))));
-        }
-
-        // 2. Idle return: an action ending on a -1 target, played to completion and beyond.
-        for (var n = 0; n < 60; n++)
-        {
-            var table = new[] { RandomMotion(random, 1), RandomMotion(random, random.Next(2) == 0 ? 1 : 6), RandomMotion(random, 2) };
-            var ops = new List<string>();
-            if (random.Next(3) == 0)
-            {
-                ops.Add($"i:{random.Next(2)}");
-            }
-
-            if (random.Next(3) == 0)
-            {
-                ops.Add($"m:{random.Next(1, 3)}:{random.Next(2)}");
-            }
-
-            ops.Add("m:3:1");
-            for (var i = 0; i < 70; i++)
-            {
-                var roll = random.Next(12);
-                ops.Add(roll switch { 0 => $"i:{random.Next(2)}", 1 => "s:0", 2 => $"s:{random.Next(2, 5)}", _ => "s:1" });
-            }
-
-            scenarios.Add(new("idle-return", table, random.Next(2), ops));
-        }
-
-        // 3. Looping motions driven through many cycles with mixed elapsed counts.
-        for (var n = 0; n < 50; n++)
-        {
-            var table = new[] { RandomMotion(random, random.Next(2) == 0 ? 1 : 6) };
-            var ops = new List<string>();
-            for (var i = 0; i < 60; i++)
-            {
-                ops.Add(random.Next(5) == 0 ? $"s:{random.Next(0, 12)}" : "s:1");
-            }
-
-            scenarios.Add(new("loop", table, 0, ops));
-        }
-
-        // 4. Hand-picked bounds and failure paths.
-        scenarios.AddRange(Edges());
-
-        var sb = new StringBuilder();
-        sb.Append("{\n  \"metadata\": ");
-        sb.Append(new JsonObject
-        {
-            ["seed"] = Seed,
-            ["count"] = scenarios.Count,
-            ["note"] = "Fabricated vectors generated from the current BattleMotionMachine implementation. All inputs are invented; no game values are embedded.",
-            ["snapshotLayout"] = "Motion, IdleMotion, Keyframe, Frame, Blend, Blending, MotionDone, ToIdle, BlendTarget, BlendSource, Looping",
-            ["ops"] = "\"s:N\" = Step(N), \"m:M:R\" = SetMotion(M, restart: R == 1), \"i:K\" = SetIdleMotion(K)",
-            ["outcomes"] = "index 0 = constructor; \"ok\"; \"V:param\" = ArgumentOutOfRangeException(param), state unchanged, continue; \"E:type\" = stop with that exception type; \"E:*\" = stop with any exception",
-            ["keyframes"] = "full keyframe list after the constructor, then only when it changed (null otherwise)",
-        }.ToJsonString());
-        sb.Append(",\n  \"cases\": [\n");
-        for (var i = 0; i < scenarios.Count; i++)
-        {
-            var s = scenarios[i];
-            var r = BattleMotionMachineVectorHarness.Run(s.Motions, s.Idle, s.Ops);
-            var executed = s.Ops.Take(r.Outcomes.Count - 1).ToList();
-            var obj = new JsonObject
-            {
-                ["id"] = i + 1,
-                ["family"] = s.Family,
-                ["motions"] = new JsonArray(s.Motions.Select(m => (JsonNode)new JsonArray(m.Select(st => (JsonNode)Arr(st)).ToArray())).ToArray()),
-                ["idle"] = s.Idle,
-                ["ops"] = new JsonArray(executed.Select(o => (JsonNode)o).ToArray()),
-                ["outcomes"] = new JsonArray(r.Outcomes.Select(o => (JsonNode)o).ToArray()),
-                ["snapshots"] = new JsonArray([.. r.Snapshots.Select(v => v is null ? null : (JsonNode)Arr(v))]),
-                ["keyframes"] = new JsonArray([.. r.Keyframes.Select(v => v is null ? null : (JsonNode)Arr(v))]),
-            };
-            sb.Append("    ").Append(obj.ToJsonString());
-            sb.Append(i + 1 < scenarios.Count ? ",\n" : "\n");
-        }
-
-        sb.Append("  ]\n}\n");
-
-        var outPath = Environment.GetEnvironmentVariable("GENERATE_VECTORS_OUT") is { Length: > 0 } p
-            ? p
-            : Path.Combine(AppContext.BaseDirectory, "Vectors", "battle-motion-machine.json");
-        Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
-        File.WriteAllText(outPath, sb.ToString());
-
-        Assert.True(scenarios.Count >= 300, $"Generated {scenarios.Count} vectors, need at least 300.");
-    }
-
     private static JsonArray Arr(int[] a) => [.. a.Select(v => (JsonNode)v).ToArray()];
+
+    private sealed class Scenario(string family, int[][][] motions, int idle, List<string> ops)
+    {
+        public string Family { get; } = family;
+
+        public int[][][] Motions { get; } = motions;
+
+        public int Idle { get; } = idle;
+
+        public List<string> Ops { get; } = ops;
+    }
 }

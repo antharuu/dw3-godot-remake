@@ -48,6 +48,12 @@ public static class Locomotion
         new(-6, -8), new(6, -8), new(8, -6), new(8, 6), new(6, 8), new(-6, 8), new(-8, 6), new(-8, -6),
     ];
 
+    // Radius (in floor cells) over which the void contour is smoothed to derive the
+    // local wall surface normal. Comparable to the original leading-edge probe reach
+    // (+-8 cells), so a staircase boundary is sampled at the actor's own scale rather
+    // than per protruding cell.
+    private const int SurfaceSmoothRadius = 6;
+
     private static readonly int[] MirrorDirections = [0, 7, 6, 5, 4, 3, 2, 1];
 
     // Per-slope, per-direction displacement vectors (8.8 fixed-point, 4096 = 1.0 world unit).
@@ -119,22 +125,6 @@ public static class Locomotion
         state.AnimationSet = state.IsRunning ? 5 : 4;
         return MovementResult.Accepted(step, meta.Cell, meta.Row, meta.Mirror, meta.SourceDirection);
     }
-
-    // Radius (in floor cells) over which the void contour is smoothed to derive the
-    // local wall surface normal. Comparable to the original leading-edge probe reach
-    // (+-8 cells), so a staircase boundary is sampled at the actor's own scale rather
-    // than per protruding cell.
-    private const int SurfaceSmoothRadius = 6;
-
-    /// <summary>
-    /// Groups the floor metadata that travels through the slide helpers and lands in
-    /// <see cref="MovementResult"/>, so a slid step reports the floor it started from.
-    /// </summary>
-    /// <param name="Cell">Raw floor cell byte under the actor.</param>
-    /// <param name="Row">Classified slope row of the direction-vector table, 0..6.</param>
-    /// <param name="Mirror">Whether the slope row is used mirrored.</param>
-    /// <param name="SourceDirection">Input direction rebased for the slope row, used to look up the direction vector.</param>
-    private readonly record struct FloorMeta(int Cell, int Row, bool Mirror, int SourceDirection);
 
     /// <summary>
     /// Tries to keep the actor moving after its full step was rejected: first along the smoothed
@@ -423,4 +413,14 @@ public static class Locomotion
         contact = Vector2.Zero;
         return true;
     }
+
+    /// <summary>
+    /// Groups the floor metadata that travels through the slide helpers and lands in
+    /// <see cref="MovementResult"/>, so a slid step reports the floor it started from.
+    /// </summary>
+    /// <param name="Cell">Raw floor cell byte under the actor.</param>
+    /// <param name="Row">Classified slope row of the direction-vector table, 0..6.</param>
+    /// <param name="Mirror">Whether the slope row is used mirrored.</param>
+    /// <param name="SourceDirection">Input direction rebased for the slope row, used to look up the direction vector.</param>
+    private readonly record struct FloorMeta(int Cell, int Row, bool Mirror, int SourceDirection);
 }

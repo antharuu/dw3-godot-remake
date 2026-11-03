@@ -876,31 +876,6 @@ public sealed class LegacyBattleConsoleTests
         };
     }
 
-    private sealed class NoRng : IBattleRng
-    {
-        public int NextValue() => 0;
-    }
-
-    private sealed class SeqRng : IBattleRng
-    {
-        private readonly int[] _values;
-        private int _index;
-
-        public SeqRng(params int[] values) => _values = values;
-
-        public int NextValue() => _values[_index++ % _values.Length];
-    }
-
-    private sealed class SeqShotRng : IShotCameraRng
-    {
-        private readonly int[] _values;
-        private int _index;
-
-        public SeqShotRng(params int[] values) => _values = values;
-
-        public int NextRoll() => _values[_index++ % _values.Length];
-    }
-
     private static BattleFighter Enemy(int id = 101, int hp = 500, int maxHp = 500, int mp = 100, int turns = 0) => new()
     {
         Id = id,
@@ -928,6 +903,31 @@ public sealed class LegacyBattleConsoleTests
     private static void Check(bool condition, string name)
     {
         Assert.True(condition, name);
+    }
+
+    private sealed class NoRng : IBattleRng
+    {
+        public int NextValue() => 0;
+    }
+
+    private sealed class SeqRng : IBattleRng
+    {
+        private readonly int[] _values;
+        private int _index;
+
+        public SeqRng(params int[] values) => _values = values;
+
+        public int NextValue() => _values[_index++ % _values.Length];
+    }
+
+    private sealed class SeqShotRng : IShotCameraRng
+    {
+        private readonly int[] _values;
+        private int _index;
+
+        public SeqShotRng(params int[] values) => _values = values;
+
+        public int NextRoll() => _values[_index++ % _values.Length];
     }
 
     private sealed record BattleFixture(

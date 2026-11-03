@@ -32,10 +32,13 @@ public sealed class FighterModelTable
     public const byte EnemyKindMinimum = 0x3A;
 
     private const int HeaderBytes = 16;
+
     private const int EntryBytes = 4;
 
     private readonly byte[] _data;
+
     private readonly int _partners;
+
     private readonly int _enemies;
 
     /// <summary>Initializes a new instance of the <see cref="FighterModelTable"/> class; called only by <see cref="Parse"/>.</summary>
@@ -117,6 +120,23 @@ public sealed class FighterModelTable
             cameras,
             new BattleGeometry(ReadI16(record + 0x10), ReadI16(record + 0x18)),
             new BattleFace(new BattleFaceSource(record, record + 0x0C, faceOffset, 10, "x==0xff"), parts));
+    }
+
+    /// <summary>Reads a u32 file offset from <paramref name="data"/> at <paramref name="at"/> and validates it fits a signed int.</summary>
+    /// <param name="data">Raw file bytes.</param>
+    /// <param name="at">Byte offset of the u32 offset value; the read covers 4 bytes.</param>
+    /// <param name="name">Field name for use in the error message.</param>
+    /// <returns>The decoded offset as a signed integer.</returns>
+    /// <exception cref="FormatException">The value exceeds <see cref="int.MaxValue"/>.</exception>
+    private static int ReadOffset(byte[] data, int at, string name)
+    {
+        uint value = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(at, 4));
+        if (value > int.MaxValue)
+        {
+            throw new FormatException($"Fighter table {name} offset 0x{value:X} is invalid.");
+        }
+
+        return (int)value;
     }
 
     /// <summary>
@@ -235,21 +255,4 @@ public sealed class FighterModelTable
     /// <param name="at">Byte offset within the retained file bytes.</param>
     /// <returns>The decoded s16 value.</returns>
     private short ReadI16(int at) => BinaryPrimitives.ReadInt16LittleEndian(_data.AsSpan(at, 2));
-
-    /// <summary>Reads a u32 file offset from <paramref name="data"/> at <paramref name="at"/> and validates it fits a signed int.</summary>
-    /// <param name="data">Raw file bytes.</param>
-    /// <param name="at">Byte offset of the u32 offset value; the read covers 4 bytes.</param>
-    /// <param name="name">Field name for use in the error message.</param>
-    /// <returns>The decoded offset as a signed integer.</returns>
-    /// <exception cref="FormatException">The value exceeds <see cref="int.MaxValue"/>.</exception>
-    private static int ReadOffset(byte[] data, int at, string name)
-    {
-        uint value = BinaryPrimitives.ReadUInt32LittleEndian(data.AsSpan(at, 4));
-        if (value > int.MaxValue)
-        {
-            throw new FormatException($"Fighter table {name} offset 0x{value:X} is invalid.");
-        }
-
-        return (int)value;
-    }
 }

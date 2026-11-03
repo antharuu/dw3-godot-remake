@@ -14,55 +14,6 @@ public sealed class RepositoryGuardTests : IDisposable
     private readonly List<string> _tempDirs = [];
 
     // ─────────────────────────────────────────────────────────────────────
-    // Helpers
-    // ─────────────────────────────────────────────────────────────────────
-
-    /// <summary>
-    /// Creates a minimal Git repo in a temp dir with the given tracked files.
-    /// All files are added and committed; no real ROM data is used.
-    /// </summary>
-    private string MakeRepo(params (string path, string content)[] files)
-    {
-        var dir = Path.Combine(Path.GetTempPath(), $"dw3-guard-{Guid.NewGuid():N}");
-        Directory.CreateDirectory(dir);
-        _tempDirs.Add(dir);
-
-        Git(dir, "init -b main");
-        Git(dir, "config user.email \"guard-test@example.invalid\"");
-        Git(dir, "config user.name \"Guard Test\"");
-
-        foreach (var (path, content) in files)
-        {
-            var full = Path.Combine(dir, path.Replace('/', Path.DirectorySeparatorChar));
-            Directory.CreateDirectory(Path.GetDirectoryName(full)!);
-            File.WriteAllText(full, content);
-            Git(dir, $"add \"{path}\"");
-        }
-
-        Git(dir, "commit -m init --allow-empty");
-        return dir;
-    }
-
-    private static void Git(string workdir, string args)
-    {
-        var psi = new ProcessStartInfo("git", args)
-        {
-            WorkingDirectory = workdir,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-        };
-        using var p = Process.Start(psi)!;
-        p.WaitForExit();
-    }
-
-    private static void AssertViolation(IReadOnlyList<Violation> v, string rule) =>
-        Assert.Contains(v, x => x.Rule == rule);
-
-    private static void AssertNoViolation(IReadOnlyList<Violation> v, string rule) =>
-        Assert.DoesNotContain(v, x => x.Rule == rule);
-
-    // ─────────────────────────────────────────────────────────────────────
     // P1: forbidden-extension
     // ─────────────────────────────────────────────────────────────────────
     [Fact]
@@ -450,5 +401,54 @@ public sealed class RepositoryGuardTests : IDisposable
             { /* best-effort */
             }
         }
+    }
+
+    private static void Git(string workdir, string args)
+    {
+        var psi = new ProcessStartInfo("git", args)
+        {
+            WorkingDirectory = workdir,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+        };
+        using var p = Process.Start(psi)!;
+        p.WaitForExit();
+    }
+
+    private static void AssertViolation(IReadOnlyList<Violation> v, string rule) =>
+        Assert.Contains(v, x => x.Rule == rule);
+
+    private static void AssertNoViolation(IReadOnlyList<Violation> v, string rule) =>
+        Assert.DoesNotContain(v, x => x.Rule == rule);
+
+    // ─────────────────────────────────────────────────────────────────────
+    // Helpers
+    // ─────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Creates a minimal Git repo in a temp dir with the given tracked files.
+    /// All files are added and committed; no real ROM data is used.
+    /// </summary>
+    private string MakeRepo(params (string path, string content)[] files)
+    {
+        var dir = Path.Combine(Path.GetTempPath(), $"dw3-guard-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(dir);
+        _tempDirs.Add(dir);
+
+        Git(dir, "init -b main");
+        Git(dir, "config user.email \"guard-test@example.invalid\"");
+        Git(dir, "config user.name \"Guard Test\"");
+
+        foreach (var (path, content) in files)
+        {
+            var full = Path.Combine(dir, path.Replace('/', Path.DirectorySeparatorChar));
+            Directory.CreateDirectory(Path.GetDirectoryName(full)!);
+            File.WriteAllText(full, content);
+            Git(dir, $"add \"{path}\"");
+        }
+
+        Git(dir, "commit -m init --allow-empty");
+        return dir;
     }
 }

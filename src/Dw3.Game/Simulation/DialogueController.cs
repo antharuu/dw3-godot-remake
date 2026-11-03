@@ -38,19 +38,27 @@ public enum DialogueState
 /// </summary>
 public sealed class DialogueController
 {
-    private DialogueState _state = DialogueState.Idle;
-    private DialogueActor? _actor;
-    private DialogueTalk? _talk;
-    private IReadOnlyList<IReadOnlyList<TextToken>> _pages = [];
-    private int _pageIndex;
-    private bool _effectReported;
-    private string? _zoneId;
-    private int _revealCount;
-    private int _revealTimer;
-
     /// <summary>The typewriter delay in simulation ticks: the typewriter reveals
     /// one token every <see cref="TypeDelay"/>+1 simulation ticks (a Cross press reveals the page).</summary>
     public const int TypeDelay = 6;
+
+    private DialogueState _state = DialogueState.Idle;
+
+    private DialogueActor? _actor;
+
+    private DialogueTalk? _talk;
+
+    private IReadOnlyList<IReadOnlyList<TextToken>> _pages = [];
+
+    private int _pageIndex;
+
+    private bool _effectReported;
+
+    private string? _zoneId;
+
+    private int _revealCount;
+
+    private int _revealTimer;
 
     /// <summary>Gets a value indicating whether a conversation holds the player, from the start until Cross is released after closing.</summary>
     public bool IsActive => _state != DialogueState.Idle;
@@ -99,6 +107,51 @@ public sealed class DialogueController
     /// <summary>Gets a value indicating whether the current (or just closed) conversation signalled its effect. Reset by <see cref="Start"/>.</summary>
     public bool EffectReported => _effectReported;
 
+    /// <summary>Control 3 (page break) is the only page boundary token.
+    /// Control 2 (wait for a button) and control 6 (pause) are within-page pauses, never a new page,
+    /// so a wait immediately followed by a page break must not produce a blank page.</summary>
+    /// <param name="token">Token to test.</param>
+    /// <returns><see langword="true"/> for control 3 only.</returns>
+    public static bool IsPageBreak(TextToken token) => token.IsControl && token.Command == 3;
+
+    /// <summary>The optional controls the dialogue runtime does not reconstruct (5 buffer
+    /// insert, 8 player name). They carry no text of their own and are signalled, never rendered.</summary>
+    /// <param name="token">Token to test.</param>
+    /// <returns><see langword="true"/> for controls 5 and 8.</returns>
+    public static bool IsUnsupported(TextToken token) => token.IsControl && token.Command is 5 or 8;
+
+    /// <summary>Splits a token stream into pages at each page break (control 3). Wait (2) and pause
+    /// (6) controls stay inside their page (they are skipped by the renderer), so a trailing page
+    /// break produces no page of its own and the last non-empty page's Cross closes the conversation
+    /// instead of showing a blank page.</summary>
+    /// <param name="entry">Talk text without the speaker name.</param>
+    /// <returns>At least one page. Only an entirely empty entry yields a single empty page.</returns>
+    public static IReadOnlyList<IReadOnlyList<TextToken>> SplitPages(IReadOnlyList<TextToken> entry)
+    {
+        var pages = new List<IReadOnlyList<TextToken>>();
+        var current = new List<TextToken>();
+        foreach (var token in entry)
+        {
+            if (IsPageBreak(token))
+            {
+                pages.Add(current);
+                current = [];
+            }
+            else
+            {
+                current.Add(token);
+            }
+        }
+
+        pages.Add(current);
+        while (pages.Count > 1 && pages[^1].Count == 0)
+        {
+            pages.RemoveAt(pages.Count - 1);
+        }
+
+        return pages;
+    }
+
     /// <summary>Begins a conversation with <paramref name="actor"/>'s selected talk. The entry's
     /// speaker name is stripped, the remaining text is split into pages at each page break
     /// (control 3, see <see cref="SplitPages"/>), and the first page is typed out when the machine
@@ -122,41 +175,6 @@ public sealed class DialogueController
         _revealCount = 0;
         _revealTimer = 0;
         _state = DialogueState.Opening;
-    }
-
-    /// <summary>Separates the speaker name from the talk text. The name sits between the leading 02 07 (control 7) and the
-    /// next 02 07; a lone 02 09 (control 9) between them stands for the player's own name. The
-    /// talk text is everything after the closing 02 07.</summary>
-    /// <param name="entry">Tokens of a talk text entry.</param>
-    /// <returns>The name tokens, whether they stand for the player, and the text. Without two control 7 tokens the name is empty and the text is the whole entry.</returns>
-    private static (IReadOnlyList<TextToken> Name, bool IsPlayer, IReadOnlyList<TextToken> Text) SplitSpeaker(IReadOnlyList<TextToken> entry)
-    {
-        var first = -1;
-        var second = -1;
-        for (var index = 0; index < entry.Count; index++)
-        {
-            if (entry[index].IsControl && entry[index].Command == 7)
-            {
-                if (first < 0)
-                {
-                    first = index;
-                }
-                else
-                {
-                    second = index;
-                    break;
-                }
-            }
-        }
-
-        if (first < 0 || second < 0)
-        {
-            return ([], false, entry);
-        }
-
-        var name = entry.Skip(first + 1).Take(second - first - 1).ToList();
-        var isPlayer = name.Count == 1 && name[0].IsControl && name[0].Command == 9;
-        return (name, isPlayer, entry.Skip(second + 1).ToList());
     }
 
     /// <summary>Advances the conversation by one simulation tick. Consumes the Cross press every tick, so a press made during the dialogue never reaches the field.</summary>
@@ -232,6 +250,41 @@ public sealed class DialogueController
         }
     }
 
+    /// <summary>Separates the speaker name from the talk text. The name sits between the leading 02 07 (control 7) and the
+    /// next 02 07; a lone 02 09 (control 9) between them stands for the player's own name. The
+    /// talk text is everything after the closing 02 07.</summary>
+    /// <param name="entry">Tokens of a talk text entry.</param>
+    /// <returns>The name tokens, whether they stand for the player, and the text. Without two control 7 tokens the name is empty and the text is the whole entry.</returns>
+    private static (IReadOnlyList<TextToken> Name, bool IsPlayer, IReadOnlyList<TextToken> Text) SplitSpeaker(IReadOnlyList<TextToken> entry)
+    {
+        var first = -1;
+        var second = -1;
+        for (var index = 0; index < entry.Count; index++)
+        {
+            if (entry[index].IsControl && entry[index].Command == 7)
+            {
+                if (first < 0)
+                {
+                    first = index;
+                }
+                else
+                {
+                    second = index;
+                    break;
+                }
+            }
+        }
+
+        if (first < 0 || second < 0)
+        {
+            return ([], false, entry);
+        }
+
+        var name = entry.Skip(first + 1).Take(second - first - 1).ToList();
+        var isPlayer = name.Count == 1 && name[0].IsControl && name[0].Command == 9;
+        return (name, isPlayer, entry.Skip(second + 1).ToList());
+    }
+
     /// <summary>Types the current page one token at a time at the original cadence: the reveal
     /// counter advances by one token every <see cref="TypeDelay"/>+1 ticks, matching the original
     /// rhythm of about six frames per glyph.</summary>
@@ -248,50 +301,5 @@ public sealed class DialogueController
             _revealTimer = 0;
             _revealCount++;
         }
-    }
-
-    /// <summary>Control 3 (page break) is the only page boundary token.
-    /// Control 2 (wait for a button) and control 6 (pause) are within-page pauses, never a new page,
-    /// so a wait immediately followed by a page break must not produce a blank page.</summary>
-    /// <param name="token">Token to test.</param>
-    /// <returns><see langword="true"/> for control 3 only.</returns>
-    public static bool IsPageBreak(TextToken token) => token.IsControl && token.Command == 3;
-
-    /// <summary>The optional controls the dialogue runtime does not reconstruct (5 buffer
-    /// insert, 8 player name). They carry no text of their own and are signalled, never rendered.</summary>
-    /// <param name="token">Token to test.</param>
-    /// <returns><see langword="true"/> for controls 5 and 8.</returns>
-    public static bool IsUnsupported(TextToken token) => token.IsControl && token.Command is 5 or 8;
-
-    /// <summary>Splits a token stream into pages at each page break (control 3). Wait (2) and pause
-    /// (6) controls stay inside their page (they are skipped by the renderer), so a trailing page
-    /// break produces no page of its own and the last non-empty page's Cross closes the conversation
-    /// instead of showing a blank page.</summary>
-    /// <param name="entry">Talk text without the speaker name.</param>
-    /// <returns>At least one page. Only an entirely empty entry yields a single empty page.</returns>
-    public static IReadOnlyList<IReadOnlyList<TextToken>> SplitPages(IReadOnlyList<TextToken> entry)
-    {
-        var pages = new List<IReadOnlyList<TextToken>>();
-        var current = new List<TextToken>();
-        foreach (var token in entry)
-        {
-            if (IsPageBreak(token))
-            {
-                pages.Add(current);
-                current = [];
-            }
-            else
-            {
-                current.Add(token);
-            }
-        }
-
-        pages.Add(current);
-        while (pages.Count > 1 && pages[^1].Count == 0)
-        {
-            pages.RemoveAt(pages.Count - 1);
-        }
-
-        return pages;
     }
 }

@@ -81,6 +81,31 @@ public sealed class FieldDataPackLoaderTests : IDisposable
         Assert.Contains("CACHE_INVALID", error.Message, StringComparison.Ordinal);
     }
 
+    public void Dispose()
+    {
+        // Release pooled connections before deletion; on Windows, the pool keeps
+        // the file handle open past Dispose(), preventing Directory.Delete.
+        SqliteConnection.ClearAllPools();
+        if (Directory.Exists(_root))
+        {
+            Directory.Delete(_root, true);
+        }
+    }
+
+    private static void Execute(DataPackWriteContext context, string sql)
+    {
+        using SqliteCommand command = context.Database.CreateCommand();
+        command.Transaction = context.Transaction;
+        command.CommandText = sql;
+        command.ExecuteNonQuery();
+    }
+
+    private static void WriteJson(string path, object value)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllText(path, JsonSerializer.Serialize(value));
+    }
+
     private void BuildPack()
     {
         new DataPackWriter(_root).Write(
@@ -148,30 +173,5 @@ public sealed class FieldDataPackLoaderTests : IDisposable
                 Execute(context, "INSERT INTO npc_sequence_records VALUES (21,200,0,3,0,6,9,2,-5)");
                 Execute(context, "INSERT INTO npc_frames VALUES (21,200,0,9,16,24,'npc/200/actor-0/frames/frame-09.png')");
             });
-    }
-
-    private static void Execute(DataPackWriteContext context, string sql)
-    {
-        using SqliteCommand command = context.Database.CreateCommand();
-        command.Transaction = context.Transaction;
-        command.CommandText = sql;
-        command.ExecuteNonQuery();
-    }
-
-    private static void WriteJson(string path, object value)
-    {
-        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        File.WriteAllText(path, JsonSerializer.Serialize(value));
-    }
-
-    public void Dispose()
-    {
-        // Release pooled connections before deletion; on Windows, the pool keeps
-        // the file handle open past Dispose(), preventing Directory.Delete.
-        SqliteConnection.ClearAllPools();
-        if (Directory.Exists(_root))
-        {
-            Directory.Delete(_root, true);
-        }
     }
 }

@@ -18,8 +18,11 @@ public sealed partial class DialogueRenderer : IDisposable
     // world is drawn at 3x and the 16:9 view shows 160 extra source pixels on each horizontal
     // side (centred). The box node draws in source coordinates; its Scale+Position apply that.
     private const float WorldScale = 3f;
+
     private const float SourceCenterX = 160f;
+
     private const float LineHeight = 14f; // FONT_STYLES[1].lineHeight (the decoded font metrics)
+
     private const float BoxHeight = 0x3E; // 62 source pixels, three lines
 
     private readonly DialogueBoxNode _box;
@@ -36,34 +39,6 @@ public sealed partial class DialogueRenderer : IDisposable
         _box = new DialogueBoxNode { Scale = new Vector2(WorldScale, WorldScale), Position = new Vector2(SourceCenterX, 0f) };
         layer.AddChild(_box);
         root.AddChild(layer);
-    }
-
-    /// <summary>Releases Godot resources owned by this renderer.</summary>
-    public void Dispose() => _box.Dispose();
-
-    /// <summary>Supplies the decoded font metrics and atlas pages used for dialogue glyphs.</summary>
-    /// <param name="font">Decoded metrics for glyph and icon placement.</param>
-    /// <param name="page0">First font atlas page.</param>
-    /// <param name="page1">Second font atlas page.</param>
-    public void SetFont(FontData font, Texture2D page0, Texture2D page1) => _box.SetFont(font, page0, page1);
-
-    /// <summary>Supplies dialogue frame layouts, sprite textures, and the panel texture.</summary>
-    /// <param name="frames">Decoded frame layouts.</param>
-    /// <param name="textures">Textures indexed by frame identifier.</param>
-    /// <param name="panelTexture">Texture stretched behind each dialogue box.</param>
-    public void SetFrames(DialogueFrameData frames, IReadOnlyDictionary<int, Texture2D> textures, Texture2D panelTexture) => _box.SetFrames(frames, textures, panelTexture);
-
-    /// <summary>Pins the arrow brightness for a deterministic offscreen probe capture.</summary>
-    /// <param name="frame">Probe frame selecting the brightness, or null for live animation.</param>
-    public void SetProbeArrowBrightness(int? frame) => _box.SetProbeArrowBrightness(frame);
-
-    /// <summary>Maps a deterministic probe frame to the four arrow brightness states.</summary>
-    /// <param name="frame">Non-negative probe frame.</param>
-    /// <returns>The zero-based arrow brightness state.</returns>
-    public static int ProbeArrowBrightnessIndex(int frame)
-    {
-        ArgumentOutOfRangeException.ThrowIfNegative(frame);
-        return frame % 4;
     }
 
     /// <summary>Gets a value indicating whether true when the current page contains at least one real glyph or icon draw.</summary>
@@ -93,6 +68,34 @@ public sealed partial class DialogueRenderer : IDisposable
     /// <summary>Gets the panel rectangle in viewport pixels (the probe checks the bubble sits at the actor, not the bottom).</summary>
     public Rect2 BoxScreenRect => _box.BoxScreenRect;
 
+    /// <summary>Maps a deterministic probe frame to the four arrow brightness states.</summary>
+    /// <param name="frame">Non-negative probe frame.</param>
+    /// <returns>The zero-based arrow brightness state.</returns>
+    public static int ProbeArrowBrightnessIndex(int frame)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(frame);
+        return frame % 4;
+    }
+
+    /// <summary>Releases Godot resources owned by this renderer.</summary>
+    public void Dispose() => _box.Dispose();
+
+    /// <summary>Supplies the decoded font metrics and atlas pages used for dialogue glyphs.</summary>
+    /// <param name="font">Decoded metrics for glyph and icon placement.</param>
+    /// <param name="page0">First font atlas page.</param>
+    /// <param name="page1">Second font atlas page.</param>
+    public void SetFont(FontData font, Texture2D page0, Texture2D page1) => _box.SetFont(font, page0, page1);
+
+    /// <summary>Supplies dialogue frame layouts, sprite textures, and the panel texture.</summary>
+    /// <param name="frames">Decoded frame layouts.</param>
+    /// <param name="textures">Textures indexed by frame identifier.</param>
+    /// <param name="panelTexture">Texture stretched behind each dialogue box.</param>
+    public void SetFrames(DialogueFrameData frames, IReadOnlyDictionary<int, Texture2D> textures, Texture2D panelTexture) => _box.SetFrames(frames, textures, panelTexture);
+
+    /// <summary>Pins the arrow brightness for a deterministic offscreen probe capture.</summary>
+    /// <param name="frame">Probe frame selecting the brightness, or null for live animation.</param>
+    public void SetProbeArrowBrightness(int? frame) => _box.SetProbeArrowBrightness(frame);
+
     /// <summary>Updates the dialogue box with the supplied view or clears it when absent.</summary>
     /// <param name="view">Dialogue content and layout state to render.</param>
     public void Present(DialogueView? view) => _box.SetView(view);
@@ -100,25 +103,42 @@ public sealed partial class DialogueRenderer : IDisposable
     /// <summary>Draws the frame, panel, and glyph runs for one dialogue box.</summary>
     private sealed partial class DialogueBoxNode : Node2D
     {
-        private static readonly float[] ArrowBrightness = [1f, 0.7f, 0.45f, 0.25f];
         private const ulong ArrowBlinkMs = 100; // the source's 4 arrow CLUTs, ~6 ticks each
 
-        private FontData? _font;
-        private Texture2D? _page0;
-        private Texture2D? _page1;
-        private DialogueFrameData? _frames;
-        private IReadOnlyDictionary<int, Texture2D>? _frameTextures;
-        private Texture2D? _panelTexture;
+        private static readonly float[] ArrowBrightness = [1f, 0.7f, 0.45f, 0.25f];
+
         private readonly List<GlyphDraw> _textDraws = [];
+
         private readonly List<GlyphDraw> _nameDraws = [];
+
+        private FontData? _font;
+
+        private Texture2D? _page0;
+
+        private Texture2D? _page1;
+
+        private DialogueFrameData? _frames;
+
+        private IReadOnlyDictionary<int, Texture2D>? _frameTextures;
+
+        private Texture2D? _panelTexture;
+
         private TalkBoxLayout _layout = null!;
+
         private int _type;
+
         private int _boxWidth;
+
         private Vector2 _boxOrigin;
+
         private Vector2 _arrowPosition;
+
         private Rect2 _panelRect;
+
         private bool _showArrow;
+
         private bool _visible;
+
         private int? _probeArrowBrightness;
 
         /// <summary>Gets the number of text glyphs placed during the latest layout pass.</summary>
@@ -187,6 +207,58 @@ public sealed partial class DialogueRenderer : IDisposable
             FrameRendered = true;
             ArrowRendered = _showArrow;
             QueueRedraw();
+        }
+
+        /// <summary>Draws the active panel, frame pieces, arrow, and laid-out glyphs.</summary>
+        public override void _Draw()
+        {
+            if (!_visible || _frames is null || _frameTextures is null || _page0 is null || _page1 is null || _panelTexture is null)
+            {
+                return;
+            }
+
+            var widthOffset = _type < 2 ? _boxWidth : 0;
+
+            // Semi-transparent panel (POLY_FT4): the 12x62 light-blue texture stretched across
+            // the box width. The body texels are opaque (setSemiTrans only blends the STP-marked
+            // texels of a textured primitive), so the panel covers the scene; the STP border rows
+            // carry their alpha-128 semi-transparency in the decoded PNG.
+            DrawTextureRectRegion(_panelTexture, _panelRect, new Rect2(Vector2.Zero, _panelTexture.GetSize()), new Color(1f, 1f, 1f, 1f));
+
+            // The four box parts (drawTalkBoxFrame): corner sprite, left edge, right edge. The
+            // edge sprites' semi-transparency comes only from their STP-marked texels (already
+            // baked into the decoded PNG alpha): setSemiTrans on a textured primitive blends only
+            // the STP texels, non-STP texels stay opaque. So the edges are drawn at full alpha and
+            // their STP texels blend through the PNG's alpha-128.
+            var opaque = new Color(1f, 1f, 1f, 1f);
+            DrawFrame(_layout.Sprite, _boxOrigin + _layout.SpritePos, opaque);                                   // corner
+            DrawFrame(0, _boxOrigin + _layout.Sprite0Pos - new Vector2(widthOffset, 0), opaque);                // left edge
+            if (_type < 2)
+            {
+                DrawFrame(2, _boxOrigin + _layout.Sprite2Pos, opaque);                                          // right edge
+            }
+            else
+            {
+                DrawFrame(2, _boxOrigin + new Vector2(_boxWidth - 14, _layout.Sprite2Pos.Y), opaque);
+            }
+
+            // Blinking "next" arrow (frame 7), opaque, cycling its four CLUT brightness levels.
+            if (_showArrow)
+            {
+                var blink = _probeArrowBrightness ?? (int)((Time.GetTicksMsec() / ArrowBlinkMs) % (ulong)ArrowBrightness.Length);
+                var brightness = ArrowBrightness[blink];
+                DrawFrame(7, _arrowPosition, new Color(brightness, brightness, brightness, 1f));
+            }
+
+            foreach (var draw in _nameDraws)
+            {
+                DrawTextureRectRegion(draw.Page == 0 ? _page0 : _page1, draw.Target, draw.Source, opaque);
+            }
+
+            foreach (var draw in _textDraws)
+            {
+                DrawTextureRectRegion(draw.Page == 0 ? _page0 : _page1, draw.Target, draw.Source, opaque);
+            }
         }
 
         /// <summary>Clears layout results before processing another dialogue view.</summary>
@@ -331,58 +403,6 @@ public sealed partial class DialogueRenderer : IDisposable
             }
 
             return null;
-        }
-
-        /// <summary>Draws the active panel, frame pieces, arrow, and laid-out glyphs.</summary>
-        public override void _Draw()
-        {
-            if (!_visible || _frames is null || _frameTextures is null || _page0 is null || _page1 is null || _panelTexture is null)
-            {
-                return;
-            }
-
-            var widthOffset = _type < 2 ? _boxWidth : 0;
-
-            // Semi-transparent panel (POLY_FT4): the 12x62 light-blue texture stretched across
-            // the box width. The body texels are opaque (setSemiTrans only blends the STP-marked
-            // texels of a textured primitive), so the panel covers the scene; the STP border rows
-            // carry their alpha-128 semi-transparency in the decoded PNG.
-            DrawTextureRectRegion(_panelTexture, _panelRect, new Rect2(Vector2.Zero, _panelTexture.GetSize()), new Color(1f, 1f, 1f, 1f));
-
-            // The four box parts (drawTalkBoxFrame): corner sprite, left edge, right edge. The
-            // edge sprites' semi-transparency comes only from their STP-marked texels (already
-            // baked into the decoded PNG alpha): setSemiTrans on a textured primitive blends only
-            // the STP texels, non-STP texels stay opaque. So the edges are drawn at full alpha and
-            // their STP texels blend through the PNG's alpha-128.
-            var opaque = new Color(1f, 1f, 1f, 1f);
-            DrawFrame(_layout.Sprite, _boxOrigin + _layout.SpritePos, opaque);                                   // corner
-            DrawFrame(0, _boxOrigin + _layout.Sprite0Pos - new Vector2(widthOffset, 0), opaque);                // left edge
-            if (_type < 2)
-            {
-                DrawFrame(2, _boxOrigin + _layout.Sprite2Pos, opaque);                                          // right edge
-            }
-            else
-            {
-                DrawFrame(2, _boxOrigin + new Vector2(_boxWidth - 14, _layout.Sprite2Pos.Y), opaque);
-            }
-
-            // Blinking "next" arrow (frame 7), opaque, cycling its four CLUT brightness levels.
-            if (_showArrow)
-            {
-                var blink = _probeArrowBrightness ?? (int)((Time.GetTicksMsec() / ArrowBlinkMs) % (ulong)ArrowBrightness.Length);
-                var brightness = ArrowBrightness[blink];
-                DrawFrame(7, _arrowPosition, new Color(brightness, brightness, brightness, 1f));
-            }
-
-            foreach (var draw in _nameDraws)
-            {
-                DrawTextureRectRegion(draw.Page == 0 ? _page0 : _page1, draw.Target, draw.Source, opaque);
-            }
-
-            foreach (var draw in _textDraws)
-            {
-                DrawTextureRectRegion(draw.Page == 0 ? _page0 : _page1, draw.Target, draw.Source, opaque);
-            }
         }
 
         /// <summary>Draws one frame texture at a source-coordinate position.</summary>

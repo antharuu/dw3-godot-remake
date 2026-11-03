@@ -39,27 +39,45 @@ public enum ClimbSubstate
 public sealed class ClimbController
 {
     private const int SourceUnitsPerPixel = 256;
+
     private const int ClimbStep = SourceUnitsPerPixel;
+
     private const int SideShiftPixels = 16;
+
     private const int EdgeClearancePixels = 24;
+
     private const int CameraSmoothingHoldTicks = 16;
 
     private const int ClimbUpSet = 0x1A;
+
     private const int ClimbDownSet = 0x1B;
+
     private const int GetOnWallSet = 0x1C;
+
     private const int ClimbOffTopSet = 0x1D;
+
     private const int GetOverEdgeSet = 0x1E;
+
     private const int ClimbOffBottomSet = 0x1F;
+
     private const int ClimbIdleSet = 0x20;
 
     private ClimbData? _data;
+
     private ClimbSubstate _substate;
+
     private int _direction;
+
     private int _climbSide;
+
     private int _climbHeight;
+
     private int _wallHeight;
+
     private int _animationSet;
+
     private int _animationTicks;
+
     private bool _overEdgeOffsetApplied;
 
     /// <summary>
@@ -160,6 +178,21 @@ public sealed class ClimbController
         _animationTicks++;
         WriteTo(state);
     }
+
+    /// <summary>Maps a substate to the climb animation set it plays, 0x1A..0x20 in the action archive.</summary>
+    /// <param name="substate">Substate to map.</param>
+    /// <returns>The set id, or 0 for <see cref="ClimbSubstate.None"/>.</returns>
+    private static int AnimationSetFor(ClimbSubstate substate) => substate switch
+    {
+        ClimbSubstate.GetOnWall => GetOnWallSet,
+        ClimbSubstate.GetOverEdge => GetOverEdgeSet,
+        ClimbSubstate.Climb => ClimbIdleSet,
+        ClimbSubstate.ClimbUp => ClimbUpSet,
+        ClimbSubstate.ClimbDown => ClimbDownSet,
+        ClimbSubstate.ClimbOffTop => ClimbOffTopSet,
+        ClimbSubstate.ClimbOffBottom => ClimbOffBottomSet,
+        _ => 0,
+    };
 
     /// <summary>Stores the climb direction and wall height for a new traverse. Direction 5 climbs on the left side, every other direction on the right.</summary>
     /// <param name="direction">Facing direction of the climb slot, 0..7.</param>
@@ -322,21 +355,6 @@ public sealed class ClimbController
     /// <summary>Sideways shift applied when stepping over or off the top edge.</summary>
     /// <returns>+16 pixels on the right side, -16 on the left side.</returns>
     private int SideOffset() => _climbSide != 0 ? SideShiftPixels : -SideShiftPixels;
-
-    /// <summary>Maps a substate to the climb animation set it plays, 0x1A..0x20 in the action archive.</summary>
-    /// <param name="substate">Substate to map.</param>
-    /// <returns>The set id, or 0 for <see cref="ClimbSubstate.None"/>.</returns>
-    private static int AnimationSetFor(ClimbSubstate substate) => substate switch
-    {
-        ClimbSubstate.GetOnWall => GetOnWallSet,
-        ClimbSubstate.GetOverEdge => GetOverEdgeSet,
-        ClimbSubstate.Climb => ClimbIdleSet,
-        ClimbSubstate.ClimbUp => ClimbUpSet,
-        ClimbSubstate.ClimbDown => ClimbDownSet,
-        ClimbSubstate.ClimbOffTop => ClimbOffTopSet,
-        ClimbSubstate.ClimbOffBottom => ClimbOffBottomSet,
-        _ => 0,
-    };
 
     /// <summary>Publishes the climb fields to the game state so the renderer and the F3 overlay can draw the actor on the wall.</summary>
     /// <param name="state">Game state that receives the fields.</param>

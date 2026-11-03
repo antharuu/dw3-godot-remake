@@ -47,36 +47,6 @@ internal sealed class CognitiveComplexityWalker : CSharpSyntaxWalker
     internal int Complexity => _complexity;
 
     // -------------------------------------------------------------------------
-    // Static helpers (placed first per SA1204)
-    // -------------------------------------------------------------------------
-
-    /// <summary>
-    /// Returns <see langword="true"/> when <paramref name="node"/> is the right-hand operand
-    /// of a binary expression with the same operator kind, meaning it is part of a sequence
-    /// already counted at the outer node.
-    /// </summary>
-    /// <param name="node">The binary expression node to test.</param>
-    /// <returns>True when the node is nested inside a same-operator sequence.</returns>
-    private static bool IsNestedInSameOperator(BinaryExpressionSyntax node)
-    {
-        return node.Parent is BinaryExpressionSyntax parent
-               && parent.Kind() == node.Kind();
-    }
-
-    /// <summary>
-    /// Returns <see langword="true"/> when <paramref name="node"/> is the right-hand operand
-    /// of a binary pattern with the same combinator kind, meaning it is part of a sequence
-    /// already counted at the outer node.
-    /// </summary>
-    /// <param name="node">The binary pattern node to test.</param>
-    /// <returns>True when the node is nested inside a same-combinator pattern sequence.</returns>
-    private static bool IsNestedInSamePattern(BinaryPatternSyntax node)
-    {
-        return node.Parent is BinaryPatternSyntax parent
-               && parent.Kind() == node.Kind();
-    }
-
-    // -------------------------------------------------------------------------
     // Conditionals
     // -------------------------------------------------------------------------
 
@@ -331,6 +301,36 @@ internal sealed class CognitiveComplexityWalker : CSharpSyntaxWalker
         _nesting++;
         base.VisitLocalFunctionStatement(node);
         _nesting--;
+    }
+
+    // -------------------------------------------------------------------------
+    // Static helpers (placed first per SA1204)
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Returns <see langword="true"/> when <paramref name="node"/> is the right-hand operand
+    /// of a binary expression with the same operator kind, meaning it is part of a sequence
+    /// already counted at the outer node.
+    /// </summary>
+    /// <param name="node">The binary expression node to test.</param>
+    /// <returns>True when the node is nested inside a same-operator sequence.</returns>
+    private static bool IsNestedInSameOperator(BinaryExpressionSyntax node)
+    {
+        return node.Parent is BinaryExpressionSyntax parent
+               && parent.Kind() == node.Kind();
+    }
+
+    /// <summary>
+    /// Returns <see langword="true"/> when <paramref name="node"/> is the right-hand operand
+    /// of a binary pattern with the same combinator kind, meaning it is part of a sequence
+    /// already counted at the outer node.
+    /// </summary>
+    /// <param name="node">The binary pattern node to test.</param>
+    /// <returns>True when the node is nested inside a same-combinator pattern sequence.</returns>
+    private static bool IsNestedInSamePattern(BinaryPatternSyntax node)
+    {
+        return node.Parent is BinaryPatternSyntax parent
+               && parent.Kind() == node.Kind();
     }
 
     // -------------------------------------------------------------------------

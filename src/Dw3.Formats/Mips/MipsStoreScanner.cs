@@ -36,6 +36,3 @@ public static class MipsStoreScanner
         return matches;
     }
 }
-
-/// <summary>A store to the requested field: the <c>sw</c> byte offset and the stored value.</summary>
-public readonly record struct MipsStoreMatch(int Offset, MipsValue Value);

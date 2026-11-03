@@ -24,140 +24,6 @@ public sealed class BattleShotCameraVectorGenerator
         123456789, -987654321,
     ];
 
-    private sealed class ViewSource
-    {
-        private readonly Random _random;
-        private readonly bool _extreme;
-
-        public List<int[]> Issued { get; } = [];
-
-        public ViewSource(Random random, bool extreme)
-        {
-            _random = random;
-            _extreme = extreme;
-        }
-
-        public int[] Next()
-        {
-            var v = new int[14];
-            for (var i = 0; i < 14; i++)
-            {
-                v[i] = Field(i);
-            }
-
-            Issued.Add(v);
-            return (int[])v.Clone();
-        }
-
-        private int Field(int i)
-        {
-            if (_extreme && _random.Next(3) == 0)
-            {
-                int[] edges = [int.MaxValue, int.MinValue, int.MaxValue - 1, int.MinValue + 1, int.MaxValue - 0x13FF, int.MinValue + 0x13FF, -1, 0];
-                return edges[_random.Next(edges.Length)];
-            }
-
-            return i switch
-            {
-                13 => _random.Next(1, 1024),                 // projection
-                10 => _random.Next(-12000, 12000),           // yaw, deliberately outside one turn
-                9 or 11 or 12 => _random.Next(0, 4096),
-                _ => _random.Next(-30000, 30001),
-            };
-        }
-    }
-
-    private sealed class Builder
-    {
-        private readonly Random _random;
-
-        public BattleShotCameraVectorHarness.Session Session { get; }
-
-        public int[] Rng { get; }
-
-        public ViewSource? Enemy { get; }
-
-        public ViewSource? Fighter { get; }
-
-        public string Family { get; }
-
-        public Builder(Random random, string family, int[] rng, bool neutral, bool extreme)
-        {
-            _random = random;
-            Family = family;
-            Rng = rng;
-            if (!neutral)
-            {
-                Enemy = new ViewSource(new Random(random.Next()), extreme);
-                Fighter = new ViewSource(new Random(random.Next()), extreme);
-            }
-
-            Session = new BattleShotCameraVectorHarness.Session(
-                rng,
-                Enemy is null ? null : Enemy.Next,
-                Fighter is null ? null : Fighter.Next);
-        }
-
-        public bool Op(string op) => !Session.Failed && Session.Apply(op);
-
-        /// <summary>Crosses the current shot boundary with single steps on both sides.</summary>
-        public void WalkBoundary(int before, int after)
-        {
-            var bulk = Session.Camera.Time - before;
-            if (bulk > 0 && !Op($"s:{bulk}"))
-            {
-                return;
-            }
-
-            for (var i = 0; i < before + after; i++)
-            {
-                if (!Op("1"))
-                {
-                    return;
-                }
-            }
-        }
-
-        public JsonObject ToJson(int id)
-        {
-            var r = Session.ToResult();
-            var obj = new JsonObject
-            {
-                ["id"] = id,
-                ["family"] = Family,
-                ["ctor"] = Enemy is null ? "neutral" : "views",
-                ["rng"] = Arr(Rng),
-                ["enemyViews"] = Rows(Enemy?.Issued ?? []),
-                ["fighterViews"] = Rows(Fighter?.Issued ?? []),
-                ["ops"] = new JsonArray(Session.Ops.Select(o => (JsonNode)o).ToArray()),
-                ["snapshots"] = Rows(r.Snapshots),
-                ["calls"] = new JsonArray(r.Calls.Select(c =>
-                    (JsonNode)new JsonArray(c.Select(s => (JsonNode)s).ToArray())).ToArray()),
-                ["throwsAt"] = r.ThrowsAt,
-                ["exception"] = r.Exception,
-            };
-            return obj;
-        }
-
-        public int RandomInt(int min, int max) => _random.Next(min, max);
-    }
-
-    private static JsonArray Arr(int[] a) => [.. a.Select(v => (JsonNode)v).ToArray()];
-
-    private static JsonArray Rows(IEnumerable<int[]> rows) => [.. rows.Select(r => (JsonNode)Arr(r)).ToArray()];
-
-    private static int[] RandomRng(Random random, int maxLength = 5)
-    {
-        var n = random.Next(1, maxLength + 1);
-        var v = new int[n];
-        for (var i = 0; i < n; i++)
-        {
-            v[i] = random.Next(4) == 0 ? random.Next(int.MinValue + 1, int.MaxValue) : RngPool[random.Next(RngPool.Length)];
-        }
-
-        return v;
-    }
-
     [Fact]
     public void GenerateBattleShotCameraVectors()
     {
@@ -298,5 +164,140 @@ public sealed class BattleShotCameraVectorGenerator
         File.WriteAllText(outPath, sb.ToString());
 
         Assert.True(cases.Count >= 300, $"Generated {cases.Count} vectors, need at least 300.");
+    }
+
+    private static JsonArray Arr(int[] a) => [.. a.Select(v => (JsonNode)v).ToArray()];
+
+    private static JsonArray Rows(IEnumerable<int[]> rows) => [.. rows.Select(r => (JsonNode)Arr(r)).ToArray()];
+
+    private static int[] RandomRng(Random random, int maxLength = 5)
+    {
+        var n = random.Next(1, maxLength + 1);
+        var v = new int[n];
+        for (var i = 0; i < n; i++)
+        {
+            v[i] = random.Next(4) == 0 ? random.Next(int.MinValue + 1, int.MaxValue) : RngPool[random.Next(RngPool.Length)];
+        }
+
+        return v;
+    }
+
+    private sealed class ViewSource
+    {
+        private readonly Random _random;
+
+        private readonly bool _extreme;
+
+        public ViewSource(Random random, bool extreme)
+        {
+            _random = random;
+            _extreme = extreme;
+        }
+
+        public List<int[]> Issued { get; } = [];
+
+        public int[] Next()
+        {
+            var v = new int[14];
+            for (var i = 0; i < 14; i++)
+            {
+                v[i] = Field(i);
+            }
+
+            Issued.Add(v);
+            return (int[])v.Clone();
+        }
+
+        private int Field(int i)
+        {
+            if (_extreme && _random.Next(3) == 0)
+            {
+                int[] edges = [int.MaxValue, int.MinValue, int.MaxValue - 1, int.MinValue + 1, int.MaxValue - 0x13FF, int.MinValue + 0x13FF, -1, 0];
+                return edges[_random.Next(edges.Length)];
+            }
+
+            return i switch
+            {
+                13 => _random.Next(1, 1024),                 // projection
+                10 => _random.Next(-12000, 12000),           // yaw, deliberately outside one turn
+                9 or 11 or 12 => _random.Next(0, 4096),
+                _ => _random.Next(-30000, 30001),
+            };
+        }
+    }
+
+    private sealed class Builder
+    {
+        private readonly Random _random;
+
+        public Builder(Random random, string family, int[] rng, bool neutral, bool extreme)
+        {
+            _random = random;
+            Family = family;
+            Rng = rng;
+            if (!neutral)
+            {
+                Enemy = new ViewSource(new Random(random.Next()), extreme);
+                Fighter = new ViewSource(new Random(random.Next()), extreme);
+            }
+
+            Session = new BattleShotCameraVectorHarness.Session(
+                rng,
+                Enemy is null ? null : Enemy.Next,
+                Fighter is null ? null : Fighter.Next);
+        }
+
+        public BattleShotCameraVectorHarness.Session Session { get; }
+
+        public int[] Rng { get; }
+
+        public ViewSource? Enemy { get; }
+
+        public ViewSource? Fighter { get; }
+
+        public string Family { get; }
+
+        public bool Op(string op) => !Session.Failed && Session.Apply(op);
+
+        /// <summary>Crosses the current shot boundary with single steps on both sides.</summary>
+        public void WalkBoundary(int before, int after)
+        {
+            var bulk = Session.Camera.Time - before;
+            if (bulk > 0 && !Op($"s:{bulk}"))
+            {
+                return;
+            }
+
+            for (var i = 0; i < before + after; i++)
+            {
+                if (!Op("1"))
+                {
+                    return;
+                }
+            }
+        }
+
+        public JsonObject ToJson(int id)
+        {
+            var r = Session.ToResult();
+            var obj = new JsonObject
+            {
+                ["id"] = id,
+                ["family"] = Family,
+                ["ctor"] = Enemy is null ? "neutral" : "views",
+                ["rng"] = Arr(Rng),
+                ["enemyViews"] = Rows(Enemy?.Issued ?? []),
+                ["fighterViews"] = Rows(Fighter?.Issued ?? []),
+                ["ops"] = new JsonArray(Session.Ops.Select(o => (JsonNode)o).ToArray()),
+                ["snapshots"] = Rows(r.Snapshots),
+                ["calls"] = new JsonArray(r.Calls.Select(c =>
+                    (JsonNode)new JsonArray(c.Select(s => (JsonNode)s).ToArray())).ToArray()),
+                ["throwsAt"] = r.ThrowsAt,
+                ["exception"] = r.Exception,
+            };
+            return obj;
+        }
+
+        public int RandomInt(int min, int max) => _random.Next(min, max);
     }
 }

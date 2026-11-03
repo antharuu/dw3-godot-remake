@@ -14,17 +14,18 @@ namespace Dw3Production.Conversion;
 /// </summary>
 public sealed class DialogueDataPackLoader : IDisposable
 {
+    private const int DialogueStyle = 1;
+
+    private const int LayoutCount = 4;
+
     // Line height of each font style; style 1 is the field dialogue style.
     private static readonly IReadOnlyDictionary<int, int> StyleLineHeights = new Dictionary<int, int> { [1] = 14, [2] = 11, [3] = 9 };
-
-    private const int DialogueStyle = 1;
 
     // Frames the talk box draws: two edges, the four corners and the "next" arrow.
     private static readonly int[] RequiredFrames = [0, 2, 3, 4, 5, 6, 7];
 
-    private const int LayoutCount = 4;
-
     private readonly DataPackReader _pack;
+
     private readonly SqliteConnection _database;
 
     /// <summary>Initializes a new instance of the <see cref="DialogueDataPackLoader"/> class bound to the given data pack.</summary>
@@ -72,6 +73,73 @@ public sealed class DialogueDataPackLoader : IDisposable
 
     /// <summary>Releases the underlying SQLite connection.</summary>
     public void Dispose() => _database.Dispose();
+
+    /// <summary>Parses one talk text JSON file whose <c>entries</c> array holds one token array per message.</summary>
+    /// <param name="path">Absolute path of the JSON file.</param>
+    /// <param name="index">Text file index, used in the error message.</param>
+    /// <returns>The messages in file order, each as a token list.</returns>
+    /// <exception cref="CacheResourceException">The file cannot be read, is not valid JSON, or a token is malformed.</exception>
+    private static List<IReadOnlyList<TextToken>> ParseTextFile(string path, int index)
+    {
+        try
+        {
+            using JsonDocument document = JsonDocument.Parse(File.ReadAllText(path));
+            var entries = new List<IReadOnlyList<TextToken>>();
+            foreach (JsonElement entry in document.RootElement.GetProperty("entries").EnumerateArray())
+            {
+                entries.Add([.. entry.EnumerateArray().Select(ParseTextToken)]);
+            }
+
+            return entries;
+        }
+        catch (Exception error) when (error is IOException or JsonException or InvalidOperationException or FormatException or KeyNotFoundException)
+        {
+            throw Invalid($"text file={index} invalid: {error.Message}");
+        }
+    }
+
+    /// <summary>Decodes one token of a talk text file: <c>g</c> glyph and <c>i</c> icon carry a code in <c>c</c>, <c>c</c> control tokens carry a command in <c>cmd</c> and integer arguments in <c>args</c>.</summary>
+    /// <param name="token">A token object with a <c>t</c> type field.</param>
+    /// <returns>The runtime token.</returns>
+    /// <exception cref="JsonException">The type field is null or not one of <c>g</c>, <c>i</c>, <c>c</c>.</exception>
+    private static TextToken ParseTextToken(JsonElement token)
+    {
+        string type = token.GetProperty("t").GetString() ?? throw new JsonException("token type missing");
+        return type switch
+        {
+            "g" => new TextToken("g", token.GetProperty("c").GetInt32(), 0, []),
+            "i" => new TextToken("i", token.GetProperty("c").GetInt32(), 0, []),
+            "c" => new TextToken("c", 0, token.GetProperty("cmd").GetInt32(), [.. token.GetProperty("args").EnumerateArray().Select(arg => arg.GetInt32())]),
+            _ => throw new JsonException($"unknown token type {type}"),
+        };
+    }
+
+    /// <summary>Runs a load step and wraps SQLite and data conversion failures into a cache error, so the host reports one error type for any malformed pack.</summary>
+    /// <typeparam name="T">Type of the loaded value.</typeparam>
+    /// <param name="subject">Domain name used in the error message.</param>
+    /// <param name="read">The load step.</param>
+    /// <returns>The value returned by <paramref name="read"/>.</returns>
+    /// <exception cref="CacheResourceException">The step threw a cache error, which is rethrown unchanged, or a SQLite, invalid operation or cast error, which is wrapped.</exception>
+    private static T Read<T>(string subject, Func<T> read)
+    {
+        try
+        {
+            return read();
+        }
+        catch (CacheResourceException)
+        {
+            throw;
+        }
+        catch (Exception error) when (error is SqliteException or InvalidOperationException or InvalidCastException)
+        {
+            throw new CacheResourceException("CACHE_INVALID", $"{subject} pack contract invalid: {error.Message}");
+        }
+    }
+
+    /// <summary>Builds the error used when a dialogue record exists but breaks the pack contract.</summary>
+    /// <param name="detail">Description of the defect.</param>
+    /// <returns>An exception with code <c>CACHE_INVALID</c>, not yet thrown.</returns>
+    private static CacheResourceException Invalid(string detail) => new("CACHE_INVALID", detail);
 
     /// <summary>Reads every stage's talk table from the pack database through <see cref="DialogueZoneReader"/>.</summary>
     /// <returns>Zone dialogue keyed by stage name. May be empty, which the caller rejects.</returns>
@@ -215,46 +283,6 @@ public sealed class DialogueDataPackLoader : IDisposable
         return texts;
     }
 
-    /// <summary>Parses one talk text JSON file whose <c>entries</c> array holds one token array per message.</summary>
-    /// <param name="path">Absolute path of the JSON file.</param>
-    /// <param name="index">Text file index, used in the error message.</param>
-    /// <returns>The messages in file order, each as a token list.</returns>
-    /// <exception cref="CacheResourceException">The file cannot be read, is not valid JSON, or a token is malformed.</exception>
-    private static List<IReadOnlyList<TextToken>> ParseTextFile(string path, int index)
-    {
-        try
-        {
-            using JsonDocument document = JsonDocument.Parse(File.ReadAllText(path));
-            var entries = new List<IReadOnlyList<TextToken>>();
-            foreach (JsonElement entry in document.RootElement.GetProperty("entries").EnumerateArray())
-            {
-                entries.Add([.. entry.EnumerateArray().Select(ParseTextToken)]);
-            }
-
-            return entries;
-        }
-        catch (Exception error) when (error is IOException or JsonException or InvalidOperationException or FormatException or KeyNotFoundException)
-        {
-            throw Invalid($"text file={index} invalid: {error.Message}");
-        }
-    }
-
-    /// <summary>Decodes one token of a talk text file: <c>g</c> glyph and <c>i</c> icon carry a code in <c>c</c>, <c>c</c> control tokens carry a command in <c>cmd</c> and integer arguments in <c>args</c>.</summary>
-    /// <param name="token">A token object with a <c>t</c> type field.</param>
-    /// <returns>The runtime token.</returns>
-    /// <exception cref="JsonException">The type field is null or not one of <c>g</c>, <c>i</c>, <c>c</c>.</exception>
-    private static TextToken ParseTextToken(JsonElement token)
-    {
-        string type = token.GetProperty("t").GetString() ?? throw new JsonException("token type missing");
-        return type switch
-        {
-            "g" => new TextToken("g", token.GetProperty("c").GetInt32(), 0, []),
-            "i" => new TextToken("i", token.GetProperty("c").GetInt32(), 0, []),
-            "c" => new TextToken("c", 0, token.GetProperty("cmd").GetInt32(), [.. token.GetProperty("args").EnumerateArray().Select(arg => arg.GetInt32())]),
-            _ => throw new JsonException($"unknown token type {type}"),
-        };
-    }
-
     /// <summary>Assembles the font: line heights and metrics of the three styles, the two glyph page PNGs of the field dialogue style (style 1) and the pack font directory for the other pages.</summary>
     /// <returns>The font, whose top-level glyphs, icons and line height are those of style 1.</returns>
     /// <exception cref="CacheResourceException">A style contract is broken, a page PNG is missing or the font directory is rejected.</exception>
@@ -354,28 +382,6 @@ public sealed class DialogueDataPackLoader : IDisposable
         return metrics;
     }
 
-    /// <summary>Runs a load step and wraps SQLite and data conversion failures into a cache error, so the host reports one error type for any malformed pack.</summary>
-    /// <typeparam name="T">Type of the loaded value.</typeparam>
-    /// <param name="subject">Domain name used in the error message.</param>
-    /// <param name="read">The load step.</param>
-    /// <returns>The value returned by <paramref name="read"/>.</returns>
-    /// <exception cref="CacheResourceException">The step threw a cache error, which is rethrown unchanged, or a SQLite, invalid operation or cast error, which is wrapped.</exception>
-    private static T Read<T>(string subject, Func<T> read)
-    {
-        try
-        {
-            return read();
-        }
-        catch (CacheResourceException)
-        {
-            throw;
-        }
-        catch (Exception error) when (error is SqliteException or InvalidOperationException or InvalidCastException)
-        {
-            throw new CacheResourceException("CACHE_INVALID", $"{subject} pack contract invalid: {error.Message}");
-        }
-    }
-
     /// <summary>Creates a command on the loader's connection with the given SQL text.</summary>
     /// <param name="sql">SQL statement. Only constant statements of this class are passed.</param>
     /// <returns>A new command the caller must dispose.</returns>
@@ -385,9 +391,4 @@ public sealed class DialogueDataPackLoader : IDisposable
         command.CommandText = sql;
         return command;
     }
-
-    /// <summary>Builds the error used when a dialogue record exists but breaks the pack contract.</summary>
-    /// <param name="detail">Description of the defect.</param>
-    /// <returns>An exception with code <c>CACHE_INVALID</c>, not yet thrown.</returns>
-    private static CacheResourceException Invalid(string detail) => new("CACHE_INVALID", detail);
 }

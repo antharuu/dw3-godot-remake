@@ -8,8 +8,10 @@ namespace Dw3Production.Presentation;
 public sealed class PsxTextPainter
 {
     private readonly Control _owner;
-    private FontData? _font;
+
     private readonly Dictionary<(int Style, int Palette, int Page), Texture2D> _pages = [];
+
+    private FontData? _font;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="PsxTextPainter"/> class.

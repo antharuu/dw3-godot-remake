@@ -6,110 +6,6 @@ namespace Dw3.Formats.Tests.Binary.Tim;
 
 public sealed class TimDecoderTests
 {
-    // ── TIM builder helpers ───────────────────────────────────────────────
-
-    /// <summary>
-    /// Builds a minimal 4-bit (flags=0x08) or 8-bit (flags=0x09) TIM with a
-    /// single CLUT row and a 1×1 image.
-    /// </summary>
-    private static byte[] Build4Or8BitTim(
-        bool is4Bit,
-        ushort[] clutEntries,
-        byte[] pixelData,
-        int widthWords,
-        int height)
-    {
-        uint flags = is4Bit ? 0x08u : 0x09u;
-        int numColors = is4Bit ? 16 : 256;
-
-        // CLUT block = 12-byte header + (numColors * 2) bytes
-        int clutDataBytes = numColors * 2;
-        uint clutBlockLen = (uint)(12 + clutDataBytes); // includes the 4-byte length field itself
-
-        // Image block = 12-byte header + pixelData bytes
-        uint imgBlockLen = (uint)(12 + pixelData.Length);
-
-        int totalLen = 8 + (int)clutBlockLen + (int)imgBlockLen;
-        var tim = new byte[totalLen];
-        int pos = 0;
-
-        // TIM header
-        WriteU32Le(tim, pos, 0x00000010u);
-        pos += 4; // magic
-        WriteU32Le(tim, pos, flags);
-        pos += 4;        // flags
-
-        // CLUT block
-        WriteU32Le(tim, pos, clutBlockLen);
-        pos += 4;
-        WriteU16Le(tim, pos, 0);
-        pos += 2;  // VRAM X
-        WriteU16Le(tim, pos, 0);
-        pos += 2;  // VRAM Y
-        WriteU16Le(tim, pos, (ushort)numColors);
-        pos += 2;
-        WriteU16Le(tim, pos, 1);
-        pos += 2;  // 1 row
-        foreach (var w in clutEntries)
-        {
-            WriteU16Le(tim, pos, w);
-            pos += 2;
-        }
-
-        // Image block
-        WriteU32Le(tim, pos, imgBlockLen);
-        pos += 4;
-        WriteU16Le(tim, pos, 0);
-        pos += 2;           // VRAM X
-        WriteU16Le(tim, pos, 0);
-        pos += 2;           // VRAM Y
-        WriteU16Le(tim, pos, (ushort)widthWords);
-        pos += 2;
-        WriteU16Le(tim, pos, (ushort)height);
-        pos += 2;
-        Array.Copy(pixelData, 0, tim, pos, pixelData.Length);
-
-        return tim;
-    }
-
-    /// <summary>Builds a 16-bit direct TIM (flags=0x02) with given pixel words.</summary>
-    private static byte[] Build16BitTim(int width, int height, ushort[] pixels)
-    {
-        // No CLUT block; image block = 12-byte header + width*height*2 bytes
-        uint imgBlockLen = (uint)(12 + (width * height * 2));
-        int totalLen = 8 + (int)imgBlockLen;
-        var tim = new byte[totalLen];
-        int pos = 0;
-
-        WriteU32Le(tim, pos, 0x00000010u);
-        pos += 4;
-        WriteU32Le(tim, pos, 0x00000002u);
-        pos += 4;
-        WriteU32Le(tim, pos, imgBlockLen);
-        pos += 4;
-        WriteU16Le(tim, pos, 0);
-        pos += 2;           // VRAM X
-        WriteU16Le(tim, pos, 0);
-        pos += 2;           // VRAM Y
-        WriteU16Le(tim, pos, (ushort)width);
-        pos += 2;
-        WriteU16Le(tim, pos, (ushort)height);
-        pos += 2;
-        foreach (var w in pixels)
-        {
-            WriteU16Le(tim, pos, w);
-            pos += 2;
-        }
-
-        return tim;
-    }
-
-    private static void WriteU32Le(byte[] arr, int offset, uint value) =>
-        BinaryPrimitives.WriteUInt32LittleEndian(arr.AsSpan(offset, 4), value);
-
-    private static void WriteU16Le(byte[] arr, int offset, ushort value) =>
-        BinaryPrimitives.WriteUInt16LittleEndian(arr.AsSpan(offset, 2), value);
-
     // ── 4-bit TIM ─────────────────────────────────────────────────────────
     [Fact]
     public void Decode4Bit_2x1_CorrectPixels()
@@ -367,4 +263,108 @@ public sealed class TimDecoderTests
         var img = TimDecoder.Decode(tim);
         Assert.Equal(123, img.Pixels[0]); // R = 123
     }
+
+    // ── TIM builder helpers ───────────────────────────────────────────────
+
+    /// <summary>
+    /// Builds a minimal 4-bit (flags=0x08) or 8-bit (flags=0x09) TIM with a
+    /// single CLUT row and a 1×1 image.
+    /// </summary>
+    private static byte[] Build4Or8BitTim(
+        bool is4Bit,
+        ushort[] clutEntries,
+        byte[] pixelData,
+        int widthWords,
+        int height)
+    {
+        uint flags = is4Bit ? 0x08u : 0x09u;
+        int numColors = is4Bit ? 16 : 256;
+
+        // CLUT block = 12-byte header + (numColors * 2) bytes
+        int clutDataBytes = numColors * 2;
+        uint clutBlockLen = (uint)(12 + clutDataBytes); // includes the 4-byte length field itself
+
+        // Image block = 12-byte header + pixelData bytes
+        uint imgBlockLen = (uint)(12 + pixelData.Length);
+
+        int totalLen = 8 + (int)clutBlockLen + (int)imgBlockLen;
+        var tim = new byte[totalLen];
+        int pos = 0;
+
+        // TIM header
+        WriteU32Le(tim, pos, 0x00000010u);
+        pos += 4; // magic
+        WriteU32Le(tim, pos, flags);
+        pos += 4;        // flags
+
+        // CLUT block
+        WriteU32Le(tim, pos, clutBlockLen);
+        pos += 4;
+        WriteU16Le(tim, pos, 0);
+        pos += 2;  // VRAM X
+        WriteU16Le(tim, pos, 0);
+        pos += 2;  // VRAM Y
+        WriteU16Le(tim, pos, (ushort)numColors);
+        pos += 2;
+        WriteU16Le(tim, pos, 1);
+        pos += 2;  // 1 row
+        foreach (var w in clutEntries)
+        {
+            WriteU16Le(tim, pos, w);
+            pos += 2;
+        }
+
+        // Image block
+        WriteU32Le(tim, pos, imgBlockLen);
+        pos += 4;
+        WriteU16Le(tim, pos, 0);
+        pos += 2;           // VRAM X
+        WriteU16Le(tim, pos, 0);
+        pos += 2;           // VRAM Y
+        WriteU16Le(tim, pos, (ushort)widthWords);
+        pos += 2;
+        WriteU16Le(tim, pos, (ushort)height);
+        pos += 2;
+        Array.Copy(pixelData, 0, tim, pos, pixelData.Length);
+
+        return tim;
+    }
+
+    /// <summary>Builds a 16-bit direct TIM (flags=0x02) with given pixel words.</summary>
+    private static byte[] Build16BitTim(int width, int height, ushort[] pixels)
+    {
+        // No CLUT block; image block = 12-byte header + width*height*2 bytes
+        uint imgBlockLen = (uint)(12 + (width * height * 2));
+        int totalLen = 8 + (int)imgBlockLen;
+        var tim = new byte[totalLen];
+        int pos = 0;
+
+        WriteU32Le(tim, pos, 0x00000010u);
+        pos += 4;
+        WriteU32Le(tim, pos, 0x00000002u);
+        pos += 4;
+        WriteU32Le(tim, pos, imgBlockLen);
+        pos += 4;
+        WriteU16Le(tim, pos, 0);
+        pos += 2;           // VRAM X
+        WriteU16Le(tim, pos, 0);
+        pos += 2;           // VRAM Y
+        WriteU16Le(tim, pos, (ushort)width);
+        pos += 2;
+        WriteU16Le(tim, pos, (ushort)height);
+        pos += 2;
+        foreach (var w in pixels)
+        {
+            WriteU16Le(tim, pos, w);
+            pos += 2;
+        }
+
+        return tim;
+    }
+
+    private static void WriteU32Le(byte[] arr, int offset, uint value) =>
+        BinaryPrimitives.WriteUInt32LittleEndian(arr.AsSpan(offset, 4), value);
+
+    private static void WriteU16Le(byte[] arr, int offset, ushort value) =>
+        BinaryPrimitives.WriteUInt16LittleEndian(arr.AsSpan(offset, 2), value);
 }

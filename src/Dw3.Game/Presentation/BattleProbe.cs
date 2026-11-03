@@ -16,9 +16,24 @@ namespace Dw3Production.Presentation;
 public sealed partial class BattleProbe : Node2D
 {
     private readonly GameState _state = new();
+
+    private readonly List<string> _log = [];
+
     private FieldRenderer? _fieldRenderer;
+
     private FieldZone? _zone;
+
     private BattleRenderer? _battleRenderer;
+
+    private BattleDataPackLoader? _battleLoader;
+
+    private FieldDataPackLoader? _fieldLoader;
+
+    private FieldAnimationDataPackLoader? _animationLoader;
+
+    private string _captureRoot = string.Empty;
+
+    private ClimbData? _actionData;
 
     /// <summary>Initializes probe data, creates the field scene, and schedules the scenario.</summary>
     public override void _Ready()
@@ -43,11 +58,6 @@ public sealed partial class BattleProbe : Node2D
         }
     }
 
-    private BattleDataPackLoader? _battleLoader;
-    private FieldDataPackLoader? _fieldLoader;
-    private FieldAnimationDataPackLoader? _animationLoader;
-    private string _captureRoot = string.Empty;
-
     /// <summary>Disposes data-pack loaders when the probe leaves the scene tree.</summary>
     public override void _ExitTree()
     {
@@ -58,40 +68,6 @@ public sealed partial class BattleProbe : Node2D
         _battleLoader?.Dispose();
         _battleLoader = null;
     }
-
-    /// <summary>Loads data and constructs the initial field presentation for the probe.</summary>
-    /// <param name="loader">Loader for field animation data.</param>
-    /// <param name="fieldLoader">Loader for field zone and player data.</param>
-    private void BuildField(FieldAnimationDataPackLoader loader, FieldDataPackLoader fieldLoader)
-    {
-        var player = fieldLoader.LoadPlayer();
-        var cue = loader.LoadExitCue();
-        var climb = loader.LoadClimb();
-        var drop = loader.LoadDrop();
-        var water = loader.LoadWater();
-        var icon = loader.LoadPlayerIcon();
-        _actionData = MergeActionData(climb, drop);
-        _fieldRenderer = new FieldRenderer(this, cue, water, icon);
-
-        var zone = fieldLoader.LoadZone("S200");
-        _zone = BuildZone(zone, []);
-        _state.ZoneId = "S200";
-        _state.Position = new NumericsVector2(1000, 236);
-        _state.SetFacing(1);
-        _state.AnimationSet = 1;
-        _state.AnimationDirection = 1;
-        _fieldRenderer.LoadZone(
-            zone,
-            player,
-            _actionData,
-            fieldLoader.PlayerFramePath,
-            (set, frame) =>
-            set is >= 0x16 and <= 0x19 ? loader.DropFramePath(frame) : loader.ClimbFramePath(frame),
-            null);
-        _fieldRenderer.Present(_state, _zone, f3On: false);
-    }
-
-    private ClimbData? _actionData;
 
     /// <summary>Combines climbing and drop animation sequences into one action-data set.</summary>
     /// <param name="climb">Climbing sequences.</param>
@@ -168,39 +144,6 @@ public sealed partial class BattleProbe : Node2D
         return new TriggerMap(zone.Width, zone.Height, cells);
     }
 
-    /// <summary>Runs the deterministic battle scenario and writes its captures.</summary>
-    private async void RunScenario()
-    {
-        try
-        {
-            var loader = _battleLoader ?? throw new InvalidOperationException("battle loader unavailable");
-            var (flow, state) = SetupBattle(loader);
-
-            _battleRenderer = new BattleRenderer(this);
-            await BuildBattleScene(loader, flow);
-            await RunBattleLoop(flow, state);
-
-            // Return to the field.
-            _battleRenderer.Hide();
-            _fieldRenderer!.Present(_state, _zone!, f3On: false);
-            await Capture("battle-after-field.png");
-            _log.Add($"field-returned zone=S200 position=({_state.Position.X:0},{_state.Position.Y:0})");
-
-            _log.Add("battle probe PASS outcome=Won return=field captures=" + Path.Combine(_captureRoot, "battle-*.png"));
-            foreach (var line in _log)
-            {
-                GD.Print("BATTLE_PROBE " + line);
-            }
-
-            GetTree().Quit(0);
-        }
-        catch (Exception error)
-        {
-            GD.PushError($"BATTLE_PROBE_FAIL: {error.Message}");
-            GetTree().Quit(3);
-        }
-    }
-
     /// <summary>Creates the deterministic battle flow and state used by the probe.</summary>
     /// <param name="loader">Loader for battle data.</param>
     /// <returns>Configured battle flow and mutable battle state.</returns>
@@ -234,6 +177,172 @@ public sealed partial class BattleProbe : Node2D
             new BattleTextCatalog(loader.LoadBattleText()));
         flow.Start(state);
         return (flow, state);
+    }
+
+    /// <summary>Builds a presentation view from the current battle flow.</summary>
+    /// <param name="flow">Battle flow supplying state and text.</param>
+    /// <returns>View consumed by the battle renderer.</returns>
+    private static BattleView BuildView(BattleFlowController flow)
+    {
+        var players = BuildFighterViews(flow.State.Players, flow.State.ActivePlayer, flow);
+        var enemies = BuildFighterViews(flow.State.Enemies, flow.State.ActiveEnemy, flow);
+        return new BattleView(flow.Phase, flow.Outcome, players, enemies, flow.Message, null);
+    }
+
+    /// <summary>Builds presentation rows for one side of the encounter.</summary>
+    /// <param name="fighters">Fighters occupying the side slots.</param>
+    /// <param name="activeIndex">Index of the active fighter.</param>
+    /// <param name="flow">Battle flow supplying names.</param>
+    /// <returns>Presentation rows for the supplied fighter slots.</returns>
+    private static List<BattleFighterView> BuildFighterViews(BattleFighter?[] fighters, int activeIndex, BattleFlowController flow)
+    {
+        var views = new List<BattleFighterView>();
+        foreach (var fighter in fighters)
+        {
+            if (fighter is null)
+            {
+                views.Add(new BattleFighterView(0, null, 0, 0, 0, 0, false, false));
+                continue;
+            }
+
+            var isActive = activeIndex >= 0 && fighters[activeIndex] == fighter;
+            var name = flow.NameIds.TryGetValue(fighter.Id, out var nameId) ? flow.Text?.DigimonByNameId(nameId) : BattleTextLine.Missing;
+            views.Add(new BattleFighterView(fighter.Id, name, fighter.Hp, fighter.MaxHp, fighter.Mp, fighter.MaxMp, isActive, fighter.IsKnockedOut));
+        }
+
+        return views;
+    }
+
+    /// <summary>Counts bright non-background pixels in a horizontal image band.</summary>
+    /// <param name="image">Capture image to inspect.</param>
+    /// <param name="xMin">Inclusive left edge of the inspected band.</param>
+    /// <param name="xMax">Exclusive right edge of the inspected band.</param>
+    /// <returns>The number of bright pixels in the band.</returns>
+    private static int CountBrightPixels(Image image, int xMin, int xMax)
+    {
+        var data = image.GetData();
+        var bytesPerPixel = image.GetFormat() == Image.Format.Rgba8 ? 4 : 3;
+        var width = image.GetWidth();
+        var height = image.GetHeight();
+        var count = 0;
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = xMin; x < xMax; x++)
+            {
+                var index = ((y * width) + x) * bytesPerPixel;
+                if (data[index] + data[index + 1] + data[index + 2] > 120)
+                {
+                    count++;
+                }
+            }
+        }
+
+        return count;
+    }
+
+    /// <summary>Counts pixels that differ between two same-sized captures in a horizontal band.</summary>
+    /// <param name="a">First capture image.</param>
+    /// <param name="b">Second capture image.</param>
+    /// <param name="xMin">Inclusive left edge of the inspected band.</param>
+    /// <param name="xMax">Exclusive right edge of the inspected band.</param>
+    /// <returns>The number of pixels whose RGB distance exceeds the comparison threshold.</returns>
+    private static int CountDifferentPixels(Image a, Image b, int xMin, int xMax)
+    {
+        var ad = a.GetData();
+        var bd = b.GetData();
+        var bytesPerPixel = a.GetFormat() == Image.Format.Rgba8 ? 4 : 3;
+        var width = a.GetWidth();
+        var height = a.GetHeight();
+        var count = 0;
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = xMin; x < xMax; x++)
+            {
+                var index = ((y * width) + x) * bytesPerPixel;
+                if (Math.Abs(ad[index] - bd[index]) + Math.Abs(ad[index + 1] - bd[index + 1]) + Math.Abs(ad[index + 2] - bd[index + 2]) > 30)
+                {
+                    count++;
+                }
+            }
+        }
+
+        return count;
+    }
+
+    /// <summary>Throws a probe failure when a required condition is false.</summary>
+    /// <param name="condition">Condition that must hold.</param>
+    /// <param name="message">Failure description used when the condition is false.</param>
+    private static void Require(bool condition, string message)
+    {
+        if (!condition)
+        {
+            throw new InvalidOperationException($"BATTLE_PROBE_FAIL: {message}");
+        }
+    }
+
+    /// <summary>Loads data and constructs the initial field presentation for the probe.</summary>
+    /// <param name="loader">Loader for field animation data.</param>
+    /// <param name="fieldLoader">Loader for field zone and player data.</param>
+    private void BuildField(FieldAnimationDataPackLoader loader, FieldDataPackLoader fieldLoader)
+    {
+        var player = fieldLoader.LoadPlayer();
+        var cue = loader.LoadExitCue();
+        var climb = loader.LoadClimb();
+        var drop = loader.LoadDrop();
+        var water = loader.LoadWater();
+        var icon = loader.LoadPlayerIcon();
+        _actionData = MergeActionData(climb, drop);
+        _fieldRenderer = new FieldRenderer(this, cue, water, icon);
+
+        var zone = fieldLoader.LoadZone("S200");
+        _zone = BuildZone(zone, []);
+        _state.ZoneId = "S200";
+        _state.Position = new NumericsVector2(1000, 236);
+        _state.SetFacing(1);
+        _state.AnimationSet = 1;
+        _state.AnimationDirection = 1;
+        _fieldRenderer.LoadZone(
+            zone,
+            player,
+            _actionData,
+            fieldLoader.PlayerFramePath,
+            (set, frame) =>
+            set is >= 0x16 and <= 0x19 ? loader.DropFramePath(frame) : loader.ClimbFramePath(frame),
+            null);
+        _fieldRenderer.Present(_state, _zone, f3On: false);
+    }
+
+    /// <summary>Runs the deterministic battle scenario and writes its captures.</summary>
+    private async void RunScenario()
+    {
+        try
+        {
+            var loader = _battleLoader ?? throw new InvalidOperationException("battle loader unavailable");
+            var (flow, state) = SetupBattle(loader);
+
+            _battleRenderer = new BattleRenderer(this);
+            await BuildBattleScene(loader, flow);
+            await RunBattleLoop(flow, state);
+
+            // Return to the field.
+            _battleRenderer.Hide();
+            _fieldRenderer!.Present(_state, _zone!, f3On: false);
+            await Capture("battle-after-field.png");
+            _log.Add($"field-returned zone=S200 position=({_state.Position.X:0},{_state.Position.Y:0})");
+
+            _log.Add("battle probe PASS outcome=Won return=field captures=" + Path.Combine(_captureRoot, "battle-*.png"));
+            foreach (var line in _log)
+            {
+                GD.Print("BATTLE_PROBE " + line);
+            }
+
+            GetTree().Quit(0);
+        }
+        catch (Exception error)
+        {
+            GD.PushError($"BATTLE_PROBE_FAIL: {error.Message}");
+            GetTree().Quit(3);
+        }
     }
 
     /// <summary>Builds models, HUD, stage, and cameras for the battle presentation.</summary>
@@ -356,42 +465,6 @@ public sealed partial class BattleProbe : Node2D
         _log.Add($"battle-victory outcome=Won player_hp={state.Players[0]!.Hp}");
     }
 
-    /// <summary>Builds a presentation view from the current battle flow.</summary>
-    /// <param name="flow">Battle flow supplying state and text.</param>
-    /// <returns>View consumed by the battle renderer.</returns>
-    private static BattleView BuildView(BattleFlowController flow)
-    {
-        var players = BuildFighterViews(flow.State.Players, flow.State.ActivePlayer, flow);
-        var enemies = BuildFighterViews(flow.State.Enemies, flow.State.ActiveEnemy, flow);
-        return new BattleView(flow.Phase, flow.Outcome, players, enemies, flow.Message, null);
-    }
-
-    /// <summary>Builds presentation rows for one side of the encounter.</summary>
-    /// <param name="fighters">Fighters occupying the side slots.</param>
-    /// <param name="activeIndex">Index of the active fighter.</param>
-    /// <param name="flow">Battle flow supplying names.</param>
-    /// <returns>Presentation rows for the supplied fighter slots.</returns>
-    private static List<BattleFighterView> BuildFighterViews(BattleFighter?[] fighters, int activeIndex, BattleFlowController flow)
-    {
-        var views = new List<BattleFighterView>();
-        foreach (var fighter in fighters)
-        {
-            if (fighter is null)
-            {
-                views.Add(new BattleFighterView(0, null, 0, 0, 0, 0, false, false));
-                continue;
-            }
-
-            var isActive = activeIndex >= 0 && fighters[activeIndex] == fighter;
-            var name = flow.NameIds.TryGetValue(fighter.Id, out var nameId) ? flow.Text?.DigimonByNameId(nameId) : BattleTextLine.Missing;
-            views.Add(new BattleFighterView(fighter.Id, name, fighter.Hp, fighter.MaxHp, fighter.Mp, fighter.MaxMp, isActive, fighter.IsKnockedOut));
-        }
-
-        return views;
-    }
-
-    private readonly List<string> _log = [];
-
     /// <summary>Waits for rendering, captures the viewport, and writes a PNG file.</summary>
     /// <param name="fileName">Name assigned to the capture file.</param>
     /// <returns>Captured viewport image.</returns>
@@ -406,73 +479,6 @@ public sealed partial class BattleProbe : Node2D
         }
 
         return image;
-    }
-
-    /// <summary>Counts bright non-background pixels in a horizontal image band.</summary>
-    /// <param name="image">Capture image to inspect.</param>
-    /// <param name="xMin">Inclusive left edge of the inspected band.</param>
-    /// <param name="xMax">Exclusive right edge of the inspected band.</param>
-    /// <returns>The number of bright pixels in the band.</returns>
-    private static int CountBrightPixels(Image image, int xMin, int xMax)
-    {
-        var data = image.GetData();
-        var bytesPerPixel = image.GetFormat() == Image.Format.Rgba8 ? 4 : 3;
-        var width = image.GetWidth();
-        var height = image.GetHeight();
-        var count = 0;
-        for (var y = 0; y < height; y++)
-        {
-            for (var x = xMin; x < xMax; x++)
-            {
-                var index = ((y * width) + x) * bytesPerPixel;
-                if (data[index] + data[index + 1] + data[index + 2] > 120)
-                {
-                    count++;
-                }
-            }
-        }
-
-        return count;
-    }
-
-    /// <summary>Counts pixels that differ between two same-sized captures in a horizontal band.</summary>
-    /// <param name="a">First capture image.</param>
-    /// <param name="b">Second capture image.</param>
-    /// <param name="xMin">Inclusive left edge of the inspected band.</param>
-    /// <param name="xMax">Exclusive right edge of the inspected band.</param>
-    /// <returns>The number of pixels whose RGB distance exceeds the comparison threshold.</returns>
-    private static int CountDifferentPixels(Image a, Image b, int xMin, int xMax)
-    {
-        var ad = a.GetData();
-        var bd = b.GetData();
-        var bytesPerPixel = a.GetFormat() == Image.Format.Rgba8 ? 4 : 3;
-        var width = a.GetWidth();
-        var height = a.GetHeight();
-        var count = 0;
-        for (var y = 0; y < height; y++)
-        {
-            for (var x = xMin; x < xMax; x++)
-            {
-                var index = ((y * width) + x) * bytesPerPixel;
-                if (Math.Abs(ad[index] - bd[index]) + Math.Abs(ad[index + 1] - bd[index + 1]) + Math.Abs(ad[index + 2] - bd[index + 2]) > 30)
-                {
-                    count++;
-                }
-            }
-        }
-
-        return count;
-    }
-
-    /// <summary>Throws a probe failure when a required condition is false.</summary>
-    /// <param name="condition">Condition that must hold.</param>
-    /// <param name="message">Failure description used when the condition is false.</param>
-    private static void Require(bool condition, string message)
-    {
-        if (!condition)
-        {
-            throw new InvalidOperationException($"BATTLE_PROBE_FAIL: {message}");
-        }
     }
 
     /// <summary>Supplies a deterministic pseudo-random sequence for probe combat.</summary>

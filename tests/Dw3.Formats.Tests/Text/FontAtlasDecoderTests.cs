@@ -14,95 +14,12 @@ public sealed class FontAtlasDecoderTests
     // The CLUT must sit at the right position for page 0 to avoid the "too small" error.
     // We use 256×256 pages (words=64, height=256) so the CLUT fits.
     private const int PageWidth = 256;
+
     private const int PageHeight = 256;
+
     private const int WordsPerLine = PageWidth / 4; // 64 words = 128 bytes per row
+
     private const int PixelBytes = WordsPerLine * PageHeight * 2; // 64 * 256 * 2 = 32768
-
-    private static byte[] BuildRlenPage(byte[] pixels)
-    {
-        // Build a raw TIM then wrap it in RLEN.
-        // TIM: magic(4) flags(4) imageBlock.length(4) vram_x(2) vram_y(2) words(2) height(2) pixels
-        var tim = new byte[8 + 12 + pixels.Length];
-        BinaryPrimitives.WriteUInt32LittleEndian(tim.AsSpan(0), 0x10u);  // magic
-        BinaryPrimitives.WriteUInt32LittleEndian(tim.AsSpan(4), 0x02u);  // flags
-        BinaryPrimitives.WriteUInt32LittleEndian(tim.AsSpan(8), (uint)(12 + pixels.Length)); // blockLen
-
-        // vram_x, vram_y at [12..15] = 0
-        BinaryPrimitives.WriteUInt16LittleEndian(tim.AsSpan(16), (ushort)WordsPerLine); // words
-        BinaryPrimitives.WriteUInt16LittleEndian(tim.AsSpan(18), (ushort)PageHeight);   // height
-        pixels.CopyTo(tim, 20);
-
-        // Wrap in RLEN as a raw literal stream (just literal copy of all bytes).
-        int outputSize = tim.Length;
-
-        // RLEN header: "RLEN" + u32 outputSize
-        // Commands: for each chunk of up to 127 bytes, emit literal run cmd (1..127) followed by bytes.
-        var rlen = new List<byte>
-        {
-            (byte)'R',
-            (byte)'L',
-            (byte)'E',
-            (byte)'N',
-            (byte)(outputSize & 0xFF),
-            (byte)((outputSize >> 8) & 0xFF),
-            (byte)((outputSize >> 16) & 0xFF),
-            (byte)((outputSize >> 24) & 0xFF),
-        };
-        int pos = 0;
-        while (pos < tim.Length)
-        {
-            int chunk = Math.Min(127, tim.Length - pos);
-            rlen.Add((byte)chunk);
-            rlen.AddRange(tim[pos..(pos + chunk)]);
-            pos += chunk;
-        }
-
-        rlen.Add(0x00); // RLEN terminator
-        return [.. rlen];
-    }
-
-    private static byte[] BuildValidArchive()
-    {
-        var pixels = new byte[PixelBytes];
-
-        // Place a known CLUT value at palette row 2, col 1 in the pixel-as-halfwords space.
-        // ClutColumnX=48, ClutRowY=232. Halfword at (row*wordsPerLine + col) * 2 where col is within 48..63.
-        // Put a non-zero word (non-transparent) at row 232, col 48.
-        int bytePos = ((232 * WordsPerLine) + 48) * 2;
-
-        // Write a non-zero 15-bit BGR word (e.g., pure red 0x001F) for palette entry 0 of row 0.
-        BinaryPrimitives.WriteUInt16LittleEndian(pixels.AsSpan(bytePos), 0x001F); // entry 0 of row 0
-
-        byte[] page0 = BuildRlenPage(pixels);
-        byte[] page1 = BuildRlenPage(new byte[PixelBytes]);
-
-        // Archive body: offset table (two entries + zero terminator), then page data.
-        // Offset is relative to archive body start (=bodyBase=4 in the file).
-        int tableSize = 3 * 4; // two non-zero offsets + terminator
-        int offset0 = tableSize;              // page0 immediately after table
-        int offset1 = tableSize + page0.Length; // page1 after page0
-
-        var file = new List<byte>();
-
-        // FILE_CACHE header (4 bytes, ignored)
-        file.AddRange([0, 0, 0, 0]);
-
-        // Offset table (relative to bodyBase=4)
-        void WriteU32(int v)
-        {
-            file.Add((byte)(v & 0xFF));
-            file.Add((byte)((v >> 8) & 0xFF));
-            file.Add((byte)((v >> 16) & 0xFF));
-            file.Add((byte)((v >> 24) & 0xFF));
-        }
-
-        WriteU32(offset0);
-        WriteU32(offset1);
-        WriteU32(0); // terminator
-        file.AddRange(page0);
-        file.AddRange(page1);
-        return [.. file];
-    }
 
     [Fact]
     public void Decode_ValidArchive_ReturnsTwoPages()
@@ -200,5 +117,91 @@ public sealed class FontAtlasDecoderTests
         {
             Assert.Equal(0, rgba[i + 3]); // alpha 0
         }
+    }
+
+    private static byte[] BuildRlenPage(byte[] pixels)
+    {
+        // Build a raw TIM then wrap it in RLEN.
+        // TIM: magic(4) flags(4) imageBlock.length(4) vram_x(2) vram_y(2) words(2) height(2) pixels
+        var tim = new byte[8 + 12 + pixels.Length];
+        BinaryPrimitives.WriteUInt32LittleEndian(tim.AsSpan(0), 0x10u);  // magic
+        BinaryPrimitives.WriteUInt32LittleEndian(tim.AsSpan(4), 0x02u);  // flags
+        BinaryPrimitives.WriteUInt32LittleEndian(tim.AsSpan(8), (uint)(12 + pixels.Length)); // blockLen
+
+        // vram_x, vram_y at [12..15] = 0
+        BinaryPrimitives.WriteUInt16LittleEndian(tim.AsSpan(16), (ushort)WordsPerLine); // words
+        BinaryPrimitives.WriteUInt16LittleEndian(tim.AsSpan(18), (ushort)PageHeight);   // height
+        pixels.CopyTo(tim, 20);
+
+        // Wrap in RLEN as a raw literal stream (just literal copy of all bytes).
+        int outputSize = tim.Length;
+
+        // RLEN header: "RLEN" + u32 outputSize
+        // Commands: for each chunk of up to 127 bytes, emit literal run cmd (1..127) followed by bytes.
+        var rlen = new List<byte>
+        {
+            (byte)'R',
+            (byte)'L',
+            (byte)'E',
+            (byte)'N',
+            (byte)(outputSize & 0xFF),
+            (byte)((outputSize >> 8) & 0xFF),
+            (byte)((outputSize >> 16) & 0xFF),
+            (byte)((outputSize >> 24) & 0xFF),
+        };
+        int pos = 0;
+        while (pos < tim.Length)
+        {
+            int chunk = Math.Min(127, tim.Length - pos);
+            rlen.Add((byte)chunk);
+            rlen.AddRange(tim[pos..(pos + chunk)]);
+            pos += chunk;
+        }
+
+        rlen.Add(0x00); // RLEN terminator
+        return [.. rlen];
+    }
+
+    private static byte[] BuildValidArchive()
+    {
+        var pixels = new byte[PixelBytes];
+
+        // Place a known CLUT value at palette row 2, col 1 in the pixel-as-halfwords space.
+        // ClutColumnX=48, ClutRowY=232. Halfword at (row*wordsPerLine + col) * 2 where col is within 48..63.
+        // Put a non-zero word (non-transparent) at row 232, col 48.
+        int bytePos = ((232 * WordsPerLine) + 48) * 2;
+
+        // Write a non-zero 15-bit BGR word (e.g., pure red 0x001F) for palette entry 0 of row 0.
+        BinaryPrimitives.WriteUInt16LittleEndian(pixels.AsSpan(bytePos), 0x001F); // entry 0 of row 0
+
+        byte[] page0 = BuildRlenPage(pixels);
+        byte[] page1 = BuildRlenPage(new byte[PixelBytes]);
+
+        // Archive body: offset table (two entries + zero terminator), then page data.
+        // Offset is relative to archive body start (=bodyBase=4 in the file).
+        int tableSize = 3 * 4; // two non-zero offsets + terminator
+        int offset0 = tableSize;              // page0 immediately after table
+        int offset1 = tableSize + page0.Length; // page1 after page0
+
+        var file = new List<byte>();
+
+        // FILE_CACHE header (4 bytes, ignored)
+        file.AddRange([0, 0, 0, 0]);
+
+        // Offset table (relative to bodyBase=4)
+        void WriteU32(int v)
+        {
+            file.Add((byte)(v & 0xFF));
+            file.Add((byte)((v >> 8) & 0xFF));
+            file.Add((byte)((v >> 16) & 0xFF));
+            file.Add((byte)((v >> 24) & 0xFF));
+        }
+
+        WriteU32(offset0);
+        WriteU32(offset1);
+        WriteU32(0); // terminator
+        file.AddRange(page0);
+        file.AddRange(page1);
+        return [.. file];
     }
 }

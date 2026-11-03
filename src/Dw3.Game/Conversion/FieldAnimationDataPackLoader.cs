@@ -12,15 +12,16 @@ namespace Dw3Production.Conversion;
 /// </summary>
 public sealed class FieldAnimationDataPackLoader : IDisposable
 {
+    private const int CueFieldRows = 5;
+
     // Frames the exit cue draws: the pop sequence 0x32..0x37 (0x32, 0x35 and 0x37 are its
     // first, open and last frames), the eight direction arrows 0x0C..0x13 and the 0x45/0x46 pair.
     private static readonly int[] RequiredCueFrames = [0x32, 0x35, 0x37, 0x0C, 0x0D, 0x0E, 0x0F, 0x10, 0x11, 0x12, 0x13, 0x45, 0x46];
 
-    private const int CueFieldRows = 5;
-
     private static readonly int[] RequiredDropSets = [0x16, 0x17, 0x18, 0x19];
 
     private readonly DataPackReader _pack;
+
     private readonly SqliteConnection _database;
 
     /// <summary>Initializes a new instance of the <see cref="FieldAnimationDataPackLoader"/> class bound to the given data pack.</summary>
@@ -83,6 +84,33 @@ public sealed class FieldAnimationDataPackLoader : IDisposable
 
     /// <summary>Releases the underlying SQLite connection.</summary>
     public void Dispose() => _database.Dispose();
+
+    /// <summary>Runs a load step and wraps SQLite and data conversion failures into a cache error, so every malformed field animation record surfaces as one error type.</summary>
+    /// <typeparam name="T">Type of the loaded value.</typeparam>
+    /// <param name="subject">Domain name used in the error message.</param>
+    /// <param name="read">The load step.</param>
+    /// <returns>The value returned by <paramref name="read"/>.</returns>
+    /// <exception cref="CacheResourceException">The step threw a cache error, which is rethrown unchanged, or a SQLite, invalid operation or cast error, which is wrapped.</exception>
+    private static T Read<T>(string subject, Func<T> read)
+    {
+        try
+        {
+            return read();
+        }
+        catch (CacheResourceException)
+        {
+            throw;
+        }
+        catch (Exception error) when (error is SqliteException or InvalidOperationException or InvalidCastException)
+        {
+            throw new CacheResourceException("CACHE_INVALID", $"{subject} pack contract invalid: {error.Message}");
+        }
+    }
+
+    /// <summary>Builds the error used when a field animation record breaks the pack contract.</summary>
+    /// <param name="detail">Description of the defect.</param>
+    /// <returns>An exception with code <c>CACHE_INVALID</c>, not yet thrown.</returns>
+    private static CacheResourceException Invalid(string detail) => new("CACHE_INVALID", detail);
 
     /// <summary>Reads the exit cue sprites (domain <c>cue</c> of <c>fieldcom_frames</c>) and wraps each one with its frame id and draw offset.</summary>
     /// <returns>Cue frames keyed by frame id. Completeness is checked by the caller.</returns>
@@ -235,33 +263,6 @@ public sealed class FieldAnimationDataPackLoader : IDisposable
 
         return frames;
     }
-
-    /// <summary>Runs a load step and wraps SQLite and data conversion failures into a cache error, so every malformed field animation record surfaces as one error type.</summary>
-    /// <typeparam name="T">Type of the loaded value.</typeparam>
-    /// <param name="subject">Domain name used in the error message.</param>
-    /// <param name="read">The load step.</param>
-    /// <returns>The value returned by <paramref name="read"/>.</returns>
-    /// <exception cref="CacheResourceException">The step threw a cache error, which is rethrown unchanged, or a SQLite, invalid operation or cast error, which is wrapped.</exception>
-    private static T Read<T>(string subject, Func<T> read)
-    {
-        try
-        {
-            return read();
-        }
-        catch (CacheResourceException)
-        {
-            throw;
-        }
-        catch (Exception error) when (error is SqliteException or InvalidOperationException or InvalidCastException)
-        {
-            throw new CacheResourceException("CACHE_INVALID", $"{subject} pack contract invalid: {error.Message}");
-        }
-    }
-
-    /// <summary>Builds the error used when a field animation record breaks the pack contract.</summary>
-    /// <param name="detail">Description of the defect.</param>
-    /// <returns>An exception with code <c>CACHE_INVALID</c>, not yet thrown.</returns>
-    private static CacheResourceException Invalid(string detail) => new("CACHE_INVALID", detail);
 
     /// <summary>Creates a command on the loader's connection, binding <c>$domain</c> when a domain is given.</summary>
     /// <param name="sql">SQL statement. Only constant statements of this class are passed.</param>

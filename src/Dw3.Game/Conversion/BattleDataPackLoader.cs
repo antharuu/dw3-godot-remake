@@ -10,6 +10,7 @@ namespace Dw3Production.Conversion;
 public sealed class BattleDataPackLoader : IDisposable
 {
     private readonly DataPackReader _pack;
+
     private readonly SqliteConnection _database;
 
     /// <summary>Initializes a new instance of the <see cref="BattleDataPackLoader"/> class bound to the given data pack.</summary>
@@ -295,6 +296,16 @@ public sealed class BattleDataPackLoader : IDisposable
     /// <summary>Releases the underlying SQLite connection.</summary>
     public void Dispose() => _database.Dispose();
 
+    /// <summary>Builds the error used when a required pack resource does not exist, so the host can tell the player to rerun extraction.</summary>
+    /// <param name="message">Description of the missing resource.</param>
+    /// <returns>An exception with code <c>CACHE_RESOURCE_UNAVAILABLE</c>, not yet thrown.</returns>
+    private static CacheResourceException Missing(string message) => new("CACHE_RESOURCE_UNAVAILABLE", message);
+
+    /// <summary>Builds the error used when a pack resource exists but its content cannot be trusted.</summary>
+    /// <param name="message">Description of the defect.</param>
+    /// <returns>An exception with code <c>CACHE_INVALID</c>, not yet thrown.</returns>
+    private static CacheResourceException Invalid(string message) => new("CACHE_INVALID", message);
+
     /// <summary>Resolves a battle text table JSON inside the pack and parses it into token lines, one entry per message index.</summary>
     /// <param name="relativePath">Pack-relative path of the table, for example under <c>battle/</c>.</param>
     /// <param name="subject">Human-readable name used in the error message when the file is missing or malformed.</param>
@@ -363,14 +374,4 @@ public sealed class BattleDataPackLoader : IDisposable
 
         return path;
     }
-
-    /// <summary>Builds the error used when a required pack resource does not exist, so the host can tell the player to rerun extraction.</summary>
-    /// <param name="message">Description of the missing resource.</param>
-    /// <returns>An exception with code <c>CACHE_RESOURCE_UNAVAILABLE</c>, not yet thrown.</returns>
-    private static CacheResourceException Missing(string message) => new("CACHE_RESOURCE_UNAVAILABLE", message);
-
-    /// <summary>Builds the error used when a pack resource exists but its content cannot be trusted.</summary>
-    /// <param name="message">Description of the defect.</param>
-    /// <returns>An exception with code <c>CACHE_INVALID</c>, not yet thrown.</returns>
-    private static CacheResourceException Invalid(string message) => new("CACHE_INVALID", message);
 }

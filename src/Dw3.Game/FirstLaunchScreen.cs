@@ -12,9 +12,8 @@ namespace Dw3Production;
 public partial class FirstLaunchScreen : CanvasLayer
 {
     private readonly string _dataDir;
+
     private readonly string _extractorPath;
-    private Label? _statusLabel;
-    private Thread? _extractionThread;
 
     // Main-thread actions queued from the extraction background thread.
     private readonly ConcurrentQueue<Action> _mainActions = new();
@@ -23,12 +22,14 @@ public partial class FirstLaunchScreen : CanvasLayer
     // lifecycle points for automated visual verification.  All capture code is
     // guarded by this flag and has no effect on nominal gameplay.
     private readonly bool _probeActive;
-    private readonly string? _captureDir;
-    private bool _progressCaptured;
 
-    /// <summary>Emitted on the main thread when extraction completes and the pack is ready.</summary>
-    [Signal]
-    public delegate void PackReadyEventHandler();
+    private readonly string? _captureDir;
+
+    private Label? _statusLabel;
+
+    private Thread? _extractionThread;
+
+    private bool _progressCaptured;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="FirstLaunchScreen"/> class.
@@ -50,6 +51,10 @@ public partial class FirstLaunchScreen : CanvasLayer
             _captureDir = System.Environment.GetEnvironmentVariable("DW3_CAPTURE_DIR");
         }
     }
+
+    /// <summary>Emitted on the main thread when extraction completes and the pack is ready.</summary>
+    [Signal]
+    public delegate void PackReadyEventHandler();
 
     /// <inheritdoc/>
     public override void _Ready()

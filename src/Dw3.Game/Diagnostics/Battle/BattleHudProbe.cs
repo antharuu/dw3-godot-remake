@@ -228,6 +228,15 @@ internal sealed class BattleHudProbe : BattleProbe
         return maxX < minX ? null : new Rect2(minX, minY, maxX - minX + 1, maxY - minY + 1);
     }
 
+    /// <summary>Maps source HUD coordinates into the 16:9 viewport.</summary>
+    /// <param name="source">Source-space coordinates.</param>
+    /// <returns>Viewport coordinates.</returns>
+    private static Vector2 ToViewport(Vector2 source)
+    {
+        var (x, y) = BattleHudLayout.ToViewport(Mathf.RoundToInt(source.X), Mathf.RoundToInt(source.Y));
+        return new Vector2(x, y);
+    }
+
     /// <summary>Injects a complete native press edge through battle simulation.</summary>
     /// <param name="key">Godot key to inject.</param>
     private void InjectBattleKey(Key key)
@@ -236,14 +245,5 @@ internal sealed class BattleHudProbe : BattleProbe
         Host.TickTestSimulation();
         Host.Input.Handle(new InputEventKey { Keycode = key, Pressed = false });
         Host.TickTestSimulation();
-    }
-
-    /// <summary>Maps source HUD coordinates into the 16:9 viewport.</summary>
-    /// <param name="source">Source-space coordinates.</param>
-    /// <returns>Viewport coordinates.</returns>
-    private static Vector2 ToViewport(Vector2 source)
-    {
-        var (x, y) = BattleHudLayout.ToViewport(Mathf.RoundToInt(source.X), Mathf.RoundToInt(source.Y));
-        return new Vector2(x, y);
     }
 }

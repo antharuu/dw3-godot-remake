@@ -161,6 +161,11 @@ public sealed class LegacyEncounterConsoleTests
         return areas;
     }
 
+    private static void Check(bool condition, string name)
+    {
+        Assert.True(condition, name);
+    }
+
     private sealed class ScriptedRng : IEncounterRng
     {
         private readonly int[] _values;
@@ -169,10 +174,5 @@ public sealed class LegacyEncounterConsoleTests
         public ScriptedRng(params int[] values) => _values = values;
 
         public int Draw() => _values[Math.Min(_index++, _values.Length - 1)];
-    }
-
-    private static void Check(bool condition, string name)
-    {
-        Assert.True(condition, name);
     }
 }

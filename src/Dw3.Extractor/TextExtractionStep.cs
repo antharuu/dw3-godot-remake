@@ -43,15 +43,8 @@ internal static class TextExtractionStep
 
     // Style IDs for glyph token code: glyphs start at 0x04, icons at 0x01.
     private const int GlyphCodeBase = 4;
-    private const int IconCodeBase = 1;
 
-    /// <summary>
-    /// Returns the disc path for the French field text file at <paramref name="index"/>:
-    /// <c>AAA/DAT/COUNTRY/FRA/FSTALKnn.BIN</c> where <c>nn</c> is the zero-padded index.
-    /// </summary>
-    /// <param name="index">File index in the range 0..9.</param>
-    /// <returns>ISO 9660 disc path for the corresponding FSTALK file.</returns>
-    private static string TalkDiscPath(int index) => $"AAA/DAT/COUNTRY/FRA/FSTALK{index:D2}.BIN";
+    private const int IconCodeBase = 1;
 
     /// <summary>
     /// Opens the disc through <paramref name="openDisc"/> and dispatches to either
@@ -96,6 +89,14 @@ internal static class TextExtractionStep
             return 1;
         }
     }
+
+    /// <summary>
+    /// Returns the disc path for the French field text file at <paramref name="index"/>:
+    /// <c>AAA/DAT/COUNTRY/FRA/FSTALKnn.BIN</c> where <c>nn</c> is the zero-padded index.
+    /// </summary>
+    /// <param name="index">File index in the range 0..9.</param>
+    /// <returns>ISO 9660 disc path for the corresponding FSTALK file.</returns>
+    private static string TalkDiscPath(int index) => $"AAA/DAT/COUNTRY/FRA/FSTALK{index:D2}.BIN";
 
     // ── Font ─────────────────────────────────────────────────────────────
 

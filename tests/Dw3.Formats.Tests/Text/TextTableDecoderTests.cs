@@ -7,19 +7,6 @@ namespace Dw3.Formats.Tests.Text;
 /// <summary>Synthetic (disc-free) tests for <see cref="TextTableDecoder"/>.</summary>
 public sealed class TextTableDecoderTests
 {
-    // Build a minimal one-entry FSTALKNN.BIN.
-    // Layout: u32 count=1, u32 offset=8, string bytes, 0x00.
-    private static byte[] OneEntryTable(params byte[] stringBytes)
-    {
-        int stringOffset = 4 + 4; // after count + one offset
-        var data = new byte[stringOffset + stringBytes.Length + 1];
-        BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(0), 1u);
-        BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(4), (uint)stringOffset);
-        stringBytes.CopyTo(data, stringOffset);
-        data[stringOffset + stringBytes.Length] = 0x00; // null terminator
-        return data;
-    }
-
     [Fact]
     public void DecodeFile_EmptyEntries_ReturnsZero()
     {
@@ -152,5 +139,18 @@ public sealed class TextTableDecoderTests
         Assert.Equal(0x12, entries[0][0].Code);
         Assert.Equal(2, entries[1].Count);
         Assert.Equal(0x56, entries[1][1].Code);
+    }
+
+    // Build a minimal one-entry FSTALKNN.BIN.
+    // Layout: u32 count=1, u32 offset=8, string bytes, 0x00.
+    private static byte[] OneEntryTable(params byte[] stringBytes)
+    {
+        int stringOffset = 4 + 4; // after count + one offset
+        var data = new byte[stringOffset + stringBytes.Length + 1];
+        BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(0), 1u);
+        BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(4), (uint)stringOffset);
+        stringBytes.CopyTo(data, stringOffset);
+        data[stringOffset + stringBytes.Length] = 0x00; // null terminator
+        return data;
     }
 }

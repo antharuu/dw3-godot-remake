@@ -22,6 +22,26 @@ public sealed class SystemExtractorLauncher : IExtractorLauncher
         _extractorBinary = extractorBinary;
     }
 
+    /// <summary>
+    /// Resolves the extractor binary path for the current environment.
+    /// Prefers the <c>DW3_EXTRACTOR</c> environment variable (development override).
+    /// Falls back to the debug build output path relative to <paramref name="repoRoot"/>.
+    /// </summary>
+    /// <param name="repoRoot">Root directory of the repository, used to construct the default debug output path.</param>
+    /// <returns>Absolute or relative path to the Dw3.Extractor binary.</returns>
+    public static string ResolveExtractorPath(string repoRoot)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(repoRoot);
+        string? env = System.Environment.GetEnvironmentVariable("DW3_EXTRACTOR");
+        if (!string.IsNullOrWhiteSpace(env))
+        {
+            return env;
+        }
+
+        // Default: debug build produced by dotnet build Dw3.sln.
+        return Path.Combine(repoRoot, "src", "Dw3.Extractor", "bin", "Debug", "net10.0", "Dw3.Extractor");
+    }
+
     /// <inheritdoc/>
     public IExtractorProcess Launch(string discPath, string outputDirectory)
     {
@@ -48,25 +68,5 @@ public sealed class SystemExtractorLauncher : IExtractorLauncher
         Process process = Process.Start(info)
             ?? throw new InvalidOperationException("Failed to start the extractor process.");
         return new SystemExtractorProcess(process);
-    }
-
-    /// <summary>
-    /// Resolves the extractor binary path for the current environment.
-    /// Prefers the <c>DW3_EXTRACTOR</c> environment variable (development override).
-    /// Falls back to the debug build output path relative to <paramref name="repoRoot"/>.
-    /// </summary>
-    /// <param name="repoRoot">Root directory of the repository, used to construct the default debug output path.</param>
-    /// <returns>Absolute or relative path to the Dw3.Extractor binary.</returns>
-    public static string ResolveExtractorPath(string repoRoot)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(repoRoot);
-        string? env = System.Environment.GetEnvironmentVariable("DW3_EXTRACTOR");
-        if (!string.IsNullOrWhiteSpace(env))
-        {
-            return env;
-        }
-
-        // Default: debug build produced by dotnet build Dw3.sln.
-        return Path.Combine(repoRoot, "src", "Dw3.Extractor", "bin", "Debug", "net10.0", "Dw3.Extractor");
     }
 }

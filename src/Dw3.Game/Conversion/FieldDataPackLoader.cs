@@ -15,7 +15,9 @@ public sealed class FieldDataPackLoader : IDisposable
     private static readonly string[] NpcSeqColumns = ["seq0", "seq1", "seq2", "seq3", "seq4"];
 
     private readonly DataPackReader _pack;
+
     private readonly SqliteConnection _database;
+
     private readonly List<string> _zoneIds;
 
     /// <summary>Initializes a new instance of the <see cref="FieldDataPackLoader"/> class bound to the given data pack.</summary>
@@ -242,6 +244,62 @@ public sealed class FieldDataPackLoader : IDisposable
         return new PlayerSequence(set.GetProperty("set").GetInt32(), sequence.GetProperty("direction").GetInt32(), records);
     }
 
+    /// <summary>Reads the color modulation of the depth-11 streamed layer. Channels are PSX vertex colors where 128 means unchanged, so each byte is divided by 128 (range 0..~2).</summary>
+    /// <param name="element">A three-integer array, or JSON null when the layer is not modulated.</param>
+    /// <returns>The modulation, or <see langword="null"/> for JSON null.</returns>
+    /// <exception cref="JsonException">The value is neither null nor a three-element array, or a channel is outside 0..255.</exception>
+    private static StreamModulate? ReadStreamModulate(JsonElement element)
+    {
+        if (element.ValueKind == JsonValueKind.Null)
+        {
+            return null;
+        }
+
+        if (element.ValueKind != JsonValueKind.Array || element.GetArrayLength() != 3)
+        {
+            throw new JsonException("depth-11 stream modulate must be three channels or null");
+        }
+
+        int[] channels = [.. element.EnumerateArray().Select(item => item.GetInt32())];
+        if (channels.Any(channel => channel is < 0 or > 255))
+        {
+            throw new JsonException("depth-11 stream channel outside byte range");
+        }
+
+        return new StreamModulate(channels[0] / 128f, channels[1] / 128f, channels[2] / 128f);
+    }
+
+    /// <summary>Parses a zone name <c>Snnn</c> back into its stage id. Signs, spaces and other lengths are rejected.</summary>
+    /// <param name="zoneId">Zone name, exactly four characters.</param>
+    /// <returns>The stage id, 0..999.</returns>
+    /// <exception cref="CacheResourceException">The name is not <c>S</c> followed by three digits.</exception>
+    private static int ParseZoneId(string zoneId)
+    {
+        if (zoneId.Length != 4 || zoneId[0] != 'S' || !int.TryParse(zoneId.AsSpan(1), NumberStyles.None, CultureInfo.InvariantCulture, out int stage))
+        {
+            throw new CacheResourceException("CACHE_RESOURCE_UNAVAILABLE", $"zone={zoneId} is not a valid stage id");
+        }
+
+        return stage;
+    }
+
+    /// <summary>Maps a facing direction 0..7 to one of the five sprite directions stored on the disc, mirroring 5, 6 and 7 from 3, 2 and 1.</summary>
+    /// <param name="direction">Facing direction, 0..7.</param>
+    /// <returns>The stored sprite direction (0..4) and whether to flip it horizontally.</returns>
+    /// <exception cref="CacheResourceException">The direction is outside 0..7.</exception>
+    private static (int Direction, bool FlipH) ResolveNpcSpriteDirection(int direction) => direction switch
+    {
+        0 => (0, false),
+        1 => (1, false),
+        2 => (2, false),
+        3 => (3, false),
+        4 => (4, false),
+        5 => (3, true),
+        6 => (2, true),
+        7 => (1, true),
+        _ => throw new CacheResourceException("CACHE_INVALID", $"invalid NPC direction {direction}"),
+    };
+
     /// <summary>Reads the standing (set 1) loop of an NPC for its placed direction. The disc stores five sprite directions (0..4); directions 5..7 reuse 3..1 mirrored horizontally.</summary>
     /// <param name="stage">Stage id of the NPC.</param>
     /// <param name="actorIndex">Index of the NPC in the stage's actor list.</param>
@@ -373,60 +431,4 @@ public sealed class FieldDataPackLoader : IDisposable
     /// <returns>An absolute path to an existing file.</returns>
     /// <exception cref="CacheResourceException">The path is rejected or the file is absent.</exception>
     private string RequirePackFile(string relativePath, string context) => DataPackFiles.Require(_pack, relativePath, context);
-
-    /// <summary>Reads the color modulation of the depth-11 streamed layer. Channels are PSX vertex colors where 128 means unchanged, so each byte is divided by 128 (range 0..~2).</summary>
-    /// <param name="element">A three-integer array, or JSON null when the layer is not modulated.</param>
-    /// <returns>The modulation, or <see langword="null"/> for JSON null.</returns>
-    /// <exception cref="JsonException">The value is neither null nor a three-element array, or a channel is outside 0..255.</exception>
-    private static StreamModulate? ReadStreamModulate(JsonElement element)
-    {
-        if (element.ValueKind == JsonValueKind.Null)
-        {
-            return null;
-        }
-
-        if (element.ValueKind != JsonValueKind.Array || element.GetArrayLength() != 3)
-        {
-            throw new JsonException("depth-11 stream modulate must be three channels or null");
-        }
-
-        int[] channels = [.. element.EnumerateArray().Select(item => item.GetInt32())];
-        if (channels.Any(channel => channel is < 0 or > 255))
-        {
-            throw new JsonException("depth-11 stream channel outside byte range");
-        }
-
-        return new StreamModulate(channels[0] / 128f, channels[1] / 128f, channels[2] / 128f);
-    }
-
-    /// <summary>Parses a zone name <c>Snnn</c> back into its stage id. Signs, spaces and other lengths are rejected.</summary>
-    /// <param name="zoneId">Zone name, exactly four characters.</param>
-    /// <returns>The stage id, 0..999.</returns>
-    /// <exception cref="CacheResourceException">The name is not <c>S</c> followed by three digits.</exception>
-    private static int ParseZoneId(string zoneId)
-    {
-        if (zoneId.Length != 4 || zoneId[0] != 'S' || !int.TryParse(zoneId.AsSpan(1), NumberStyles.None, CultureInfo.InvariantCulture, out int stage))
-        {
-            throw new CacheResourceException("CACHE_RESOURCE_UNAVAILABLE", $"zone={zoneId} is not a valid stage id");
-        }
-
-        return stage;
-    }
-
-    /// <summary>Maps a facing direction 0..7 to one of the five sprite directions stored on the disc, mirroring 5, 6 and 7 from 3, 2 and 1.</summary>
-    /// <param name="direction">Facing direction, 0..7.</param>
-    /// <returns>The stored sprite direction (0..4) and whether to flip it horizontally.</returns>
-    /// <exception cref="CacheResourceException">The direction is outside 0..7.</exception>
-    private static (int Direction, bool FlipH) ResolveNpcSpriteDirection(int direction) => direction switch
-    {
-        0 => (0, false),
-        1 => (1, false),
-        2 => (2, false),
-        3 => (3, false),
-        4 => (4, false),
-        5 => (3, true),
-        6 => (2, true),
-        7 => (1, true),
-        _ => throw new CacheResourceException("CACHE_INVALID", $"invalid NPC direction {direction}"),
-    };
 }

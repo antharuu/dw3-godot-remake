@@ -6,22 +6,6 @@ namespace Dw3.Formats.Tests.Dialogue;
 
 public sealed class StageTextFileResolverTests
 {
-    private static StageTextFileResolver Resolver(params (int FileId, string Path)[] files)
-    {
-        byte[] exe = DialogueFixtures.Executable(0x200);
-        var paths = new Dictionary<int, string>();
-        foreach ((int fileId, string path) in files)
-        {
-            int lba = 1000 + fileId;
-            DialogueFixtures.U32(exe, DialogueFixtures.ExeOffset(DialogueFixtures.Layout.FileSectorsAddress) + (fileId * 4), (uint)lba);
-            paths[lba] = path;
-        }
-
-        DiscFileTable table = DiscFileTable.Read(
-            PsxExecutable.Parse(exe), DialogueFixtures.Layout.FileSectorsAddress, DialogueFixtures.Layout.FileSectorCount, paths);
-        return new StageTextFileResolver(table, 3, "XYZ");
-    }
-
     [Fact]
     public void PicksTheCopyInTheCountryFolderAndReadsItsTalkNumber()
     {
@@ -49,4 +33,20 @@ public sealed class StageTextFileResolverTests
     [InlineData(14)]
     public void RejectsSelectorOutsideTheFileTable(int selector) =>
         Assert.Throws<FormatException>(() => Resolver().Resolve(selector));
+
+    private static StageTextFileResolver Resolver(params (int FileId, string Path)[] files)
+    {
+        byte[] exe = DialogueFixtures.Executable(0x200);
+        var paths = new Dictionary<int, string>();
+        foreach ((int fileId, string path) in files)
+        {
+            int lba = 1000 + fileId;
+            DialogueFixtures.U32(exe, DialogueFixtures.ExeOffset(DialogueFixtures.Layout.FileSectorsAddress) + (fileId * 4), (uint)lba);
+            paths[lba] = path;
+        }
+
+        DiscFileTable table = DiscFileTable.Read(
+            PsxExecutable.Parse(exe), DialogueFixtures.Layout.FileSectorsAddress, DialogueFixtures.Layout.FileSectorCount, paths);
+        return new StageTextFileResolver(table, 3, "XYZ");
+    }
 }

@@ -10,6 +10,9 @@ namespace Dw3.Analyzers.Tests;
 /// </summary>
 internal sealed class ConstantAnalyzerConfigOptionsProvider : AnalyzerConfigOptionsProvider
 {
+    /// <summary>Empty options returned for all files not matching <see cref="_filePath"/>.</summary>
+    private static readonly AnalyzerConfigOptions EmptyOptions = new EmptyAnalyzerConfigOptions();
+
     /// <summary>The normalised file path this provider applies to.</summary>
     private readonly string _filePath;
 
@@ -18,9 +21,6 @@ internal sealed class ConstantAnalyzerConfigOptionsProvider : AnalyzerConfigOpti
 
     /// <summary>The value to return for <see cref="_key"/>.</summary>
     private readonly string _value;
-
-    /// <summary>Empty options returned for all files not matching <see cref="_filePath"/>.</summary>
-    private static readonly AnalyzerConfigOptions EmptyOptions = new EmptyAnalyzerConfigOptions();
 
     /// <summary>
     /// Initializes a new instance of <see cref="ConstantAnalyzerConfigOptionsProvider"/>.

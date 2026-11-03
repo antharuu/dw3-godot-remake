@@ -9,13 +9,6 @@ namespace Dw3.Extractor;
 /// </summary>
 public static class Cli
 {
-    /// <summary>Groups the parsed options for the extract subcommand.</summary>
-    private sealed record ExtractOptions(
-        string? CuePath,
-        string? OutputPath,
-        string? OnlyDomain,
-        string? ProgressFormat);
-
     /// <summary>Dispatches a CLI invocation and returns a POSIX exit code.</summary>
     /// <param name="arguments">Command-line arguments, as passed to the entry point.</param>
     /// <param name="output">Standard output stream for normal program output.</param>
@@ -416,4 +409,11 @@ public static class Cli
             return 1;
         }
     }
+
+    /// <summary>Groups the parsed options for the extract subcommand.</summary>
+    private sealed record ExtractOptions(
+        string? CuePath,
+        string? OutputPath,
+        string? OnlyDomain,
+        string? ProgressFormat);
 }

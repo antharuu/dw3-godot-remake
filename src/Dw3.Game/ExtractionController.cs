@@ -9,11 +9,20 @@ namespace Dw3Production;
 /// </summary>
 public sealed class ExtractionController
 {
-    private ExtractionState _state = ExtractionState.Idle;
     private readonly IExtractorLauncher _launcher;
 
-    /// <summary>Gets the current extraction state.</summary>
-    public ExtractionState State => _state;
+    private ExtractionState _state = ExtractionState.Idle;
+
+    /// <summary>
+    /// Initializes a new instance of the <see cref="ExtractionController"/> class
+    /// with the launcher that will spawn the extractor.
+    /// </summary>
+    /// <param name="launcher">Launcher used to start the extractor child process.</param>
+    public ExtractionController(IExtractorLauncher launcher)
+    {
+        ArgumentNullException.ThrowIfNull(launcher);
+        _launcher = launcher;
+    }
 
     /// <summary>
     /// Fired when a domain step completes: (domainName, done, totalDomains).
@@ -26,16 +35,8 @@ public sealed class ExtractionController
     /// <summary>Fired with a player-actionable message when extraction fails.</summary>
     public event Action<string>? Failed;
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="ExtractionController"/> class
-    /// with the launcher that will spawn the extractor.
-    /// </summary>
-    /// <param name="launcher">Launcher used to start the extractor child process.</param>
-    public ExtractionController(IExtractorLauncher launcher)
-    {
-        ArgumentNullException.ThrowIfNull(launcher);
-        _launcher = launcher;
-    }
+    /// <summary>Gets the current extraction state.</summary>
+    public ExtractionState State => _state;
 
     /// <summary>
     /// Runs extraction synchronously; intended to be called from a background thread.

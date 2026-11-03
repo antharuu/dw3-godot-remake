@@ -246,11 +246,6 @@ public sealed class LegacyBattleReportConsoleTests
         return s;
     }
 
-    private sealed class NoRng : IBattleRng
-    {
-        public int NextValue() => 0;
-    }
-
     // ---- report.c / partner.c: engine-free STFGTREP controller ----
     private static void ReportNeverEndsWithoutCross()
     {
@@ -342,5 +337,10 @@ public sealed class LegacyBattleReportConsoleTests
     private static void Check(bool condition, string name)
     {
         Assert.True(condition, name);
+    }
+
+    private sealed class NoRng : IBattleRng
+    {
+        public int NextValue() => 0;
     }
 }

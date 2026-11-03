@@ -25,10 +25,24 @@ public static class StageDescriptorReader
 
     // Member offsets inside the descriptor.
     private const uint SheetEntryMember = 0x0C;
+
     private const uint ObjectsMember = 0x10;
 
     // MIPS caller-saved registers: at, v0-v1, a0-a3, t0-t9, ra.
     private static readonly int[] CallerSavedRegisters = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 24, 25, 31];
+
+    /// <summary>Classifies whether the instruction in the delay slot of a pending branch or jump should invalidate caller-saved registers.</summary>
+    private enum PendingJump
+    {
+        /// <summary>No pending jump; the current instruction is not a delay slot.</summary>
+        None,
+
+        /// <summary>A <c>jal</c> or <c>jalr</c> instruction was seen; the next instruction is its delay slot.</summary>
+        Call,
+
+        /// <summary>A branch or jump (other than call) was seen; the next instruction is its delay slot.</summary>
+        Other,
+    }
 
     /// <summary>Reads the object-table address and sprite-sheet entry from raw overlay bytes.</summary>
     /// <param name="overlay">Raw bytes of the WSTAG stage overlay.</param>
@@ -204,18 +218,5 @@ public static class StageDescriptorReader
         }
 
         return values.Single()!.Value;
-    }
-
-    /// <summary>Classifies whether the instruction in the delay slot of a pending branch or jump should invalidate caller-saved registers.</summary>
-    private enum PendingJump
-    {
-        /// <summary>No pending jump; the current instruction is not a delay slot.</summary>
-        None,
-
-        /// <summary>A <c>jal</c> or <c>jalr</c> instruction was seen; the next instruction is its delay slot.</summary>
-        Call,
-
-        /// <summary>A branch or jump (other than call) was seen; the next instruction is its delay slot.</summary>
-        Other,
     }
 }

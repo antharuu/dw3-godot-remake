@@ -485,14 +485,14 @@ public sealed class LegacyBattleFlowConsoleTests
         return s;
     }
 
-    private sealed class NoRng : IBattleRng
-    {
-        public int NextValue() => 0;
-    }
-
     private static void Check(bool condition, string name)
     {
         Assert.True(condition, name);
+    }
+
+    private sealed class NoRng : IBattleRng
+    {
+        public int NextValue() => 0;
     }
 
     private sealed record BattleFixture(

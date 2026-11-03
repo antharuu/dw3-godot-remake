@@ -10,24 +10,6 @@ namespace Dw3.Game.Tests;
 public sealed class ExtractionControllerTests
 {
     // ---------------------------------------------------------------------------
-    // Helpers
-    // ---------------------------------------------------------------------------
-    private static ExtractionController Build(IEnumerable<string> lines, int exitCode = 0)
-    {
-        var launcher = new FakeLauncher(lines, exitCode);
-        return new ExtractionController(launcher);
-    }
-
-    private static string Progress(string domain, int done, int total) =>
-        $"{{\"step\":\"{domain}\",\"done\":{done},\"total\":{total}}}";
-
-    private static string Complete(int domains = 3) =>
-        $"{{\"event\":\"complete\",\"domains\":{domains}}}";
-
-    private static string Error(string code, string message) =>
-        $"{{\"event\":\"error\",\"code\":\"{code}\",\"message\":\"{message}\"}}";
-
-    // ---------------------------------------------------------------------------
     // Initial state
     // ---------------------------------------------------------------------------
     [Fact]
@@ -228,4 +210,22 @@ public sealed class ExtractionControllerTests
         release.Set();
         Assert.True(thread.Join(TimeSpan.FromSeconds(5)), "Extraction thread did not finish in time.");
     }
+
+    // ---------------------------------------------------------------------------
+    // Helpers
+    // ---------------------------------------------------------------------------
+    private static ExtractionController Build(IEnumerable<string> lines, int exitCode = 0)
+    {
+        var launcher = new FakeLauncher(lines, exitCode);
+        return new ExtractionController(launcher);
+    }
+
+    private static string Progress(string domain, int done, int total) =>
+        $"{{\"step\":\"{domain}\",\"done\":{done},\"total\":{total}}}";
+
+    private static string Complete(int domains = 3) =>
+        $"{{\"event\":\"complete\",\"domains\":{domains}}}";
+
+    private static string Error(string code, string message) =>
+        $"{{\"event\":\"error\",\"code\":\"{code}\",\"message\":\"{message}\"}}";
 }

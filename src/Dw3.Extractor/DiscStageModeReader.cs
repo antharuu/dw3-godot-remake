@@ -81,84 +81,6 @@ public static class DiscStageModeReader
         return ParseStageRegistry(fieldStgData, fileSectors, lbaToStageName);
     }
 
-    // ── Implementation ────────────────────────────────────────────────────
-
-    /// <summary>
-    /// Builds a mapping from disc LBA to WSTAG filename by scanning the entry list
-    /// for files matching the pattern <c>WSTAG###.PRO</c> (three-digit decimal, uppercase).
-    /// </summary>
-    /// <param name="entries">The full disc file entry list to scan.</param>
-    /// <returns>A dictionary from LBA to stage filename (e.g. <c>WSTAG200.PRO</c>).</returns>
-    private static Dictionary<int, string> BuildLbaToStageNameMap(IReadOnlyList<DiscFileEntry> entries)
-    {
-        var map = new Dictionary<int, string>();
-        foreach (var entry in entries)
-        {
-            string name = Path.GetFileName(entry.IsoPath);
-
-            // Match WSTAG###.PRO (three digits, uppercase).
-            if (name.StartsWith("WSTAG", StringComparison.Ordinal) &&
-                name.EndsWith(".PRO", StringComparison.Ordinal) &&
-                name.Length == "WSTAG000.PRO".Length)
-            {
-                map[entry.Lba] = name;
-            }
-        }
-
-        return map;
-    }
-
-    /// <summary>
-    /// Reads the FILE_SECTORS int32 array from SLES_039.36 at the known fixed offset,
-    /// verifying that entry 466 matches the LBA of WSTAG200.PRO before returning the full table.
-    /// </summary>
-    /// <param name="slesData">The raw bytes of SLES_039.36.</param>
-    /// <param name="lbaToStageName">LBA-to-filename map used for verification (WSTAG200.PRO LBA lookup).</param>
-    /// <param name="entries">The full disc file entry list used for the verification LBA lookup.</param>
-    /// <returns>The complete FILE_SECTORS LBA table as an int32 array.</returns>
-    /// <exception cref="InvalidDataException">WSTAG200.PRO is absent, the verification offset is out of range,
-    /// or the stored LBA does not match the disc directory LBA.</exception>
-    private static int[] ReadFileSectors(
-        byte[] slesData,
-        Dictionary<int, string> lbaToStageName,
-        IReadOnlyList<DiscFileEntry> entries)
-    {
-        _ = lbaToStageName;
-
-        // The FILE_SECTORS array is a flat int32[] at a known offset in SLES_039.36.
-        // We verify by checking that FILE_SECTORS[466] equals the LBA of WSTAG200.PRO.
-        int verificationLba = entries
-            .FirstOrDefault(e => string.Equals(e.IsoPath, "AAA/PRO/WSTAG200.PRO", StringComparison.Ordinal))
-            ?.Lba ?? 0;
-        if (verificationLba == 0)
-        {
-            throw new InvalidDataException("WSTAG200.PRO is absent from the disc; cannot verify FILE_SECTORS base.");
-        }
-
-        int verificationOffset = FileSectorsBaseOffset + (VerificationOverlayIndex * sizeof(int));
-        if (verificationOffset + sizeof(int) > slesData.Length)
-        {
-            throw new InvalidDataException($"FILE_SECTORS verification offset 0x{verificationOffset:X} is out of {SlesIsoPath} range.");
-        }
-
-        int storedLba = BinaryPrimitives.ReadInt32LittleEndian(slesData.AsSpan(verificationOffset, sizeof(int)));
-        if (storedLba != verificationLba)
-        {
-            throw new InvalidDataException(
-                $"FILE_SECTORS[{VerificationOverlayIndex}] = {storedLba} but WSTAG200.PRO LBA = {verificationLba}; disc or offset mismatch.");
-        }
-
-        // The array length is determined by available data; cap at a safe maximum.
-        int maxEntries = (slesData.Length - FileSectorsBaseOffset) / sizeof(int);
-        var result = new int[maxEntries];
-        for (int i = 0; i < maxEntries; i++)
-        {
-            result[i] = BinaryPrimitives.ReadInt32LittleEndian(slesData.AsSpan(FileSectorsBaseOffset + (i * sizeof(int)), sizeof(int)));
-        }
-
-        return result;
-    }
-
     /// <summary>Exposed as internal for unit-testing with synthetic data.</summary>
     /// <param name="fieldStgData">The FIELDSTG.PRO overlay bytes.</param>
     /// <param name="fileSectors">The FILE_SECTORS LBA table extracted from SLES_039.36.</param>
@@ -235,6 +157,84 @@ public static class DiscStageModeReader
             }
 
             result.Add(new DiscFieldStage(raw.Mode, stageNumber, raw.OverlayFileId, raw.InitializerAddress));
+        }
+
+        return result;
+    }
+
+    // ── Implementation ────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Builds a mapping from disc LBA to WSTAG filename by scanning the entry list
+    /// for files matching the pattern <c>WSTAG###.PRO</c> (three-digit decimal, uppercase).
+    /// </summary>
+    /// <param name="entries">The full disc file entry list to scan.</param>
+    /// <returns>A dictionary from LBA to stage filename (e.g. <c>WSTAG200.PRO</c>).</returns>
+    private static Dictionary<int, string> BuildLbaToStageNameMap(IReadOnlyList<DiscFileEntry> entries)
+    {
+        var map = new Dictionary<int, string>();
+        foreach (var entry in entries)
+        {
+            string name = Path.GetFileName(entry.IsoPath);
+
+            // Match WSTAG###.PRO (three digits, uppercase).
+            if (name.StartsWith("WSTAG", StringComparison.Ordinal) &&
+                name.EndsWith(".PRO", StringComparison.Ordinal) &&
+                name.Length == "WSTAG000.PRO".Length)
+            {
+                map[entry.Lba] = name;
+            }
+        }
+
+        return map;
+    }
+
+    /// <summary>
+    /// Reads the FILE_SECTORS int32 array from SLES_039.36 at the known fixed offset,
+    /// verifying that entry 466 matches the LBA of WSTAG200.PRO before returning the full table.
+    /// </summary>
+    /// <param name="slesData">The raw bytes of SLES_039.36.</param>
+    /// <param name="lbaToStageName">LBA-to-filename map used for verification (WSTAG200.PRO LBA lookup).</param>
+    /// <param name="entries">The full disc file entry list used for the verification LBA lookup.</param>
+    /// <returns>The complete FILE_SECTORS LBA table as an int32 array.</returns>
+    /// <exception cref="InvalidDataException">WSTAG200.PRO is absent, the verification offset is out of range,
+    /// or the stored LBA does not match the disc directory LBA.</exception>
+    private static int[] ReadFileSectors(
+        byte[] slesData,
+        Dictionary<int, string> lbaToStageName,
+        IReadOnlyList<DiscFileEntry> entries)
+    {
+        _ = lbaToStageName;
+
+        // The FILE_SECTORS array is a flat int32[] at a known offset in SLES_039.36.
+        // We verify by checking that FILE_SECTORS[466] equals the LBA of WSTAG200.PRO.
+        int verificationLba = entries
+            .FirstOrDefault(e => string.Equals(e.IsoPath, "AAA/PRO/WSTAG200.PRO", StringComparison.Ordinal))
+            ?.Lba ?? 0;
+        if (verificationLba == 0)
+        {
+            throw new InvalidDataException("WSTAG200.PRO is absent from the disc; cannot verify FILE_SECTORS base.");
+        }
+
+        int verificationOffset = FileSectorsBaseOffset + (VerificationOverlayIndex * sizeof(int));
+        if (verificationOffset + sizeof(int) > slesData.Length)
+        {
+            throw new InvalidDataException($"FILE_SECTORS verification offset 0x{verificationOffset:X} is out of {SlesIsoPath} range.");
+        }
+
+        int storedLba = BinaryPrimitives.ReadInt32LittleEndian(slesData.AsSpan(verificationOffset, sizeof(int)));
+        if (storedLba != verificationLba)
+        {
+            throw new InvalidDataException(
+                $"FILE_SECTORS[{VerificationOverlayIndex}] = {storedLba} but WSTAG200.PRO LBA = {verificationLba}; disc or offset mismatch.");
+        }
+
+        // The array length is determined by available data; cap at a safe maximum.
+        int maxEntries = (slesData.Length - FileSectorsBaseOffset) / sizeof(int);
+        var result = new int[maxEntries];
+        for (int i = 0; i < maxEntries; i++)
+        {
+            result[i] = BinaryPrimitives.ReadInt32LittleEndian(slesData.AsSpan(FileSectorsBaseOffset + (i * sizeof(int)), sizeof(int)));
         }
 
         return result;

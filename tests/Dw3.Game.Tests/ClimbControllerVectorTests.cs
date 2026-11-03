@@ -20,57 +20,6 @@ public sealed class ClimbControllerVectorTests
     private static readonly string VectorsPath = Path.Combine(
         AppContext.BaseDirectory, "Vectors", "climb-controller.json");
 
-    // ------------------------------------------------------------------ standard ClimbData
-    // Must match the data used in the generator exactly.
-    private static ClimbData StandardData()
-    {
-        var sequences = new Dictionary<int, ClimbSequence>
-        {
-            [0x1A] = new(0x1A, true, [new ClimbRecord(0, 6, -21, -32), new ClimbRecord(1, 6, -21, -32)]),
-            [0x1B] = new(0x1B, true, [new ClimbRecord(1, 6, -21, -32)]),
-            [0x1C] = new(0x1C, false, [new ClimbRecord(0, 4, -17, -29), new ClimbRecord(1, 4, -17, -29)]),
-            [0x1D] = new(0x1D, false, [new ClimbRecord(0, 4, -21, -32)]),
-            [0x1E] = new(0x1E, false, [new ClimbRecord(0, 4, -25, -49)]),
-            [0x1F] = new(0x1F, false, [new ClimbRecord(0, 4, -20, -32)]),
-            [0x20] = new(0x20, true, [new ClimbRecord(0, 6, -21, -32)]),
-        };
-        return new ClimbData(sequences);
-    }
-
-    // ------------------------------------------------------------------ helpers
-    private static InputState MakeInput(string label)
-    {
-        var inp = new InputState();
-        switch (label)
-        {
-            case "Up": inp.SetDirections(left: false, right: false, up: true, down: false); break;
-            case "Down": inp.SetDirections(left: false, right: false, up: false, down: true); break;
-            case "None": inp.SetDirections(left: false, right: false, up: false, down: false); break;
-            default: throw new ArgumentException($"Unknown input label: {label}");
-        }
-
-        return inp;
-    }
-
-    private static ClimbData AnimSampleDataFromCase(JsonNode c)
-    {
-        int set = c["set"]!.GetValue<int>();
-        bool loops = c["loops"]!.GetValue<bool>();
-        var recs = new List<ClimbRecord>();
-        foreach (var r in c["records"]!.AsArray())
-        {
-            recs.Add(new ClimbRecord(
-                r!["frame"]!.GetValue<int>(),
-                r["duration"]!.GetValue<int>(),
-                r["offsetX"]!.GetValue<int>(),
-                r["offsetY"]!.GetValue<int>()));
-        }
-
-        var seq = new ClimbSequence(set, loops, recs);
-        var seqDict = new Dictionary<int, ClimbSequence> { [set] = seq };
-        return new ClimbData(seqDict);
-    }
-
     // ------------------------------------------------------------------ count check
     [Fact]
     public void VectorCount_AtLeast300()
@@ -130,6 +79,57 @@ public sealed class ClimbControllerVectorTests
         {
             Assert.Fail($"{errors.Count} vector(s) failed:\n" + string.Join("\n", errors));
         }
+    }
+
+    // ------------------------------------------------------------------ standard ClimbData
+    // Must match the data used in the generator exactly.
+    private static ClimbData StandardData()
+    {
+        var sequences = new Dictionary<int, ClimbSequence>
+        {
+            [0x1A] = new(0x1A, true, [new ClimbRecord(0, 6, -21, -32), new ClimbRecord(1, 6, -21, -32)]),
+            [0x1B] = new(0x1B, true, [new ClimbRecord(1, 6, -21, -32)]),
+            [0x1C] = new(0x1C, false, [new ClimbRecord(0, 4, -17, -29), new ClimbRecord(1, 4, -17, -29)]),
+            [0x1D] = new(0x1D, false, [new ClimbRecord(0, 4, -21, -32)]),
+            [0x1E] = new(0x1E, false, [new ClimbRecord(0, 4, -25, -49)]),
+            [0x1F] = new(0x1F, false, [new ClimbRecord(0, 4, -20, -32)]),
+            [0x20] = new(0x20, true, [new ClimbRecord(0, 6, -21, -32)]),
+        };
+        return new ClimbData(sequences);
+    }
+
+    // ------------------------------------------------------------------ helpers
+    private static InputState MakeInput(string label)
+    {
+        var inp = new InputState();
+        switch (label)
+        {
+            case "Up": inp.SetDirections(left: false, right: false, up: true, down: false); break;
+            case "Down": inp.SetDirections(left: false, right: false, up: false, down: true); break;
+            case "None": inp.SetDirections(left: false, right: false, up: false, down: false); break;
+            default: throw new ArgumentException($"Unknown input label: {label}");
+        }
+
+        return inp;
+    }
+
+    private static ClimbData AnimSampleDataFromCase(JsonNode c)
+    {
+        int set = c["set"]!.GetValue<int>();
+        bool loops = c["loops"]!.GetValue<bool>();
+        var recs = new List<ClimbRecord>();
+        foreach (var r in c["records"]!.AsArray())
+        {
+            recs.Add(new ClimbRecord(
+                r!["frame"]!.GetValue<int>(),
+                r["duration"]!.GetValue<int>(),
+                r["offsetX"]!.GetValue<int>(),
+                r["offsetY"]!.GetValue<int>()));
+        }
+
+        var seq = new ClimbSequence(set, loops, recs);
+        var seqDict = new Dictionary<int, ClimbSequence> { [set] = seq };
+        return new ClimbData(seqDict);
     }
 
     // ------------------------------------------------------------------ AnimSample verifier

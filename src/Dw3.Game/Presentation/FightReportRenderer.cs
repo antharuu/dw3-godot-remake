@@ -10,7 +10,9 @@ namespace Dw3Production.Presentation;
 public sealed partial class FightReportRenderer : IDisposable
 {
     private readonly CanvasLayer _layer;
+
     private readonly ReportControl _control;
+
     private readonly ColorRect _fader;
 
     /// <summary>
@@ -30,6 +32,9 @@ public sealed partial class FightReportRenderer : IDisposable
         _layer.AddChild(_fader);
     }
 
+    /// <summary>Gets a value indicating whether the report layer is visible.</summary>
+    public bool Visible => _layer.Visible;
+
     /// <summary>Releases Godot resources owned by this renderer.</summary>
     public void Dispose()
     {
@@ -37,9 +42,6 @@ public sealed partial class FightReportRenderer : IDisposable
         _control.Dispose();
         _layer.Dispose();
     }
-
-    /// <summary>Gets a value indicating whether the report layer is visible.</summary>
-    public bool Visible => _layer.Visible;
 
     /// <summary>Supplies decoded report sprites and font metrics.</summary>
     /// <param name="sprites">Decoded report sprite frames and animation data.</param>
@@ -66,13 +68,21 @@ public sealed partial class FightReportRenderer : IDisposable
     private sealed partial class ReportControl : Control
     {
         private readonly Dictionary<int, ImageTexture[]> _frames = [];
+
         private readonly Dictionary<int, Vector2> _offsets = [];
-        private ImageTexture[]? _arrow;
-        private Vector2 _arrowOffset;
-        private IReadOnlyList<int[]> _animations = [];
+
         private readonly PsxTextPainter _text;
+
+        private ImageTexture[]? _arrow;
+
+        private Vector2 _arrowOffset;
+
+        private IReadOnlyList<int[]> _animations = [];
+
         private FightReportView? _view;
+
         private BattleTextCatalog? _catalog;
+
         private IReadOnlyDictionary<int, BattleTextLine> _names = new Dictionary<int, BattleTextLine>();
 
         /// <summary>Initializes a new instance of the <see cref="ReportControl"/> class.</summary>

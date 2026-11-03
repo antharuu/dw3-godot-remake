@@ -9,10 +9,24 @@ namespace Dw3Production.Presentation;
 /// </summary>
 public sealed class BattleModelLayer : IDisposable
 {
+    private const string ShaderCode = @"shader_type spatial;
+render_mode unshaded, depth_test_disabled, depth_draw_never, cull_disabled, blend_mix;
+uniform sampler2DArray pages : source_color, filter_nearest;
+void fragment() {
+    vec4 sampled = texture(pages, vec3(UV, UV2.x));
+    if (sampled.a < 0.25) discard;
+    ALBEDO = sampled.rgb * COLOR.rgb * 2.0;
+    ALPHA = UV2.y;
+}";
+
     private readonly MeshInstance3D _instance;
+
     private readonly ShaderMaterial _material;
+
     private readonly Dictionary<(BattleModel Model, int TextureKey), int> _pageLayers = [];
+
     private Texture2DArray? _pages;
+
     private bool _dirtyPages = true;
 
     /// <summary>Initializes a new instance of the <see cref="BattleModelLayer"/> class, creating the mesh instance and shader material and attaching them to <paramref name="parent"/>.</summary>
@@ -270,16 +284,6 @@ public sealed class BattleModelLayer : IDisposable
         mesh.AddSurfaceFromArrays(Mesh.PrimitiveType.Triangles, arrays);
         _instance.Mesh = mesh;
     }
-
-    private const string ShaderCode = @"shader_type spatial;
-render_mode unshaded, depth_test_disabled, depth_draw_never, cull_disabled, blend_mix;
-uniform sampler2DArray pages : source_color, filter_nearest;
-void fragment() {
-    vec4 sampled = texture(pages, vec3(UV, UV2.x));
-    if (sampled.a < 0.25) discard;
-    ALBEDO = sampled.rgb * COLOR.rgb * 2.0;
-    ALPHA = UV2.y;
-}";
 
     /// <summary>Stores projected ordering and render data for one pending polygon.</summary>
     private readonly record struct PendingPolygon(int Key, Godot.Vector3[] Positions, Godot.Vector2[] Uvs, Color[] Colors, int Page, float Alpha);

@@ -19,73 +19,6 @@ public sealed class BattleGrowthVectorTests
     private static readonly string VectorsPath = Path.Combine(
         AppContext.BaseDirectory, "Vectors", "battle-growth.json");
 
-    // ------------------------------------------------------------------ helpers
-    private sealed class SeqRng : IBattleRng
-    {
-        private readonly int[] _v;
-        private int _i;
-
-        public SeqRng(params int[] v) => _v = v;
-
-        // Returns 0 if the sequence is empty (safe fallback).
-        public int NextValue() => _v.Length == 0 ? 0 : _v[_i++ % _v.Length];
-    }
-
-    private sealed class ConstRng : IBattleRng
-    {
-        private readonly int _v;
-
-        public ConstRng(int v) => _v = v;
-
-        public int NextValue() => _v;
-    }
-
-    private static int[] ToIntArray(JsonNode? node)
-    {
-        var arr = node!.AsArray();
-        var r = new int[arr.Count];
-        for (int i = 0; i < arr.Count; i++)
-        {
-            r[i] = arr[i]!.GetValue<int>();
-        }
-
-        return r;
-    }
-
-    private static int[][] ToInt2DArray(JsonNode? node)
-    {
-        var outer = node!.AsArray();
-        var r = new int[outer.Count][];
-        for (int i = 0; i < outer.Count; i++)
-        {
-            r[i] = ToIntArray(outer[i]);
-        }
-
-        return r;
-    }
-
-    private static GrowthTables TablesFromCase(JsonNode c) => new()
-    {
-        LevelExp = c["tableLevelExp"] is JsonNode le ? ToIntArray(le) : new int[4],
-        VitalCuts = ToIntArray(c["tableVitalCuts"]),
-        VitalRandom = ToIntArray(c["tableVitalRandom"]),
-        StatGains = ToInt2DArray(c["tableStatGains"]),
-        ResistGains = ToIntArray(c["tableResistGains"]),
-    };
-
-    private static GrowthTables TablesWithLevelExpFromCase(JsonNode c)
-    {
-        // AddExp cases embed LevelExp separately
-        return new GrowthTables
-        {
-            LevelExp = c["tableLevelExp"] != null ? ToIntArray(c["tableLevelExp"]) : new int[4],
-            VitalCuts = ToIntArray(c["tableVitalCuts"]),
-            VitalRandom = ToIntArray(c["tableVitalRandom"]),
-            StatGains = ToInt2DArray(c["tableStatGains"]),
-            ResistGains = ToIntArray(c["tableResistGains"]),
-        };
-    }
-
     // ------------------------------------------------------------------ count check
     [Fact]
     public void VectorCount_AtLeast300()
@@ -157,6 +90,52 @@ public sealed class BattleGrowthVectorTests
         {
             Assert.Fail($"{errors.Count} vector(s) failed:\n" + string.Join("\n", errors));
         }
+    }
+
+    private static int[] ToIntArray(JsonNode? node)
+    {
+        var arr = node!.AsArray();
+        var r = new int[arr.Count];
+        for (int i = 0; i < arr.Count; i++)
+        {
+            r[i] = arr[i]!.GetValue<int>();
+        }
+
+        return r;
+    }
+
+    private static int[][] ToInt2DArray(JsonNode? node)
+    {
+        var outer = node!.AsArray();
+        var r = new int[outer.Count][];
+        for (int i = 0; i < outer.Count; i++)
+        {
+            r[i] = ToIntArray(outer[i]);
+        }
+
+        return r;
+    }
+
+    private static GrowthTables TablesFromCase(JsonNode c) => new()
+    {
+        LevelExp = c["tableLevelExp"] is JsonNode le ? ToIntArray(le) : new int[4],
+        VitalCuts = ToIntArray(c["tableVitalCuts"]),
+        VitalRandom = ToIntArray(c["tableVitalRandom"]),
+        StatGains = ToInt2DArray(c["tableStatGains"]),
+        ResistGains = ToIntArray(c["tableResistGains"]),
+    };
+
+    private static GrowthTables TablesWithLevelExpFromCase(JsonNode c)
+    {
+        // AddExp cases embed LevelExp separately
+        return new GrowthTables
+        {
+            LevelExp = c["tableLevelExp"] != null ? ToIntArray(c["tableLevelExp"]) : new int[4],
+            VitalCuts = ToIntArray(c["tableVitalCuts"]),
+            VitalRandom = ToIntArray(c["tableVitalRandom"]),
+            StatGains = ToInt2DArray(c["tableStatGains"]),
+            ResistGains = ToIntArray(c["tableResistGains"]),
+        };
     }
 
     // ------------------------------------------------------------------ per-method verifiers
@@ -351,5 +330,26 @@ public sealed class BattleGrowthVectorTests
         {
             errors.Add($"[{id}] ExpShare(exp={rewardExp},fought={fought}): got {got} expected {expected}");
         }
+    }
+
+    // ------------------------------------------------------------------ helpers
+    private sealed class SeqRng : IBattleRng
+    {
+        private readonly int[] _v;
+        private int _i;
+
+        public SeqRng(params int[] v) => _v = v;
+
+        // Returns 0 if the sequence is empty (safe fallback).
+        public int NextValue() => _v.Length == 0 ? 0 : _v[_i++ % _v.Length];
+    }
+
+    private sealed class ConstRng : IBattleRng
+    {
+        private readonly int _v;
+
+        public ConstRng(int v) => _v = v;
+
+        public int NextValue() => _v;
     }
 }

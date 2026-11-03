@@ -13,29 +13,51 @@ namespace Dw3Production.Presentation;
 public sealed class BattleRenderer : IDisposable
 {
     private const int ViewportWidth = 1280;
+
     private const int ViewportHeight = 720;
+
     private const float PresentDelta = 1f / 60f;
 
     private readonly CanvasLayer _layer;
+
     private readonly Node3D _world;
+
     private readonly Camera3D _camera;
+
     private readonly BattlePartnerView _partnerView;
+
     private readonly WorldEnvironment _environment;
+
     private readonly BattleHudNode _hud;
+
     private readonly ColorRect _flash;
+
     private readonly Sprite3D _hitSpark;
+
     private readonly MeshInstance3D _floor;
+
     private readonly BattleFighterRoster _fighters = new();
+
     private readonly BattleModelLayer _modelLayer;
+
     private readonly List<MeshInstance3D> _placeholders = [];
+
     private readonly BattlePalClock _motionClock = new();
+
     private readonly BattleEntranceFade _entranceFade = new();
+
     private readonly BattleCameraFade _cameraFade = new();
+
     private readonly BattleCommandCamera _commandCamera = new();
+
     private (int Polygons, int Culled, int AbrUnsorted)? _lastOrderingLog;
+
     private BattleModel? _stage;
+
     private string _lastModelLoadFailure = "unknown model loader failure";
+
     private bool _probePoseOverride;
+
     private BattleModel.BattleLightSet? _stageLights;
 
     /// <summary>
@@ -108,6 +130,10 @@ public sealed class BattleRenderer : IDisposable
     /// <returns>The source-clock time represented by <paramref name="frame"/>.</returns>
     public static ulong ProbeAnimationMilliseconds(int frame) => (ulong)ValidateProbeAnimationFrame(frame) * 16UL;
 
+    /// <summary>Probe oracle for the source HUD mapping and command cursor bounds.</summary>
+    /// <returns>A description of the verified HUD layout.</returns>
+    public static string AssertHudLayout() => BattleHudNode.AssertLayout();
+
     /// <summary>Makes the battle canvas visible.</summary>
     public void Show() => _layer.Visible = true;
 
@@ -117,10 +143,6 @@ public sealed class BattleRenderer : IDisposable
     /// <summary>Probe-only HUD suppression for a model/stage-only framebuffer comparison.</summary>
     /// <param name="visible">Whether the HUD should be included in the capture.</param>
     public void SetHudVisibleForProbe(bool visible) => _hud.Visible = visible;
-
-    /// <summary>Probe oracle for the source HUD mapping and command cursor bounds.</summary>
-    /// <returns>A description of the verified HUD layout.</returns>
-    public static string AssertHudLayout() => BattleHudNode.AssertLayout();
 
     /// <summary>Loads the decoded fight stage (the battle background) for the encounter's
     /// <paramref name="stageId"/> and poses it statically. Returns false (and logs) when the

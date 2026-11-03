@@ -151,9 +151,6 @@ public sealed class SonarConcordanceTests
         return dir?.FullName ?? throw new InvalidOperationException("Dw3.sln not found");
     }
 
-    /// <summary>Represents one S3776 entry from the SARIF log.</summary>
-    private readonly record struct S3776Entry(string RelativePath, int Line, int SonarComplexity, string MethodHint);
-
     private static List<S3776Entry> ParseS3776Entries(string sarifPath)
     {
         var entries = new List<S3776Entry>();
@@ -249,4 +246,7 @@ public sealed class SonarConcordanceTests
             _ => null,
         };
     }
+
+    /// <summary>Represents one S3776 entry from the SARIF log.</summary>
+    private readonly record struct S3776Entry(string RelativePath, int Line, int SonarComplexity, string MethodHint);
 }

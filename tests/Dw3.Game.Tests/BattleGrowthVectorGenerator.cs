@@ -16,246 +16,6 @@ namespace Dw3.Game.Tests;
 /// </summary>
 public sealed class BattleGrowthVectorGenerator
 {
-    // ------------------------------------------------------------------ helpers
-    private sealed class SeqRng : IBattleRng
-    {
-        private readonly int[] _v;
-        private int _i;
-
-        public SeqRng(params int[] v) => _v = v;
-
-        // Returns 0 if the sequence is empty (safe fallback for cases with no level-up
-        // that accidentally reach RNG due to zero thresholds or other edge conditions).
-        public int NextValue() => _v.Length == 0 ? 0 : _v[_i++ % _v.Length];
-    }
-
-    // Returns an int[] of length n filled with value v (for use as a SeqRng sequence).
-    private static int[] ConstSeq(int v, int n)
-    {
-        var a = new int[n];
-        for (int i = 0; i < n; i++)
-        {
-            a[i] = v;
-        }
-
-        return a;
-    }
-
-    private static GrowthTables MakeTables(
-        int[] levelExp,
-        int[] vitalCuts,
-        int[] vitalRandom,
-        int[][] statGains,
-        int[] resistGains) => new()
-        {
-            LevelExp = levelExp,
-            VitalCuts = vitalCuts,
-            VitalRandom = vitalRandom,
-            StatGains = statGains,
-            ResistGains = resistGains,
-        };
-
-    private static int[][] MakeStatGains(params int[][] rows) => rows;
-
-    private static GrowthTables DefaultTables() => MakeTables(
-        levelExp: [0, 100, 500, 1000],
-        vitalCuts: [5, 10, 15, 20],
-        vitalRandom: [0, 2, 4, 6, 8, 10, 12, 14, 16],
-        statGains: MakeStatGains(
-            [1, 2, 3, 4, 5, 6, 7, 8, 9],
-            [2, 3, 4, 5, 6, 7, 8, 9, 10],
-            [3, 4, 5, 6, 7, 8, 9, 10, 11],
-            [4, 5, 6, 7, 8, 9, 10, 11, 12],
-            [5, 6, 7, 8, 9, 10, 11, 12, 13],
-            [6, 7, 8, 9, 10, 11, 12, 13, 14]),
-        resistGains: [0, 1, 2, 3, 4, 5, 6, 7]);
-
-    // ------------------------------------------------------------------ JSON helpers
-    private static JsonArray ToJsonArray(int[] arr)
-    {
-        var a = new JsonArray();
-        foreach (var v in arr)
-        {
-            a.Add(v);
-        }
-
-        return a;
-    }
-
-    private static JsonArray StatGainsToJson(int[][] sg)
-    {
-        var outer = new JsonArray();
-        foreach (var row in sg)
-        {
-            outer.Add(ToJsonArray(row));
-        }
-
-        return outer;
-    }
-
-    private static PartnerGrowthState CloneState(PartnerGrowthState s) => new()
-    {
-        Level = s.Level,
-        Exp = s.Exp,
-        Tp = s.Tp,
-        MaxHp = s.MaxHp,
-        MaxMp = s.MaxMp,
-        BattleStats = (int[])s.BattleStats.Clone(),
-        Resistances = (int[])s.Resistances.Clone(),
-    };
-
-    private static PartnerGrowthState MakeState(
-        int level = 1,
-        int exp = 0,
-        int tp = 0,
-        int maxHp = 100,
-        int maxMp = 50,
-        int[]? battleStats = null,
-        int[]? resistances = null) => new()
-        {
-            Level = level,
-            Exp = exp,
-            Tp = tp,
-            MaxHp = maxHp,
-            MaxMp = maxMp,
-            BattleStats = battleStats ?? [10, 10, 10, 10, 10, 10],
-            Resistances = resistances ?? [100, 100, 100, 100, 100, 100, 100],
-        };
-
-    // ------------------------------------------------------------------ case builders
-
-    // RaiseStats: rngValues is the full materialized sequence (stored in JSON for replay).
-    private static JsonObject RaiseStatsCase(
-        int id,
-        GrowthTables tables,
-        PartnerGrowthState stateIn,
-        PartnerGrowthCurve curve,
-        int level,
-        int[] rngValues)
-    {
-        var state = CloneState(stateIn);
-        GrowthCalculator.RaiseStats(tables, state, curve, level, new SeqRng(rngValues));
-
-        return new JsonObject
-        {
-            ["id"] = id,
-            ["fn"] = "RaiseStats",
-            ["level"] = level,
-            ["hpGrowth"] = curve.HpGrowth,
-            ["mpGrowth"] = curve.MpGrowth,
-            ["statGrowth"] = ToJsonArray([.. curve.StatGrowth]),
-            ["resistGrowth"] = ToJsonArray([.. curve.ResistGrowth]),
-            ["rngSequence"] = ToJsonArray(rngValues),
-            ["inMaxHp"] = stateIn.MaxHp,
-            ["inMaxMp"] = stateIn.MaxMp,
-            ["inBattleStats"] = ToJsonArray(stateIn.BattleStats),
-            ["inResistances"] = ToJsonArray(stateIn.Resistances),
-            ["outMaxHp"] = state.MaxHp,
-            ["outMaxMp"] = state.MaxMp,
-            ["outBattleStats"] = ToJsonArray(state.BattleStats),
-            ["outResistances"] = ToJsonArray(state.Resistances),
-            ["tableVitalCuts"] = ToJsonArray(tables.VitalCuts),
-            ["tableVitalRandom"] = ToJsonArray(tables.VitalRandom),
-            ["tableStatGains"] = StatGainsToJson(tables.StatGains),
-            ["tableResistGains"] = ToJsonArray(tables.ResistGains),
-        };
-    }
-
-    // AddExp: rngValues is the full materialized sequence for all level-ups.
-    private static JsonObject AddExpCase(
-        int id,
-        GrowthTables tables,
-        PartnerGrowthState stateIn,
-        PartnerGrowthCurve curve,
-        int exp,
-        int[] rngValues)
-    {
-        var state = CloneState(stateIn);
-        bool leveled = GrowthCalculator.AddExp(tables, state, curve, exp, new SeqRng(rngValues));
-
-        return new JsonObject
-        {
-            ["id"] = id,
-            ["fn"] = "AddExp",
-            ["expRate"] = curve.ExpRate,
-            ["hpGrowth"] = curve.HpGrowth,
-            ["mpGrowth"] = curve.MpGrowth,
-            ["statGrowth"] = ToJsonArray([.. curve.StatGrowth]),
-            ["resistGrowth"] = ToJsonArray([.. curve.ResistGrowth]),
-            ["exp"] = exp,
-            ["rngSequence"] = ToJsonArray(rngValues),
-            ["inLevel"] = stateIn.Level,
-            ["inExp"] = stateIn.Exp,
-            ["inTp"] = stateIn.Tp,
-            ["inMaxHp"] = stateIn.MaxHp,
-            ["inMaxMp"] = stateIn.MaxMp,
-            ["inBattleStats"] = ToJsonArray(stateIn.BattleStats),
-            ["inResistances"] = ToJsonArray(stateIn.Resistances),
-            ["outLevel"] = state.Level,
-            ["outExp"] = state.Exp,
-            ["outTp"] = state.Tp,
-            ["outMaxHp"] = state.MaxHp,
-            ["outMaxMp"] = state.MaxMp,
-            ["outBattleStats"] = ToJsonArray(state.BattleStats),
-            ["outResistances"] = ToJsonArray(state.Resistances),
-            ["outLeveled"] = leveled,
-            ["tableLevelExp"] = ToJsonArray(tables.LevelExp),
-            ["tableVitalCuts"] = ToJsonArray(tables.VitalCuts),
-            ["tableVitalRandom"] = ToJsonArray(tables.VitalRandom),
-            ["tableStatGains"] = StatGainsToJson(tables.StatGains),
-            ["tableResistGains"] = ToJsonArray(tables.ResistGains),
-        };
-    }
-
-    private static JsonObject GetDigimonExpCase(
-        int id, int level, int digimonExpLevel, int entryLevel, int exp, int used)
-    {
-        int result = GrowthCalculator.GetDigimonExp(level, digimonExpLevel, entryLevel, exp, used);
-        return new JsonObject
-        {
-            ["id"] = id,
-            ["fn"] = "GetDigimonExp",
-            ["level"] = level,
-            ["digimonExpLevel"] = digimonExpLevel,
-            ["entryLevel"] = entryLevel,
-            ["exp"] = exp,
-            ["used"] = used,
-            ["expected"] = result,
-        };
-    }
-
-    private static JsonObject AddDigimonExpCase(
-        int id, int expLevel, int entryLevel, int entryExp, int exp)
-    {
-        int el = entryLevel, ee = entryExp;
-        bool leveled = GrowthCalculator.AddDigimonExp(expLevel, ref el, ref ee, exp);
-        return new JsonObject
-        {
-            ["id"] = id,
-            ["fn"] = "AddDigimonExp",
-            ["expLevel"] = expLevel,
-            ["inEntryLevel"] = entryLevel,
-            ["inEntryExp"] = entryExp,
-            ["exp"] = exp,
-            ["outEntryLevel"] = el,
-            ["outEntryExp"] = ee,
-            ["outLeveled"] = leveled,
-        };
-    }
-
-    private static JsonObject ExpShareCase(int id, int rewardExp, int fought)
-    {
-        int result = GrowthCalculator.ExpShare(rewardExp, fought);
-        return new JsonObject
-        {
-            ["id"] = id,
-            ["fn"] = "ExpShare",
-            ["rewardExp"] = rewardExp,
-            ["fought"] = fought,
-            ["expected"] = result,
-        };
-    }
-
     // ------------------------------------------------------------------ generator
     [Fact]
     public void GenerateBattleGrowthVectors()
@@ -630,5 +390,245 @@ public sealed class BattleGrowthVectorGenerator
         File.WriteAllText(outPath, root.ToJsonString(new JsonSerializerOptions { WriteIndented = true }));
 
         Assert.True(cases.Count >= 300, $"Generated {cases.Count} vectors, need at least 300.");
+    }
+
+    // Returns an int[] of length n filled with value v (for use as a SeqRng sequence).
+    private static int[] ConstSeq(int v, int n)
+    {
+        var a = new int[n];
+        for (int i = 0; i < n; i++)
+        {
+            a[i] = v;
+        }
+
+        return a;
+    }
+
+    private static GrowthTables MakeTables(
+        int[] levelExp,
+        int[] vitalCuts,
+        int[] vitalRandom,
+        int[][] statGains,
+        int[] resistGains) => new()
+        {
+            LevelExp = levelExp,
+            VitalCuts = vitalCuts,
+            VitalRandom = vitalRandom,
+            StatGains = statGains,
+            ResistGains = resistGains,
+        };
+
+    private static int[][] MakeStatGains(params int[][] rows) => rows;
+
+    private static GrowthTables DefaultTables() => MakeTables(
+        levelExp: [0, 100, 500, 1000],
+        vitalCuts: [5, 10, 15, 20],
+        vitalRandom: [0, 2, 4, 6, 8, 10, 12, 14, 16],
+        statGains: MakeStatGains(
+            [1, 2, 3, 4, 5, 6, 7, 8, 9],
+            [2, 3, 4, 5, 6, 7, 8, 9, 10],
+            [3, 4, 5, 6, 7, 8, 9, 10, 11],
+            [4, 5, 6, 7, 8, 9, 10, 11, 12],
+            [5, 6, 7, 8, 9, 10, 11, 12, 13],
+            [6, 7, 8, 9, 10, 11, 12, 13, 14]),
+        resistGains: [0, 1, 2, 3, 4, 5, 6, 7]);
+
+    // ------------------------------------------------------------------ JSON helpers
+    private static JsonArray ToJsonArray(int[] arr)
+    {
+        var a = new JsonArray();
+        foreach (var v in arr)
+        {
+            a.Add(v);
+        }
+
+        return a;
+    }
+
+    private static JsonArray StatGainsToJson(int[][] sg)
+    {
+        var outer = new JsonArray();
+        foreach (var row in sg)
+        {
+            outer.Add(ToJsonArray(row));
+        }
+
+        return outer;
+    }
+
+    private static PartnerGrowthState CloneState(PartnerGrowthState s) => new()
+    {
+        Level = s.Level,
+        Exp = s.Exp,
+        Tp = s.Tp,
+        MaxHp = s.MaxHp,
+        MaxMp = s.MaxMp,
+        BattleStats = (int[])s.BattleStats.Clone(),
+        Resistances = (int[])s.Resistances.Clone(),
+    };
+
+    private static PartnerGrowthState MakeState(
+        int level = 1,
+        int exp = 0,
+        int tp = 0,
+        int maxHp = 100,
+        int maxMp = 50,
+        int[]? battleStats = null,
+        int[]? resistances = null) => new()
+        {
+            Level = level,
+            Exp = exp,
+            Tp = tp,
+            MaxHp = maxHp,
+            MaxMp = maxMp,
+            BattleStats = battleStats ?? [10, 10, 10, 10, 10, 10],
+            Resistances = resistances ?? [100, 100, 100, 100, 100, 100, 100],
+        };
+
+    // ------------------------------------------------------------------ case builders
+
+    // RaiseStats: rngValues is the full materialized sequence (stored in JSON for replay).
+    private static JsonObject RaiseStatsCase(
+        int id,
+        GrowthTables tables,
+        PartnerGrowthState stateIn,
+        PartnerGrowthCurve curve,
+        int level,
+        int[] rngValues)
+    {
+        var state = CloneState(stateIn);
+        GrowthCalculator.RaiseStats(tables, state, curve, level, new SeqRng(rngValues));
+
+        return new JsonObject
+        {
+            ["id"] = id,
+            ["fn"] = "RaiseStats",
+            ["level"] = level,
+            ["hpGrowth"] = curve.HpGrowth,
+            ["mpGrowth"] = curve.MpGrowth,
+            ["statGrowth"] = ToJsonArray([.. curve.StatGrowth]),
+            ["resistGrowth"] = ToJsonArray([.. curve.ResistGrowth]),
+            ["rngSequence"] = ToJsonArray(rngValues),
+            ["inMaxHp"] = stateIn.MaxHp,
+            ["inMaxMp"] = stateIn.MaxMp,
+            ["inBattleStats"] = ToJsonArray(stateIn.BattleStats),
+            ["inResistances"] = ToJsonArray(stateIn.Resistances),
+            ["outMaxHp"] = state.MaxHp,
+            ["outMaxMp"] = state.MaxMp,
+            ["outBattleStats"] = ToJsonArray(state.BattleStats),
+            ["outResistances"] = ToJsonArray(state.Resistances),
+            ["tableVitalCuts"] = ToJsonArray(tables.VitalCuts),
+            ["tableVitalRandom"] = ToJsonArray(tables.VitalRandom),
+            ["tableStatGains"] = StatGainsToJson(tables.StatGains),
+            ["tableResistGains"] = ToJsonArray(tables.ResistGains),
+        };
+    }
+
+    // AddExp: rngValues is the full materialized sequence for all level-ups.
+    private static JsonObject AddExpCase(
+        int id,
+        GrowthTables tables,
+        PartnerGrowthState stateIn,
+        PartnerGrowthCurve curve,
+        int exp,
+        int[] rngValues)
+    {
+        var state = CloneState(stateIn);
+        bool leveled = GrowthCalculator.AddExp(tables, state, curve, exp, new SeqRng(rngValues));
+
+        return new JsonObject
+        {
+            ["id"] = id,
+            ["fn"] = "AddExp",
+            ["expRate"] = curve.ExpRate,
+            ["hpGrowth"] = curve.HpGrowth,
+            ["mpGrowth"] = curve.MpGrowth,
+            ["statGrowth"] = ToJsonArray([.. curve.StatGrowth]),
+            ["resistGrowth"] = ToJsonArray([.. curve.ResistGrowth]),
+            ["exp"] = exp,
+            ["rngSequence"] = ToJsonArray(rngValues),
+            ["inLevel"] = stateIn.Level,
+            ["inExp"] = stateIn.Exp,
+            ["inTp"] = stateIn.Tp,
+            ["inMaxHp"] = stateIn.MaxHp,
+            ["inMaxMp"] = stateIn.MaxMp,
+            ["inBattleStats"] = ToJsonArray(stateIn.BattleStats),
+            ["inResistances"] = ToJsonArray(stateIn.Resistances),
+            ["outLevel"] = state.Level,
+            ["outExp"] = state.Exp,
+            ["outTp"] = state.Tp,
+            ["outMaxHp"] = state.MaxHp,
+            ["outMaxMp"] = state.MaxMp,
+            ["outBattleStats"] = ToJsonArray(state.BattleStats),
+            ["outResistances"] = ToJsonArray(state.Resistances),
+            ["outLeveled"] = leveled,
+            ["tableLevelExp"] = ToJsonArray(tables.LevelExp),
+            ["tableVitalCuts"] = ToJsonArray(tables.VitalCuts),
+            ["tableVitalRandom"] = ToJsonArray(tables.VitalRandom),
+            ["tableStatGains"] = StatGainsToJson(tables.StatGains),
+            ["tableResistGains"] = ToJsonArray(tables.ResistGains),
+        };
+    }
+
+    private static JsonObject GetDigimonExpCase(
+        int id, int level, int digimonExpLevel, int entryLevel, int exp, int used)
+    {
+        int result = GrowthCalculator.GetDigimonExp(level, digimonExpLevel, entryLevel, exp, used);
+        return new JsonObject
+        {
+            ["id"] = id,
+            ["fn"] = "GetDigimonExp",
+            ["level"] = level,
+            ["digimonExpLevel"] = digimonExpLevel,
+            ["entryLevel"] = entryLevel,
+            ["exp"] = exp,
+            ["used"] = used,
+            ["expected"] = result,
+        };
+    }
+
+    private static JsonObject AddDigimonExpCase(
+        int id, int expLevel, int entryLevel, int entryExp, int exp)
+    {
+        int el = entryLevel, ee = entryExp;
+        bool leveled = GrowthCalculator.AddDigimonExp(expLevel, ref el, ref ee, exp);
+        return new JsonObject
+        {
+            ["id"] = id,
+            ["fn"] = "AddDigimonExp",
+            ["expLevel"] = expLevel,
+            ["inEntryLevel"] = entryLevel,
+            ["inEntryExp"] = entryExp,
+            ["exp"] = exp,
+            ["outEntryLevel"] = el,
+            ["outEntryExp"] = ee,
+            ["outLeveled"] = leveled,
+        };
+    }
+
+    private static JsonObject ExpShareCase(int id, int rewardExp, int fought)
+    {
+        int result = GrowthCalculator.ExpShare(rewardExp, fought);
+        return new JsonObject
+        {
+            ["id"] = id,
+            ["fn"] = "ExpShare",
+            ["rewardExp"] = rewardExp,
+            ["fought"] = fought,
+            ["expected"] = result,
+        };
+    }
+
+    // ------------------------------------------------------------------ helpers
+    private sealed class SeqRng : IBattleRng
+    {
+        private readonly int[] _v;
+        private int _i;
+
+        public SeqRng(params int[] v) => _v = v;
+
+        // Returns 0 if the sequence is empty (safe fallback for cases with no level-up
+        // that accidentally reach RNG due to zero thresholds or other edge conditions).
+        public int NextValue() => _v.Length == 0 ? 0 : _v[_i++ % _v.Length];
     }
 }

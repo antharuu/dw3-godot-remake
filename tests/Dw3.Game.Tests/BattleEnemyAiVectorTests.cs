@@ -13,12 +13,6 @@ public sealed class BattleEnemyAiVectorTests
     private static readonly string VectorsPath =
         Path.Combine(AppContext.BaseDirectory, "Vectors", "battle-enemy-ai.json");
 
-    private static JsonArray LoadCases()
-    {
-        Assert.True(File.Exists(VectorsPath), $"Vectors file not found: {VectorsPath}");
-        return JsonNode.Parse(File.ReadAllText(VectorsPath))!["cases"]!.AsArray();
-    }
-
     [Fact]
     public void VectorCount_AtLeast300() => Assert.True(LoadCases().Count >= 300);
 
@@ -47,5 +41,11 @@ public sealed class BattleEnemyAiVectorTests
         }
 
         Assert.True(errors.Count == 0, string.Join("\n", errors.Take(20)));
+    }
+
+    private static JsonArray LoadCases()
+    {
+        Assert.True(File.Exists(VectorsPath), $"Vectors file not found: {VectorsPath}");
+        return JsonNode.Parse(File.ReadAllText(VectorsPath))!["cases"]!.AsArray();
     }
 }

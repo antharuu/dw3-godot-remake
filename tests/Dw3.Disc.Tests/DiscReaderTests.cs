@@ -25,17 +25,6 @@ public sealed class DiscReaderTests : IDisposable
         }
     }
 
-    // ── Helpers ────────────────────────────────────────────────────────────
-    private string WriteSyntheticDisc()
-    {
-        byte[] binBytes = SyntheticDiscBuilder.Build();
-        string bin = Path.Combine(_tmp, "synthetic.bin");
-        string cue = Path.Combine(_tmp, "synthetic.cue");
-        File.WriteAllBytes(bin, binBytes);
-        File.WriteAllText(cue, "FILE \"synthetic.bin\" BINARY\r\nTRACK 01 MODE2/2352\r\n  INDEX 01 00:00:00\r\n");
-        return cue;
-    }
-
     // ── CUE parsing ────────────────────────────────────────────────────────
     [Fact]
     public void CueMissing_ThrowsFormatInvalid()
@@ -161,5 +150,16 @@ public sealed class DiscReaderTests : IDisposable
 
         // The synthetic disc has wrong fingerprints — edition mismatch.
         Assert.Equal(DiscSourceException.EditionInvalid, ex.ErrorCode);
+    }
+
+    // ── Helpers ────────────────────────────────────────────────────────────
+    private string WriteSyntheticDisc()
+    {
+        byte[] binBytes = SyntheticDiscBuilder.Build();
+        string bin = Path.Combine(_tmp, "synthetic.bin");
+        string cue = Path.Combine(_tmp, "synthetic.cue");
+        File.WriteAllBytes(bin, binBytes);
+        File.WriteAllText(cue, "FILE \"synthetic.bin\" BINARY\r\nTRACK 01 MODE2/2352\r\n  INDEX 01 00:00:00\r\n");
+        return cue;
     }
 }

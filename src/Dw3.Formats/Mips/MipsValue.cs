@@ -6,6 +6,8 @@ namespace Dw3.Formats.Mips;
 /// </summary>
 public readonly record struct MipsValue
 {
+    private readonly uint _constantOrAddress;
+
     /// <summary>Initializes a new instance of the <see cref="MipsValue"/> struct with its discriminant, backing word, and addend; use <see cref="Constant"/> or <see cref="LoadedWord"/> to construct.</summary>
     /// <param name="isLoadedWord">True for a symbolic loaded word; false for a plain constant.</param>
     /// <param name="constantOrAddress">The constant value when <paramref name="isLoadedWord"/> is false; the watched load address when true.</param>
@@ -16,8 +18,6 @@ public readonly record struct MipsValue
         _constantOrAddress = constantOrAddress;
         Addend = addend;
     }
-
-    private readonly uint _constantOrAddress;
 
     /// <summary>Gets a value indicating whether true for a symbolic loaded word, false for a plain constant.</summary>
     public bool IsLoadedWord { get; }

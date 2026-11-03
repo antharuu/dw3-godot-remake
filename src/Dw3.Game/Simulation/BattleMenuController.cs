@@ -41,6 +41,9 @@ public sealed class BattleMenuController
         NextPageText,
         StatusText);
 
+    /// <summary>Gets a value indicating whether the line under the cursor exists and is enabled, so Cross on a greyed line does nothing.</summary>
+    public bool CanConfirm => Lines.Count > 0 && SelectedIndex < Lines.Count && Lines[SelectedIndex].Enabled;
+
     /// <summary>Gets or sets the label drawn next to the previous page hint (L1), null for menus without pages.</summary>
     private BattleTextLine? PreviousPageText { get; set; }
 
@@ -49,6 +52,12 @@ public sealed class BattleMenuController
 
     /// <summary>Gets or sets the status block shown beside the menu, such as the MP of the active partner. Null when the menu has none.</summary>
     private BattleMenuStatusText? StatusText { get; set; }
+
+    /// <summary>Gets the zero-based index of the page shown.</summary>
+    private int CurrentPage => First / PageSize;
+
+    /// <summary>Gets the number of populated rows on the page shown, smaller than <see cref="PageSize"/> on a last partial page.</summary>
+    private int VisibleCount => Math.Min(PageSize, Math.Max(0, Lines.Count - First));
 
     /// <summary>Opens a menu (or re-opens the root), on its first source page.</summary>
     /// <param name="menu">Menu to open, which sets the page size.</param>
@@ -118,15 +127,6 @@ public sealed class BattleMenuController
     /// <summary>Shows the next page of the Technique or Item menu (R1) with the cursor on its first row. Other menus ignore it.</summary>
     /// <returns><see langword="true"/> when the page changed, <see langword="false"/> on the last page or in a menu without pages.</returns>
     public bool NextPage() => SetPage(CurrentPage + 1);
-
-    /// <summary>Gets a value indicating whether the line under the cursor exists and is enabled, so Cross on a greyed line does nothing.</summary>
-    public bool CanConfirm => Lines.Count > 0 && SelectedIndex < Lines.Count && Lines[SelectedIndex].Enabled;
-
-    /// <summary>Gets the zero-based index of the page shown.</summary>
-    private int CurrentPage => First / PageSize;
-
-    /// <summary>Gets the number of populated rows on the page shown, smaller than <see cref="PageSize"/> on a last partial page.</summary>
-    private int VisibleCount => Math.Min(PageSize, Math.Max(0, Lines.Count - First));
 
     /// <summary>Moves to a page of a paginated menu, clamped to the existing pages, and resets the cursor to row 0 as the original menu does.</summary>
     /// <param name="page">Wanted page index, may be out of range.</param>

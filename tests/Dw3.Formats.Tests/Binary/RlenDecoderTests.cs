@@ -5,27 +5,6 @@ namespace Dw3.Formats.Tests.Binary;
 
 public sealed class RlenDecoderTests
 {
-    // ── Helpers ───────────────────────────────────────────────────────────
-
-    /// <summary>Builds a minimal valid RLEN stream from commands.</summary>
-    private static byte[] BuildRlen(uint targetSize, params byte[] commands)
-    {
-        var stream = new List<byte>
-        {
-            (byte)'R',
-            (byte)'L',
-            (byte)'E',
-            (byte)'N',
-            (byte)(targetSize & 0xFF),
-            (byte)((targetSize >> 8) & 0xFF),
-            (byte)((targetSize >> 16) & 0xFF),
-            (byte)((targetSize >> 24) & 0xFF),
-        };
-        stream.AddRange(commands);
-        stream.Add(0); // terminator
-        return [.. stream];
-    }
-
     // ── IsRlen ────────────────────────────────────────────────────────────
     [Fact]
     public void IsRlen_ValidMagic_ReturnsTrue()
@@ -204,5 +183,26 @@ public sealed class RlenDecoderTests
         var data = BuildRlen(2, 0x85, 0xFF); // repeat 5 × 0xFF
         var ex = Assert.Throws<FormatException>(() => RlenDecoder.Decompress(data));
         Assert.Contains("exceed", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    // ── Helpers ───────────────────────────────────────────────────────────
+
+    /// <summary>Builds a minimal valid RLEN stream from commands.</summary>
+    private static byte[] BuildRlen(uint targetSize, params byte[] commands)
+    {
+        var stream = new List<byte>
+        {
+            (byte)'R',
+            (byte)'L',
+            (byte)'E',
+            (byte)'N',
+            (byte)(targetSize & 0xFF),
+            (byte)((targetSize >> 8) & 0xFF),
+            (byte)((targetSize >> 16) & 0xFF),
+            (byte)((targetSize >> 24) & 0xFF),
+        };
+        stream.AddRange(commands);
+        stream.Add(0); // terminator
+        return [.. stream];
     }
 }

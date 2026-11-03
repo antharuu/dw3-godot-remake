@@ -62,30 +62,6 @@ public sealed class ClassCognitiveComplexityAnalyzer : DiagnosticAnalyzer
     }
 
     // -------------------------------------------------------------------------
-    // Per-compilation accumulation
-    // -------------------------------------------------------------------------
-
-    /// <summary>
-    /// Registers syntax-node and compilation-end actions so that partial classes can
-    /// have their complexity accumulated across files before a single diagnostic is emitted.
-    /// </summary>
-    /// <param name="compilationContext">The compilation-start context.</param>
-    private static void RegisterPerCompilationActions(CompilationStartAnalysisContext compilationContext)
-    {
-        var accumulator = new ComplexityAccumulator();
-
-        compilationContext.RegisterSyntaxNodeAction(
-            accumulator.OnTypeDeclarationNode,
-            SyntaxKind.ClassDeclaration,
-            SyntaxKind.RecordDeclaration,
-            SyntaxKind.StructDeclaration,
-            SyntaxKind.RecordStructDeclaration,
-            SyntaxKind.InterfaceDeclaration);
-
-        compilationContext.RegisterCompilationEndAction(accumulator.OnCompilationEnd);
-    }
-
-    // -------------------------------------------------------------------------
     // Complexity computation
     // -------------------------------------------------------------------------
 
@@ -119,6 +95,30 @@ public sealed class ClassCognitiveComplexityAnalyzer : DiagnosticAnalyzer
         }
 
         return total;
+    }
+
+    // -------------------------------------------------------------------------
+    // Per-compilation accumulation
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Registers syntax-node and compilation-end actions so that partial classes can
+    /// have their complexity accumulated across files before a single diagnostic is emitted.
+    /// </summary>
+    /// <param name="compilationContext">The compilation-start context.</param>
+    private static void RegisterPerCompilationActions(CompilationStartAnalysisContext compilationContext)
+    {
+        var accumulator = new ComplexityAccumulator();
+
+        compilationContext.RegisterSyntaxNodeAction(
+            accumulator.OnTypeDeclarationNode,
+            SyntaxKind.ClassDeclaration,
+            SyntaxKind.RecordDeclaration,
+            SyntaxKind.StructDeclaration,
+            SyntaxKind.RecordStructDeclaration,
+            SyntaxKind.InterfaceDeclaration);
+
+        compilationContext.RegisterCompilationEndAction(accumulator.OnCompilationEnd);
     }
 
     /// <summary>

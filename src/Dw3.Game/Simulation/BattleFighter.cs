@@ -78,13 +78,6 @@ public sealed class BattleFighter
     /// <summary>Gets a value indicating whether HP reached 0. A knocked-out fighter cannot act or be switched in.</summary>
     public bool IsKnockedOut => Hp <= 0;
 
-    /// <summary>Takes <paramref name="damage"/> off the fighter's HP, which never drops below 0.</summary>
-    /// <param name="damage">The hit's damage, as the damage formulas return it.</param>
-    public void TakeDamage(int damage)
-    {
-        Hp = Math.Max(Hp - damage, 0);
-    }
-
     /// <summary>
     /// Loads a party member for the battle. The fighter shares the seed's resolved stats object,
     /// whose flags and damage bonus are reset to the fresh fighter's (no status, no charge).
@@ -132,5 +125,12 @@ public sealed class BattleFighter
         fighter.Stats.Flags = fighter.Flags;
         fighter.Stats.DamageBonus = fighter.Charge;
         return fighter;
+    }
+
+    /// <summary>Takes <paramref name="damage"/> off the fighter's HP, which never drops below 0.</summary>
+    /// <param name="damage">The hit's damage, as the damage formulas return it.</param>
+    public void TakeDamage(int damage)
+    {
+        Hp = Math.Max(Hp - damage, 0);
     }
 }

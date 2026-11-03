@@ -32,52 +32,92 @@ namespace Dw3Production;
 /// </remarks>
 public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverHost, IFieldTickHost, IBattleTickHost, IInteractiveFrameHost
 {
-    #region Composition state
-
     private const int DebugBattleEncounter = 200;
+
     private const int BattleReportFadeFrames = 10;
 
     private readonly GameState _state = new();
+
     private readonly SimClock _clock = new();
+
     private readonly InteractiveFrameCoordinator _frameCoordinator;
+
     private readonly BattleMenuCoordinator _battleMenuCoordinator;
+
     private readonly BattleSetupCoordinator _battleSetupCoordinator;
+
     private readonly FieldRuntimeCoordinator _fieldRuntimeCoordinator;
+
     private readonly BattlePresentationCoordinator _battlePresentationCoordinator;
+
     private readonly FirstLaunchCompletionCoordinator _firstLaunchCompletionCoordinator;
+
     private readonly DiagnosticProbeResolver _diagnosticProbeResolver;
+
     private readonly DialogueController _dialogue = new();
+
     private readonly EncounterController _encounter = new(new SystemRandomEncounterRng());
+
     private readonly BattleMenuController _battleMenu = new();
+
     private readonly IBattleRng _battleRng = new SystemRandomBattleRng();
+
     private readonly FieldEncounterStepper _encounterStepper = new();
 
     private readonly ClimbController _climb = new();
+
     private readonly DropController _drop = new();
+
     private readonly InputAdapter _input = new();
+
     private readonly QuietLog _log = new();
+
     private readonly HostStartupOptions _options = HostStartupOptions.FromEnvironment();
+
     private readonly WarpController _warp = new();
+
     private readonly PlayerIconController _icon = new();
+
+    private readonly List<int> _battleSubmenuArgs = [];
+
     private BattleDataPackLoader? _battleLoader;
+
     private string _dataRoot = string.Empty;
+
     private FieldDataPackLoader? _fieldLoader;
+
     private FieldAnimationDataPackLoader? _animationLoader;
+
     private FieldZoneCache? _zoneCache;
+
     private FieldZone? _currentZone;
+
     private FloorMap? _floor;
+
     private IReadOnlyList<Occupant> _occupants = [];
+
     private PlayerData? _playerData;
+
     private ClimbData? _actionData;
+
     private WaterData? _water;
+
     private NpcData? _npc;
+
     private PlayerIconData? _iconData;
+
     private FieldRenderer? _renderer;
+
     private DialogueData? _dialogueData;
+
     private DialogueRenderer? _dialogueRenderer;
+
     private DialogueFrameData? _dialogueFrames;
+
     private Dictionary<int, Texture2D>? _frameTextures;
+
     private Texture2D? _panelTexture;
+
     private int _dialogueBoxWidth;
 
     // Explicit test-only driver. Interactive sessions never set this flag and never receive
@@ -87,42 +127,65 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     // M6 combat runtime: the engine-free encounter controller owns the step countdown and
     // the area/event draws; the loaded encounter/fighter/tech manifests fill BattleSetup.
     private EncounterData? _encounterData;
+
     private FighterData? _fighterData;
+
     private TechniqueData? _techData;
+
     private DigivolutionData? _digivolutionData;
+
     private BattleItemsData? _battleItemsData;
+
     private BattleTextData? _battleTextData;
+
     private AreaMap? _areas;
+
     private BattleSetup? _activeBattle;
+
     private BattleFlowController? _battleFlow;
+
     private BattleRenderer? _battleRenderer;
+
     private FightReportRenderer? _fightReportRenderer;
+
     private FightReportController? _fightReportController;
+
     private FightReportInput? _fightReportInput;
+
     private int _battleReportFadeTicks;
+
     private int _lastBattleEncounter = -1;
+
     private int[] _lastBattleEnemyIds = [];
+
     private Dictionary<int, int> _battleNameIds = [];
 
     // The battle menu's press-edge state, so the cursor advances once per key press, not
     // once per frame while a key is held. Reset on battle start.
     private bool _battlePrevUp;
+
     private bool _battlePrevDown;
+
     private int _battleCatalogForId = -1;
+
     private int _battleRenderedPlayerId = -1;
+
     private int _battleRenderedEnemyId = -1;
+
     private bool _battlePlayerCameraActive;
-    private readonly List<int> _battleSubmenuArgs = [];
 
     // switch_in_the battle presentation flow keeps the selected party member while its second page chooses the
     // incoming form and then Changement/Technique de paire.
     private int _battleSwitchPartner = -1;
+
     private int _battlePendingChangeMotion;
+
     private bool _battleSwitchForced;
 
     // The diagnostic on-screen notice for a failed battle load, plus its last text (the
     // probe asserts both the ERROR log and the notice).
     private Label? _battleNoticeLabel;
+
     private string? _battleNoticeText;
 
     // M6-C6: the battle rewards + growth. The rewards manifest and growth tables load at
@@ -130,15 +193,21 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     // the session's battles (there is no save system). The resolved report is carried into the
     // battle view while the terminal report holds, then discarded on return.
     private RewardsData? _rewardsData;
+
     private GrowthTables? _growthTables;
+
     private IReadOnlyList<int>? _partyDigimonIds;
+
     private IReadOnlyList<PartnerGrowthState>? _partyGrowth;
+
     private BattleReportView? _battleReport;
+
     private bool _battleResolved;
 
     // The title screen shown on defeat (MODE_TITLE): a terminal modal state, distinct from the
     // field, that the probe asserts.
     private CanvasLayer? _titleScreen;
+
     private bool _inTitle;
 
     /// <summary>Initializes a new instance of the <see cref="GameHost"/> class.</summary>
@@ -167,6 +236,30 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
 
     /// <inheritdoc/>
     bool IInteractiveFrameHost.HasActiveBattle => _activeBattle is not null;
+
+    /// <inheritdoc/>
+    BattleFlowController? IBattleTickHost.Flow => _battleFlow;
+
+    /// <inheritdoc/>
+    bool IBattleTickHost.HasFightReport => _fightReportController is not null;
+
+    /// <inheritdoc/>
+    bool IBattleTickHost.IsPlayerCameraActive => _battlePlayerCameraActive;
+
+    /// <inheritdoc/>
+    bool IBattleTickHost.IsBattleResolved => _battleResolved;
+
+    /// <inheritdoc/>
+    BattleFlowController IBattleMenuDriverHost.Flow => BattleFlow;
+
+    /// <inheritdoc/>
+    BattleMenuController IBattleMenuDriverHost.Menu => _battleMenu;
+
+    /// <inheritdoc/>
+    InputState IBattleMenuDriverHost.Input => _input.State;
+
+    /// <inheritdoc/>
+    IReadOnlyList<int> IBattleMenuDriverHost.SubmenuArguments => _battleSubmenuArgs;
 
     // These accessors mark lifecycle boundaries explicitly. A caller that needs an
     // initialized runtime collaborator receives a useful failure instead of masking
@@ -217,34 +310,6 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     /// <summary>Gets the dialogue panel texture; throws when the dialogue panel has not been initialized yet.</summary>
     private Texture2D PanelTexture => _panelTexture ?? throw new InvalidOperationException("dialogue panel texture has not been initialized");
 
-    /// <inheritdoc/>
-    BattleFlowController? IBattleTickHost.Flow => _battleFlow;
-
-    /// <inheritdoc/>
-    bool IBattleTickHost.HasFightReport => _fightReportController is not null;
-
-    /// <inheritdoc/>
-    bool IBattleTickHost.IsPlayerCameraActive => _battlePlayerCameraActive;
-
-    /// <inheritdoc/>
-    bool IBattleTickHost.IsBattleResolved => _battleResolved;
-
-    /// <inheritdoc/>
-    BattleFlowController IBattleMenuDriverHost.Flow => BattleFlow;
-
-    /// <inheritdoc/>
-    BattleMenuController IBattleMenuDriverHost.Menu => _battleMenu;
-
-    /// <inheritdoc/>
-    InputState IBattleMenuDriverHost.Input => _input.State;
-
-    /// <inheritdoc/>
-    IReadOnlyList<int> IBattleMenuDriverHost.SubmenuArguments => _battleSubmenuArgs;
-
-    #endregion
-
-    #region Startup and Godot lifecycle
-
     /// <summary>
     /// Validates the user data pack and starts a playable session, or displays the first-launch
     /// extraction screen when the pack is unavailable or invalid. Successful startup constructs
@@ -265,6 +330,11 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
 
         StartupWithDataPack(dataRoot);
     }
+
+    /// <summary>Asserts <paramref name="condition"/> and throws <see cref="ProbeRequirement"/> with <paramref name="message"/> when false.</summary>
+    /// <param name="condition">The condition that must be true.</param>
+    /// <param name="message">Failure message passed to the probe requirement exception.</param>
+    private static void Require(bool condition, string message) => ProbeRequirement.Require(condition, message);
 
     /// <summary>
     /// Presents the first-launch extraction overlay when the data pack is absent or invalid.
@@ -427,10 +497,6 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     /// <returns>The probe body, to be started after the current frame.</returns>
     /// <exception cref="InvalidOperationException">No family registers the name.</exception>
     private Func<Task> ResolveProbe(string entryName) => _diagnosticProbeResolver.Resolve(entryName);
-
-    #endregion
-
-    #region Field simulation and battle coordination
 
     /// <summary>
     /// Executes one fixed field tick in its required order: modal dialogue gate, traversal or
@@ -822,61 +888,6 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     /// <returns>Stage id for the encounter, used to load the fight background.</returns>
     private int ResolveBattleStage(int encounterIndex) => BattleStageResolver.Resolve(_encounterData, encounterIndex);
 
-    #endregion
-
-    #region Field interaction and dialogue
-
-    /// <summary>
-    /// Encounter RNG that draws from <see cref="System.Random"/>, seeded from
-    /// the <c>DW3_RNG_SEED</c> environment variable when set for reproducible test runs.
-    /// </summary>
-    private sealed class SystemRandomEncounterRng : IEncounterRng
-    {
-        private readonly System.Random _random;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="SystemRandomEncounterRng"/> class.
-        /// Reads <c>DW3_RNG_SEED</c> to produce a deterministic sequence for testing.
-        /// </summary>
-        public SystemRandomEncounterRng()
-        {
-            var seedRaw = System.Environment.GetEnvironmentVariable("DW3_RNG_SEED");
-            _random = int.TryParse(seedRaw, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var seed)
-                ? new System.Random(seed)
-                : new System.Random();
-        }
-
-        /// <summary>Returns the next encounter random value in the controller's 0..4095 domain.</summary>
-        /// <returns>A uniformly distributed integer in [0, 4095].</returns>
-        public int Draw() => _random.Next(0, 4096);
-    }
-
-    /// <summary>The battle's RNG, mirroring SystemRandomEncounterRng (same DW3_RNG_SEED seed).</summary>
-    private sealed class SystemRandomBattleRng : IBattleRng
-    {
-        private readonly System.Random _random;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="SystemRandomBattleRng"/> class.
-        /// Reads <c>DW3_RNG_SEED</c> to produce a deterministic sequence for testing.
-        /// </summary>
-        public SystemRandomBattleRng()
-        {
-            var seedRaw = System.Environment.GetEnvironmentVariable("DW3_RNG_SEED");
-            _random = int.TryParse(seedRaw, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var seed)
-                ? new System.Random(seed)
-                : new System.Random();
-        }
-
-        /// <summary>Returns the next battle random value in the controller's 0..4095 domain.</summary>
-        /// <returns>A uniformly distributed integer in [0, 4095].</returns>
-        public int NextValue() => _random.Next(0, 4096);
-    }
-
-    #endregion
-
-    #region Field interaction and dialogue
-
     // After a climb lands on its own slot foot, the actor's collision circle can still
     // overlap the wall one row above the (open) foot cell, leaving the player stuck in
     // every direction. Nudge back to the nearest free cell, mirroring the source's
@@ -1013,10 +1024,6 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
         _input.Handle(new InputEventKey { PhysicalKeycode = Key.F3, Pressed = false });
     }
 
-    #endregion
-
-    #region Scene transitions and cache contracts
-
     /// <summary>Returns a zone from the session cache, building it on first use.</summary>
     /// <param name="zoneId">Normalized zone id (<c>Snnn</c>).</param>
     /// <returns>The built zone.</returns>
@@ -1086,10 +1093,50 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
         return root;
     }
 
-    /// <summary>Asserts <paramref name="condition"/> and throws <see cref="ProbeRequirement"/> with <paramref name="message"/> when false.</summary>
-    /// <param name="condition">The condition that must be true.</param>
-    /// <param name="message">Failure message passed to the probe requirement exception.</param>
-    private static void Require(bool condition, string message) => ProbeRequirement.Require(condition, message);
+    /// <summary>
+    /// Encounter RNG that draws from <see cref="System.Random"/>, seeded from
+    /// the <c>DW3_RNG_SEED</c> environment variable when set for reproducible test runs.
+    /// </summary>
+    private sealed class SystemRandomEncounterRng : IEncounterRng
+    {
+        private readonly System.Random _random;
 
-    #endregion
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SystemRandomEncounterRng"/> class.
+        /// Reads <c>DW3_RNG_SEED</c> to produce a deterministic sequence for testing.
+        /// </summary>
+        public SystemRandomEncounterRng()
+        {
+            var seedRaw = System.Environment.GetEnvironmentVariable("DW3_RNG_SEED");
+            _random = int.TryParse(seedRaw, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var seed)
+                ? new System.Random(seed)
+                : new System.Random();
+        }
+
+        /// <summary>Returns the next encounter random value in the controller's 0..4095 domain.</summary>
+        /// <returns>A uniformly distributed integer in [0, 4095].</returns>
+        public int Draw() => _random.Next(0, 4096);
+    }
+
+    /// <summary>The battle's RNG, mirroring SystemRandomEncounterRng (same DW3_RNG_SEED seed).</summary>
+    private sealed class SystemRandomBattleRng : IBattleRng
+    {
+        private readonly System.Random _random;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SystemRandomBattleRng"/> class.
+        /// Reads <c>DW3_RNG_SEED</c> to produce a deterministic sequence for testing.
+        /// </summary>
+        public SystemRandomBattleRng()
+        {
+            var seedRaw = System.Environment.GetEnvironmentVariable("DW3_RNG_SEED");
+            _random = int.TryParse(seedRaw, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var seed)
+                ? new System.Random(seed)
+                : new System.Random();
+        }
+
+        /// <summary>Returns the next battle random value in the controller's 0..4095 domain.</summary>
+        /// <returns>A uniformly distributed integer in [0, 4095].</returns>
+        public int NextValue() => _random.Next(0, 4096);
+    }
 }

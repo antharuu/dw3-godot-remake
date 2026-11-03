@@ -8,27 +8,6 @@ namespace Dw3.Formats.Binary.Tim;
 /// </summary>
 public sealed class TimImage
 {
-    /// <summary>Gets image width in pixels.</summary>
-    public int Width { get; }
-
-    /// <summary>Gets image height in pixels.</summary>
-    public int Height { get; }
-
-    /// <summary>
-    /// Gets raw RGBA pixel data: 4 bytes (R, G, B, A) per pixel, row-major.
-    /// Length is exactly <c>Width * Height * 4</c>.
-    /// </summary>
-    public byte[] Pixels { get; }
-
-    /// <summary>Gets tIM pixel mode that produced this image.</summary>
-    public TimPixelMode Mode { get; }
-
-    /// <summary>
-    /// Gets number of CLUT rows in the source TIM file.
-    /// 0 for 16-bit direct images (no CLUT).
-    /// </summary>
-    public int ClutRowCount { get; }
-
     /// <summary>Initializes a new instance of the <see cref="TimImage"/> class; called only by <see cref="TimDecoder"/>.</summary>
     /// <param name="width">Image width in pixels; must be positive.</param>
     /// <param name="height">Image height in pixels; must be positive.</param>
@@ -43,31 +22,25 @@ public sealed class TimImage
         Mode = mode;
         ClutRowCount = clutRowCount;
     }
-}
 
-/// <summary>PSX TIM pixel modes supported by this decoder.</summary>
-public enum TimPixelMode
-{
-    /// <summary>
-    /// 4-bit indexed colour.
-    /// CLUT has 16 entries; pixels are packed two per byte (low nibble = left pixel).
-    /// Words-per-line in the image block must be multiplied by 4 to get pixel width.
-    /// TIM flags field = 0x08.
-    /// </summary>
-    Indexed4Bit,
+    /// <summary>Gets image width in pixels.</summary>
+    public int Width { get; }
+
+    /// <summary>Gets image height in pixels.</summary>
+    public int Height { get; }
 
     /// <summary>
-    /// 8-bit indexed colour.
-    /// CLUT has 256 entries; one byte per pixel.
-    /// Words-per-line must be multiplied by 2 to get pixel width.
-    /// TIM flags field = 0x09.
+    /// Gets raw RGBA pixel data: 4 bytes (R, G, B, A) per pixel, row-major.
+    /// Length is exactly <c>Width * Height * 4</c>.
     /// </summary>
-    Indexed8Bit,
+    public byte[] Pixels { get; }
+
+    /// <summary>Gets the TIM pixel mode (4-bit, 8-bit or 16-bit) the image was decoded from.</summary>
+    public TimPixelMode Mode { get; }
 
     /// <summary>
-    /// 15-bit direct colour (5-5-5 BGR), one 16-bit word per pixel.
-    /// No CLUT.  Words-per-line equals pixel width.
-    /// TIM flags field = 0x02.
+    /// Gets number of CLUT rows in the source TIM file.
+    /// 0 for 16-bit direct images (no CLUT).
     /// </summary>
-    Direct15Bit,
+    public int ClutRowCount { get; }
 }

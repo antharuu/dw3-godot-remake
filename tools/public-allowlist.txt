@@ -220,6 +220,7 @@ src/Dw3.Formats/Binary/RlenDecoder.cs
 src/Dw3.Formats/Binary/Tim/Rgba5551.cs
 src/Dw3.Formats/Binary/Tim/TimDecoder.cs
 src/Dw3.Formats/Binary/Tim/TimImage.cs
+src/Dw3.Formats/Binary/Tim/TimPixelMode.cs
 src/Dw3.Formats/Dialogue/DialogueRomLayout.cs
 src/Dw3.Formats/Dialogue/DiscFileTable.cs
 src/Dw3.Formats/Dialogue/FieldTalk.cs
@@ -319,6 +320,8 @@ src/Dw3.Formats/Field/ZoneTerrain.cs
 src/Dw3.Formats/Field/ZoneTileRecord.cs
 src/Dw3.Formats/Mips/MipsInstruction.cs
 src/Dw3.Formats/Mips/MipsRegisterTracker.cs
+src/Dw3.Formats/Mips/MipsStore.cs
+src/Dw3.Formats/Mips/MipsStoreMatch.cs
 src/Dw3.Formats/Mips/MipsStoreScanner.cs
 src/Dw3.Formats/Mips/MipsValue.cs
 src/Dw3.Formats/Text/FontAtlas.cs

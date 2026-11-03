@@ -101,6 +101,22 @@ internal sealed class FightReportPartnerPanel(FightReportPartner source)
             slots);
     }
 
+    /// <summary>
+    /// The Digimon slot's experience is not modelled yet: the slot is skipped, and the gap is
+    /// logged once per report.
+    /// </summary>
+    /// <param name="logs">The report's diagnostics.</param>
+    /// <returns>The slot level phase.</returns>
+    private static FightReportPartnerPhase SkipSlotExp(List<string> logs)
+    {
+        if (!logs.Contains(SlotExpUnwiredLog))
+        {
+            logs.Add(SlotExpUnwiredLog);
+        }
+
+        return FightReportPartnerPhase.SlotLevel;
+    }
+
     /// <summary>Runs the current phase for one frame and returns the phase for the next frame.</summary>
     /// <param name="messages">The report's message line.</param>
     /// <param name="logs">The report's diagnostics.</param>
@@ -128,22 +144,6 @@ internal sealed class FightReportPartnerPanel(FightReportPartner source)
     {
         Fade.Start(fadeIn, 10);
         return fadeIn ? FightReportPartnerPhase.ShowFade : FightReportPartnerPhase.HideFade;
-    }
-
-    /// <summary>
-    /// The Digimon slot's experience is not modelled yet: the slot is skipped, and the gap is
-    /// logged once per report.
-    /// </summary>
-    /// <param name="logs">The report's diagnostics.</param>
-    /// <returns>The slot level phase.</returns>
-    private static FightReportPartnerPhase SkipSlotExp(List<string> logs)
-    {
-        if (!logs.Contains(SlotExpUnwiredLog))
-        {
-            logs.Add(SlotExpUnwiredLog);
-        }
-
-        return FightReportPartnerPhase.SlotLevel;
     }
 
     /// <summary>Moves to the next of the three Digimon slots, then to the partner's own level.</summary>
