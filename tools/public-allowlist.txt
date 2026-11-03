@@ -936,3 +936,6 @@ src/Dw3.Extractor/ExtractionDomain.cs
 tests/Dw3.Extractor.Tests/Fabricate.cs
 tests/Dw3.Extractor.Tests/FullExtractionStepTests.cs
 tests/Dw3.Extractor.Tests/BattleExtractionStepTests.cs
+tests/Dw3.Extractor.Tests/FabricatedSprites.cs
+tests/Dw3.Extractor.Tests/BattleAssetStepsTests.cs
+tests/Dw3.Extractor.Tests/FieldMemberStepsTests.cs
