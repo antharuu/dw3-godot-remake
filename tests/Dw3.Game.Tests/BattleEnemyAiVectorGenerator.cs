@@ -142,7 +142,18 @@ public sealed class BattleEnemyAiVectorGenerator
         },
         note);
 
+    // The conditions are emitted in their numeric order so the vector file keeps a stable layout.
     private void ConditionCases()
+    {
+        ChanceConditionCases();
+        HpShareConditionCases();
+        PlayerConditionCases();
+        OtherEnemyConditionCases();
+        EnemyStateConditionCases();
+    }
+
+    // Conditions that ignore the battle state: the always-true ones and the random roll.
+    private void ChanceConditionCases()
     {
         // Always-true conditions: 0 and anything outside 1..18.
         foreach (int cond in new[] { 0, -1, -128, 19, 20, 64, 255 })
@@ -158,7 +169,11 @@ public sealed class BattleEnemyAiVectorGenerator
                 Condition(1, arg, Ctx(), [roll, 9], $"chance arg {arg} roll {roll}");
             }
         }
+    }
 
+    // Conditions 2 to 5 on the enemy's own HP and MP.
+    private void HpShareConditionCases()
+    {
         // 2/3: the enemy's HP against the HP share.
         foreach (int maxHp in new[] { 0, 99, 100, 250, 999, 5000 })
         {
@@ -179,7 +194,11 @@ public sealed class BattleEnemyAiVectorGenerator
             Condition(4, 10, Ctx(enemy: Enemy(stats: new EnemyStats(Mp: mp))), [], $"mp {mp} below 10");
             Condition(5, 10, Ctx(enemy: Enemy(stats: new EnemyStats(Mp: mp))), [], $"mp {mp} at or above 10");
         }
+    }
 
+    // Conditions 6 to 9 on the active player, including a missing one.
+    private void PlayerConditionCases()
+    {
         // 6/7: the active player's HP share, including no active player.
         foreach (int cond in new[] { 6, 7 })
         {
@@ -204,7 +223,11 @@ public sealed class BattleEnemyAiVectorGenerator
         }
 
         Condition(9, 0, Ctx(player: null), [], "asleep check without player");
+    }
 
+    // Condition 10 over rosters with empty, knocked-out and out-of-range entries.
+    private void OtherEnemyConditionCases()
+    {
         // 10: another enemy is alive (any, or with a given id).
         var rosters = new (BattleFighter?[] Roster, int Active, string Label)[]
         {
@@ -226,7 +249,11 @@ public sealed class BattleEnemyAiVectorGenerator
             {
                 Condition(10, arg, Ctx(enemies: roster, activeEnemy: active), [], $"other enemy {label}, arg {arg}");
             }
+    }
 
+    // Conditions 11 to 18 on the encounter values and the enemy's charge, boosts and turn count.
+    private void EnemyStateConditionCases()
+    {
         // 11/12/13: equality with the battle's element boost, battle id and encounter kind.
         foreach (int value in new[] { 0, 3, 4 })
         {
@@ -407,7 +434,12 @@ public sealed class BattleEnemyAiVectorGenerator
         Switch(EnemyDecision.None, full, 0, [1], "none decision resolves as any");
         Switch(new EnemyDecision(EnemyActionKind.Attack, 101, -1), full, 2, [0], "attack decision resolves as any");
         Switch(new EnemyDecision(EnemyActionKind.SwitchToAny, 0, -7), full, 1, [1], "negative slot resolves as any");
+        SeededSwitchCases();
+    }
 
+    // Random rosters of zero to four entries, with empty slots and out-of-range active indices.
+    private void SeededSwitchCases()
+    {
         for (int i = 0; i < 30; i++)
         {
             int count = _random.Next(0, 5);
