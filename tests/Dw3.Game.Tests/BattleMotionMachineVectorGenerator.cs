@@ -26,18 +26,34 @@ public sealed class BattleMotionMachineVectorGenerator
             return;
         }
 
+        // The families draw from one seeded generator in this order, so their order fixes the file.
         var random = new Random(Seed);
         var scenarios = new List<Scenario>();
+        AddRandomPlay(random, scenarios);
+        AddIdleReturns(random, scenarios);
+        AddLoops(random, scenarios);
 
-        // 1. Random well-formed tables, random interleavings of every operation.
+        // 4. Hand-picked bounds and failure paths.
+        scenarios.AddRange(Edges());
+        WriteVectors(scenarios);
+
+        Assert.True(scenarios.Count >= 300, $"Generated {scenarios.Count} vectors, need at least 300.");
+    }
+
+    // 1. Random well-formed tables, random interleavings of every operation.
+    private static void AddRandomPlay(Random random, List<Scenario> scenarios)
+    {
         for (var n = 0; n < 160; n++)
         {
             var table = RandomTable(random);
             var idle = table.Length >= 2 && random.Next(4) == 0 ? 1 : 0;
             scenarios.Add(new("random-play", table, idle, RandomOps(random, table.Length, random.Next(15, 41))));
         }
+    }
 
-        // 2. Idle return: an action ending on a -1 target, played to completion and beyond.
+    // 2. Idle return: an action ending on a -1 target, played to completion and beyond.
+    private static void AddIdleReturns(Random random, List<Scenario> scenarios)
+    {
         for (var n = 0; n < 60; n++)
         {
             var table = new[] { RandomMotion(random, 1), RandomMotion(random, random.Next(2) == 0 ? 1 : 6), RandomMotion(random, 2) };
@@ -61,8 +77,11 @@ public sealed class BattleMotionMachineVectorGenerator
 
             scenarios.Add(new("idle-return", table, random.Next(2), ops));
         }
+    }
 
-        // 3. Looping motions driven through many cycles with mixed elapsed counts.
+    // 3. Looping motions driven through many cycles with mixed elapsed counts.
+    private static void AddLoops(Random random, List<Scenario> scenarios)
+    {
         for (var n = 0; n < 50; n++)
         {
             var table = new[] { RandomMotion(random, random.Next(2) == 0 ? 1 : 6) };
@@ -74,10 +93,10 @@ public sealed class BattleMotionMachineVectorGenerator
 
             scenarios.Add(new("loop", table, 0, ops));
         }
+    }
 
-        // 4. Hand-picked bounds and failure paths.
-        scenarios.AddRange(Edges());
-
+    private static void WriteVectors(List<Scenario> scenarios)
+    {
         var sb = new StringBuilder();
         sb.Append("{\n  \"metadata\": ");
         sb.Append(new JsonObject
@@ -118,8 +137,6 @@ public sealed class BattleMotionMachineVectorGenerator
             : Path.Combine(AppContext.BaseDirectory, "Vectors", "battle-motion-machine.json");
         Directory.CreateDirectory(Path.GetDirectoryName(outPath)!);
         File.WriteAllText(outPath, sb.ToString());
-
-        Assert.True(scenarios.Count >= 300, $"Generated {scenarios.Count} vectors, need at least 300.");
     }
 
     /// <summary>Builds one well-formed motion: explicit and blended runs, then a terminator.</summary>
@@ -131,27 +148,8 @@ public sealed class BattleMotionMachineVectorGenerator
         var lastWasBlend = false;
         for (var s = 0; s < segments; s++)
         {
-            var count = r.Next(1, 11);
-            var blend = steps.Count > 0 && r.Next(10) < 4;
-            if (s == 0 && r.Next(6) == 0)
-            {
-                blend = true; // a leading blend must use source "current pose"
-            }
-
-            if (blend)
-            {
-                var index = steps.Count == 0 || r.Next(4) == 0 ? 0 : steps.Count;
-                steps.Add([index, Math.Min(count, 8), r.Next(0, 300), 0]);
-            }
-            else
-            {
-                var frame = r.Next(0, 300);
-                var endFrame = r.Next(3) == 0 ? r.Next(1, 300) : Math.Max(1, frame + count - 1);
-                steps.Add([steps.Count, count, frame, endFrame]);
-            }
-
+            lastWasBlend = AddRandomRun(r, steps, s == 0);
             keyframes += steps[^1][1];
-            lastWasBlend = blend;
         }
 
         var kind = forcedTerminator ?? r.Next(7);
@@ -161,16 +159,7 @@ public sealed class BattleMotionMachineVectorGenerator
         }
 
         var pos = steps.Count;
-        int[] terminator = kind switch
-        {
-            0 => [End, r.Next(0, 5), r.Next(0, 300), r.Next(0, 300)],
-            1 => [pos, 0, 0x8000, r.Next(0, keyframes + 1)],                    // loop
-            2 => [pos, 0, -1, 0],                                               // finish (and idle target)
-            3 => [pos, 0, 0xFFFF, 0],                                           // finish, literal
-            4 => [pos, 0, r.Next(0, 300), r.Next(0, 300)],                      // plain held frame
-            5 => [pos, 0, 0x8000 | r.Next(1, 0x8000), r.Next(0, 300)],          // blended hold
-            _ => [pos, 0, 0x8000, 0],                                           // loop to entry 0
-        };
+        int[] terminator = RandomTerminator(r, kind, pos, keyframes);
 
         // A blend run right before a 0x7FFF end marker needs a successor; give it a real one.
         if (kind == 0 && lastWasBlend)
@@ -186,6 +175,42 @@ public sealed class BattleMotionMachineVectorGenerator
 
         return [.. steps];
     }
+
+    // Appends one explicit or blended run; returns whether it is a blend.
+    private static bool AddRandomRun(Random r, List<int[]> steps, bool first)
+    {
+        var count = r.Next(1, 11);
+        var blend = steps.Count > 0 && r.Next(10) < 4;
+        if (first && r.Next(6) == 0)
+        {
+            blend = true; // a leading blend must use source "current pose"
+        }
+
+        if (blend)
+        {
+            var index = steps.Count == 0 || r.Next(4) == 0 ? 0 : steps.Count;
+            steps.Add([index, Math.Min(count, 8), r.Next(0, 300), 0]);
+        }
+        else
+        {
+            var frame = r.Next(0, 300);
+            var endFrame = r.Next(3) == 0 ? r.Next(1, 300) : Math.Max(1, frame + count - 1);
+            steps.Add([steps.Count, count, frame, endFrame]);
+        }
+
+        return blend;
+    }
+
+    private static int[] RandomTerminator(Random r, int kind, int pos, int keyframes) => kind switch
+    {
+        0 => [End, r.Next(0, 5), r.Next(0, 300), r.Next(0, 300)],
+        1 => [pos, 0, 0x8000, r.Next(0, keyframes + 1)],                    // loop
+        2 => [pos, 0, -1, 0],                                               // finish (and idle target)
+        3 => [pos, 0, 0xFFFF, 0],                                           // finish, literal
+        4 => [pos, 0, r.Next(0, 300), r.Next(0, 300)],                      // plain held frame
+        5 => [pos, 0, 0x8000 | r.Next(1, 0x8000), r.Next(0, 300)],          // blended hold
+        _ => [pos, 0, 0x8000, 0],                                           // loop to entry 0
+    };
 
     private static int[][][] RandomTable(Random r, int min = 1, int max = 6)
     {

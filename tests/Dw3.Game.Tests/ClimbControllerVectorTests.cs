@@ -199,85 +199,20 @@ public sealed class ClimbControllerVectorTests
             ctrl.Tick(state, MakeInput(inp!.GetValue<string>()));
         }
 
-        bool expClimbActive = c["expClimbActive"]!.GetValue<bool>();
-        int expClimbHeight = c["expClimbHeight"]!.GetValue<int>();
-        int expClimbSide = c["expClimbSide"]!.GetValue<int>();
-        int expAnimSet = c["expAnimSet"]!.GetValue<int>();
-        int expAnimTicks = c["expAnimTicks"]!.GetValue<int>();
-        int expAnimDirection = c["expAnimDirection"]!.GetValue<int>();
-        float expPosX = c["expPosX"]!.GetValue<float>();
-        float expPosY = c["expPosY"]!.GetValue<float>();
-        int expFacing = c["expFacing"]!.GetValue<int>();
-        int expCamSmoothing = c["expCameraSmoothing"]!.GetValue<int>();
-        bool expOffer = c["expOffer"]!.GetValue<bool>();
-        int expStateAnimSet = c["expStateAnimSet"]!.GetValue<int>();
-        int expStateAnimTicks = c["expStateAnimTicks"]!.GetValue<int>();
-
         string tag = $"[{id}] ClimbSequence start={startMethod} dir={dir} h={height}";
-
-        if (state.ClimbActive != expClimbActive)
-        {
-            errors.Add($"{tag}: ClimbActive got {state.ClimbActive} expected {expClimbActive}");
-        }
-
-        if (state.ClimbHeight != expClimbHeight)
-        {
-            errors.Add($"{tag}: ClimbHeight got {state.ClimbHeight} expected {expClimbHeight}");
-        }
-
-        if (state.ClimbSide != expClimbSide)
-        {
-            errors.Add($"{tag}: ClimbSide got {state.ClimbSide} expected {expClimbSide}");
-        }
-
-        if (state.ClimbAnimationSet != expAnimSet)
-        {
-            errors.Add($"{tag}: ClimbAnimationSet got {state.ClimbAnimationSet} expected {expAnimSet}");
-        }
-
-        if (state.ClimbAnimationTicks != expAnimTicks)
-        {
-            errors.Add($"{tag}: ClimbAnimationTicks got {state.ClimbAnimationTicks} expected {expAnimTicks}");
-        }
-
-        if (state.AnimationDirection != expAnimDirection)
-        {
-            errors.Add($"{tag}: AnimationDirection got {state.AnimationDirection} expected {expAnimDirection}");
-        }
-
-        if (BitConverter.SingleToInt32Bits(state.Position.X) != BitConverter.SingleToInt32Bits(expPosX))
-        {
-            errors.Add($"{tag}: Position.X got {state.Position.X} expected {expPosX}");
-        }
-
-        if (BitConverter.SingleToInt32Bits(state.Position.Y) != BitConverter.SingleToInt32Bits(expPosY))
-        {
-            errors.Add($"{tag}: Position.Y got {state.Position.Y} expected {expPosY}");
-        }
-
-        if (state.Facing != expFacing)
-        {
-            errors.Add($"{tag}: Facing got {state.Facing} expected {expFacing}");
-        }
-
-        if (state.CameraSmoothingTicks != expCamSmoothing)
-        {
-            errors.Add($"{tag}: CameraSmoothingTicks got {state.CameraSmoothingTicks} expected {expCamSmoothing}");
-        }
-
-        if (state.Offer != expOffer)
-        {
-            errors.Add($"{tag}: Offer got {state.Offer} expected {expOffer}");
-        }
-
-        if (state.AnimationSet != expStateAnimSet)
-        {
-            errors.Add($"{tag}: AnimationSet got {state.AnimationSet} expected {expStateAnimSet}");
-        }
-
-        if (state.AnimationTicks != expStateAnimTicks)
-        {
-            errors.Add($"{tag}: AnimationTicks got {state.AnimationTicks} expected {expStateAnimTicks}");
-        }
+        var check = new VectorFieldCheck(c, tag, errors);
+        check.Expect("ClimbActive", "expClimbActive", state.ClimbActive);
+        check.Expect("ClimbHeight", "expClimbHeight", state.ClimbHeight);
+        check.Expect("ClimbSide", "expClimbSide", state.ClimbSide);
+        check.Expect("ClimbAnimationSet", "expAnimSet", state.ClimbAnimationSet);
+        check.Expect("ClimbAnimationTicks", "expAnimTicks", state.ClimbAnimationTicks);
+        check.Expect("AnimationDirection", "expAnimDirection", state.AnimationDirection);
+        check.ExpectBits("Position.X", "expPosX", state.Position.X);
+        check.ExpectBits("Position.Y", "expPosY", state.Position.Y);
+        check.Expect("Facing", "expFacing", state.Facing);
+        check.Expect("CameraSmoothingTicks", "expCameraSmoothing", state.CameraSmoothingTicks);
+        check.Expect("Offer", "expOffer", state.Offer);
+        check.Expect("AnimationSet", "expStateAnimSet", state.AnimationSet);
+        check.Expect("AnimationTicks", "expStateAnimTicks", state.AnimationTicks);
     }
 }

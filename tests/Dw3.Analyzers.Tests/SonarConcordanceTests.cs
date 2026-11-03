@@ -59,67 +59,15 @@ public sealed class SonarConcordanceTests
         foreach (var (relativePath, entries) in byFile)
         {
             var fullPath = Path.Combine(sourceRoot, relativePath);
-            if (!File.Exists(fullPath))
+            if (File.Exists(fullPath))
             {
-                continue;
-            }
-
-            var sourceText = await File.ReadAllTextAsync(fullPath);
-            var syntaxTree = CSharpSyntaxTree.ParseText(sourceText, path: fullPath);
-            var root = await syntaxTree.GetRootAsync();
-
-            var compilation = CSharpCompilation.Create(
-                "ConcordanceCheck",
-                [syntaxTree],
-                [MetadataReference.CreateFromFile(typeof(object).Assembly.Location)],
-                new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
-
-            var semanticModel = compilation.GetSemanticModel(syntaxTree);
-
-            foreach (var entry in entries)
-            {
-                // Find the method declaration that STARTS at the S3776-reported line.
-                var method = FindMemberAtLine(root, entry.Line);
-                if (method == null)
-                {
-                    _output.WriteLine($"  SKIP  {entry.MethodHint} (line {entry.Line}): member not found");
-                    continue;
-                }
-
-                var bodyNode = GetBodyNode(method);
-                if (bodyNode == null)
-                {
-                    continue;
-                }
-
-                var walker = new CognitiveComplexityWalker(semanticModel, symbol: null);
-                walker.Visit(bodyNode);
-                var myComplexity = walker.Complexity;
-
-                if (myComplexity == entry.SonarComplexity)
-                {
-                    matches++;
-                    _output.WriteLine($"  OK    {Path.GetFileName(fullPath)}:{entry.Line}  sonar={entry.SonarComplexity} mine={myComplexity}");
-                }
-                else
-                {
-                    var msg = $"  DIFF  {Path.GetFileName(fullPath)}:{entry.Line}  sonar={entry.SonarComplexity} mine={myComplexity}";
-                    mismatches.Add(msg);
-                    _output.WriteLine(msg);
-                }
+                matches += await CompareFileAsync(fullPath, entries, mismatches);
             }
         }
 
         _output.WriteLine($"\nMatches: {matches}  Mismatches: {mismatches.Count}");
 
-        if (mismatches.Count > 0)
-        {
-            _output.WriteLine("\nMismatches:");
-            foreach (var m in mismatches)
-            {
-                _output.WriteLine(m);
-            }
-        }
+        WriteMismatches(mismatches);
 
         // We require at least 30 comparisons and no more than 10% mismatch.
         var total = matches + mismatches.Count;
@@ -137,9 +85,6 @@ public sealed class SonarConcordanceTests
             $"{mismatches.Count}/{total} mismatches exceed 10% tolerance.");
     }
 
-    // -------------------------------------------------------------------------
-    // Helpers
-    // -------------------------------------------------------------------------
     private static string FindRepoRoot()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
@@ -153,74 +98,63 @@ public sealed class SonarConcordanceTests
 
     private static List<S3776Entry> ParseS3776Entries(string sarifPath)
     {
-        var entries = new List<S3776Entry>();
         using var doc = JsonDocument.Parse(File.ReadAllText(sarifPath));
-        var runs = doc.RootElement.GetProperty("runs");
+        return
+        [
+            .. doc.RootElement.GetProperty("runs").EnumerateArray()
+                .Where(run => run.TryGetProperty("results", out _))
+                .SelectMany(run => run.GetProperty("results").EnumerateArray())
+                .Where(result => result.GetProperty("ruleId").GetString() == "S3776")
+                .Select(TryParseEntry)
+                .OfType<S3776Entry>(),
+        ];
+    }
 
-        foreach (var run in runs.EnumerateArray())
+    // Reads one S3776 result; null when it is not a method entry of Dw3.Formats with a non-zero complexity.
+    private static S3776Entry? TryParseEntry(JsonElement result)
+    {
+        var msg = result.GetProperty("message").GetProperty("text").GetString() ?? string.Empty;
+        var complexity = MethodComplexity(msg);
+        if (complexity == 0)
         {
-            if (!run.TryGetProperty("results", out var results))
-            {
-                continue;
-            }
-
-            foreach (var result in results.EnumerateArray())
-            {
-                if (result.GetProperty("ruleId").GetString() != "S3776")
-                {
-                    continue;
-                }
-
-                var msg = result.GetProperty("message").GetProperty("text").GetString() ?? string.Empty;
-
-                // Only count methods (threshold=0), skip properties (threshold=3).
-                // Method message: "Refactor this method ... from N to the 0 ..."
-                if (!msg.Contains("to the 0 ", StringComparison.Ordinal))
-                {
-                    continue;
-                }
-
-                var idx = msg.IndexOf("from ", StringComparison.Ordinal);
-                if (idx < 0)
-                {
-                    continue;
-                }
-
-                var rest = msg.AsSpan(idx + 5);
-                var spaceIdx = rest.IndexOf(' ');
-                if (spaceIdx < 0)
-                {
-                    continue;
-                }
-
-                if (!int.TryParse(rest.Slice(0, spaceIdx), out var complexity) || complexity == 0)
-                {
-                    continue;
-                }
-
-                var locations = result.GetProperty("locations");
-                var first = locations[0].GetProperty("physicalLocation");
-                var uri = first.GetProperty("artifactLocation").GetProperty("uri").GetString() ?? string.Empty;
-                var line = first.GetProperty("region").GetProperty("startLine").GetInt32();
-
-                // uri is "file:///absolute/path/to/src/Dw3.Formats/Sub/Foo.cs"
-                // Unescape and extract the part after "src/Dw3.Formats/".
-                var unescaped = Uri.UnescapeDataString(uri);
-                var marker = "src/Dw3.Formats/";
-                var markerIdx = unescaped.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
-                if (markerIdx < 0)
-                {
-                    continue;
-                }
-
-                var relPath = unescaped.Substring(markerIdx + marker.Length)
-                    .Replace('/', Path.DirectorySeparatorChar);
-
-                entries.Add(new S3776Entry(relPath, line, complexity, msg[..Math.Min(60, msg.Length)]));
-            }
+            return null;
         }
 
-        return entries;
+        var first = result.GetProperty("locations")[0].GetProperty("physicalLocation");
+        var uri = first.GetProperty("artifactLocation").GetProperty("uri").GetString() ?? string.Empty;
+        var line = first.GetProperty("region").GetProperty("startLine").GetInt32();
+        var relPath = FormatsRelativePath(uri);
+        return relPath == null ? null : new S3776Entry(relPath, line, complexity, msg[..Math.Min(60, msg.Length)]);
+    }
+
+    // Complexity N of a method message "Refactor this method ... from N to the 0 ...", or 0 for anything
+    // else: properties are reported against threshold 3 and are skipped.
+    private static int MethodComplexity(string msg)
+    {
+        if (!msg.Contains("to the 0 ", StringComparison.Ordinal))
+        {
+            return 0;
+        }
+
+        var idx = msg.IndexOf("from ", StringComparison.Ordinal);
+        if (idx < 0)
+        {
+            return 0;
+        }
+
+        var rest = msg.AsSpan(idx + 5);
+        var spaceIdx = rest.IndexOf(' ');
+        return spaceIdx >= 0 && int.TryParse(rest[..spaceIdx], out var complexity) ? complexity : 0;
+    }
+
+    // uri is "file:///absolute/path/to/src/Dw3.Formats/Sub/Foo.cs"; returns "Sub/Foo.cs" with the
+    // platform separator, or null outside src/Dw3.Formats.
+    private static string? FormatsRelativePath(string uri)
+    {
+        var unescaped = Uri.UnescapeDataString(uri);
+        const string marker = "src/Dw3.Formats/";
+        var markerIdx = unescaped.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+        return markerIdx < 0 ? null : unescaped[(markerIdx + marker.Length)..].Replace('/', Path.DirectorySeparatorChar);
     }
 
     private static MemberDeclarationSyntax? FindMemberAtLine(SyntaxNode root, int line)
@@ -245,6 +179,77 @@ public sealed class SonarConcordanceTests
             PropertyDeclarationSyntax p => (SyntaxNode?)p.AccessorList ?? p.ExpressionBody?.Expression,
             _ => null,
         };
+    }
+
+    // -------------------------------------------------------------------------
+    // Helpers
+    // -------------------------------------------------------------------------
+
+    // Compares the walker with every Sonar entry of one source file; returns the number of matches
+    // and appends one line per mismatch.
+    private async Task<int> CompareFileAsync(string fullPath, List<S3776Entry> entries, List<string> mismatches)
+    {
+        var sourceText = await File.ReadAllTextAsync(fullPath);
+        var syntaxTree = CSharpSyntaxTree.ParseText(sourceText, path: fullPath);
+        var root = await syntaxTree.GetRootAsync();
+
+        var compilation = CSharpCompilation.Create(
+            "ConcordanceCheck",
+            [syntaxTree],
+            [MetadataReference.CreateFromFile(typeof(object).Assembly.Location)],
+            new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
+
+        var semanticModel = compilation.GetSemanticModel(syntaxTree);
+        var matches = 0;
+
+        foreach (var entry in entries)
+        {
+            // Find the method declaration that STARTS at the S3776-reported line.
+            var method = FindMemberAtLine(root, entry.Line);
+            if (method == null)
+            {
+                _output.WriteLine($"  SKIP  {entry.MethodHint} (line {entry.Line}): member not found");
+                continue;
+            }
+
+            var bodyNode = GetBodyNode(method);
+            if (bodyNode == null)
+            {
+                continue;
+            }
+
+            var walker = new CognitiveComplexityWalker(semanticModel, symbol: null);
+            walker.Visit(bodyNode);
+            var myComplexity = walker.Complexity;
+
+            if (myComplexity == entry.SonarComplexity)
+            {
+                matches++;
+                _output.WriteLine($"  OK    {Path.GetFileName(fullPath)}:{entry.Line}  sonar={entry.SonarComplexity} mine={myComplexity}");
+            }
+            else
+            {
+                var msg = $"  DIFF  {Path.GetFileName(fullPath)}:{entry.Line}  sonar={entry.SonarComplexity} mine={myComplexity}";
+                mismatches.Add(msg);
+                _output.WriteLine(msg);
+            }
+        }
+
+        return matches;
+    }
+
+    private void WriteMismatches(List<string> mismatches)
+    {
+        if (mismatches.Count == 0)
+        {
+            return;
+        }
+
+        _output.WriteLine("\nMismatches:");
+        foreach (var m in mismatches)
+        {
+            _output.WriteLine(m);
+        }
     }
 
     /// <summary>Represents one S3776 entry from the SARIF log.</summary>

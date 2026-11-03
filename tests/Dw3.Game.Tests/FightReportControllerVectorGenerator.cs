@@ -42,82 +42,43 @@ public sealed class FightReportControllerVectorGenerator
         int[] framesA = [1, 2, 3, 5, 10, 14, 15, 20, 25, 26, 30, 37, 38, 40, 44, 50,
                           60, 61, 63, 65, 69, 70, 72, 73, 78, 79, 80, 87, 100, 101,
                           107, 108, 120, 138, 139, 200];
-        foreach (var f in framesA)
-        {
-            cases.Add(StepCase(id++, InputA(), f, crossEvery: 20, label: $"A-frame{f}"));
-        }
+        AddFrames(cases, ref id, InputA, 20, "A-", framesA);
 
         // A with no cross presses (report blocks at first message)
-        foreach (var f in new[] { 50, 100, 200, 500, 1000, 10000 })
-        {
-            cases.Add(StepCase(id++, InputA(), f, crossEvery: 0, label: $"A-nocross-frame{f}"));
-        }
+        AddFrames(cases, ref id, InputA, 0, "A-nocross-", [50, 100, 200, 500, 1000, 10000]);
 
         // A with aggressive cross (every 5 frames)
-        foreach (var f in new[] { 37, 50, 75, 100, 150, 200 })
-        {
-            cases.Add(StepCase(id++, InputA(), f, crossEvery: 5, label: $"A-cross5-frame{f}"));
-        }
+        AddFrames(cases, ref id, InputA, 5, "A-cross5-", [37, 50, 75, 100, 150, 200]);
 
         // B: single partner with level up
-        foreach (var f in new[] { 60, 70, 80, 90, 100, 130, 150, 200, 250 })
-        {
-            cases.Add(StepCase(id++, InputB(), f, crossEvery: 20, label: $"B-frame{f}"));
-        }
+        AddFrames(cases, ref id, InputB, 20, "B-", [60, 70, 80, 90, 100, 130, 150, 200, 250]);
 
         // C: single partner, exp=0 (skipped), goes straight to money
-        foreach (var f in new[] { 14, 25, 30, 40, 50, 60, 70, 80, 100, 120, 130 })
-        {
-            cases.Add(StepCase(id++, InputC(), f, crossEvery: 20, label: $"C-frame{f}"));
-        }
+        AddFrames(cases, ref id, InputC, 20, "C-", [14, 25, 30, 40, 50, 60, 70, 80, 100, 120, 130]);
 
         // D: exp=100 (3-digit, step=111), check RollStep effect
-        foreach (var f in new[] { 60, 65, 70, 75, 80, 100, 120 })
-        {
-            cases.Add(StepCase(id++, InputD(), f, crossEvery: 20, label: $"D-frame{f}"));
-        }
+        AddFrames(cases, ref id, InputD, 20, "D-", [60, 65, 70, 75, 80, 100, 120]);
 
         // E: item reward
-        foreach (var f in new[] { 90, 100, 110, 120, 130, 150, 200 })
-        {
-            cases.Add(StepCase(id++, InputE(), f, crossEvery: 20, label: $"E-frame{f}"));
-        }
+        AddFrames(cases, ref id, InputE, 20, "E-", [90, 100, 110, 120, 130, 150, 200]);
 
         // F: two partners
-        foreach (var f in new[] { 25, 50, 75, 100, 125, 150, 175, 200, 225, 250, 275, 300 })
-        {
-            cases.Add(StepCase(id++, InputF(), f, crossEvery: 20, label: $"F-frame{f}"));
-        }
+        AddFrames(cases, ref id, InputF, 20, "F-", [25, 50, 75, 100, 125, 150, 175, 200, 225, 250, 275, 300]);
 
         // G: first partner skipped
-        foreach (var f in new[] { 25, 50, 75, 100, 125, 150, 200 })
-        {
-            cases.Add(StepCase(id++, InputG(), f, crossEvery: 20, label: $"G-frame{f}"));
-        }
+        AddFrames(cases, ref id, InputG, 20, "G-", [25, 50, 75, 100, 125, 150, 200]);
 
         // H: three partners, item reward
-        foreach (var f in new[] { 50, 100, 150, 200, 250, 300, 350, 400 })
-        {
-            cases.Add(StepCase(id++, InputH(), f, crossEvery: 20, label: $"H-frame{f}"));
-        }
+        AddFrames(cases, ref id, InputH, 20, "H-", [50, 100, 150, 200, 250, 300, 350, 400]);
 
         // I: 3-slot partner, exp=50 (step=11)
-        foreach (var f in new[] { 60, 70, 75, 80, 100, 130 })
-        {
-            cases.Add(StepCase(id++, InputI(), f, crossEvery: 20, label: $"I-frame{f}"));
-        }
+        AddFrames(cases, ref id, InputI, 20, "I-", [60, 70, 75, 80, 100, 130]);
 
         // J: custom token counts
-        foreach (var f in new[] { 40, 50, 60, 70, 80, 90, 100, 120, 150 })
-        {
-            cases.Add(StepCase(id++, InputJ(), f, crossEvery: 20, label: $"J-frame{f}"));
-        }
+        AddFrames(cases, ref id, InputJ, 20, "J-", [40, 50, 60, 70, 80, 90, 100, 120, 150]);
 
         // K: high exp, check RollStep(999999)
-        foreach (var f in new[] { 60, 65, 70, 75, 80, 100, 130 })
-        {
-            cases.Add(StepCase(id++, InputK(), f, crossEvery: 20, label: $"K-frame{f}"));
-        }
+        AddFrames(cases, ref id, InputK, 20, "K-", [60, 65, 70, 75, 80, 100, 130]);
 
         // Cross-every-1 (every single frame) — fastest possible completion
         cases.Add(StepCase(id++, InputA(), 200, crossEvery: 1, label: "A-cross1-200"));
@@ -125,10 +86,7 @@ public sealed class FightReportControllerVectorGenerator
         cases.Add(StepCase(id++, InputH(), 300, crossEvery: 1, label: "H-cross1-300"));
 
         // Cross every 50 frames (slow cadence)
-        foreach (var f in new[] { 100, 150, 200, 300 })
-        {
-            cases.Add(StepCase(id++, InputA(), f, crossEvery: 50, label: $"A-cross50-frame{f}"));
-        }
+        AddFrames(cases, ref id, InputA, 50, "A-cross50-", [100, 150, 200, 300]);
 
         // Very high step count with no cross — report blocked at EXP message
         cases.Add(StepCase(id++, InputA(), 50_000, crossEvery: 0, label: "A-nocross-long"));
@@ -580,4 +538,13 @@ public sealed class FightReportControllerVectorGenerator
         [Partner(0, 1, 383, (50, 50), 500000, 250, [101])],
         Money: 9999,
         Item: 0);
+
+    // Adds one StepSequence case per frame count; the label is the prefix followed by "frame" and the count.
+    private static void AddFrames(JsonArray cases, ref int id, Func<FightReportInput> input, int crossEvery, string labelPrefix, int[] frames)
+    {
+        foreach (var f in frames)
+        {
+            cases.Add(StepCase(id++, input(), f, crossEvery, $"{labelPrefix}frame{f}"));
+        }
+    }
 }

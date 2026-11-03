@@ -136,64 +136,82 @@ public sealed class FieldAnimationDataPackLoaderTests : IDisposable
         command.ExecuteNonQuery();
     }
 
+    private static void WriteCue(DataPackWriteContext context, int skipCueRow)
+    {
+        Execute(context, "INSERT INTO fieldcom_domains VALUES ('cue','FIELDCOM','aa',1),('icon','FIELDCOM','aa',1)");
+        foreach (int frame in CueFrames)
+        {
+            Execute(context, $"INSERT INTO fieldcom_frames VALUES ('cue',{frame},16,16,-8,-29,0,-1,'{Image(context, $"cue/frame-{frame:X2}.png")}')");
+        }
+
+        int[] rowFrames = [0x10, 0x0E, 0x0C, 0x12, 0x45];
+        for (int row = 6; row <= 10; row++)
+        {
+            if (row == skipCueRow)
+            {
+                continue;
+            }
+
+            int first = rowFrames[row - 6];
+            Execute(context, $"INSERT INTO cue_sequences VALUES ('inner','row-{first:X2}',0,{first},22,{row}),('inner','row-{first:X2}',1,{first + 1},22,{row})");
+        }
+
+        Execute(context, "INSERT INTO cue_sequences VALUES ('pop','opening',0,50,1,NULL)");
+    }
+
+    private static void WriteIcon(DataPackWriteContext context, int skipIconFrame, int iconLoopTarget)
+    {
+        for (int frame = 0x23; frame <= 0x31; frame++)
+        {
+            if (frame != skipIconFrame)
+            {
+                Execute(context, $"INSERT INTO fieldcom_frames VALUES ('icon',{frame},16,16,4,-36,0,-1,'{Image(context, $"icon/frame-{frame:X2}.png")}')");
+            }
+        }
+
+        Execute(context, $"INSERT INTO icon_animations VALUES (0,0),(1,{iconLoopTarget})");
+        Execute(context, "INSERT INTO icon_animation_steps VALUES (0,0,35,8),(1,0,35,3),(1,1,36,4)");
+    }
+
+    private static void WriteActions(DataPackWriteContext context, int skipDropSet)
+    {
+        Execute(context, "INSERT INTO action_domains VALUES ('climb',1,1,'s','CLIMB','aa',1),('drop',2,1,'s','DROP','aa',1)");
+        Execute(context, $"INSERT INTO action_frames VALUES ('climb',2,8,8,'{Image(context, "climb/frames/frame-02.png")}')");
+        Execute(context, $"INSERT INTO action_frames VALUES ('drop',1,8,8,'{Image(context, "drop/frames/frame-01.png")}')");
+        Execute(context, "INSERT INTO action_sets VALUES ('climb',26,'CLIMB_UP','loop')");
+        Execute(context, "INSERT INTO action_records VALUES ('climb',26,0,5,2,-3,4)");
+        for (int set = 0x16; set <= 0x19; set++)
+        {
+            if (set == skipDropSet)
+            {
+                continue;
+            }
+
+            Execute(context, $"INSERT INTO action_sets VALUES ('drop',{set},'DROP','{(set == 0x16 ? "end" : "loop")}')");
+            Execute(context, $"INSERT INTO action_records VALUES ('drop',{set},0,2,1,0,0)");
+        }
+    }
+
+    private static void WriteWater(DataPackWriteContext context, bool waterFrames)
+    {
+        Execute(context, "INSERT INTO water_zones VALUES (200,'a','b','c',1)");
+        Execute(context, "INSERT INTO water_objects VALUES (200,3,1,0,64,2,71,2,0,3,6,0,1048,211,246,0,1)");
+        if (waterFrames)
+        {
+            Execute(context, $"INSERT INTO water_object_frames VALUES (200,3,0,71,0,1,2,1,'{Image(context, "water/S200/object-003-opaque.png")}','{Image(context, "water/S200/object-003-stp.png")}')");
+        }
+    }
+
     private void BuildPack(int skipDropSet = -1, int skipIconFrame = -1, int iconLoopTarget = 1, int skipCueRow = -1, bool waterFrames = true)
     {
         new DataPackWriter(_root).Write(
             new DataPackMetadata("test", "synthetic", SyntheticDataPackFixture.SyntheticEdition, DateTimeOffset.UnixEpoch),
             context =>
             {
-                Execute(context, "INSERT INTO fieldcom_domains VALUES ('cue','FIELDCOM','aa',1),('icon','FIELDCOM','aa',1)");
-                foreach (int frame in CueFrames)
-                {
-                    Execute(context, $"INSERT INTO fieldcom_frames VALUES ('cue',{frame},16,16,-8,-29,0,-1,'{Image(context, $"cue/frame-{frame:X2}.png")}')");
-                }
-
-                int[] rowFrames = [0x10, 0x0E, 0x0C, 0x12, 0x45];
-                for (int row = 6; row <= 10; row++)
-                {
-                    if (row == skipCueRow)
-                    {
-                        continue;
-                    }
-
-                    int first = rowFrames[row - 6];
-                    Execute(context, $"INSERT INTO cue_sequences VALUES ('inner','row-{first:X2}',0,{first},22,{row}),('inner','row-{first:X2}',1,{first + 1},22,{row})");
-                }
-
-                Execute(context, "INSERT INTO cue_sequences VALUES ('pop','opening',0,50,1,NULL)");
-                for (int frame = 0x23; frame <= 0x31; frame++)
-                {
-                    if (frame != skipIconFrame)
-                    {
-                        Execute(context, $"INSERT INTO fieldcom_frames VALUES ('icon',{frame},16,16,4,-36,0,-1,'{Image(context, $"icon/frame-{frame:X2}.png")}')");
-                    }
-                }
-
-                Execute(context, $"INSERT INTO icon_animations VALUES (0,0),(1,{iconLoopTarget})");
-                Execute(context, "INSERT INTO icon_animation_steps VALUES (0,0,35,8),(1,0,35,3),(1,1,36,4)");
-
-                Execute(context, "INSERT INTO action_domains VALUES ('climb',1,1,'s','CLIMB','aa',1),('drop',2,1,'s','DROP','aa',1)");
-                Execute(context, $"INSERT INTO action_frames VALUES ('climb',2,8,8,'{Image(context, "climb/frames/frame-02.png")}')");
-                Execute(context, $"INSERT INTO action_frames VALUES ('drop',1,8,8,'{Image(context, "drop/frames/frame-01.png")}')");
-                Execute(context, "INSERT INTO action_sets VALUES ('climb',26,'CLIMB_UP','loop')");
-                Execute(context, "INSERT INTO action_records VALUES ('climb',26,0,5,2,-3,4)");
-                for (int set = 0x16; set <= 0x19; set++)
-                {
-                    if (set == skipDropSet)
-                    {
-                        continue;
-                    }
-
-                    Execute(context, $"INSERT INTO action_sets VALUES ('drop',{set},'DROP','{(set == 0x16 ? "end" : "loop")}')");
-                    Execute(context, $"INSERT INTO action_records VALUES ('drop',{set},0,2,1,0,0)");
-                }
-
-                Execute(context, "INSERT INTO water_zones VALUES (200,'a','b','c',1)");
-                Execute(context, "INSERT INTO water_objects VALUES (200,3,1,0,64,2,71,2,0,3,6,0,1048,211,246,0,1)");
-                if (waterFrames)
-                {
-                    Execute(context, $"INSERT INTO water_object_frames VALUES (200,3,0,71,0,1,2,1,'{Image(context, "water/S200/object-003-opaque.png")}','{Image(context, "water/S200/object-003-stp.png")}')");
-                }
+                WriteCue(context, skipCueRow);
+                WriteIcon(context, skipIconFrame, iconLoopTarget);
+                WriteActions(context, skipDropSet);
+                WriteWater(context, waterFrames);
             });
     }
 }

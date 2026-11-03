@@ -933,6 +933,7 @@ src/Dw3.Game/Simulation/InteractiveFrameCoordinator.cs
 src/Dw3.Game/Simulation/LinearCongruentialRng.cs
 tests/Dw3.Game.Tests/InteractiveFrameCoordinatorTests.cs
 tests/Dw3.Game.Tests/LinearCongruentialRngTests.cs
+tests/Dw3.Game.Tests/VectorFieldCheck.cs
 src/Dw3.Disc/IDiscSource.cs
 src/Dw3.Extractor/EngineFileReader.cs
 src/Dw3.Extractor/ExtractDomainDispatcher.cs

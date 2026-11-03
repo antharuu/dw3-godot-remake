@@ -156,176 +156,15 @@ public sealed class FightReportControllerVectorTests
         var v = ctrl.View;
         string pfx = $"[{id}]";
 
-        // Scalar view fields
-        int expHeaderFade = c["out_headerFade"]!.GetValue<int>();
-        int expFooterFade = c["out_footerFade"]!.GetValue<int>();
-        int expBgScroll = c["out_bgScroll"]!.GetValue<int>();
-        int expExitFade = c["out_exitFade"]!.GetValue<int>();
-        bool expDone = c["out_done"]!.GetValue<bool>();
+        var view = new VectorFieldCheck(c, pfx, errors);
+        view.Expect("HeaderFade", "out_headerFade", v.HeaderFade);
+        view.Expect("FooterFade", "out_footerFade", v.FooterFade);
+        view.Expect("BgScroll", "out_bgScroll", v.BgScroll);
+        view.Expect("ExitFade", "out_exitFade", v.ExitFade);
+        view.Expect("Done", "out_done", v.Done);
 
-        if (v.HeaderFade != expHeaderFade)
-        {
-            errors.Add($"{pfx} HeaderFade: got {v.HeaderFade} expected {expHeaderFade}");
-        }
-
-        if (v.FooterFade != expFooterFade)
-        {
-            errors.Add($"{pfx} FooterFade: got {v.FooterFade} expected {expFooterFade}");
-        }
-
-        if (v.BgScroll != expBgScroll)
-        {
-            errors.Add($"{pfx} BgScroll: got {v.BgScroll} expected {expBgScroll}");
-        }
-
-        if (v.ExitFade != expExitFade)
-        {
-            errors.Add($"{pfx} ExitFade: got {v.ExitFade} expected {expExitFade}");
-        }
-
-        if (v.Done != expDone)
-        {
-            errors.Add($"{pfx} Done: got {v.Done} expected {expDone}");
-        }
-
-        // Partners
-        var expPartnersArr = c["out_partners"]!.AsArray();
-        if (v.Partners.Count != expPartnersArr.Count)
-        {
-            errors.Add($"{pfx} Partners.Count: got {v.Partners.Count} expected {expPartnersArr.Count}");
-        }
-        else
-        {
-            for (int pi = 0; pi < v.Partners.Count; pi++)
-            {
-                var ep = expPartnersArr[pi]!;
-                var gp = v.Partners[pi];
-                string pp = $"{pfx}[P{pi}]";
-                if (gp.PartyIndex != ep["partyIndex"]!.GetValue<int>())
-                {
-                    errors.Add($"{pp} partyIndex");
-                }
-
-                if (gp.PartnerId != ep["partnerId"]!.GetValue<int>())
-                {
-                    errors.Add($"{pp} partnerId");
-                }
-
-                if (gp.FighterId != ep["fighterId"]!.GetValue<int>())
-                {
-                    errors.Add($"{pp} fighterId");
-                }
-
-                if (gp.Fade != ep["fade"]!.GetValue<int>())
-                {
-                    errors.Add($"{pp} Fade: got {gp.Fade} expected {ep["fade"]!.GetValue<int>()}");
-                }
-
-                if (gp.Selected != ep["selected"]!.GetValue<bool>())
-                {
-                    errors.Add($"{pp} Selected: got {gp.Selected} expected {ep["selected"]!.GetValue<bool>()}");
-                }
-
-                if (gp.CursorFrame != ep["cursorFrame"]!.GetValue<int>())
-                {
-                    errors.Add($"{pp} CursorFrame: got {gp.CursorFrame} expected {ep["cursorFrame"]!.GetValue<int>()}");
-                }
-
-                if (gp.LevelBlinkFrame != ep["levelBlinkFrame"]!.GetValue<int>())
-                {
-                    errors.Add($"{pp} LevelBlinkFrame");
-                }
-
-                if (gp.ShownExp != ep["shownExp"]!.GetValue<int>())
-                {
-                    errors.Add($"{pp} ShownExp: got {gp.ShownExp} expected {ep["shownExp"]!.GetValue<int>()}");
-                }
-
-                if (gp.AnimationFrame != ep["animationFrame"]!.GetValue<int>())
-                {
-                    errors.Add($"{pp} AnimationFrame");
-                }
-
-                // Slots
-                var expSlots = ep["slots"]!.AsArray();
-                if (gp.Slots.Count != expSlots.Count)
-                {
-                    errors.Add($"{pp} Slots.Count: got {gp.Slots.Count} expected {expSlots.Count}");
-                }
-                else
-                {
-                    for (int si = 0; si < gp.Slots.Count; si++)
-                    {
-                        var es = expSlots[si]!;
-                        var gs = gp.Slots[si];
-                        if (gs.DigimonId != es["digimonId"]!.GetValue<int>())
-                        {
-                            errors.Add($"{pp}[S{si}] DigimonId");
-                        }
-
-                        if (gs.Visible != es["visible"]!.GetValue<bool>())
-                        {
-                            errors.Add($"{pp}[S{si}] Visible");
-                        }
-
-                        if (gs.ExpApplied != es["expApplied"]!.GetValue<bool>())
-                        {
-                            errors.Add($"{pp}[S{si}] ExpApplied");
-                        }
-
-                        if (gs.BlinkFrame != es["blinkFrame"]!.GetValue<int>())
-                        {
-                            errors.Add($"{pp}[S{si}] BlinkFrame");
-                        }
-                    }
-                }
-            }
-        }
-
-        // Message
-        var expMsgNode = c["out_message"];
-        bool expMsgNull = expMsgNode is null || (expMsgNode is JsonValue jv && jv.GetValue<object?>() is null);
-
-        // JSON null can appear as JsonValue null or as a missing key
-        bool gotMsgNull = v.Message is null;
-
-        if (expMsgNull && !gotMsgNull)
-        {
-            errors.Add($"{pfx} Message: got non-null expected null");
-        }
-        else if (!expMsgNull && gotMsgNull)
-        {
-            errors.Add($"{pfx} Message: got null expected non-null");
-        }
-        else if (!expMsgNull && v.Message is not null)
-        {
-            var em = expMsgNode!;
-            var gm = v.Message;
-            if (gm.Entry != em["entry"]!.GetValue<int>())
-            {
-                errors.Add($"{pfx} Message.Entry: got {gm.Entry} expected {em["entry"]!.GetValue<int>()}");
-            }
-
-            if (gm.TokensRevealed != em["tokensRevealed"]!.GetValue<int>())
-            {
-                errors.Add($"{pfx} Message.TokensRevealed: got {gm.TokensRevealed} expected {em["tokensRevealed"]!.GetValue<int>()}");
-            }
-
-            if (gm.TokenCount != em["tokenCount"]!.GetValue<int>())
-            {
-                errors.Add($"{pfx} Message.TokenCount");
-            }
-
-            if (gm.ArrowVisible != em["arrowVisible"]!.GetValue<bool>())
-            {
-                errors.Add($"{pfx} Message.ArrowVisible: got {gm.ArrowVisible} expected {em["arrowVisible"]!.GetValue<bool>()}");
-            }
-
-            if (gm.ArrowFrame != em["arrowFrame"]!.GetValue<int>())
-            {
-                errors.Add($"{pfx} Message.ArrowFrame: got {gm.ArrowFrame} expected {em["arrowFrame"]!.GetValue<int>()}");
-            }
-        }
+        VerifyPartners(c["out_partners"]!.AsArray(), v.Partners, pfx, errors);
+        VerifyMessage(c["out_message"], v.Message, pfx, errors);
 
         // Logs
         var expLogsArr = c["out_logs"]!.AsArray();
@@ -335,5 +174,72 @@ public sealed class FightReportControllerVectorTests
         {
             errors.Add($"{pfx} Logs: got [{string.Join(",", gotLogs)}] expected [{string.Join(",", expLogs)}]");
         }
+    }
+
+    private static void VerifyPartners(JsonArray expected, IReadOnlyList<FightReportPartnerView> partners, string pfx, List<string> errors)
+    {
+        if (partners.Count != expected.Count)
+        {
+            errors.Add($"{pfx} Partners.Count: got {partners.Count} expected {expected.Count}");
+            return;
+        }
+
+        for (int pi = 0; pi < partners.Count; pi++)
+        {
+            var ep = expected[pi]!;
+            var gp = partners[pi];
+            string pp = $"{pfx}[P{pi}]";
+            var check = new VectorFieldCheck(ep, pp, errors);
+            check.Expect("partyIndex", "partyIndex", gp.PartyIndex);
+            check.Expect("partnerId", "partnerId", gp.PartnerId);
+            check.Expect("fighterId", "fighterId", gp.FighterId);
+            check.Expect("Fade", "fade", gp.Fade);
+            check.Expect("Selected", "selected", gp.Selected);
+            check.Expect("CursorFrame", "cursorFrame", gp.CursorFrame);
+            check.Expect("LevelBlinkFrame", "levelBlinkFrame", gp.LevelBlinkFrame);
+            check.Expect("ShownExp", "shownExp", gp.ShownExp);
+            check.Expect("AnimationFrame", "animationFrame", gp.AnimationFrame);
+            VerifySlots(ep["slots"]!.AsArray(), gp.Slots, pp, errors);
+        }
+    }
+
+    private static void VerifySlots(JsonArray expected, IReadOnlyList<FightReportSlotView> slots, string pp, List<string> errors)
+    {
+        if (slots.Count != expected.Count)
+        {
+            errors.Add($"{pp} Slots.Count: got {slots.Count} expected {expected.Count}");
+            return;
+        }
+
+        for (int si = 0; si < slots.Count; si++)
+        {
+            var check = new VectorFieldCheck(expected[si]!, $"{pp}[S{si}]", errors);
+            check.Expect("DigimonId", "digimonId", slots[si].DigimonId);
+            check.Expect("Visible", "visible", slots[si].Visible);
+            check.Expect("ExpApplied", "expApplied", slots[si].ExpApplied);
+            check.Expect("BlinkFrame", "blinkFrame", slots[si].BlinkFrame);
+        }
+    }
+
+    // A null message is written either as a JSON null or as a missing key.
+    private static void VerifyMessage(JsonNode? expected, FightReportMessage? message, string pfx, List<string> errors)
+    {
+        bool expectedNull = expected is null || (expected is JsonValue jv && jv.GetValue<object?>() is null);
+        if (expectedNull || message is null)
+        {
+            if (expectedNull != (message is null))
+            {
+                errors.Add($"{pfx} Message: got {(message is null ? "null" : "non-null")} expected {(expectedNull ? "null" : "non-null")}");
+            }
+
+            return;
+        }
+
+        var check = new VectorFieldCheck(expected!, pfx, errors);
+        check.Expect("Message.Entry", "entry", message.Entry);
+        check.Expect("Message.TokensRevealed", "tokensRevealed", message.TokensRevealed);
+        check.Expect("Message.TokenCount", "tokenCount", message.TokenCount);
+        check.Expect("Message.ArrowVisible", "arrowVisible", message.ArrowVisible);
+        check.Expect("Message.ArrowFrame", "arrowFrame", message.ArrowFrame);
     }
 }

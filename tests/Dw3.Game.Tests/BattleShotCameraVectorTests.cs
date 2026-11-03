@@ -97,28 +97,36 @@ public sealed class BattleShotCameraVectorTests
             return;
         }
 
+        CompareSnapshots(id, snapshots, r.Snapshots, ops, errors);
+        CompareCalls(id, c["calls"]!.AsArray(), r.Calls, errors);
+    }
+
+    private static void CompareSnapshots(int id, JsonArray snapshots, List<int[]> actual, List<string> ops, List<string> errors)
+    {
         for (var i = 0; i < snapshots.Count; i++)
         {
             var expected = BattleShotCameraVectorHarness.Ints(snapshots[i]);
-            if (!expected.SequenceEqual(r.Snapshots[i]))
+            if (!expected.SequenceEqual(actual[i]))
             {
-                errors.Add($"[{id}] snapshot {i} after op '{(i == 0 ? "ctor" : ops[i - 1])}': got [{string.Join(",", r.Snapshots[i])}] expected [{string.Join(",", expected)}]");
+                errors.Add($"[{id}] snapshot {i} after op '{(i == 0 ? "ctor" : ops[i - 1])}': got [{string.Join(",", actual[i])}] expected [{string.Join(",", expected)}]");
             }
         }
+    }
 
-        var calls = c["calls"]!.AsArray();
-        for (var i = 0; i < calls.Count && i < r.Calls.Count; i++)
+    private static void CompareCalls(int id, JsonArray calls, List<List<string>> actual, List<string> errors)
+    {
+        for (var i = 0; i < calls.Count && i < actual.Count; i++)
         {
             var expected = calls[i]!.AsArray().Select(x => x!.GetValue<string>()).ToArray();
-            if (!expected.SequenceEqual(r.Calls[i]))
+            if (!expected.SequenceEqual(actual[i]))
             {
-                errors.Add($"[{id}] calls {i}: got [{string.Join(",", r.Calls[i])}] expected [{string.Join(",", expected)}]");
+                errors.Add($"[{id}] calls {i}: got [{string.Join(",", actual[i])}] expected [{string.Join(",", expected)}]");
             }
         }
 
-        if (calls.Count != r.Calls.Count)
+        if (calls.Count != actual.Count)
         {
-            errors.Add($"[{id}] call-group count: got {r.Calls.Count} expected {calls.Count}");
+            errors.Add($"[{id}] call-group count: got {actual.Count} expected {calls.Count}");
         }
     }
 

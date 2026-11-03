@@ -148,55 +148,68 @@ public sealed class DialogueDataPackLoaderTests : IDisposable
         command.ExecuteNonQuery();
     }
 
+    private static void WriteTalks(DataPackWriteContext context, int textEntryCount, string? textJson)
+    {
+        Execute(context, "INSERT INTO dialogue_zones VALUES (200,512,1)");
+        Execute(context, "INSERT INTO dialogue_actors VALUES (200,12,30,40,2,16)");
+        Execute(context, "INSERT INTO dialogue_talks VALUES (200,12,0,5,0,'simple'),(200,12,1,6,1,'effect')");
+        Execute(context, "INSERT INTO dialogue_codes VALUES (200,12,1,'condition',0,24580,1,'progress'),(200,12,1,'action',0,16,1,'flag_set'),(200,12,1,'action',1,36864,2,'start_event')");
+        Execute(context, "INSERT INTO dialogue_talk_families VALUES (200,12,1,'start_event'),(200,12,1,'flag_set')");
+        Execute(context, $"INSERT INTO text_files VALUES (1,'FSTALK01',{textEntryCount})");
+        File(context, "text/talk01.json", textJson ?? """{"count":1,"entries":[[{"t":"g","c":65},{"t":"i","c":3},{"t":"c","cmd":2,"args":[7,8]}]]}""", register: false);
+    }
+
+    private static void WriteFonts(DataPackWriteContext context, int style2LineHeight)
+    {
+        foreach ((int style, int lineHeight) in new[] { (1, 14), (2, style2LineHeight), (3, 9) })
+        {
+            Execute(context, $"INSERT INTO font_styles VALUES ({style},{lineHeight},1,1)");
+            Execute(context, $"INSERT INTO font_glyphs VALUES ({style},4,0,1,2,3,4,5,6,-1,-2,7)");
+            Execute(context, $"INSERT INTO font_icons VALUES ({style},1,0,1,2,3,4,5,6,0,0,7)");
+            for (int page = 0; page < 2; page++)
+            {
+                for (int palette = 0; palette < 8; palette++)
+                {
+                    File(context, $"font/font-style-{style}-palette-{palette}-page-{page}.png", "png");
+                }
+            }
+        }
+
+        File(context, "font/font-style-1-page-0.png", "png");
+        File(context, "font/font-style-1-page-1.png", "png");
+    }
+
+    private static void WriteTalkBox(DataPackWriteContext context, int skipFrame, int layouts)
+    {
+        foreach (int frame in DialogueFrameNumbers)
+        {
+            if (frame == skipFrame)
+            {
+                continue;
+            }
+
+            string path = File(context, $"dialogue/frame/frame-{frame}.png", "png");
+            Execute(context, $"INSERT INTO talk_box_frames VALUES ({frame},8,8,{(frame == 7 ? 4 : 1)},{(frame == 7 ? 0 : 1)},'{path}')");
+        }
+
+        string panel = File(context, "dialogue/frame/panel.png", "png");
+        Execute(context, $"INSERT INTO talk_box_panel VALUES (222,238,255,1,69,11351,12,62,'{panel}')");
+        int[] sprites = [3, 5, 5, 6];
+        for (int layout = 0; layout < layouts; layout++)
+        {
+            Execute(context, $"INSERT INTO talk_box_layouts VALUES ({layout},{sprites[layout]},-16,-16,-26,-74,-10,-74,125,-74,-20,-71,-20,-58,125,-38)");
+        }
+    }
+
     private void BuildPack(int textEntryCount = 1, string? textJson = null, int style2LineHeight = 11, int skipFrame = -1, int layouts = 4)
     {
         new DataPackWriter(_root).Write(
             new DataPackMetadata("test", "synthetic", SyntheticDataPackFixture.SyntheticEdition, DateTimeOffset.UnixEpoch),
             context =>
             {
-                Execute(context, "INSERT INTO dialogue_zones VALUES (200,512,1)");
-                Execute(context, "INSERT INTO dialogue_actors VALUES (200,12,30,40,2,16)");
-                Execute(context, "INSERT INTO dialogue_talks VALUES (200,12,0,5,0,'simple'),(200,12,1,6,1,'effect')");
-                Execute(context, "INSERT INTO dialogue_codes VALUES (200,12,1,'condition',0,24580,1,'progress'),(200,12,1,'action',0,16,1,'flag_set'),(200,12,1,'action',1,36864,2,'start_event')");
-                Execute(context, "INSERT INTO dialogue_talk_families VALUES (200,12,1,'start_event'),(200,12,1,'flag_set')");
-                Execute(context, $"INSERT INTO text_files VALUES (1,'FSTALK01',{textEntryCount})");
-                File(context, "text/talk01.json", textJson ?? """{"count":1,"entries":[[{"t":"g","c":65},{"t":"i","c":3},{"t":"c","cmd":2,"args":[7,8]}]]}""", register: false);
-
-                foreach ((int style, int lineHeight) in new[] { (1, 14), (2, style2LineHeight), (3, 9) })
-                {
-                    Execute(context, $"INSERT INTO font_styles VALUES ({style},{lineHeight},1,1)");
-                    Execute(context, $"INSERT INTO font_glyphs VALUES ({style},4,0,1,2,3,4,5,6,-1,-2,7)");
-                    Execute(context, $"INSERT INTO font_icons VALUES ({style},1,0,1,2,3,4,5,6,0,0,7)");
-                    for (int page = 0; page < 2; page++)
-                    {
-                        for (int palette = 0; palette < 8; palette++)
-                        {
-                            File(context, $"font/font-style-{style}-palette-{palette}-page-{page}.png", "png");
-                        }
-                    }
-                }
-
-                File(context, "font/font-style-1-page-0.png", "png");
-                File(context, "font/font-style-1-page-1.png", "png");
-
-                foreach (int frame in DialogueFrameNumbers)
-                {
-                    if (frame == skipFrame)
-                    {
-                        continue;
-                    }
-
-                    string path = File(context, $"dialogue/frame/frame-{frame}.png", "png");
-                    Execute(context, $"INSERT INTO talk_box_frames VALUES ({frame},8,8,{(frame == 7 ? 4 : 1)},{(frame == 7 ? 0 : 1)},'{path}')");
-                }
-
-                string panel = File(context, "dialogue/frame/panel.png", "png");
-                Execute(context, $"INSERT INTO talk_box_panel VALUES (222,238,255,1,69,11351,12,62,'{panel}')");
-                int[] sprites = [3, 5, 5, 6];
-                for (int layout = 0; layout < layouts; layout++)
-                {
-                    Execute(context, $"INSERT INTO talk_box_layouts VALUES ({layout},{sprites[layout]},-16,-16,-26,-74,-10,-74,125,-74,-20,-71,-20,-58,125,-38)");
-                }
+                WriteTalks(context, textEntryCount, textJson);
+                WriteFonts(context, style2LineHeight);
+                WriteTalkBox(context, skipFrame, layouts);
             });
     }
 }

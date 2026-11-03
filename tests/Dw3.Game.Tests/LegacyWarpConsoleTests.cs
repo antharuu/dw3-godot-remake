@@ -33,26 +33,28 @@ public sealed class LegacyWarpConsoleTests
         var warp = new WarpController();
         var current = s200;
         var logs = new List<string>();
+        Func<string, FieldZone> resolve = target => target == "S235" ? s235 : s200;
+        Action<FieldZone> enter = zone => current = zone;
 
-        Tick(warp, state, input, current, target => target == "S235" ? s235 : s200, zone => current = zone, logs);
+        Tick(warp, state, input, current, resolve, enter, logs);
         Check(warp.State == WarpState.Offer && state.Offer, "offer admitted on S200 slot4");
         input.PressAction();
-        RunUntilRearm(warp, state, input, () => current, target => target == "S235" ? s235 : s200, zone => current = zone, logs);
+        RunUntilRearm(warp, state, input, () => current, resolve, enter, logs);
         Check(state.ZoneId == "S235" && state.Position == new Vector2(278, 218) && state.Facing == 3, "S200 slot4 commits S235 manifest arrival");
         Check(warp.CommitCount == 1, "first edge commits exactly once");
         input.ReleaseAction();
-        Tick(warp, state, input, current, target => target == "S235" ? s235 : s200, zone => current = zone, logs);
+        Tick(warp, state, input, current, resolve, enter, logs);
         Check(warp.State == WarpState.Idle, "release rearms controller");
 
         state.Position = Vector2.Zero;
         state.SetFacing(7);
-        Tick(warp, state, input, current, target => target == "S235" ? s235 : s200, zone => current = zone, logs);
+        Tick(warp, state, input, current, resolve, enter, logs);
         input.PressAction();
-        RunUntilRearm(warp, state, input, () => current, target => target == "S235" ? s235 : s200, zone => current = zone, logs);
+        RunUntilRearm(warp, state, input, () => current, resolve, enter, logs);
         Check(state.ZoneId == "S200" && state.Position == new Vector2(672, 378) && state.Facing == 7, "S235 slot1 commits S200 manifest arrival");
         Check(warp.CommitCount == 2, "roundtrip commits each edge once");
         input.ReleaseAction();
-        Tick(warp, state, input, current, target => target == "S235" ? s235 : s200, zone => current = zone, logs);
+        Tick(warp, state, input, current, resolve, enter, logs);
     }
 
     private static void RejectsIncompatibleSourceFacingFromActualM1Triggers()
