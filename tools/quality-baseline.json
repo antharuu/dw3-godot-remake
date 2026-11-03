@@ -4,8 +4,8 @@
     "linePercent": {
       "Dw3.Data": 97.18,
       "Dw3.Disc": 94.38,
-      "Dw3.Extractor": 41.11,
-      "Dw3.Formats": 81.85
+      "Dw3.Extractor": 87.33,
+      "Dw3.Formats": 84.5
     }
   },
   "violations": [
@@ -661,7 +661,7 @@
       "rule": "SA1201",
       "project": "Dw3.Extractor",
       "folder": ".",
-      "count": 2
+      "count": 1
     },
     {
       "rule": "SA1201",
@@ -1531,7 +1531,7 @@
       "rule": "SA1515",
       "project": "Dw3.Extractor",
       "folder": ".",
-      "count": 16
+      "count": 15
     },
     {
       "rule": "SA1515",
