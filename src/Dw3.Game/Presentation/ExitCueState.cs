@@ -31,8 +31,14 @@ public sealed class ExitCueState
         _innerRows = innerRows;
     }
 
+    /// <summary>Gets the current visibility and transition phase of the field cue.</summary>
     public ExitCuePhase Phase { get; private set; } = ExitCuePhase.Hidden;
 
+    /// <summary>Advances the cue by one simulation step and returns the frame selection for rendering.</summary>
+    /// <param name="offered">Whether the current field position offers an exit or interaction cue.</param>
+    /// <param name="rawDirection">Player-facing direction in the inclusive range 0 through 7.</param>
+    /// <returns>A snapshot containing the cue phase, outer frame, optional inner frame, and facing direction.</returns>
+    /// <exception cref="ArgumentOutOfRangeException">Thrown when <paramref name="rawDirection"/> is outside 0 through 7.</exception>
     public ExitCueSnapshot Advance(bool offered, int rawDirection)
     {
         if (rawDirection is < 0 or > 7)
@@ -59,6 +65,7 @@ public sealed class ExitCueState
         return new ExitCueSnapshot(Phase, _pop >> 2, innerFrame, _rawDirection);
     }
 
+    /// <summary>Clears all accumulated timing and returns the cue to its hidden initial state.</summary>
     public void Reset()
     {
         Phase = ExitCuePhase.Hidden;
@@ -68,6 +75,9 @@ public sealed class ExitCueState
         _rawDirection = 0;
     }
 
+    /// <summary>Opens or advances the cue while an exit is available to the player.</summary>
+    /// <param name="rawDirection">Current player-facing direction in the source eight-direction encoding.</param>
+    /// <param name="sourceUnits">Elapsed source-clock units accumulated for this simulation step.</param>
     private void AdvanceOffered(int rawDirection, int sourceUnits)
     {
         _rawDirection = rawDirection;
@@ -92,6 +102,8 @@ public sealed class ExitCueState
         }
     }
 
+    /// <summary>Closes a visible cue after the player no longer faces an offered exit.</summary>
+    /// <param name="sourceUnits">Elapsed source-clock units accumulated for this simulation step.</param>
     private void AdvanceNotOffered(int sourceUnits)
     {
         if (Phase is ExitCuePhase.Opening or ExitCuePhase.Open)
@@ -109,6 +121,8 @@ public sealed class ExitCueState
         }
     }
 
+    /// <summary>Converts one 60 Hz simulation step into whole source-clock units while preserving fractions.</summary>
+    /// <returns>The whole source-clock units available to this step.</returns>
     private int NextSourceUnits()
     {
         _sourceRemainder += SourceIncrementNumerator;
@@ -117,6 +131,9 @@ public sealed class ExitCueState
         return units;
     }
 
+    /// <summary>Resolves the looping inner animation frame for the remembered player-facing direction.</summary>
+    /// <returns>The selected frame identifier from the directional cue row.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when the selected row is absent, has no positive duration, or cannot yield a frame.</exception>
     private int CurrentInnerFrame()
     {
         var row = _rawDirection == 4 ? 10 : (_rawDirection >> 1) + 6;

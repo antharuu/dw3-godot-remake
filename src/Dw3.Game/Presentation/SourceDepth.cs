@@ -8,5 +8,8 @@ namespace Dw3Production.Presentation;
 /// </summary>
 public static class SourceDepth
 {
+    /// <summary>Inverts an ordering-table depth so the near primitive receives the larger canvas Z index.</summary>
+    /// <param name="orderingTableDepth">Depth bucket assigned by the source painter-order pass.</param>
+    /// <returns>The Godot canvas Z index that preserves source draw order.</returns>
     public static int ToGodotZIndex(int orderingTableDepth) => -orderingTableDepth;
 }
