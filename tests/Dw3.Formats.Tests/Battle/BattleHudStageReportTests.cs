@@ -225,7 +225,80 @@ public sealed class BattleHudStageReportTests
         Assert.Equal(4, rows[0x25]);
     }
 
+    [Fact]
+    public void DecodeFourBitTimValidSyntheticPagePreservesEveryRowWord()
+    {
+        byte[] tim = BuildFourBitTim();
+
+        HudTexturePage page = HudTexturePageDecoder.DecodeFourBitTim(tim);
+
+        Assert.Equal(HudTexturePage.PageHeight, page.Height);
+        Assert.Equal(HudTexturePage.PageWidthWords, page.WidthWords);
+        Assert.Equal((ushort)0x1234, page.Rows[0][0]);
+        Assert.Equal((ushort)0xABCD, page.Rows[255][63]);
+    }
+
+    [Fact]
+    public void DecodeFourBitTimWrongDimensionsThrowsFormatException()
+    {
+        byte[] tim = BuildFourBitTim();
+        BinaryPrimitives.WriteUInt16LittleEndian(tim.AsSpan(16), 63);
+
+        Assert.Throws<FormatException>(() => HudTexturePageDecoder.DecodeFourBitTim(tim));
+    }
+
+    [Fact]
+    public void DecodeCursorBarValidSyntheticStripConvertsOpaqueAndTransparentPixels()
+    {
+        byte[] images = BuildCursorImages();
+
+        (int width, int height, byte[] rgba) = HudCursorBarDecoder.Decode(images);
+
+        Assert.Equal(156, width);
+        Assert.Equal(12, height);
+        Assert.Equal([0, 0, 0, 0], rgba[..4]);
+        Assert.Equal([255, 255, 255, 255], rgba[4..8]);
+    }
+
+    [Fact]
+    public void DecodeCursorBarTruncatedPixelsThrowsFormatException()
+    {
+        byte[] images = BuildCursorImages();
+        Array.Resize(ref images, images.Length - 1);
+
+        Assert.Throws<FormatException>(() => HudCursorBarDecoder.Decode(images));
+    }
+
     // ── helpers ───────────────────────────────────────────────────────────────
+
+    private static byte[] BuildFourBitTim()
+    {
+        int pixelBytes = HudTexturePage.PageWidthWords * HudTexturePage.PageHeight * sizeof(ushort);
+        byte[] tim = new byte[20 + pixelBytes];
+        BinaryPrimitives.WriteUInt32LittleEndian(tim, 0x10);
+        BinaryPrimitives.WriteUInt32LittleEndian(tim.AsSpan(8), (uint)(12 + pixelBytes));
+        BinaryPrimitives.WriteUInt16LittleEndian(tim.AsSpan(16), HudTexturePage.PageWidthWords);
+        BinaryPrimitives.WriteUInt16LittleEndian(tim.AsSpan(18), HudTexturePage.PageHeight);
+        BinaryPrimitives.WriteUInt16LittleEndian(tim.AsSpan(20), 0x1234);
+        BinaryPrimitives.WriteUInt16LittleEndian(tim.AsSpan(tim.Length - 2), 0xABCD);
+        return tim;
+    }
+
+    private static byte[] BuildCursorImages()
+    {
+        const int cursorOffset = 8;
+        const int width = 156;
+        const int height = 12;
+        int pixelBytes = width * height * sizeof(ushort);
+        byte[] images = new byte[cursorOffset + 20 + pixelBytes];
+        BinaryPrimitives.WriteUInt32LittleEndian(images, cursorOffset);
+        BinaryPrimitives.WriteUInt32LittleEndian(images.AsSpan(4), (uint)images.Length);
+        BinaryPrimitives.WriteUInt32LittleEndian(images.AsSpan(cursorOffset), 0x10);
+        BinaryPrimitives.WriteUInt16LittleEndian(images.AsSpan(cursorOffset + 16), width);
+        BinaryPrimitives.WriteUInt16LittleEndian(images.AsSpan(cursorOffset + 18), height);
+        BinaryPrimitives.WriteUInt16LittleEndian(images.AsSpan(cursorOffset + 22), 0x7FFF);
+        return images;
+    }
 
     private static byte[] BuildMinimalSheet(int partsOffset, int idsOffset)
     {
