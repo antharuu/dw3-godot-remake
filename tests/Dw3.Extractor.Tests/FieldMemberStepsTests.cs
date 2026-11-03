@@ -144,56 +144,15 @@ public sealed class FieldMemberStepsTests : IDisposable
     /// </summary>
     private static byte[] ActionArchive(int lastEntry, IReadOnlyList<int> setIds)
     {
-        var entries = new List<byte[]>
-        {
-            DirectTim(),
-            Words(4, 0, -1, -2, -1),
-        };
+        var entries = new List<byte[]> { Fabricate.DirectTim(), Fabricate.Words(4, 0, -1, -2, -1) };
         while (entries.Count < lastEntry)
         {
             entries.Add(new byte[4]);
         }
 
-        var table = new List<byte>();
-        foreach (int id in setIds)
-        {
-            foreach (int word in new[] { id, 1, 1, 1, 1, 1 })
-            {
-                table.AddRange(BitConverter.GetBytes((ushort)word));
-            }
-        }
-
-        table.AddRange([0, 0]);
-        entries.Add([.. table]);
-        int cursor = entries.Count * 4;
-        var data = new List<byte>();
-        foreach (byte[] entry in entries)
-        {
-            data.AddRange(BitConverter.GetBytes(cursor));
-            cursor += entry.Length;
-        }
-
-        foreach (byte[] entry in entries)
-        {
-            data.AddRange(entry);
-        }
-
-        return [.. data];
+        entries.Add(Fabricate.SetTable(setIds, sequence: 1));
+        return Fabricate.Archive(entries);
     }
-
-    private static byte[] DirectTim()
-    {
-        var tim = new byte[8 + 12 + 4];
-        Fabricate.U32(tim, 0, 0x10);
-        Fabricate.U32(tim, 4, 2);
-        Fabricate.U32(tim, 8, 16);
-        Fabricate.U16(tim, 16, 2);
-        Fabricate.U16(tim, 18, 1);
-        Fabricate.U16(tim, 20, 0x7FFF);
-        return tim;
-    }
-
-    private static byte[] Words(params int[] values) => [.. values.SelectMany(BitConverter.GetBytes)];
 
     private static object? Scalar(SqliteConnection connection, string sql)
     {

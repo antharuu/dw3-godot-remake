@@ -54,4 +54,56 @@ internal static class Fabricate
 
         return data;
     }
+
+    /// <summary>Builds an offset-table archive: one u32 start offset per entry, then the entries back to back.</summary>
+    internal static byte[] Archive(IReadOnlyList<byte[]> entries)
+    {
+        int cursor = entries.Count * 4;
+        var data = new List<byte>();
+        foreach (byte[] entry in entries)
+        {
+            data.AddRange(BitConverter.GetBytes(cursor));
+            cursor += entry.Length;
+        }
+
+        foreach (byte[] entry in entries)
+        {
+            data.AddRange(entry);
+        }
+
+        return [.. data];
+    }
+
+    /// <summary>Builds a 2×1 direct-16 TIM whose two pixels are opaque white.</summary>
+    internal static byte[] DirectTim()
+    {
+        var tim = new byte[8 + 12 + 4];
+        U32(tim, 0, 0x10);
+        U32(tim, 4, 2);
+        U32(tim, 8, 16);
+        U16(tim, 16, 2);
+        U16(tim, 18, 1);
+        U16(tim, 20, 0x7FFF);
+        U16(tim, 22, 0x7FFF);
+        return tim;
+    }
+
+    /// <summary>Serialises 32-bit little-endian words.</summary>
+    internal static byte[] Words(params int[] values) => [.. values.SelectMany(BitConverter.GetBytes)];
+
+    /// <summary>Builds a halfword set table: per set its id then five direction sequence indices, ended by a zero id.</summary>
+    internal static byte[] SetTable(IEnumerable<int> setIds, int sequence)
+    {
+        var table = new List<byte>();
+        foreach (int id in setIds)
+        {
+            foreach (int word in new[] { id, sequence, sequence, sequence, sequence, sequence })
+            {
+                table.AddRange(BitConverter.GetBytes((ushort)word));
+            }
+        }
+
+        table.AddRange([0, 0]);
+        return [.. table];
+    }
 }
