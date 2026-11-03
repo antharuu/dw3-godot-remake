@@ -146,9 +146,16 @@ internal static class BattleModelDocument
     public static int[] ReadTriple(JsonElement element) =>
         [element[0].GetInt32(), element[1].GetInt32(), element[2].GetInt32()];
 
+    /// <summary>Reads one position, rotation, or scale key channel.</summary>
+    /// <param name="channel">JSON array of frame and component tuples.</param>
+    /// <returns>Keys stored as X, Y, Z, then frame.</returns>
     private static List<Vector4> ReadKeys(JsonElement channel) =>
         [.. channel.EnumerateArray().Select(key => new Vector4(key[1].GetSingle(), key[2].GetSingle(), key[3].GetSingle(), key[0].GetSingle()))];
 
+    /// <summary>Reads the ambient colour and three directional lights of a stage.</summary>
+    /// <param name="value">JSON object containing the stage light set.</param>
+    /// <returns>The decoded light set.</returns>
+    /// <exception cref="InvalidOperationException">The object does not contain exactly three lights.</exception>
     private static BattleModel.BattleLightSet ReadLightSet(JsonElement value)
     {
         var lights = new List<BattleModel.BattleLight>();

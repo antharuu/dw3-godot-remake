@@ -70,6 +70,8 @@ internal sealed class FieldTextureCache : IDisposable
         return _shadowTexture;
     }
 
+    /// <summary>Builds the radial-gradient image used as the shared actor shadow.</summary>
+    /// <returns>A texture with a soft elliptical alpha gradient.</returns>
     private static ImageTexture BuildShadowTexture()
     {
         var image = Image.CreateEmpty(32, 16, false, Image.Format.Rgba8);

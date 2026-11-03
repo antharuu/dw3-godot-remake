@@ -53,6 +53,9 @@ internal sealed class BattleCommandMenuPainter
         }
     }
 
+    /// <summary>Draws the six-command root menu and updates its cursor trail.</summary>
+    /// <param name="canvas">The HUD drawing context.</param>
+    /// <param name="menu">The root menu state.</param>
     private void DrawRoot(BattleHudCanvas canvas, BattleMenuView menu)
     {
         var cursorFrame = canvas.CursorFrame;

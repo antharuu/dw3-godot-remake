@@ -72,8 +72,16 @@ internal static class BattleKeyTrack
     /// <returns>True when X, Y or Z is zero.</returns>
     public static bool HasZero(Vector3 value) => value.X == 0 || value.Y == 0 || value.Z == 0;
 
+    /// <summary>Extracts the three channel components from one encoded key.</summary>
+    /// <param name="key">Key whose X, Y, and Z components hold the value.</param>
+    /// <returns>The key value without its frame component.</returns>
     private static Vector3 Value(Vector4 key) => new(key.X, key.Y, key.Z);
 
+    /// <summary>Interpolates between adjacent keys with the track's fixed-point arithmetic.</summary>
+    /// <param name="a">Key at the beginning of the interval.</param>
+    /// <param name="b">Key at the end of the interval.</param>
+    /// <param name="frame">Frame sampled inside the interval.</param>
+    /// <returns>The interpolated channel value.</returns>
     private static Vector3 Interpolate(Vector4 a, Vector4 b, int frame)
     {
         if (frame == b.W)

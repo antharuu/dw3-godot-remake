@@ -396,8 +396,11 @@ public sealed partial class BattleProbe : Node2D
         return image;
     }
 
-    /// <summary>Counts the bright (non-background) pixels in the horizontal band [xMin, xMax),
-    /// the "opaque pixels" evidence that a textured model is actually rendered.</summary>
+    /// <summary>Counts bright non-background pixels in a horizontal image band.</summary>
+    /// <param name="image">Capture image to inspect.</param>
+    /// <param name="xMin">Inclusive left edge of the inspected band.</param>
+    /// <param name="xMax">Exclusive right edge of the inspected band.</param>
+    /// <returns>The number of bright pixels in the band.</returns>
     private static int CountBrightPixels(Image image, int xMin, int xMax)
     {
         var data = image.GetData();
@@ -420,7 +423,12 @@ public sealed partial class BattleProbe : Node2D
         return count;
     }
 
-    /// <summary>Counts pixels that differ between two same-sized captures in [xMin, xMax).</summary>
+    /// <summary>Counts pixels that differ between two same-sized captures in a horizontal band.</summary>
+    /// <param name="a">First capture image.</param>
+    /// <param name="b">Second capture image.</param>
+    /// <param name="xMin">Inclusive left edge of the inspected band.</param>
+    /// <param name="xMax">Exclusive right edge of the inspected band.</param>
+    /// <returns>The number of pixels whose RGB distance exceeds the comparison threshold.</returns>
     private static int CountDifferentPixels(Image a, Image b, int xMin, int xMax)
     {
         var ad = a.GetData();

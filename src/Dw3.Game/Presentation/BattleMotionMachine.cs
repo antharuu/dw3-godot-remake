@@ -18,7 +18,7 @@ public sealed class BattleMotionMachine
     private readonly List<int> _sources = [];
 
     /// <summary>
-    /// Creates a motion machine from decoded fighter motions and activates the selected idle motion.
+    /// Initializes a new instance of the <see cref="BattleMotionMachine"/> class from decoded fighter motions and activates the selected idle motion.
     /// </summary>
     /// <param name="motions">Motions containing ordered animation steps.</param>
     /// <param name="idleMotion">Idle selection, normally zero or one.</param>

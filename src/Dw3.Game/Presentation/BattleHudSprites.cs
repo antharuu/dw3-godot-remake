@@ -133,6 +133,10 @@ internal sealed class BattleHudSprites : IDisposable
         _menuIconTextures.Clear();
     }
 
+    /// <summary>Loads one cursor image and warns when it cannot be decoded.</summary>
+    /// <param name="path">Path of the cursor image.</param>
+    /// <param name="warningKey">Diagnostic key emitted for an unreadable image.</param>
+    /// <returns>The loaded texture, or null when the image is unreadable.</returns>
     private static ImageTexture? LoadCursor(string path, string warningKey)
     {
         var image = Image.LoadFromFile(path);
@@ -145,6 +149,9 @@ internal sealed class BattleHudSprites : IDisposable
         return ImageTexture.CreateFromImage(image);
     }
 
+    /// <summary>Loads every palette-row texture for one HUD frame.</summary>
+    /// <param name="id">Frame identifier.</param>
+    /// <param name="frame">Decoded image paths and crop offset.</param>
     private void LoadFrame(int id, BattleHudFrame frame)
     {
         var rows = frame.ClutRows.Select(path => Image.LoadFromFile(path)).ToArray();

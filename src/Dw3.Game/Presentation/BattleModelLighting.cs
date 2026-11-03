@@ -34,6 +34,10 @@ internal sealed class BattleModelLighting
         }
     }
 
+    /// <summary>Calculates the clamped lit colour for one transformed surface normal.</summary>
+    /// <param name="set">Ambient and directional stage lights.</param>
+    /// <param name="normal">Surface normal in world coordinates.</param>
+    /// <returns>The resulting colour.</returns>
     private static Color Shade(BattleModel.BattleLightSet set, Vector3 normal)
     {
         var color = set.Ambient;
@@ -45,6 +49,10 @@ internal sealed class BattleModelLighting
         return new Color(Mathf.Min(1f, color.R), Mathf.Min(1f, color.G), Mathf.Min(1f, color.B));
     }
 
+    /// <summary>Rebuilds one surface mesh with colours calculated from its live bone basis.</summary>
+    /// <param name="surface">Surface to recolour.</param>
+    /// <param name="basis">World basis of the surface's owning bone.</param>
+    /// <param name="fighterId">Fighter identifier used for diagnostics.</param>
     private void RefreshSurface(BattleLitSurface surface, Basis basis, int fighterId)
     {
         var tool = new SurfaceTool();
@@ -62,6 +70,12 @@ internal sealed class BattleModelLighting
         surface.Instance.MaterialOverride = surface.Material;
     }
 
+    /// <summary>Calculates one surface vertex colour and records the first lit diagnostic sample.</summary>
+    /// <param name="surface">Surface containing the vertex.</param>
+    /// <param name="index">Zero-based vertex index.</param>
+    /// <param name="basis">World basis of the surface's owning bone.</param>
+    /// <param name="fighterId">Fighter identifier used for diagnostics.</param>
+    /// <returns>The colour assigned to the vertex.</returns>
     private Color VertexColor(BattleLitSurface surface, int index, Basis basis, int fighterId)
     {
         var source = surface.Lighting[index];

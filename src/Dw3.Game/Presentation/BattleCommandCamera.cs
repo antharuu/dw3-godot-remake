@@ -59,6 +59,13 @@ internal sealed class BattleCommandCamera
     public string Summary() => _shot is null ? "inactive" :
         $"list={_shot.List} shot={_shot.Shot} substate={_shot.Substate} rot.vy=0x{_shot.View.RotationY:X3} time={_shot.Time} player={_shot.PlayerVisible} enemy={_shot.EnemyVisible}";
 
+    /// <summary>Converts one fighter camera at the requested index into a renderable view.</summary>
+    /// <param name="players">Player fighter camera views.</param>
+    /// <param name="enemies">Enemy fighter camera views.</param>
+    /// <param name="enemy">Whether to select the enemy camera list.</param>
+    /// <param name="index">Zero-based camera index.</param>
+    /// <returns>The selected camera view in presentation coordinates.</returns>
+    /// <exception cref="InvalidOperationException">The requested camera index is unavailable.</exception>
     private static SourceBattleCameraView ViewFor(IReadOnlyList<BattleModel.BattleCameraView> players, IReadOnlyList<BattleModel.BattleCameraView> enemies, bool enemy, int index)
     {
         var cameras = enemy ? enemies : players;

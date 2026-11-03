@@ -60,6 +60,9 @@ internal static class BattleListMenuPainter
         canvas.Cursor(14, 69 + (menu.Cursor * 14));
     }
 
+    /// <summary>Gets the selected menu line when the menu contains at least one line.</summary>
+    /// <param name="menu">Menu whose selection is queried.</param>
+    /// <returns>The selected line, or null for an empty menu.</returns>
     private static BattleMenuLine? Selected(BattleMenuView menu) => menu.Lines.Count == 0 ? null : menu.Lines[menu.Cursor];
 
     /// <summary>The MP header, current MP (or its override text), separator and maximum MP at y 0x3A.</summary>
@@ -82,6 +85,10 @@ internal static class BattleListMenuPainter
         canvas.Text.DrawWindow(3, 0xFB, 0x3A, player.MaxMp.ToString(CultureInfo.InvariantCulture), rightAlign: true, palette: BattleHudPalette.White);
     }
 
+    /// <summary>Draws the visible icon and label rows of a paged menu.</summary>
+    /// <param name="canvas">The HUD drawing context.</param>
+    /// <param name="menu">Menu containing the rows.</param>
+    /// <param name="maxLines">Maximum number of rows visible in the pane.</param>
     private static void DrawLines(BattleHudCanvas canvas, BattleMenuView menu, int maxLines)
     {
         for (var i = 0; i < menu.Lines.Count && i < maxLines; i++)
@@ -114,6 +121,10 @@ internal static class BattleListMenuPainter
         }
     }
 
+    /// <summary>Draws the labels beside a menu's page arrows.</summary>
+    /// <param name="canvas">The HUD drawing context.</param>
+    /// <param name="menu">Menu providing the page labels.</param>
+    /// <param name="y">Source y coordinate of the label row.</param>
     private static void DrawPageLabels(BattleHudCanvas canvas, BattleMenuView menu, int y)
     {
         canvas.Text.DrawLine(3, 0x1A, y, menu.PreviousPageText, string.Empty, rightAlign: false, palette: BattleHudPalette.DarkBlue);

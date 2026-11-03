@@ -37,6 +37,11 @@ internal static class BattleGeometryOracle
         return string.Join(" ", summaries) + $" stageMinY={stageBounds.Position.Y:0.###} fighterMinY={lowestFighter:0.###}";
     }
 
+    /// <summary>Verifies that one fighter projects above its feet in the supplied camera.</summary>
+    /// <param name="model">Fighter model to inspect.</param>
+    /// <param name="camera">Camera used for screen-space projection.</param>
+    /// <returns>A diagnostic summary of the projected head and foot positions.</returns>
+    /// <exception cref="InvalidOperationException">The projected head is not above the projected feet.</exception>
     private static string AssertUpright(BattleModel model, Camera3D camera)
     {
         // The ordering-table renderer owns visibility. MeshInstance3D nodes are source geometry

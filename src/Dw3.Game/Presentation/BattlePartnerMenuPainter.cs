@@ -68,6 +68,11 @@ internal static class BattlePartnerMenuPainter
         canvas.Cursor(168, 147 + (menu.Cursor * 19));
     }
 
+    /// <summary>Draws one benched partner row with its health and technique-point values.</summary>
+    /// <param name="canvas">The HUD drawing context.</param>
+    /// <param name="menu">Switch menu that supplies row text and selection.</param>
+    /// <param name="i">Zero-based row index.</param>
+    /// <param name="fighter">Benched fighter represented by the row.</param>
     private static void DrawSwitchCandidate(BattleHudCanvas canvas, BattleMenuView menu, int i, BattleFighterView fighter)
     {
         var y = 0x4E + (i * 0x20);
@@ -79,6 +84,12 @@ internal static class BattlePartnerMenuPainter
         DrawStat(canvas, y + 0xE, "MP", fighter.Mp, fighter.MaxMp);
     }
 
+    /// <summary>Draws one labelled current and maximum statistic pair.</summary>
+    /// <param name="canvas">The HUD drawing context.</param>
+    /// <param name="y">Source y coordinate of the statistic row.</param>
+    /// <param name="label">Statistic label.</param>
+    /// <param name="current">Current statistic value.</param>
+    /// <param name="maximum">Maximum statistic value.</param>
     private static void DrawStat(BattleHudCanvas canvas, int y, string label, int current, int maximum)
     {
         canvas.Text.DrawWindow(3, 0x6C, y, label, rightAlign: false, palette: BattleHudPalette.White);

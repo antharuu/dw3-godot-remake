@@ -104,6 +104,7 @@ public sealed class BattleShotCamera
     }
 
     /// <summary>Advances the battle shot by the requested number of frames.</summary>
+    /// <param name="frames">Number of frames to advance.</param>
     public void StepFrames(int frames)
     {
         for (var frame = 0; frame < frames; frame++)
@@ -120,6 +121,7 @@ public sealed class BattleShotCamera
         View = _views.GetEnemyView();
     }
 
+    /// <summary>Applies the current shot behavior to the camera view.</summary>
     private void ApplyBehavior()
     {
         if (_firstFrame)
@@ -145,6 +147,7 @@ public sealed class BattleShotCamera
         }
     }
 
+    /// <summary>Initializes camera state and visibility for a newly entered behavior.</summary>
     private void BeginBehavior()
     {
         switch (Substate)
@@ -188,6 +191,7 @@ public sealed class BattleShotCamera
         }
     }
 
+    /// <summary>Starts a side view focused on the player fighter.</summary>
     private void BeginPlayerSide()
     {
         EnemyVisible = false;
@@ -197,6 +201,7 @@ public sealed class BattleShotCamera
         View.Vrz = unchecked(View.Vrz + SideDistance);
     }
 
+    /// <summary>Starts a side view focused on the enemy fighter.</summary>
     private void BeginEnemySide()
     {
         PlayerVisible = false;
@@ -206,11 +211,16 @@ public sealed class BattleShotCamera
         View.Vrz = unchecked(View.Vrz - SideDistance);
     }
 
+    /// <summary>Wraps a turn-unit angle into the non-negative full-turn range.</summary>
+    /// <param name="angle">Angle in turn units.</param>
+    /// <returns>The wrapped angle.</returns>
     private static int WrapTurn(int angle)
     {
         var wrapped = angle % TurnUnits;
         return wrapped < 0 ? wrapped + TurnUnits : wrapped;
     }
 
+    /// <summary>Creates the neutral view used by isolated camera tests.</summary>
+    /// <returns>A neutral camera view.</returns>
     private static SourceBattleCameraView NeutralView() => new() { Projection = 280 };
 }

@@ -54,6 +54,8 @@ internal sealed class BattleHudText
         _painter.DrawLine(style, x, y, line, rightAlign, palette);
     }
 
+    /// <summary>Warns once that a requested battle text line has no resolved source.</summary>
+    /// <param name="key">Fallback key identifying the unresolved text.</param>
     private void WarnUnsourced(string key)
     {
         if (_unsourcedWarnings.Add(key))

@@ -38,6 +38,11 @@ internal static class BattleTexturePages
         return result;
     }
 
+    /// <summary>Loads and validates one decoded texture page.</summary>
+    /// <param name="texture">Texture JSON record.</param>
+    /// <param name="directory">Directory containing decoded page images.</param>
+    /// <returns>The immutable source image, working image, and rendering texture.</returns>
+    /// <exception cref="InvalidOperationException">The record is unsupported or its image is invalid.</exception>
     private static BattleFaceTexture LoadPage(JsonElement texture, string directory)
     {
         if (texture.GetProperty("kind").GetString() != "ps1-tpage")

@@ -66,10 +66,16 @@ internal sealed class BattleMeshBuilder
         }
     }
 
+    /// <summary>Reads and converts the vertex stream of one mesh.</summary>
+    /// <param name="mesh">Mesh JSON object containing the vertex array.</param>
+    /// <returns>Vertices in presentation coordinates.</returns>
     private static List<Vector3> ReadVertices(JsonElement mesh) =>
         [.. mesh.GetProperty("vertices").EnumerateArray().Select(vertex =>
             BattleModel.Ps1Position(new Vector3(vertex[0].GetSingle(), vertex[1].GetSingle(), vertex[2].GetSingle())))];
 
+    /// <summary>Reads and converts the normal stream of one mesh.</summary>
+    /// <param name="mesh">Mesh JSON object containing the normal array.</param>
+    /// <returns>Normalized normals in presentation coordinates.</returns>
     private static List<Vector3> ReadNormals(JsonElement mesh) =>
         [.. mesh.GetProperty("normals").EnumerateArray().Select(normal =>
             new Vector3(normal[0].GetSingle(), -normal[1].GetSingle(), -normal[2].GetSingle()).Normalized())];
@@ -108,6 +114,12 @@ internal sealed class BattleMeshBuilder
         return new Color(intensity * 128f / 255f, intensity * 128f / 255f, intensity * 128f / 255f);
     }
 
+    /// <summary>Appends the triangles representing one polygon to a surface buffer.</summary>
+    /// <param name="buffer">Surface buffer receiving vertices and state.</param>
+    /// <param name="streams">Vertex and normal streams for the mesh.</param>
+    /// <param name="polygon">Polygon record to append.</param>
+    /// <param name="sourceCommand">Ordinal of the polygon within the mesh.</param>
+    /// <exception cref="InvalidOperationException">The polygon is neither a triangle nor a quad.</exception>
     private static void AppendPolygon(BattleSurfaceBuffer buffer, BattleMeshStreams streams, JsonElement polygon, int sourceCommand)
     {
         var indices = polygon.GetProperty("indices");
@@ -132,6 +144,10 @@ internal sealed class BattleMeshBuilder
         buffer.SourceStates.Add((sourceCommand, vertexStart, count));
     }
 
+    /// <summary>Groups mesh polygons by texture and blend mode for surface construction.</summary>
+    /// <param name="mesh">Mesh JSON object containing polygons.</param>
+    /// <returns>Polygons grouped by texture key and blend mode.</returns>
+    /// <exception cref="InvalidOperationException">A polygon has no retained UV state.</exception>
     private Dictionary<(int Texture, int Abr), List<(JsonElement Polygon, int Command)>> GroupPolygons(JsonElement mesh)
     {
         var groups = new Dictionary<(int Texture, int Abr), List<(JsonElement Polygon, int Command)>>();
@@ -160,6 +176,11 @@ internal sealed class BattleMeshBuilder
         return groups;
     }
 
+    /// <summary>Builds and attaches one material surface from a polygon group.</summary>
+    /// <param name="streams">Vertex and normal streams for the owning mesh.</param>
+    /// <param name="key">Texture key and blend mode of the group.</param>
+    /// <param name="polygons">Polygons to emit into the surface.</param>
+    /// <exception cref="InvalidOperationException">The group references an unavailable texture.</exception>
     private void BuildSurface(BattleMeshStreams streams, (int Texture, int Abr) key, List<(JsonElement Polygon, int Command)> polygons)
     {
         if (!_textures.TryGetValue(key.Texture, out var texture))

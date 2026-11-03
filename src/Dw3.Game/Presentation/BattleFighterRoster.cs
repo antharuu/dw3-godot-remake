@@ -158,6 +158,9 @@ internal sealed class BattleFighterRoster
         }
     }
 
+    /// <summary>Applies requested visibility unless the probe has explicitly hidden the model.</summary>
+    /// <param name="model">Model to update, if present.</param>
+    /// <param name="visible">Whether the current presentation state requests visibility.</param>
     private void ShowUnlessHidden(BattleModel? model, bool visible)
     {
         model?.Root.Visible = visible && !_probeHiddenFighters.Contains(model.FighterId);

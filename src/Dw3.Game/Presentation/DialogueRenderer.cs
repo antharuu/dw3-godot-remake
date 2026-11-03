@@ -54,9 +54,12 @@ public sealed partial class DialogueRenderer : IDisposable
     public void SetFrames(DialogueFrameData frames, IReadOnlyDictionary<int, Texture2D> textures, Texture2D panelTexture) => _box.SetFrames(frames, textures, panelTexture);
 
     /// <summary>Pins the arrow brightness for a deterministic offscreen probe capture.</summary>
+    /// <param name="frame">Probe frame selecting the brightness, or null for live animation.</param>
     public void SetProbeArrowBrightness(int? frame) => _box.SetProbeArrowBrightness(frame);
 
     /// <summary>Maps a deterministic probe frame to the four arrow brightness states.</summary>
+    /// <param name="frame">Non-negative probe frame.</param>
+    /// <returns>The zero-based arrow brightness state.</returns>
     public static int ProbeArrowBrightnessIndex(int frame)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(frame);
@@ -242,10 +245,13 @@ public sealed partial class DialogueRenderer : IDisposable
             _arrowPosition = new Vector2(_boxOrigin.X + arrowX, _boxOrigin.Y + _layout.Arrow.Y);
         }
 
-        /// <summary>Lays out a token run (the name or the text page) left-to-right in source pixels,
-        /// wrapping only at the explicit newline control (1), exactly like textWindowDraw. When
-        /// <paramref name="revealCount"/> is non-negative, only the first that many tokens are drawn
-        /// (the typewriter); -1 reveals everything at once.</summary>
+        /// <summary>Lays out a token run from left to right in source pixels.</summary>
+        /// <param name="target">Draw list receiving the resolved glyph placements.</param>
+        /// <param name="tokens">Name or dialogue-page tokens to lay out.</param>
+        /// <param name="originX">Source x coordinate of the run origin.</param>
+        /// <param name="originY">Source y coordinate of the run origin.</param>
+        /// <param name="nameWindow">Whether the run belongs to the speaker-name window.</param>
+        /// <param name="revealCount">Maximum token count to reveal, or negative one for all tokens.</param>
         private void LayoutTokens(List<GlyphDraw> target, IReadOnlyList<TextToken> tokens, float originX, float originY, bool nameWindow, int revealCount)
         {
             var cursorX = 0f;

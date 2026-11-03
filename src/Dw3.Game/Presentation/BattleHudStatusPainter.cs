@@ -85,6 +85,14 @@ internal static class BattleHudStatusPainter
         canvas.DrawRect(BarRect(side, left, right, top, Mathf.Min(filled, 6f), height), dark);
     }
 
+    /// <summary>Builds the filled rectangle for one side's HP bar.</summary>
+    /// <param name="side">Zero for the player bar and one for the enemy bar.</param>
+    /// <param name="left">Left edge of the bar.</param>
+    /// <param name="right">Right edge of the bar.</param>
+    /// <param name="top">Top edge of the bar.</param>
+    /// <param name="width">Filled width.</param>
+    /// <param name="height">Bar height.</param>
+    /// <returns>The filled bar rectangle.</returns>
     private static Rect2 BarRect(int side, Vector2 left, Vector2 right, float top, float width, float height) => side == 0
         ? new Rect2(new Vector2(right.X - width, top), new Vector2(width, height))
         : new Rect2(new Vector2(left.X, top), new Vector2(width, height));
@@ -102,6 +110,9 @@ internal static class BattleHudStatusPainter
         }
     }
 
+    /// <summary>Draws the names of the active player and enemy fighters.</summary>
+    /// <param name="canvas">The HUD drawing context.</param>
+    /// <param name="view">The battle view of this frame.</param>
     private static void DrawFighterNames(BattleHudCanvas canvas, BattleView view)
     {
         var player = view.Players.FirstOrDefault(fighter => fighter.Active);
@@ -126,6 +137,10 @@ internal static class BattleHudStatusPainter
         DrawTeamSide(canvas, view.Enemies, TeamIconX[1]);
     }
 
+    /// <summary>Draws the status icons for one team.</summary>
+    /// <param name="canvas">The HUD drawing context.</param>
+    /// <param name="fighters">Fighters occupying the team's slots.</param>
+    /// <param name="iconX">Source x coordinate for each slot.</param>
     private static void DrawTeamSide(BattleHudCanvas canvas, IReadOnlyList<BattleFighterView> fighters, int[] iconX)
     {
         for (var slot = 0; slot < Math.Min(3, fighters.Count); slot++)

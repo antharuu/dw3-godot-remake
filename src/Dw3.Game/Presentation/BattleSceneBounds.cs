@@ -39,6 +39,9 @@ internal static class BattleSceneBounds
     /// <returns>The count.</returns>
     public static int MeshCount(Node3D root) => Descendants(root).Count(node => node is MeshInstance3D { Mesh: not null });
 
+    /// <summary>Enumerates every descendant node below a root in depth-first order.</summary>
+    /// <param name="node">Root whose descendants are enumerated.</param>
+    /// <returns>All descendants of <paramref name="node"/>.</returns>
     private static IEnumerable<Node> Descendants(Node node)
     {
         foreach (Node child in node.GetChildren())

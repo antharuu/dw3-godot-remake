@@ -143,6 +143,9 @@ internal sealed class BattleSkeleton
         return max;
     }
 
+    /// <summary>Builds a basis from ZYX Euler angles without using the engine conversion.</summary>
+    /// <param name="radians">Rotation angles in radians.</param>
+    /// <returns>The corresponding ZYX basis.</returns>
     private static Basis ExplicitZyx(Vector3 radians)
     {
         var sx = Mathf.Sin(radians.X);
@@ -159,8 +162,14 @@ internal sealed class BattleSkeleton
             new Vector3((cz * sy * cx) + (sz * sx), (sz * sy * cx) - (cz * sx), cy * cx));
     }
 
+    /// <summary>Finds the largest Euclidean difference between matching basis columns.</summary>
+    /// <param name="a">First basis.</param>
+    /// <param name="b">Second basis.</param>
+    /// <returns>The greatest column difference.</returns>
     private static float BasisMaxDelta(Basis a, Basis b) => Math.Max((a.X - b.X).Length(), Math.Max((a.Y - b.Y).Length(), (a.Z - b.Z).Length()));
 
+    /// <summary>Captures pose values used as the starting point of a blend.</summary>
+    /// <param name="blendSource">Source frame, or 0xFFFF to retain the live pose.</param>
     private void CaptureBlendSource(int blendSource)
     {
         foreach (var pair in _tracks)
@@ -171,9 +180,17 @@ internal sealed class BattleSkeleton
         }
     }
 
+    /// <summary>Gets the retained pose of a bone, or its identity pose when it has none.</summary>
+    /// <param name="bone">Source bone index.</param>
+    /// <returns>The retained position, rotation, and scale.</returns>
     private (Vector3 Position, Vector3 Rotation, Vector3 Scale) ReadCurrentPose(int bone) =>
         _blendPose.TryGetValue(bone, out var pose) ? pose : (Vector3.Zero, Vector3.Zero, IdentityScale);
 
+    /// <summary>Applies fixed-point position, rotation, and scale to one bone node.</summary>
+    /// <param name="bone">Source bone index.</param>
+    /// <param name="positionFixed">Position in fixed-point source units.</param>
+    /// <param name="rotationFixed">Rotation in turn-based fixed-point units.</param>
+    /// <param name="scaleFixed">Scale in fixed-point units.</param>
     private void ApplyPose(int bone, Vector3 positionFixed, Vector3 rotationFixed, Vector3 scaleFixed)
     {
         var sx = (int)scaleFixed.X;
