@@ -939,3 +939,4 @@ tests/Dw3.Extractor.Tests/BattleExtractionStepTests.cs
 tests/Dw3.Extractor.Tests/FabricatedSprites.cs
 tests/Dw3.Extractor.Tests/BattleAssetStepsTests.cs
 tests/Dw3.Extractor.Tests/FieldMemberStepsTests.cs
+tests/Dw3.Extractor.Tests/TextAndEncounterStepsTests.cs

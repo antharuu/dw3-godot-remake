@@ -224,7 +224,8 @@ internal static class TextExtractionStep
     {
         // Build the font-metrics.json payload (mirrors the Python decoder's schema).
         string metricsPath = context.GetImagePath("font/font-metrics.json");
-        using var metricsWriter = new Utf8JsonWriter(File.Create(metricsPath), new JsonWriterOptions { Indented = true });
+        using FileStream metricsStream = File.Create(metricsPath);
+        using var metricsWriter = new Utf8JsonWriter(metricsStream, new JsonWriterOptions { Indented = true });
         metricsWriter.WriteStartObject();
         metricsWriter.WriteString("schema", "m8a-font-metrics-v1");
         metricsWriter.WriteString("source", SlesDiscPath);
@@ -259,7 +260,8 @@ internal static class TextExtractionStep
     {
         // Build the font-clut.json payload.
         string clutPath = context.GetImagePath("font/font-clut.json");
-        using var clutWriter = new Utf8JsonWriter(File.Create(clutPath), new JsonWriterOptions { Indented = true });
+        using FileStream clutStream = File.Create(clutPath);
+        using var clutWriter = new Utf8JsonWriter(clutStream, new JsonWriterOptions { Indented = true });
         clutWriter.WriteStartObject();
         clutWriter.WriteNumber("applied_palette", LegacyPaletteIndex);
         clutWriter.WriteNumber("clut_x", 48);
@@ -355,7 +357,10 @@ internal static class TextExtractionStep
             string fullPath = context.GetImagePath(jsonPath);
             Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);
 
-            using var jsonWriter = new Utf8JsonWriter(File.Create(fullPath), new JsonWriterOptions { Indented = false });
+            // Utf8JsonWriter does not own the stream: the FileStream is disposed separately so the
+            // file handle is released before the next talk file is written.
+            using FileStream jsonStream = File.Create(fullPath);
+            using var jsonWriter = new Utf8JsonWriter(jsonStream, new JsonWriterOptions { Indented = false });
             jsonWriter.WriteStartObject();
             jsonWriter.WriteNumber("count", tableEntries.Count);
             jsonWriter.WriteStartArray("entries");
