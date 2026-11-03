@@ -17,6 +17,8 @@ public sealed class PsxTextPainter
     /// <param name="owner">The Godot Control node whose DrawTextureRectRegion is called for all glyph and icon draws.</param>
     public PsxTextPainter(Control owner) => _owner = owner;
 
+    /// <summary>Loads font metrics and palette pages used by text drawing.</summary>
+    /// <param name="font">Decoded font data and palette-page paths.</param>
     public void SetFont(FontData font)
     {
         _font = font;
@@ -27,9 +29,24 @@ public sealed class PsxTextPainter
         }
     }
 
+    /// <summary>Draws a plain string in a positioned text window.</summary>
+    /// <param name="style">Font style identifier.</param>
+    /// <param name="x">Window horizontal coordinate.</param>
+    /// <param name="y">Window vertical coordinate.</param>
+    /// <param name="text">String to draw.</param>
+    /// <param name="rightAlign">Indicates whether the string is right aligned.</param>
+    /// <param name="palette">Palette row used by glyphs.</param>
     public void DrawWindow(int style, int x, int y, string text, bool rightAlign, int palette) =>
         DrawString(new Vector2(x, y), text, rightAlign ? HorizontalAlignment.Right : HorizontalAlignment.Left, 0, palette, style);
 
+    /// <summary>Draws a tokenized text line with optional reveal limiting.</summary>
+    /// <param name="style">Font style identifier.</param>
+    /// <param name="x">Line horizontal coordinate.</param>
+    /// <param name="y">Line vertical coordinate.</param>
+    /// <param name="line">Tokenized line to draw.</param>
+    /// <param name="rightAlign">Indicates whether the line is right aligned.</param>
+    /// <param name="palette">Palette row used by glyphs.</param>
+    /// <param name="tokenLimit">Maximum number of tokens drawn.</param>
     public void DrawLine(int style, int x, int y, BattleTextLine? line, bool rightAlign, int palette, int tokenLimit = int.MaxValue)
     {
         if (line is null || line == BattleTextLine.Missing)
@@ -46,6 +63,13 @@ public sealed class PsxTextPainter
         DrawTokens(line.Tokens, line.Substitutions, new Vector2(x, y), ref cursor, palette, style, tokenLimit);
     }
 
+    /// <summary>Draws a string using glyph metrics and the selected alignment.</summary>
+    /// <param name="origin">Window origin.</param>
+    /// <param name="text">String to draw.</param>
+    /// <param name="alignment">Horizontal alignment mode.</param>
+    /// <param name="width">Available alignment width.</param>
+    /// <param name="palette">Palette row used by glyphs.</param>
+    /// <param name="style">Font style identifier.</param>
     public void DrawString(Vector2 origin, string text, HorizontalAlignment alignment, float width, int palette, int style = 1)
     {
         if (_font is null || palette is < 0 or > 7)
@@ -67,6 +91,10 @@ public sealed class PsxTextPainter
         }
     }
 
+    /// <summary>Converts supported characters into drawable glyph metrics.</summary>
+    /// <param name="selected">Font style containing glyph metrics.</param>
+    /// <param name="text">Text to convert.</param>
+    /// <returns>Glyph metrics for supported characters.</returns>
     private static List<GlyphMetric> BuildGlyphList(FontStyleData selected, string text)
     {
         var glyphs = new List<GlyphMetric>();
@@ -82,6 +110,12 @@ public sealed class PsxTextPainter
         return glyphs;
     }
 
+    /// <summary>Calculates the first glyph coordinate for an alignment mode.</summary>
+    /// <param name="originX">Unaligned horizontal origin.</param>
+    /// <param name="width">Available alignment width.</param>
+    /// <param name="alignment">Alignment mode.</param>
+    /// <param name="glyphs">Glyphs whose advance is measured.</param>
+    /// <returns>Aligned horizontal coordinate.</returns>
     private static float ComputeAlignedX(float originX, float width, HorizontalAlignment alignment, List<GlyphMetric> glyphs)
     {
         var advance = glyphs.Sum(glyph => glyph.Advance + glyph.Dx);
@@ -94,6 +128,9 @@ public sealed class PsxTextPainter
         return x;
     }
 
+    /// <summary>Maps a supported character to its glyph-table code.</summary>
+    /// <param name="character">Character to map.</param>
+    /// <returns>Glyph-table code or a negative value when unsupported.</returns>
     private static int ToSourceGlyphCode(char character) => character switch
     {
         ' ' => 1,
@@ -103,6 +140,9 @@ public sealed class PsxTextPainter
         _ => -1,
     };
 
+    /// <summary>Loads every palette row for one font style.</summary>
+    /// <param name="font">Decoded font data.</param>
+    /// <param name="style">Style identifier to load.</param>
     private void LoadFontStyle(FontData font, int style)
     {
         for (var palette = 0; palette < 8; palette++)
@@ -111,6 +151,10 @@ public sealed class PsxTextPainter
         }
     }
 
+    /// <summary>Loads both atlas pages for one style and palette row.</summary>
+    /// <param name="font">Decoded font data.</param>
+    /// <param name="style">Style identifier to load.</param>
+    /// <param name="palette">Palette row to load.</param>
     private void LoadFontStylePalette(FontData font, int style, int palette)
     {
         for (var page = 0; page < 2; page++)
@@ -125,6 +169,14 @@ public sealed class PsxTextPainter
         }
     }
 
+    /// <summary>Draws tokens until the configured reveal limit is reached.</summary>
+    /// <param name="tokens">Token sequence to draw.</param>
+    /// <param name="substitutions">Replacement token sequences.</param>
+    /// <param name="origin">Text origin.</param>
+    /// <param name="cursor">Mutable text cursor.</param>
+    /// <param name="palette">Palette row used by glyphs.</param>
+    /// <param name="style">Font style identifier.</param>
+    /// <param name="tokenLimit">Maximum number of tokens drawn.</param>
     private void DrawTokens(IReadOnlyList<TextToken> tokens, IReadOnlyList<IReadOnlyList<TextToken>> substitutions,
         Vector2 origin, ref Vector2 cursor, int palette, int style, int tokenLimit)
     {
@@ -145,7 +197,15 @@ public sealed class PsxTextPainter
         }
     }
 
-    // S107: removed the redundant `selected` parameter; DrawToken now resolves the style itself.
+    /// <summary>Draws one token or applies its control action using its selected font style.</summary>
+    /// <param name="token">Token to process.</param>
+    /// <param name="substitutions">Replacement token sequences.</param>
+    /// <param name="origin">Text origin.</param>
+    /// <param name="cursor">Mutable text cursor.</param>
+    /// <param name="palette">Palette row used by glyphs.</param>
+    /// <param name="style">Font style identifier.</param>
+    /// <param name="tokenLimit">Remaining reveal budget.</param>
+    /// <returns>Number of glyph tokens drawn.</returns>
     private int DrawToken(TextToken token, IReadOnlyList<IReadOnlyList<TextToken>> substitutions,
         Vector2 origin, ref Vector2 cursor, int palette, int style, int tokenLimit)
     {
@@ -176,6 +236,14 @@ public sealed class PsxTextPainter
         return 1;
     }
 
+    /// <summary>Applies a line-break or substitution control token.</summary>
+    /// <param name="token">Control token to apply.</param>
+    /// <param name="substitutions">Replacement token sequences.</param>
+    /// <param name="origin">Text origin.</param>
+    /// <param name="cursor">Mutable text cursor.</param>
+    /// <param name="palette">Palette row used by glyphs.</param>
+    /// <param name="style">Font style identifier.</param>
+    /// <param name="tokenLimit">Remaining reveal budget.</param>
     private void ApplyControl(TextToken token, IReadOnlyList<IReadOnlyList<TextToken>> substitutions,
         Vector2 origin, ref Vector2 cursor, int palette, int style, int tokenLimit)
     {

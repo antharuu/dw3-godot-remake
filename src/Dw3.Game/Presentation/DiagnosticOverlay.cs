@@ -49,16 +49,26 @@ public sealed partial class DiagnosticOverlay : IDisposable
         _world.Dispose();
     }
 
+    /// <summary>Gets the count of cached geometry builds for loaded field zones.</summary>
     public int GeometryBuilds { get; private set; }
 
+    /// <summary>Gets the count of diagnostic HUD text refreshes.</summary>
     public int HudRefreshes { get; private set; }
 
+    /// <summary>Gets the count of visible overlay draw updates.</summary>
     public int DrawRequests { get; private set; }
 
     /// <summary>Gets or sets optional diagnostic-mode marker prepended to the HUD line (e.g. the DEC-019
     /// DW3_START_ZONE selection). Null in a normal interactive session.</summary>
     public string? DiagnosticBadge { get; set; }
 
+    /// <summary>Updates diagnostic geometry and HUD content for the current field frame.</summary>
+    /// <param name="zone">Field zone supplying collision and trigger geometry.</param>
+    /// <param name="state">Current field simulation state.</param>
+    /// <param name="visible">Gets a value indicating whether diagnostics should be shown.</param>
+    /// <param name="actualFps">Measured rendering frame rate.</param>
+    /// <param name="deltaSeconds">Elapsed frame duration.</param>
+    /// <param name="viewport">Visible world rectangle.</param>
     public void Update(FieldZone zone, GameState state, bool visible, float actualFps, double deltaSeconds, Rect2 viewport)
     {
         _world.Visible = visible;
@@ -86,24 +96,36 @@ public sealed partial class DiagnosticOverlay : IDisposable
         DrawRequests++;
     }
 
+    /// <summary>Caches classified field geometry for a single immutable zone.</summary>
     private sealed class GeometryCache
     {
+        /// <summary>Gets the field zone represented by this cache.</summary>
         public required FieldZone Zone { get; init; }
 
+        /// <summary>Gets merged walkable floor rectangles.</summary>
         public required IReadOnlyList<Rect2> Walkable { get; init; }
 
+        /// <summary>Gets merged blocked floor rectangles.</summary>
         public required IReadOnlyList<Rect2> Blocked { get; init; }
 
+        /// <summary>Gets floor rectangles with unclassified values.</summary>
         public required IReadOnlyList<Rect2> Unknown { get; init; }
 
+        /// <summary>Gets collision rectangles for zone occupants.</summary>
         public required IReadOnlyList<Rect2> Occupants { get; init; }
 
+        /// <summary>Gets trigger rectangles for unconditional exits.</summary>
         public required IReadOnlyList<Rect2> UnconditionalExits { get; init; }
 
+        /// <summary>Gets trigger rectangles for exits pending evaluation.</summary>
         public required IReadOnlyList<Rect2> UnevaluatedExits { get; init; }
 
+        /// <summary>Gets trigger rectangles for climbing transitions.</summary>
         public required IReadOnlyList<Rect2> Climbs { get; init; }
 
+        /// <summary>Builds cached diagnostic geometry for one field zone.</summary>
+        /// <param name="zone">Zone to classify.</param>
+        /// <returns>Geometry cache for the zone.</returns>
         public static GeometryCache Build(FieldZone zone)
         {
             var exitStatus = zone.Zone.Exits.ToDictionary(exit => exit.Slot, exit => exit.IsUnevaluated);
@@ -139,6 +161,12 @@ public sealed partial class DiagnosticOverlay : IDisposable
             };
         }
 
+        /// <summary>Classifies contiguous floor cells from one row into merged rectangles.</summary>
+        /// <param name="zone">Zone whose floor is scanned.</param>
+        /// <param name="y">Floor row to scan.</param>
+        /// <param name="walkable">Destination collection for walkable runs.</param>
+        /// <param name="blocked">Destination collection for blocked runs.</param>
+        /// <param name="unknown">Destination collection for unknown runs.</param>
         private static void ScanFloorRow(FieldZone zone, int y, List<Rect2> walkable, List<Rect2> blocked, List<Rect2> unknown)
         {
             var runStart = 0;
@@ -161,6 +189,14 @@ public sealed partial class DiagnosticOverlay : IDisposable
             }
         }
 
+        /// <summary>Classifies trigger cells from one row into diagnostic rectangles.</summary>
+        /// <param name="zone">Zone whose triggers are scanned.</param>
+        /// <param name="y">Trigger row to scan.</param>
+        /// <param name="exitStatus">Exit slots indexed by evaluation status.</param>
+        /// <param name="climbSlots">Climb slots indexed by identifier.</param>
+        /// <param name="unconditionalExits">Destination collection for unconditional exits.</param>
+        /// <param name="unevaluatedExits">Destination collection for pending exits.</param>
+        /// <param name="climbs">Destination collection for climb triggers.</param>
         private static void ScanTriggerRow(FieldZone zone, int y, Dictionary<int, bool> exitStatus, Dictionary<int, Climb> climbSlots, List<Rect2> unconditionalExits, List<Rect2> unevaluatedExits, List<Rect2> climbs)
         {
             for (var x = 0; x < zone.Triggers.Width; x++)
@@ -183,13 +219,22 @@ public sealed partial class DiagnosticOverlay : IDisposable
             }
         }
 
+        /// <summary>Classifies a floor cell for diagnostic rendering.</summary>
         private enum FloorClass
         {
+            /// <summary>Marks a cell that admits normal movement.</summary>
             Walkable,
+
+            /// <summary>Marks a cell that blocks movement.</summary>
             Blocked,
+
+            /// <summary>Marks a cell with an unclassified movement value.</summary>
             Unknown,
         }
 
+        /// <summary>Maps one encoded floor cell to a diagnostic class.</summary>
+        /// <param name="cell">Encoded floor-cell value.</param>
+        /// <returns>The matching diagnostic class.</returns>
         private static FloorClass Classify(byte cell)
         {
             if (cell == 0)
@@ -203,12 +248,17 @@ public sealed partial class DiagnosticOverlay : IDisposable
         }
     }
 
+    /// <summary>Draws cached diagnostic shapes that intersect the current viewport.</summary>
     private sealed partial class DebugGeometry : Node2D
     {
         private GeometryCache? _cache;
         private Rect2 _viewport;
         private Vector2 _playerPosition;
 
+        /// <summary>Updates cached drawing inputs and requests redraw when they changed.</summary>
+        /// <param name="cache">Geometry cache to draw.</param>
+        /// <param name="viewport">Current visible world rectangle.</param>
+        /// <param name="playerPosition">Current player position.</param>
         public void Update(GeometryCache cache, Rect2 viewport, Vector2 playerPosition)
         {
             if (!ReferenceEquals(_cache, cache) || _viewport != viewport || _playerPosition != playerPosition)
@@ -220,6 +270,7 @@ public sealed partial class DiagnosticOverlay : IDisposable
             }
         }
 
+        /// <summary>Draws visible collision, trigger, and player-shape diagnostics.</summary>
         public override void _Draw()
         {
             if (_cache is null)
@@ -237,6 +288,11 @@ public sealed partial class DiagnosticOverlay : IDisposable
             DrawPlayerCollisionShape(_playerPosition);
         }
 
+        /// <summary>Draws shapes that intersect the current viewport.</summary>
+        /// <param name="shapes">Shapes to consider.</param>
+        /// <param name="color">Drawing colour.</param>
+        /// <param name="filled">Gets a value indicating whether shapes are filled.</param>
+        /// <param name="width">Outline width for unfilled shapes.</param>
         private void DrawVisible(IReadOnlyList<Rect2> shapes, Color color, bool filled, float width)
         {
             foreach (var shape in shapes)
@@ -260,9 +316,8 @@ public sealed partial class DiagnosticOverlay : IDisposable
         private static readonly Color PlayerCollisionColor = new(1f, 1f, 0f);
         private static readonly Color SourceDiamondColor = new(1f, 1f, 1f, 0.7f);
 
-        // Draws the active rounded collision shape (circle) at the actor position, plus
-        // the removed source diamond octagon as a dashed reference. Presentation-only:
-        // it reads the same radius the simulation uses and never feeds back into it.
+        /// <summary>Draws the active player collision circle and reference outline without changing simulation state.</summary>
+        /// <param name="position">Player position in world coordinates.</param>
         private void DrawPlayerCollisionShape(Vector2 position)
         {
             var radius = Locomotion.PlayerCollisionRadius;

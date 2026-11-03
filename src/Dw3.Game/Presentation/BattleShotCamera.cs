@@ -27,7 +27,9 @@ public sealed class BattleShotCamera
     private bool _firstFrame = true;
     private int _orbitYaw;
 
-    /// <summary>Creates a shot camera using caller-supplied random and view providers.</summary>
+    /// <summary>Initializes a new instance of the <see cref="BattleShotCamera"/> class using caller-supplied random and view providers.</summary>
+    /// <param name="rng">Random source used when choosing a successor shot list.</param>
+    /// <param name="views">Provider for fighter and enemy camera views.</param>
     public BattleShotCamera(IShotCameraRng rng, BattleShotCameraViews views)
     {
         _rng = rng;
@@ -42,7 +44,9 @@ public sealed class BattleShotCamera
         _orbitYaw = View.RotationY;
     }
 
-    /// <summary>Creates a shot camera with neutral test views.</summary>
+    /// <summary>Initializes a new instance of the <see cref="BattleShotCamera"/> class with neutral test views.</summary>
+    /// <param name="rng">Random source used when choosing a successor shot list.</param>
+    /// <param name="enemyCameraCount">Retained test input that documents expected camera availability.</param>
     public BattleShotCamera(IShotCameraRng rng, int enemyCameraCount)
         : this(rng, new BattleShotCameraViews
         {

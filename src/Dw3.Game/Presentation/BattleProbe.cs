@@ -20,6 +20,7 @@ public sealed partial class BattleProbe : Node2D
     private FieldZone? _zone;
     private BattleRenderer? _battleRenderer;
 
+    /// <summary>Initializes probe data, creates the field scene, and schedules the scenario.</summary>
     public override void _Ready()
     {
         try
@@ -47,6 +48,7 @@ public sealed partial class BattleProbe : Node2D
     private FieldAnimationDataPackLoader? _animationLoader;
     private string _captureRoot = string.Empty;
 
+    /// <summary>Disposes data-pack loaders when the probe leaves the scene tree.</summary>
     public override void _ExitTree()
     {
         _fieldLoader?.Dispose();
@@ -57,6 +59,9 @@ public sealed partial class BattleProbe : Node2D
         _battleLoader = null;
     }
 
+    /// <summary>Loads data and constructs the initial field presentation for the probe.</summary>
+    /// <param name="loader">Loader for field animation data.</param>
+    /// <param name="fieldLoader">Loader for field zone and player data.</param>
     private void BuildField(FieldAnimationDataPackLoader loader, FieldDataPackLoader fieldLoader)
     {
         var player = fieldLoader.LoadPlayer();
@@ -82,6 +87,10 @@ public sealed partial class BattleProbe : Node2D
 
     private ClimbData? _actionData;
 
+    /// <summary>Combines climbing and drop animation sequences into one action-data set.</summary>
+    /// <param name="climb">Climbing sequences.</param>
+    /// <param name="drop">Drop sequences.</param>
+    /// <returns>Combined action-animation data.</returns>
     private static ClimbData MergeActionData(ClimbData climb, ClimbData drop)
     {
         var merged = new Dictionary<int, ClimbSequence>(climb.Sequences);
@@ -96,6 +105,10 @@ public sealed partial class BattleProbe : Node2D
         return new ClimbData(merged);
     }
 
+    /// <summary>Builds a simulation field zone from decoded zone and collision data.</summary>
+    /// <param name="zone">Decoded zone data.</param>
+    /// <param name="collision">Collision actors available to the probe.</param>
+    /// <returns>Field-zone aggregate used by simulation.</returns>
     private static FieldZone BuildZone(Zone zone, IReadOnlyList<CollisionActor> collision)
     {
         var occupants = collision.Where(actor => actor.ZoneId == zone.Id)
@@ -103,6 +116,9 @@ public sealed partial class BattleProbe : Node2D
         return new FieldZone(zone, LoadFloor(zone), LoadTriggers(zone), occupants);
     }
 
+    /// <summary>Loads the floor-cell image for a zone into a simulation map.</summary>
+    /// <param name="zone">Zone whose floor map is loaded.</param>
+    /// <returns>Decoded floor map.</returns>
     private static FloorMap LoadFloor(Zone zone)
     {
         var image = Image.LoadFromFile(zone.FloorCellsPath);
@@ -123,6 +139,9 @@ public sealed partial class BattleProbe : Node2D
         return new FloorMap(zone.Width, zone.Height, cells);
     }
 
+    /// <summary>Loads the trigger-cell image for a zone into a simulation map.</summary>
+    /// <param name="zone">Zone whose trigger map is loaded.</param>
+    /// <returns>Decoded trigger map.</returns>
     private static TriggerMap LoadTriggers(Zone zone)
     {
         var image = Image.LoadFromFile(zone.TriggerCellsPath);
@@ -143,6 +162,7 @@ public sealed partial class BattleProbe : Node2D
         return new TriggerMap(zone.Width, zone.Height, cells);
     }
 
+    /// <summary>Runs the deterministic battle scenario and writes its captures.</summary>
     private async void RunScenario()
     {
         try
@@ -175,6 +195,9 @@ public sealed partial class BattleProbe : Node2D
         }
     }
 
+    /// <summary>Creates the deterministic battle flow and state used by the probe.</summary>
+    /// <param name="loader">Loader for battle data.</param>
+    /// <returns>Configured battle flow and mutable battle state.</returns>
     private static (BattleFlowController Flow, BattleState State) SetupBattle(BattleDataPackLoader loader)
     {
         var fighters = loader.LoadFighters();
@@ -201,6 +224,10 @@ public sealed partial class BattleProbe : Node2D
         return (flow, state);
     }
 
+    /// <summary>Builds models, HUD, stage, and cameras for the battle presentation.</summary>
+    /// <param name="loader">Loader for battle data.</param>
+    /// <param name="flow">Configured battle flow.</param>
+    /// <returns>An asynchronous operation that completes after capture and setup.</returns>
     private async System.Threading.Tasks.Task BuildBattleScene(BattleDataPackLoader loader, BattleFlowController flow)
     {
         var modelPath = System.Environment.GetEnvironmentVariable("DW3_BATTLE_MODEL") ?? loader.ModelPath(3);
@@ -229,6 +256,9 @@ public sealed partial class BattleProbe : Node2D
         await SetupCameras(flow);
     }
 
+    /// <summary>Captures configured fighter camera views for the probe evidence.</summary>
+    /// <param name="flow">Battle flow used to create presentation views.</param>
+    /// <returns>An asynchronous operation that completes after camera captures.</returns>
     private async System.Threading.Tasks.Task SetupCameras(BattleFlowController flow)
     {
         var playerCams = _battleRenderer!.FighterCameras(enemy: false);
@@ -246,6 +276,10 @@ public sealed partial class BattleProbe : Node2D
         _log.Add($"battle-camera-player pos={playerClose.CamPos[0]},{playerClose.CamPos[1]},{playerClose.CamPos[2]} proj={playerClose.Proj}");
     }
 
+    /// <summary>Captures battle poses and runs the deterministic combat loop.</summary>
+    /// <param name="flow">Battle flow to advance.</param>
+    /// <param name="state">Mutable battle state.</param>
+    /// <returns>An asynchronous operation that completes after battle presentation checks.</returns>
     private async System.Threading.Tasks.Task RunBattleLoop(BattleFlowController flow, BattleState state)
     {
         await Capture("battle-start.png");
@@ -268,6 +302,10 @@ public sealed partial class BattleProbe : Node2D
         await VerifyEnemyModel(flow, state);
     }
 
+    /// <summary>Checks enemy-model visibility and distinct poses before completing combat.</summary>
+    /// <param name="flow">Battle flow to advance after rendering checks.</param>
+    /// <param name="state">Mutable battle state inspected for victory.</param>
+    /// <returns>An asynchronous operation that completes after verification and combat.</returns>
     private async System.Threading.Tasks.Task VerifyEnemyModel(BattleFlowController flow, BattleState state)
     {
         const int enemyXMin = 640, enemyXMax = 1280;
@@ -306,6 +344,9 @@ public sealed partial class BattleProbe : Node2D
         _log.Add($"battle-victory outcome=Won player_hp={state.Players[0]!.Hp}");
     }
 
+    /// <summary>Builds a presentation view from the current battle flow.</summary>
+    /// <param name="flow">Battle flow supplying state and text.</param>
+    /// <returns>View consumed by the battle renderer.</returns>
     private static BattleView BuildView(BattleFlowController flow)
     {
         var players = BuildFighterViews(flow.State.Players, flow.State.ActivePlayer, flow);
@@ -313,6 +354,11 @@ public sealed partial class BattleProbe : Node2D
         return new BattleView(flow.Phase, flow.Outcome, players, enemies, flow.Message, null);
     }
 
+    /// <summary>Builds presentation rows for one side of the encounter.</summary>
+    /// <param name="fighters">Fighters occupying the side slots.</param>
+    /// <param name="activeIndex">Index of the active fighter.</param>
+    /// <param name="flow">Battle flow supplying names.</param>
+    /// <returns>Presentation rows for the supplied fighter slots.</returns>
     private static List<BattleFighterView> BuildFighterViews(BattleFighter?[] fighters, int activeIndex, BattleFlowController flow)
     {
         var views = new List<BattleFighterView>();
@@ -334,6 +380,9 @@ public sealed partial class BattleProbe : Node2D
 
     private readonly List<string> _log = [];
 
+    /// <summary>Waits for rendering, captures the viewport, and writes a PNG file.</summary>
+    /// <param name="fileName">Name assigned to the capture file.</param>
+    /// <returns>Captured viewport image.</returns>
     private async System.Threading.Tasks.Task<Image> Capture(string fileName)
     {
         await ToSignal(RenderingServer.Singleton, RenderingServer.SignalName.FramePostDraw);
@@ -395,6 +444,9 @@ public sealed partial class BattleProbe : Node2D
         return count;
     }
 
+    /// <summary>Throws a probe failure when a required condition is false.</summary>
+    /// <param name="condition">Condition that must hold.</param>
+    /// <param name="message">Failure description used when the condition is false.</param>
     private static void Require(bool condition, string message)
     {
         if (!condition)
@@ -403,14 +455,17 @@ public sealed partial class BattleProbe : Node2D
         }
     }
 
-    /// <summary>A fixed, deterministic RNG for the probe (never returns the same roll twice in a row
-    /// unless asked).</summary>
+    /// <summary>Supplies a deterministic pseudo-random sequence for probe combat.</summary>
     private sealed class FixedRng : IBattleRng
     {
         private int _value;
 
+        /// <summary>Initializes a new instance of the <see cref="FixedRng"/> class from a seed value.</summary>
+        /// <param name="seed">Initial pseudo-random state.</param>
         public FixedRng(int seed) => _value = seed;
 
+        /// <summary>Advances and returns the next deterministic pseudo-random value.</summary>
+        /// <returns>Next value in the sequence.</returns>
         public int NextValue() => _value = (_value * 1103515245 + 12345) & 0x7FFFFFFF;
     }
 }

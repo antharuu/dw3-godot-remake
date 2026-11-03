@@ -133,10 +133,23 @@ internal sealed class BattleFaceAnimator
     /// <param name="random">Source of non-negative integers; only the low 7 bits are used.</param>
     public void SetRandom(Func<int> random) => _random = random;
 
+    /// <summary>Chooses the forced eye frame associated with a motion.</summary>
+    /// <param name="motion">One-based active motion number.</param>
+    /// <returns>Forced eye frame or zero when blinking controls the eyes.</returns>
     private static int MotionEyeFrame(int motion) => motion is >= 4 and <= 11 ? 2 : motion == 2 ? 1 : 0;
 
+    /// <summary>Checks whether a rectangle lies within one texture page.</summary>
+    /// <param name="x">Rectangle horizontal coordinate.</param>
+    /// <param name="y">Rectangle vertical coordinate.</param>
+    /// <param name="w">Rectangle width.</param>
+    /// <param name="h">Rectangle height.</param>
+    /// <returns>True when the rectangle fits the page.</returns>
     private static bool FitsPage(int x, int y, int w, int h) => x >= 0 && y >= 0 && x + w <= PageSize && y + h <= PageSize;
 
+    /// <summary>Counts changed texels for one face part and texture page.</summary>
+    /// <param name="texture">Texture page to compare.</param>
+    /// <param name="part">Face rectangle to inspect.</param>
+    /// <returns>Count of changed texels.</returns>
     private static int CountChanged(BattleFaceTexture texture, BattleFacePart part)
     {
         var changed = 0;
@@ -154,6 +167,9 @@ internal sealed class BattleFaceAnimator
         return changed;
     }
 
+    /// <summary>Advances the blink timer and selects its eye frame.</summary>
+    /// <param name="framesElapsed">Elapsed PAL frames.</param>
+    /// <returns>Eye frame selected by the timer.</returns>
     private int AdvanceBlink(int framesElapsed)
     {
         var eyes = (_blinkTimer >> 1) switch { 1 or 2 or 5 or 6 => 1, 3 or 4 => 2, _ => 0 };
@@ -166,6 +182,9 @@ internal sealed class BattleFaceAnimator
         return eyes;
     }
 
+    /// <summary>Copies one face-frame rectangle into every working texture page.</summary>
+    /// <param name="part">Face part to patch.</param>
+    /// <param name="frame">Frame index to copy.</param>
     private void CopyPart(BattleFacePart part, int frame)
     {
         var source = part.Frames[frame];

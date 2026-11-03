@@ -54,6 +54,9 @@ public sealed class BattleModelLayer : IDisposable
         PolygonCount = CulledCount = AbrUnsortedCount = 0;
     }
 
+    /// <summary>Rebuilds the ordered model mesh for the supplied camera and fighters.</summary>
+    /// <param name="camera">Camera used to project and depth-sort polygons.</param>
+    /// <param name="models">Visible fighter models contributing polygons.</param>
     public void Rebuild(Camera3D camera, IReadOnlyList<BattleModel> models)
     {
         EnsurePages(models);
@@ -66,6 +69,10 @@ public sealed class BattleModelLayer : IDisposable
         }
     }
 
+    /// <summary>Collects visible polygons eligible for ordered rendering.</summary>
+    /// <param name="camera">Camera used for projection.</param>
+    /// <param name="models">Fighter models to inspect.</param>
+    /// <returns>Pending polygons ready for mesh emission.</returns>
     private List<PendingPolygon> CollectPending(Camera3D camera, IReadOnlyList<BattleModel> models)
     {
         var pending = new List<PendingPolygon>();
@@ -83,6 +90,10 @@ public sealed class BattleModelLayer : IDisposable
         return pending;
     }
 
+    /// <summary>Collects drawable polygons from one model.</summary>
+    /// <param name="camera">Camera used for projection.</param>
+    /// <param name="model">Model supplying polygons.</param>
+    /// <param name="pending">Destination collection for accepted polygons.</param>
     private void CollectModelPolygons(Camera3D camera, BattleModel model, List<PendingPolygon> pending)
     {
         foreach (var polygon in model.EnumeratePolygons())
@@ -117,6 +128,12 @@ public sealed class BattleModelLayer : IDisposable
         }
     }
 
+    /// <summary>Calculates an ordering key and queues one polygon for mesh emission.</summary>
+    /// <param name="camera">Camera used for depth calculation.</param>
+    /// <param name="model">Model owning the polygon.</param>
+    /// <param name="polygon">Polygon source data.</param>
+    /// <param name="world">World-space polygon vertices.</param>
+    /// <param name="pending">Destination collection for the polygon.</param>
     private void AddPendingPolygon(Camera3D camera, BattleModel model, BattleModel.SourcePolygon polygon, Godot.Vector3[] world, List<PendingPolygon> pending)
     {
         var cameraInverse = camera.GlobalTransform.AffineInverse();
@@ -132,6 +149,8 @@ public sealed class BattleModelLayer : IDisposable
         pending.Add(new PendingPolygon(key, world, polygon.Uvs, polygon.Colors, page, polygon.Abr == 0 ? 0.5f : 1f));
     }
 
+    /// <summary>Synchronizes texture-array pages with the supplied models.</summary>
+    /// <param name="models">Models whose texture pages are required.</param>
     private void EnsurePages(IReadOnlyList<BattleModel> models)
     {
         var known = BuildKnownPages(models);
@@ -149,6 +168,9 @@ public sealed class BattleModelLayer : IDisposable
         }
     }
 
+    /// <summary>Registers model texture pages and returns the currently known page keys.</summary>
+    /// <param name="models">Models whose texture pages are registered.</param>
+    /// <returns>Set of model texture-page keys.</returns>
     private HashSet<(BattleModel Model, int TextureKey)> BuildKnownPages(IReadOnlyList<BattleModel> models)
     {
         var known = new HashSet<(BattleModel Model, int TextureKey)>();
@@ -176,6 +198,7 @@ public sealed class BattleModelLayer : IDisposable
         return known;
     }
 
+    /// <summary>Builds the GPU texture array from registered page images.</summary>
     private void BuildTextureArray()
     {
         var images = new Godot.Collections.Array<Image>();
@@ -200,8 +223,13 @@ public sealed class BattleModelLayer : IDisposable
         _dirtyPages = false;
     }
 
+    /// <summary>Marks texture pages stale after face animation changes one page.</summary>
+    /// <param name="_">Changed texture key.</param>
+    /// <param name="__">Updated page image.</param>
     private void OnFacePageChanged(int _, Image __) => _dirtyPages = true;
 
+    /// <summary>Emits the ordered pending polygons into the Godot mesh.</summary>
+    /// <param name="pending">Polygons to emit.</param>
     private void EmitMesh(IReadOnlyList<PendingPolygon> pending)
     {
         var order = RenderOrderingTable.DrawOrder([.. pending.Select(polygon => polygon.Key)]);
@@ -252,5 +280,6 @@ void fragment() {
     ALPHA = UV2.y;
 }";
 
+    /// <summary>Stores projected ordering and render data for one pending polygon.</summary>
     private readonly record struct PendingPolygon(int Key, Godot.Vector3[] Positions, Godot.Vector2[] Uvs, Color[] Colors, int Page, float Alpha);
 }

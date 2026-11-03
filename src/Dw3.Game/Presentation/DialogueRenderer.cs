@@ -41,8 +41,16 @@ public sealed partial class DialogueRenderer : IDisposable
     /// <summary>Releases Godot resources owned by this renderer.</summary>
     public void Dispose() => _box.Dispose();
 
+    /// <summary>Supplies the decoded font metrics and atlas pages used for dialogue glyphs.</summary>
+    /// <param name="font">Decoded metrics for glyph and icon placement.</param>
+    /// <param name="page0">First font atlas page.</param>
+    /// <param name="page1">Second font atlas page.</param>
     public void SetFont(FontData font, Texture2D page0, Texture2D page1) => _box.SetFont(font, page0, page1);
 
+    /// <summary>Supplies dialogue frame layouts, sprite textures, and the panel texture.</summary>
+    /// <param name="frames">Decoded frame layouts.</param>
+    /// <param name="textures">Textures indexed by frame identifier.</param>
+    /// <param name="panelTexture">Texture stretched behind each dialogue box.</param>
     public void SetFrames(DialogueFrameData frames, IReadOnlyDictionary<int, Texture2D> textures, Texture2D panelTexture) => _box.SetFrames(frames, textures, panelTexture);
 
     /// <summary>Pins the arrow brightness for a deterministic offscreen probe capture.</summary>
@@ -58,13 +66,16 @@ public sealed partial class DialogueRenderer : IDisposable
     /// <summary>Gets a value indicating whether true when the current page contains at least one real glyph or icon draw.</summary>
     public bool HasGlyphPixels => _box.GlyphCount > 0 || _box.IconCount > 0;
 
+    /// <summary>Gets the number of text glyphs were placed for the current page.</summary>
     public int GlyphCount => _box.GlyphCount;
 
+    /// <summary>Gets the number of inline icons were placed for the current page.</summary>
     public int IconCount => _box.IconCount;
 
     /// <summary>Gets a value indicating whether true when the speaker name window carries real glyph pixels.</summary>
     public bool HasNamePixels => _box.NameGlyphCount > 0;
 
+    /// <summary>Gets the number of glyphs were placed in the speaker-name window.</summary>
     public int NameGlyphCount => _box.NameGlyphCount;
 
     /// <summary>Gets a value indicating whether true when the corner/edge sprites and the panel were laid out this frame.</summary>
@@ -73,13 +84,17 @@ public sealed partial class DialogueRenderer : IDisposable
     /// <summary>Gets a value indicating whether true when the blinking "next" arrow is visible this frame.</summary>
     public bool HasArrowPixels => _box.ArrowRendered;
 
+    /// <summary>Gets the layout type selected for the current dialogue box.</summary>
     public int BoxType => _box.Type;
 
     /// <summary>Gets the panel rectangle in viewport pixels (the probe checks the bubble sits at the actor, not the bottom).</summary>
     public Rect2 BoxScreenRect => _box.BoxScreenRect;
 
+    /// <summary>Updates the dialogue box with the supplied view or clears it when absent.</summary>
+    /// <param name="view">Dialogue content and layout state to render.</param>
     public void Present(DialogueView? view) => _box.SetView(view);
 
+    /// <summary>Draws the frame, panel, and glyph runs for one dialogue box.</summary>
     private sealed partial class DialogueBoxNode : Node2D
     {
         private static readonly float[] ArrowBrightness = [1f, 0.7f, 0.45f, 0.25f];
@@ -103,20 +118,31 @@ public sealed partial class DialogueRenderer : IDisposable
         private bool _visible;
         private int? _probeArrowBrightness;
 
+        /// <summary>Gets the number of text glyphs placed during the latest layout pass.</summary>
         public int GlyphCount { get; private set; }
 
+        /// <summary>Gets the number of inline icons placed during the latest layout pass.</summary>
         public int IconCount { get; private set; }
 
+        /// <summary>Gets the number of speaker-name glyphs placed during the latest layout pass.</summary>
         public int NameGlyphCount { get; private set; }
 
+        /// <summary>Gets a value indicating whether frame sprites and the panel were prepared for drawing.</summary>
         public bool FrameRendered { get; private set; }
 
+        /// <summary>Gets a value indicating whether the advance arrow was prepared for drawing.</summary>
         public bool ArrowRendered { get; private set; }
 
+        /// <summary>Gets the active dialogue layout type.</summary>
         public int Type => _type;
 
+        /// <summary>Gets the dialogue panel rectangle in viewport coordinates.</summary>
         public Rect2 BoxScreenRect { get; private set; }
 
+        /// <summary>Stores the glyph metrics and atlas pages used by drawing.</summary>
+        /// <param name="font">Decoded glyph and icon metrics.</param>
+        /// <param name="page0">First atlas page.</param>
+        /// <param name="page1">Second atlas page.</param>
         public void SetFont(FontData font, Texture2D page0, Texture2D page1)
         {
             _font = font;
@@ -124,6 +150,10 @@ public sealed partial class DialogueRenderer : IDisposable
             _page1 = page1;
         }
 
+        /// <summary>Stores dialogue layout data and frame textures.</summary>
+        /// <param name="frames">Decoded dialogue frame definitions.</param>
+        /// <param name="textures">Frame textures indexed by identifier.</param>
+        /// <param name="panelTexture">Texture used for the box panel.</param>
         public void SetFrames(DialogueFrameData frames, IReadOnlyDictionary<int, Texture2D> textures, Texture2D panelTexture)
         {
             _frames = frames;
@@ -131,12 +161,16 @@ public sealed partial class DialogueRenderer : IDisposable
             _panelTexture = panelTexture;
         }
 
+        /// <summary>Selects a deterministic arrow brightness state for probe captures.</summary>
+        /// <param name="frame">Probe frame that chooses the brightness state, or null for live animation.</param>
         public void SetProbeArrowBrightness(int? frame)
         {
             _probeArrowBrightness = frame is null ? null : DialogueRenderer.ProbeArrowBrightnessIndex(frame.Value);
             QueueRedraw();
         }
 
+        /// <summary>Rebuilds draw state from a dialogue view or hides the node when absent.</summary>
+        /// <param name="view">Dialogue view to lay out.</param>
         public void SetView(DialogueView? view)
         {
             ResetDrawState();
@@ -152,6 +186,7 @@ public sealed partial class DialogueRenderer : IDisposable
             QueueRedraw();
         }
 
+        /// <summary>Clears layout results before processing another dialogue view.</summary>
         private void ResetDrawState()
         {
             _textDraws.Clear();
@@ -165,6 +200,8 @@ public sealed partial class DialogueRenderer : IDisposable
             BoxScreenRect = default;
         }
 
+        /// <summary>Translates dialogue data into panel, frame, arrow, and glyph placements.</summary>
+        /// <param name="value">Dialogue view to translate.</param>
         private void ApplyView(DialogueView value)
         {
             _visible = true;
@@ -247,6 +284,10 @@ public sealed partial class DialogueRenderer : IDisposable
             }
         }
 
+        /// <summary>Resolves one token to its drawable metric and updates placement counters.</summary>
+        /// <param name="token">Token to resolve.</param>
+        /// <param name="nameWindow">Gets a value indicating whether the token belongs to the speaker-name window.</param>
+        /// <returns>The matching glyph or icon metric, when available.</returns>
         private GlyphMetric? ResolveGlyphMetric(TextToken token, bool nameWindow)
         {
             if (token.IsGlyph)
@@ -286,6 +327,7 @@ public sealed partial class DialogueRenderer : IDisposable
             return null;
         }
 
+        /// <summary>Draws the active panel, frame pieces, arrow, and laid-out glyphs.</summary>
         public override void _Draw()
         {
             if (!_visible || _frames is null || _frameTextures is null || _page0 is null || _page1 is null || _panelTexture is null)
@@ -337,6 +379,10 @@ public sealed partial class DialogueRenderer : IDisposable
             }
         }
 
+        /// <summary>Draws one frame texture at a source-coordinate position.</summary>
+        /// <param name="frameId">Identifier of the frame texture.</param>
+        /// <param name="position">Destination position in source coordinates.</param>
+        /// <param name="modulate">Colour multiplier applied while drawing.</param>
         private void DrawFrame(int frameId, Vector2 position, Color modulate)
         {
             if (!_frameTextures!.TryGetValue(frameId, out var texture))
@@ -348,6 +394,7 @@ public sealed partial class DialogueRenderer : IDisposable
             DrawTextureRectRegion(texture, new Rect2(position, size), new Rect2(Vector2.Zero, size), modulate);
         }
 
+        /// <summary>Describes one atlas region and destination rectangle for a glyph or icon.</summary>
         private readonly record struct GlyphDraw(int Page, Rect2 Target, Rect2 Source);
     }
 }

@@ -77,16 +77,22 @@ public sealed class FieldRenderer : IDisposable
         _diagnosticOverlay.Dispose();
     }
 
+    /// <summary>Gets image decode operations performed by the texture cache.</summary>
     public int ImageDecodes => _textureCache.ImageDecodes;
 
+    /// <summary>Gets texture uploads performed by the texture cache.</summary>
     public int TextureUploads => _textureCache.TextureUploads;
 
+    /// <summary>Gets the count of calls that present field state.</summary>
     public int PresentCalls { get; private set; }
 
+    /// <summary>Gets the count of presentation-side simulation advancement calls.</summary>
     public int SimulationPresentationSteps { get; private set; }
 
+    /// <summary>Gets geometry cache builds requested by the diagnostic overlay.</summary>
     public int OverlayGeometryBuilds => _diagnosticOverlay.GeometryBuilds;
 
+    /// <summary>Gets diagnostic HUD text refreshes.</summary>
     public int OverlayHudRefreshes => _diagnosticOverlay.HudRefreshes;
 
     /// <summary>Gets or sets optional diagnostic-mode marker shown in the F3 HUD (DEC-019 DW3_START_ZONE).</summary>
@@ -106,6 +112,13 @@ public sealed class FieldRenderer : IDisposable
     /// previous zone, while textures remain cached for reuse; <see cref="FieldZone"/> is the runtime
     /// aggregate used by simulation, whereas <see cref="Zone"/> is this data-pack render contract.
     /// </summary>
+    /// <summary>Replaces render nodes and data bindings for a loaded field zone.</summary>
+    /// <param name="zone">Decoded zone render data.</param>
+    /// <param name="player">Decoded walking animation data.</param>
+    /// <param name="climb">Decoded climbing and drop animation data.</param>
+    /// <param name="framePath">Resolves a walking frame identifier to a texture path.</param>
+    /// <param name="climbFramePath">Resolves an action frame identifier to a texture path.</param>
+    /// <param name="npcs">NPC records visible in the zone.</param>
     public void LoadZone(Zone zone, PlayerData player, ClimbData climb, Func<int, string> framePath, Func<int, int, string> climbFramePath, IReadOnlyList<NpcRecord>? npcs)
     {
         foreach (var depthRoot in _depthRoots.Values)
@@ -142,6 +155,8 @@ public sealed class FieldRenderer : IDisposable
         _lastSourceTick = 0;
     }
 
+    /// <summary>Creates terrain sprites for every layer in a zone.</summary>
+    /// <param name="zone">Zone whose layers are rendered.</param>
     private void LoadZoneLayers(Zone zone)
     {
         foreach (var layer in zone.Layers)
@@ -160,10 +175,15 @@ public sealed class FieldRenderer : IDisposable
         }
     }
 
+    /// <summary>Gets the current state of the field exit cue.</summary>
     public ExitCueSnapshot CueSnapshot => _cueSnapshot;
 
+    /// <summary>Gets the current outer exit-cue frame when the cue is visible.</summary>
     public CueFrame? CurrentCuePopFrame => _cueSnapshot.Visible ? _cue.Frames[_cueSnapshot.PopFrame] : null;
 
+    /// <summary>Advances presentation-only water, NPC, and exit-cue state from simulation state.</summary>
+    /// <param name="state">Current field simulation state.</param>
+    /// <param name="zone">Current simulation field zone.</param>
     public void AdvanceSimulation(GameState state, FieldZone zone)
     {
         SimulationPresentationSteps++;
@@ -183,6 +203,12 @@ public sealed class FieldRenderer : IDisposable
         _cueSnapshot = _cueState.Advance(state.Offer, rawDirection);
     }
 
+    /// <summary>Applies current field state to sprites, camera, cue, icon, and diagnostic overlay.</summary>
+    /// <param name="state">Current field simulation state.</param>
+    /// <param name="zone">Current simulation field zone.</param>
+    /// <param name="f3On">Gets a value indicating whether diagnostic geometry is visible.</param>
+    /// <param name="deltaSeconds">Elapsed frame duration used by diagnostics.</param>
+    /// <param name="iconView">Optional connection-icon state.</param>
     public void Present(GameState state, FieldZone zone, bool f3On, double deltaSeconds = 0, IconView? iconView = null)
     {
         if (_zone is null || _player is null || _playerData is null || _framePath is null)
@@ -212,6 +238,9 @@ public sealed class FieldRenderer : IDisposable
         _diagnosticOverlay.Update(zone, state, f3On, (float)Engine.GetFramesPerSecond(), (float)deltaSeconds, viewport);
     }
 
+    /// <summary>Chooses the walking or climbing presentation for the player sprite.</summary>
+    /// <param name="state">Current field simulation state.</param>
+    /// <param name="climbing">Gets a value indicating whether the player uses action-animation frames.</param>
     private void PresentPlayer(GameState state, bool climbing)
     {
         if (climbing)
@@ -224,6 +253,8 @@ public sealed class FieldRenderer : IDisposable
         }
     }
 
+    /// <summary>Updates sprite texture, anchor, and shadow for climbing movement.</summary>
+    /// <param name="state">Current field simulation state.</param>
     private void PresentClimbing(GameState state)
     {
         if (_climbData is not { } climbData || _climbFramePath is not { } framePath || _player is not { } player)
@@ -248,6 +279,8 @@ public sealed class FieldRenderer : IDisposable
         }
     }
 
+    /// <summary>Updates sprite texture and anchor for ordinary walking movement.</summary>
+    /// <param name="state">Current field simulation state.</param>
     private void PresentWalking(GameState state)
     {
         if (_playerData is not { } playerData || _framePath is not { } framePath || _player is not { } player)
@@ -266,6 +299,9 @@ public sealed class FieldRenderer : IDisposable
         }
     }
 
+    /// <summary>Returns the render root for a source depth, creating it when required.</summary>
+    /// <param name="depth">Source depth represented by the root.</param>
+    /// <returns>The node that owns sprites at the requested depth.</returns>
     private Node2D DepthRoot(int depth)
     {
         if (_depthRoots.TryGetValue(depth, out var root))
@@ -279,6 +315,8 @@ public sealed class FieldRenderer : IDisposable
         return root;
     }
 
+    /// <summary>Orders callback sprites relative to the player ground position.</summary>
+    /// <param name="playerGroundY">Player foot position used for depth sorting.</param>
     private void ArrangeCallbacksAtPlayerGroundY(int playerGroundY)
     {
         if (_player is null)
@@ -296,6 +334,9 @@ public sealed class FieldRenderer : IDisposable
         }
     }
 
+    /// <summary>Applies painter ordering to callbacks and immediate objects at one depth.</summary>
+    /// <param name="depth">Source depth to order.</param>
+    /// <param name="playerGroundY">Player foot position used for callback ordering.</param>
     private void SortDepthCallbacks(int depth, int playerGroundY)
     {
         var depthRoot = DepthRoot(depth);
@@ -325,14 +366,20 @@ public sealed class FieldRenderer : IDisposable
         }
     }
 
+    /// <summary>Calculates the visible world rectangle for the current camera.</summary>
+    /// <returns>The visible world rectangle.</returns>
     private Rect2 GetViewportRect()
     {
         var size = GetViewportWorldSize();
         return new Rect2(_camera.Position - size / 2f, size);
     }
 
+    /// <summary>Calculates the visible viewport size in world coordinates.</summary>
+    /// <returns>The visible world size.</returns>
     private Vector2 GetViewportWorldSize() => _root.GetViewport().GetVisibleRect().Size / 3f;
 
+    /// <summary>Updates exit-cue sprites from the current cue snapshot.</summary>
+    /// <param name="state">Current field simulation state.</param>
     private void PresentCue(GameState state)
     {
         if (_cuePop is null || _cueInner is null)
@@ -358,6 +405,10 @@ public sealed class FieldRenderer : IDisposable
         }
     }
 
+    /// <summary>Applies one decoded exit-cue frame to its sprite.</summary>
+    /// <param name="sprite">Sprite receiving the frame.</param>
+    /// <param name="frame">Decoded cue frame to display.</param>
+    /// <param name="state">Current field simulation state.</param>
     private void ApplyCueSprite(Sprite2D sprite, CueFrame frame, GameState state)
     {
         sprite.Texture = _textureCache.TextureFor(frame.Path);
@@ -365,6 +416,8 @@ public sealed class FieldRenderer : IDisposable
         sprite.Visible = true;
     }
 
+    /// <summary>Updates or hides the above-head connection icon.</summary>
+    /// <param name="view">Optional icon view state.</param>
     private void PresentIcon(IconView? view)
     {
         if (_iconSprite is null)

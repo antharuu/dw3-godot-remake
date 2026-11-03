@@ -38,20 +38,31 @@ public sealed partial class FightReportRenderer : IDisposable
         _layer.Dispose();
     }
 
+    /// <summary>Gets a value indicating whether the report layer is visible.</summary>
     public bool Visible => _layer.Visible;
 
+    /// <summary>Supplies decoded report sprites and font metrics.</summary>
+    /// <param name="sprites">Decoded report sprite frames and animation data.</param>
+    /// <param name="font">Decoded font metrics.</param>
     public void Configure(BattleReportSprites sprites, FontData font) => _control.Configure(sprites, font);
 
+    /// <summary>Makes the report layer visible.</summary>
     public void Show() => _layer.Visible = true;
 
+    /// <summary>Hides the report layer.</summary>
     public void Hide() => _layer.Visible = false;
 
+    /// <summary>Updates report sprites, text, and fade state from a report view.</summary>
+    /// <param name="view">Current report presentation state.</param>
+    /// <param name="text">Catalog used for report messages.</param>
+    /// <param name="names">Fighter names indexed by fighter identifier.</param>
     public void Present(FightReportView view, BattleTextCatalog text, IReadOnlyDictionary<int, BattleTextLine> names)
     {
         _control.SetView(view, text, names);
         _fader.Color = new Color(0, 0, 0, Mathf.Clamp(view.ExitFade / 4096f, 0, 1));
     }
 
+    /// <summary>Draws report frames, partner rows, and message text.</summary>
     private sealed partial class ReportControl : Control
     {
         private readonly Dictionary<int, ImageTexture[]> _frames = [];
@@ -64,12 +75,16 @@ public sealed partial class FightReportRenderer : IDisposable
         private BattleTextCatalog? _catalog;
         private IReadOnlyDictionary<int, BattleTextLine> _names = new Dictionary<int, BattleTextLine>();
 
+        /// <summary>Initializes a new instance of the <see cref="ReportControl"/> class.</summary>
         public ReportControl()
         {
             MouseFilter = MouseFilterEnum.Ignore;
             _text = new PsxTextPainter(this);
         }
 
+        /// <summary>Loads report frame textures and text metrics.</summary>
+        /// <param name="sprites">Decoded report sprites.</param>
+        /// <param name="font">Decoded font metrics.</param>
         public void Configure(BattleReportSprites sprites, FontData font)
         {
             _frames.Clear();
@@ -98,6 +113,10 @@ public sealed partial class FightReportRenderer : IDisposable
             _text.SetFont(font);
         }
 
+        /// <summary>Stores report state and requests a redraw.</summary>
+        /// <param name="view">Report view to render.</param>
+        /// <param name="catalog">Text catalog for report messages.</param>
+        /// <param name="names">Fighter names indexed by identifier.</param>
         public void SetView(FightReportView view, BattleTextCatalog catalog, IReadOnlyDictionary<int, BattleTextLine> names)
         {
             _view = view;
@@ -106,6 +125,7 @@ public sealed partial class FightReportRenderer : IDisposable
             QueueRedraw();
         }
 
+        /// <summary>Draws the report background, partner rows, and message.</summary>
         public override void _Draw()
         {
             if (_view is not { } view || _catalog is null)
@@ -132,6 +152,9 @@ public sealed partial class FightReportRenderer : IDisposable
             DrawMessage(view.Message);
         }
 
+        /// <summary>Draws one partner row and its optional selection cursor.</summary>
+        /// <param name="partner">Partner state to render.</param>
+        /// <param name="index">Vertical row index.</param>
         private void DrawPartner(FightReportPartnerView partner, int index)
         {
             if (partner.Fade <= 0)
@@ -168,6 +191,8 @@ public sealed partial class FightReportRenderer : IDisposable
             }
         }
 
+        /// <summary>Draws the current report message and advance arrow.</summary>
+        /// <param name="message">Optional message state to render.</param>
         private void DrawMessage(FightReportMessage? message)
         {
             if (message is null || _catalog is null)
@@ -184,6 +209,11 @@ public sealed partial class FightReportRenderer : IDisposable
             }
         }
 
+        /// <summary>Draws a frame after applying a scale around a pivot.</summary>
+        /// <param name="frame">Frame identifier to draw.</param>
+        /// <param name="position">Destination position.</param>
+        /// <param name="scale">Scale applied to the frame.</param>
+        /// <param name="pivot">Pivot used for scaling.</param>
         private void DrawScaledFrame(int frame, Vector2 position, Vector2 scale, Vector2 pivot)
         {
             if (scale.X <= 0 || scale.Y <= 0)
@@ -196,6 +226,12 @@ public sealed partial class FightReportRenderer : IDisposable
             DrawSetTransform(Vector2.Zero, 0, Vector2.One);
         }
 
+        /// <summary>Draws one indexed report frame with an optional colour-row selection.</summary>
+        /// <param name="frame">Frame identifier to draw.</param>
+        /// <param name="x">Destination horizontal coordinate.</param>
+        /// <param name="y">Destination vertical coordinate.</param>
+        /// <param name="row">Colour-row index.</param>
+        /// <param name="modulate">Optional colour multiplier.</param>
         private void DrawFrame(int frame, float x, float y, int row = 0, Color? modulate = null)
         {
             if (!_frames.TryGetValue(frame, out var rows))
