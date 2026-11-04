@@ -19,6 +19,7 @@ internal sealed class BattleSkeleton
 
     private readonly Dictionary<int, Node3D> _bones;
     private readonly Dictionary<int, List<Vector4>[]> _tracks;
+    private readonly BattleSkeletonTransformCache _transforms;
     private readonly Dictionary<int, (Vector3 Position, Vector3 Rotation, Vector3 Scale)> _blendPose = [];
 
     /// <summary>
@@ -30,6 +31,7 @@ internal sealed class BattleSkeleton
     {
         _bones = bones;
         _tracks = tracks;
+        _transforms = new BattleSkeletonTransformCache(BuildParents(bones));
     }
 
     /// <summary>Gets the number of bones.</summary>
@@ -68,11 +70,16 @@ internal sealed class BattleSkeleton
     /// <returns>False for an unknown or hidden bone.</returns>
     public bool IsVisible(int index) => _bones.TryGetValue(index, out var bone) && bone.Visible;
 
-    /// <summary>Transforms a bone-local point to world space through the live hierarchy.</summary>
+    /// <summary>Transforms a bone-local point through the retained source-style hierarchy.</summary>
     /// <param name="bone">Source bone index.</param>
     /// <param name="local">Point in the bone's local Godot units.</param>
-    /// <returns>The world-space point.</returns>
-    public Vector3 WorldPosition(int bone, Vector3 local) => _bones[bone].GlobalTransform * local;
+    /// <returns>The world-space point in model-local presentation coordinates.</returns>
+    public Vector3 WorldPosition(int bone, Vector3 local) => _transforms.World(bone) * local;
+
+    /// <summary>Gets a bone's retained transform in model-local presentation space.</summary>
+    /// <param name="bone">Source bone index.</param>
+    /// <returns>The transform from the most recent visible pose.</returns>
+    public Transform3D WorldTransform(int bone) => _transforms.World(bone);
 
     /// <summary>Poses every tracked bone at one source frame.</summary>
     /// <param name="frame">Source animation frame.</param>
@@ -101,7 +108,7 @@ internal sealed class BattleSkeleton
             var position = BattleKeyTrack.FirstKeyAtOrAfter(pair.Value[0], state.Frame);
             var rotation = BattleKeyTrack.FirstKeyAtOrAfter(pair.Value[1], state.Frame);
             var scale = BattleKeyTrack.FirstKeyAtOrAfter(pair.Value[2], state.Frame);
-            var blendedScale = BattleKeyTrack.HasZero(from.Scale) || BattleKeyTrack.HasZero(scale) ? scale : BattleKeyTrack.FixedBlend(from.Scale, scale, state.Blend);
+            var blendedScale = BlendScale(from.Scale, scale, state.Blend);
             ApplyPose(pair.Key, BattleKeyTrack.FixedBlend(from.Position, position, state.Blend), BattleKeyTrack.FixedBlend(from.Rotation, rotation, state.Blend), blendedScale);
         }
     }
@@ -143,6 +150,14 @@ internal sealed class BattleSkeleton
         return max;
     }
 
+    /// <summary>Selects the source-compatible scale for one blend step.</summary>
+    /// <param name="from">The captured start scale.</param>
+    /// <param name="target">The target key scale.</param>
+    /// <param name="weight">The 12-bit blend weight.</param>
+    /// <returns>The target immediately if either endpoint has a zero component, otherwise their fixed blend.</returns>
+    internal static Vector3 BlendScale(Vector3 from, Vector3 target, int weight) =>
+        BattleKeyTrack.HasZero(from) || BattleKeyTrack.HasZero(target) ? target : BattleKeyTrack.FixedBlend(from, target, weight);
+
     /// <summary>Builds a basis from ZYX Euler angles without using the engine conversion.</summary>
     /// <param name="radians">Rotation angles in radians.</param>
     /// <returns>The corresponding ZYX basis.</returns>
@@ -160,6 +175,22 @@ internal sealed class BattleSkeleton
             new Vector3(cz * cy, sz * cy, -sy),
             new Vector3((cz * sy * sx) - (sz * cx), (sz * sy * sx) + (cz * cx), cy * sx),
             new Vector3((cz * sy * cx) + (sz * sx), (sz * sy * cx) - (cz * sx), cy * cx));
+    }
+
+    /// <summary>Finds each bone's source parent in the already constructed node hierarchy.</summary>
+    /// <param name="bones">Bone nodes indexed by source index.</param>
+    /// <returns>The source parent index, or null for a skeleton root.</returns>
+    private static Dictionary<int, int?> BuildParents(IReadOnlyDictionary<int, Node3D> bones)
+    {
+        var indices = bones.ToDictionary(pair => pair.Value, pair => pair.Key);
+        var parents = new Dictionary<int, int?>();
+        foreach (var (index, bone) in bones)
+        {
+            var parentNode = bone.GetParent() as Node3D;
+            parents[index] = parentNode is not null && indices.TryGetValue(parentNode, out var parent) ? parent : null;
+        }
+
+        return parents;
     }
 
     /// <summary>Finds the largest Euclidean difference between matching basis columns.</summary>
@@ -197,11 +228,16 @@ internal sealed class BattleSkeleton
         var sy = (int)scaleFixed.Y;
         var sz = (int)scaleFixed.Z;
         var node = _bones[bone];
-        node.Position = BattleModel.Ps1Position(positionFixed);
+        var position = BattleModel.Ps1Position(positionFixed);
         var sourceBasis = Basis.FromEuler(rotationFixed * (Mathf.Pi / 2048f), EulerOrder.Zyx);
-        node.Basis = Ps1ToGodot * sourceBasis * Ps1ToGodot;
-        node.Scale = new Vector3(sx, sy, sz) / 4096f;
-        node.Visible = (sx | sy | sz) > HiddenScaleThreshold;
+        var basis = Ps1ToGodot * sourceBasis * Ps1ToGodot;
+        var scale = new Vector3(sx, sy, sz) / 4096f;
+        var visible = (sx | sy | sz) > HiddenScaleThreshold;
+        node.Position = position;
+        node.Basis = basis;
+        node.Scale = scale;
+        node.Visible = visible;
+        _transforms.Apply(bone, new Transform3D(basis.Scaled(scale), position), visible);
         _blendPose[bone] = (positionFixed, rotationFixed, scaleFixed);
     }
 }

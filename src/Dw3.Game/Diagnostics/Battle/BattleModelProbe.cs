@@ -110,7 +110,7 @@ internal sealed class BattleModelProbe : BattleProbe
             "Kotemon idle frame 10 must show saber bone 16 only");
         var kotemon = await CaptureAsync(captureRoot, "kotemon-idle.png");
         var kotemonPixels = LeftHalfBright(kotemon);
-        var saberDifference = BattlePixelMetrics.CountDifferent(legacy, kotemon, 790, 930);
+        var saberDifference = BattlePixelMetrics.CountDifferent(legacy, kotemon, 740, 800);
         ProbeRequirement.Require(
             kotemonPixels > 1000 && saberDifference > 0,
             $"Kotemon source mask must retain textured body and change saber region pixels={saberDifference} before={legacyPixels} after={kotemonPixels}");

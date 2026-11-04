@@ -193,7 +193,7 @@ public sealed class BattleModel
     /// <param name="bone">Zero-based bone index that owns the vertex.</param>
     /// <param name="local">Vertex position in the bone's local source space.</param>
     /// <returns>The vertex position in the model's current world space.</returns>
-    public Vector3 WorldPosition(int bone, Vector3 local) => _skeleton.WorldPosition(bone, local);
+    public Vector3 WorldPosition(int bone, Vector3 local) => Root.GlobalTransform * _skeleton.WorldPosition(bone, local);
 
     /// <summary>
     /// Source primitives in the decoded mesh contract draw order: bones 1..N, then command-stream order.
@@ -243,6 +243,7 @@ public sealed class BattleModel
     public void Pose(int frame)
     {
         _skeleton.Pose(frame);
+        SynchronizeSurfaceTransforms();
         RefreshLighting();
     }
 
@@ -268,6 +269,7 @@ public sealed class BattleModel
         }
 
         _skeleton.Blend(state, priorTarget != state.BlendTarget);
+        SynchronizeSurfaceTransforms();
         RefreshLighting();
         UpdateFace(framesElapsed);
     }
@@ -386,6 +388,15 @@ public sealed class BattleModel
         }
 
         return frames;
+    }
+
+    /// <summary>Updates top-level legacy surfaces from the retained source-style bone matrices.</summary>
+    private void SynchronizeSurfaceTransforms()
+    {
+        foreach (var surface in _litSurfaces)
+        {
+            surface.Instance.GlobalTransform = Root.GlobalTransform * _skeleton.WorldTransform(surface.Bone);
+        }
     }
 
     /// <summary>Recalculates lit vertex colours after a pose or lighting-state change.</summary>
