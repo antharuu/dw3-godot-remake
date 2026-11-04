@@ -196,8 +196,8 @@ internal sealed class BattleMeshBuilder
 
         var material = BattlePs1Material.Create(texture.Texture, key.Abr == 0, cullBack: true);
         Materials.Add(material);
-        var instance = new MeshInstance3D { Mesh = buffer.Commit(), MaterialOverride = material, TopLevel = true };
-        _skeleton.Bone(streams.Bone).AddChild(instance);
+        var instance = new MeshInstance3D { Mesh = buffer.Commit(), MaterialOverride = material };
+        _skeleton.RenderRoot.AddChild(instance);
         var surface = new BattleLitSurface(instance, streams.Bone, [.. buffer.Positions], [.. buffer.Uvs], [.. buffer.Lighting], material, key.Abr);
         Surfaces.Add(surface);
         foreach (var state in buffer.SourceStates)

@@ -130,7 +130,7 @@ public sealed class BattleModel
         var stageBgColor = BattleModelDocument.ReadBackgroundColor(root);
         var fighter = BattleModelDocument.ReadFighter(root);
         var bones = BattleSkeleton.BuildBones(rootNode, root.GetProperty("bones"));
-        var skeleton = new BattleSkeleton(bones, BattleModelDocument.ReadTracks(root.GetProperty("tracks")));
+        var skeleton = new BattleSkeleton(rootNode, bones, BattleModelDocument.ReadTracks(root.GetProperty("tracks")));
         var textures = BattleTexturePages.Load(root.GetProperty("textures"), Path.GetDirectoryName(jsonPath) ?? string.Empty);
         var face = new BattleFaceAnimator(textures);
         face.Configure(root);
@@ -279,6 +279,18 @@ public sealed class BattleModel
     /// <returns><see langword="true"/> when the bone survived the latest scale threshold.</returns>
     public bool IsBoneVisible(int index) => _skeleton.IsVisible(index);
 
+    /// <summary>Reports whether a detached legacy surface owned by one bone remains visible in the scene tree.</summary>
+    /// <param name="bone">Source bone index that owns the surface.</param>
+    /// <returns>True when at least one locally visible legacy surface is composable by Godot.</returns>
+    public bool HasVisibleLegacySurface(int bone) =>
+        _litSurfaces.Any(surface => surface.Bone == bone && surface.Instance.IsVisibleInTree());
+
+    /// <summary>Counts source polygons that the common ordering path can draw from one locally visible bone.</summary>
+    /// <param name="bone">Source bone index that owns the polygons.</param>
+    /// <returns>The number of locally drawable source primitives.</returns>
+    public int DrawablePolygonCount(int bone) =>
+        IsBoneVisible(bone) ? EnumeratePolygons().Count(polygon => polygon.Bone == bone) : 0;
+
     /// <summary>Probe-only legacy comparison: restores all bones to identity scale and visible.
     /// Production always calls <see cref="Pose"/> immediately afterwards.</summary>
     public void ShowAllBonesForProbe() => _skeleton.ShowAll();
@@ -290,7 +302,7 @@ public sealed class BattleModel
         Root.Visible = visible;
         foreach (var surface in _litSurfaces)
         {
-            surface.Instance.Visible = visible && (!_painterLayerActive || surface.Abr > 1);
+            ApplyLegacySurfaceVisibility(surface, visible);
         }
     }
 
@@ -302,7 +314,7 @@ public sealed class BattleModel
         _painterLayerActive = active;
         foreach (var surface in _litSurfaces)
         {
-            surface.Instance.Visible = Root.Visible && (!active || surface.Abr > 1);
+            ApplyLegacySurfaceVisibility(surface, Root.Visible);
         }
     }
 
@@ -396,8 +408,15 @@ public sealed class BattleModel
         foreach (var surface in _litSurfaces)
         {
             surface.Instance.GlobalTransform = Root.GlobalTransform * _skeleton.WorldTransform(surface.Bone);
+            ApplyLegacySurfaceVisibility(surface, Root.Visible);
         }
     }
+
+    /// <summary>Applies source-local bone visibility to a detached legacy surface.</summary>
+    /// <param name="surface">Legacy surface whose owning bone determines its local visibility.</param>
+    /// <param name="rootVisible">Whether the owning model root is locally visible.</param>
+    private void ApplyLegacySurfaceVisibility(BattleLitSurface surface, bool rootVisible) =>
+        surface.Instance.Visible = rootVisible && _skeleton.IsVisible(surface.Bone) && (!_painterLayerActive || surface.Abr > 1);
 
     /// <summary>Recalculates lit vertex colours after a pose or lighting-state change.</summary>
     private void RefreshLighting() => _lighting.Refresh(_litSurfaces, _skeleton, FighterId);

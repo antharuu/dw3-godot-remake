@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Dw3Production.Diagnostics.Field;
 using Dw3Production.Logging;
 using Dw3Production.Presentation;
@@ -50,6 +51,7 @@ internal sealed class BattleModelProbe : BattleProbe
         await CaptureComparisonModelAsync(renderer, captureRoot, kotemonPath, Kuwagamon, "Kuwagamon");
         await CaptureComparisonModelAsync(renderer, captureRoot, kotemonPath, WarGreymon, "WarGreymon");
         await VerifyResidualUvAsync(renderer, captureRoot, kotemonPath);
+        await ReplayHiddenParentVectorsAsync(renderer, captureRoot, kotemonPath);
         QuietLog.Info($"battle-model probe PASS fps={Engine.GetFramesPerSecond():0.0} captures={captureRoot}/kotemon-idle.png,{captureRoot}/kuwagamon-idle.png,{captureRoot}/wargreymon-idle.png");
     }
 
@@ -170,10 +172,64 @@ internal sealed class BattleModelProbe : BattleProbe
         QuietLog.Info($"battle-model untextured polygons={renderer.UntexturedPolygonCount(MegaSeadramon)} fighter={MegaSeadramon} textured-pixels={megaPixels}");
     }
 
+    /// <summary>Replays externally supplied real parent-hidden vectors through both production render paths.</summary>
+    /// <param name="renderer">Live production renderer.</param>
+    /// <param name="captureRoot">Directory receiving the affected-fighter frame pair.</param>
+    /// <param name="kotemonPath">Decoded Kotemon model path used as the opposing fighter.</param>
+    /// <returns>A task completed when every requested vector has been checked.</returns>
+    private async Task ReplayHiddenParentVectorsAsync(BattleRenderer renderer, string captureRoot, string kotemonPath)
+    {
+        var path = System.Environment.GetEnvironmentVariable("DW3_BATTLE_SKELETON_VECTORS");
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return;
+        }
+
+        using var document = JsonDocument.Parse(await File.ReadAllTextAsync(path));
+        var vectors = document.RootElement.GetProperty("parent_hidden_child_visible_cases")
+            .EnumerateArray().Select(item => new HiddenParentVector(
+                item.GetProperty("fighter").GetInt32(),
+                item.GetProperty("frame").GetInt32(),
+                item.GetProperty("parent").GetInt32(),
+                item.GetProperty("child").GetInt32())).ToArray();
+        ProbeRequirement.Require(vectors.Length > 0, "hidden-parent vector replay received no cases");
+        var replayed = 0;
+        foreach (var group in vectors.GroupBy(vector => vector.Fighter))
+        {
+            var fighter = group.Key;
+            renderer.BuildModels(Host.ResolveBattleModelPath(fighter), kotemonPath, $"fighter-{fighter}", "Kotemon", Kotemon);
+            foreach (var vector in group)
+            {
+                renderer.SetProbePose(vector.Frame);
+                ProbeRequirement.Require(!renderer.BoneVisible(fighter, vector.Parent), $"vector parent remained visible fighter={fighter} frame={vector.Frame} bone={vector.Parent}");
+                ProbeRequirement.Require(renderer.BoneVisible(fighter, vector.Child), $"vector child hidden fighter={fighter} frame={vector.Frame} bone={vector.Child}");
+                ProbeRequirement.Require(renderer.LegacySurfaceVisible(fighter, vector.Child), $"legacy child not visible in tree fighter={fighter} frame={vector.Frame} bone={vector.Child}");
+                ProbeRequirement.Require(renderer.DrawablePolygonCount(fighter, vector.Child) > 0, $"painter child has no drawable primitive fighter={fighter} frame={vector.Frame} bone={vector.Child}");
+                replayed++;
+            }
+        }
+
+        renderer.BuildModels(Host.ResolveBattleModelPath(11), kotemonPath, "fighter-11", "Kotomen", Kotemon);
+        renderer.SetProbePose(0);
+        var before = await CaptureAsync(captureRoot, "fighter-11-before-hidden-parent.png");
+        renderer.SetProbePose(vectors.First(vector => vector.Fighter == 11).Frame);
+        var after = await CaptureAsync(captureRoot, "fighter-11-child-visible-under-hidden-parent.png");
+        var distinct = BattlePixelMetrics.CountDifferent(before, after, 0, before.GetWidth());
+        ProbeRequirement.Require(distinct > 0, "fighter 11 affected-pose framebuffer made no change");
+        QuietLog.Info($"battle-hidden-parent replayed={replayed} fighters={vectors.Select(vector => vector.Fighter).Distinct().Count()} fighter11-frame-diff={distinct}");
+    }
+
     /// <summary>Captures one settled battle frame.</summary>
     /// <param name="captureRoot">Directory receiving the capture.</param>
     /// <param name="fileName">PNG file name.</param>
     /// <returns>The captured viewport image.</returns>
     private Task<Image> CaptureAsync(string captureRoot, string fileName) =>
         BattleProbeCapture.CaptureAsync(Host, captureRoot, fileName);
+
+    /// <summary>One externally supplied parent-hidden/child-visible production replay vector.</summary>
+    /// <param name="Fighter">Affected fighter identifier.</param>
+    /// <param name="Frame">Source pose frame.</param>
+    /// <param name="Parent">Locally hidden parent bone.</param>
+    /// <param name="Child">Locally visible child bone.</param>
+    private readonly record struct HiddenParentVector(int Fighter, int Frame, int Parent, int Child);
 }

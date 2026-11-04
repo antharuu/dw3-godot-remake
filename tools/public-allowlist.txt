@@ -460,6 +460,9 @@ src/Dw3.Game/LeadWaterProbe.cs
 src/Dw3.Game/LeadWaterProbe.tscn
 src/Dw3.Game/Logging/QuietLog.cs
 src/Dw3.Game/Presentation/BattleCameraFade.cs
+src/Dw3.Game/Presentation/BattleBlendPose.cs
+src/Dw3.Game/Presentation/BattleBlendState.cs
+src/Dw3.Game/Presentation/BattleBoneTransform.cs
 src/Dw3.Game/Presentation/BattleCommandCamera.cs
 src/Dw3.Game/Presentation/BattleCommandMenuPainter.cs
 src/Dw3.Game/Presentation/BattleEntranceFade.cs
@@ -502,6 +505,7 @@ src/Dw3.Game/Presentation/BattleSceneMath.cs
 src/Dw3.Game/Presentation/BattleShotCamera.cs
 src/Dw3.Game/Presentation/BattleShotCameraViews.cs
 src/Dw3.Game/Presentation/BattleSkeleton.cs
+src/Dw3.Game/Presentation/BattleSkeletonTransformCache.cs
 src/Dw3.Game/Presentation/BattleSourcePolygonState.cs
 src/Dw3.Game/Presentation/BattleSurfaceBuffer.cs
 src/Dw3.Game/Presentation/BattleTexturePages.cs
@@ -733,6 +737,8 @@ tests/Dw3.Game.Tests/BattleGrowthVectorTests.cs
 tests/Dw3.Game.Tests/BattleMotionMachineVectorGenerator.cs
 tests/Dw3.Game.Tests/BattleMotionMachineVectorHarness.cs
 tests/Dw3.Game.Tests/BattleMotionMachineVectorTests.cs
+tests/Dw3.Game.Tests/BattleSkeletonBlendTests.cs
+tests/Dw3.Game.Tests/BattleSkeletonTransformCacheTests.cs
 tests/Dw3.Game.Tests/BattlePresentationMathTests.cs
 tests/Dw3.Game.Tests/BattleProbeCatalogTests.cs
 tests/Dw3.Game.Tests/BattleShotCameraVectorGenerator.cs

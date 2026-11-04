@@ -25,10 +25,12 @@ internal sealed class BattleSkeleton
     /// <summary>
     /// Initializes a new instance of the <see cref="BattleSkeleton"/> class.
     /// </summary>
+    /// <param name="root">Model root that owns detached legacy mesh surfaces.</param>
     /// <param name="bones">Bone nodes by source index, already parented.</param>
     /// <param name="tracks">Position, rotation and scale channels by bone index.</param>
-    public BattleSkeleton(Dictionary<int, Node3D> bones, Dictionary<int, List<Vector4>[]> tracks)
+    public BattleSkeleton(Node3D root, Dictionary<int, Node3D> bones, Dictionary<int, List<Vector4>[]> tracks)
     {
+        RenderRoot = root;
         _bones = bones;
         _tracks = tracks;
         _transforms = new BattleSkeletonTransformCache(BuildParents(bones));
@@ -36,6 +38,9 @@ internal sealed class BattleSkeleton
 
     /// <summary>Gets the number of bones.</summary>
     public int Count => _bones.Count;
+
+    /// <summary>Gets the model root that owns independently visible legacy mesh surfaces.</summary>
+    public Node3D RenderRoot { get; }
 
     /// <summary>Gets the indices of bones the scale threshold currently hides, in ascending order.</summary>
     public IReadOnlyList<int> HiddenBones => [.. _bones.Where(pair => !pair.Value.Visible).Select(pair => pair.Key).Order()];
@@ -238,7 +243,7 @@ internal sealed class BattleSkeleton
         node.Basis = basis;
         node.Scale = scale;
         node.Visible = visible;
-        _transforms.Apply(bone, new Transform3D(basis.Scaled(scale), position), visible);
+        _transforms.Apply(bone, BattleBoneTransform.Compose(basis, position, scale), visible);
         _blendState.Publish(bone, new BattleBlendPose(positionFixed, rotationFixed, scaleFixed));
     }
 }

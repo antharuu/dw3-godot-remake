@@ -292,6 +292,20 @@ public sealed class BattleRenderer : IDisposable
     /// <returns><see langword="true"/> when the requested bone is visible.</returns>
     public bool BoneVisible(int fighterId, int bone) => _fighters.Find(fighterId)?.IsBoneVisible(bone) == true;
 
+    /// <summary>Reports whether a bone still contributes at least one visible detached legacy surface.</summary>
+    /// <param name="fighterId">Identifier of the decoded fighter.</param>
+    /// <param name="bone">Source bone index to inspect.</param>
+    /// <returns>True when the legacy render path composes a surface for this bone.</returns>
+    public bool LegacySurfaceVisible(int fighterId, int bone) =>
+        _fighters.Find(fighterId)?.HasVisibleLegacySurface(bone) == true;
+
+    /// <summary>Counts locally visible primitives submitted by one bone to the common painter path.</summary>
+    /// <param name="fighterId">Identifier of the decoded fighter.</param>
+    /// <param name="bone">Source bone index to inspect.</param>
+    /// <returns>Number of drawable source primitives.</returns>
+    public int DrawablePolygonCount(int fighterId, int bone) =>
+        _fighters.Find(fighterId)?.DrawablePolygonCount(bone) ?? 0;
+
     /// <summary>Reports the maximum matrix and scale difference against the pose oracle.</summary>
     /// <returns>The greatest difference, or positive infinity when no model is built.</returns>
     public float RotationOracleMaxDiff() => ModelCount == 0 ? float.PositiveInfinity : _fighters.Models.Max(model => model.RotationOracleMaxDiff());
@@ -561,6 +575,21 @@ public sealed class BattleRenderer : IDisposable
     /// <summary>Describes the active command shot camera for diagnostics.</summary>
     /// <returns>A textual summary of the shot camera state.</returns>
     public string ShotCameraSummary() => _commandCamera.Summary();
+
+    /// <summary>Installs a deterministic command-camera random source for a probe and restores the runtime source on disposal.</summary>
+    /// <param name="rng">Seeded source whose draws the caller records.</param>
+    /// <returns>A scope that restores the ordinary runtime random source.</returns>
+    public IDisposable OverrideShotCameraRngForProbe(IShotCameraRng rng) =>
+        new ShotCameraRngScope(_commandCamera, _commandCamera.ReplaceRngForProbe(rng));
+
+    /// <summary>Describes the active player motion and main battle camera for deterministic replay traces.</summary>
+    /// <returns>A stable motion and camera projection, or inactive markers when unavailable.</returns>
+    public string ReplaySummary()
+    {
+        var motion = _fighters.Player?.Motion;
+        var motionText = motion is null ? "inactive" : $"motion={motion.Motion} frame={motion.Frame} blend={motion.Blend}";
+        return $"{motionText} camera={_commandCamera.Summary()}";
+    }
 
     /// <summary>Advances the command shot camera and applies its next view when available.</summary>
     public void StepShotCamera()
