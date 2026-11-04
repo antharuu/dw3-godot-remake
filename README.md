@@ -1,6 +1,6 @@
 # DW3 Remake
 
-An unofficial, from-scratch reimplementation of **Digimon World 2003** (PS1, Europe, SLES-03936) in Godot 4 and C#.
+An unofficial, from-scratch reimplementation of **Digimon World 2003** (PS1) in Godot 4 and C#.
 The original rules are the reference; modern comforts (16:9, 60 FPS, gamepad, debug views) are opt-in improvements.
 
 > **No game content is included.** You must supply your own disc image. The game files are read locally and
