@@ -20,7 +20,9 @@ public partial class GameHost
     {
         _testDriverActive = ownsInput;
         var run = ResolveProbe(methodName);
-        Callable.From(() => _ = run()).CallDeferred();
+
+        // A block body keeps the callable an Action: an expression body would return the Task, which Godot cannot convert to a Variant.
+        Callable.From(() => { _ = run(); }).CallDeferred();
     }
 
     /// <summary>

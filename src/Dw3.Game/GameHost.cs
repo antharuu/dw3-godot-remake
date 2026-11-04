@@ -393,7 +393,8 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
 
             if (!DispatchDiagnosticProbe())
             {
-                Callable.From(() => _ = SpawnCapture.RunAsync(this, _options.CaptureAndQuit)).CallDeferred();
+                // Block body: the callable must return nothing, Godot cannot convert the Task to a Variant.
+                Callable.From(() => { _ = SpawnCapture.RunAsync(this, _options.CaptureAndQuit); }).CallDeferred();
             }
         }
         catch (CacheResourceException error)
