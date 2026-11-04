@@ -62,9 +62,12 @@ internal static class BattleStageExtractionStep
                         {
                             BattleStageInfo info = BattleStageDecoder.ParseRecord(stagesData, stageId);
                             (_, byte[] modelData) = files.Read(info.ModelFile);
+                            byte[] motionData = info.MotionFile == info.ModelFile
+                                ? modelData
+                                : files.Read(info.MotionFile).Bytes;
                             byte[] modelSha256 = SHA256.HashData(modelData);
                             BattleModelPayload payload = BattleModelDecoder.DecodeStage(
-                                modelData, info.ModelEntry, info.MotionEntry);
+                                modelData, info.ModelEntry, motionData, info.MotionEntry);
                             WriteStageAssets(context, stageId, info, payload, modelSha256);
                             decoded++;
                         }

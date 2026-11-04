@@ -11,6 +11,7 @@ namespace Dw3.Formats.Battle;
 /// <param name="MotionEntry">Archive entry of the motion data.</param>
 /// <param name="Music">Music track id (may be -1).</param>
 /// <param name="BgColor">Background clear colour (R, G, B bytes).</param>
+/// <param name="NoBoundsBones">Terminated list of stage bones that disable source bounds checks.</param>
 /// <param name="Lights">Three directional light entries from LightSet.</param>
 /// <param name="Ambient">Ambient RGB as three s32 values read from stage.h SetBackColor args.</param>
 public sealed record BattleStageInfo(
@@ -21,5 +22,6 @@ public sealed record BattleStageInfo(
     int MotionEntry,
     int Music,
     byte[] BgColor,
+    byte[] NoBoundsBones,
     IReadOnlyList<BattleStageLightEntry> Lights,
     int[] Ambient);

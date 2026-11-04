@@ -98,6 +98,14 @@ public static class BattleStageJsonWriter
         json.WriteNumber("music", info.Music);
         json.WriteNumber("model_file", info.ModelFile);
         json.WriteNumber("model_archive_entry", info.ModelEntry);
+        json.WriteNumber("motion_file", info.MotionFile);
         json.WriteNumber("motion_archive_entry", info.MotionEntry);
+        json.WriteStartArray("no_bounds_bones");
+        foreach (byte bone in info.NoBoundsBones)
+        {
+            json.WriteNumberValue(bone);
+        }
+
+        json.WriteEndArray();
     }
 }

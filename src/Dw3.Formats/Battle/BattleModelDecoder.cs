@@ -104,40 +104,22 @@ public static class BattleModelDecoder
     }
 
     /// <summary>
-    /// Decodes a fight-stage model (model and motion in the same archive file).
-    /// Fight stages use the same model format as fighter models but have no fighter metadata
-    /// (cameras, geometry, face); the returned payload's Metadata is a placeholder.
+    /// Decodes a fight-stage model and its motion archive. Stage model and motion data may reside
+    /// in distinct engine files, so the two byte arrays are carried independently in the pack contract.
     /// </summary>
-    /// <param name="modelData">Raw bytes of the model/motion archive file.</param>
+    /// <param name="modelData">Raw bytes of the model archive file.</param>
     /// <param name="modelEntry">Archive entry of the model mesh data.</param>
-    /// <param name="motionEntry">Archive entry of the animation data (from FightStageInfo).</param>
+    /// <param name="motionData">Raw bytes of the motion archive file.</param>
+    /// <param name="motionEntry">Archive entry of the animation data.</param>
     /// <returns>The decoded model payload with empty fighter metadata placeholder.</returns>
     /// <exception cref="FormatException">Any archive entry is absent or malformed.</exception>
-    public static BattleModelPayload DecodeStage(byte[] modelData, int modelEntry, int motionEntry)
+    public static BattleModelPayload DecodeStage(byte[] modelData, int modelEntry, byte[] motionData, int motionEntry)
     {
-        BattleModelStructure structure = Decode(modelData, modelEntry);
-        IReadOnlyList<ArchiveRange> bounds = ModelArchive.ReadBounds(modelData);
-        Dictionary<int, BattleBoneTracks> tracks = DecodeTracks(structure, modelData, bounds);
-        BattleTextureSet textures = DecodeTextures(structure, modelData, bounds);
-
-        if (motionEntry < 0 || motionEntry >= bounds.Count || bounds[motionEntry].Start == 0)
-        {
-            throw new FormatException($"Fight stage motion archive entry {motionEntry} is absent.");
-        }
-
-        ArchiveRange motionRange = bounds[motionEntry];
-        IReadOnlyList<IReadOnlyList<BattleMotionStep>> motions = BattleAnimationDecoder.DecodeMotions(modelData, motionRange.Start, motionRange.End);
-        if (motions[0][0].Index != 0)
-        {
-            throw new FormatException($"Fight stage motion 1 does not start at index 0: {motions[0][0]}");
-        }
-
-        // Fight stages carry no fighter metadata (no cameras, geometry or face animation).
         var emptyMetadata = new BattleFighterMetadata(
             [],
             new BattleGeometry(0, 0),
             new BattleFace(new BattleFaceSource(0, 0, 0, 0, string.Empty), []));
-        return new BattleModelPayload(structure, tracks, textures, motions, emptyMetadata);
+        return DecodeComplete(modelData, modelEntry, motionData, motionEntry, emptyMetadata);
     }
 
     /// <summary>Reads the 12-byte records of bones 1..<paramref name="boneCount"/> - 1 after the implicit root.</summary>

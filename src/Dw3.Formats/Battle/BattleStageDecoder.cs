@@ -22,6 +22,7 @@ public static class BattleStageDecoder
     private const int OffMotions = 0x04; // u32 same layout
     private const int OffMusic = 0x08;   // s32
     private const int OffBgColor = 0x0C; // 3 bytes R,G,B
+    private const int OffNoBoundsBones = 0x10; // up to 8 u8 bone ids, zero-terminated
     private const int OffLights = 0x18;  // 3 × 16 bytes (GsF_LIGHT padded to 16 by PS1 ABI)
     private const int OffAmbient = 0x48; // 3 × s32 passed to SetBackColor
 
@@ -53,6 +54,7 @@ public static class BattleStageDecoder
 
         // bgColor: 3 raw bytes (R, G, B), the fourth byte is padding.
         var bgColor = new byte[] { data[offset + OffBgColor], data[offset + OffBgColor + 1], data[offset + OffBgColor + 2] };
+        byte[] noBoundsBones = ReadNoBoundsBones(data, offset);
 
         // LightSet: 3 × GsF_LIGHT = {s32 vx, s32 vy, s32 vz, u8 R, u8 G, u8 B, u8 pad, u32 pad}
         var lights = new BattleStageLightEntry[3];
@@ -79,7 +81,29 @@ public static class BattleStageDecoder
             (int)(motions & 0xFFFF),
             music,
             bgColor,
+            noBoundsBones,
             lights,
             ambient);
+    }
+
+    /// <summary>Reads the source's eight-byte, zero-terminated stage bone exception list.</summary>
+    /// <param name="data">The complete stage table.</param>
+    /// <param name="recordOffset">The first byte of the current record.</param>
+    /// <returns>Bone ids before the first terminator, in source order.</returns>
+    private static byte[] ReadNoBoundsBones(byte[] data, int recordOffset)
+    {
+        var bones = new List<byte>(8);
+        for (int index = 0; index < 8; index++)
+        {
+            byte bone = data[recordOffset + OffNoBoundsBones + index];
+            if (bone == 0)
+            {
+                break;
+            }
+
+            bones.Add(bone);
+        }
+
+        return [.. bones];
     }
 }

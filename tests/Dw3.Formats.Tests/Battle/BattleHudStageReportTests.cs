@@ -45,6 +45,11 @@ public sealed class BattleHudStageReportTests
         data[off + 0x0D] = 70;
         data[off + 0x0E] = 199;
 
+        // noBoundsBones: terminated after three source bone ids.
+        data[off + 0x10] = 4;
+        data[off + 0x11] = 9;
+        data[off + 0x12] = 12;
+
         // light 0: dir=(0, 12800, 0), rgb=(128, 128, 128)
         int l0 = off + 0x18;
         BinaryPrimitives.WriteInt32LittleEndian(data.AsSpan(l0), 0);
@@ -72,6 +77,7 @@ public sealed class BattleHudStageReportTests
         Assert.Equal(0, info.Lights[0].DirX);
         Assert.Equal(12800, info.Lights[0].DirY);
         Assert.Equal(128, info.Lights[0].R);
+        Assert.Equal([4, 9, 12], info.NoBoundsBones);
         Assert.Equal([76, 76, 76], info.Ambient);
     }
 
