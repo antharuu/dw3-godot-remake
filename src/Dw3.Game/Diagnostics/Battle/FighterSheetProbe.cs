@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using Dw3Production.Diagnostics.Field;
 using Dw3Production.Logging;
 using Dw3Production.Presentation;
@@ -23,6 +24,9 @@ internal sealed class FighterSheetProbe : BattleProbe
 
     private static readonly float[] PullBackFactors = [1f, 1.3f, 1.7f, 2.2f, 3f, 4f, 6f];
 
+    private static readonly JsonSerializerOptions ReportJsonOptions = new() { WriteIndented = true, Converters = { new JsonStringEnumConverter() } };
+
+    private readonly List<FighterSheetResult> _results = [];
     private int _failed;
 
     /// <summary>Initializes a new instance of the <see cref="FighterSheetProbe"/> class.</summary>
@@ -42,46 +46,20 @@ internal sealed class FighterSheetProbe : BattleProbe
     protected override async Task ExecuteAsync()
     {
         var captureRoot = Host.PrepareCaptureDirectory("probe/fighter-sheet");
-        var paths = Directory.EnumerateFiles(Host.BattleModelsDirectory, "fighter-*-model.json")
-            .OrderBy(ParseFighterId).ToArray();
+        var catalog = FighterSheetCatalog.Discover(Host.BattleModelsDirectory);
         Host.StartDebugBattle();
         var renderer = Host.HasBattleRenderer ? Host.Renderer : throw new InvalidOperationException("F8 did not construct BattleRenderer");
         await RenderStageBackgroundAsync(renderer, captureRoot);
         _failed = 0;
-        foreach (var path in paths)
+        _results.Clear();
+        foreach (var entry in catalog)
         {
-            await RenderRecordedAsync(renderer, captureRoot, path);
+            await RenderRecordedAsync(renderer, captureRoot, entry);
         }
 
-        QuietLog.Info($"FIGHTER_SHEET complete total={paths.Length} failed={_failed} root={captureRoot}");
-    }
-
-    /// <summary>Extracts the fighter id from a decoded model file name.</summary>
-    /// <param name="path">Model JSON path.</param>
-    /// <returns>The id, or <see cref="int.MaxValue"/> for an unexpected name.</returns>
-    private static int ParseFighterId(string path)
-    {
-        const string prefix = "fighter-";
-        const string suffix = "-model.json";
-        var name = Path.GetFileName(path);
-        if (!name.StartsWith(prefix, StringComparison.Ordinal) || !name.EndsWith(suffix, StringComparison.Ordinal))
-        {
-            return int.MaxValue;
-        }
-
-        return int.TryParse(name[prefix.Length..^suffix.Length], out var fighter) ? fighter : int.MaxValue;
-    }
-
-    /// <summary>Reads whether a model uses the enemy FighterInfo layout.</summary>
-    /// <param name="path">Model JSON path.</param>
-    /// <returns>True when the manifest holds the three enemy views.</returns>
-    private static bool ReadIsEnemy(string path)
-    {
-        using var document = JsonDocument.Parse(File.ReadAllText(path));
-        var cameras = document.RootElement.GetProperty("cameras");
-
-        // FighterInfoEnemy has three views, while FighterInfo has twelve.
-        return cameras.GetArrayLength() == 3;
+        var reportPath = Path.Combine(captureRoot, "fighter-catalog.json");
+        await File.WriteAllTextAsync(reportPath, JsonSerializer.Serialize(_results, ReportJsonOptions));
+        QuietLog.Info($"FIGHTER_SHEET complete total={catalog.Count} failed={_failed} report={reportPath} root={captureRoot}");
     }
 
     /// <summary>Moves a source camera away from its reference point.</summary>
@@ -136,19 +114,30 @@ internal sealed class FighterSheetProbe : BattleProbe
     /// <summary>Renders one fighter and records a failure line instead of aborting the sheet.</summary>
     /// <param name="renderer">Active battle renderer.</param>
     /// <param name="captureRoot">Directory receiving the sheet.</param>
-    /// <param name="path">Model JSON path.</param>
+    /// <param name="entry">Pack-derived manifest and static preflight record.</param>
     /// <returns>A task completed after the fighter is rendered or recorded as failed.</returns>
-    private async Task RenderRecordedAsync(BattleRenderer renderer, string captureRoot, string path)
+    private async Task RenderRecordedAsync(BattleRenderer renderer, string captureRoot, FighterSheetCatalogEntry entry)
     {
-        var fighter = ParseFighterId(path);
+        if (!entry.CanRender)
+        {
+            _failed++;
+            _results.Add(new FighterSheetResult(entry.FighterId, entry.IsEnemy, entry.CameraCount, entry.Failures, null, "static preflight"));
+            QuietLog.Info($"FIGHTER_SHEET fighter={entry.FighterId} status=preflight failures={string.Join(',', entry.Failures)}");
+            return;
+        }
+
         try
         {
-            await RenderFighterAsync(renderer, captureRoot, new SheetFighter(path, fighter, ReadIsEnemy(path)));
+            var framing = await RenderFighterAsync(renderer, captureRoot, new SheetFighter(entry.Path, entry.FighterId, entry.IsEnemy) { CameraCount = entry.CameraCount });
+            var failures = framing == "source-view-0" ? [] : new[] { FighterSheetFailure.DiagnosticPullBack };
+            _results.Add(new FighterSheetResult(entry.FighterId, entry.IsEnemy, entry.CameraCount, failures, framing, null));
         }
         catch (Exception error)
         {
             _failed++;
-            QuietLog.Info($"FIGHTER_SHEET fighter={fighter} status=error reason={error.Message}");
+            var failure = error.Message.Contains("zero textured pixels", StringComparison.Ordinal) ? FighterSheetFailure.SilhouetteEmpty : FighterSheetFailure.RendererError;
+            _results.Add(new FighterSheetResult(entry.FighterId, entry.IsEnemy, entry.CameraCount, [failure], null, error.Message));
+            QuietLog.Info($"FIGHTER_SHEET fighter={entry.FighterId} status=error failure={failure} reason={error.Message}");
         }
     }
 
@@ -158,7 +147,7 @@ internal sealed class FighterSheetProbe : BattleProbe
     /// <param name="fighter">Fighter manifest.</param>
     /// <returns>A task completed after an accepted framing.</returns>
     /// <exception cref="InvalidOperationException">No usable source camera or framing exists.</exception>
-    private async Task RenderFighterAsync(BattleRenderer renderer, string captureRoot, SheetFighter fighter)
+    private async Task<string> RenderFighterAsync(BattleRenderer renderer, string captureRoot, SheetFighter fighter)
     {
         renderer.BuildSingleModelForSheet(fighter.Path, fighter.Name, fighter.Id, fighter.Enemy);
         renderer.SetProbePose(0);
@@ -178,9 +167,10 @@ internal sealed class FighterSheetProbe : BattleProbe
 
         foreach (var factor in PullBackFactors)
         {
-            if (await TryFrameAsync(renderer, captureRoot, fighter with { CameraCount = cameras.Count }, view, factor))
+            var framing = await TryFrameAsync(renderer, captureRoot, fighter with { CameraCount = cameras.Count }, view, factor);
+            if (framing is not null)
             {
-                return;
+                return framing;
             }
         }
 
@@ -195,7 +185,7 @@ internal sealed class FighterSheetProbe : BattleProbe
     /// <param name="factor">Pull-back factor.</param>
     /// <returns>True when the framing was accepted and saved.</returns>
     /// <exception cref="InvalidOperationException">The fighter renders no textured pixel.</exception>
-    private async Task<bool> TryFrameAsync(BattleRenderer renderer, string captureRoot, SheetFighter fighter, BattleModel.BattleCameraView view, float factor)
+    private async Task<string?> TryFrameAsync(BattleRenderer renderer, string captureRoot, SheetFighter fighter, BattleModel.BattleCameraView view, float factor)
     {
         var framed = PullBack(view, factor);
         renderer.SetSourceCamera(framed, snap: true);
@@ -218,7 +208,7 @@ internal sealed class FighterSheetProbe : BattleProbe
 
         if (bounds.TouchesFrame)
         {
-            return false;
+            return null;
         }
 
         Save(empty, Path.Combine(captureRoot, $"fighter-{fighter.Id}-background.png"), $"background save failed fighter={fighter.Id}");
@@ -226,7 +216,7 @@ internal sealed class FighterSheetProbe : BattleProbe
         Save(image, output, $"save failed={output}");
         var framing = factor <= 1f ? $"source-view-{ViewIndex}" : $"pulled-back x{factor.ToString("0.0", CultureInfo.InvariantCulture)}";
         QuietLog.Info($"FIGHTER_SHEET fighter={fighter.Id} status=ok enemy={fighter.Enemy} cameras={fighter.CameraCount} framing={framing} image={output}");
-        return true;
+        return framing;
     }
 
     /// <summary>Waits for the next drawn frame and downsamples it to the 320x240 sheet size.</summary>
