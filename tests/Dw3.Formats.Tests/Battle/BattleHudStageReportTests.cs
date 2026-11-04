@@ -28,7 +28,7 @@ public sealed class BattleHudStageReportTests
     {
         // Build a synthetic FightStageInfo record for stage 0.
         // Stride = 0x58 bytes.
-        byte[] data = new byte[BattleStageDecoder.StageCount * 0x58];
+        byte[] data = new byte[0x58];
         int off = 0; // stage 0
 
         // model: file 0x70A, entry 0x1A → packed u32 = 0x070A001A
@@ -84,9 +84,9 @@ public sealed class BattleHudStageReportTests
     [Fact]
     public void ParseRecord_StageIdOutOfRange_Throws()
     {
-        byte[] data = new byte[BattleStageDecoder.StageCount * 0x58];
+        byte[] data = new byte[0x58];
         Assert.Throws<FormatException>(() => BattleStageDecoder.ParseRecord(data, -1));
-        Assert.Throws<FormatException>(() => BattleStageDecoder.ParseRecord(data, BattleStageDecoder.StageCount));
+        Assert.Throws<FormatException>(() => BattleStageDecoder.ParseRecord(data, 1));
     }
 
     [Fact]
@@ -94,6 +94,70 @@ public sealed class BattleHudStageReportTests
     {
         byte[] tiny = new byte[5];
         Assert.Throws<FormatException>(() => BattleStageDecoder.ParseRecord(tiny, 0));
+    }
+
+    [Theory]
+    [InlineData(27, 0x07AF, 0x001A, 0x0006)]
+    [InlineData(47, 0x07C3, 0x0008, 0x0000)]
+    public void ParseRecord_PopulatedDirectStageId_ReturnsThatRecord(
+        int stageId,
+        int expectedModelFile,
+        int expectedModelEntry,
+        int expectedMotionEntry)
+    {
+        byte[] data = new byte[57 * 0x58];
+        for (int recordId = 0; recordId < 57; recordId++)
+        {
+            data[recordId * 0x58] = 1;
+        }
+
+        int offset = stageId * 0x58;
+        BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(offset), (uint)((expectedModelFile << 16) | expectedModelEntry));
+        BinaryPrimitives.WriteUInt32LittleEndian(data.AsSpan(offset + 0x04), (uint)((expectedModelFile << 16) | expectedMotionEntry));
+
+        BattleStageInfo info = BattleStageDecoder.ParseRecord(data, stageId);
+
+        Assert.Equal(stageId, info.StageId);
+        Assert.Equal(expectedModelFile, info.ModelFile);
+        Assert.Equal(expectedModelEntry, info.ModelEntry);
+        Assert.Equal(expectedModelFile, info.MotionFile);
+        Assert.Equal(expectedMotionEntry, info.MotionEntry);
+    }
+
+    [Fact]
+    public void GetPopulatedRecordCount_57RecordsFollowedByZeroPadding_Returns57()
+    {
+        byte[] data = new byte[60 * 0x58];
+        for (int recordId = 0; recordId < 57; recordId++)
+        {
+            data[recordId * 0x58] = 1;
+        }
+
+        int count = BattleStageDecoder.GetPopulatedRecordCount(data);
+
+        Assert.Equal(57, count);
+    }
+
+    [Fact]
+    public void GetPopulatedRecordCount_NonMultipleTableLength_ThrowsClearly()
+    {
+        byte[] data = new byte[0x58 + 1];
+
+        FormatException exception = Assert.Throws<FormatException>(() => BattleStageDecoder.GetPopulatedRecordCount(data));
+
+        Assert.Contains("not a multiple", exception.Message);
+    }
+
+    [Fact]
+    public void GetPopulatedRecordCount_PopulatedRecordAfterZeroPadding_ThrowsClearly()
+    {
+        byte[] data = new byte[3 * 0x58];
+        data[0] = 1;
+        data[2 * 0x58] = 1;
+
+        FormatException exception = Assert.Throws<FormatException>(() => BattleStageDecoder.GetPopulatedRecordCount(data));
+
+        Assert.Contains("after zero padding", exception.Message);
     }
 
     // ── HudSpriteSheetParser.Parse ───────────────────────────────────────────

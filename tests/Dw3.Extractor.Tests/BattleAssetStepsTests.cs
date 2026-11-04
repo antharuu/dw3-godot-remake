@@ -120,10 +120,14 @@ public sealed class BattleAssetStepsTests : IDisposable
     }
 
     [Fact]
-    public void BattleStageStepRecordsEveryUndecodableStageAndStillCompletes()
+    public void BattleStageStepRecordsAll57PopulatedUndecodableStagesAndStillCompletes()
     {
-        var stages = new byte[BattleStageDecoder.StageCount * 0x60];
-        Fabricate.U32(stages, 0, 0x0300_0000);
+        var stages = new byte[60 * 0x58];
+        for (int stageId = 0; stageId < 57; stageId++)
+        {
+            Fabricate.U32(stages, stageId * 0x58, 0x0300_0000);
+        }
+
         AddEngineFile(BattleStageDecoder.FightStageFileId, "AAA/DAT/FIGHT/STAGES.BIN", stages);
         AddEngineFile(0x300, "AAA/DAT/FIGHT/STAGE00.BIN", [1, 2, 3, 4]);
         using var output = new StringWriter();
@@ -132,9 +136,9 @@ public sealed class BattleAssetStepsTests : IDisposable
         int exitCode = Run("battle-stages", output, error);
 
         Assert.True(exitCode == 0, error.ToString());
-        Assert.Contains("\"event\":\"domain-progress\",\"domain\":\"battle-stages\",\"decoded\":0,\"failed\":27", output.ToString());
+        Assert.Contains("\"event\":\"domain-progress\",\"domain\":\"battle-stages\",\"decoded\":0,\"failed\":57", output.ToString());
         Assert.Contains("ERROR battle-stage-failed stage=0", error.ToString());
-        Assert.Contains("ERROR battle-stage-failed stage=26", error.ToString());
+        Assert.Contains("ERROR battle-stage-failed stage=56", error.ToString());
         Assert.True(Directory.Exists(Path.Combine(_root, "data", "battle", "stages")));
     }
 

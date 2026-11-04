@@ -4,15 +4,12 @@ namespace Dw3.Formats.Battle;
 
 /// <summary>
 /// Decodes FightStageInfo records from the FILE_FIGHT_STAGES binary (engine file 0x1CB, EU).
-/// Each record describes one of the 27 battle background scenes.
+/// Each nonzero record describes one battle background scene; trailing zero records are padding.
 /// </summary>
 public static class BattleStageDecoder
 {
     /// <summary>Engine file id of the FightStageInfo table (EU disc).</summary>
     public const int FightStageFileId = 0x1CB;
-
-    /// <summary>Number of fight stage records in the EU disc.</summary>
-    public const int StageCount = 27;
 
     // sizeof(FightStageInfo) from stage.h — model, motions, music, pad, bgColor, LightSet, ...
     private const int Stride = 0x58;
@@ -27,18 +24,45 @@ public static class BattleStageDecoder
     private const int OffAmbient = 0x48; // 3 × s32 passed to SetBackColor
 
     /// <summary>
+    /// Counts populated stage records before zero padding in a complete stage table.
+    /// </summary>
+    /// <param name="data">Raw bytes of the complete FILE_FIGHT_STAGES file.</param>
+    /// <returns>The number of leading nonzero records.</returns>
+    public static int GetPopulatedRecordCount(byte[] data)
+    {
+        ArgumentNullException.ThrowIfNull(data);
+        if (data.Length % Stride != 0)
+        {
+            throw new FormatException($"Fight stage table is {data.Length} bytes, which is not a multiple of {Stride}-byte records.");
+        }
+
+        int recordCount = data.Length / Stride;
+        for (int recordId = 0; recordId < recordCount; recordId++)
+        {
+            if (IsZeroRecord(data, recordId))
+            {
+                ValidateZeroPadding(data, recordId + 1, recordCount);
+                return recordId;
+            }
+        }
+
+        return recordCount;
+    }
+
+    /// <summary>
     /// Parses one FightStageInfo record.
     /// </summary>
     /// <param name="data">Raw bytes of the complete FILE_FIGHT_STAGES file.</param>
-    /// <param name="stageId">Stage index, 0..26.</param>
+    /// <param name="stageId">The zero-based, direct index of a populated stage record.</param>
     /// <returns>The decoded <see cref="BattleStageInfo"/> for the requested stage.</returns>
     /// <exception cref="FormatException">Record out of bounds or id out of range.</exception>
     public static BattleStageInfo ParseRecord(byte[] data, int stageId)
     {
         ArgumentNullException.ThrowIfNull(data);
-        if (stageId < 0 || stageId >= StageCount)
+        int populatedRecordCount = GetPopulatedRecordCount(data);
+        if (stageId < 0 || stageId >= populatedRecordCount)
         {
-            throw new FormatException($"Fight stage id {stageId} is out of range (must be 0..{StageCount - 1}).");
+            throw new FormatException($"Fight stage id {stageId} is out of range for {populatedRecordCount} populated records.");
         }
 
         int offset = stageId * Stride;
@@ -105,5 +129,39 @@ public static class BattleStageDecoder
         }
 
         return [.. bones];
+    }
+
+    /// <summary>Verifies that no populated record follows the first zero padding record.</summary>
+    /// <param name="data">The complete stage table.</param>
+    /// <param name="firstPaddingRecord">The record immediately after the first zero record.</param>
+    /// <param name="recordCount">The total number of record slots in the table.</param>
+    /// <exception cref="FormatException">A populated record follows zero padding.</exception>
+    private static void ValidateZeroPadding(byte[] data, int firstPaddingRecord, int recordCount)
+    {
+        for (int recordId = firstPaddingRecord; recordId < recordCount; recordId++)
+        {
+            if (!IsZeroRecord(data, recordId))
+            {
+                throw new FormatException($"Fight stage table has populated record {recordId} after zero padding.");
+            }
+        }
+    }
+
+    /// <summary>Determines whether every byte in one record is zero padding.</summary>
+    /// <param name="data">The complete stage table.</param>
+    /// <param name="recordId">The zero-based record index to inspect.</param>
+    /// <returns><see langword="true"/> when the record contains only zero bytes.</returns>
+    private static bool IsZeroRecord(byte[] data, int recordId)
+    {
+        int offset = recordId * Stride;
+        for (int byteIndex = 0; byteIndex < Stride; byteIndex++)
+        {
+            if (data[offset + byteIndex] != 0)
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

@@ -8,7 +8,7 @@ using Dw3.Formats.Binary.Png;
 namespace Dw3.Extractor;
 
 /// <summary>
-/// Extracts the 27 fight-stage (battle background) models from the disc.
+/// Extracts the populated fight-stage (battle background) models from the disc.
 /// Walks FILE_FIGHT_STAGES (engine file 0x1CB) to read FightStageInfo records,
 /// then decodes each stage model the same way as fighter models (bones, meshes, textures, motions).
 /// Writes stage-N-model.json + stage-N-texture-K.png under battle/stages/ in the data pack.
@@ -21,7 +21,7 @@ internal static class BattleStageExtractionStep
     private const string OutputSubdir = "battle/stages";
 
     /// <summary>
-    /// Iterates the 27 entries of FILE_FIGHT_STAGES (engine file 0x1CB), decodes each stage model
+    /// Iterates the populated, record-aligned entries of FILE_FIGHT_STAGES (engine file 0x1CB), decodes each stage model
     /// with bones, meshes, and textures using <see cref="BattleModelDecoder.DecodeStage"/>, and writes
     /// PNG textures and model JSON under <c>battle/stages/</c> in the data pack.
     /// </summary>
@@ -44,6 +44,7 @@ internal static class BattleStageExtractionStep
 
             // Read the FightStageInfo file (FILE_FIGHT_STAGES = 0x1CB).
             (_, byte[] stagesData) = files.Read(BattleStageDecoder.FightStageFileId);
+            int stageCount = BattleStageDecoder.GetPopulatedRecordCount(stagesData);
 
             new DataPackWriter(outputDirectory).Write(
                 new DataPackMetadata(
@@ -56,7 +57,7 @@ internal static class BattleStageExtractionStep
                     string imagesDir = context.GetImagePath(OutputSubdir);
                     Directory.CreateDirectory(imagesDir);
                     int decoded = 0, failed = 0;
-                    for (int stageId = 0; stageId < BattleStageDecoder.StageCount; stageId++)
+                    for (int stageId = 0; stageId < stageCount; stageId++)
                     {
                         try
                         {
