@@ -24,6 +24,12 @@ public sealed class BattleHudStageReportTests
 
     // ── BattleStageDecoder ────────────────────────────────────────────────────
     [Fact]
+    public void StageManifest_OnlyListsTheBlendEquationAsUnsupported()
+    {
+        Assert.Equal(["exact PS1 ABR blend equations"], BattleStageJsonWriter.UnsupportedFeatures);
+    }
+
+    [Fact]
     public void ParseRecord_ValidRecord_ReturnsCorrectFields()
     {
         // Build a synthetic FightStageInfo record for stage 0.

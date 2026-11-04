@@ -8,8 +8,8 @@ namespace Dw3.Formats.Battle;
 /// </summary>
 public static class BattleStageJsonWriter
 {
-    /// <summary>Source features a stage manifest does not reproduce, listed under <c>unsupported</c>.</summary>
-    private static readonly string[] UnsupportedFeatures = ["exact PS1 ABR blend equations", "stage motion playback", "bgColor fade-in"];
+    /// <summary>Gets source features the current stage manifest intentionally does not reproduce.</summary>
+    public static IReadOnlyList<string> UnsupportedFeatures { get; } = ["exact PS1 ABR blend equations"];
 
     /// <summary>
     /// Serialises one complete fight stage: metadata, textures, bones, meshes, tracks, motions.

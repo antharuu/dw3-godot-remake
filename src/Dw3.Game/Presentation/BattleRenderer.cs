@@ -166,7 +166,8 @@ public sealed class BattleRenderer : IDisposable
         _modelLayer.SetProbeCanvasCalibrationVisible(visible, legacyDoubleUv);
 
     /// <summary>Loads the decoded fight stage (the battle background) for the encounter's
-    /// <paramref name="stageId"/> and poses it statically. Returns false (and logs) when the
+    /// <paramref name="stageId"/>. Its first keyframe is posed during setup, then its recovered
+    /// motion advances on the same PAL clock as the fighters. Returns false (and logs) when the
     /// JSON is absent or invalid; the dark floor then stays as the background, never silently
     /// presented as the real stage.</summary>
     /// <param name="stageJsonPath">Path to the extracted stage model document.</param>
@@ -451,6 +452,7 @@ public sealed class BattleRenderer : IDisposable
         {
             _fighters.Step(1);
             _partnerView.Model?.Step(1);
+            _stage?.Step(1);
             SynchronizePartnerFace();
         }
     }
