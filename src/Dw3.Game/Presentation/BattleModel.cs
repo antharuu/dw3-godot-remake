@@ -167,6 +167,24 @@ public sealed class BattleModel
     public static Vector3 Ps1Position(Vector3 value) =>
         new Vector3(value.X, -value.Y, -value.Z) / BattleSceneMath.Ps1UnitsPerGodotUnit;
 
+    /// <summary>Captures the currently published motion state and every effective bone pose for a cadence probe checkpoint.</summary>
+    /// <param name="sourceFrame">Pinned elapsed source PAL frames at the checkpoint.</param>
+    /// <returns>The observable machine publication and skeleton result from the live production model.</returns>
+    public BattleMotionCadenceSample CaptureCadenceSample(int sourceFrame)
+    {
+        var motion = Motion ?? throw new InvalidOperationException("motion state unavailable");
+        return new BattleMotionCadenceSample(
+            sourceFrame,
+            motion.Motion,
+            motion.Keyframe,
+            motion.Frame,
+            motion.Blend,
+            motion.BlendTarget,
+            motion.BlendSource,
+            motion.Blending,
+            _skeleton.CaptureCadenceBones());
+    }
+
     /// <summary>Binds the current directional and ambient light state. Every pose rebuilds only
     /// its vertex colours: texture page, source UVs, flat polygons and Gouraud sharing stay intact.</summary>
     /// <param name="lights">Stage lights to apply, or <see langword="null"/> to clear them.</param>

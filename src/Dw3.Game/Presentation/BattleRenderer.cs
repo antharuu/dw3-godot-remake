@@ -447,10 +447,16 @@ public sealed class BattleRenderer : IDisposable
             return;
         }
 
-        _fighters.Step(elapsed);
-        _partnerView.Model?.Step(elapsed);
-        SynchronizePartnerFace();
+        for (var frame = 0; frame < elapsed; frame++)
+        {
+            _fighters.Step(1);
+            _partnerView.Model?.Step(1);
+            SynchronizePartnerFace();
+        }
     }
+
+    /// <summary>Clears only the carried fractional PAL time before an isolated production cadence trial.</summary>
+    public void ResetMotionClockForProbe() => _motionClock.Reset();
 
     /// <summary>Each battle creates a stage task in the battle-stage presentation contract, including repeated fights on one stage.</summary>
     public void RestartEntranceFade()

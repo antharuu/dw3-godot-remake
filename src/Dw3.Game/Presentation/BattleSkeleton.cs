@@ -86,6 +86,33 @@ internal sealed class BattleSkeleton
     /// <returns>The transform from the most recent visible pose.</returns>
     public Transform3D WorldTransform(int bone) => _transforms.World(bone);
 
+    /// <summary>Captures every effective source-bone transform for the end-to-end cadence probe.</summary>
+    /// <returns>Source-indexed world transforms after pose or blend application.</returns>
+    public IReadOnlyList<BattleMotionCadenceBone> CaptureCadenceBones() =>
+    [
+        .. _bones.Keys.Order().Select(index =>
+        {
+            var transform = _transforms.World(index);
+            var basis = transform.Basis;
+            var origin = transform.Origin;
+            return new BattleMotionCadenceBone(
+                index,
+                IsVisible(index),
+                origin.X,
+                origin.Y,
+                origin.Z,
+                basis.X.X,
+                basis.X.Y,
+                basis.X.Z,
+                basis.Y.X,
+                basis.Y.Y,
+                basis.Y.Z,
+                basis.Z.X,
+                basis.Z.Y,
+                basis.Z.Z);
+        }),
+    ];
+
     /// <summary>Poses every tracked bone at one source frame.</summary>
     /// <param name="frame">Source animation frame.</param>
     public void Pose(int frame)
