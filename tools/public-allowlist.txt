@@ -934,3 +934,6 @@ tests/Dw3.Extractor.Tests/PlayerExtractionStepTests.cs
 tests/Dw3.Extractor.Tests/NpcExtractionStepTests.cs
 tests/Dw3.Extractor.Tests/FabricatedFieldDisc.cs
 tests/Dw3.Extractor.Tests/FieldRegistryStepsTests.cs
+src/Dw3.Game/GodotObjectDisposal.cs
+tools/bisect-probe.sh
+tools/probe-smoke.sh
