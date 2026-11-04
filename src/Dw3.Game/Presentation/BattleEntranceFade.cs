@@ -60,14 +60,14 @@ internal sealed class BattleEntranceFade
         return true;
     }
 
-    /// <summary>Scales every light and the ambient colour of a set by the fade fraction.</summary>
+    /// <summary>Interpolates every light vector and colour from black by the fade fraction.</summary>
     /// <param name="source">The decoded stage light set.</param>
     /// <returns>The faded set.</returns>
     public BattleModel.BattleLightSet Scale(BattleModel.BattleLightSet source)
     {
         var fade = Fraction;
         return new BattleModel.BattleLightSet(
-            [.. source.Lights.Select(light => new BattleModel.BattleLight(light.Direction, light.Rgb * fade))],
+            [.. source.Lights.Select(light => new BattleModel.BattleLight(light.Direction * fade, light.Rgb * fade))],
             source.Ambient * fade);
     }
 

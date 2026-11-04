@@ -27,7 +27,8 @@ internal sealed class BattleEntranceProbe : BattleProbe
         renderer.SetHudVisibleForProbe(false);
         var playerId = Host.Flow.State.ActivePlayerFighter!.Id;
         var enemyId = Host.Flow.State.ActiveEnemyFighter!.Id;
-        double? settledRatio = null;
+        double? previousFighter = null;
+        double? previousStage = null;
         foreach (var fade in new[] { 0f, .25f, .5f, .75f, 1f })
         {
             var measurements = await CaptureFadeAsync(captureRoot, fade, playerId, enemyId);
@@ -37,15 +38,42 @@ internal sealed class BattleEntranceProbe : BattleProbe
                 continue;
             }
 
-            var ratio = measurements.Fighter / Math.Max(1d, measurements.Stage);
-            settledRatio ??= ratio;
-            ProbeRequirement.Require(
-                Math.Abs(ratio - settledRatio.Value) <= .35d * settledRatio.Value,
-                $"fighters fade apart from the stage fade={fade:0.00} ratio={ratio:0.00} settled={settledRatio:0.00}");
+            VerifyFadeProgress(fade, measurements, previousFighter, previousStage);
+            previousFighter = measurements.Fighter;
+            previousStage = measurements.Stage;
         }
 
         renderer.SetHudVisibleForProbe(true);
         QuietLog.Info("battle-entrance PASS");
+    }
+
+    /// <summary>
+    /// Verifies the source fade's observable ordering without treating its nonlinear fighter-to-stage
+    /// ratio as an error. Stage colours ramp directly, while each directional-light vector and colour
+    /// both interpolate from zero, making the normal-lit fighters remain dimmer at early fractions.
+    /// </summary>
+    /// <param name="fade">Current source fade fraction.</param>
+    /// <param name="current">Current fighter, stage and full-frame luminance.</param>
+    /// <param name="previousFighter">Fighter luminance from the preceding non-black capture.</param>
+    /// <param name="previousStage">Stage luminance from the preceding non-black capture.</param>
+    private static void VerifyFadeProgress(
+        float fade,
+        (double Fighter, double Stage, double Mean) current,
+        double? previousFighter,
+        double? previousStage)
+    {
+        if (previousFighter is not null && previousStage is not null)
+        {
+            ProbeRequirement.Require(current.Fighter >= previousFighter, $"fighter darkened while entering fade={fade:0.00}");
+            ProbeRequirement.Require(current.Stage >= previousStage, $"stage darkened while entering fade={fade:0.00}");
+        }
+
+        if (fade < 1f)
+        {
+            ProbeRequirement.Require(
+                current.Fighter < current.Stage,
+                $"early directional fade expected fighter below stage fade={fade:0.00} fighter={current.Fighter:0.0} stage={current.Stage:0.0}");
+        }
     }
 
     /// <summary>Captures the full and stage-only frames for one explicit fade value.</summary>

@@ -8,7 +8,7 @@ namespace Dw3Production.Diagnostics.Battle;
 /// <summary>Compares the command-menu Kotemon lighting distribution against the private PSX oracle.</summary>
 internal sealed class BattleKotemonLightProbe : BattleProbe
 {
-    private static readonly string[] Regions = ["helmet", "body", "fur"];
+    private static readonly string[] Regions = ["helmet", "body", "limbs"];
 
     /// <summary>Initializes a new instance of the <see cref="BattleKotemonLightProbe"/> class.</summary>
     /// <param name="host">Restricted live battle host.</param>
@@ -114,7 +114,7 @@ internal sealed class BattleKotemonLightProbe : BattleProbe
     {
         ["helmet"] = RegionMask(image, new Rect2I(263, 151, 37, 38), p => p.B > (p.R * 1.15f) && p.B > (p.G * 1.08f) && p.B > .18f),
         ["body"] = RegionMask(image, new Rect2I(250, 164, 40, 44), p => p.R > (p.G * 1.22f) && p.R > (p.B * 1.12f) && p.R > .22f),
-        ["fur"] = RegionMask(image, new Rect2I(244, 180, 32, 37), p => p.R > .42f && p.G > .42f && p.B > .42f && Range(p) < .38f),
+        ["limbs"] = RegionMask(image, new Rect2I(244, 180, 32, 37), p => p.R > .42f && p.G > .42f && p.B > .42f && Range(p) < .38f),
     };
 
     /// <summary>Builds remake masks relative to the measured fighter silhouette.</summary>
@@ -128,7 +128,7 @@ internal sealed class BattleKotemonLightProbe : BattleProbe
         {
             ["helmet"] = RegionMask(image, silhouette, Relative(box, .42f, .00f, .42f, .38f), p => p.B > (p.R * 1.12f) && p.B > (p.G * 1.04f) && p.B > .15f),
             ["body"] = RegionMask(image, silhouette, Relative(box, .28f, .25f, .55f, .48f), p => p.R > (p.G * 1.18f) && p.R > (p.B * 1.08f) && p.R > .18f),
-            ["fur"] = RegionMask(image, silhouette, Relative(box, .00f, .42f, .58f, .58f), p => p.R > .38f && p.G > .38f && p.B > .38f && Range(p) < .42f),
+            ["limbs"] = RegionMask(image, silhouette, Relative(box, .00f, .42f, .58f, .58f), p => p.R > .38f && p.G > .38f && p.B > .38f && Range(p) < .42f),
         };
     }
 

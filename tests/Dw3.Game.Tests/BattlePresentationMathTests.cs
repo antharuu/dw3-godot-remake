@@ -80,6 +80,22 @@ public sealed class BattlePresentationMathTests
     }
 
     [Fact]
+    public void EntranceFadeInterpolatesLightDirectionsAlongsideTheirColours()
+    {
+        var fade = new BattleEntranceFade();
+        var source = new BattleModel.BattleLightSet(
+            [new BattleModel.BattleLight(new Vector3(4, -2, 1), new Color(.8f, .6f, .4f))],
+            new Color(.2f, .1f, .05f));
+        fade.SetFraction(.5f);
+
+        var scaled = fade.Scale(source);
+
+        Assert.Equal(new Vector3(2, -1, .5f), scaled.Lights[0].Direction);
+        Assert.Equal(new Color(.4f, .3f, .2f, .5f), scaled.Lights[0].Rgb);
+        Assert.Equal(new Color(.1f, .05f, .025f, .5f), scaled.Ambient);
+    }
+
+    [Fact]
     public void CameraFadeSnapsOrReachesItsTargetOnTheLastStep()
     {
         var fade = new BattleCameraFade();
