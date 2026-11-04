@@ -24,6 +24,8 @@ endorsed by Bandai Namco.
 | Combat (1v1, six commands, enemy AI, rewards) | In progress |
 | Save, quests, shops, cutscenes, audio | Not started, help wanted |
 
+The combat loop is playable for development, but combat fidelity is still under active verification. Model pivot and scene-composition work, plus production framebuffer comparisons, remain pending. No 1:1 combat claim is made.
+
 See [docs/ROADMAP.md](docs/ROADMAP.md).
 
 ## Quick start
