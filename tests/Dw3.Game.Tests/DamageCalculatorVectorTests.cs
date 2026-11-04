@@ -49,61 +49,52 @@ public sealed class DamageCalculatorVectorTests
             int id = c!["id"]!.GetValue<int>();
             string fn = c["fn"]!.GetValue<string>();
 
-            try
+            switch (fn)
             {
-                switch (fn)
-                {
-                    case "GetElementBoost":
-                        VerifyGetElementBoost(c, id, errors);
-                        break;
+                case "GetElementBoost":
+                    VerifyGetElementBoost(c, id, errors);
+                    break;
 
-                    case "GetTurnDelay":
-                        VerifyGetTurnDelay(c, id, errors);
-                        break;
+                case "GetTurnDelay":
+                    VerifyGetTurnDelay(c, id, errors);
+                    break;
 
-                    case "TestRunAway":
-                        VerifyTestRunAway(c, id, errors);
-                        break;
+                case "TestRunAway":
+                    VerifyTestRunAway(c, id, errors);
+                    break;
 
-                    case "TestEnemyRunAway":
-                        VerifyTestEnemyRunAway(c, id, errors);
-                        break;
+                case "TestEnemyRunAway":
+                    VerifyTestEnemyRunAway(c, id, errors);
+                    break;
 
-                    case "ComputeDamage":
-                        VerifyComputeDamage(c, id, errors);
-                        break;
+                case "ComputeDamage":
+                    VerifyComputeDamage(c, id, errors);
+                    break;
 
-                    case "ComputeMagicDamage":
-                        VerifyComputeMagicDamage(c, id, errors);
-                        break;
+                case "ComputeMagicDamage":
+                    VerifyComputeMagicDamage(c, id, errors);
+                    break;
 
-                    case "ComputeCounterDamage":
-                        VerifyComputeCounterDamage(c, id, errors);
-                        break;
+                case "ComputeCounterDamage":
+                    VerifyComputeCounterDamage(c, id, errors);
+                    break;
 
-                    case "ComputeEnemyStats":
-                        VerifyComputeEnemyStats(c, id, errors);
-                        break;
+                case "ComputeEnemyStats":
+                    VerifyComputeEnemyStats(c, id, errors);
+                    break;
 
-                    case "RollCritical":
-                        VerifyRollCritical(c, id, errors);
-                        break;
+                case "RollCritical":
+                    VerifyRollCritical(c, id, errors);
+                    break;
 
-                    case "RollMagicCritical":
-                        VerifyRollMagicCritical(c, id, errors);
-                        break;
+                case "RollMagicCritical":
+                    VerifyRollMagicCritical(c, id, errors);
+                    break;
 
-                    default:
-                        errors.Add($"[id={id}] Unknown function '{fn}'");
-                        break;
-                }
+                default:
+                    errors.Add($"[id={id}] Unknown function '{fn}'");
+                    break;
             }
-#pragma warning disable CA1031
-            catch (Exception ex)
-            {
-                errors.Add($"[id={id}] Exception in '{fn}': {ex.Message}");
-            }
-#pragma warning restore CA1031
         }
 
         Assert.True(
