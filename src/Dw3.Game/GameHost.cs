@@ -393,7 +393,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
                 ToggleF3();
             }
 
-            if (!DispatchDiagnosticProbe())
+            if (!DispatchDiagnosticProbe() && _options.SpawnCaptureEnabled)
             {
                 // Block body: the callable must return nothing, Godot cannot convert the Task to a Variant.
                 Callable.From(() => { _ = SpawnCapture.RunAsync(this, _options.CaptureAndQuit); }).CallDeferred();
@@ -628,6 +628,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
         _battleRenderer.Show();
         _battleMenuCoordinator.RefreshActivePartnerCatalogs();
         _battleMenu.OpenRoot(flow.RootMenuLines());
+        _frameCoordinator.NotifyLoadingStart();
         QuietLog.Info($"battle-start {why} encounter={encounter} enemies=[{string.Join(",", _lastBattleEnemyIds)}] party=[{string.Join(",", flow.State.Players.Where(p => p is not null).Select(p => p!.Id))}] level={TestTeamGrowth.Level}");
     }
 
@@ -1053,7 +1054,11 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     /// position, and presents the completed scene once before the next simulation tick.
     /// </summary>
     /// <param name="zone">The built field zone to apply as the active scene.</param>
-    private void ApplyScene(FieldZone zone) => _fieldRuntimeCoordinator.ApplyScene(zone);
+    private void ApplyScene(FieldZone zone)
+    {
+        _fieldRuntimeCoordinator.ApplyScene(zone);
+        _frameCoordinator.NotifyLoadingStart();
+    }
 
     /// <summary>
     /// Resolves the PNG path for a player animation frame from the field data-pack.

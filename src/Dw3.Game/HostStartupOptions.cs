@@ -109,6 +109,11 @@ public sealed class HostStartupOptions
     /// </summary>
     public bool CaptureAndQuit { get; init; }
 
+    /// <summary>Gets a value indicating whether the spawn capture should run after a normal session starts.
+    /// True when either <see cref="CaptureAndQuit"/> is set or a <see cref="CaptureDir"/> override is active.
+    /// No capture is written during ordinary player sessions.</summary>
+    public bool SpawnCaptureEnabled => CaptureAndQuit || CaptureDir is not null;
+
     // ── Battle probe path overrides ───────────────────────────────────────────
 
     /// <summary>

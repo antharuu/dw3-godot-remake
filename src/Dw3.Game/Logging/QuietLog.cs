@@ -16,7 +16,9 @@ public sealed class QuietLog
     /// <param name="message">The error message text.</param>
     public static void Error(string message) => GD.PushError($"ERROR {message}");
 
-    /// <summary>Emits a warning the first and second time it is raised; suppresses subsequent duplicates.</summary>
+    /// <summary>Emits a warning the first and second time it is raised; suppresses subsequent duplicates.
+    /// Uses <c>GD.Print</c> instead of <c>GD.PushWarning</c> so that no C# stack trace
+    /// is appended to the output: application-level warnings are expected and not actionable as errors.</summary>
     /// <param name="key">A stable key that identifies the warning category for deduplication.</param>
     /// <param name="message">The human-readable warning text.</param>
     public void Warn(string key, string message)
@@ -25,11 +27,11 @@ public sealed class QuietLog
         _repetitions[key] = count;
         if (count == 1)
         {
-            GD.PushWarning($"WARN {message}");
+            GD.Print($"WARN {message}");
         }
         else if (count == 2)
         {
-            GD.PushWarning($"WARN {message} repeats={count}");
+            GD.Print($"WARN {message} repeats={count}");
         }
     }
 
