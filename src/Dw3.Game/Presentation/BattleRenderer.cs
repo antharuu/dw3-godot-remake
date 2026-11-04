@@ -201,6 +201,7 @@ public sealed class BattleRenderer : IDisposable
 
         if (_partnerView.TryBuild(playerModelJsonPath, playerFighterId))
         {
+            SynchronizePartnerFace();
             ApplyStageLights();
         }
 
@@ -325,6 +326,10 @@ public sealed class BattleRenderer : IDisposable
     /// <returns>The changed texture-texel count.</returns>
     public int FaceChangedTexels(int fighterId) => _fighters.Require(fighterId).FaceChangedTexels();
 
+    /// <summary>Counts changed texels in the independent partner-view copy of the active fighter.</summary>
+    /// <returns>The changed destination texels, or zero when the view has no decoded model.</returns>
+    public int PartnerFaceChangedTexels() => _partnerView.Model?.FaceChangedTexels() ?? 0;
+
     /// <summary>Supplies a deterministic random value to a fighter's probe-only face update.</summary>
     /// <param name="fighterId">Identifier of the fighter to update.</param>
     /// <param name="randomValue">Fixed random value returned during the update.</param>
@@ -338,6 +343,7 @@ public sealed class BattleRenderer : IDisposable
         var model = _fighters.Require(fighterId);
         model.SetFaceBlinkTimerForProbe(timer);
         model.Step(0);
+        SynchronizePartnerFace();
     }
 
     /// <summary>Probe-only baseline resembling the old identity-scale renderer. The next PoseAll
@@ -422,6 +428,7 @@ public sealed class BattleRenderer : IDisposable
 
         _fighters.Step(elapsed);
         _partnerView.Model?.Step(elapsed);
+        SynchronizePartnerFace();
     }
 
     /// <summary>Each battle creates a stage task in the battle-stage presentation contract, including repeated fights on one stage.</summary>
@@ -902,6 +909,15 @@ public sealed class BattleRenderer : IDisposable
         if (_partnerView.Visible)
         {
             _partnerView.AimCamera(_fighters.Player?.Motion?.IdleMotion ?? 0);
+        }
+    }
+
+    /// <summary>Keeps the independent partner render target on the player's selected face frame.</summary>
+    private void SynchronizePartnerFace()
+    {
+        if (_partnerView.Model is { } partner && _fighters.Player is { } player)
+        {
+            partner.SynchronizeFaceFrom(player);
         }
     }
 

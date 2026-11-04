@@ -236,6 +236,17 @@ public sealed class BattleModel
     /// <param name="random">Callback that provides the next source-range random value.</param>
     public void SetFaceRandomForProbe(Func<int> random) => _face.SetRandom(random);
 
+    /// <summary>
+    /// Synchronizes this independent render copy's face to the selected face frame of
+    /// <paramref name="source"/> without sharing mutable image pages between viewports.
+    /// </summary>
+    /// <param name="source">The active fighter whose face frame is authoritative.</param>
+    public void SynchronizeFaceFrom(BattleModel source)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        _face.SynchronizeFrom(source._face, source.Motion?.Motion ?? 1);
+    }
+
     /// <summary>Poses the hierarchy at a source frame. This is the same local construction as
     /// the decoded mesh contract: ZYX rotation, fixed-point scale (/4096), translation, then parent composition
     /// through the Godot hierarchy. A source-negligible scale hides that bone and its mesh.</summary>

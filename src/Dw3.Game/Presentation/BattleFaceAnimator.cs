@@ -42,6 +42,9 @@ internal sealed class BattleFaceAnimator
     /// <summary>Gets every working texture page by key.</summary>
     public IEnumerable<(int TextureKey, Image Image)> Pages => _textures.Select(pair => (pair.Key, pair.Value.Working));
 
+    /// <summary>Gets the source-frame clock that selects the currently visible facial frames.</summary>
+    public (int BlinkTimer, int Time) State => (_blinkTimer, _time);
+
     /// <summary>Reads the optional <c>face</c> section; parts with a non-positive width are skipped.</summary>
     /// <param name="root">Model document root.</param>
     /// <exception cref="InvalidOperationException">A part does not have three frames or a rectangle leaves the 256x256 page.</exception>
@@ -132,6 +135,20 @@ internal sealed class BattleFaceAnimator
     /// <summary>Replaces the random source used to re-arm the blink timer, for a deterministic probe.</summary>
     /// <param name="random">Source of non-negative integers; only the low 7 bits are used.</param>
     public void SetRandom(Func<int> random) => _random = random;
+
+    /// <summary>
+    /// Copies the source clock and redraws this model's own texture pages with the source motion's
+    /// selected face frame. The partner viewport owns separate images, so it must share frame
+    /// selection rather than an image or GPU texture with the main fighter.
+    /// </summary>
+    /// <param name="source">Animator that owns the visible fighter's clocks.</param>
+    /// <param name="motion">One-based motion number currently selected by the visible fighter.</param>
+    public void SynchronizeFrom(BattleFaceAnimator source, int motion)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        (_blinkTimer, _time) = source.State;
+        Update(0, motion);
+    }
 
     /// <summary>Chooses the forced eye frame associated with a motion.</summary>
     /// <param name="motion">One-based active motion number.</param>
