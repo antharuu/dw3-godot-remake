@@ -246,7 +246,6 @@ src/Dw3.Formats/Encounter/BattleList.cs
 src/Dw3.Formats/Encounter/EncounterEnemySlot.cs
 src/Dw3.Formats/Encounter/EncounterManifest.cs
 src/Dw3.Formats/Encounter/EncounterRecord.cs
-src/Dw3.Formats/Encounter/EncounterTypes.cs
 src/Dw3.Formats/Encounter/FieldBattles.cs
 src/Dw3.Formats/Encounter/FieldEncounterDecoder.cs
 src/Dw3.Formats/Encounter/StageBattleArray.cs
@@ -352,15 +351,11 @@ src/Dw3.Formats/Water/StageTileDecoder.cs
 src/Dw3.Game/.gitignore
 src/Dw3.Game/BattleProbe.tscn
 src/Dw3.Game/Conversion/BattleDataPackLoader.cs
-src/Dw3.Game/Conversion/BattleTextRuntime.cs
 src/Dw3.Game/Conversion/CacheResourceException.cs
 src/Dw3.Game/Conversion/DataPackFiles.cs
 src/Dw3.Game/Conversion/DialogueDataPackLoader.cs
-src/Dw3.Game/Conversion/DialogueRecords.cs
 src/Dw3.Game/Conversion/FieldAnimationDataPackLoader.cs
-src/Dw3.Game/Conversion/FieldAnimationRecords.cs
 src/Dw3.Game/Conversion/FieldDataPackLoader.cs
-src/Dw3.Game/Conversion/RuntimeRecords.cs
 src/Dw3.Game/Conversion/Vec2I.Godot.cs
 src/Dw3.Game/Diagnostics/Battle/BattleCameraProbe.cs
 src/Dw3.Game/Diagnostics/Battle/BattleComparisonImage.cs
