@@ -12,7 +12,9 @@ while read -r local_ref local_sha remote_ref remote_sha; do
   esac
 done
 
-dotnet test tests/Dw3.Repository.Tests --nologo -v q >/dev/null || {
+# The production provenance test is the push gate. Fixture tests create temporary
+# Git repositories and belong to the regular solution suite, not this hook.
+dotnet test tests/Dw3.Repository.Tests --nologo -v q --filter 'FullyQualifiedName~RealRepositoryTests' >/dev/null || {
   echo "PRE_PUSH_REFUSED: provenance guard failed" >&2
   exit 1
 }
