@@ -56,6 +56,25 @@ public sealed class BattlePresentationMathTests
     }
 
     [Fact]
+    public void SourceClockCarriesSixtyHzTicksAcrossPresentationCadences()
+    {
+        var clock = new BattleSourceClock();
+        Assert.Equal(1, clock.Advance(1f / 60f));
+        Assert.Equal(2, clock.Advance(1f / 30f));
+        Assert.Equal(0, clock.Advance(1f / 120f));
+        Assert.Equal(1, clock.Advance(1f / 120f));
+    }
+
+    [Fact]
+    public void SourceClockReplaysTheSameShotStateAtThirtySixtyAndOneTwentyHz()
+    {
+        var expected = ReplayShotAtOneSecond(60);
+
+        Assert.Equal(expected, ReplayShotAtOneSecond(30));
+        Assert.Equal(expected, ReplayShotAtOneSecond(120));
+    }
+
+    [Fact]
     public void EntranceFadeAdvancesByWholeFramesAndStopsAtFull()
     {
         var fade = new BattleEntranceFade();
@@ -129,6 +148,18 @@ public sealed class BattlePresentationMathTests
         Assert.Equal(200f, fade.Projection);
     }
 
+    private static (int List, int Shot, int Time, int Substate, int Rotation) ReplayShotAtOneSecond(int cadence)
+    {
+        var camera = new BattleShotCamera(new FixedShotRng(), enemyCameraCount: 3);
+        var clock = new BattleSourceClock();
+        for (var frame = 0; frame < cadence; frame++)
+        {
+            camera.StepFrames(clock.Advance(1f / cadence));
+        }
+
+        return (camera.List, camera.Shot, camera.Time, camera.Substate, camera.View.RotationY);
+    }
+
     private static void AssertConsumedShade(BattleModel.BattleLightSet source, BattleEntranceFade fade, Vector3 normal)
     {
         var directional = Mathf.Max(0f, source.Lights[0].Direction.Normalized().Dot(normal));
@@ -147,5 +178,11 @@ public sealed class BattlePresentationMathTests
     {
         var method = typeof(BattleModelLighting).GetMethod("Shade", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!;
         return (Color)method.Invoke(null, [set, normal])!;
+    }
+
+    private sealed class FixedShotRng : IShotCameraRng
+    {
+        /// <inheritdoc/>
+        public int NextRoll() => 0;
     }
 }

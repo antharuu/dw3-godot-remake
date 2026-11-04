@@ -514,6 +514,7 @@ src/Dw3.Game/Presentation/BattleShotCamera.cs
 src/Dw3.Game/Presentation/BattleShotCameraViews.cs
 src/Dw3.Game/Presentation/BattleSkeleton.cs
 src/Dw3.Game/Presentation/BattleSilhouetteMetrics.cs
+src/Dw3.Game/Presentation/BattleSourceClock.cs
 src/Dw3.Game/Presentation/BattleSkeletonTransformCache.cs
 src/Dw3.Game/Presentation/BattleSourcePolygonState.cs
 src/Dw3.Game/Presentation/BattleSurfaceBuffer.cs

@@ -50,6 +50,8 @@ public sealed class BattleRenderer : IDisposable
 
     private readonly BattleCommandCamera _commandCamera = new();
 
+    private readonly BattleSourceClock _shotClock = new();
+
     private (int Polygons, int Culled, int UnsupportedAbr)? _lastOrderingLog;
 
     private BattleModel? _stage;
@@ -604,6 +606,7 @@ public sealed class BattleRenderer : IDisposable
     /// scene during the player's command turn (see <see cref="BattleCommandCamera"/>).</summary>
     public void SetCommandMenuCamera()
     {
+        _shotClock.Reset();
         SetSourceCamera(_commandCamera.Start(FighterCameras(enemy: false), FighterCameras(enemy: true)), snap: true);
         ApplyShotVisibility();
     }
@@ -627,21 +630,27 @@ public sealed class BattleRenderer : IDisposable
         return $"{motionText} camera={_commandCamera.Summary()}";
     }
 
-    /// <summary>Advances the command shot camera and applies its next view when available.</summary>
-    public void StepShotCamera()
+    /// <summary>Advances the command shot camera by elapsed source time and applies its last view.</summary>
+    /// <param name="delta">Elapsed presentation time in seconds.</param>
+    public void StepShotCamera(float delta)
     {
-        if (_commandCamera.Step() is not { } view)
+        var sourceTicks = _shotClock.Advance(delta);
+        for (var tick = 0; tick < sourceTicks; tick++)
         {
-            return;
-        }
+            if (_commandCamera.Step() is not { } view)
+            {
+                return;
+            }
 
-        SetSourceCamera(view, snap: true);
-        ApplyShotVisibility();
+            SetSourceCamera(view, snap: true);
+            ApplyShotVisibility();
+        }
     }
 
     /// <summary>Stops the command shot camera and restores both fighters' visibility.</summary>
     public void StopShotCamera()
     {
+        _shotClock.Reset();
         _commandCamera.Stop();
         _fighters.RestoreVisibility();
     }
@@ -698,7 +707,7 @@ public sealed class BattleRenderer : IDisposable
         var commandTurn = value.Phase == BattleFlowPhase.PlayerCommand;
         if (commandTurn)
         {
-            StepShotCamera();
+            StepShotCamera(elapsed);
         }
         else
         {
