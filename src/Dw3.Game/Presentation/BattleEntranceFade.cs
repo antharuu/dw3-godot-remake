@@ -60,14 +60,19 @@ internal sealed class BattleEntranceFade
         return true;
     }
 
-    /// <summary>Interpolates every light vector and colour from black by the fade fraction.</summary>
+    /// <summary>
+    /// Binds the entrance's effective light set by normalizing every nonzero interpolated direction
+    /// before the model-light consumer. A zero fraction remains zero, matching the consumer's safe
+    /// early-out. RGB and ambient alone carry the brightness fade, so a direction magnitude cannot
+    /// attenuate the directional term a second time.
+    /// </summary>
     /// <param name="source">The decoded stage light set.</param>
-    /// <returns>The faded set.</returns>
+    /// <returns>The effective set consumed by model lighting.</returns>
     public BattleModel.BattleLightSet Scale(BattleModel.BattleLightSet source)
     {
         var fade = Fraction;
         return new BattleModel.BattleLightSet(
-            [.. source.Lights.Select(light => new BattleModel.BattleLight(light.Direction * fade, light.Rgb * fade))],
+            [.. source.Lights.Select(light => new BattleModel.BattleLight(NormalizeInterpolatedDirection(light.Direction, fade), light.Rgb * fade))],
             source.Ambient * fade);
     }
 
@@ -92,5 +97,15 @@ internal sealed class BattleEntranceFade
             BattleSceneMath.LerpFixed(0, (int)(target.G * 255), Level) / 255f,
             BattleSceneMath.LerpFixed(0, (int)(target.B * 255), Level) / 255f);
         return bg.R + bg.G + bg.B == 0f ? new Color(1f / 255f, 1f / 255f, 1f / 255f) : bg;
+    }
+
+    /// <summary>Returns the SDK-equivalent direction after interpolation from the zero vector.</summary>
+    /// <param name="direction">Decoded source direction.</param>
+    /// <param name="fade">Current entrance fraction.</param>
+    /// <returns>A unit direction, or zero when interpolation yields a zero vector.</returns>
+    private static Vector3 NormalizeInterpolatedDirection(Vector3 direction, float fade)
+    {
+        var interpolated = direction * fade;
+        return interpolated.LengthSquared() == 0f ? Vector3.Zero : interpolated.Normalized();
     }
 }

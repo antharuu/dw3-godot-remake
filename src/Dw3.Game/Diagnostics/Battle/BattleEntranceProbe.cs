@@ -4,9 +4,11 @@ using Dw3Production.Logging;
 
 namespace Dw3Production.Diagnostics.Battle;
 
-/// <summary>Checks that battle entrance lighting fades fighters and stage together.</summary>
+/// <summary>Checks black endpoints and monotonic entrance lighting at one fixed production pose.</summary>
 internal sealed class BattleEntranceProbe : BattleProbe
 {
+    private const int FixedPoseFrame = 10;
+
     /// <summary>Initializes a new instance of the <see cref="BattleEntranceProbe"/> class.</summary>
     /// <param name="host">Restricted live battle host.</param>
     public BattleEntranceProbe(IBattleProbeHost host)
@@ -24,6 +26,7 @@ internal sealed class BattleEntranceProbe : BattleProbe
         Host.ApplyS200();
         Host.StartDebugBattle();
         var renderer = Host.Renderer;
+        renderer.SetProbePose(FixedPoseFrame);
         renderer.SetHudVisibleForProbe(false);
         var playerId = Host.Flow.State.ActivePlayerFighter!.Id;
         var enemyId = Host.Flow.State.ActiveEnemyFighter!.Id;
@@ -48,9 +51,7 @@ internal sealed class BattleEntranceProbe : BattleProbe
     }
 
     /// <summary>
-    /// Verifies the source fade's observable ordering without treating its nonlinear fighter-to-stage
-    /// ratio as an error. Stage colours ramp directly, while each directional-light vector and colour
-    /// both interpolate from zero, making the normal-lit fighters remain dimmer at early fractions.
+    /// Verifies observable monotonic progression without imposing an unsupported fighter-to-stage ratio.
     /// </summary>
     /// <param name="fade">Current source fade fraction.</param>
     /// <param name="current">Current fighter, stage and full-frame luminance.</param>
@@ -66,13 +67,6 @@ internal sealed class BattleEntranceProbe : BattleProbe
         {
             ProbeRequirement.Require(current.Fighter >= previousFighter, $"fighter darkened while entering fade={fade:0.00}");
             ProbeRequirement.Require(current.Stage >= previousStage, $"stage darkened while entering fade={fade:0.00}");
-        }
-
-        if (fade < 1f)
-        {
-            ProbeRequirement.Require(
-                current.Fighter < current.Stage,
-                $"early directional fade expected fighter below stage fade={fade:0.00} fighter={current.Fighter:0.0} stage={current.Stage:0.0}");
         }
     }
 
@@ -91,6 +85,9 @@ internal sealed class BattleEntranceProbe : BattleProbe
         var renderer = Host.Renderer;
         renderer.SetLightFadeForProbe(fade);
         var suffix = fade.ToString("0.00", CultureInfo.InvariantCulture);
+        QuietLog.Info($"battle-entrance frame effective_fraction={renderer.LightFade:0.00} pose=idle:{FixedPoseFrame} time=fixed");
+        renderer.SetModelVisibleForProbe(playerId, false);
+        renderer.SetModelVisibleForProbe(playerId, true);
         var full = BattleComparisonImage.ToSourceSize(
             await BattleProbeCapture.CaptureRawAsync(Host, captureRoot, $"entrance-{suffix}.png"));
         renderer.SetModelVisibleForProbe(playerId, false);

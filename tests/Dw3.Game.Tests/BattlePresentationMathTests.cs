@@ -79,20 +79,37 @@ public sealed class BattlePresentationMathTests
         Assert.Equal(new Color(0x80 / 255f, 0x80 / 255f, 0x80 / 255f), fade.StageColor());
     }
 
+    [Theory]
+    [InlineData(0f)]
+    [InlineData(.25f)]
+    [InlineData(.5f)]
+    [InlineData(.75f)]
+    [InlineData(1f)]
+    public void EntranceFadeConsumesOneDirectionalAttenuationAfterSdkNormalization(float fraction)
+    {
+        var direction = new Vector3(4, -2, 1).Normalized();
+        var source = new BattleModel.BattleLightSet(
+            [new BattleModel.BattleLight(direction, new Color(.8f, .6f, .4f))],
+            new Color(.2f, .1f, .05f));
+        var fade = new BattleEntranceFade();
+        fade.SetFraction(fraction);
+
+        AssertConsumedShade(source, fade, direction);
+        AssertConsumedShade(source, fade, new Vector3(3, -1, 2).Normalized());
+    }
+
     [Fact]
-    public void EntranceFadeInterpolatesLightDirectionsAlongsideTheirColours()
+    public void EntranceFadeConsumesAmbientWithoutDividingAZeroDirection()
     {
         var fade = new BattleEntranceFade();
-        var source = new BattleModel.BattleLightSet(
-            [new BattleModel.BattleLight(new Vector3(4, -2, 1), new Color(.8f, .6f, .4f))],
-            new Color(.2f, .1f, .05f));
         fade.SetFraction(.5f);
+        var source = new BattleModel.BattleLightSet(
+            [new BattleModel.BattleLight(Vector3.Zero, new Color(.8f, .6f, .4f))],
+            new Color(.2f, .1f, .05f));
 
-        var scaled = fade.Scale(source);
+        var actual = Shade(fade.Scale(source), Vector3.Right);
 
-        Assert.Equal(new Vector3(2, -1, .5f), scaled.Lights[0].Direction);
-        Assert.Equal(new Color(.4f, .3f, .2f, .5f), scaled.Lights[0].Rgb);
-        Assert.Equal(new Color(.1f, .05f, .025f, .5f), scaled.Ambient);
+        AssertColor(new Color(.1f, .05f, .025f), actual);
     }
 
     [Fact]
@@ -110,5 +127,25 @@ public sealed class BattlePresentationMathTests
         Assert.Equal(new Vector3(4, 4, 4), fade.Position);
         Assert.Equal(Vector3.One, fade.Target);
         Assert.Equal(200f, fade.Projection);
+    }
+
+    private static void AssertConsumedShade(BattleModel.BattleLightSet source, BattleEntranceFade fade, Vector3 normal)
+    {
+        var directional = Mathf.Max(0f, source.Lights[0].Direction.Normalized().Dot(normal));
+        var expected = (source.Ambient * fade.Fraction) + (source.Lights[0].Rgb * (fade.Fraction * directional));
+        AssertColor(expected, Shade(fade.Scale(source), normal));
+    }
+
+    private static void AssertColor(Color expected, Color actual)
+    {
+        Assert.Equal(expected.R, actual.R, 5);
+        Assert.Equal(expected.G, actual.G, 5);
+        Assert.Equal(expected.B, actual.B, 5);
+    }
+
+    private static Color Shade(BattleModel.BattleLightSet set, Vector3 normal)
+    {
+        var method = typeof(BattleModelLighting).GetMethod("Shade", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!;
+        return (Color)method.Invoke(null, [set, normal])!;
     }
 }
