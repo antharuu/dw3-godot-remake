@@ -20,6 +20,7 @@ internal sealed class BattlePartnerView : IDisposable
     private readonly Node3D _world;
     private readonly Camera3D _camera;
     private readonly TextureRect _screen;
+
     private readonly BattleModelLayer _modelLayer;
     private BattleModel? _model;
 
@@ -40,7 +41,9 @@ internal sealed class BattlePartnerView : IDisposable
         };
         _world = new Node3D { Name = "PartnerViewWorld" };
         _viewport.AddChild(_world);
-        _modelLayer = new BattleModelLayer(_world, "PartnerModelOrderingLayer");
+        var rasterLayer = new CanvasLayer { Layer = 1 };
+        _viewport.AddChild(rasterLayer);
+        _modelLayer = new BattleModelLayer(rasterLayer, "PartnerModelOrderingLayer");
         _camera = new Camera3D { Current = true, KeepAspect = Camera3D.KeepAspectEnum.Height };
         _world.AddChild(_camera);
         _screen = new TextureRect

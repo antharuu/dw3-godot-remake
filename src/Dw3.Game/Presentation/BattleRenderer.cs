@@ -50,7 +50,7 @@ public sealed class BattleRenderer : IDisposable
 
     private readonly BattleCommandCamera _commandCamera = new();
 
-    private (int Polygons, int Culled, int AbrUnsorted)? _lastOrderingLog;
+    private (int Polygons, int Culled, int UnsupportedAbr)? _lastOrderingLog;
 
     private BattleModel? _stage;
 
@@ -85,13 +85,14 @@ public sealed class BattleRenderer : IDisposable
         _world.AddChild(_environment);
         _floor = CreateFloor();
         _world.AddChild(_floor);
-        _modelLayer = new BattleModelLayer(_world, "BattleModelOrderingLayer");
+        _modelLayer = new BattleModelLayer(_layer, "BattleModelOrderingLayer");
         _partnerView = new BattlePartnerView(_layer);
 
         var screen = new SubViewportContainer { Stretch = true };
         screen.SetAnchorsPreset(Control.LayoutPreset.FullRect);
         screen.AddChild(viewport);
         _layer.AddChild(screen);
+        _modelLayer.MoveAfter(screen);
 
         // PS1 320x240 -> 1280x720 at exact 3x with 160px side margins, matching dialogue.
         _hud = new BattleHudNode
@@ -143,6 +144,17 @@ public sealed class BattleRenderer : IDisposable
     /// <summary>Probe-only HUD suppression for a model/stage-only framebuffer comparison.</summary>
     /// <param name="visible">Whether the HUD should be included in the capture.</param>
     public void SetHudVisibleForProbe(bool visible) => _hud.Visible = visible;
+
+    /// <summary>Shows or hides the model layer's untextured canvas visibility control.</summary>
+    /// <param name="visible">Whether the probe triangle is drawn.</param>
+    public void SetModelLayerDiagnosticTriangleVisibleForProbe(bool visible) =>
+        _modelLayer.SetProbeDiagnosticTriangleVisible(visible);
+
+    /// <summary>Shows or hides the model layer's production Canvas calibration fixture.</summary>
+    /// <param name="visible">Whether the synthetic Polygon2D fixture is drawn.</param>
+    /// <param name="legacyDoubleUv">Whether to reproduce the pre-repair UV conversion for RED evidence.</param>
+    public void SetModelLayerCanvasCalibrationVisibleForProbe(bool visible, bool legacyDoubleUv) =>
+        _modelLayer.SetProbeCanvasCalibrationVisible(visible, legacyDoubleUv);
 
     /// <summary>Loads the decoded fight stage (the battle background) for the encounter's
     /// <paramref name="stageId"/> and poses it statically. Returns false (and logs) when the
@@ -924,11 +936,11 @@ public sealed class BattleRenderer : IDisposable
     /// <summary>Logs ordering statistics only when their values changed.</summary>
     private void LogOrdering()
     {
-        (int Polygons, int Culled, int AbrUnsorted) ordering = (_modelLayer.PolygonCount, _modelLayer.CulledCount, _modelLayer.AbrUnsortedCount);
+        (int Polygons, int Culled, int UnsupportedAbr) ordering = (_modelLayer.PolygonCount, _modelLayer.CulledCount, _modelLayer.UnsupportedAbrCount);
         if (_lastOrderingLog != ordering)
         {
             _lastOrderingLog = ordering;
-            GD.Print($"battle-ot polygons={ordering.Polygons} culled={ordering.Culled} abr-unsorted={ordering.AbrUnsorted}");
+            GD.Print($"battle-ot polygons={ordering.Polygons} culled={ordering.Culled} unsupported-abr={ordering.UnsupportedAbr}");
         }
     }
 }

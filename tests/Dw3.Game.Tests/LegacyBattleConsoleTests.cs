@@ -36,6 +36,7 @@ public sealed class LegacyBattleConsoleTests
         KotemonMotionOneLoopsAtSourceSentinel();
         AttackBlendsThenReturnsToIdle();
         OrderingTableMatchesAddPrim();
+        SourceWindingUsesOriginalCornerOrder();
         DialogueProbePinsArrowBlinkFrame();
         BattleProbePinsHudAnimationFrame();
 
@@ -259,6 +260,17 @@ public sealed class LegacyBattleConsoleTests
         Check(
             RenderOrderingTable.WholeQuadIndices().SequenceEqual([0, 1, 2, 2, 1, 3]),
             "a source quad remains one ordered primitive and emits its two triangles only after ordering");
+    }
+
+    private static void SourceWindingUsesOriginalCornerOrder()
+    {
+        var first = new Vector2(0, 0);
+        var second = new Vector2(10, 0);
+        var third = new Vector2(0, 10);
+        Check(BattlePrimitiveCompositor.FacesCameraInSourceOrder(first, second, third), "source corner order (0,1,2) preserves the visible face");
+        var invertedSecond = third;
+        var invertedThird = second;
+        Check(!BattlePrimitiveCompositor.FacesCameraInSourceOrder(first, invertedSecond, invertedThird), "inverted source corner order (0,2,1) rejects the visible face");
     }
 
     private static void DialogueProbePinsArrowBlinkFrame()

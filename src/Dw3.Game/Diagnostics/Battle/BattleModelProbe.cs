@@ -43,6 +43,9 @@ internal sealed class BattleModelProbe : BattleProbe
         ProbeRequirement.Require(Host.RenderedPlayerId == Kotemon, $"F8 player fighter={Host.RenderedPlayerId}, expected Kotemon 383");
         ProbeRequirement.Require(renderer.ModelCount == 2, "F8 did not build both real models");
         renderer.SetCommandMenuCamera();
+        await VerifyCanvasLayerVisibilityAsync(Host, renderer, captureRoot);
+        await VerifyCanvasCalibrationAsync(Host, renderer, captureRoot);
+        SaveRawPartnerView(renderer, captureRoot);
         VerifyRotationAndWinding(renderer);
         VerifySurfacePasses(renderer);
         await VerifyBoneMaskAsync(renderer, captureRoot);
@@ -53,6 +56,115 @@ internal sealed class BattleModelProbe : BattleProbe
         await VerifyResidualUvAsync(renderer, captureRoot, kotemonPath);
         await ReplayHiddenParentVectorsAsync(renderer, captureRoot, kotemonPath);
         QuietLog.Info($"battle-model probe PASS fps={Engine.GetFramesPerSecond():0.0} captures={captureRoot}/kotemon-idle.png,{captureRoot}/kuwagamon-idle.png,{captureRoot}/wargreymon-idle.png");
+    }
+
+    /// <summary>Captures the production Canvas fixture and proves UV, RGB and alpha coverage in framebuffer samples.</summary>
+    /// <param name="host">Live host that captures the same canvas parent used by fighters.</param>
+    /// <param name="renderer">Renderer exposing the production Polygon2D command layer.</param>
+    /// <param name="captureRoot">Directory receiving RED/GREEN calibration evidence.</param>
+    /// <returns>A task completed after every required sample has been classified.</returns>
+    private static async Task VerifyCanvasCalibrationAsync(IBattleProbeHost host, BattleRenderer renderer, string captureRoot)
+    {
+        var baseline = await BattleProbeCapture.CaptureAsync(host, captureRoot, "canvas-calibration-baseline.png");
+        var legacy = System.Environment.GetEnvironmentVariable("DW3_BATTLE_CANVAS_CALIBRATION_LEGACY") == "1";
+        renderer.SetModelLayerCanvasCalibrationVisibleForProbe(true, legacy);
+        var calibration = await BattleProbeCapture.CaptureAsync(host, captureRoot, legacy ? "canvas-calibration-red.png" : "canvas-calibration-green.png");
+        renderer.SetModelLayerCanvasCalibrationVisibleForProbe(false, legacy);
+        VerifyCanvasRgbSamples(calibration);
+        VerifyCanvasAlphaSamples(baseline, calibration);
+        QuietLog.Info($"battle-canvas-calibration mode={(legacy ? "RED" : "GREEN")} uv=once nearest=2x2 rgb128=64 rgb255=128 alpha=0,128,255");
+    }
+
+    /// <summary>Checks the two vertex modulation levels against all nearest-filtered fixture quadrants.</summary>
+    /// <param name="image">Framebuffer containing the opaque RGB quadrants.</param>
+    private static void VerifyCanvasRgbSamples(Image image)
+    {
+        var expected = new[]
+        {
+            new CanvasSample(24, 24, new Color8(64, 0, 0), "rgb128-red"),
+            new CanvasSample(40, 24, new Color8(0, 64, 0), "rgb128-green"),
+            new CanvasSample(24, 40, new Color8(0, 0, 64), "rgb128-blue"),
+            new CanvasSample(40, 40, new Color8(64, 64, 64), "rgb128-white"),
+            new CanvasSample(72, 24, new Color8(128, 0, 0), "rgb255-red"),
+            new CanvasSample(88, 24, new Color8(0, 128, 0), "rgb255-green"),
+            new CanvasSample(72, 40, new Color8(0, 0, 128), "rgb255-blue"),
+            new CanvasSample(88, 40, new Color8(128, 128, 128), "rgb255-white"),
+        };
+        foreach (var sample in expected)
+        {
+            RequireRgb(image.GetPixel(sample.X, sample.Y), sample.Rgb, sample.Name);
+        }
+    }
+
+    /// <summary>Classifies raw transparent, STP and non-STP texels through the paired production shader passes.</summary>
+    /// <param name="baseline">Framebuffer before the synthetic alpha fixture was drawn.</param>
+    /// <param name="calibration">Framebuffer after the synthetic alpha fixture was drawn.</param>
+    private static void VerifyCanvasAlphaSamples(Image baseline, Image calibration)
+    {
+        var transparent = calibration.GetPixel(24, 72);
+        var stp = calibration.GetPixel(40, 72);
+        var nonStp = calibration.GetPixel(56, 72);
+        ProbeRequirement.Require(transparent == baseline.GetPixel(24, 72), "canvas alpha=0 must discard through both coverage passes");
+        ProbeRequirement.Require(stp != baseline.GetPixel(40, 72) && stp.R8 is > 96 and < 255, "canvas alpha=128 must select STP half blend");
+        RequireRgb(nonStp, new Color8(255, 255, 255), "canvas alpha=255 non-STP opaque");
+    }
+
+    /// <summary>Requires one opaque RGB framebuffer sample within the texture upload rounding tolerance.</summary>
+    /// <param name="actual">Framebuffer pixel read from the production capture.</param>
+    /// <param name="expected">Expected RGB after the PS1 x2 vertex modulation.</param>
+    /// <param name="name">Diagnostic fixture sample name.</param>
+    private static void RequireRgb(Color actual, Color8 expected, string name)
+    {
+        var matches = Math.Abs(actual.R8 - expected.R) <= 2
+            && Math.Abs(actual.G8 - expected.G) <= 2
+            && Math.Abs(actual.B8 - expected.B) <= 2;
+        ProbeRequirement.Require(matches, $"canvas {name} actual=({actual.R8},{actual.G8},{actual.B8}) expected=({expected.R},{expected.G},{expected.B})");
+    }
+
+    /// <summary>Writes and validates the raw 100x60 PartnerView target beside the composed model capture.</summary>
+    /// <param name="renderer">Renderer owning the live partner target.</param>
+    /// <param name="captureRoot">Directory receiving the raw PartnerView PNG.</param>
+    private static void SaveRawPartnerView(BattleRenderer renderer, string captureRoot)
+    {
+        var path = Path.Combine(captureRoot, "kotemon-partner-view-raw.png");
+        ProbeRequirement.Require(renderer.SavePartnerView(path) == Error.Ok, "could not save raw Kotemon PartnerView target");
+        var target = Image.LoadFromFile(path);
+        ProbeRequirement.Require(target.GetWidth() == 100 && target.GetHeight() == 60, "PartnerView target must remain 100x60");
+        ProbeRequirement.Require(renderer.PartnerViewOpaquePixels() > 300, "raw PartnerView lacks recognizable textured geometry");
+        QuietLog.Info($"battle-model partner-view raw={path} size={target.GetWidth()}x{target.GetHeight()} opaque={renderer.PartnerViewOpaquePixels()}");
+    }
+
+    /// <summary>Proves that the actual production canvas parent reaches the offscreen battle framebuffer.</summary>
+    /// <param name="host">Live host that captures the production framebuffer.</param>
+    /// <param name="renderer">Active renderer carrying the production model layer.</param>
+    /// <param name="captureRoot">Directory receiving the control capture.</param>
+    /// <returns>A task completed after the control capture is checked and removed.</returns>
+    private static async Task VerifyCanvasLayerVisibilityAsync(IBattleProbeHost host, BattleRenderer renderer, string captureRoot)
+    {
+        renderer.SetModelLayerDiagnosticTriangleVisibleForProbe(true);
+        var image = await BattleProbeCapture.CaptureAsync(host, captureRoot, "canvas-layer-control.png");
+        renderer.SetModelLayerDiagnosticTriangleVisibleForProbe(false);
+        var redPixels = CountRedPixels(image);
+        ProbeRequirement.Require(redPixels > 5000, $"model canvas control triangle is not visible red_pixels={redPixels}");
+        QuietLog.Info($"battle-model canvas-control parent=external-canvas red_pixels={redPixels}");
+    }
+
+    /// <summary>Counts the deliberately saturated control colour without classifying stage or HUD pixels.</summary>
+    /// <param name="image">Framebuffer containing the diagnostic control.</param>
+    /// <returns>Number of control-red pixels.</returns>
+    private static int CountRedPixels(Image image)
+    {
+        var count = 0;
+        for (var y = 0; y < 200; y++)
+        {
+            for (var x = 0; x < 200; x++)
+            {
+                var pixel = image.GetPixel(x, y);
+                count += pixel.R8 > 240 && pixel.G8 < 16 && pixel.B8 < 16 ? 1 : 0;
+            }
+        }
+
+        return count;
     }
 
     /// <summary>Checks the source rotation order and that both fighters keep source triangle winding.</summary>
@@ -112,7 +224,7 @@ internal sealed class BattleModelProbe : BattleProbe
             "Kotemon idle frame 10 must show saber bone 16 only");
         var kotemon = await CaptureAsync(captureRoot, "kotemon-idle.png");
         var kotemonPixels = LeftHalfBright(kotemon);
-        var saberDifference = BattlePixelMetrics.CountDifferent(legacy, kotemon, 740, 800);
+        var saberDifference = BattlePixelMetrics.CountDifferent(legacy, kotemon, 200, 520);
         ProbeRequirement.Require(
             kotemonPixels > 1000 && saberDifference > 0,
             $"Kotemon source mask must retain textured body and change saber region pixels={saberDifference} before={legacyPixels} after={kotemonPixels}");
@@ -232,4 +344,17 @@ internal sealed class BattleModelProbe : BattleProbe
     /// <param name="Parent">Locally hidden parent bone.</param>
     /// <param name="Child">Locally visible child bone.</param>
     private readonly record struct HiddenParentVector(int Fighter, int Frame, int Parent, int Child);
+
+    /// <summary>One named calibration fixture coordinate and expected framebuffer RGB.</summary>
+    /// <param name="X">Framebuffer x coordinate.</param>
+    /// <param name="Y">Framebuffer y coordinate.</param>
+    /// <param name="Rgb">Expected RGB after shader modulation.</param>
+    /// <param name="Name">Stable log name.</param>
+    private readonly record struct CanvasSample(int X, int Y, Color8 Rgb, string Name);
+
+    /// <summary>One compact 8-bit RGB triplet used for framebuffer assertions.</summary>
+    /// <param name="R">Expected red channel.</param>
+    /// <param name="G">Expected green channel.</param>
+    /// <param name="B">Expected blue channel.</param>
+    private readonly record struct Color8(byte R, byte G, byte B);
 }

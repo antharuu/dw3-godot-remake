@@ -22,6 +22,14 @@ public static class BattlePrimitiveCompositor
         _ => throw new ArgumentOutOfRangeException(nameof(primitive), primitive.CornerCount, "source primitive must have three or four corners"),
     };
 
+    /// <summary>Evaluates nclip with the original source corner order.</summary>
+    /// <param name="first">Source corner zero.</param>
+    /// <param name="second">Source corner one.</param>
+    /// <param name="third">Source corner two.</param>
+    /// <returns>True when the source-oriented triangle faces the camera.</returns>
+    public static bool FacesCameraInSourceOrder(System.Numerics.Vector2 first, System.Numerics.Vector2 second, System.Numerics.Vector2 third) =>
+        RenderOrderingTable.FacesCamera(first, second, third);
+
     /// <summary>Composites one decoded texel over the current framebuffer colour.</summary>
     /// <param name="background">Colour already written by farther primitives.</param>
     /// <param name="texel">Palette-decoded source texel and its STP state.</param>
