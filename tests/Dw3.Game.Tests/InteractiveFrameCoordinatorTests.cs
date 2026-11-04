@@ -15,6 +15,7 @@ public sealed class InteractiveFrameCoordinatorTests
 
         Assert.Equal(1, host.SimulatedTicks);
         Assert.Equal(1, host.BattlePresents);
+        Assert.Equal(1.0 / 60.0, host.BattleDelta);
         Assert.Equal(0, host.FieldPresents);
     }
 
@@ -105,6 +106,8 @@ public sealed class InteractiveFrameCoordinatorTests
 
         public int BattlePresents { get; private set; }
 
+        public double BattleDelta { get; private set; }
+
         public int FieldPresents { get; private set; }
 
         public bool HasActiveBattle { get; private set; }
@@ -130,9 +133,10 @@ public sealed class InteractiveFrameCoordinatorTests
         {
         }
 
-        public void PresentBattle()
+        public void PresentBattle(double delta)
         {
             BattlePresents++;
+            BattleDelta = delta;
         }
 
         public void PresentField(double delta)

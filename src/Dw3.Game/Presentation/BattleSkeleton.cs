@@ -20,7 +20,7 @@ internal sealed class BattleSkeleton
     private readonly Dictionary<int, Node3D> _bones;
     private readonly Dictionary<int, List<Vector4>[]> _tracks;
     private readonly BattleSkeletonTransformCache _transforms;
-    private readonly Dictionary<int, (Vector3 Position, Vector3 Rotation, Vector3 Scale)> _blendPose = [];
+    private readonly BattleBlendState _blendState = new();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="BattleSkeleton"/> class.
@@ -104,7 +104,7 @@ internal sealed class BattleSkeleton
 
         foreach (var pair in _tracks)
         {
-            var from = _blendPose[pair.Key];
+            var from = _blendState.Origin(pair.Key);
             var position = BattleKeyTrack.FirstKeyAtOrAfter(pair.Value[0], state.Frame);
             var rotation = BattleKeyTrack.FirstKeyAtOrAfter(pair.Value[1], state.Frame);
             var scale = BattleKeyTrack.FirstKeyAtOrAfter(pair.Value[2], state.Frame);
@@ -205,17 +205,18 @@ internal sealed class BattleSkeleton
     {
         foreach (var pair in _tracks)
         {
-            _blendPose[pair.Key] = blendSource == 0xffff
-                ? ReadCurrentPose(pair.Key)
-                : (BattleKeyTrack.Sample(pair.Value[0], blendSource), BattleKeyTrack.Sample(pair.Value[1], blendSource), BattleKeyTrack.Sample(pair.Value[2], blendSource));
+            if (blendSource == 0xffff)
+            {
+                _blendState.CaptureOrigin(pair.Key);
+                continue;
+            }
+
+            _blendState.SetOrigin(pair.Key, new BattleBlendPose(
+                BattleKeyTrack.Sample(pair.Value[0], blendSource),
+                BattleKeyTrack.Sample(pair.Value[1], blendSource),
+                BattleKeyTrack.Sample(pair.Value[2], blendSource)));
         }
     }
-
-    /// <summary>Gets the retained pose of a bone, or its identity pose when it has none.</summary>
-    /// <param name="bone">Source bone index.</param>
-    /// <returns>The retained position, rotation, and scale.</returns>
-    private (Vector3 Position, Vector3 Rotation, Vector3 Scale) ReadCurrentPose(int bone) =>
-        _blendPose.TryGetValue(bone, out var pose) ? pose : (Vector3.Zero, Vector3.Zero, IdentityScale);
 
     /// <summary>Applies fixed-point position, rotation, and scale to one bone node.</summary>
     /// <param name="bone">Source bone index.</param>
@@ -238,6 +239,6 @@ internal sealed class BattleSkeleton
         node.Scale = scale;
         node.Visible = visible;
         _transforms.Apply(bone, new Transform3D(basis.Scaled(scale), position), visible);
-        _blendPose[bone] = (positionFixed, rotationFixed, scaleFixed);
+        _blendState.Publish(bone, new BattleBlendPose(positionFixed, rotationFixed, scaleFixed));
     }
 }

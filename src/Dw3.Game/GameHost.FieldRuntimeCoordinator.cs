@@ -56,7 +56,7 @@ public partial class GameHost
         SimulateStep(movement => _log.Warn($"move:{movement.Rejection}", $"move reject={movement.Rejection} zone={_state.ZoneId} position=({_state.Position.X:0.##},{_state.Position.Y:0.##})"));
 
     /// <inheritdoc/>
-    void IInteractiveFrameHost.PresentBattle() => _battleRenderer?.Present(BuildBattleView());
+    void IInteractiveFrameHost.PresentBattle(double delta) => _battleRenderer?.Present(BuildBattleView(), delta);
 
     /// <inheritdoc/>
     void IInteractiveFrameHost.PresentField(double delta)

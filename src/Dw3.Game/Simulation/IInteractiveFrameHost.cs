@@ -33,7 +33,8 @@ public interface IInteractiveFrameHost
     void SimulateStep();
 
     /// <summary>Presents the final battle state for the rendered frame.</summary>
-    void PresentBattle();
+    /// <param name="delta">Elapsed rendered-frame time.</param>
+    void PresentBattle(double delta);
 
     /// <summary>Presents the final field state for the rendered frame.</summary>
     /// <param name="delta">Elapsed rendered-frame time.</param>

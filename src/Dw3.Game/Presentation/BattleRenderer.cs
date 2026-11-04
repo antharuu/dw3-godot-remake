@@ -604,13 +604,20 @@ public sealed class BattleRenderer : IDisposable
         _hitSpark.Visible = show;
     }
 
+    /// <summary>Presents one deterministic probe frame at the ordinary 60 Hz presentation interval.</summary>
+    /// <param name="view">Current battle state, or <see langword="null"/> when no battle is active.</param>
+    public void Present(BattleView? view) => Present(view, PresentDelta);
+
     /// <summary>Presents the current battle view and advances its camera, lighting, model, and HUD state.</summary>
     /// <param name="view">Current battle state, or <see langword="null"/> when no battle is active.</param>
-    public void Present(BattleView? view)
+    /// <param name="delta">Elapsed rendered-frame time.</param>
+    public void Present(BattleView? view, double delta)
     {
+        var elapsed = (float)delta;
+
         // Advance and apply the battle camera's interpolation each presented frame.
-        StepCamera(PresentDelta);
-        StepEntranceFade(PresentDelta);
+        StepCamera(elapsed);
+        StepEntranceFade(elapsed);
         if (view is not { } value)
         {
             _hud.SetView(null);
@@ -620,7 +627,7 @@ public sealed class BattleRenderer : IDisposable
 
         if (!_probePoseOverride)
         {
-            StepMotions(PresentDelta);
+            StepMotions(elapsed);
         }
 
         var commandTurn = value.Phase == BattleFlowPhase.PlayerCommand;

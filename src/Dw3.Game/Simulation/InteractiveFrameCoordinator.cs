@@ -57,7 +57,7 @@ public sealed class InteractiveFrameCoordinator
 
         if (host.HasActiveBattle)
         {
-            host.PresentBattle();
+            host.PresentBattle(delta);
             return;
         }
 
