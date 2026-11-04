@@ -649,6 +649,7 @@ tests/Directory.Build.props
 tests/Dw3.Analyzers.Tests/ClassCognitiveComplexityAnalyzerTests.cs
 tests/Dw3.Analyzers.Tests/ConstantAnalyzerConfigOptionsProvider.cs
 tests/Dw3.Analyzers.Tests/Dw3.Analyzers.Tests.csproj
+tests/Dw3.Analyzers.Tests/Fixtures/concordance_fixture.sarif
 tests/Dw3.Analyzers.Tests/SonarConcordanceTests.cs
 tests/Dw3.Data.Tests/AssemblyVersionTests.cs
 tests/Dw3.Data.Tests/DataPackTests.cs
