@@ -49,21 +49,29 @@ internal sealed class BattleMotionProbe : BattleProbe
         return trials;
     }
 
-    /// <summary>Runs one production trace: attack blend, a real interruption to idle, then attack completion and idle return.</summary>
+    /// <summary>Runs one production trace: captures an active attack blend, interrupts it into idle, then proves a second attack completes.</summary>
     /// <param name="renderer">Live production renderer.</param>
     /// <param name="cadence">Presentation frames per second.</param>
-    /// <returns>Actor traces sampled at eight identical ten-PAL-frame checkpoints.</returns>
+    /// <returns>Actor traces sampled at ten identical ten-PAL-frame checkpoints.</returns>
     private Dictionary<int, BattleMotionCadenceTrace> RunCadenceTrial(BattleRenderer renderer, int cadence)
     {
         renderer.ResetMotionClockForProbe();
-        renderer.SetMotionAll(3, restart: true);
         var samples = Fighters.ToDictionary(fighter => fighter, _ => new List<BattleMotionCadenceSample>());
         var sourceFrame = 0;
-        sourceFrame += 10;
-        AdvanceSegment(renderer, cadence, sourceFrame, samples);
+        renderer.SetMotionAll(3, restart: true);
+        for (var segment = 0; segment < 2; segment++)
+        {
+            sourceFrame += 10;
+            AdvanceSegment(renderer, cadence, sourceFrame, samples);
+        }
+
         renderer.SetMotionAll(1, restart: true);
-        sourceFrame += 10;
-        AdvanceSegment(renderer, cadence, sourceFrame, samples);
+        for (var segment = 0; segment < 2; segment++)
+        {
+            sourceFrame += 10;
+            AdvanceSegment(renderer, cadence, sourceFrame, samples);
+        }
+
         renderer.SetMotionAll(3, restart: true);
         for (var segment = 0; segment < 6; segment++)
         {

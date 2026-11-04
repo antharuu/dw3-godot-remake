@@ -25,10 +25,7 @@ internal static class BattleMotionCadenceVerifier
             AssertActorsEqual(reference, trials[cadence], cadence, fighters);
         }
 
-        foreach (var fighter in fighters)
-        {
-            AssertRequiredTransitions(reference[fighter].Samples, fighter);
-        }
+        AssertReferenceTransitions(reference, fighters);
     }
 
     /// <summary>Writes every compared publication and effective bone transform outside Git for later inspection.</summary>
@@ -38,7 +35,7 @@ internal static class BattleMotionCadenceVerifier
     {
         var path = Path.Combine(captureRoot, "cadence-equivalence.json");
         File.WriteAllText(path, JsonSerializer.Serialize(trials, JsonOptions));
-        QuietLog.Info($"battle-motion cadence PASS rates=30,60,120 actors=383,51 samples=8 evidence={path}");
+        QuietLog.Info($"battle-motion cadence captured rates=30,60,120 actors=383,51 samples=10 evidence={path}");
     }
 
     /// <summary>Requires the candidate cadence to retain every published state and bone pose from the reference.</summary>
@@ -59,13 +56,30 @@ internal static class BattleMotionCadenceVerifier
         }
     }
 
-    /// <summary>Requires an interrupted blend path and a completed return to source idle.</summary>
+    /// <summary>Requires every reference actor to retain an active-blend interruption and a completed second attack.</summary>
+    /// <param name="reference">The 60 FPS traces after all cadence comparisons passed.</param>
+    /// <param name="fighters">Real source actors captured in each trace.</param>
+    private static void AssertReferenceTransitions(IReadOnlyDictionary<int, BattleMotionCadenceTrace> reference, IReadOnlyCollection<int> fighters)
+    {
+        foreach (var fighter in fighters)
+        {
+            AssertRequiredTransitions(reference[fighter].Samples, fighter);
+        }
+    }
+
+    /// <summary>Requires an active source blend before interruption, idle publications after it, and a final idle return.</summary>
     /// <param name="trace">60 FPS actor checkpoints.</param>
     /// <param name="fighter">Source fighter identifier used in diagnostics.</param>
     private static void AssertRequiredTransitions(IReadOnlyList<BattleMotionCadenceSample> trace, int fighter)
     {
-        ProbeRequirement.Require(trace.Any(sample => sample.Blending), $"fighter={fighter} did not publish a blend");
-        ProbeRequirement.Require(trace[1].Motion == 1, $"fighter={fighter} did not interrupt into idle motion");
+        ProbeRequirement.Require(trace.Count == 10, $"fighter={fighter} expected ten checkpoints actual={trace.Count}");
+        var beforeInterrupt = trace[1];
+        var duringInterrupt = trace[2];
+        var afterInterrupt = trace[3];
+        ProbeRequirement.Require(beforeInterrupt.SourceFrame == 20 && beforeInterrupt.Blending, $"fighter={fighter} interruption was not armed during active blend");
+        ProbeRequirement.Require(duringInterrupt.SourceFrame == 30 && duringInterrupt.Motion == 1, $"fighter={fighter} did not interrupt into idle motion");
+        ProbeRequirement.Require(afterInterrupt.SourceFrame == 40 && afterInterrupt.Motion == 1 && !afterInterrupt.Blending, $"fighter={fighter} did not publish settled idle after interruption");
+        ProbeRequirement.Require(trace[4].Motion == 3, $"fighter={fighter} did not restart attack after interruption");
         ProbeRequirement.Require(trace[^1].Motion == 1, $"fighter={fighter} did not return to idle after finish");
     }
 }

@@ -366,6 +366,7 @@ src/Dw3.Game/Diagnostics/Battle/BattleFontProbe.cs
 src/Dw3.Game/Diagnostics/Battle/BattleHudProbe.cs
 src/Dw3.Game/Diagnostics/Battle/BattleInputProbe.cs
 src/Dw3.Game/Diagnostics/Battle/BattleMotionProbe.cs
+src/Dw3.Game/Diagnostics/Battle/BattleMotionCadenceVerifier.cs
 src/Dw3.Game/Diagnostics/Battle/BattleKotemonLightProbe.cs
 src/Dw3.Game/Diagnostics/Battle/BattlePixelMetrics.cs
 src/Dw3.Game/Diagnostics/Battle/BattlePlayProbe.cs
@@ -374,10 +375,14 @@ src/Dw3.Game/Diagnostics/Battle/BattleProbeCapture.cs
 src/Dw3.Game/Diagnostics/Battle/BattleProbeCatalog.cs
 src/Dw3.Game/Diagnostics/Battle/BattleReportProbe.cs
 src/Dw3.Game/Diagnostics/Battle/FighterSheetBounds.cs
+src/Dw3.Game/Diagnostics/Battle/FighterSheetCatalog.cs
+src/Dw3.Game/Diagnostics/Battle/FighterSheetCatalogEntry.cs
+src/Dw3.Game/Diagnostics/Battle/FighterSheetFailure.cs
 src/Dw3.Game/Diagnostics/Battle/IBattleProbeHost.cs
 src/Dw3.Game/Diagnostics/Battle/BattleLightProbe.cs
 src/Dw3.Game/Diagnostics/Battle/BattleModelProbe.cs
 src/Dw3.Game/Diagnostics/Battle/FighterSheetProbe.cs
+src/Dw3.Game/Diagnostics/Battle/FighterSheetResult.cs
 src/Dw3.Game/Diagnostics/Battle/PsxReferenceImages.cs
 src/Dw3.Game/Diagnostics/Battle/PsxReferenceUnavailableException.cs
 src/Dw3.Game/Diagnostics/BattleDiagnosticProbeRunner.cs
@@ -492,6 +497,9 @@ src/Dw3.Game/Presentation/BattleModelDocument.cs
 src/Dw3.Game/Presentation/BattleModelLayer.cs
 src/Dw3.Game/Presentation/BattleModelLighting.cs
 src/Dw3.Game/Presentation/BattleMotionMachine.cs
+src/Dw3.Game/Presentation/BattleMotionCadenceBone.cs
+src/Dw3.Game/Presentation/BattleMotionCadenceSample.cs
+src/Dw3.Game/Presentation/BattleMotionCadenceTrace.cs
 src/Dw3.Game/Presentation/BattlePalClock.cs
 src/Dw3.Game/Presentation/BattlePartnerMenuPainter.cs
 src/Dw3.Game/Presentation/BattlePartnerReportView.cs
@@ -505,6 +513,7 @@ src/Dw3.Game/Presentation/BattleSceneMath.cs
 src/Dw3.Game/Presentation/BattleShotCamera.cs
 src/Dw3.Game/Presentation/BattleShotCameraViews.cs
 src/Dw3.Game/Presentation/BattleSkeleton.cs
+src/Dw3.Game/Presentation/BattleSilhouetteMetrics.cs
 src/Dw3.Game/Presentation/BattleSkeletonTransformCache.cs
 src/Dw3.Game/Presentation/BattleSourcePolygonState.cs
 src/Dw3.Game/Presentation/BattleSurfaceBuffer.cs
@@ -738,10 +747,12 @@ tests/Dw3.Game.Tests/BattleGrowthVectorTests.cs
 tests/Dw3.Game.Tests/BattleMotionMachineVectorGenerator.cs
 tests/Dw3.Game.Tests/BattleMotionMachineVectorHarness.cs
 tests/Dw3.Game.Tests/BattleMotionMachineVectorTests.cs
+tests/Dw3.Game.Tests/BattleMotionCadenceTraceTests.cs
 tests/Dw3.Game.Tests/BattleSkeletonBlendTests.cs
 tests/Dw3.Game.Tests/BattleSkeletonTransformCacheTests.cs
 tests/Dw3.Game.Tests/BattlePresentationMathTests.cs
 tests/Dw3.Game.Tests/BattleProbeCatalogTests.cs
+tests/Dw3.Game.Tests/BattleSilhouetteMetricsTests.cs
 tests/Dw3.Game.Tests/BattleShotCameraVectorGenerator.cs
 tests/Dw3.Game.Tests/BattleShotCameraVectorHarness.cs
 tests/Dw3.Game.Tests/BattleShotCameraVectorTests.cs
@@ -762,6 +773,7 @@ tests/Dw3.Game.Tests/FieldAnimationDataPackLoaderTests.cs
 tests/Dw3.Game.Tests/FieldDataPackLoaderTests.cs
 tests/Dw3.Game.Tests/FieldProbeCatalogTests.cs
 tests/Dw3.Game.Tests/FieldDiagnosticProbeRunnerTests.cs
+tests/Dw3.Game.Tests/FighterSheetCatalogTests.cs
 tests/Dw3.Game.Tests/FightReportControllerVectorGenerator.cs
 tests/Dw3.Game.Tests/FightReportControllerVectorTests.cs
 tests/Dw3.Game.Tests/GrowthTablesBuilderTests.cs
