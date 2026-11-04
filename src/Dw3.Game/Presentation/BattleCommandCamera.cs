@@ -8,11 +8,22 @@ namespace Dw3Production.Presentation;
 /// </summary>
 internal sealed class BattleCommandCamera
 {
-    private readonly IShotCameraRng _rng = new RuntimeShotRng();
+    private IShotCameraRng _rng = new RuntimeShotRng();
     private BattleShotCamera? _shot;
 
     /// <summary>Gets the running shot camera, or null outside the command menu.</summary>
     public BattleShotCamera? Shot => _shot;
+
+    /// <summary>Temporarily replaces the command-camera random source for a deterministic diagnostic replay.</summary>
+    /// <param name="rng">Replay random source to use for subsequent shot sequences.</param>
+    /// <returns>The prior runtime random source.</returns>
+    public IShotCameraRng ReplaceRngForProbe(IShotCameraRng rng)
+    {
+        ArgumentNullException.ThrowIfNull(rng);
+        IShotCameraRng previous = _rng;
+        _rng = rng;
+        return previous;
+    }
 
     /// <summary>Starts a new shot sequence over the two fighters' cameras.</summary>
     /// <param name="players">Camera views of the player fighter (slot 0).</param>
