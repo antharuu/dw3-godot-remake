@@ -14,4 +14,8 @@
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.12.0" />
     <ProjectReference Include="../../tools/Dw3.Analyzers/Dw3.Analyzers.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- Frozen concordance fixture: a minimal SARIF with known S3776 entries, never overwritten by build. -->
+    <Content Include="Fixtures/concordance_fixture.sarif" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

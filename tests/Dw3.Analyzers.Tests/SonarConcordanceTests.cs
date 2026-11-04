@@ -12,10 +12,14 @@ namespace Dw3.Analyzers.Tests;
 /// <see cref="CognitiveComplexityWalker"/> against Sonar S3776 values
 /// reported at threshold 0 (all methods with complexity &gt; 0 reported).
 ///
-/// This test reads the SARIF produced by the last build of Dw3.Formats
-/// (which must have been built with S3776 threshold = 0 in SonarLint.xml).
-/// It finds the method declaration at each S3776 location, runs my walker,
-/// and asserts the values match.
+/// By default the test reads the frozen fixture
+/// <c>Fixtures/concordance_fixture.sarif</c> shipped with the test project.
+/// That fixture is a static, versioned SARIF snapshot (no proprietary content)
+/// that is never overwritten by a parallel build, so the suite is race-free.
+///
+/// To run a full concordance against a fresh Sonar analysis, set the
+/// environment variable <c>DW3_CONCORDANCE_SARIF</c> to the absolute path of
+/// a SARIF built with S3776 threshold = 0 before invoking the test.
 ///
 /// Run once after building with threshold 0 to generate concordance evidence.
 /// </summary>
@@ -34,9 +38,7 @@ public sealed class SonarConcordanceTests
     [Fact]
     public async Task Walker_MatchesSonarS3776_PerMethod()
     {
-        // Locate the repo root by walking up from the test assembly location.
-        var repoRoot = FindRepoRoot();
-        var sarifPath = Path.Combine(repoRoot, "artifacts", "quality", "sarif", "Dw3.Formats.sarif");
+        var sarifPath = ResolveSarifPath();
 
         if (!File.Exists(sarifPath))
         {
@@ -44,8 +46,18 @@ public sealed class SonarConcordanceTests
             return;
         }
 
+        var sarifText = await File.ReadAllTextAsync(sarifPath);
+        if (string.IsNullOrWhiteSpace(sarifText))
+        {
+            // Should never happen for the versioned fixture, but handle
+            // gracefully so an accidentally empty custom path does not crash.
+            _output.WriteLine($"SARIF at {sarifPath} is empty, skipping concordance check.");
+            return;
+        }
+
         // Parse S3776 entries from SARIF.
-        var s3776Entries = ParseS3776Entries(sarifPath);
+        var s3776Entries = ParseS3776Entries(sarifText);
+        var repoRoot = FindRepoRoot();
         var sourceRoot = Path.Combine(repoRoot, "src", "Dw3.Formats");
 
         // Group entries by source file for efficient parsing.
@@ -85,6 +97,20 @@ public sealed class SonarConcordanceTests
             $"{mismatches.Count}/{total} mismatches exceed 10% tolerance.");
     }
 
+    // Returns the SARIF path to use:
+    // 1. DW3_CONCORDANCE_SARIF env variable (absolute path, full Sonar run).
+    // 2. The frozen fixture shipped with the test assembly (default, race-free).
+    private static string ResolveSarifPath()
+    {
+        var envOverride = Environment.GetEnvironmentVariable("DW3_CONCORDANCE_SARIF");
+        if (!string.IsNullOrWhiteSpace(envOverride))
+        {
+            return envOverride;
+        }
+
+        return Path.Combine(AppContext.BaseDirectory, "Fixtures", "concordance_fixture.sarif");
+    }
+
     private static string FindRepoRoot()
     {
         var dir = new DirectoryInfo(AppContext.BaseDirectory);
@@ -96,9 +122,9 @@ public sealed class SonarConcordanceTests
         return dir?.FullName ?? throw new InvalidOperationException("Dw3.sln not found");
     }
 
-    private static List<S3776Entry> ParseS3776Entries(string sarifPath)
+    private static List<S3776Entry> ParseS3776Entries(string sarifText)
     {
-        using var doc = JsonDocument.Parse(File.ReadAllText(sarifPath));
+        using var doc = JsonDocument.Parse(sarifText);
         return
         [
             .. doc.RootElement.GetProperty("runs").EnumerateArray()
