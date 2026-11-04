@@ -34,6 +34,32 @@ public sealed class BattleModelAssetsTests
         Assert.Throws<FormatException>(() => BattleTextureDecoder.Decode(new byte[68], []));
         var state = new MeshTextureState(0, 0, 0, 60, 255, 0);
         Assert.Throws<FormatException>(() => BattleTextureDecoder.Decode(TextureArchive(), [state]));
+        Assert.Throws<FormatException>(() => BattleTextureDecoder.Decode(TextureArchive(), [new MeshTextureState(0, 0, 0, 0, 0, 3)]));
+    }
+
+    [Fact]
+    public void TextureArchive_DecodesPageSelectedFourEightAndDirectColorModes()
+    {
+        ushort[] first = new ushort[64 * 256];
+        ushort[] second = new ushort[64 * 256];
+        first[0] = 0x0201;
+        second[0] = 0x0001;
+        int palette = 255 * 64;
+        first[palette + 1] = 0x001F;
+        first[palette + 2] = 0x83E0;
+
+        BattleTextureSet decoded = BattleTextureDecoder.Decode(
+            TextureArchive(first, second, new ushort[64 * 256], new ushort[64 * 256]),
+            [
+                new MeshTextureState(0, 1, 0, 0, 255, 0),
+                new MeshTextureState(0, 0, 0, 0, 255, 1),
+                new MeshTextureState(0, 0, 0, 99, 99, 2),
+            ]);
+
+        Assert.Equal([255, 0, 0, 255], decoded.Textures[0].Rgba.AsSpan(0, 4).ToArray());
+        Assert.Equal([255, 0, 0, 255, 0, 255, 0, 128], decoded.Textures[1].Rgba.AsSpan(0, 8).ToArray());
+        Assert.Equal([8, 132, 0, 255], decoded.Textures[2].Rgba.AsSpan(0, 4).ToArray());
+        Assert.Null(decoded.Textures[2].ClutX);
     }
 
     [Fact]
@@ -145,6 +171,37 @@ public sealed class BattleModelAssetsTests
         BinaryPrimitives.WriteUInt16LittleEndian(tim.AsSpan(palette + 4), 0x83E0);
         BinaryPrimitives.WriteUInt16LittleEndian(tim.AsSpan(palette + 6), 0x7C00);
         return Concat(U32(8), U32(0), tim);
+    }
+
+    private static byte[] TextureArchive(params ushort[][] pages)
+    {
+        byte[][] entries = [.. pages.Select(Tim)];
+        var archive = new byte[((entries.Length + 1) * 4) + entries.Sum(entry => entry.Length)];
+        var offset = (entries.Length + 1) * 4;
+        for (int i = 0; i < entries.Length; i++)
+        {
+            WriteU32(archive, i * 4, (uint)offset);
+            entries[i].CopyTo(archive, offset);
+            offset += entries[i].Length;
+        }
+
+        return archive;
+    }
+
+    private static byte[] Tim(ushort[] words)
+    {
+        var tim = new byte[20 + (words.Length * 2)];
+        WriteU32(tim, 0, 0x10);
+        WriteU32(tim, 4, 2);
+        WriteU32(tim, 8, (uint)(12 + (words.Length * 2)));
+        BinaryPrimitives.WriteUInt16LittleEndian(tim.AsSpan(16), 64);
+        BinaryPrimitives.WriteUInt16LittleEndian(tim.AsSpan(18), 256);
+        for (int i = 0; i < words.Length; i++)
+        {
+            BinaryPrimitives.WriteUInt16LittleEndian(tim.AsSpan(20 + (i * 2)), words[i]);
+        }
+
+        return tim;
     }
 
     private static byte[] Key(short frame, short x, short y, short z) => Concat(I16(x), I16(y), I16(z), I16(frame));
