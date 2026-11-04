@@ -162,7 +162,9 @@ internal static class FullExtractionStep
     /// <param name="sourceDatabase">Absolute path to a domain-pack SQLite file (read-only).</param>
     private static void MergeDatabase(DataPackWriteContext context, string sourceDatabase)
     {
-        using var source = new SqliteConnection($"Data Source={sourceDatabase};Mode=ReadOnly");
+        // Pooling=False: the domain pack directory is deleted after the merge, and a pooled handle
+        // would keep dw3.sqlite open and block that deletion on Windows.
+        using var source = new SqliteConnection($"Data Source={sourceDatabase};Mode=ReadOnly;Pooling=False");
         source.Open();
         var tables = new List<string>();
         using (SqliteCommand tableQuery = source.CreateCommand())
@@ -292,7 +294,9 @@ internal static class FullExtractionStep
     private static void RegisterImages(DataPackWriteContext context, string sourceDirectory)
     {
         string sourceDatabase = Path.Combine(sourceDirectory, "dw3.sqlite");
-        using var source = new SqliteConnection($"Data Source={sourceDatabase};Mode=ReadOnly");
+
+        // Pooling=False for the same reason as MergeDatabase: the domain directory is deleted afterwards.
+        using var source = new SqliteConnection($"Data Source={sourceDatabase};Mode=ReadOnly;Pooling=False");
         source.Open();
         using SqliteCommand query = source.CreateCommand();
         query.CommandText = "SELECT relative_path FROM pack_images ORDER BY relative_path";

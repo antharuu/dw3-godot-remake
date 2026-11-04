@@ -68,6 +68,10 @@ public sealed class DataPackReader
         {
             DataSource = Path.Combine(dataDirectory, "dw3.sqlite"),
             Mode = SqliteOpenMode.ReadOnly,
+
+            // Not pooled, so disposing the connection releases dw3.sqlite: on Windows a pooled handle
+            // blocks the replacement of the pack by a later extraction.
+            Pooling = false,
         };
         try
         {

@@ -38,6 +38,10 @@ internal static class DataPackValidator
             {
                 DataSource = databasePath,
                 Mode = SqliteOpenMode.ReadOnly,
+
+                // A pooled handle outlives Dispose and, on Windows, blocks the rename of the active
+                // pack to previous/ when the next extraction replaces it.
+                Pooling = false,
             };
             using var connection = new SqliteConnection(builder.ConnectionString);
             connection.Open();

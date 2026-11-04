@@ -46,7 +46,7 @@ internal static class SqliteProbe
     /// <param name="dbPath">Temporary database path.</param>
     private static void Write(string dbPath)
     {
-        using var conn = new SqliteConnection($"Data Source={dbPath}");
+        using var conn = new SqliteConnection($"Data Source={dbPath};Pooling=False");
         conn.Open();
         using var create = conn.CreateCommand();
         create.CommandText = "CREATE TABLE probe (key TEXT PRIMARY KEY, value TEXT NOT NULL)";
@@ -63,7 +63,7 @@ internal static class SqliteProbe
     /// <exception cref="InvalidOperationException">The row is missing.</exception>
     private static string Read(string dbPath)
     {
-        using var conn = new SqliteConnection($"Data Source={dbPath}");
+        using var conn = new SqliteConnection($"Data Source={dbPath};Pooling=False");
         conn.Open();
         using var select = conn.CreateCommand();
         select.CommandText = "SELECT value FROM probe WHERE key = 'run'";
