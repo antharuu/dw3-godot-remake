@@ -61,6 +61,11 @@ Reverse engineers, C# and Godot developers, testers with a disc, translators: al
 Start with [CONTRIBUTING.md](CONTRIBUTING.md) and the
 [good first issues](https://github.com/antharuu/dw3-remake/labels/good%20first%20issue).
 
+For a full picture of what is done and what is next, see the
+[Roadmap](https://github.com/antharuu/dw3-remake/issues/19).
+New contributors: the [Start here](https://github.com/antharuu/dw3-remake/discussions/20)
+discussion post has setup tips and research notes.
+
 ## Credits and legal
 
 Thanks to the Digimon World 2003 reverse-engineering community for format research.
