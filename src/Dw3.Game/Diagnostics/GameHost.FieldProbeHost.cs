@@ -122,6 +122,10 @@ public partial class GameHost : IFieldProbeHost
     /// <inheritdoc/>
     void IFieldProbeHost.Quit(int exitCode) => GetTree().Quit(exitCode);
 
+    /// <inheritdoc/>
+    void IFieldProbeHost.QuitDeferred(int exitCode) =>
+        Callable.From(() => GetTree().Quit(exitCode)).CallDeferred();
+
     /// <summary>Runs one simulation step that must not be refused, as scripted probes require.</summary>
     /// <exception cref="InvalidOperationException">Locomotion rejected the held direction.</exception>
     private void TickTestSimulation() =>

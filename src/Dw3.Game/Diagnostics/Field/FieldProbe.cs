@@ -26,16 +26,21 @@ internal abstract class FieldProbe
     /// <returns>A task that completes once the quit has been requested.</returns>
     public async Task RunAsync()
     {
+        int exitCode;
         try
         {
             await ExecuteAsync();
-            Host.Quit(0);
+            exitCode = 0;
         }
         catch (Exception error)
         {
             GD.PushError($"{FailureCode}_FAIL: {error.Message}");
-            Host.Quit(3);
+            exitCode = 3;
         }
+
+        // Defer the actual Quit to the next main-loop frame so that any remaining
+        // deferred Godot operations have completed and the scene is fully settled.
+        Host.QuitDeferred(exitCode);
     }
 
     /// <summary>Drives the game and asserts the probe expectations.</summary>

@@ -72,33 +72,52 @@ internal sealed class DialogueProbe : FieldProbe
         Host.Renderer.Present(Host.State, Host.CurrentZone, f3On: false);
         _dialogueHost.DialogueRenderer.Present(null);
         await Host.NextFrameDrawn();
+
+        // Explicitly dispose each Image after use so its native wrapper is freed
+        // before the probe calls Quit, preventing "Leaked unsafe reference" errors.
         var before = Host.CaptureViewport();
-        Require(before.SavePng(Path.Combine(captureRoot, "dialogue-before.png")) == Error.Ok, "dialogue before capture failed");
+        try
+        {
+            Require(before.SavePng(Path.Combine(captureRoot, "dialogue-before.png")) == Error.Ok, "dialogue before capture failed");
 
-        Host.Input.State.PressAction();
-        Host.TickTestSimulation(); // Cross edge -> conversation start
-        Require(Dialogue.IsActive, "Cross did not start the simple conversation");
-        Host.Input.State.ReleaseAction();
-        Host.TickTestSimulation(); // Opening -> Open, the typewriter starts at 0
-        Require(Dialogue.State == DialogueState.Open, $"dialogue did not reach Open state={Dialogue.State}");
-        Require(Dialogue.PageCount >= 2, $"simple talk has too few pages to advance pages={Dialogue.PageCount}");
-        Require(Dialogue.SpeakerName.Count > 0 && !Dialogue.SpeakerIsPlayer, "named talk lost its speaker name");
-        TapCross(); // reveal the whole page so every part of the box can be checked
-        Require(Dialogue.RevealComplete, "Cross did not reveal the page (showPage)");
+            Host.Input.State.PressAction();
+            Host.TickTestSimulation(); // Cross edge -> conversation start
+            Require(Dialogue.IsActive, "Cross did not start the simple conversation");
+            Host.Input.State.ReleaseAction();
+            Host.TickTestSimulation(); // Opening -> Open, the typewriter starts at 0
+            Require(Dialogue.State == DialogueState.Open, $"dialogue did not reach Open state={Dialogue.State}");
+            Require(Dialogue.PageCount >= 2, $"simple talk has too few pages to advance pages={Dialogue.PageCount}");
+            Require(Dialogue.SpeakerName.Count > 0 && !Dialogue.SpeakerIsPlayer, "named talk lost its speaker name");
+            TapCross(); // reveal the whole page so every part of the box can be checked
+            Require(Dialogue.RevealComplete, "Cross did not reveal the page (showPage)");
 
-        var renderer = _dialogueHost.DialogueRenderer;
-        renderer.SetProbeArrowBrightness(0);
-        Host.Renderer.Present(Host.State, Host.CurrentZone, f3On: false);
-        renderer.Present(_dialogueHost.BuildDialogueView());
-        await Host.NextFrameDrawn();
-        var openCapture = Host.CaptureViewport();
-        Require(openCapture.SavePng(Path.Combine(captureRoot, "dialogue-open.png")) == Error.Ok, "dialogue open capture failed");
-        Require(renderer.HasFramePixels, "bubble laid out no frame sprites");
-        Require(renderer.HasNamePixels, "bubble laid out no name glyphs");
-        Require(renderer.HasArrowPixels, "bubble laid out no arrow");
-        Require(renderer.HasGlyphPixels, "bubble laid out no text glyphs");
-        new DialogueBubbleAssertions(_dialogueHost).Check(before, openCapture, actor);
-        QuietLog.Info($"dialogue render PASS zone=S200 actor={actor.Id} type={renderer.BoxType} glyphs={renderer.GlyphCount} icons={renderer.IconCount} name={renderer.NameGlyphCount} rect={renderer.BoxScreenRect}");
+            var renderer = _dialogueHost.DialogueRenderer;
+            renderer.SetProbeArrowBrightness(0);
+            Host.Renderer.Present(Host.State, Host.CurrentZone, f3On: false);
+            renderer.Present(_dialogueHost.BuildDialogueView());
+            await Host.NextFrameDrawn();
+
+            var openCapture = Host.CaptureViewport();
+            try
+            {
+                Require(openCapture.SavePng(Path.Combine(captureRoot, "dialogue-open.png")) == Error.Ok, "dialogue open capture failed");
+                Require(renderer.HasFramePixels, "bubble laid out no frame sprites");
+                Require(renderer.HasNamePixels, "bubble laid out no name glyphs");
+                Require(renderer.HasArrowPixels, "bubble laid out no arrow");
+                Require(renderer.HasGlyphPixels, "bubble laid out no text glyphs");
+                new DialogueBubbleAssertions(_dialogueHost).Check(before, openCapture, actor);
+            }
+            finally
+            {
+                openCapture.Dispose();
+            }
+        }
+        finally
+        {
+            before.Dispose();
+        }
+
+        QuietLog.Info($"dialogue render PASS zone=S200 actor={actor.Id} type={_dialogueHost.DialogueRenderer.BoxType} glyphs={_dialogueHost.DialogueRenderer.GlyphCount} icons={_dialogueHost.DialogueRenderer.IconCount} name={_dialogueHost.DialogueRenderer.NameGlyphCount} rect={_dialogueHost.DialogueRenderer.BoxScreenRect}");
     }
 
     /// <summary>Advances the open conversation page by page until it closes to Idle.</summary>

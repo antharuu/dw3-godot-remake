@@ -84,13 +84,21 @@ internal sealed class DialogueBubbleAssertions
         var bodyBlue = DialogueBubblePixels.CountBodyBlue(after, middleRect);
         Require(bodyBlue > 4000, $"panel middle not covered by the opaque body body_blue={bodyBlue} rect={middleRect}");
         var panelImage = _host.PanelTexture.GetImage() ?? throw new InvalidOperationException("panel texture image unavailable");
-        Require(!panelImage.IsEmpty(), "panel texture image unavailable");
-        Require(
-            ProbePixels.DifferentRgb(panelImage.GetPixel(0, 30), panelImage.GetPixel(0, 13)),
-            $"panel texture flattened at the top line body={panelImage.GetPixel(0, 30)} top={panelImage.GetPixel(0, 13)}");
-        Require(
-            ProbePixels.DifferentRgb(panelImage.GetPixel(0, 30), panelImage.GetPixel(0, 60)),
-            $"panel texture flattened at the bottom line body={panelImage.GetPixel(0, 30)} bottom={panelImage.GetPixel(0, 60)}");
+        try
+        {
+            Require(!panelImage.IsEmpty(), "panel texture image unavailable");
+            Require(
+                ProbePixels.DifferentRgb(panelImage.GetPixel(0, 30), panelImage.GetPixel(0, 13)),
+                $"panel texture flattened at the top line body={panelImage.GetPixel(0, 30)} top={panelImage.GetPixel(0, 13)}");
+            Require(
+                ProbePixels.DifferentRgb(panelImage.GetPixel(0, 30), panelImage.GetPixel(0, 60)),
+                $"panel texture flattened at the bottom line body={panelImage.GetPixel(0, 30)} bottom={panelImage.GetPixel(0, 60)}");
+        }
+        finally
+        {
+            panelImage.Dispose();
+        }
+
         return bodyBlue;
     }
 

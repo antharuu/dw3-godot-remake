@@ -138,4 +138,12 @@ internal interface IFieldProbeHost
     /// <summary>Stops the engine with the probe verdict.</summary>
     /// <param name="exitCode">0 for a pass, 3 for a probe failure.</param>
     void Quit(int exitCode);
+
+    /// <summary>
+    /// Schedules a stop of the engine with the probe verdict, deferred to the next main-loop
+    /// frame.  Use this instead of <see cref="Quit"/> when calling from an async continuation
+    /// so that the main loop can settle before the engine tears down its native objects.
+    /// </summary>
+    /// <param name="exitCode">0 for a pass, 3 for a probe failure.</param>
+    void QuitDeferred(int exitCode);
 }

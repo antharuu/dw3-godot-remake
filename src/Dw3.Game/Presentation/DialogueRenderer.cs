@@ -162,6 +162,15 @@ public sealed partial class DialogueRenderer : IDisposable
         /// <summary>Gets the dialogue panel rectangle in viewport coordinates.</summary>
         public Rect2 BoxScreenRect { get; private set; }
 
+        /// <summary>Frees the font atlas textures owned by this node when it leaves the tree.</summary>
+        public override void _ExitTree()
+        {
+            _page0?.Dispose();
+            _page0 = null;
+            _page1?.Dispose();
+            _page1 = null;
+        }
+
         /// <summary>Stores the glyph metrics and atlas pages used by drawing.</summary>
         /// <param name="font">Decoded glyph and icon metrics.</param>
         /// <param name="page0">First atlas page.</param>

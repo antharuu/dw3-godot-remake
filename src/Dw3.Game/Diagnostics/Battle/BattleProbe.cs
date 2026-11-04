@@ -25,21 +25,24 @@ internal abstract class BattleProbe
     /// <returns>A task that completes once termination is requested.</returns>
     public async Task RunAsync()
     {
+        int exitCode;
         try
         {
             await ExecuteAsync();
-            Host.Quit(CompletedExitCode);
+            exitCode = CompletedExitCode;
         }
         catch (PsxReferenceUnavailableException error)
         {
             GD.Print(error.Message);
-            Host.Quit(5);
+            exitCode = 5;
         }
         catch (Exception error)
         {
             GD.PushError($"{FailureCode}_FAIL: {error.Message}");
-            Host.Quit(3);
+            exitCode = 3;
         }
+
+        Host.QuitDeferred(exitCode);
     }
 
     /// <summary>Drives the active battle and validates the probe-specific invariant.</summary>

@@ -197,5 +197,9 @@ public partial class GameHost
 
         /// <inheritdoc/>
         public void Quit(int exitCode) => _host.GetTree().Quit(exitCode);
+
+        /// <inheritdoc/>
+        public void QuitDeferred(int exitCode) =>
+            Callable.From(() => _host.GetTree().Quit(exitCode)).CallDeferred();
     }
 }

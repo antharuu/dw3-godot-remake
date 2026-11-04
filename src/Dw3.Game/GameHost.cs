@@ -186,6 +186,8 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     // probe asserts both the ERROR log and the notice).
     private Label? _battleNoticeLabel;
 
+    private StyleBoxFlat? _battleNoticeStyleBox;
+
     private string? _battleNoticeText;
 
     // M6-C6: the battle rewards + growth. The rewards manifest and growth tables load at
@@ -699,10 +701,8 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
         _battleNoticeLabel.OffsetBottom = 48;
         _battleNoticeLabel.AddThemeFontSizeOverride("font_size", 20);
         _battleNoticeLabel.AddThemeColorOverride("font_color", new Color(1f, 0.4f, 0.35f));
-        _battleNoticeLabel.AddThemeStyleboxOverride("normal", new StyleBoxFlat
-        {
-            BgColor = new Color(0.06f, 0.03f, 0.03f, 0.88f),
-        });
+        _battleNoticeStyleBox = new StyleBoxFlat { BgColor = new Color(0.06f, 0.03f, 0.03f, 0.88f) };
+        _battleNoticeLabel.AddThemeStyleboxOverride("normal", _battleNoticeStyleBox);
         layer.AddChild(_battleNoticeLabel);
     }
 

@@ -65,6 +65,18 @@ public partial class GameHost
         _fieldLoader = null;
         _animationLoader?.Dispose();
         _animationLoader = null;
+
+        // Dispose Godot RefCounted resources that the host created and that the C# GC may
+        // not finalize before the engine tears down native objects, which would otherwise
+        // produce "Leaked unsafe reference" errors (exit 134) during probe shutdown.
+        _dialogueRenderer?.Dispose();
+        _dialogueRenderer = null;
+        _panelTexture?.Dispose();
+        _panelTexture = null;
+        GodotObjectDisposal.DisposeValues(_frameTextures);
+        _frameTextures = null;
+        _battleNoticeStyleBox?.Dispose();
+        _battleNoticeStyleBox = null;
     }
 
     /// <summary>Advances fixed simulation ticks and presents one final state for the rendered frame.</summary>
