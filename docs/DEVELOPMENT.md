@@ -20,13 +20,13 @@ dotnet build Dw3.sln --nologo
 dotnet format whitespace Dw3.sln   # required before committing; verified by Linux CI
 dotnet format style Dw3.sln
 dotnet test Dw3.sln --nologo
-dotnet run --project tools/Dw3.QualityRatchet -- check
 ```
 
-The build gate is zero errors. The only warnings allowed come from the rules still
-tracked by the quality ratchet, whose counts may only go down: see
-[CODE_RULES.md](CODE_RULES.md). The test suite includes format,
-data-pack, extractor, game, and repository-provenance tests.
+The build gate is zero errors and zero warnings: every analyzer rule is a build error,
+see [CODE_RULES.md](CODE_RULES.md). The test suite includes format,
+data-pack, extractor, game, and repository-provenance tests. The line coverage minimum
+(80 % for the four libraries) is checked with the commands in
+[CODE_RULES.md](CODE_RULES.md#the-coverage-check).
 
 While the legacy Python parity pipeline remains in the tree, also run:
 

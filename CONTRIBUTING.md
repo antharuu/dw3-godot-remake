@@ -25,7 +25,8 @@ Before opening a PR, verify each item:
 - [ ] Tests use only fabricated data and pass without a disc present
 - [ ] `dotnet format whitespace Dw3.sln` and `dotnet format style Dw3.sln` have been run before committing
 - [ ] `dotnet test Dw3.sln` passes locally
-- [ ] The quality ratchet passes and, if you fixed violations, `tools/quality-baseline.json` is lowered
+- [ ] `dotnet build Dw3.sln` has zero errors: every analyzer rule is a build error, and no diagnostic is suppressed
+- [ ] The coverage check passes (80 % of lines in `Dw3.Data`, `Dw3.Disc`, `Dw3.Formats`, `Dw3.Extractor`)
 
 ## Setup
 
@@ -38,11 +39,24 @@ dotnet build Dw3.sln
 dotnet format whitespace Dw3.sln   # the CI verifies both format passes on Linux
 dotnet format style Dw3.sln
 dotnet test Dw3.sln                # all synthetic tests, including the provenance guard
+```
+
+Coverage (the CI fails when a library listed in `tools/quality-baseline.json` is under 80 %):
+
+```sh
+rm -rf artifacts/quality/coverage
+dotnet test Dw3.sln --collect:"XPlat Code Coverage" --results-directory artifacts/quality/coverage
 dotnet run --project tools/Dw3.QualityRatchet -- check
 ```
 
-The code rules (complexity, length, documentation, analyzers, coverage), the quality ratchet
-and the ban on suppressions are described in [docs/CODE_RULES.md](docs/CODE_RULES.md).
+The build fails on any rule violation. The rules and their limits, in short:
+cognitive complexity 13 per method (S3776) and 50 per class (DW3001), 60 lines (S138),
+7 parameters (S107) and 3 nesting levels (S134) per method, one type per file named after it
+(SA1402, SA1649), XML documentation on every element outside `tests/` (CS1591, SA16xx),
+the .NET analyzers in `Recommended` mode and the full StyleCop set.
+No suppression is accepted: no `#pragma warning disable`, `[SuppressMessage]`,
+`[ExcludeFromCodeCoverage]`, `NoWarn` or lowered severity. Fix the code instead.
+Details and reasons: [docs/CODE_RULES.md](docs/CODE_RULES.md).
 
 ### Optional pre-push guard
 

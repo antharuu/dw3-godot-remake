@@ -4,7 +4,7 @@
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <ImplicitUsings>enable</ImplicitUsings>
-    <!-- Every analyzer diagnostic is a build error. -->
+    <!-- Every analyzer diagnostic is a build error: there is no warning-only rule and no suppression. -->
     <AnalysisLevel>10.0</AnalysisLevel>
     <AnalysisMode>Recommended</AnalysisMode>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -13,7 +13,8 @@
   </PropertyGroup>
 
   <!--
-    Each compilation writes its diagnostics to a SARIF log under artifacts/quality/sarif.
+    Each compilation also writes its diagnostics to artifacts/quality/sarif/<project>.sarif.
+    CI uploads these logs so a failing build can be read without rerunning it.
   -->
   <PropertyGroup>
     <QualityArtifactsDir>$(MSBuildThisFileDirectory)artifacts/quality/</QualityArtifactsDir>

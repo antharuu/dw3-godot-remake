@@ -1,9 +1,11 @@
 # Code rules
 
 Every C# project in `Dw3.sln` builds with the .NET analyzers in `Recommended` mode, the
-Sonar analyzer and StyleCop. Any diagnostic is a build error (`TreatWarningsAsErrors`).
-The only exception is a temporary list of rules that the existing code still breaks,
-tracked by the quality ratchet described below. New code must follow every rule.
+Sonar analyzer, StyleCop and the repository analyzer `DW3001`. Any diagnostic is a build
+error (`TreatWarningsAsErrors`), with no warning-only rule and no baseline: the whole
+solution has zero violations, and `dotnet build Dw3.sln` fails on the first new one.
+Line coverage is the one rule the build cannot see. It is checked after the tests by
+`tools/Dw3.QualityRatchet`, described below.
 
 ## The rules
 
@@ -34,63 +36,46 @@ and files carry no copyright header because `LICENSE.md` covers the repository (
 ## No suppressions
 
 Do not silence a diagnostic: no `#pragma warning disable`, no `[SuppressMessage]`,
-no `GlobalSuppressions.cs`, no `NoWarn`, no `.editorconfig` severity lowered to make a
-build pass. Fix the code. If a rule is wrong for this repository, open an issue to change
+no `GlobalSuppressions.cs`, no `NoWarn`, no `WarningsNotAsErrors`, no `.editorconfig` or
+`.globalconfig` severity lowered to make a build pass, and no `[ExcludeFromCodeCoverage]`
+to hide untested code from the coverage check. `tests/Dw3.Repository.Tests` fails when one
+of these appears in `src/`, `tests/`, `tools/` or a root build file. Fix the code. If a rule is wrong for this repository, open an issue to change
 the rule for everyone, with the reason written next to the setting.
 
-## The quality ratchet
+## The coverage check
 
-The analyzers were introduced on an existing code base, so some rules still have violations.
-These rules are listed in `QualityRatchetedRules` in `Directory.Build.props` and passed to
-`WarningsNotAsErrors`: they stay warnings while their count goes down. The list is temporary.
-When a rule has no violation left, its identifier is removed from the list and the rule
-becomes a build error like the others. The list is never extended.
+`dotnet build` enforces every analyzer rule. Coverage needs a test run, so it has its own
+command. `tools/quality-baseline.json` holds only the coverage section: an absolute minimum
+(`minimumPercent`, 80) and the libraries it applies to (`Dw3.Data`, `Dw3.Disc`,
+`Dw3.Extractor`, `Dw3.Formats`). `tools/Dw3.QualityRatchet` merges the Cobertura reports of
+every test project (a line counts as covered when any test project ran it) and fails when a
+listed library is below the minimum or absent from the reports. The minimum is never
+derived from a measurement: adding braces or splitting a line changes the number of
+measured lines, and a recorded floor would turn that into a false regression. Raising the
+minimum is a decision written by hand in the baseline, lowering it is not allowed.
 
-Each compilation writes its diagnostics to `artifacts/quality/sarif/<project>.sarif`.
-`tools/Dw3.QualityRatchet` counts the violations per rule, project and top-level folder of
-the project (for example `S3776 Dw3.Game/Simulation`) and compares them with
-`tools/quality-baseline.json`. It fails when a count goes up, when a rule appears in a
-project folder where the baseline does not list it, or when the line coverage of one of the
-libraries listed in the baseline is below the absolute minimum (`minimumPercent`, 80). The
-minimum is never derived from a measurement: adding braces or splitting a line changes the
-number of measured lines, and a recorded floor would turn that into a false regression.
-CI runs it on Linux after the tests, so a pull request that adds a violation fails.
+CI runs it on Linux after the tests, so a pull request that drops a library under 80 % fails.
 
 ### Run it locally
 
-```sh
-dotnet build Dw3.sln
-dotnet run --project tools/Dw3.QualityRatchet -- check
-```
-
-To include coverage, delete `artifacts/quality/coverage` first (old runs would be merged
-in), then:
+Delete `artifacts/quality/coverage` first (old runs would be merged in), then:
 
 ```sh
 dotnet test Dw3.sln --collect:"XPlat Code Coverage" --results-directory artifacts/quality/coverage
-dotnet run --project tools/Dw3.QualityRatchet -- check --require-coverage
+dotnet run --project tools/Dw3.QualityRatchet -- check
 ```
 
-The ratchet also writes the merged Cobertura report to `artifacts/quality/coverage.cobertura.xml`.
+The command also writes the merged Cobertura report to `artifacts/quality/coverage.cobertura.xml`.
 
-### Lower the baseline
+Exit codes: `0` every library reaches the minimum, `1` a library is below it or missing from
+the reports, `2` a missing or unreadable input (no Cobertura report, a missing or invalid
+baseline, an unknown option).
 
-When you fix violations or add tests, lock the improvement in:
+## SARIF logs
 
-```sh
-dotnet run --project tools/Dw3.QualityRatchet -- update
-```
-
-`update` only lowers counts, it never writes coverage. If any count went up or a library is
-below the coverage minimum, it refuses, prints what regressed and leaves the baseline untouched. When a rule
-reaches zero everywhere, `update` says so: remove that identifier from `QualityRatchetedRules`
-in the same pull request. Commit `tools/quality-baseline.json` with the fix.
-
-Never edit the baseline by hand to make room for new violations.
-
-Exit codes: `0` the ratchet holds, `1` a regression or a refused update, `2` a missing or
-unreadable input (no SARIF log for a project, no coverage report with `--require-coverage`,
-an invalid baseline).
+Each compilation also writes its diagnostics to `artifacts/quality/sarif/<project>.sarif`.
+CI uploads them with the merged coverage report as the `quality-reports` artifact, so a red
+build can be read without rerunning it.
 
 ## DW3001 — Class cognitive complexity
 

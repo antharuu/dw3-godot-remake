@@ -20,7 +20,7 @@ jobs:
         with:
           dotnet-version: "10.0.113"
       - run: dotnet build Dw3.sln --nologo
-      # Whitespace and IDE style rules. Analyzer rules are enforced by the build and the quality ratchet.
+      # Whitespace and IDE style rules. Every analyzer diagnostic already fails the build above.
       - if: runner.os == 'Linux'
         run: |
           dotnet format whitespace Dw3.sln --verify-no-changes
@@ -29,9 +29,9 @@ jobs:
         run: dotnet test Dw3.sln --nologo --no-build --collect:"XPlat Code Coverage" --results-directory artifacts/quality/coverage
       - if: runner.os != 'Linux'
         run: dotnet test Dw3.sln --nologo --no-build
-      - name: Quality ratchet
+      - name: Coverage minimum (80 % of lines in Dw3.Data, Dw3.Disc, Dw3.Formats, Dw3.Extractor)
         if: runner.os == 'Linux'
-        run: dotnet run --project tools/Dw3.QualityRatchet --no-build -- check --require-coverage
+        run: dotnet run --project tools/Dw3.QualityRatchet --no-build -- check
       - name: Upload quality reports
         if: runner.os == 'Linux' && always()
         uses: actions/upload-artifact@v7

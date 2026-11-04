@@ -1,32 +1,17 @@
 namespace Dw3.QualityRatchet;
 
 /// <summary>
-/// The kinds of difference between a measurement and the baseline.
+/// The ways a listed library can fail the coverage check.
 /// </summary>
 internal enum RatchetFindingKind
 {
     /// <summary>
-    /// A recorded count went up.
-    /// </summary>
-    CountIncreased,
-
-    /// <summary>
-    /// A rule, project and folder that the baseline does not list now has violations.
-    /// </summary>
-    NewViolationPair,
-
-    /// <summary>
-    /// The line coverage of a library is below the minimum of the baseline.
+    /// The line coverage of the library is below the minimum of the baseline.
     /// </summary>
     CoverageBelowMinimum,
 
     /// <summary>
-    /// A listed library is absent from the coverage reports.
+    /// The library is absent from every Cobertura report, usually because no test project references it.
     /// </summary>
     CoverageMissing,
-
-    /// <summary>
-    /// A recorded count went down.
-    /// </summary>
-    CountDecreased,
 }
