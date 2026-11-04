@@ -8,24 +8,5 @@
       "Dw3.Formats"
     ]
   },
-  "violations": [
-    {
-      "rule": "S134",
-      "project": "Dw3.Game.Tests",
-      "folder": ".",
-      "count": 1
-    },
-    {
-      "rule": "S3776",
-      "project": "Dw3.Analyzers.Tests",
-      "folder": ".",
-      "count": 2
-    },
-    {
-      "rule": "S3776",
-      "project": "Dw3.Game.Tests",
-      "folder": ".",
-      "count": 12
-    }
-  ]
+  "violations": []
 }

@@ -4,7 +4,7 @@
     <Nullable>enable</Nullable>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <ImplicitUsings>enable</ImplicitUsings>
-    <!-- Every analyzer diagnostic is a build error, except the ratcheted rules listed below. -->
+    <!-- Every analyzer diagnostic is a build error. -->
     <AnalysisLevel>10.0</AnalysisLevel>
     <AnalysisMode>Recommended</AnalysisMode>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
@@ -13,27 +13,12 @@
   </PropertyGroup>
 
   <!--
-    Quality ratchet (docs/CODE_RULES.md).
-    Each compilation writes its diagnostics to a SARIF log that tools/Dw3.QualityRatchet compares
-    with tools/quality-baseline.json: a count may go down, never up.
-    QualityRatchetedRules is the exact list of rules that still had violations when the analyzers
-    were introduced. They stay warnings only until their count reaches zero, then the identifier is
-    removed from this list and the rule becomes a build error like every other diagnostic.
-    The list is temporary: it shrinks and is never extended.
+    Each compilation writes its diagnostics to a SARIF log under artifacts/quality/sarif.
   -->
   <PropertyGroup>
     <QualityArtifactsDir>$(MSBuildThisFileDirectory)artifacts/quality/</QualityArtifactsDir>
     <QualitySarifFile>$(QualityArtifactsDir)sarif/$(MSBuildProjectName).sarif</QualitySarifFile>
     <ErrorLog>$(QualitySarifFile),version=2.1</ErrorLog>
-    <!-- .NET analyzers (Recommended mode). -->
-    <QualityRatchetedRules></QualityRatchetedRules>
-    <!-- Compiler documentation diagnostics. -->
-    <!-- Sonar rules. -->
-    <QualityRatchetedRules>$(QualityRatchetedRules);S134</QualityRatchetedRules>
-    <QualityRatchetedRules>$(QualityRatchetedRules);S3776</QualityRatchetedRules>
-    <!-- StyleCop spacing, readability and ordering rules. -->
-    <!-- StyleCop maintainability and layout rules. -->
-    <WarningsNotAsErrors>$(WarningsNotAsErrors);$(QualityRatchetedRules)</WarningsNotAsErrors>
   </PropertyGroup>
 
   <!-- Pin SQLitePCLRaw native lib to a non-vulnerable version across all projects.
