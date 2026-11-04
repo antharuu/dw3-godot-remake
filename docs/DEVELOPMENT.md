@@ -94,3 +94,38 @@ Read [Architecture overview](OVERVIEW.md) before adding a decoder or game rule.
 Format structures are documented in [Format notes](formats/README.md). Keep all
 new decoder tests synthetic, validate malformed inputs explicitly, and record
 the exact build, test, and probe output with every change.
+
+## Probe smoke test
+
+After any change that touches the game, probe infrastructure, or Godot resource
+lifetime, run all non-PSX probes to confirm they exit cleanly:
+
+```sh
+tools/probe-smoke.sh
+```
+
+The script launches each listed non-PSX probe headlessly under Xvfb, then fails
+immediately if any probe exits non-zero **or** if any line of Godot output
+contains `Leaked unsafe reference` (which indicates a Godot C# object lifetime
+violation and causes an SIGABRT exit, code 134).
+
+The bisect helper `tools/bisect-probe.sh` can be used with `git bisect run` to
+locate the commit that introduced a probe regression:
+
+```sh
+git bisect start
+git bisect bad HEAD
+git bisect good <last-known-good>
+git bisect run tools/bisect-probe.sh
+```
+
+### Probe resource lifetime rule
+
+Every `FieldProbe` and `BattleProbe` subclass that captures Godot images
+(`GetViewport().GetTexture().GetImage()` or `BattleProbeCapture.CaptureAsync`)
+must dispose the returned `Image` with `try/finally` immediately after the
+pixel checks.  The base `RunAsync` defers the engine quit to the next
+main-loop frame (`QuitDeferred`) so that Godot resources explicitly disposed
+before the call are freed before teardown begins.  `GameHost._ExitTree`
+disposes the long-lived dialogue textures and style boxes so they are never
+alive after the host node is removed.
