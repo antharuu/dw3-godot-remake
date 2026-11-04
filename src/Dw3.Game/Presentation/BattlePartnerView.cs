@@ -23,6 +23,7 @@ internal sealed class BattlePartnerView : IDisposable
 
     private readonly BattleModelLayer _modelLayer;
     private BattleModel? _model;
+    private BattleModel? _probeOpponent;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="BattlePartnerView"/> class and adds its render
@@ -70,6 +71,18 @@ internal sealed class BattlePartnerView : IDisposable
         set => _screen.Visible = value;
     }
 
+    /// <summary>Gets the unmodified raw-target source camera for diagnostic actor translation.</summary>
+    internal Camera3D CameraForProbe => _camera;
+
+    /// <summary>Gets the required diagnostic partner after a successful model build.</summary>
+    internal BattleModel RequiredModelForProbe => _model ?? throw new InvalidOperationException("probe partner missing");
+
+    /// <summary>Gets the diagnostic opponent after explicit offscreen creation.</summary>
+    internal BattleModel OpponentForProbe => _probeOpponent ?? throw new InvalidOperationException("probe opponent missing");
+
+    /// <summary>Gets the actual partner Canvas executor for controlled offscreen evidence.</summary>
+    internal BattleModelLayer RasterForProbe => _modelLayer;
+
     /// <summary>Moves the rectangle above every other layer child. Its source layer is created after
     /// the screen, menu and front layers, so it draws over the HUD frame that surrounds it.</summary>
     public void MoveScreenToFront() => _screen.GetParent().MoveChild(_screen, _screen.GetParent().GetChildCount() - 1);
@@ -102,6 +115,8 @@ internal sealed class BattlePartnerView : IDisposable
     public void Clear()
     {
         _modelLayer.Clear();
+        _probeOpponent?.Root.QueueFree();
+        _probeOpponent = null;
         _model?.Root.QueueFree();
         _model = null;
         _screen.Visible = false;
@@ -135,7 +150,7 @@ internal sealed class BattlePartnerView : IDisposable
     {
         if (_model is not null)
         {
-            _modelLayer.Rebuild(_camera, [_model]);
+            _modelLayer.Rebuild(_camera, _probeOpponent is { } opponent ? [_model, opponent] : [_model]);
         }
         else
         {
@@ -175,5 +190,15 @@ internal sealed class BattlePartnerView : IDisposable
     {
         _viewport.QueueFree();
         _screen.QueueFree();
+    }
+
+    /// <summary>Adds a diagnostic opposing fighter without changing product placement or camera rules.</summary>
+    /// <param name="path">Prepared opposing fighter model.</param>
+    internal void AddOpponentForProbe(string path)
+    {
+        var player = _model ?? throw new InvalidOperationException("partner model missing");
+        _probeOpponent = BattleModel.Load(_world, path);
+        _probeOpponent.Root.Transform = player.Root.Transform;
+        _probeOpponent.Pose(10);
     }
 }

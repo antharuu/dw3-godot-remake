@@ -220,6 +220,13 @@ public sealed class BattleModel
     /// <returns>Texture-page keys paired with their writable images.</returns>
     public IEnumerable<(int TextureKey, Image Image)> EnumerateTexturePages() => _face.Pages;
 
+    /// <summary>Gets the live GPU texture page used by an ordered raster command.</summary>
+    /// <param name="textureKey">Decoded tpage/CLUT page key.</param>
+    /// <returns>The mutable texture synchronized with face animation updates.</returns>
+    /// <exception cref="InvalidOperationException">The model has no page with <paramref name="textureKey"/>.</exception>
+    public Texture2D TextureFor(int textureKey) =>
+        _face.TextureFor(textureKey);
+
     /// <summary>Gets the number of face texture texels changed since the model was loaded.</summary>
     /// <returns>The accumulated count of modified face-page texels.</returns>
     public int FaceChangedTexels() => _face.ChangedTexels();
@@ -317,9 +324,8 @@ public sealed class BattleModel
         }
     }
 
-    /// <summary>Moves opaque and PSX ABR-0 primitives to BattleModelLayer. Later ABR modes
-    /// stay on their existing Godot surfaces until their source blend equations are implemented.</summary>
-    /// <param name="active">Whether opaque and ABR-0 primitives are delegated to the ordering layer.</param>
+    /// <summary>Moves all observed source primitives to BattleModelLayer's ordered canvas command stream.</summary>
+    /// <param name="active">Whether the ordering layer owns the model's source primitives.</param>
     public void SetPainterLayerActive(bool active)
     {
         _painterLayerActive = active;
@@ -427,7 +433,7 @@ public sealed class BattleModel
     /// <param name="surface">Legacy surface whose owning bone determines its local visibility.</param>
     /// <param name="rootVisible">Whether the owning model root is locally visible.</param>
     private void ApplyLegacySurfaceVisibility(BattleLitSurface surface, bool rootVisible) =>
-        surface.Instance.Visible = rootVisible && _skeleton.IsVisible(surface.Bone) && (!_painterLayerActive || surface.Abr > 1);
+        surface.Instance.Visible = rootVisible && _skeleton.IsVisible(surface.Bone) && !_painterLayerActive;
 
     /// <summary>Recalculates lit vertex colours after a pose or lighting-state change.</summary>
     private void RefreshLighting() => _lighting.Refresh(_litSurfaces, _skeleton, FighterId);

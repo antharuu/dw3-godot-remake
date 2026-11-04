@@ -46,6 +46,9 @@ public sealed class BattleModelLayer : IDisposable
     /// <summary>Gets unsupported ABR primitives. Observed modes zero and one never enter this count.</summary>
     public int UnsupportedAbrCount { get; private set; }
 
+    /// <summary>Gets or sets optional offscreen probe interventions on the actual executor.</summary>
+    internal BattleRasterControl? ProbeControl { get; set; }
+
     /// <summary>Places the raster command root immediately after a stage canvas sibling.</summary>
     /// <param name="sibling">Stage canvas item that must remain underneath the command stream.</param>
     public void MoveAfter(Node sibling)
@@ -241,10 +244,10 @@ public sealed class BattleModelLayer : IDisposable
     /// <param name="camera">Camera used for projection and ordering depth.</param>
     /// <param name="models">Models contributing primitives.</param>
     /// <returns>Unsplit primitives in source submission order.</returns>
-    private List<PendingPrimitive> Collect(Camera3D camera, IReadOnlyList<BattleModel> models)
+    private List<BattleRasterPrimitive> Collect(Camera3D camera, IReadOnlyList<BattleModel> models)
     {
         PolygonCount = CulledCount = UnsupportedAbrCount = 0;
-        var result = new List<PendingPrimitive>();
+        var result = new List<BattleRasterPrimitive>();
         foreach (var model in models.Where(model => model.Visible))
         {
             CollectModel(camera, model, result);
@@ -258,7 +261,7 @@ public sealed class BattleModelLayer : IDisposable
     /// <param name="camera">Camera used for source-compatible projection.</param>
     /// <param name="model">Model supplying primitives and texture pages.</param>
     /// <param name="result">Destination stream.</param>
-    private void CollectModel(Camera3D camera, BattleModel model, List<PendingPrimitive> result)
+    private void CollectModel(Camera3D camera, BattleModel model, List<BattleRasterPrimitive> result)
     {
         foreach (var polygon in model.EnumeratePolygons())
         {
@@ -289,7 +292,7 @@ public sealed class BattleModelLayer : IDisposable
                 continue;
             }
 
-            result.Add(new PendingPrimitive(OrderKey(camera, world, polygon.Size), polygon, screen, model.TextureFor(polygon.TextureKey)));
+            result.Add(new BattleRasterPrimitive(OrderKey(camera, world, polygon.Size), polygon, screen, model.TextureFor(polygon.TextureKey), model.FighterId));
         }
     }
 
@@ -312,12 +315,18 @@ public sealed class BattleModelLayer : IDisposable
     /// <summary>Emits ordered opaque and STP coverage commands into the single canvas framebuffer.</summary>
     /// <param name="pending">Collected whole source primitives.</param>
     /// <param name="order">Indices of <paramref name="pending"/> in source draw order.</param>
-    private void Emit(IReadOnlyList<PendingPrimitive> pending, IReadOnlyList<int> order)
+    private void Emit(List<BattleRasterPrimitive> pending, IReadOnlyList<int> order)
     {
-        var command = 0;
-        foreach (var index in order)
+        var ordered = order.Select(index => pending[index]);
+        if (ProbeControl is { } control)
         {
-            var primitive = pending[index];
+            control.Ordered = control.Fixture ?? [.. ordered];
+            ordered = control.Ordered.Take(control.Limit).Where(control.Includes);
+        }
+
+        var command = 0;
+        foreach (var primitive in ordered)
+        {
             command = EmitPrimitive(primitive, command);
         }
 
@@ -328,9 +337,9 @@ public sealed class BattleModelLayer : IDisposable
     /// <param name="primitive">Primitive whose quad grouping has already determined global order.</param>
     /// <param name="command">Next pooled canvas command slot.</param>
     /// <returns>The following free canvas command slot.</returns>
-    private int EmitPrimitive(PendingPrimitive primitive, int command)
+    private int EmitPrimitive(BattleRasterPrimitive primitive, int command)
     {
-        if (primitive.Polygon.Abr < 0)
+        if (primitive.Polygon.Abr < 0 || ProbeControl?.UsesWrongBlend(primitive) == true)
         {
             Draw(command++, primitive, _opaque);
             return command;
@@ -345,13 +354,18 @@ public sealed class BattleModelLayer : IDisposable
     /// <param name="index">Stable canvas command index.</param>
     /// <param name="primitive">Projected primitive and its mutable page texture.</param>
     /// <param name="material">Fixed-function blend material for this disjoint coverage pass.</param>
-    private void Draw(int index, PendingPrimitive primitive, ShaderMaterial material)
+    private void Draw(int index, BattleRasterPrimitive primitive, ShaderMaterial material)
     {
         var node = CommandAt(index);
         node.Polygon = [.. primitive.Screen];
         node.Polygons = primitive.Polygon.Size == 4
             ? [(int[])[0, 1, 2], (int[])[2, 1, 3]]
             : [(int[])[0, 1, 2]];
+        if (ProbeControl?.ClearIndices == true)
+        {
+            node.Polygons = [];
+        }
+
         node.UV = ToCanvasPixels(primitive.Polygon.Uvs, primitive.Texture);
         node.VertexColors = primitive.Polygon.Colors;
         node.Texture = primitive.Texture;
@@ -400,7 +414,4 @@ public sealed class BattleModelLayer : IDisposable
         material.SetShaderParameter("coverage", coverage);
         return material;
     }
-
-    /// <summary>One unsplit source primitive ready for compositor ordering and canvas emission.</summary>
-    private readonly record struct PendingPrimitive(int Key, BattleModel.SourcePolygon Polygon, Vector2[] Screen, Texture2D Texture);
 }

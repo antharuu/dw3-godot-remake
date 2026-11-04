@@ -126,6 +126,15 @@ public sealed class BattleRenderer : IDisposable
     /// <summary>Gets the number of real battle models built (player + any decoded enemy).</summary>
     public int ModelCount => _fighters.Models.Count;
 
+    /// <summary>Gets the unmodified main source camera for diagnostic actor translation.</summary>
+    internal Camera3D CameraForProbe => _camera;
+
+    /// <summary>Gets the actual command executor for controlled offscreen evidence.</summary>
+    internal BattleModelLayer RasterForProbe => _modelLayer;
+
+    /// <summary>Gets the actual partner render target for controlled offscreen evidence.</summary>
+    internal BattlePartnerView PartnerForProbe => _partnerView;
+
     /// <summary>Maps a deterministic HUD frame to its source animation milliseconds.</summary>
     /// <param name="frame">Non-negative frame number to convert.</param>
     /// <returns>The source-clock time represented by <paramref name="frame"/>.</returns>
@@ -701,6 +710,11 @@ public sealed class BattleRenderer : IDisposable
         _partnerView.Dispose();
         _layer.QueueFree();
     }
+
+    /// <summary>Gets a live model without changing product placement.</summary>
+    /// <param name="fighter">Fighter identifier to inspect.</param>
+    /// <returns>The required live model.</returns>
+    internal BattleModel ModelForProbe(int fighter) => _fighters.Require(fighter);
 
     /// <summary>Determines whether an exception represents an expected model loading failure.</summary>
     /// <param name="error">Exception raised while loading a model document.</param>

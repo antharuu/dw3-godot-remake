@@ -944,3 +944,26 @@ tests/Dw3.Extractor.Tests/FieldRegistryStepsTests.cs
 src/Dw3.Game/GodotObjectDisposal.cs
 tools/bisect-probe.sh
 tools/probe-smoke.sh
+
+# Battle raster framebuffer proof
+src/Dw3.Game/Presentation/BattleRasterPrimitive.cs
+src/Dw3.Game/Presentation/BattleRasterControl.cs
+src/Dw3.Game/Diagnostics/Battle/BattleProofCameraRng.cs
+src/Dw3.Game/Diagnostics/Battle/BattleRasterAlignment.cs
+src/Dw3.Game/Diagnostics/Battle/BattleRasterBlendFixtureProof.cs
+src/Dw3.Game/Diagnostics/Battle/BattleRasterCadenceProof.cs
+src/Dw3.Game/Diagnostics/Battle/BattleRasterEvidence.cs
+src/Dw3.Game/Diagnostics/Battle/BattleRasterOverlapProof.cs
+src/Dw3.Game/Diagnostics/Battle/BattleRasterPresenceProof.cs
+src/Dw3.Game/Diagnostics/Battle/BattleRasterSampleOracle.cs
+src/Dw3.Game/Diagnostics/Battle/BattleRasterVectorCorpus.cs
+tests/Dw3.Game.Tests/BattleRasterControlTests.cs
+docs/testing/BATTLE_RASTER_PROOF.md
+# Previously committed raster prerequisites reviewed with this proof
+src/Dw3.Game/Presentation/BattlePrimitiveCompositor.cs
+src/Dw3.Game/Presentation/Ps1AbrMode.cs
+src/Dw3.Game/Presentation/Ps1CompositorColor.cs
+src/Dw3.Game/Presentation/Ps1CompositorTexel.cs
+src/Dw3.Game/Presentation/SourcePrimitive.cs
+tests/Dw3.Game.Tests/BattleFaceAnimatorTests.cs
+tests/Dw3.Game.Tests/BattlePrimitiveCompositorTests.cs

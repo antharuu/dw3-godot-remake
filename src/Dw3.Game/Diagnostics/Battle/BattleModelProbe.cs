@@ -42,12 +42,14 @@ internal sealed class BattleModelProbe : BattleProbe
         var renderer = Host.Renderer;
         ProbeRequirement.Require(Host.RenderedPlayerId == Kotemon, $"F8 player fighter={Host.RenderedPlayerId}, expected Kotemon 383");
         ProbeRequirement.Require(renderer.ModelCount == 2, "F8 did not build both real models");
+        using var cameraRng = renderer.OverrideShotCameraRngForProbe(new BattleProofCameraRng());
         renderer.SetCommandMenuCamera();
         await VerifyCanvasLayerVisibilityAsync(Host, renderer, captureRoot);
         await VerifyCanvasCalibrationAsync(Host, renderer, captureRoot);
         SaveRawPartnerView(renderer, captureRoot);
         VerifyRotationAndWinding(renderer);
         VerifySurfacePasses(renderer);
+        await BattleRasterPresenceProof.RunAsync(Host, captureRoot);
         await VerifyBoneMaskAsync(renderer, captureRoot);
         await VerifyCullingAsync(renderer, captureRoot);
         var kotemonPath = Host.ResolveBattleModelPath(Kotemon);
@@ -55,6 +57,16 @@ internal sealed class BattleModelProbe : BattleProbe
         await CaptureComparisonModelAsync(renderer, captureRoot, kotemonPath, WarGreymon, "WarGreymon");
         await VerifyResidualUvAsync(renderer, captureRoot, kotemonPath);
         await ReplayHiddenParentVectorsAsync(renderer, captureRoot, kotemonPath);
+        if (System.Environment.GetEnvironmentVariable("DW3_BATTLE_STP_PROOF") == "1")
+        {
+            await BattleRasterOverlapProof.RunAsync(Host, captureRoot);
+        }
+
+        if (System.Environment.GetEnvironmentVariable("DW3_BATTLE_CADENCE_PROOF") == "1")
+        {
+            await BattleRasterCadenceProof.RunAsync(Host, captureRoot);
+        }
+
         QuietLog.Info($"battle-model probe PASS fps={Engine.GetFramesPerSecond():0.0} captures={captureRoot}/kotemon-idle.png,{captureRoot}/kuwagamon-idle.png,{captureRoot}/wargreymon-idle.png");
     }
 
@@ -208,7 +220,8 @@ internal sealed class BattleModelProbe : BattleProbe
     /// <summary>
     /// Source bone 16 retains the one visible shinai while 21/23 remove its duplicate mesh instances.
     /// Texture modulation makes whole-frame bright-pixel counts nonmonotonic, so the semantic
-    /// difference is proven only in the visible shinai region.
+    /// duplicate-bone difference is measured over the frame. A separate bone-16 removal proves
+    /// actual shinai contribution in main and raw PartnerView without an arbitrary strip.
     /// </summary>
     /// <param name="renderer">Active battle renderer.</param>
     /// <param name="captureRoot">Directory receiving the captures.</param>
@@ -224,7 +237,7 @@ internal sealed class BattleModelProbe : BattleProbe
             "Kotemon idle frame 10 must show saber bone 16 only");
         var kotemon = await CaptureAsync(captureRoot, "kotemon-idle.png");
         var kotemonPixels = LeftHalfBright(kotemon);
-        var saberDifference = BattlePixelMetrics.CountDifferent(legacy, kotemon, 200, 520);
+        var saberDifference = BattlePixelMetrics.CountDifferent(legacy, kotemon, 0, kotemon.GetWidth());
         ProbeRequirement.Require(
             kotemonPixels > 1000 && saberDifference > 0,
             $"Kotemon source mask must retain textured body and change saber region pixels={saberDifference} before={legacyPixels} after={kotemonPixels}");

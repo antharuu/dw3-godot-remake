@@ -45,6 +45,15 @@ internal sealed class BattleFaceAnimator
     /// <summary>Gets the source-frame clock that selects the currently visible facial frames.</summary>
     public (int BlinkTimer, int Time) State => (_blinkTimer, _time);
 
+    /// <summary>Gets the live GPU texture page synchronized whenever a face rectangle changes.</summary>
+    /// <param name="textureKey">Decoded page key.</param>
+    /// <returns>The mutable GPU texture used by the ordered rasterizer.</returns>
+    /// <exception cref="InvalidOperationException">No texture page has the requested key.</exception>
+    public Texture2D TextureFor(int textureKey) =>
+        _textures.TryGetValue(textureKey, out var texture)
+            ? texture.Texture
+            : throw new InvalidOperationException($"battle face texture page missing: {textureKey}");
+
     /// <summary>Reads the optional <c>face</c> section; parts with a non-positive width are skipped.</summary>
     /// <param name="root">Model document root.</param>
     /// <exception cref="InvalidOperationException">A part does not have three frames or a rectangle leaves the 256x256 page.</exception>
