@@ -15,6 +15,8 @@ internal sealed class BattleModelProbe : BattleProbe
 {
     private const int Kotemon = 383;
     private const int Kuwagamon = 51;
+    private const int Renamon = 373;
+    private const int ComparisonCameraIndex = 2;
     private const int IdleFrame = 10;
 
     /// <summary>DIGNAM entry 36 is WarGreymon. fighter.json resolves that name id to fighter 213.</summary>
@@ -53,8 +55,11 @@ internal sealed class BattleModelProbe : BattleProbe
         await VerifyBoneMaskAsync(renderer, captureRoot);
         await VerifyCullingAsync(renderer, captureRoot);
         var kotemonPath = Host.ResolveBattleModelPath(Kotemon);
-        await CaptureComparisonModelAsync(renderer, captureRoot, kotemonPath, Kuwagamon, "Kuwagamon");
-        await CaptureComparisonModelAsync(renderer, captureRoot, kotemonPath, WarGreymon, "WarGreymon");
+        var comparisonCamera = renderer.FighterCameras(enemy: false)[ComparisonCameraIndex];
+        var renamon = await CaptureComparisonModelAsync(renderer, captureRoot, kotemonPath, Renamon, "Renamon", comparisonCamera);
+        var kuwagamon = await CaptureComparisonModelAsync(renderer, captureRoot, kotemonPath, Kuwagamon, "Kuwagamon", comparisonCamera);
+        var warGreymon = await CaptureComparisonModelAsync(renderer, captureRoot, kotemonPath, WarGreymon, "WarGreymon", comparisonCamera);
+        VerifySilhouetteComparisons(renamon, kuwagamon, warGreymon, comparisonCamera);
         await VerifyResidualUvAsync(renderer, captureRoot, kotemonPath);
         await ReplayHiddenParentVectorsAsync(renderer, captureRoot, kotemonPath);
         if (System.Environment.GetEnvironmentVariable("DW3_BATTLE_STP_PROOF") == "1")
@@ -217,6 +222,19 @@ internal sealed class BattleModelProbe : BattleProbe
     /// <returns>The bright-pixel count.</returns>
     private static int LeftHalfBright(Image image) => BattlePixelMetrics.CountBright(image, 0, image.GetWidth() / 2);
 
+    /// <summary>Checks all three comparison silhouettes under the unchanged source camera.</summary>
+    /// <param name="renamon">Small-model logical silhouette.</param>
+    /// <param name="kuwagamon">Large-model logical silhouette.</param>
+    /// <param name="warGreymon">Asymmetric-model logical silhouette.</param>
+    /// <param name="camera">Fixed source camera captured before any comparison model is rebuilt.</param>
+    private static void VerifySilhouetteComparisons(BattleSilhouetteMetrics renamon, BattleSilhouetteMetrics kuwagamon, BattleSilhouetteMetrics warGreymon, BattleModel.BattleCameraView camera)
+    {
+        ProbeRequirement.Require(
+            renamon.HeightFraction > 0f && kuwagamon.HeightFraction > 0f && warGreymon.WidthFraction > 0f,
+            "comparison silhouettes lost logical-raster area");
+        QuietLog.Info($"battle-projection comparison camera_index={ComparisonCameraIndex} pos=({camera.CamPos[0]},{camera.CamPos[1]},{camera.CamPos[2]}) ref=({camera.CamRef[0]},{camera.CamRef[1]},{camera.CamRef[2]}) proj={camera.Proj} small={BattleComparisonImage.FormatBounds(renamon.Bounds)} large={BattleComparisonImage.FormatBounds(kuwagamon.Bounds)} asymmetric={BattleComparisonImage.FormatBounds(warGreymon.Bounds)} logical=320x240 margins=160x0 scale=3");
+    }
+
     /// <summary>
     /// Source bone 16 retains the one visible shinai while 21/23 remove its duplicate mesh instances.
     /// Texture modulation makes whole-frame bright-pixel counts nonmonotonic, so the semantic
@@ -260,21 +278,34 @@ internal sealed class BattleModelProbe : BattleProbe
         QuietLog.Info($"battle-model culling fighter=383 mode=Back textured-no-cull={noCullPixels} textured-back={culledPixels} orientation=correct");
     }
 
-    /// <summary>Rebuilds an enemy beside Kotemon and records its idle bone visibility.</summary>
+    /// <summary>Rebuilds an enemy beside Kotemon and measures its isolated silhouette in the original raster.</summary>
     /// <param name="renderer">Active battle renderer.</param>
-    /// <param name="captureRoot">Directory receiving the capture.</param>
+    /// <param name="captureRoot">Directory receiving the paired captures.</param>
     /// <param name="kotemonPath">Decoded Kotemon model path.</param>
     /// <param name="fighter">Enemy fighter id.</param>
     /// <param name="name">Enemy display name.</param>
-    /// <returns>A task completed after the capture.</returns>
-    private async Task CaptureComparisonModelAsync(BattleRenderer renderer, string captureRoot, string kotemonPath, int fighter, string name)
+    /// <param name="comparisonCamera">Fixed source camera captured before rebuilding the compared fighter.</param>
+    /// <returns>Logical-raster silhouette metrics isolated from the unchanged scene.</returns>
+    private async Task<BattleSilhouetteMetrics> CaptureComparisonModelAsync(BattleRenderer renderer, string captureRoot, string kotemonPath, int fighter, string name, BattleModel.BattleCameraView comparisonCamera)
     {
         renderer.BuildModels(Host.ResolveBattleModelPath(fighter), kotemonPath, name, "Kotemon", Kotemon);
         ProbeRequirement.Require(renderer.ModelCount == 2, $"{name} comparison model did not load");
+        renderer.StopShotCamera();
+        renderer.SetSourceCamera(comparisonCamera, snap: true);
         renderer.SetProbePose(IdleFrame);
-        await CaptureAsync(captureRoot, $"{name.ToLowerInvariant()}-idle.png");
+        renderer.SetModelVisibleForProbe(fighter, false);
+        var withoutFighter = await BattleProbeCapture.CaptureRawAsync(Host, captureRoot, $"{name.ToLowerInvariant()}-without.png");
+        renderer.SetModelVisibleForProbe(fighter, true);
+        var withFighter = await BattleProbeCapture.CaptureRawAsync(Host, captureRoot, $"{name.ToLowerInvariant()}-idle.png");
+        var sourceBounds = BattlePixelMetrics.DifferenceBoundsAboveThreshold(
+            BattleComparisonImage.ToSourceSize(withFighter),
+            BattleComparisonImage.ToSourceSize(withoutFighter),
+            threshold: 30);
+        ProbeRequirement.Require(sourceBounds is not null, $"{name} source silhouette is empty");
+        var metrics = BattleSilhouetteMetrics.FromBounds(sourceBounds.GetValueOrDefault());
         var identity = fighter == WarGreymon ? $"fighter_name={name} name_id=36 fighter_id={fighter}" : $"fighter_name={name}";
-        QuietLog.Info($"battle-model bones {renderer.BoneVisibility(fighter)} {identity} frame={IdleFrame}");
+        QuietLog.Info($"battle-model bones {renderer.BoneVisibility(fighter)} {identity} frame={IdleFrame} silhouette={BattleComparisonImage.FormatBounds(metrics.Bounds)} anchor=({metrics.Anchor.X:0},{metrics.Anchor.Y:0}) proportions=({metrics.WidthFraction:0.###},{metrics.HeightFraction:0.###})");
+        return metrics;
     }
 
     /// <summary>

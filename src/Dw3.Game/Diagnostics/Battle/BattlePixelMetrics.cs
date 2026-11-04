@@ -121,6 +121,19 @@ internal static class BattlePixelMetrics
         first,
         (x, y) => ProbePixels.DifferentRgb(first.GetPixel(x, y), second.GetPixel(x, y)));
 
+    /// <summary>Finds source-raster differences whose combined RGB delta exceeds a noise threshold.</summary>
+    /// <param name="first">Frame containing the tested fighter.</param>
+    /// <param name="second">Matching frame with that fighter hidden.</param>
+    /// <param name="threshold">Strict minimum combined 8-bit RGB delta for one selected pixel.</param>
+    /// <returns>The selected bounds, or <see langword="null"/> when no pixel exceeds the threshold.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="threshold"/> is negative.</exception>
+    public static Rect2? DifferenceBoundsAboveThreshold(Image first, Image second, int threshold)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(threshold);
+        ProbeRequirement.Require(first.GetSize() == second.GetSize(), "difference images must share dimensions");
+        return Bounds(first, (x, y) => RgbDelta(first.GetPixel(x, y), second.GetPixel(x, y)) > threshold);
+    }
+
     /// <summary>Finds Kotemon's warm armour pixels in a source-size command frame.</summary>
     /// <param name="image">Source-size 320x240 frame.</param>
     /// <returns>The warm armour bounds, or null when no matching texel exists.</returns>
@@ -234,6 +247,13 @@ internal static class BattlePixelMetrics
             ? null
             : new Rect2(minimum, maximum - minimum + Vector2I.One);
     }
+
+    /// <summary>Measures combined absolute RGB difference in 8-bit framebuffer space.</summary>
+    /// <param name="first">First framebuffer colour.</param>
+    /// <param name="second">Second framebuffer colour.</param>
+    /// <returns>Combined absolute RGB delta.</returns>
+    private static int RgbDelta(Color first, Color second) =>
+        Math.Abs(first.R8 - second.R8) + Math.Abs(first.G8 - second.G8) + Math.Abs(first.B8 - second.B8);
 
     /// <summary>Converts a normalized RGB color to the probe's 0..255 luminance scale.</summary>
     /// <param name="pixel">Normalized source color.</param>
