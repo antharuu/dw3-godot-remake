@@ -7,6 +7,19 @@ public sealed class ContributorQualityTests
 {
     private static readonly string RepoRoot = FindRepoRoot();
 
+    private static readonly string[] ProjectFolders = ["src", "tests", "tools"];
+
+    private static readonly string[] BuildInputExtensions = [".cs", ".csproj", ".props", ".targets", ".globalconfig"];
+
+    private static readonly string[] SuppressionTokens =
+    [
+        "#pragma warning disable",
+        "SuppressMessage",
+        "ExcludeFromCodeCoverage",
+        "<NoWarn",
+        "<WarningsNotAsErrors",
+    ];
+
     [Fact]
     public void EditorConfig_EnforcesCSharpStyleBaseline()
     {
@@ -41,6 +54,47 @@ public sealed class ContributorQualityTests
         Assert.True(
             count <= 64,
             $"Expected at most 64 postfix null-forgiving operators in Dw3.Game, found {count}.");
+    }
+
+    [Fact]
+    public void SourcesAndBuildFiles_SuppressNoDiagnostic()
+    {
+        string self = Path.Combine(RepoRoot, "tests", "Dw3.Repository.Tests", nameof(ContributorQualityTests) + ".cs");
+        List<string> offenders =
+        [
+            .. EnumerateBuildInputs()
+                .Where(path => path != self)
+                .SelectMany(path => SuppressionTokens
+                    .Where(token => File.ReadAllText(path).Contains(token, StringComparison.Ordinal))
+                    .Select(token => $"{Path.GetRelativePath(RepoRoot, path)}: {token}")),
+        ];
+
+        Assert.True(offenders.Count == 0, "Diagnostic suppressions are not allowed:\n" + string.Join("\n", offenders));
+    }
+
+    [Fact]
+    public void Repository_HasNoGlobalSuppressionOrAnalyzerConfigFile()
+    {
+        List<string> files =
+        [
+            .. EnumerateBuildInputs()
+                .Where(path => Path.GetFileName(path) is "GlobalSuppressions.cs" || path.EndsWith(".globalconfig", StringComparison.Ordinal))
+                .Select(path => Path.GetRelativePath(RepoRoot, path)),
+        ];
+
+        Assert.Empty(files);
+    }
+
+    private static IEnumerable<string> EnumerateBuildInputs()
+    {
+        IEnumerable<string> rootFiles = Directory.EnumerateFiles(RepoRoot);
+        IEnumerable<string> projectFiles = ProjectFolders
+            .Select(folder => Path.Combine(RepoRoot, folder))
+            .Where(Directory.Exists)
+            .SelectMany(folder => Directory.EnumerateFiles(folder, "*", SearchOption.AllDirectories));
+        return rootFiles.Concat(projectFiles)
+            .Where(path => BuildInputExtensions.Contains(Path.GetExtension(path), StringComparer.Ordinal))
+            .Where(path => !path.Split(Path.DirectorySeparatorChar).Any(part => part is "bin" or "obj" or ".godot"));
     }
 
     private static int CountPostfixNullForgivingOperators(string path)
