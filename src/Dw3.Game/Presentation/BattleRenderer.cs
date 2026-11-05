@@ -651,7 +651,11 @@ public sealed class BattleRenderer : IDisposable
     public void StopShotCamera()
     {
         _shotClock.Reset();
-        _commandCamera.Stop();
+        if (_commandCamera.Stop() is { } overview)
+        {
+            SetSourceCamera(overview, snap: true);
+        }
+
         _fighters.RestoreVisibility();
     }
 
