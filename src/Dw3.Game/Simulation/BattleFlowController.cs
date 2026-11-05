@@ -70,7 +70,7 @@ public sealed class BattleFlowController
     {
         State = state;
         State.Techs = Techs;
-        Phase = BattleFlowPhase.PlayerCommand;
+        Phase = State.NextActor == BattleSide.Player ? BattleFlowPhase.PlayerCommand : BattleFlowPhase.EnemyTurn;
         ClearMessage();
     }
 

@@ -119,7 +119,9 @@ public sealed class EnemyTurnResolver(BattleState state)
         }
         else
         {
-            EndTurn();
+            attacker.Turns++;
+            state.AdvanceEnemyRunAway(rng);
+            state.CheckOutcome();
         }
 
         return fled;

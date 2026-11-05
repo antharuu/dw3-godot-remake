@@ -26,6 +26,7 @@ docs/ROADMAP.md
 docs/VERTICAL_SLICE_ROADMAP.md
 docs/design/ARCHITECTURE.md
 docs/design/ASSET_PIPELINE.md
+docs/design/B9_DELAY_FAMILY_HANDOFF.md
 docs/design/DECISIONS.md
 docs/design/DISTRIBUTION.md
 docs/design/MODERNIZATION.md
@@ -554,11 +555,15 @@ src/Dw3.Game/Scene/ZoneMapImages.cs
 src/Dw3.Game/Simulation/AnimationSample.cs
 src/Dw3.Game/Simulation/AreaBattle.cs
 src/Dw3.Game/Simulation/AreaMap.cs
+src/Dw3.Game/Simulation/BattleActionDelay.cs
+src/Dw3.Game/Simulation/BattleActionDelayKind.cs
 src/Dw3.Game/Simulation/BattleCommand.cs
 src/Dw3.Game/Simulation/BattleConst.cs
+src/Dw3.Game/Simulation/BattleDefaultOpeningRng.cs
 src/Dw3.Game/Simulation/BattleEnemy.cs
 src/Dw3.Game/Simulation/BattleEnemyAi.cs
 src/Dw3.Game/Simulation/BattleFighter.cs
+src/Dw3.Game/Simulation/BattleFighterTiming.cs
 src/Dw3.Game/Simulation/BattleFlowController.cs
 src/Dw3.Game/Simulation/BattleFlowPhase.cs
 src/Dw3.Game/Simulation/BattleHitResolver.cs
@@ -578,6 +583,8 @@ src/Dw3.Game/Simulation/BattleOutcomeResolution.cs
 src/Dw3.Game/Simulation/BattleOutcomeResolver.cs
 src/Dw3.Game/Simulation/BattleReward.cs
 src/Dw3.Game/Simulation/BattleRoster.cs
+src/Dw3.Game/Simulation/BattleScheduledEvent.cs
+src/Dw3.Game/Simulation/BattleScheduledEventKind.cs
 src/Dw3.Game/Simulation/BattleSetup.cs
 src/Dw3.Game/Simulation/BattleSetupFactory.cs
 src/Dw3.Game/Simulation/BattleSide.cs
@@ -588,6 +595,8 @@ src/Dw3.Game/Simulation/BattleStageResolver.cs
 src/Dw3.Game/Simulation/BattleTableAction.cs
 src/Dw3.Game/Simulation/BattleTechnique.cs
 src/Dw3.Game/Simulation/BattleTickCoordinator.cs
+src/Dw3.Game/Simulation/BattleTurnScheduler.cs
+src/Dw3.Game/Simulation/BattleTurnSchedulerRules.cs
 src/Dw3.Game/Simulation/BattleViewBuilder.cs
 src/Dw3.Game/Simulation/ClimbAnimation.cs
 src/Dw3.Game/Simulation/ClimbAnimationSample.cs
@@ -765,6 +774,7 @@ tests/Dw3.Game.Tests/BattleShotCameraVectorGenerator.cs
 tests/Dw3.Game.Tests/BattleShotCameraVectorHarness.cs
 tests/Dw3.Game.Tests/BattleShotCameraVectorTests.cs
 tests/Dw3.Game.Tests/BattleStageResolverTests.cs
+tests/Dw3.Game.Tests/BattleTurnSchedulerTests.cs
 tests/Dw3.Game.Tests/ClimbControllerVectorGenerator.cs
 tests/Dw3.Game.Tests/ClimbControllerVectorTests.cs
 tests/Dw3.Game.Tests/DamageCalculatorVectorTests.cs

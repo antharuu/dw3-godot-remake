@@ -24,6 +24,7 @@ namespace Dw3Production.Simulation;
 public sealed class BattleState
 {
     private readonly EnemyTurnResolver _enemyTurn;
+    private readonly BattleTurnScheduler _turnScheduler = new();
 
     /// <summary>Initializes a new instance of the <see cref="BattleState"/> class with empty sides and no outcome.</summary>
     public BattleState()
@@ -78,11 +79,11 @@ public sealed class BattleState
     /// <summary>Gets or sets a value indicating whether criticals roll; when false (default) damage is deterministic.</summary>
     public bool AllowCritical { get; set; }
 
-    /// <summary>Gets or sets the player side's time-to-next-turn counter (the conditional-turn scheduler).</summary>
-    public int NextPlayerTurn { get; set; }
+    /// <summary>Gets the player side's remaining event delay.</summary>
+    public int NextPlayerTurn => _turnScheduler.RemainingTurnDelay(BattleSide.Player);
 
-    /// <summary>Gets or sets the enemy side's time-to-next-turn counter.</summary>
-    public int NextEnemyTurn { get; set; }
+    /// <summary>Gets the enemy side's remaining event delay.</summary>
+    public int NextEnemyTurn => _turnScheduler.RemainingTurnDelay(BattleSide.Enemy);
 
     /// <summary>Gets the partner in the active slot, null when no slot is active.</summary>
     public BattleFighter? ActivePlayerFighter => ActivePlayer >= 0 ? Players[ActivePlayer] : null;
@@ -90,8 +91,8 @@ public sealed class BattleState
     /// <summary>Gets the enemy in the active slot, null when no slot is active.</summary>
     public BattleFighter? ActiveEnemyFighter => ActiveEnemy >= 0 ? Enemies[ActiveEnemy] : null;
 
-    /// <summary>Gets the side whose next-turn time is due first (Player on a tie).</summary>
-    public BattleSide NextActor => NextPlayerTurn <= NextEnemyTurn ? BattleSide.Player : BattleSide.Enemy;
+    /// <summary>Gets the side whose next queued turn wins the EU slot-sensitive selection.</summary>
+    public BattleSide NextActor => _turnScheduler.Count == 0 ? BattleSide.Player : _turnScheduler.PeekNextTurnSide();
 
     /// <summary>
     /// Fills the three partners (the first with the active Digimon)
@@ -99,8 +100,9 @@ public sealed class BattleState
     /// </summary>
     /// <param name="setup">The battle set up by the encounter.</param>
     /// <param name="digimon">Digimon id slot 0 fights as, which may differ from its seed after a digivolution on the field.</param>
+    /// <param name="openingRng">Injected shared stream for the opening roll, or a compatibility source when omitted.</param>
     /// <returns>A state on the first living fighter of each side. Its outcome is already set when a side starts with no living fighter.</returns>
-    public static BattleState InitFighters(BattleSetup setup, int digimon)
+    public static BattleState InitFighters(BattleSetup setup, int digimon, IBattleRng? openingRng = null)
     {
         var state = new BattleState
         {
@@ -122,7 +124,7 @@ public sealed class BattleState
 
         state.ActivePlayer = BattleRoster.FirstLivingIndex(state.Players);
         state.ActiveEnemy = BattleRoster.FirstLivingIndex(state.Enemies);
-        state.SeedTurnClock();
+        state.SeedTurnClock(setup.AmbushChance, openingRng ?? new BattleDefaultOpeningRng());
         state.CheckOutcome();
         return state;
     }
@@ -251,7 +253,7 @@ public sealed class BattleState
             return true;
         }
 
-        AdvancePlayerTurn();
+        AdvancePlayerTurn(BattleActionDelayKind.RunAway, rng);
         return false;
     }
 
@@ -302,7 +304,11 @@ public sealed class BattleState
     internal BattleHitResolver Hits(IBattleRng rng) => new(Boost, AllowCritical, rng);
 
     /// <summary>Re-arms the enemy cadence after it spent its turn.</summary>
-    internal void AdvanceEnemyTurn() => NextEnemyTurn += TurnDelay(ActiveEnemyFighter, ActivePlayerFighter);
+    internal void AdvanceEnemyTurn() => ScheduleTurn(BattleSide.Enemy, BattleActionDelayKind.NormalTurn, null);
+
+    /// <summary>Re-arms the enemy after an unsuccessful run-away attempt.</summary>
+    /// <param name="rng">The battle random source used for the attempt.</param>
+    internal void AdvanceEnemyRunAway(IBattleRng rng) => ScheduleTurn(BattleSide.Enemy, BattleActionDelayKind.RunAway, rng);
 
     /// <summary>
     /// Ends the battle once a side has no living fighter: won when every enemy slot is down
@@ -326,29 +332,11 @@ public sealed class BattleState
         }
     }
 
-    /// <summary>The delay before <paramref name="own"/> acts again against <paramref name="other"/>, or 0 when either is missing.</summary>
-    /// <param name="own">The fighter whose next turn is scheduled.</param>
-    /// <param name="other">The opposing active fighter.</param>
-    /// <returns>The delay in scheduler ticks, 707..1414, or 0.</returns>
-    private static int TurnDelay(BattleFighter? own, BattleFighter? other)
-    {
-        if (own == null || other == null)
-        {
-            return 0;
-        }
-
-        return DamageCalculator.GetTurnDelay(own.Stats.Stats[BattleStat.Speed], other.Stats.Stats[BattleStat.Speed]);
-    }
-
-    /// <summary>
-    /// Seeds the turn clock: the player acts at time 0 and the enemy at half the player's
-    /// first delay. Without both active fighters the enemy clock stays at 0.
-    /// </summary>
-    private void SeedTurnClock()
-    {
-        NextPlayerTurn = 0;
-        NextEnemyTurn = TurnDelay(ActivePlayerFighter, ActiveEnemyFighter) / 2;
-    }
+    /// <summary>Seeds the EU relative queue with the encounter opening rule.</summary>
+    /// <param name="ambushChance">Encounter ambush probability, or zero when disabled.</param>
+    /// <param name="rng">Shared injected battle random source.</param>
+    private void SeedTurnClock(int ambushChance, IBattleRng rng) =>
+        _turnScheduler.InitializeOpening(BattleFighterTiming.SpeedOf(ActivePlayerFighter), BattleFighterTiming.SpeedOf(ActiveEnemyFighter), ambushChance, rng);
 
     /// <summary>
     /// The common end of a player hit: the damage lands, the enemy may counter, a knocked-out
@@ -367,8 +355,25 @@ public sealed class BattleState
         CheckOutcome();
     }
 
-    /// <summary>Re-arms the player cadence after it spent its turn, by the speed-based delay against the active enemy.</summary>
-    private void AdvancePlayerTurn() => NextPlayerTurn += TurnDelay(ActivePlayerFighter, ActiveEnemyFighter);
+    /// <summary>Re-arms the player cadence after an ordinary completed action.</summary>
+    private void AdvancePlayerTurn() => ScheduleTurn(BattleSide.Player, BattleActionDelayKind.NormalTurn, null);
+
+    /// <summary>Re-arms the player cadence after an action family that consumes the shared random stream.</summary>
+    /// <param name="kind">Qualified delay family for the completed player action.</param>
+    /// <param name="rng">The battle random source used by that action.</param>
+    private void AdvancePlayerTurn(BattleActionDelayKind kind, IBattleRng rng) => ScheduleTurn(BattleSide.Player, kind, rng);
+
+    /// <summary>Consumes the due side event once and schedules its replacement from current fighter values.</summary>
+    /// <param name="side">Side that completed an action.</param>
+    /// <param name="kind">Qualified replacement delay family.</param>
+    /// <param name="rng">Random source when the family needs a draw, otherwise null.</param>
+    private void ScheduleTurn(BattleSide side, BattleActionDelayKind kind, IBattleRng? rng)
+    {
+        _ = _turnScheduler.PopNext();
+        var own = side == BattleSide.Player ? ActivePlayerFighter : ActiveEnemyFighter;
+        var other = side == BattleSide.Player ? ActiveEnemyFighter : ActivePlayerFighter;
+        _turnScheduler.EnqueueActionTurn(side, kind, BattleFighterTiming.SpeedOf(own), BattleFighterTiming.SpeedOf(other), BattleFighterTiming.SpiritOf(own), rng ?? new BattleDefaultOpeningRng());
+    }
 
     /// <summary>The enemy side brings in its next living
     /// fighter when the active one falls to a hit. This reinforcement is distinct from the
