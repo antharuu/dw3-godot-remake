@@ -4,16 +4,16 @@ namespace Dw3Production.Simulation;
 public sealed class BattleTurnScheduler
 {
     private const int Capacity = 99;
-    private readonly List<BattleScheduledEvent> _events = [];
+    private readonly BattleScheduledEvent?[] _events = new BattleScheduledEvent?[Capacity];
 
     /// <summary>Gets elapsed battle-time units removed from popped events.</summary>
     public int Elapsed { get; private set; }
 
     /// <summary>Gets the number of pending events.</summary>
-    public int Count => _events.Count;
+    public int Count { get; private set; }
 
     /// <summary>Gets the delay until the next selected event is due without consuming it.</summary>
-    public int NextDueDelay => _events[FindNextIndex()].Delay;
+    public int NextDueDelay => EventAt(FindNextIndex()).Delay;
 
     /// <summary>Clears the queue and initializes the normal or ambush opening.</summary>
     /// <param name="playerSpeed">Active player speed.</param>
@@ -70,26 +70,29 @@ public sealed class BattleTurnScheduler
     public BattleScheduledEvent PopNext()
     {
         int index = FindNextIndex();
-        var next = _events[index];
+        var next = EventAt(index);
         Elapsed += next.Delay;
         ReduceAll(next.Delay);
-        _events.RemoveAt(index);
+        _events[index] = null;
+        Count--;
         return next;
     }
 
     /// <summary>Gets the side of the next queued turn without mutating elapsed time.</summary>
     /// <returns>The next turn side.</returns>
-    public BattleSide PeekNextTurnSide() => _events[FindNextIndex()].Side;
+    public BattleSide PeekNextTurnSide() => EventAt(FindNextIndex()).Side;
 
     /// <summary>Gets the delay remaining before a side's pending turn.</summary>
     /// <param name="side">Side to inspect.</param>
     /// <returns>Relative delay, or zero when no turn is pending.</returns>
-    public int RemainingTurnDelay(BattleSide side) => _events.FirstOrDefault(item => item.Kind == BattleTurnSchedulerRules.TurnKind(side)).Delay;
+    public int RemainingTurnDelay(BattleSide side) =>
+        _events.FirstOrDefault(item => item?.Kind == BattleTurnSchedulerRules.TurnKind(side)).GetValueOrDefault().Delay;
 
     /// <summary>Clears events and elapsed simulation time.</summary>
     private void Reset()
     {
-        _events.Clear();
+        Array.Clear(_events);
+        Count = 0;
         Elapsed = 0;
     }
 
@@ -106,15 +109,15 @@ public sealed class BattleTurnScheduler
     /// <returns>Index of the selected event.</returns>
     private int FindNextIndex()
     {
-        if (_events.Count == 0)
+        if (Count == 0)
         {
             throw new InvalidOperationException("Battle event queue is empty.");
         }
 
-        int best = 0;
-        for (var index = 1; index < _events.Count; index++)
+        int best = Array.FindIndex(_events, item => item.HasValue);
+        for (var index = best + 1; index < Capacity; index++)
         {
-            if (BattleTurnSchedulerRules.ShouldReplaceBest(_events[best], _events[index]))
+            if (_events[index] is { } candidate && BattleTurnSchedulerRules.ShouldReplaceBest(EventAt(best), candidate))
             {
                 best = index;
             }
@@ -125,7 +128,17 @@ public sealed class BattleTurnScheduler
 
     /// <summary>Removes the pending ordinary turn of one side.</summary>
     /// <param name="side">Side whose turn is replaced.</param>
-    private void RemovePendingTurn(BattleSide side) => _events.RemoveAll(item => item.Kind == BattleTurnSchedulerRules.TurnKind(side));
+    private void RemovePendingTurn(BattleSide side)
+    {
+        for (var index = 0; index < Capacity; index++)
+        {
+            if (_events[index]?.Kind == BattleTurnSchedulerRules.TurnKind(side))
+            {
+                _events[index] = null;
+                Count--;
+            }
+        }
+    }
 
     /// <summary>Adds time to every pending event for a priority insertion.</summary>
     /// <param name="shift">Units added to pending events.</param>
@@ -139,22 +152,32 @@ public sealed class BattleTurnScheduler
     /// <param name="transform">Delay transformation.</param>
     private void ReplaceDelays(Func<BattleScheduledEvent, int> transform)
     {
-        for (var index = 0; index < _events.Count; index++)
+        for (var index = 0; index < Capacity; index++)
         {
-            var item = _events[index];
-            _events[index] = item with { Delay = transform(item) };
+            if (_events[index] is { } item)
+            {
+                _events[index] = item with { Delay = transform(item) };
+            }
         }
     }
 
-    /// <summary>Adds one event while enforcing the source queue capacity.</summary>
+    /// <summary>Reads an occupied slot without allowing holes to become default events.</summary>
+    /// <param name="index">Selected occupied slot.</param>
+    /// <returns>The event in that slot.</returns>
+    private BattleScheduledEvent EventAt(int index) =>
+        _events[index] ?? throw new InvalidOperationException("Battle event slot is empty.");
+
+    /// <summary>Adds one event to the first free slot without relocating existing events.</summary>
     /// <param name="item">Event to add.</param>
     private void Add(BattleScheduledEvent item)
     {
-        if (_events.Count >= Capacity)
+        int free = Array.FindIndex(_events, entry => !entry.HasValue);
+        if (free < 0)
         {
             throw new InvalidOperationException("Battle event queue capacity exceeded.");
         }
 
-        _events.Add(item);
+        _events[free] = item;
+        Count++;
     }
 }

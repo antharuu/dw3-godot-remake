@@ -1,6 +1,6 @@
 namespace Dw3Production.Simulation;
 
-/// <summary>Provides the deterministic opening roll retained for callers that have not injected a battle stream.</summary>
+/// <summary>Provides a fixed compatibility roll for legacy and synthetic callers, never the production host or original random table.</summary>
 internal sealed class BattleDefaultOpeningRng : IBattleRng
 {
     /// <summary>Returns a roll that retains the previous player-first compatibility path.</summary>

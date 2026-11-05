@@ -100,7 +100,7 @@ public sealed class BattleState
     /// </summary>
     /// <param name="setup">The battle set up by the encounter.</param>
     /// <param name="digimon">Digimon id slot 0 fights as, which may differ from its seed after a digivolution on the field.</param>
-    /// <param name="openingRng">Injected shared stream for the opening roll, or a compatibility source when omitted.</param>
+    /// <param name="openingRng">Injected shared opening stream. Only legacy and synthetic callers may omit it for a fixed compatibility roll.</param>
     /// <returns>A state on the first living fighter of each side. Its outcome is already set when a side starts with no living fighter.</returns>
     public static BattleState InitFighters(BattleSetup setup, int digimon, IBattleRng? openingRng = null)
     {

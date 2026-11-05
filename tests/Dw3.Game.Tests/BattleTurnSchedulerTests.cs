@@ -193,6 +193,42 @@ public sealed class BattleTurnSchedulerTests
         Assert.Equal(250, state.NextPlayerTurn);
     }
 
+    [Fact]
+    public void EqualNonTurnWinsOverAnEarlierTurnAndBlocksALaterEqualTurn()
+    {
+        var scheduler = new BattleTurnScheduler();
+        scheduler.EnqueueTurn(BattleSide.Player, delay: 10);
+        AddEvent(scheduler, new BattleScheduledEvent(BattleScheduledEventKind.Interrupt, BattleSide.Player, 10));
+        scheduler.EnqueueTurn(BattleSide.Enemy, delay: 10);
+
+        Assert.Equal(BattleScheduledEventKind.Interrupt, scheduler.PopNext().Kind);
+        Assert.Equal(BattleSide.Enemy, scheduler.PopNext().Side);
+        Assert.Equal(BattleSide.Player, scheduler.PopNext().Side);
+        Assert.Equal(10, scheduler.Elapsed);
+    }
+
+    [Fact]
+    public void PoppedSlotIsReusedBeforeALaterEqualTurn()
+    {
+        var scheduler = new BattleTurnScheduler();
+        scheduler.EnqueueTurn(BattleSide.Player, delay: 0);
+        scheduler.EnqueueTurn(BattleSide.Enemy, delay: 10);
+        Assert.Equal(BattleSide.Player, scheduler.PopNext().Side);
+
+        scheduler.EnqueueTurn(BattleSide.Player, delay: 10);
+
+        Assert.Equal(BattleSide.Enemy, scheduler.PopNext().Side);
+        Assert.Equal(BattleSide.Player, scheduler.PopNext().Side);
+        Assert.Equal(10, scheduler.Elapsed);
+    }
+
+    private static void AddEvent(BattleTurnScheduler scheduler, BattleScheduledEvent item)
+    {
+        var add = typeof(BattleTurnScheduler).GetMethod("Add", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+            ?? throw new InvalidOperationException("Missing scheduler insertion seam.");
+        _ = add.Invoke(scheduler, [item]);
+    }
+
     private static List<string> RunAtRenderCadence(IReadOnlyList<int> frameCadence, int simulatedTime, IBattleRng rng)
     {
         var scheduler = new BattleTurnScheduler();
@@ -203,7 +239,7 @@ public sealed class BattleTurnSchedulerTests
 
         while (accumulated < simulatedTime)
         {
-            accumulated += frameCadence[frame % frameCadence.Count];
+            accumulated = Math.Min(simulatedTime, accumulated + frameCadence[frame % frameCadence.Count]);
             frame++;
             ConsumeDueEvents(scheduler, accumulated, trace);
         }

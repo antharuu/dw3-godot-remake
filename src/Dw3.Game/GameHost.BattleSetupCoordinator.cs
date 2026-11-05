@@ -56,8 +56,19 @@ public partial class GameHost
                 _host._battleNameIds,
                 new BattleTextCatalog(_host._battleTextData ?? throw new CacheResourceException("CACHE_RESOURCE_UNAVAILABLE", "battle text manifest unavailable")));
             _host._battleMenuCoordinator.WireCatalogs(flow);
-            flow.Start(BattleState.InitFighters(setup, digimon: party[0]));
+            flow.Start(CreateOpeningState(setup, party[0], _host._battleRng));
             return flow;
+        }
+
+        /// <summary>Initializes production fighters with the mandatory shared battle stream.</summary>
+        /// <param name="setup">Prepared encounter and party.</param>
+        /// <param name="digimon">Active partner form.</param>
+        /// <param name="rng">Host-owned stream used by subsequent battle consumers.</param>
+        /// <returns>The initialized battle state, including its injected opening order.</returns>
+        internal static BattleState CreateOpeningState(BattleSetup setup, int digimon, IBattleRng rng)
+        {
+            ArgumentNullException.ThrowIfNull(rng);
+            return BattleState.InitFighters(setup, digimon, rng);
         }
 
         /// <summary>Copies the encounter's bounded block list into the simulation setup.</summary>

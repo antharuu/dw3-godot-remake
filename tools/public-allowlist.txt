@@ -774,6 +774,7 @@ tests/Dw3.Game.Tests/BattleShotCameraVectorGenerator.cs
 tests/Dw3.Game.Tests/BattleShotCameraVectorHarness.cs
 tests/Dw3.Game.Tests/BattleShotCameraVectorTests.cs
 tests/Dw3.Game.Tests/BattleStageResolverTests.cs
+tests/Dw3.Game.Tests/BattleHostOpeningTests.cs
 tests/Dw3.Game.Tests/BattleTurnSchedulerTests.cs
 tests/Dw3.Game.Tests/ClimbControllerVectorGenerator.cs
 tests/Dw3.Game.Tests/ClimbControllerVectorTests.cs

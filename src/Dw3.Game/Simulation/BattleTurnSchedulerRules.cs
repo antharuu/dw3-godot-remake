@@ -21,7 +21,7 @@ internal static class BattleTurnSchedulerRules
     /// <param name="candidate">Later scanned event.</param>
     /// <returns>Whether the candidate wins selection.</returns>
     internal static bool ShouldReplaceBest(BattleScheduledEvent best, BattleScheduledEvent candidate) =>
-        candidate.Delay < best.Delay || (candidate.Delay == best.Delay && IsTurn(best) && IsTurn(candidate));
+        candidate.Delay < best.Delay || (candidate.Delay == best.Delay && IsTurn(best));
 
     /// <summary>Tests whether an event is a player or enemy turn.</summary>
     /// <param name="item">Event to inspect.</param>
