@@ -60,6 +60,8 @@ public sealed class BattleRenderer : IDisposable
 
     private bool _probePoseOverride;
 
+    private bool _hudVisibleForProbe = true;
+
     private BattleModel.BattleLightSet? _stageLights;
 
     /// <summary>
@@ -137,6 +139,9 @@ public sealed class BattleRenderer : IDisposable
     /// <summary>Gets the actual partner render target for controlled offscreen evidence.</summary>
     internal BattlePartnerView PartnerForProbe => _partnerView;
 
+    /// <summary>Gets a value indicating whether the HUD is visible in the composed production canvas.</summary>
+    internal bool EffectiveHudVisibleForProbe => _hud.Visible;
+
     /// <summary>Maps a deterministic HUD frame to its source animation milliseconds.</summary>
     /// <param name="frame">Non-negative frame number to convert.</param>
     /// <returns>The source-clock time represented by <paramref name="frame"/>.</returns>
@@ -154,7 +159,11 @@ public sealed class BattleRenderer : IDisposable
 
     /// <summary>Probe-only HUD suppression for a model/stage-only framebuffer comparison.</summary>
     /// <param name="visible">Whether the HUD should be included in the capture.</param>
-    public void SetHudVisibleForProbe(bool visible) => _hud.Visible = visible;
+    public void SetHudVisibleForProbe(bool visible)
+    {
+        _hudVisibleForProbe = visible;
+        ApplyEntranceOverlayVisibility();
+    }
 
     /// <summary>Shows or hides the model layer's untextured canvas visibility control.</summary>
     /// <param name="visible">Whether the probe triangle is drawn.</param>
@@ -928,6 +937,14 @@ public sealed class BattleRenderer : IDisposable
         ApplyStageLights();
         _stage?.SetModelColor(_entranceFade.StageColor());
         _environment.Environment.BackgroundColor = _entranceFade.Background(_stage?.StageBgColor ?? Colors.Black);
+        ApplyEntranceOverlayVisibility();
+    }
+
+    /// <summary>Prevents a retained HUD or partner silhouette from preceding a restarted stage fade.</summary>
+    private void ApplyEntranceOverlayVisibility()
+    {
+        _hud.Visible = _hudVisibleForProbe && _entranceFade.OverlaysVisible;
+        _partnerView.Visible &= _entranceFade.OverlaysVisible;
     }
 
     /// <summary>Applies the interpolated camera state to the battle viewport camera.</summary>
@@ -952,7 +969,7 @@ public sealed class BattleRenderer : IDisposable
     /// <param name="commandTurn">True during the player's command turn.</param>
     private void PresentPartnerView(bool commandTurn)
     {
-        _partnerView.Visible = commandTurn && _partnerView.Model is not null;
+        _partnerView.Visible = _entranceFade.OverlaysVisible && commandTurn && _partnerView.Model is not null;
         if (_partnerView.Visible)
         {
             _partnerView.AimCamera(_fighters.Player?.Motion?.IdleMotion ?? 0);

@@ -89,6 +89,20 @@ public sealed class BattlePresentationMathTests
     }
 
     [Fact]
+    public void EntranceFadeKeepsOverlaysHiddenUntilTheStageIsFullyLit()
+    {
+        var fade = new BattleEntranceFade();
+
+        Assert.False(fade.OverlaysVisible);
+        fade.SetFraction(.75f);
+        Assert.False(fade.OverlaysVisible);
+        fade.SetFraction(1f);
+        Assert.True(fade.OverlaysVisible);
+        fade.Restart();
+        Assert.False(fade.OverlaysVisible);
+    }
+
+    [Fact]
     public void EntranceFadeWritesBlackAsOneAndRampsTheStageGrey()
     {
         var fade = new BattleEntranceFade();

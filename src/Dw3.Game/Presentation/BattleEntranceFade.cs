@@ -22,6 +22,9 @@ internal sealed class BattleEntranceFade
     /// <summary>Gets the fade level as a 0..1 fraction.</summary>
     public float Fraction => Level / 4096f;
 
+    /// <summary>Gets a value indicating whether the HUD and partner-view overlays may arrive over the fully lit stage.</summary>
+    public bool OverlaysVisible => Level >= FullLevel;
+
     /// <summary>Starts the fade again from black.</summary>
     public void Restart()
     {

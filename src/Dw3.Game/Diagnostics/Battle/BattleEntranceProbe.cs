@@ -27,7 +27,6 @@ internal sealed class BattleEntranceProbe : BattleProbe
         Host.StartDebugBattle();
         var renderer = Host.Renderer;
         renderer.SetProbePose(FixedPoseFrame);
-        renderer.SetHudVisibleForProbe(false);
         var playerId = Host.Flow.State.ActivePlayerFighter!.Id;
         var enemyId = Host.Flow.State.ActiveEnemyFighter!.Id;
         double? previousFighter = null;
@@ -38,15 +37,17 @@ internal sealed class BattleEntranceProbe : BattleProbe
             if (fade < float.Epsilon)
             {
                 ProbeRequirement.Require(measurements.Mean < 3, $"entrance frame 0 is not black mean={measurements.Mean:0.0}");
+                ProbeRequirement.Require(!measurements.HudVisible, "HUD arrived before the stage fade");
                 continue;
             }
 
             VerifyFadeProgress(fade, measurements, previousFighter, previousStage);
+            VerifyHudArrival(fade, measurements.HudVisible);
             previousFighter = measurements.Fighter;
             previousStage = measurements.Stage;
         }
 
-        renderer.SetHudVisibleForProbe(true);
+        await VerifyRepeatedEntranceAsync(captureRoot);
         QuietLog.Info("battle-entrance PASS");
     }
 
@@ -59,7 +60,7 @@ internal sealed class BattleEntranceProbe : BattleProbe
     /// <param name="previousStage">Stage luminance from the preceding non-black capture.</param>
     private static void VerifyFadeProgress(
         float fade,
-        (double Fighter, double Stage, double Mean) current,
+        (double Fighter, double Stage, double Mean, bool HudVisible) current,
         double? previousFighter,
         double? previousStage)
     {
@@ -70,13 +71,44 @@ internal sealed class BattleEntranceProbe : BattleProbe
         }
     }
 
+    /// <summary>Checks that the retained HUD appears only after the stage has reached its source endpoint.</summary>
+    /// <param name="fade">Current source fade fraction.</param>
+    /// <param name="hudVisible">Whether the composed canvas exposes the HUD.</param>
+    private static void VerifyHudArrival(float fade, bool hudVisible)
+    {
+        if (fade < 1f)
+        {
+            ProbeRequirement.Require(!hudVisible, $"HUD arrived during stage fade={fade:0.00}");
+            return;
+        }
+
+        ProbeRequirement.Require(hudVisible, "HUD did not arrive after the stage fade");
+    }
+
+    /// <summary>Starts the same encounter again and rejects a retained HUD before its own fade advances.</summary>
+    /// <param name="captureRoot">Directory receiving the second-entry captures.</param>
+    /// <returns>A task completed after the repeated entrance has been inspected.</returns>
+    private async Task VerifyRepeatedEntranceAsync(string captureRoot)
+    {
+        Host.StartDebugBattle();
+        var renderer = Host.Renderer;
+        renderer.SetProbePose(FixedPoseFrame);
+        renderer.SetLightFadeForProbe(0f);
+        renderer.SetHudVisibleForProbe(true);
+        var composed = await BattleProbeCapture.CaptureRawAsync(Host, captureRoot, "entrance-repeat-0.00.png");
+        var mean = BattlePixelMetrics.MeanLuminance(composed);
+        ProbeRequirement.Require(!renderer.EffectiveHudVisibleForProbe, "repeat entrance retained HUD");
+        ProbeRequirement.Require(mean < 6, $"repeat entrance retained scene brightness mean={mean:0.0}");
+        QuietLog.Info($"battle-entrance repeat fade=0.00 hud_visible={renderer.EffectiveHudVisibleForProbe} mean={mean:0.0}");
+    }
+
     /// <summary>Captures the full and stage-only frames for one explicit fade value.</summary>
     /// <param name="captureRoot">Directory receiving both frames.</param>
     /// <param name="fade">Light interpolation in 0..1.</param>
     /// <param name="playerId">Player fighter model id.</param>
     /// <param name="enemyId">Enemy fighter model id.</param>
-    /// <returns>Fighter, stage and full-frame luminance.</returns>
-    private async Task<(double Fighter, double Stage, double Mean)> CaptureFadeAsync(
+    /// <returns>Fighter, stage, full-frame luminance and composed HUD visibility.</returns>
+    private async Task<(double Fighter, double Stage, double Mean, bool HudVisible)> CaptureFadeAsync(
         string captureRoot,
         float fade,
         int playerId,
@@ -86,6 +118,9 @@ internal sealed class BattleEntranceProbe : BattleProbe
         renderer.SetLightFadeForProbe(fade);
         var suffix = fade.ToString("0.00", CultureInfo.InvariantCulture);
         QuietLog.Info($"battle-entrance frame effective_fraction={renderer.LightFade:0.00} pose=idle:{FixedPoseFrame} time=fixed");
+        renderer.SetHudVisibleForProbe(true);
+        await BattleProbeCapture.CaptureRawAsync(Host, captureRoot, $"entrance-{suffix}-composed.png");
+        renderer.SetHudVisibleForProbe(false);
         renderer.SetModelVisibleForProbe(playerId, false);
         renderer.SetModelVisibleForProbe(playerId, true);
         var full = BattleComparisonImage.ToSourceSize(
@@ -96,15 +131,17 @@ internal sealed class BattleEntranceProbe : BattleProbe
             await BattleProbeCapture.CaptureRawAsync(Host, captureRoot, $"entrance-{suffix}-stage.png"));
         renderer.SetModelVisibleForProbe(playerId, true);
         renderer.SetModelVisibleForProbe(enemyId, true);
+        renderer.SetHudVisibleForProbe(true);
+        var hudVisible = renderer.EffectiveHudVisibleForProbe;
         if (fade < float.Epsilon)
         {
             var mean = BattlePixelMetrics.MeanLuminance(full);
-            QuietLog.Info($"battle-entrance fade={fade:0.00} fighter=0.0 stage=0.0 mean={mean:0.0}");
-            return (0, 0, mean);
+            QuietLog.Info($"battle-entrance fade={fade:0.00} fighter=0.0 stage=0.0 mean={mean:0.0} hud_visible={hudVisible}");
+            return (0, 0, mean, hudVisible);
         }
 
         var measurements = BattlePixelMetrics.FighterAndStageLuminance(full, stage);
-        QuietLog.Info($"battle-entrance fade={fade:0.00} fighter={measurements.Fighter:0.0} stage={measurements.Stage:0.0} mean={measurements.Mean:0.0}");
-        return measurements;
+        QuietLog.Info($"battle-entrance fade={fade:0.00} fighter={measurements.Fighter:0.0} stage={measurements.Stage:0.0} mean={measurements.Mean:0.0} hud_visible={hudVisible}");
+        return (measurements.Fighter, measurements.Stage, measurements.Mean, hudVisible);
     }
 }
