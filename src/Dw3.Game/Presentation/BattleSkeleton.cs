@@ -145,6 +145,29 @@ internal sealed class BattleSkeleton
         }
     }
 
+    /// <summary>Copies the effective pose of an identical source skeleton, including hidden-bone transforms.</summary>
+    /// <param name="source">Skeleton currently displayed by the active fighter.</param>
+    public void SynchronizeFrom(BattleSkeleton source)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        if (!_bones.Keys.Order().SequenceEqual(source._bones.Keys.Order()))
+        {
+            throw new InvalidOperationException("battle skeleton bones do not match");
+        }
+
+        foreach (var bone in _bones.Keys)
+        {
+            var target = _bones[bone];
+            var origin = source._bones[bone];
+            target.Position = origin.Position;
+            target.Basis = origin.Basis;
+            target.Scale = origin.Scale;
+            target.Visible = origin.Visible;
+        }
+
+        _transforms.CopyFrom(source._transforms);
+    }
+
     /// <summary>Restores every bone to identity scale and visible, for a legacy probe comparison.</summary>
     public void ShowAll()
     {

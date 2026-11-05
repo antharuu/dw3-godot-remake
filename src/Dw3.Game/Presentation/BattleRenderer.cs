@@ -234,7 +234,7 @@ public sealed class BattleRenderer : IDisposable
 
         if (_partnerView.TryBuild(playerModelJsonPath, playerFighterId))
         {
-            SynchronizePartnerFace();
+            SynchronizePartnerPresentation();
             ApplyStageLights();
         }
 
@@ -295,7 +295,11 @@ public sealed class BattleRenderer : IDisposable
 
     /// <summary>Poses every built model at <paramref name="frame"/> (for the probe's distinct-pose proof).</summary>
     /// <param name="frame">Source pose frame applied to every built fighter.</param>
-    public void PoseAll(int frame) => _fighters.PoseAll(frame);
+    public void PoseAll(int frame)
+    {
+        _fighters.PoseAll(frame);
+        SynchronizePartnerPresentation();
+    }
 
     /// <summary>Source scale-threshold status for an actual decoded model, used by the offscreen
     /// regression probe rather than inferred from its final pixels.</summary>
@@ -376,7 +380,7 @@ public sealed class BattleRenderer : IDisposable
         var model = _fighters.Require(fighterId);
         model.SetFaceBlinkTimerForProbe(timer);
         model.Step(0);
-        SynchronizePartnerFace();
+        SynchronizePartnerPresentation();
     }
 
     /// <summary>Probe-only baseline resembling the old identity-scale renderer. The next PoseAll
@@ -462,9 +466,8 @@ public sealed class BattleRenderer : IDisposable
         for (var frame = 0; frame < elapsed; frame++)
         {
             _fighters.Step(1);
-            _partnerView.Model?.Step(1);
             _stage?.Step(1);
-            SynchronizePartnerFace();
+            SynchronizePartnerPresentation();
         }
     }
 
@@ -976,12 +979,12 @@ public sealed class BattleRenderer : IDisposable
         }
     }
 
-    /// <summary>Keeps the independent partner render target on the player's selected face frame.</summary>
-    private void SynchronizePartnerFace()
+    /// <summary>Keeps the independent partner target on the active fighter's committed pose and face frame.</summary>
+    private void SynchronizePartnerPresentation()
     {
         if (_partnerView.Model is { } partner && _fighters.Player is { } player)
         {
-            partner.SynchronizeFaceFrom(player);
+            partner.SynchronizePresentationFrom(player);
         }
     }
 

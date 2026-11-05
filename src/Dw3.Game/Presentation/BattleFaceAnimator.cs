@@ -23,6 +23,8 @@ internal sealed class BattleFaceAnimator
     private Func<int> _random = () => Random.Shared.Next();
     private int _blinkTimer;
     private int _time;
+    private int _eyes;
+    private int _cycle;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="BattleFaceAnimator"/> class.
@@ -44,6 +46,9 @@ internal sealed class BattleFaceAnimator
 
     /// <summary>Gets the source-frame clock that selects the currently visible facial frames.</summary>
     public (int BlinkTimer, int Time) State => (_blinkTimer, _time);
+
+    /// <summary>Gets the frames currently committed to eye and non-eye face parts.</summary>
+    public (int Eyes, int Cycle) FrameState => (_eyes, _cycle);
 
     /// <summary>Gets the live GPU texture page synchronized whenever a face rectangle changes.</summary>
     /// <param name="textureKey">Decoded page key.</param>
@@ -97,10 +102,10 @@ internal sealed class BattleFaceAnimator
             return;
         }
 
-        var eyes = MotionEyeFrame(motion);
-        if (eyes == 0)
+        _eyes = MotionEyeFrame(motion);
+        if (_eyes == 0)
         {
-            eyes = AdvanceBlink(framesElapsed);
+            _eyes = AdvanceBlink(framesElapsed);
         }
         else
         {
@@ -108,11 +113,8 @@ internal sealed class BattleFaceAnimator
         }
 
         _time += framesElapsed;
-        var cycle = (_time % 18) / 6;
-        foreach (var part in _parts)
-        {
-            CopyPart(part, part.Index < 2 ? eyes : cycle);
-        }
+        _cycle = (_time % 18) / 6;
+        CopyCurrentParts();
     }
 
     /// <summary>Counts working texels inside the face rectangles that differ from the source pages.</summary>
@@ -146,17 +148,25 @@ internal sealed class BattleFaceAnimator
     public void SetRandom(Func<int> random) => _random = random;
 
     /// <summary>
-    /// Copies the source clock and redraws this model's own texture pages with the source motion's
-    /// selected face frame. The partner viewport owns separate images, so it must share frame
-    /// selection rather than an image or GPU texture with the main fighter.
+    /// Copies the already displayed source face selection to this model's independent texture pages.
+    /// The partner viewport owns separate images, so it must not derive a second frame from a clock
+    /// that the main fighter has already advanced.
     /// </summary>
     /// <param name="source">Animator that owns the visible fighter's clocks.</param>
-    /// <param name="motion">One-based motion number currently selected by the visible fighter.</param>
-    public void SynchronizeFrom(BattleFaceAnimator source, int motion)
+    public void SynchronizeFrom(BattleFaceAnimator source)
     {
         ArgumentNullException.ThrowIfNull(source);
-        (_blinkTimer, _time) = source.State;
-        Update(0, motion);
+        (_blinkTimer, _time, _eyes, _cycle) = (source._blinkTimer, source._time, source._eyes, source._cycle);
+        CopyCurrentParts();
+    }
+
+    /// <summary>Synchronizes an already committed face selection while retaining the former call shape.</summary>
+    /// <param name="source">Animator that owns the visible fighter's selection.</param>
+    /// <param name="motion">Ignored because the source has already selected its visible frame.</param>
+    public void SynchronizeFrom(BattleFaceAnimator source, int motion)
+    {
+        _ = motion;
+        SynchronizeFrom(source);
     }
 
     /// <summary>Chooses the forced eye frame associated with a motion.</summary>
@@ -224,6 +234,15 @@ internal sealed class BattleFaceAnimator
             texture.Working.BlitRect(texture.Source, new Rect2I(source, new Vector2I(part.W, part.H)), new Vector2I(part.X, part.Y));
             texture.Texture.Update(texture.Working);
             PageChanged?.Invoke(key, texture.Working);
+        }
+    }
+
+    /// <summary>Copies the frame selection already committed by the authoritative animator.</summary>
+    private void CopyCurrentParts()
+    {
+        foreach (var part in _parts)
+        {
+            CopyPart(part, part.Index < 2 ? _eyes : _cycle);
         }
     }
 }

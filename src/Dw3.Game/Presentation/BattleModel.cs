@@ -262,14 +262,17 @@ public sealed class BattleModel
     public void SetFaceRandomForProbe(Func<int> random) => _face.SetRandom(random);
 
     /// <summary>
-    /// Synchronizes this independent render copy's face to the selected face frame of
-    /// <paramref name="source"/> without sharing mutable image pages between viewports.
+    /// Synchronizes this independent render copy's pose and face to the active fighter without
+    /// sharing mutable image pages or scene nodes between viewports.
     /// </summary>
     /// <param name="source">The active fighter whose face frame is authoritative.</param>
-    public void SynchronizeFaceFrom(BattleModel source)
+    public void SynchronizePresentationFrom(BattleModel source)
     {
         ArgumentNullException.ThrowIfNull(source);
-        _face.SynchronizeFrom(source._face, source.Motion?.Motion ?? 1);
+        _skeleton.SynchronizeFrom(source._skeleton);
+        SynchronizeSurfaceTransforms();
+        RefreshLighting();
+        _face.SynchronizeFrom(source._face);
     }
 
     /// <summary>Poses the hierarchy at a source frame. This is the same local construction as

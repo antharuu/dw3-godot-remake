@@ -43,4 +43,20 @@ internal sealed class BattleSkeletonTransformCache
     /// <param name="bone">The source bone index.</param>
     /// <returns>The last visible world transform.</returns>
     public Transform3D World(int bone) => _world[bone];
+
+    /// <summary>Copies retained source-space transforms from an identical decoded skeleton.</summary>
+    /// <param name="source">The authoritative skeleton cache.</param>
+    public void CopyFrom(BattleSkeletonTransformCache source)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+        if (!_world.Keys.Order().SequenceEqual(source._world.Keys.Order()))
+        {
+            throw new InvalidOperationException("battle skeleton transform keys do not match");
+        }
+
+        foreach (var bone in _world.Keys)
+        {
+            _world[bone] = source._world[bone];
+        }
+    }
 }
