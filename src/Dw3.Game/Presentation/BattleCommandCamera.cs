@@ -58,11 +58,19 @@ internal sealed class BattleCommandCamera
         return _shot.View;
     }
 
-    /// <summary>Stops the running sequence, if any.</summary>
-    public void Stop()
+    /// <summary>Stops the running sequence and returns its source overview, when one was active.</summary>
+    /// <returns>The restored enemy overview, or <see langword="null"/> when no sequence ran.</returns>
+    public SourceBattleCameraView? Stop()
     {
-        _shot?.Stop();
+        var shot = _shot;
+        if (shot is null)
+        {
+            return null;
+        }
+
+        shot.Stop();
         _shot = null;
+        return shot.View;
     }
 
     /// <summary>Describes the sequence state for a probe log line.</summary>

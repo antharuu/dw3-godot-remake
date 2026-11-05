@@ -48,6 +48,10 @@ public sealed class BattleTickCoordinator
             }
 
             _host.TickBattleMenu();
+            if (flow.Phase != BattleFlowPhase.PlayerCommand)
+            {
+                _host.DeactivatePlayerCamera();
+            }
         }
         else if (flow.Phase == BattleFlowPhase.EnemyTurn)
         {
