@@ -8,6 +8,7 @@ public sealed class BattleProbeCatalogTests
     [Theory]
     [InlineData("RunBattleCameraProbe", typeof(BattleCameraProbe))]
     [InlineData("RunBattleMotionProbe", typeof(BattleMotionProbe))]
+    [InlineData("RunBattleActionProbe", typeof(BattleActionProbe))]
     [InlineData("RunBattleFontProbe", typeof(BattleFontProbe))]
     [InlineData("RunBattleEntranceProbe", typeof(BattleEntranceProbe))]
     [InlineData("RunBattleFaceProbe", typeof(BattleFaceProbe))]

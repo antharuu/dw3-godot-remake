@@ -258,6 +258,10 @@ public sealed class HostStartupOptions
     /// <remarks>Environment variable: <c>DW3_BATTLE_MOTION_PROBE=1</c>.</remarks>
     public bool BattleMotionProbe { get; init; }
 
+    /// <summary>Gets a value indicating whether the battle action probe records real command boundaries and stage advancement, then quits.</summary>
+    /// <remarks>Environment variable: <c>DW3_BATTLE_ACTION_PROBE=1</c>.</remarks>
+    public bool BattleActionProbe { get; init; }
+
     /// <summary>Gets a value indicating whether the battle font probe checks HUD glyph rasterisation, then quits.</summary>
     /// <remarks>Environment variable: <c>DW3_BATTLE_FONT_PROBE=1</c>.</remarks>
     public bool BattleFontProbe { get; init; }
@@ -358,6 +362,7 @@ public sealed class HostStartupOptions
         BattleInputProbe = getEnv("DW3_BATTLE_INPUT_PROBE") == "1",
         BattlePlayProbe = getEnv("DW3_BATTLE_PLAY_PROBE") == "1",
         BattleMotionProbe = getEnv("DW3_BATTLE_MOTION_PROBE") == "1",
+        BattleActionProbe = getEnv("DW3_BATTLE_ACTION_PROBE") == "1",
         BattleFontProbe = getEnv("DW3_BATTLE_FONT_PROBE") == "1",
         BattleFaceProbe = getEnv("DW3_BATTLE_FACE_PROBE") == "1",
         BattleModelProbe = getEnv("DW3_BATTLE_MODEL_PROBE") == "1",

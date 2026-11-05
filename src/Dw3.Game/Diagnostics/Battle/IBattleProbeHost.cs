@@ -114,6 +114,10 @@ internal interface IBattleProbeHost
     /// <summary>Starts the same manifest-backed battle as the F8 debug shortcut.</summary>
     void StartDebugBattle();
 
+    /// <summary>Starts an unmodified source encounter through the ordinary battle construction path.</summary>
+    /// <param name="encounter">Encounter index from the local data pack.</param>
+    void StartEncounterForProbe(int encounter);
+
     /// <summary>Resolves the decoded battle model file of a fighter.</summary>
     /// <param name="fighterId">Source fighter id.</param>
     /// <returns>The model JSON path in the data pack.</returns>
@@ -123,6 +127,11 @@ internal interface IBattleProbeHost
     /// <param name="stageId">Source battle stage id.</param>
     /// <returns>The stage JSON path in the data pack.</returns>
     string ResolveBattleStagePath(int stageId);
+
+    /// <summary>Resolves a registry arena without the active-stage override.</summary>
+    /// <param name="stageId">Registered arena identifier.</param>
+    /// <returns>The data-pack stage document.</returns>
+    string ResolveRegisteredStageForProbe(int stageId);
 
     /// <summary>Records a fighter built outside the battle flow as the rendered player and releases the command camera.</summary>
     /// <param name="fighterId">Source fighter id rendered by the sheet.</param>

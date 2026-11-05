@@ -132,10 +132,17 @@ public partial class GameHost
         public void StartDebugBattle() => _host.StartDebugBattle();
 
         /// <inheritdoc/>
+        public void StartEncounterForProbe(int encounter) =>
+            _host.EnterBattle(_host.BuildEncounterBattle(encounter), encounter, "native action probe source encounter");
+
+        /// <inheritdoc/>
         public string ResolveBattleModelPath(int fighterId) => _host.ResolveBattleModelPath(fighterId);
 
         /// <inheritdoc/>
         public string ResolveBattleStagePath(int stageId) => _host.ResolveBattleStagePath(stageId);
+
+        /// <inheritdoc/>
+        public string ResolveRegisteredStageForProbe(int stageId) => _host.BattleLoader.StagePath(stageId);
 
         /// <inheritdoc/>
         public void AdoptSheetFighter(int fighterId)

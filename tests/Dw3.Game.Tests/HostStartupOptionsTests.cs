@@ -202,6 +202,14 @@ public sealed class HostStartupOptionsTests
     }
 
     [Fact]
+    public void BattleActionProbeParsedFromEnv()
+    {
+        var opts = HostStartupOptions.From(k => k == "DW3_BATTLE_ACTION_PROBE" ? "1" : null);
+
+        Assert.True(opts.BattleActionProbe);
+    }
+
+    [Fact]
     public void BattleModelOverridesParsedFromEnv()
     {
         var opts = HostStartupOptions.From(k => k switch

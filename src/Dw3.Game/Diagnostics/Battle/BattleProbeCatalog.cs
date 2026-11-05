@@ -11,6 +11,7 @@ internal static class BattleProbeCatalog
     {
         "RunBattleCameraProbe" => new BattleCameraProbe(host),
         "RunBattleMotionProbe" => new BattleMotionProbe(host),
+        "RunBattleActionProbe" => new BattleActionProbe(host),
         "RunBattleFontProbe" => new BattleFontProbe(host),
         "RunBattleEntranceProbe" => new BattleEntranceProbe(host),
         "RunBattleFaceProbe" => new BattleFaceProbe(host),

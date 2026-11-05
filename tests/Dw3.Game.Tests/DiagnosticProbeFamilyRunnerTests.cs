@@ -21,6 +21,19 @@ public sealed class DiagnosticProbeFamilyRunnerTests
     }
 
     [Fact]
+    public void BattleRunnerSelectsActionProbe()
+    {
+        var host = new RecordingProbeHost();
+        var options = HostStartupOptions.From(name => name == "DW3_BATTLE_ACTION_PROBE" ? "1" : null);
+
+        bool dispatched = new BattleDiagnosticProbeRunner(host).TryDispatch(options);
+
+        Assert.True(dispatched);
+        Assert.Equal("RunBattleActionProbe", host.MethodName);
+        Assert.True(host.OwnsInput);
+    }
+
+    [Fact]
     public void DialogueRunnerOwnsDialogueAndIconProbeSelection()
     {
         var host = new RecordingProbeHost();

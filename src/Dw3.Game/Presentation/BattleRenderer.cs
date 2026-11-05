@@ -474,6 +474,11 @@ public sealed class BattleRenderer : IDisposable
     /// <summary>Clears only the carried fractional PAL time before an isolated production cadence trial.</summary>
     public void ResetMotionClockForProbe() => _motionClock.Reset();
 
+    /// <summary>Captures the active decoded stage's motion machine and bone state for a production-loop diagnostic.</summary>
+    /// <returns>The live stage state, or null when no decoded stage is loaded.</returns>
+    public BattleMotionCadenceSample? CaptureStageMotionForProbe() =>
+        _stage?.CaptureCadenceSample(0);
+
     /// <summary>Each battle creates a stage task in the battle-stage presentation contract, including repeated fights on one stage.</summary>
     public void RestartEntranceFade()
     {

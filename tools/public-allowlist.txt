@@ -987,3 +987,11 @@ src/Dw3.Game/Presentation/Ps1CompositorTexel.cs
 src/Dw3.Game/Presentation/SourcePrimitive.cs
 tests/Dw3.Game.Tests/BattleFaceAnimatorTests.cs
 tests/Dw3.Game.Tests/BattlePrimitiveCompositorTests.cs
+# Native action, settled stage geometry and focused current-Canvas contribution diagnostics
+src/Dw3.Game/Diagnostics/Battle/BattleActionProbe.cs
+src/Dw3.Game/Diagnostics/Battle/BattleActionEvidence.cs
+src/Dw3.Game/Diagnostics/Battle/BattleStageActionProof.cs
+src/Dw3.Game/Diagnostics/Battle/BattleHiddenParentCanvasProof.cs
+tests/Dw3.Game.Tests/BattleActionEvidenceTests.cs
+tests/Dw3.Game.Tests/BattleStageActionProofTests.cs
+docs/BATTLE_SCENE_DIAGNOSTICS.md

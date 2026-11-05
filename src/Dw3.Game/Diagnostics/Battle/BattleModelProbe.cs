@@ -44,6 +44,12 @@ internal sealed class BattleModelProbe : BattleProbe
         var renderer = Host.Renderer;
         ProbeRequirement.Require(Host.RenderedPlayerId == Kotemon, $"F8 player fighter={Host.RenderedPlayerId}, expected Kotemon 383");
         ProbeRequirement.Require(renderer.ModelCount == 2, "F8 did not build both real models");
+        if (System.Environment.GetEnvironmentVariable("DW3_BATTLE_HIDDEN_PARENT_ONLY") == "1")
+        {
+            await BattleHiddenParentCanvasProof.RunAsync(Host, captureRoot);
+            return;
+        }
+
         using var cameraRng = renderer.OverrideShotCameraRngForProbe(new BattleProofCameraRng());
         renderer.SetCommandMenuCamera();
         await VerifyCanvasLayerVisibilityAsync(Host, renderer, captureRoot);
