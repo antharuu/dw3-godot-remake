@@ -755,6 +755,7 @@ tests/Dw3.Game.Tests/BattleMotionCadenceTraceTests.cs
 tests/Dw3.Game.Tests/BattleSkeletonBlendTests.cs
 tests/Dw3.Game.Tests/BattleSkeletonTransformCacheTests.cs
 tests/Dw3.Game.Tests/BattlePresentationMathTests.cs
+tests/Dw3.Game.Tests/BattleTickCoordinatorTests.cs
 tests/Dw3.Game.Tests/BattleProbeCatalogTests.cs
 tests/Dw3.Game.Tests/BattleSilhouetteMetricsTests.cs
 tests/Dw3.Game.Tests/BattleShotCameraVectorGenerator.cs
