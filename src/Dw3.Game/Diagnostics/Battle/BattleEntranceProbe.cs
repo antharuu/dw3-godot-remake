@@ -1,14 +1,14 @@
 using System.Globalization;
 using Dw3Production.Diagnostics.Field;
 using Dw3Production.Logging;
+using Dw3Production.Presentation;
+using Godot;
 
 namespace Dw3Production.Diagnostics.Battle;
 
-/// <summary>Checks black endpoints and monotonic entrance lighting at one fixed production pose.</summary>
+/// <summary>Separates natural battle restarts from controlled entrance-fraction measurements.</summary>
 internal sealed class BattleEntranceProbe : BattleProbe
 {
-    private const int FixedPoseFrame = 10;
-
     /// <summary>Initializes a new instance of the <see cref="BattleEntranceProbe"/> class.</summary>
     /// <param name="host">Restricted live battle host.</param>
     public BattleEntranceProbe(IBattleProbeHost host)
@@ -22,126 +22,109 @@ internal sealed class BattleEntranceProbe : BattleProbe
     /// <inheritdoc/>
     protected override async Task ExecuteAsync()
     {
-        var captureRoot = Host.PrepareCaptureDirectory("probe/battle-entrance");
+        var root = Host.PrepareCaptureDirectory("probe/battle-entrance");
         Host.ApplyS200();
+        await CaptureNaturalEntranceAsync(root, "first");
+        await CaptureNaturalEntranceAsync(root, "repeat");
+        await CaptureControlledFractionsAsync(root);
+        QuietLog.Info("battle-entrance PASS natural-reset and controlled-fractions");
+    }
+
+    /// <summary>Uses the real start, simulation and presentation paths, without supplying a fade reset.</summary>
+    /// <param name="root">Private evidence directory.</param>
+    /// <param name="label">First or repeated start.</param>
+    /// <returns>A task completed after the natural entrance reaches command-ready light.</returns>
+    private async Task CaptureNaturalEntranceAsync(string root, string label)
+    {
         Host.StartDebugBattle();
         var renderer = Host.Renderer;
-        renderer.SetProbePose(FixedPoseFrame);
-        var playerId = Host.Flow.State.ActivePlayerFighter!.Id;
-        var enemyId = Host.Flow.State.ActiveEnemyFighter!.Id;
-        double? previousFighter = null;
-        double? previousStage = null;
-        foreach (var fade in new[] { 0f, .25f, .5f, .75f, 1f })
+        ProbeRequirement.Require(renderer.LightFade == 0f, "normal start did not reset fade");
+        Host.TickTestSimulation();
+        var oracle = new BattleEntranceOracle(Host, root);
+        for (var frame = 1; frame <= 74; frame++)
         {
-            var measurements = await CaptureFadeAsync(captureRoot, fade, playerId, enemyId);
-            if (fade < float.Epsilon)
+            // The test driver owns _Process, so explicitly execute the ordinary presentation before drawing.
+            // Skipping it deliberately recreates the old probe's retained, unpresented Canvas mesh.
+            var bypass = label == "repeat" && System.Environment.GetEnvironmentVariable("DW3_BATTLE_ENTRANCE_BYPASS_PRESENT") == "1";
+            if (!bypass)
             {
-                ProbeRequirement.Require(measurements.Mean < 3, $"entrance frame 0 is not black mean={measurements.Mean:0.0}");
-                ProbeRequirement.Require(!measurements.HudVisible, "HUD arrived before the stage fade");
-                continue;
+                renderer.Present(Host.BuildBattleView(), 1d / 60d);
             }
 
-            VerifyFadeProgress(fade, measurements, previousFighter, previousStage);
-            VerifyHudArrival(fade, measurements.HudVisible);
-            previousFighter = measurements.Fighter;
-            previousStage = measurements.Stage;
+            if (frame == 1)
+            {
+                InjectBrightNegative();
+                var first = await oracle.CaptureAsync($"natural-{label}-first.png");
+                QuietLog.Info($"battle-entrance natural={label} presented_frame={frame} fade={renderer.LightFade:0.000000} phase={Host.Flow.Phase}");
+                oracle.RequireBlack(first);
+            }
+            else if (frame == 36 || renderer.LightFade >= 1f)
+            {
+                QuietLog.Info($"battle-entrance natural={label} presented_frame={frame} fade={renderer.LightFade:0.000000} phase={Host.Flow.Phase}");
+                await oracle.VerifyOverlaysAsync($"natural-{label}-{frame:00}");
+            }
+            else
+            {
+                await Host.NextFrameDrawn();
+            }
+
+            if (renderer.LightFade >= 1f)
+            {
+                ProbeRequirement.Require(frame > 36, "natural entrance skipped intermediate lighting");
+                return;
+            }
         }
 
-        await VerifyRepeatedEntranceAsync(captureRoot);
-        QuietLog.Info("battle-entrance PASS");
+        throw new InvalidOperationException("natural entrance never completed");
     }
 
-    /// <summary>
-    /// Verifies observable monotonic progression without imposing an unsupported fighter-to-stage ratio.
-    /// </summary>
-    /// <param name="fade">Current source fade fraction.</param>
-    /// <param name="current">Current fighter, stage and full-frame luminance.</param>
-    /// <param name="previousFighter">Fighter luminance from the preceding non-black capture.</param>
-    /// <param name="previousStage">Stage luminance from the preceding non-black capture.</param>
-    private static void VerifyFadeProgress(
-        float fade,
-        (double Fighter, double Stage, double Mean, bool HudVisible) current,
-        double? previousFighter,
-        double? previousStage)
+    /// <summary>Mutates actual fighter lighting, never image pixels, to prove localized rejection.</summary>
+    private void InjectBrightNegative()
     {
-        if (previousFighter is not null && previousStage is not null)
+        if (System.Environment.GetEnvironmentVariable("DW3_BATTLE_ENTRANCE_RETAIN_BRIGHT") != "1")
         {
-            ProbeRequirement.Require(current.Fighter >= previousFighter, $"fighter darkened while entering fade={fade:0.00}");
-            ProbeRequirement.Require(current.Stage >= previousStage, $"stage darkened while entering fade={fade:0.00}");
-        }
-    }
-
-    /// <summary>Checks that the retained HUD appears only after the stage has reached its source endpoint.</summary>
-    /// <param name="fade">Current source fade fraction.</param>
-    /// <param name="hudVisible">Whether the composed canvas exposes the HUD.</param>
-    private static void VerifyHudArrival(float fade, bool hudVisible)
-    {
-        if (fade < 1f)
-        {
-            ProbeRequirement.Require(!hudVisible, $"HUD arrived during stage fade={fade:0.00}");
             return;
         }
 
-        ProbeRequirement.Require(hudVisible, "HUD did not arrive after the stage fade");
-    }
-
-    /// <summary>Starts the same encounter again and rejects a retained HUD before its own fade advances.</summary>
-    /// <param name="captureRoot">Directory receiving the second-entry captures.</param>
-    /// <returns>A task completed after the repeated entrance has been inspected.</returns>
-    private async Task VerifyRepeatedEntranceAsync(string captureRoot)
-    {
-        Host.StartDebugBattle();
         var renderer = Host.Renderer;
-        renderer.SetProbePose(FixedPoseFrame);
-        renderer.SetLightFadeForProbe(0f);
-        renderer.SetHudVisibleForProbe(true);
-        var composed = await BattleProbeCapture.CaptureRawAsync(Host, captureRoot, "entrance-repeat-0.00.png");
-        var mean = BattlePixelMetrics.MeanLuminance(composed);
-        ProbeRequirement.Require(!renderer.EffectiveHudVisibleForProbe, "repeat entrance retained HUD");
-        ProbeRequirement.Require(mean < 6, $"repeat entrance retained scene brightness mean={mean:0.0}");
-        QuietLog.Info($"battle-entrance repeat fade=0.00 hud_visible={renderer.EffectiveHudVisibleForProbe} mean={mean:0.0}");
-    }
-
-    /// <summary>Captures the full and stage-only frames for one explicit fade value.</summary>
-    /// <param name="captureRoot">Directory receiving both frames.</param>
-    /// <param name="fade">Light interpolation in 0..1.</param>
-    /// <param name="playerId">Player fighter model id.</param>
-    /// <param name="enemyId">Enemy fighter model id.</param>
-    /// <returns>Fighter, stage, full-frame luminance and composed HUD visibility.</returns>
-    private async Task<(double Fighter, double Stage, double Mean, bool HudVisible)> CaptureFadeAsync(
-        string captureRoot,
-        float fade,
-        int playerId,
-        int enemyId)
-    {
-        var renderer = Host.Renderer;
-        renderer.SetLightFadeForProbe(fade);
-        var suffix = fade.ToString("0.00", CultureInfo.InvariantCulture);
-        QuietLog.Info($"battle-entrance frame effective_fraction={renderer.LightFade:0.00} pose=idle:{FixedPoseFrame} time=fixed");
-        renderer.SetHudVisibleForProbe(true);
-        await BattleProbeCapture.CaptureRawAsync(Host, captureRoot, $"entrance-{suffix}-composed.png");
-        renderer.SetHudVisibleForProbe(false);
-        renderer.SetModelVisibleForProbe(playerId, false);
-        renderer.SetModelVisibleForProbe(playerId, true);
-        var full = BattleComparisonImage.ToSourceSize(
-            await BattleProbeCapture.CaptureRawAsync(Host, captureRoot, $"entrance-{suffix}.png"));
-        renderer.SetModelVisibleForProbe(playerId, false);
-        renderer.SetModelVisibleForProbe(enemyId, false);
-        var stage = BattleComparisonImage.ToSourceSize(
-            await BattleProbeCapture.CaptureRawAsync(Host, captureRoot, $"entrance-{suffix}-stage.png"));
-        renderer.SetModelVisibleForProbe(playerId, true);
-        renderer.SetModelVisibleForProbe(enemyId, true);
-        renderer.SetHudVisibleForProbe(true);
-        var hudVisible = renderer.EffectiveHudVisibleForProbe;
-        if (fade < float.Epsilon)
+        var models = new[]
         {
-            var mean = BattlePixelMetrics.MeanLuminance(full);
-            QuietLog.Info($"battle-entrance fade={fade:0.00} fighter=0.0 stage=0.0 mean={mean:0.0} hud_visible={hudVisible}");
-            return (0, 0, mean, hudVisible);
+            renderer.ModelForProbe(Host.Flow.State.ActivePlayerFighter!.Id),
+            renderer.ModelForProbe(Host.Flow.State.ActiveEnemyFighter!.Id),
+        };
+        foreach (var model in models)
+        {
+            model.SetLighting(new BattleModel.BattleLightSet([], Colors.White));
         }
 
-        var measurements = BattlePixelMetrics.FighterAndStageLuminance(full, stage);
-        QuietLog.Info($"battle-entrance fade={fade:0.00} fighter={measurements.Fighter:0.0} stage={measurements.Stage:0.0} mean={measurements.Mean:0.0} hud_visible={hudVisible}");
-        return (measurements.Fighter, measurements.Stage, measurements.Mean, hudVisible);
+        renderer.RasterForProbe.Rebuild(renderer.CameraForProbe, models);
+    }
+
+    /// <summary>Preserves the five original samples, presenting each explicitly without advancing its fraction.</summary>
+    /// <param name="root">Private evidence directory.</param>
+    /// <returns>A task completed after all actor and overlay measurements pass.</returns>
+    private async Task CaptureControlledFractionsAsync(string root)
+    {
+        var renderer = Host.Renderer;
+        renderer.SetProbePose(10);
+        renderer.SetProbeAnimationFrame(0);
+        var oracle = new BattleEntranceOracle(Host, root);
+        double previous = 0;
+        foreach (var fade in new[] { 0f, .25f, .5f, .75f, 1f })
+        {
+            renderer.SetLightFadeForProbe(fade);
+            renderer.Present(Host.BuildBattleView(), 0d);
+            var suffix = fade.ToString("0.00", CultureInfo.InvariantCulture);
+            var image = await oracle.VerifyOverlaysAsync($"entrance-{suffix}");
+            ProbeRequirement.Require(Math.Abs(renderer.LightFade - fade) < float.Epsilon, "controlled capture advanced the fade");
+            if (fade == 0f)
+            {
+                oracle.RequireBlack(image);
+            }
+
+            var mean = await oracle.MeasureActorsAsync(image, $"entrance-{suffix}");
+            ProbeRequirement.Require(mean >= previous, $"fighter lighting regressed fade={fade}");
+            previous = mean;
+        }
     }
 }

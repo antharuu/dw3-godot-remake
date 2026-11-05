@@ -362,7 +362,10 @@ src/Dw3.Game/Diagnostics/Battle/BattleCameraSnapshot.cs
 tests/Dw3.Game.Tests/BattleCameraSnapshotTests.cs
 docs/testing/BATTLE_CAMERA_SNAPSHOT.md
 src/Dw3.Game/Diagnostics/Battle/BattleComparisonImage.cs
+src/Dw3.Game/Diagnostics/Battle/BattleEntranceOracle.cs
+src/Dw3.Game/Diagnostics/Battle/BattleEntrancePixels.cs
 src/Dw3.Game/Diagnostics/Battle/BattleEntranceProbe.cs
+tests/Dw3.Game.Tests/BattleEntrancePixelsTests.cs
 src/Dw3.Game/Diagnostics/Battle/BattleFaceProbe.cs
 src/Dw3.Game/Diagnostics/Battle/BattleFontPixels.cs
 src/Dw3.Game/Diagnostics/Battle/BattleFontProbe.cs
