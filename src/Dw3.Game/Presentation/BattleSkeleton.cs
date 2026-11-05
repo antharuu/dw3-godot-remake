@@ -14,7 +14,7 @@ internal sealed class BattleSkeleton
     /// <summary>A bone whose largest fixed-point scale component is at most this value is hidden.</summary>
     private const int HiddenScaleThreshold = 48;
 
-    private static readonly Basis Ps1ToGodot = new(Vector3.Right, Vector3.Down, Vector3.Back);
+    private static readonly Basis Ps1ToGodot = new(Vector3.Right, Vector3.Down, Vector3.Forward);
     private static readonly Vector3 IdentityScale = new(4096, 4096, 4096);
 
     private readonly Dictionary<int, Node3D> _bones;

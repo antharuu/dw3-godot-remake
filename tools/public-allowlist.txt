@@ -358,6 +358,9 @@ src/Dw3.Game/Conversion/FieldAnimationDataPackLoader.cs
 src/Dw3.Game/Conversion/FieldDataPackLoader.cs
 src/Dw3.Game/Conversion/Vec2I.Godot.cs
 src/Dw3.Game/Diagnostics/Battle/BattleCameraProbe.cs
+src/Dw3.Game/Diagnostics/Battle/BattleCameraSnapshot.cs
+tests/Dw3.Game.Tests/BattleCameraSnapshotTests.cs
+docs/testing/BATTLE_CAMERA_SNAPSHOT.md
 src/Dw3.Game/Diagnostics/Battle/BattleComparisonImage.cs
 src/Dw3.Game/Diagnostics/Battle/BattleEntranceProbe.cs
 src/Dw3.Game/Diagnostics/Battle/BattleFaceProbe.cs
