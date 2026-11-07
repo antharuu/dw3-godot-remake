@@ -885,6 +885,7 @@ public sealed class LegacyBattleConsoleTests
             ElementPower = elementPower,
             Family = family,
             Mp = mp,
+            Accuracy = 128,
         };
     }
 

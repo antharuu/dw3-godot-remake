@@ -46,7 +46,12 @@ public sealed class EnemyTurnResolver(BattleState state)
             return;
         }
 
-        target.TakeDamage(state.Hits(rng).Basic(tech, attacker, target, enemyAttacker: true));
+        BattleHitResult result = state.Hits(rng).Basic(tech, attacker, target, enemyAttacker: true);
+        if (result.Landed)
+        {
+            target.TakeDamage(result.Damage);
+        }
+
         EndTurn();
     }
 
@@ -73,7 +78,12 @@ public sealed class EnemyTurnResolver(BattleState state)
         }
 
         attacker.Mp -= tech.Mp;
-        target.TakeDamage(state.Hits(rng).Technique(tech, attacker, target, enemyAttacker: true));
+        BattleHitResult result = state.Hits(rng).Technique(tech, attacker, target, enemyAttacker: true);
+        if (result.Landed)
+        {
+            target.TakeDamage(result.Damage);
+        }
+
         EndTurn();
         return true;
     }
@@ -143,7 +153,12 @@ public sealed class EnemyTurnResolver(BattleState state)
             return;
         }
 
-        target.TakeDamage(state.Hits(rng).Counter(tech, attacker, target, receivedDamage));
+        BattleHitResult result = state.Hits(rng).Counter(tech, attacker, target, receivedDamage);
+        if (result.Landed)
+        {
+            target.TakeDamage(result.Damage);
+        }
+
         state.CheckOutcome();
     }
 

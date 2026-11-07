@@ -1,72 +1,72 @@
 namespace Dw3Production.Simulation;
 
 /// <summary>
-/// Resolves the damage of one technique landing on one fighter: it rolls the critical hit
-/// (when criticals are enabled), picks the physical or magic formula and applies the
-/// battlefield's element boost. Both sides use it, so a player hit and an enemy hit consume
-/// the random values in the same order.
+/// Resolves one technique's hit check and damage. The disc rolls hit first, then still computes
+/// critical and damage on a miss, so the shared random stream remains aligned while callers suppress
+/// damage and on-hit reactions for an unlanded result.
 /// </summary>
 /// <param name="boost">The battlefield's element boost.</param>
-/// <param name="allowCritical">When <see langword="false"/> no critical is rolled and no random value is consumed.</param>
+/// <param name="allowCritical">When <see langword="false"/> no critical is rolled and no critical random value is consumed.</param>
 /// <param name="rng">The battle's random source.</param>
 public sealed class BattleHitResolver(ElementBoost boost, bool allowCritical, IBattleRng rng)
 {
-    /// <summary>
-    /// The damage of a basic attack, always a physical hit. An enemy attacker's technique power
-    /// is scaled by its strength in 16ths, a partner's is not.
-    /// </summary>
+    /// <summary>Resolves a basic physical attack, including its landing check.</summary>
     /// <param name="tech">The technique used.</param>
     /// <param name="attacker">The fighter that uses it.</param>
-    /// <param name="target">The fighter it lands on.</param>
+    /// <param name="target">The fighter it targets.</param>
     /// <param name="enemyAttacker">Whether the attacker is on the enemy side.</param>
-    /// <returns>The HP to take off the target, 0..9999.</returns>
-    public int Basic(TechData tech, BattleFighter attacker, BattleFighter target, bool enemyAttacker)
+    /// <returns>The landing and damage result.</returns>
+    public BattleHitResult Basic(TechData tech, BattleFighter attacker, BattleFighter target, bool enemyAttacker)
     {
+        bool landed = BattleHitRules.RollPhysical(tech, attacker.Stats, target.Stats, enemyAttacker, rng.NextValue());
         int crit = RollCrit(attacker, target, tech);
-        return DamageCalculator.ComputeDamage(tech, attacker.Stats, target.Stats, enemyAttacker, attacker.Strength, boost, crit);
+        int damage = DamageCalculator.ComputeDamage(tech, attacker.Stats, target.Stats, enemyAttacker, attacker.Strength, boost, crit);
+        return new BattleHitResult(landed, damage);
     }
 
-    /// <summary>
-    /// The damage of a technique picked from a menu or a battle table: a magic technique
-    /// (<see cref="BattleConst.TechMagic"/> icon) uses the spirit formula and the magic critical
-    /// roll, any other technique is a physical hit.
-    /// </summary>
-    /// <param name="tech">The technique used; its MP cost is the caller's concern.</param>
+    /// <summary>Resolves a physical or magic technique, including its landing check.</summary>
+    /// <param name="tech">The technique used.</param>
     /// <param name="attacker">The fighter that uses it.</param>
-    /// <param name="target">The fighter it lands on.</param>
+    /// <param name="target">The fighter it targets.</param>
     /// <param name="enemyAttacker">Whether the attacker is on the enemy side.</param>
-    /// <returns>The HP to take off the target, 0..9999.</returns>
-    public int Technique(TechData tech, BattleFighter attacker, BattleFighter target, bool enemyAttacker)
+    /// <returns>The landing and damage result.</returns>
+    public BattleHitResult Technique(TechData tech, BattleFighter attacker, BattleFighter target, bool enemyAttacker)
     {
         if (tech.Icon != BattleConst.TechMagic)
         {
             return Basic(tech, attacker, target, enemyAttacker);
         }
 
+        bool landed = BattleHitRules.RollMagic(tech, attacker.Stats, target.Stats, rng.NextValue());
         int crit = RollMagicCrit(target, tech);
-        return DamageCalculator.ComputeMagicDamage(tech, attacker.Stats, target.Stats, enemyAttacker, attacker.Strength, boost, crit);
+        int damage = DamageCalculator.ComputeMagicDamage(tech, attacker.Stats, target.Stats, enemyAttacker, attacker.Strength, boost, crit);
+        return new BattleHitResult(landed, damage);
     }
 
     /// <summary>The damage of an enemy counter-attack, a share of the damage the enemy just received.</summary>
     /// <param name="tech">The counter technique; its effect power sets the share in 64ths.</param>
     /// <param name="attacker">The countering enemy.</param>
     /// <param name="target">The partner that hit it.</param>
-    /// <param name="receivedDamage">The damage of the hit that triggered the counter.</param>
-    /// <returns>The HP to take off the target, 0..9999.</returns>
-    public int Counter(TechData tech, BattleFighter attacker, BattleFighter target, int receivedDamage)
+    /// <param name="receivedDamage">The damage of the hit that triggered it.</param>
+    /// <returns>The landing and damage result.</returns>
+    public BattleHitResult Counter(TechData tech, BattleFighter attacker, BattleFighter target, int receivedDamage)
     {
+        bool landed = BattleHitRules.RollPhysical(tech, attacker.Stats, target.Stats, enemyAttacker: true, rng.NextValue());
+        if (!landed)
+        {
+            return new BattleHitResult(Landed: false, Damage: 0);
+        }
+
         int crit = RollCrit(attacker, target, tech);
-        return DamageCalculator.ComputeCounterDamage(tech, attacker.Stats, target.Stats, receivedDamage, boost, crit);
+        int damage = DamageCalculator.ComputeCounterDamage(tech, attacker.Stats, target.Stats, receivedDamage, boost, crit);
+        return new BattleHitResult(Landed: true, damage);
     }
 
-    /// <summary>
-    /// Rolls a physical critical: one random value decides it, a second one (0..63) sets its
-    /// strength. Returns -1, the formulas' "no critical", when it misses or criticals are off.
-    /// </summary>
-    /// <param name="attacker">The fighter that uses the technique.</param>
-    /// <param name="target">The fighter it lands on.</param>
-    /// <param name="tech">The technique used.</param>
-    /// <returns>The critical strength 0..63, or -1.</returns>
+    /// <summary>Rolls a physical critical and returns its strength, or -1 when it does not occur.</summary>
+    /// <param name="attacker">The fighter using the technique.</param>
+    /// <param name="target">The fighter the technique targets.</param>
+    /// <param name="tech">The technique whose physical critical rule is applied.</param>
+    /// <returns>The critical strength, or -1 when no critical applies.</returns>
     private int RollCrit(BattleFighter attacker, BattleFighter target, TechData tech)
     {
         if (!allowCritical)
@@ -75,13 +75,13 @@ public sealed class BattleHitResolver(ElementBoost boost, bool allowCritical, IB
         }
 
         bool crit = CriticalHitRules.RollCritical(tech, attacker.Stats, target.Stats, attacker, target, rng.NextValue());
-        return crit ? rng.NextValue() & 0x3F : -1;
+        return crit ? rng.NextValue() & 0x3f : -1;
     }
 
-    /// <summary>Rolls a magic critical like <see cref="RollCrit"/>, with a strength of 0..64.</summary>
-    /// <param name="target">The fighter the technique lands on.</param>
-    /// <param name="tech">The magic technique used.</param>
-    /// <returns>The critical strength 0..64, or -1.</returns>
+    /// <summary>Rolls a magic critical and returns its strength, or -1 when it does not occur.</summary>
+    /// <param name="target">The fighter the technique targets.</param>
+    /// <param name="tech">The technique whose magic critical rule is applied.</param>
+    /// <returns>The critical strength, or -1 when no critical applies.</returns>
     private int RollMagicCrit(BattleFighter target, TechData tech)
     {
         if (!allowCritical)

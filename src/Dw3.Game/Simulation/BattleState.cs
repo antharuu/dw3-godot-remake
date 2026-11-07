@@ -343,13 +343,17 @@ public sealed class BattleState
     /// enemy is replaced by its next living fighter, and the player's turn is spent.
     /// </summary>
     /// <param name="target">The active enemy that takes the hit.</param>
-    /// <param name="damage">The hit's damage.</param>
+    /// <param name="result">The resolved hit, which may miss after consuming its qualified random draws.</param>
     /// <param name="rng">The battle's random source, for the counter.</param>
-    private void LandPlayerHit(BattleFighter target, int damage, IBattleRng rng)
+    private void LandPlayerHit(BattleFighter target, BattleHitResult result, IBattleRng rng)
     {
-        target.TakeDamage(damage);
-        _enemyTurn.TryCounter(damage, rng);
-        ResolveEnemySlot();
+        if (result.Landed)
+        {
+            target.TakeDamage(result.Damage);
+            _enemyTurn.TryCounter(result.Damage, rng);
+            ResolveEnemySlot();
+        }
+
         MarkFought();
         AdvancePlayerTurn();
         CheckOutcome();

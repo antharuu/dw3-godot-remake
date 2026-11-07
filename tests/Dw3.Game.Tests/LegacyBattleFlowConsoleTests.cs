@@ -438,9 +438,9 @@ public sealed class LegacyBattleFlowConsoleTests
     {
         var flow = new BattleFlowController
         {
-            PlayerBasicTech = new TechData { Power = 20, Mp = 0 },
-            EnemyBasicTech = new TechData { Power = 10, Mp = 0 },
-            Techs = new Dictionary<int, TechData> { [777] = new TechData { Power = 10, Mp = 0 } },
+            PlayerBasicTech = new TechData { Power = 20, Mp = 0, Accuracy = 128 },
+            EnemyBasicTech = new TechData { Power = 10, Mp = 0, Accuracy = 128 },
+            Techs = new Dictionary<int, TechData> { [777] = new TechData { Power = 10, Mp = 0, Accuracy = 128 } },
             NameIds = new Dictionary<int, int> { [1] = 1, [2] = 2, [101] = 101 },
             Text = TestText(),
         };
