@@ -272,6 +272,20 @@ public sealed class BattleState
         return true;
     }
 
+    /// <summary>Tests whether the active enemy loses its turn to paralysis and spends that turn when it does.</summary>
+    /// <param name="rng">Shared battle random source.</param>
+    /// <returns>Whether paralysis consumed the turn.</returns>
+    public bool TryLoseEnemyTurnToParalysis(IBattleRng rng)
+    {
+        if (!_statusCoordinator.LosesEnemyTurnToParalysis(rng))
+        {
+            return false;
+        }
+
+        AdvanceEnemyTurn();
+        return true;
+    }
+
     /// <summary>Tests whether a hit wakes the active fighter of one side and removes its pending sleep expiry.</summary>
     /// <param name="side">Side whose active fighter received the hit.</param>
     /// <param name="damage">Resolved damage value.</param>

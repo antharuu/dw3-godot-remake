@@ -116,6 +116,21 @@ public sealed class BattleStatusCoordinator(BattleState state, BattleTurnSchedul
         return BattleControlStatusRules.LosesTurnToParalysis(fighter, rng);
     }
 
+    /// <summary>Tests whether the active enemy loses its turn to paralysis.</summary>
+    /// <param name="rng">Shared battle random source.</param>
+    /// <returns>Whether paralysis consumed the turn.</returns>
+    public bool LosesEnemyTurnToParalysis(IBattleRng rng)
+    {
+        BattleFighter? fighter = state.ActiveEnemyFighter;
+        if (fighter is not { IsKnockedOut: false } || (fighter.Flags & FighterFlags.Paralyzed) == 0)
+        {
+            return false;
+        }
+
+        fighter.RefreshStats();
+        return BattleControlStatusRules.LosesTurnToParalysis(fighter, rng);
+    }
+
     /// <summary>Tests whether a hit wakes the active fighter of one side.</summary>
     /// <param name="side">Side whose active fighter received the hit.</param>
     /// <param name="damage">Resolved damage value.</param>

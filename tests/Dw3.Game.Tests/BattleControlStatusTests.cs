@@ -134,6 +134,129 @@ public sealed class BattleControlStatusTests
         Assert.False(state.PlayerFlee(new SequenceRng()));
     }
 
+    /// <summary>Verifies that TryLoseEnemyTurnToParalysis advances the schedule and returns true when the roll succeeds.</summary>
+    [Fact]
+    public void TryLoseEnemyTurnToParalysis_AdvancesScheduleWhenRollSucceeds()
+    {
+        BattleState state = CreateState();
+        BattleFighter enemy = Assert.IsType<BattleFighter>(state.ActiveEnemyFighter);
+        enemy.Flags |= FighterFlags.Paralyzed;
+        enemy.Paralysis = 32;
+
+        bool lost = state.TryLoseEnemyTurnToParalysis(new SequenceRng(0));
+
+        Assert.True(lost);
+        Assert.NotEqual(0, enemy.Flags & FighterFlags.Paralyzed);
+    }
+
+    /// <summary>Verifies that TryLoseEnemyTurnToParalysis returns false and leaves the schedule when the roll fails.</summary>
+    [Fact]
+    public void TryLoseEnemyTurnToParalysis_ReturnsFalseWhenRollFails()
+    {
+        BattleState state = CreateState();
+        BattleFighter enemy = Assert.IsType<BattleFighter>(state.ActiveEnemyFighter);
+        enemy.Flags |= FighterFlags.Paralyzed;
+        enemy.Paralysis = 32;
+
+        bool lost = state.TryLoseEnemyTurnToParalysis(new SequenceRng(127));
+
+        Assert.False(lost);
+        Assert.NotEqual(0, enemy.Flags & FighterFlags.Paralyzed);
+    }
+
+    /// <summary>Verifies that a sleeping enemy loses its turn without dealing damage (direct simulation API).</summary>
+    [Fact]
+    public void EnemyAttack_SleepingEnemy_NoDamageAndTurnSpent()
+    {
+        BattleState state = CreateState();
+        Assert.True(state.InflictSleep(BattleSide.Player, chance: 127, strength: 56, new SequenceRng(0, 0)));
+        BattleFighter enemy = Assert.IsType<BattleFighter>(state.ActiveEnemyFighter);
+        Assert.NotEqual(0, enemy.Flags & FighterFlags.Asleep);
+        int playerHp = Assert.IsType<BattleFighter>(state.ActivePlayerFighter).Hp;
+
+        state.EnemyAttack(new TechData { Accuracy = 128, Power = 20 }, new SequenceRng(0));
+
+        Assert.Equal(playerHp, Assert.IsType<BattleFighter>(state.ActivePlayerFighter).Hp);
+    }
+
+    /// <summary>Verifies that the enemy AI turn is spent without acting when the enemy is asleep.</summary>
+    [Fact]
+    public void EnemyAct_SleepingEnemy_SpendsTurnWithoutDamagingPlayer()
+    {
+        var flow = new BattleFlowController();
+        flow.Start(CreateState());
+        Assert.True(flow.State.InflictSleep(BattleSide.Player, chance: 127, strength: 56, new SequenceRng(0, 0)));
+        int playerHp = Assert.IsType<BattleFighter>(flow.State.ActivePlayerFighter).Hp;
+
+        flow.EnemyAct(new SequenceRng());
+
+        Assert.Equal(playerHp, Assert.IsType<BattleFighter>(flow.State.ActivePlayerFighter).Hp);
+        Assert.Equal(BattleFlowPhase.PlayerCommand, flow.Phase);
+    }
+
+    /// <summary>Verifies that the enemy AI turn is spent without acting when the qualified paralysis check succeeds.</summary>
+    [Fact]
+    public void EnemyAct_ParalyzedEnemy_LosesTurnToQualifiedRng()
+    {
+        var flow = new BattleFlowController();
+        flow.Start(CreateState());
+        BattleFighter enemy = Assert.IsType<BattleFighter>(flow.State.ActiveEnemyFighter);
+        enemy.Flags |= FighterFlags.Paralyzed;
+        enemy.Paralysis = 32;
+        int playerHp = Assert.IsType<BattleFighter>(flow.State.ActivePlayerFighter).Hp;
+
+        flow.EnemyAct(new SequenceRng(0));
+
+        Assert.Equal(playerHp, Assert.IsType<BattleFighter>(flow.State.ActivePlayerFighter).Hp);
+        Assert.Equal(BattleFlowPhase.PlayerCommand, flow.Phase);
+    }
+
+    /// <summary>Verifies that the enemy AI turn advances normally when the qualified paralysis check fails.</summary>
+    [Fact]
+    public void EnemyAct_ParalyzedEnemy_ActsNormallyWhenRngFails()
+    {
+        var flow = new BattleFlowController();
+        flow.Start(CreateState());
+        BattleFighter enemy = Assert.IsType<BattleFighter>(flow.State.ActiveEnemyFighter);
+        enemy.Flags |= FighterFlags.Paralyzed;
+        enemy.Paralysis = 32;
+
+        flow.EnemyAct(new SequenceRng(127));
+
+        Assert.Equal(BattleFlowPhase.PlayerCommand, flow.Phase);
+    }
+
+    /// <summary>Verifies that a confused enemy still spends its turn without soft-locking the battle.</summary>
+    [Fact]
+    public void EnemyAct_ConfusedEnemy_TurnAdvancesWithoutSoftLock()
+    {
+        var flow = new BattleFlowController();
+        flow.Start(CreateState());
+        Assert.IsType<BattleFighter>(flow.State.ActiveEnemyFighter).Flags |= FighterFlags.Confused;
+
+        flow.EnemyAct(new SequenceRng());
+
+        Assert.Equal(BattleFlowPhase.PlayerCommand, flow.Phase);
+    }
+
+    /// <summary>Verifies that a sleeping player with no other partners is not stuck: enemy acts and battle advances.</summary>
+    [Fact]
+    public void Choose_SleepingOnlyPartner_BattleStillAdvancesViaEnemyTurn()
+    {
+        var flow = new BattleFlowController();
+        var setup = new BattleSetup();
+        setup.Partners[0] = new PartnerSeed { Id = 1, Hp = 100, MaxHp = 100, Mp = 100, MaxMp = 100, Stats = new BattleStats() };
+        setup.Enemies[0] = new BattleEnemy { Fighter = 3, Hp = 100, Mp = 100, Strength = 16 };
+        flow.Start(BattleState.InitFighters(setup, digimon: 1, new SequenceRng(127)));
+        Assert.IsType<BattleFighter>(flow.State.ActivePlayerFighter).Flags |= FighterFlags.Asleep;
+
+        Assert.False(flow.Choose(BattleCommand.Attack, 0, new SequenceRng()));
+        Assert.Equal(BattleFlowPhase.PlayerCommand, flow.Phase);
+
+        flow.EnemyAct(new SequenceRng());
+        Assert.Equal(BattleFlowPhase.PlayerCommand, flow.Phase);
+    }
+
     private static BattleState CreateState()
     {
         var setup = new BattleSetup();

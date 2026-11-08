@@ -15,6 +15,23 @@ public sealed class EnemyTurnResolver(BattleState state)
     /// <returns>The decision, <see cref="EnemyDecision.None"/> when the enemy cannot act.</returns>
     public EnemyDecision RunTurn(IBattleRng rng)
     {
+        var enemy = state.ActiveEnemyFighter;
+        if (enemy is not { IsKnockedOut: false })
+        {
+            return EnemyDecision.None;
+        }
+
+        if ((enemy.Flags & FighterFlags.Asleep) != 0)
+        {
+            EndTurn();
+            return EnemyDecision.None;
+        }
+
+        if (state.TryLoseEnemyTurnToParalysis(rng))
+        {
+            return EnemyDecision.None;
+        }
+
         var decision = Decide(rng);
         Execute(decision, rng);
         return decision;
@@ -46,6 +63,12 @@ public sealed class EnemyTurnResolver(BattleState state)
             return;
         }
 
+        if ((attacker.Flags & FighterFlags.Asleep) != 0)
+        {
+            EndTurn();
+            return;
+        }
+
         BattleHitResult result = state.Hits(rng).Basic(tech, attacker, target, enemyAttacker: true);
         if (result.Landed)
         {
@@ -69,6 +92,12 @@ public sealed class EnemyTurnResolver(BattleState state)
         var target = state.ActivePlayerFighter;
         if (attacker is not { IsKnockedOut: false } || target is not { IsKnockedOut: false })
         {
+            return false;
+        }
+
+        if ((attacker.Flags & FighterFlags.Asleep) != 0)
+        {
+            EndTurn();
             return false;
         }
 
