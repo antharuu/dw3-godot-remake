@@ -148,7 +148,7 @@ public sealed class BattleState
             return false;
         }
 
-        LandPlayerHit(target, Hits(rng).Basic(tech, attacker, target, enemyAttacker: false), rng);
+        LandPlayerHit(target, tech, Hits(rng).Basic(tech, attacker, target, enemyAttacker: false), rng);
         return true;
     }
 
@@ -168,7 +168,7 @@ public sealed class BattleState
         attacker.RefreshStats();
         target.RefreshStats();
         attacker.Mp -= tech.Mp;
-        LandPlayerHit(target, Hits(rng).Technique(tech, attacker, target, enemyAttacker: false), rng);
+        LandPlayerHit(target, tech, Hits(rng).Technique(tech, attacker, target, enemyAttacker: false), rng);
         _modifierCoordinator.ConsumeCharge(BattleSide.Player);
         return true;
     }
@@ -460,6 +460,13 @@ public sealed class BattleState
     /// <param name="side">Side whose active fighter's charge is cleared.</param>
     internal void ConsumeCharge(BattleSide side) => _modifierCoordinator.ConsumeCharge(side);
 
+    /// <summary>Applies one supported technique effect after its damage has landed.</summary>
+    /// <param name="attackerSide">Side that landed the technique.</param>
+    /// <param name="technique">Technique supplying the extracted effect fields.</param>
+    /// <param name="rng">Shared battle random source.</param>
+    internal void ApplyTechniqueEffect(BattleSide attackerSide, TechData technique, IBattleRng rng) =>
+        _ = BattleTechniqueEffectResolver.ApplyLanded(this, attackerSide, technique, rng);
+
     /// <summary>Gets the active fighter on one side.</summary>
     /// <param name="side">Requested side.</param>
     /// <returns>The active fighter, if one exists.</returns>
@@ -492,14 +499,16 @@ public sealed class BattleState
     /// enemy is replaced by its next living fighter, and the player's turn is spent.
     /// </summary>
     /// <param name="target">The active enemy that takes the hit.</param>
+    /// <param name="technique">Technique which supplied the landed result.</param>
     /// <param name="result">The resolved hit, which may miss after consuming its qualified random draws.</param>
     /// <param name="rng">The battle's random source, for the counter.</param>
-    private void LandPlayerHit(BattleFighter target, BattleHitResult result, IBattleRng rng)
+    private void LandPlayerHit(BattleFighter target, TechData technique, BattleHitResult result, IBattleRng rng)
     {
         if (result.Landed)
         {
             target.TakeDamage(result.Damage);
             _ = TryWakeOnHit(BattleSide.Enemy, result.Damage, rng);
+            ApplyTechniqueEffect(BattleSide.Player, technique, rng);
             _enemyTurn.TryCounter(result.Damage, rng);
             ResolveEnemySlot();
         }

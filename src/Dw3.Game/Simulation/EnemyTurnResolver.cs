@@ -113,6 +113,7 @@ public sealed class EnemyTurnResolver(BattleState state)
         {
             target.TakeDamage(result.Damage);
             _ = state.TryWakeOnHit(BattleSide.Player, result.Damage, rng);
+            state.ApplyTechniqueEffect(BattleSide.Enemy, tech, rng);
         }
 
         state.ConsumeCharge(BattleSide.Enemy);
