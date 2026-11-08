@@ -131,10 +131,14 @@ public sealed class BattleFighter
     }
 
     /// <summary>Refreshes the stat snapshot used by the next rule calculation from the current form and mutable battle modifiers.</summary>
+    /// <remarks>
+    /// The resolution source is always the persistent <see cref="_baseStats"/> so that applying and
+    /// removing boosts is idempotent across multiple calls. Using <see cref="Stats"/> instead would
+    /// accumulate boosts on every refresh because the snapshot already carries the previous boost.
+    /// </remarks>
     public void RefreshStats()
     {
-        BattleStats source = _partner is null ? Stats : _baseStats;
-        Stats = BattleStatResolver.Resolve(source, _partner, Id, Flags, Charge, Boosts);
+        Stats = BattleStatResolver.Resolve(_baseStats, _partner, Id, Flags, Charge, Boosts);
     }
 
     /// <summary>Takes <paramref name="damage"/> off the fighter's HP, which never drops below 0.</summary>

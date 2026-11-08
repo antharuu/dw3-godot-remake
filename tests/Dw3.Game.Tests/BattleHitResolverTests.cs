@@ -163,7 +163,8 @@ public sealed class BattleHitResolverTests
         stats.Stats[BattleStat.Spirit] = spirit;
         stats.Stats[BattleStat.Wisdom] = wisdom;
         stats.Stats[BattleStat.Speed] = speed;
-        return new BattleFighter { Hp = 500, MaxHp = 500, Stats = stats };
+        var seed = new PartnerSeed { Hp = 500, MaxHp = 500, Stats = stats };
+        return BattleFighter.FromPartner(seed, id: 0);
     }
 
     private sealed class RecordingRng(params int[] values) : IBattleRng
