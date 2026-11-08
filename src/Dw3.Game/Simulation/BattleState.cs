@@ -28,12 +28,14 @@ public sealed class BattleState
     private readonly EnemyTurnResolver _enemyTurn;
     private readonly BattleTurnScheduler _turnScheduler = new();
     private readonly BattleStatusCoordinator _statusCoordinator;
+    private readonly BattleModifierCoordinator _modifierCoordinator;
 
     /// <summary>Initializes a new instance of the <see cref="BattleState"/> class with empty sides and no outcome.</summary>
     public BattleState()
     {
         _enemyTurn = new EnemyTurnResolver(this);
         _statusCoordinator = new BattleStatusCoordinator(this, _turnScheduler);
+        _modifierCoordinator = new BattleModifierCoordinator(this, _turnScheduler);
     }
 
     /// <summary>Gets or sets the three party slots. A null slot is empty.</summary>
@@ -163,8 +165,11 @@ public sealed class BattleState
             return false; // an unaffordable technique does not spend the turn
         }
 
+        attacker.RefreshStats();
+        target.RefreshStats();
         attacker.Mp -= tech.Mp;
         LandPlayerHit(target, Hits(rng).Technique(tech, attacker, target, enemyAttacker: false), rng);
+        _modifierCoordinator.ConsumeCharge(BattleSide.Player);
         return true;
     }
 
@@ -184,6 +189,7 @@ public sealed class BattleState
         }
 
         attacker.Id = form;
+        attacker.RefreshStats();
         MarkFought();
         AdvancePlayerTurn();
         CheckOutcome();
@@ -209,6 +215,22 @@ public sealed class BattleState
         AdvancePlayerTurn();
         return true;
     }
+
+    /// <summary>Applies one temporary attack, defense, or speed modifier to a living fighter.</summary>
+    /// <param name="side">Side containing the fighter.</param>
+    /// <param name="fighterSlot">Target fighter slot.</param>
+    /// <param name="stat">Attack, defense, or speed stat to modify.</param>
+    /// <param name="percent">Delta in 128ths of the unmodified stat.</param>
+    /// <param name="rng">Shared battle random source for expiry timing.</param>
+    /// <returns>Whether the modifier was applied.</returns>
+    public bool ApplyStatModifier(BattleSide side, int fighterSlot, int stat, int percent, IBattleRng rng) =>
+        _modifierCoordinator.ApplyStatModifier(side, fighterSlot, stat, percent, fromTechnique: false, rng);
+
+    /// <summary>Sets the active fighter's charge for its next technique.</summary>
+    /// <param name="side">Side containing the active fighter.</param>
+    /// <param name="value">Charge in sixty-fourths of damage.</param>
+    /// <returns>Whether a living fighter received the charge.</returns>
+    public bool SetCharge(BattleSide side, int value) => _modifierCoordinator.SetCharge(side, value);
 
     /// <summary>Attempts to poison the opposing active fighter using the qualified poison resistance roll.</summary>
     /// <param name="attackerSide">Side inflicting poison.</param>
@@ -487,7 +509,22 @@ public sealed class BattleState
         var own = side == BattleSide.Player ? ActivePlayerFighter : ActiveEnemyFighter;
         var other = side == BattleSide.Player ? ActiveEnemyFighter : ActivePlayerFighter;
         _turnScheduler.EnqueueActionTurn(side, kind, BattleFighterTiming.SpeedOf(own), BattleFighterTiming.SpeedOf(other), BattleFighterTiming.SpiritOf(own), rng ?? new BattleDefaultOpeningRng());
-        _statusCoordinator.ProcessDueEvents();
+        ProcessDueEvents();
+    }
+
+    /// <summary>Consumes every due modifier and status event before the next ordinary action.</summary>
+    private void ProcessDueEvents()
+    {
+        while (true)
+        {
+            if (_modifierCoordinator.ProcessNextExpiry())
+            {
+                continue;
+            }
+
+            _statusCoordinator.ProcessDueEvents();
+            return;
+        }
     }
 
     /// <summary>The enemy side brings in its next living

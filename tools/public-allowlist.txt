@@ -584,6 +584,7 @@ src/Dw3.Game/Simulation/BattleMenuKind.cs
 src/Dw3.Game/Simulation/BattleMenuLine.cs
 src/Dw3.Game/Simulation/BattleMenuStatusText.cs
 src/Dw3.Game/Simulation/BattleMenuView.cs
+src/Dw3.Game/Simulation/BattleModifierCoordinator.cs
 src/Dw3.Game/Simulation/BattleNameIdCatalog.cs
 src/Dw3.Game/Simulation/BattleOutcome.cs
 src/Dw3.Game/Simulation/BattleOutcomeRequest.cs
@@ -776,6 +777,7 @@ tests/Dw3.Game.Tests/BattleGrowthVectorTests.cs
 tests/Dw3.Game.Tests/BattleMotionMachineVectorGenerator.cs
 tests/Dw3.Game.Tests/BattleMotionMachineVectorHarness.cs
 tests/Dw3.Game.Tests/BattleMotionMachineVectorTests.cs
+tests/Dw3.Game.Tests/BattleModifierTests.cs
 tests/Dw3.Game.Tests/BattleMotionCadenceTraceTests.cs
 tests/Dw3.Game.Tests/BattleSkeletonBlendTests.cs
 tests/Dw3.Game.Tests/BattleSkeletonTransformCacheTests.cs
