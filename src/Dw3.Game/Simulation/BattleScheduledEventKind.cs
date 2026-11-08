@@ -11,4 +11,7 @@ public enum BattleScheduledEventKind
 
     /// <summary>An immediate interrupt that precedes ordinary turns.</summary>
     Interrupt,
+
+    /// <summary>Recurring poison damage attached to one fighter.</summary>
+    PoisonDamage,
 }

@@ -206,6 +206,53 @@ public sealed class BattleState
         return true;
     }
 
+    /// <summary>Attempts to poison the opposing active fighter using the qualified poison resistance roll.</summary>
+    /// <param name="attackerSide">Side inflicting poison.</param>
+    /// <param name="chance">Base application chance.</param>
+    /// <param name="power">Stored periodic poison strength.</param>
+    /// <param name="rng">Shared battle random source.</param>
+    /// <returns>Whether poison was applied or refreshed.</returns>
+    public bool InflictPoison(BattleSide attackerSide, int chance, int power, IBattleRng rng)
+    {
+        if (attackerSide == BattleSide.Player && Blocks[BattleConst.BlockPoison] != 0)
+        {
+            return false;
+        }
+
+        BattleFighter? attacker = FighterFor(attackerSide);
+        BattleFighter? target = FighterFor(BattlePoisonRules.Opposite(attackerSide));
+        if (attacker is not { IsKnockedOut: false } || target is not { IsKnockedOut: false })
+        {
+            return false;
+        }
+
+        attacker.RefreshStats();
+        target.RefreshStats();
+        if (!BattlePoisonRules.RollSucceeds(chance, attacker, target, rng))
+        {
+            return false;
+        }
+
+        BattleSide targetSide = BattlePoisonRules.Opposite(attackerSide);
+        target.Flags |= FighterFlags.Poisoned;
+        _turnScheduler.EnqueuePoison(targetSide, ActiveSlot(targetSide), attacker.Special ? power * 2 : power);
+        return true;
+    }
+
+    /// <summary>Cures poison from one fighter and removes its scheduled periodic damage.</summary>
+    /// <param name="side">Side containing the cured fighter.</param>
+    /// <param name="fighterSlot">Slot of the cured fighter.</param>
+    public void CurePoison(BattleSide side, int fighterSlot)
+    {
+        BattleFighter? fighter = FighterAt(side, fighterSlot);
+        if (fighter is not null)
+        {
+            fighter.Flags &= ~FighterFlags.Poisoned;
+        }
+
+        _turnScheduler.RemovePoison(side, fighterSlot);
+    }
+
     /// <summary>
     /// The active partner uses a battle item. The effect is applied to
     /// the active fighter (or the party for revive); removing the item from the bag is the
@@ -377,7 +424,64 @@ public sealed class BattleState
         var own = side == BattleSide.Player ? ActivePlayerFighter : ActiveEnemyFighter;
         var other = side == BattleSide.Player ? ActiveEnemyFighter : ActivePlayerFighter;
         _turnScheduler.EnqueueActionTurn(side, kind, BattleFighterTiming.SpeedOf(own), BattleFighterTiming.SpeedOf(other), BattleFighterTiming.SpiritOf(own), rng ?? new BattleDefaultOpeningRng());
+        ProcessDueStatuses();
     }
+
+    /// <summary>Consumes every due poison event before the next ordinary action resumes.</summary>
+    private void ProcessDueStatuses()
+    {
+        while (_turnScheduler.Count > 0 && _turnScheduler.NextKind == BattleScheduledEventKind.PoisonDamage)
+        {
+            ProcessPoisonDamage(_turnScheduler.PopNext());
+        }
+    }
+
+    /// <summary>Resolves one poison event and re-arms it unless the affected fighter is knocked out.</summary>
+    /// <param name="scheduled">Due poison event.</param>
+    private void ProcessPoisonDamage(BattleScheduledEvent scheduled)
+    {
+        BattleFighter? fighter = FighterAt(scheduled.Side, scheduled.FighterSlot);
+        if (fighter is null || (fighter.Flags & FighterFlags.Poisoned) == 0 || fighter.IsKnockedOut)
+        {
+            return;
+        }
+
+        if (ActiveSlot(scheduled.Side) == scheduled.FighterSlot)
+        {
+            fighter.RefreshStats();
+            fighter.TakeDamage(BattlePoisonRules.Damage(scheduled.Value, fighter));
+            CheckOutcome();
+        }
+
+        if (fighter.IsKnockedOut)
+        {
+            fighter.Flags &= ~FighterFlags.Poisoned;
+            return;
+        }
+
+        _turnScheduler.EnqueuePoison(scheduled.Side, scheduled.FighterSlot, scheduled.Value);
+    }
+
+    /// <summary>Gets the active fighter on one side.</summary>
+    /// <param name="side">Requested side.</param>
+    /// <returns>The active fighter, if one exists.</returns>
+    private BattleFighter? FighterFor(BattleSide side) =>
+        side == BattleSide.Player ? ActivePlayerFighter : ActiveEnemyFighter;
+
+    /// <summary>Gets a fighter by side and slot without throwing on invalid input.</summary>
+    /// <param name="side">Requested side.</param>
+    /// <param name="slot">Requested slot.</param>
+    /// <returns>Fighter at the slot, if valid.</returns>
+    private BattleFighter? FighterAt(BattleSide side, int slot)
+    {
+        BattleFighter?[] fighters = side == BattleSide.Player ? Players : Enemies;
+        return slot >= 0 && slot < fighters.Length ? fighters[slot] : null;
+    }
+
+    /// <summary>Gets the active slot of one side.</summary>
+    /// <param name="side">Requested side.</param>
+    /// <returns>The active slot, or -1 when no fighter is active.</returns>
+    private int ActiveSlot(BattleSide side) => side == BattleSide.Player ? ActivePlayer : ActiveEnemy;
 
     /// <summary>The enemy side brings in its next living
     /// fighter when the active one falls to a hit. This reinforcement is distinct from the

@@ -15,6 +15,9 @@ public sealed class BattleTurnScheduler
     /// <summary>Gets the delay until the next selected event is due without consuming it.</summary>
     public int NextDueDelay => EventAt(FindNextIndex()).Delay;
 
+    /// <summary>Gets the kind of the next queued event without consuming it.</summary>
+    public BattleScheduledEventKind NextKind => EventAt(FindNextIndex()).Kind;
+
     /// <summary>Clears the queue and initializes the normal or ambush opening.</summary>
     /// <param name="playerSpeed">Active player speed.</param>
     /// <param name="enemySpeed">Active enemy speed.</param>
@@ -64,6 +67,22 @@ public sealed class BattleTurnScheduler
         ShiftAll(shift);
         Add(new BattleScheduledEvent(kind, side, 1));
     }
+
+    /// <summary>Creates or refreshes one fighter's pending poison damage event.</summary>
+    /// <param name="side">Side containing the poisoned fighter.</param>
+    /// <param name="fighterSlot">Slot of the poisoned fighter.</param>
+    /// <param name="power">Stored poison strength.</param>
+    public void EnqueuePoison(BattleSide side, int fighterSlot, int power)
+    {
+        Remove(BattleScheduledEventKind.PoisonDamage, side, fighterSlot);
+        Add(new BattleScheduledEvent(BattleScheduledEventKind.PoisonDamage, side, 1000, fighterSlot, power));
+    }
+
+    /// <summary>Removes a fighter's pending poison damage event.</summary>
+    /// <param name="side">Side containing the cured or knocked-out fighter.</param>
+    /// <param name="fighterSlot">Slot of the fighter.</param>
+    public void RemovePoison(BattleSide side, int fighterSlot) =>
+        Remove(BattleScheduledEventKind.PoisonDamage, side, fighterSlot);
 
     /// <summary>Pops the next event using the slot-sensitive EU tie rule.</summary>
     /// <returns>The selected event with its pre-pop relative delay.</returns>
@@ -133,6 +152,22 @@ public sealed class BattleTurnScheduler
         for (var index = 0; index < Capacity; index++)
         {
             if (_events[index]?.Kind == BattleTurnSchedulerRules.TurnKind(side))
+            {
+                _events[index] = null;
+                Count--;
+            }
+        }
+    }
+
+    /// <summary>Removes all events matching one per-fighter status identity.</summary>
+    /// <param name="kind">Kind of event to remove.</param>
+    /// <param name="side">Affected side.</param>
+    /// <param name="fighterSlot">Affected fighter slot.</param>
+    private void Remove(BattleScheduledEventKind kind, BattleSide side, int fighterSlot)
+    {
+        for (var index = 0; index < Capacity; index++)
+        {
+            if (_events[index] is { } item && item.Kind == kind && item.Side == side && item.FighterSlot == fighterSlot)
             {
                 _events[index] = null;
                 Count--;

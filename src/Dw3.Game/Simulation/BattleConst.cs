@@ -27,6 +27,12 @@ public static class BattleConst
     /// <summary>Technique effect id that raises the critical hit chance.</summary>
     public const int TechEffectCritical = 11;
 
+    /// <summary>Index in an encounter's block flags of the flag that prevents player-originated poison.</summary>
+    public const int BlockPoison = 0;
+
+    /// <summary>Elemental resistance slot paired with poison resistance.</summary>
+    public const int PoisonElementResistance = 1;
+
     /// <summary>Index in an encounter's block flags of the flag that forbids running away.</summary>
     public const int BlockRunAway = 11;
 }
