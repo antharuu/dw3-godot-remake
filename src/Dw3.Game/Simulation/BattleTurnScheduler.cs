@@ -100,8 +100,9 @@ public sealed class BattleTurnScheduler
     /// <param name="delay">Qualified delay until the field returns to its previous value.</param>
     public void EnqueueElementBoostExpiry(ElementBoost previousBoost, int delay)
     {
+        ElementBoost originalBoost = PendingElementBoostRestore() ?? previousBoost;
         Remove(BattleScheduledEventKind.ElementBoostEnd, BattleSide.Player, fighterSlot: -1);
-        Add(new BattleScheduledEvent(BattleScheduledEventKind.ElementBoostEnd, BattleSide.Player, Math.Max(delay, 0), PreviousBoost: previousBoost));
+        Add(new BattleScheduledEvent(BattleScheduledEventKind.ElementBoostEnd, BattleSide.Player, Math.Max(delay, 0), PreviousBoost: originalBoost));
     }
 
     /// <summary>Removes one control-status expiry for a fighter.</summary>
@@ -140,6 +141,21 @@ public sealed class BattleTurnScheduler
         Array.Clear(_events);
         Count = 0;
         Elapsed = 0;
+    }
+
+    /// <summary>Gets the original field value retained by a pending refreshed field effect.</summary>
+    /// <returns>The retained original field value, or <see langword="null"/> when none is pending.</returns>
+    private ElementBoost? PendingElementBoostRestore()
+    {
+        foreach (BattleScheduledEvent? candidate in _events)
+        {
+            if (candidate is { Kind: BattleScheduledEventKind.ElementBoostEnd } pending)
+            {
+                return pending.PreviousBoost;
+            }
+        }
+
+        return null;
     }
 
     /// <summary>Queues both opening turns after their single opening decision.</summary>

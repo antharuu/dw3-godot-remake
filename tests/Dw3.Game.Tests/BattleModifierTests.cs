@@ -99,6 +99,30 @@ public sealed class BattleModifierTests
     }
 
     [Fact]
+    public void RefreshedElementBoostExpiresToTheOriginalField()
+    {
+        BattleState state = CreateState();
+        ElementBoost original = new(2, 32);
+        ElementBoost first = new(5, 64);
+        ElementBoost refreshed = new(6, 96);
+        var flow = new BattleFlowController
+        {
+            PlayerBasicTech = new TechData { Power = 1, Icon = BattleConst.TechPhysical, Accuracy = 128 },
+        };
+        state.Boost = original;
+
+        Assert.True(state.ApplyElementBoost(first, new SequenceRng()));
+        Assert.True(state.ApplyElementBoost(refreshed, new SequenceRng()));
+        flow.Start(state);
+        flow.EnemyAct(new SequenceRng());
+        Assert.True(flow.Choose(BattleCommand.Attack, 0, new SequenceRng()));
+        flow.EnemyAct(new SequenceRng());
+        Assert.True(flow.Choose(BattleCommand.Attack, 0, new SequenceRng()));
+
+        Assert.Equal(original, state.Boost);
+    }
+
+    [Fact]
     public void SpecialStatusExpiryLeavesLaterSpecialAndFormSnapshotUntouched()
     {
         BattleState state = CreateState(formAttack: 90);
