@@ -73,6 +73,56 @@ public sealed class BattleModifierTests
         Assert.Equal(50, state.Players[0]!.Stats.Stats[BattleStat.Attack]);
     }
 
+    [Fact]
+    public void ElementBoostExpiresThroughSchedulerAndRestoresThePreviousField()
+    {
+        BattleState state = CreateState();
+        ElementBoost previous = new(2, 32);
+        ElementBoost temporary = new(5, 64);
+        var flow = new BattleFlowController
+        {
+            PlayerBasicTech = new TechData { Power = 1, Icon = BattleConst.TechPhysical, Accuracy = 128 },
+        };
+        state.Boost = previous;
+
+        Assert.True(state.ApplyElementBoost(temporary, new SequenceRng()));
+        Assert.Equal(temporary, state.Boost);
+        flow.Start(state);
+        flow.EnemyAct(new SequenceRng());
+        Assert.True(flow.Choose(BattleCommand.Attack, 0, new SequenceRng()));
+        flow.EnemyAct(new SequenceRng());
+        Assert.True(flow.Choose(BattleCommand.Attack, 0, new SequenceRng()));
+
+        Assert.Equal(previous, state.Boost);
+        Assert.False(state.ApplyElementBoost(ElementBoost.None, new SequenceRng()));
+        Assert.Equal(previous, state.Boost);
+    }
+
+    [Fact]
+    public void SpecialStatusExpiryLeavesLaterSpecialAndFormSnapshotUntouched()
+    {
+        BattleState state = CreateState(formAttack: 90);
+        var flow = new BattleFlowController
+        {
+            PlayerBasicTech = new TechData { Power = 1, Icon = BattleConst.TechPhysical, Accuracy = 128 },
+        };
+
+        Assert.True(state.ApplySpecialStatus(BattleSide.Player, 0, new SequenceRng()));
+        Assert.True(state.ApplySpecialStatus(BattleSide.Player, 1, new SequenceRng(2000)));
+        Assert.True(state.Players[0]!.Special);
+        Assert.True(state.Players[1]!.Special);
+        flow.Start(state);
+        flow.EnemyAct(new SequenceRng());
+        Assert.True(flow.Choose(BattleCommand.Digivolve, 2, new SequenceRng()));
+        flow.EnemyAct(new SequenceRng());
+        Assert.True(flow.Choose(BattleCommand.Attack, 0, new SequenceRng()));
+
+        Assert.False(state.Players[0]!.Special);
+        Assert.True(state.Players[1]!.Special);
+        Assert.Equal(90, state.Players[0]!.Stats.Stats[BattleStat.Attack]);
+        Assert.False(state.ApplySpecialStatus(BattleSide.Player, fighterSlot: 2, new SequenceRng()));
+    }
+
     private static BattleState CreateState(int formAttack = 0)
     {
         var baseStats = new BattleStats();
@@ -92,8 +142,10 @@ public sealed class BattleModifierTests
         return BattleState.InitFighters(setup, digimon: 1, new SequenceRng());
     }
 
-    private sealed class SequenceRng : IBattleRng
+    private sealed class SequenceRng(params int[] values) : IBattleRng
     {
-        public int NextValue() => 0;
+        private readonly Queue<int> _values = new(values);
+
+        public int NextValue() => _values.Count > 0 ? _values.Dequeue() : 0;
     }
 }

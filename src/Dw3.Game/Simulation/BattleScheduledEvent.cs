@@ -6,9 +6,11 @@ namespace Dw3Production.Simulation;
 /// <param name="Delay">Remaining battle-time units until execution.</param>
 /// <param name="FighterSlot">Fighter slot affected by a per-fighter event, or -1 for a side-wide event.</param>
 /// <param name="Value">Effect-specific stored value.</param>
+/// <param name="PreviousBoost">Field boost to restore when a temporary field event expires.</param>
 public readonly record struct BattleScheduledEvent(
     BattleScheduledEventKind Kind,
     BattleSide Side,
     int Delay,
     int FighterSlot = -1,
-    int Value = 0);
+    int Value = 0,
+    ElementBoost PreviousBoost = default);

@@ -95,6 +95,15 @@ public sealed class BattleTurnScheduler
         Add(new BattleScheduledEvent(kind, side, Math.Max(delay, 0), fighterSlot));
     }
 
+    /// <summary>Creates or refreshes the pending expiry of the battle's temporary field boost.</summary>
+    /// <param name="previousBoost">Field boost to restore when the expiry is due.</param>
+    /// <param name="delay">Qualified delay until the field returns to its previous value.</param>
+    public void EnqueueElementBoostExpiry(ElementBoost previousBoost, int delay)
+    {
+        Remove(BattleScheduledEventKind.ElementBoostEnd, BattleSide.Player, fighterSlot: -1);
+        Add(new BattleScheduledEvent(BattleScheduledEventKind.ElementBoostEnd, BattleSide.Player, Math.Max(delay, 0), PreviousBoost: previousBoost));
+    }
+
     /// <summary>Removes one control-status expiry for a fighter.</summary>
     /// <param name="kind">Control-status expiry kind.</param>
     /// <param name="side">Side containing the affected fighter.</param>

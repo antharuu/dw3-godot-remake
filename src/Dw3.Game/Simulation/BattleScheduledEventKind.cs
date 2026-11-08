@@ -32,4 +32,10 @@ public enum BattleScheduledEventKind
 
     /// <summary>Expiry of one fighter's temporary speed modifier.</summary>
     SpeedBoostEnd,
+
+    /// <summary>Expiry of a temporary battlefield element boost.</summary>
+    ElementBoostEnd,
+
+    /// <summary>Expiry of one fighter's temporary special state.</summary>
+    SpecialEnd,
 }

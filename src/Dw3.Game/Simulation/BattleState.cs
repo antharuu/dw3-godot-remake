@@ -226,6 +226,20 @@ public sealed class BattleState
     public bool ApplyStatModifier(BattleSide side, int fighterSlot, int stat, int percent, IBattleRng rng) =>
         _modifierCoordinator.ApplyStatModifier(side, fighterSlot, stat, percent, fromTechnique: false, rng);
 
+    /// <summary>Applies a temporary elemental field boost that restores the previous field when its scheduled expiry is due.</summary>
+    /// <param name="boost">Element and amount active for the temporary field window.</param>
+    /// <param name="rng">Shared battle random source for expiry timing.</param>
+    /// <returns>Whether a supported elemental field was applied.</returns>
+    public bool ApplyElementBoost(ElementBoost boost, IBattleRng rng) => _modifierCoordinator.ApplyElementBoost(boost, rng);
+
+    /// <summary>Applies a temporary special state to one living fighter.</summary>
+    /// <param name="side">Side containing the fighter.</param>
+    /// <param name="fighterSlot">Slot of the fighter receiving the state.</param>
+    /// <param name="rng">Shared battle random source for expiry timing.</param>
+    /// <returns>Whether a living fighter received the state.</returns>
+    public bool ApplySpecialStatus(BattleSide side, int fighterSlot, IBattleRng rng) =>
+        _modifierCoordinator.ApplySpecialStatus(side, fighterSlot, rng);
+
     /// <summary>Sets the active fighter's charge for its next technique.</summary>
     /// <param name="side">Side containing the active fighter.</param>
     /// <param name="value">Charge in sixty-fourths of damage.</param>

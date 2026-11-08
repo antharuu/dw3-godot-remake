@@ -48,6 +48,41 @@ public sealed class BattleModifierCoordinator(BattleState state, BattleTurnSched
         return true;
     }
 
+    /// <summary>Applies one temporary elemental field boost and retains the replaced field for expiry.</summary>
+    /// <param name="boost">Valid elemental field value to expose while this effect is active.</param>
+    /// <param name="rng">Shared battle random source used for expiry timing.</param>
+    /// <returns>Whether the boost has a supported element and was scheduled.</returns>
+    public bool ApplyElementBoost(ElementBoost boost, IBattleRng rng)
+    {
+        if (!HasSupportedElement(boost))
+        {
+            return false;
+        }
+
+        ElementBoost previous = state.Boost;
+        state.Boost = boost;
+        scheduler.EnqueueElementBoostExpiry(previous, FieldExpiryDelay(rng));
+        return true;
+    }
+
+    /// <summary>Applies a temporary special state to one living fighter.</summary>
+    /// <param name="side">Side containing the fighter.</param>
+    /// <param name="fighterSlot">Slot receiving the state.</param>
+    /// <param name="rng">Shared battle random source used for expiry timing.</param>
+    /// <returns>Whether a living fighter received the state.</returns>
+    public bool ApplySpecialStatus(BattleSide side, int fighterSlot, IBattleRng rng)
+    {
+        BattleFighter? fighter = state.FighterAt(side, fighterSlot);
+        if (fighter is not { Id: not 0, IsKnockedOut: false })
+        {
+            return false;
+        }
+
+        fighter.Special = true;
+        scheduler.EnqueueControlExpiry(BattleScheduledEventKind.SpecialEnd, side, fighterSlot, ExpiryDelay(fighter, fromTechnique: false, rng));
+        return true;
+    }
+
     /// <summary>Consumes a fighter's pending charge after its next technique begins.</summary>
     /// <param name="side">Side containing the fighter.</param>
     public void ConsumeCharge(BattleSide side)
@@ -106,16 +141,44 @@ public sealed class BattleModifierCoordinator(BattleState state, BattleTurnSched
         return (fighter.Stats.Stats[BattleStat.Spirit] * multiplier) + 1000 + (rng.NextValue() % 2001);
     }
 
-    /// <summary>Gets whether an event ends one temporary stat modifier.</summary>
+    /// <summary>Tests whether a field effect names one of the seven defined battle elements.</summary>
+    /// <param name="boost">Candidate temporary field value.</param>
+    /// <returns>Whether its element is valid for damage resolution.</returns>
+    private static bool HasSupportedElement(ElementBoost boost) =>
+        boost.Element >= BattleConst.ElementFirst && boost.Element < BattleConst.ElementFirst + BattleConst.ElementCount;
+
+    /// <summary>Gets the field-effect expiry delay without coupling the field to a fighter snapshot.</summary>
+    /// <param name="rng">Shared battle random source.</param>
+    /// <returns>Expiry delay in battle-time units.</returns>
+    private static int FieldExpiryDelay(IBattleRng rng) =>
+        BattleActionDelay.Calculate(BattleActionDelayKind.BoostExpiry, 0, 0, 0, rng);
+
+    /// <summary>Gets whether an event ends one temporary battle modifier.</summary>
     /// <param name="kind">Queued event kind.</param>
     /// <returns>Whether the kind belongs to this coordinator.</returns>
-    private static bool IsModifierEvent(BattleScheduledEventKind kind) => kind is BattleScheduledEventKind.AttackBoostEnd or BattleScheduledEventKind.DefenseBoostEnd or BattleScheduledEventKind.SpeedBoostEnd;
+    private static bool IsModifierEvent(BattleScheduledEventKind kind) => kind is BattleScheduledEventKind.AttackBoostEnd or BattleScheduledEventKind.DefenseBoostEnd or BattleScheduledEventKind.SpeedBoostEnd or BattleScheduledEventKind.ElementBoostEnd or BattleScheduledEventKind.SpecialEnd;
 
-    /// <summary>Clears the one boost addressed by an expiry event.</summary>
+    /// <summary>Clears the one modifier addressed by an expiry event.</summary>
     /// <param name="scheduled">Consumed modifier expiry.</param>
     private void ClearBoost(BattleScheduledEvent scheduled)
     {
+        if (scheduled.Kind == BattleScheduledEventKind.ElementBoostEnd)
+        {
+            state.Boost = scheduled.PreviousBoost;
+            return;
+        }
+
         BattleFighter? fighter = state.FighterAt(scheduled.Side, scheduled.FighterSlot);
+        if (scheduled.Kind == BattleScheduledEventKind.SpecialEnd)
+        {
+            if (fighter is { } special)
+            {
+                special.Special = false;
+            }
+
+            return;
+        }
+
         int index = scheduled.Kind switch
         {
             BattleScheduledEventKind.AttackBoostEnd => 0,
