@@ -50,6 +50,7 @@ public sealed class EnemyTurnResolver(BattleState state)
         if (result.Landed)
         {
             target.TakeDamage(result.Damage);
+            _ = state.TryWakeOnHit(BattleSide.Player, result.Damage, rng);
         }
 
         EndTurn();
@@ -82,6 +83,7 @@ public sealed class EnemyTurnResolver(BattleState state)
         if (result.Landed)
         {
             target.TakeDamage(result.Damage);
+            _ = state.TryWakeOnHit(BattleSide.Player, result.Damage, rng);
         }
 
         EndTurn();
@@ -157,6 +159,7 @@ public sealed class EnemyTurnResolver(BattleState state)
         if (result.Landed)
         {
             target.TakeDamage(result.Damage);
+            _ = state.TryWakeOnHit(BattleSide.Player, result.Damage, rng);
         }
 
         state.CheckOutcome();

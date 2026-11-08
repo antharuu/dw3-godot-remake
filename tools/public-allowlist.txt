@@ -563,6 +563,8 @@ src/Dw3.Game/Simulation/BattleActionDelay.cs
 src/Dw3.Game/Simulation/BattleActionDelayKind.cs
 src/Dw3.Game/Simulation/BattleCommand.cs
 src/Dw3.Game/Simulation/BattleConst.cs
+src/Dw3.Game/Simulation/BattleControlStatusDefinition.cs
+src/Dw3.Game/Simulation/BattleControlStatusRules.cs
 src/Dw3.Game/Simulation/BattleDefaultOpeningRng.cs
 src/Dw3.Game/Simulation/BattleEnemy.cs
 src/Dw3.Game/Simulation/BattleEnemyAi.cs
@@ -597,6 +599,7 @@ src/Dw3.Game/Simulation/BattleSetupFactory.cs
 src/Dw3.Game/Simulation/BattleSide.cs
 src/Dw3.Game/Simulation/BattleStat.cs
 src/Dw3.Game/Simulation/BattleState.cs
+src/Dw3.Game/Simulation/BattleStatusCoordinator.cs
 src/Dw3.Game/Simulation/BattleStats.cs
 src/Dw3.Game/Simulation/BattleStageResolver.cs
 src/Dw3.Game/Simulation/BattleTableAction.cs
@@ -762,6 +765,7 @@ tests/Dw3.Formats.Tests/Water/SpriteSheetDecoderTests.cs
 tests/Dw3.Formats.Tests/Water/StageObjectDecoderTests.cs
 tests/Dw3.Formats.Tests/Water/StageTileDecoderTests.cs
 tests/Dw3.Game.Tests/BattleDataPackLoaderTests.cs
+tests/Dw3.Game.Tests/BattleControlStatusTests.cs
 tests/Dw3.Game.Tests/BattleEnemyAiVectorCodec.cs
 tests/Dw3.Game.Tests/BattleEnemyAiVectorGenerator.cs
 tests/Dw3.Game.Tests/BattleEnemyAiVectorTests.cs

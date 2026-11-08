@@ -14,4 +14,13 @@ public enum BattleScheduledEventKind
 
     /// <summary>Recurring poison damage attached to one fighter.</summary>
     PoisonDamage,
+
+    /// <summary>Expiry of one fighter's paralysis.</summary>
+    ParalysisEnd,
+
+    /// <summary>Expiry of one fighter's confusion.</summary>
+    ConfusionEnd,
+
+    /// <summary>Expiry of one fighter's sleep.</summary>
+    SleepEnd,
 }

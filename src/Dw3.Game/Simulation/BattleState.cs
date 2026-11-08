@@ -19,17 +19,21 @@ namespace Dw3Production.Simulation;
 /// side decides its turn from its fighter table (<see cref="BattleEnemyAi"/>, through
 /// <see cref="EnemyTurnResolver"/>): attack, technique, switch or run away, plus the
 /// counter-attack its counter field triggers when the player's hit lands. The blast (a
-/// temporary gauge-triggered digivolution, not a command) and statuses are out of scope.</para>
+/// temporary gauge-triggered digivolution, not a command) remains out of scope. Persistent
+/// poison plus the sleep, paralysis and confusion control statuses are coordinated by
+/// <see cref="BattleStatusCoordinator"/>.</para>
 /// </remarks>
 public sealed class BattleState
 {
     private readonly EnemyTurnResolver _enemyTurn;
     private readonly BattleTurnScheduler _turnScheduler = new();
+    private readonly BattleStatusCoordinator _statusCoordinator;
 
     /// <summary>Initializes a new instance of the <see cref="BattleState"/> class with empty sides and no outcome.</summary>
     public BattleState()
     {
         _enemyTurn = new EnemyTurnResolver(this);
+        _statusCoordinator = new BattleStatusCoordinator(this, _turnScheduler);
     }
 
     /// <summary>Gets or sets the three party slots. A null slot is empty.</summary>
@@ -137,7 +141,7 @@ public sealed class BattleState
     {
         var attacker = ActivePlayerFighter;
         var target = ActiveEnemyFighter;
-        if (attacker is not { IsKnockedOut: false } || target == null)
+        if (attacker is not { IsKnockedOut: false } || target == null || (attacker.Flags & FighterFlags.Asleep) != 0)
         {
             return false;
         }
@@ -154,7 +158,7 @@ public sealed class BattleState
     {
         var attacker = ActivePlayerFighter;
         var target = ActiveEnemyFighter;
-        if (attacker is not { IsKnockedOut: false } || target == null || tech.Mp > attacker.Mp)
+        if (attacker is not { IsKnockedOut: false } || target == null || tech.Mp > attacker.Mp || (attacker.Flags & (FighterFlags.Asleep | FighterFlags.Confused)) != 0)
         {
             return false; // an unaffordable technique does not spend the turn
         }
@@ -174,7 +178,7 @@ public sealed class BattleState
     public bool PlayerDigivolve(int form)
     {
         var attacker = ActivePlayerFighter;
-        if (attacker is not { IsKnockedOut: false } || (attacker.Flags & FighterFlags.NoDigivolve) != 0 || form == attacker.Id)
+        if (attacker is not { IsKnockedOut: false } || (attacker.Flags & (FighterFlags.NoDigivolve | FighterFlags.Asleep | FighterFlags.Confused)) != 0 || form == attacker.Id)
         {
             return false;
         }
@@ -196,7 +200,7 @@ public sealed class BattleState
     /// <returns><see langword="false"/> for an out-of-range, active, empty or knocked-out slot, otherwise <see langword="true"/>.</returns>
     public bool PlayerSwitch(int slot)
     {
-        if (slot < 0 || slot >= Players.Length || slot == ActivePlayer || Players[slot] is not { Id: not 0, IsKnockedOut: false })
+        if ((ActivePlayerFighter?.Flags & (FighterFlags.NoSwitch | FighterFlags.Confused)) != 0 || slot < 0 || slot >= Players.Length || slot == ActivePlayer || Players[slot] is not { Id: not 0, IsKnockedOut: false })
         {
             return false;
         }
@@ -213,45 +217,68 @@ public sealed class BattleState
     /// <param name="rng">Shared battle random source.</param>
     /// <returns>Whether poison was applied or refreshed.</returns>
     public bool InflictPoison(BattleSide attackerSide, int chance, int power, IBattleRng rng)
-    {
-        if (attackerSide == BattleSide.Player && Blocks[BattleConst.BlockPoison] != 0)
-        {
-            return false;
-        }
-
-        BattleFighter? attacker = FighterFor(attackerSide);
-        BattleFighter? target = FighterFor(BattlePoisonRules.Opposite(attackerSide));
-        if (attacker is not { IsKnockedOut: false } || target is not { IsKnockedOut: false })
-        {
-            return false;
-        }
-
-        attacker.RefreshStats();
-        target.RefreshStats();
-        if (!BattlePoisonRules.RollSucceeds(chance, attacker, target, rng))
-        {
-            return false;
-        }
-
-        BattleSide targetSide = BattlePoisonRules.Opposite(attackerSide);
-        target.Flags |= FighterFlags.Poisoned;
-        _turnScheduler.EnqueuePoison(targetSide, ActiveSlot(targetSide), attacker.Special ? power * 2 : power);
-        return true;
-    }
+        => _statusCoordinator.InflictPoison(attackerSide, chance, power, rng);
 
     /// <summary>Cures poison from one fighter and removes its scheduled periodic damage.</summary>
     /// <param name="side">Side containing the cured fighter.</param>
     /// <param name="fighterSlot">Slot of the cured fighter.</param>
     public void CurePoison(BattleSide side, int fighterSlot)
+        => _statusCoordinator.CurePoison(side, fighterSlot);
+
+    /// <summary>Attempts to paralyze the opposing active fighter with a source-strength counter.</summary>
+    /// <param name="attackerSide">Side applying paralysis.</param>
+    /// <param name="chance">Base application chance.</param>
+    /// <param name="strength">Paralysis strength stored on success.</param>
+    /// <param name="rng">Shared battle random source.</param>
+    /// <returns>Whether paralysis was applied or refreshed.</returns>
+    public bool InflictParalysis(BattleSide attackerSide, int chance, int strength, IBattleRng rng) =>
+        _statusCoordinator.InflictControl(attackerSide, chance, strength, new(FighterFlags.Paralyzed, BattleScheduledEventKind.ParalysisEnd, Resist.Paralysis, 4), rng);
+
+    /// <summary>Attempts to confuse the opposing active fighter with a source-strength counter.</summary>
+    /// <param name="attackerSide">Side applying confusion.</param>
+    /// <param name="chance">Base application chance.</param>
+    /// <param name="strength">Confusion strength stored on success.</param>
+    /// <param name="rng">Shared battle random source.</param>
+    /// <returns>Whether confusion was applied or refreshed.</returns>
+    public bool InflictConfusion(BattleSide attackerSide, int chance, int strength, IBattleRng rng) =>
+        _statusCoordinator.InflictControl(attackerSide, chance, strength, new(FighterFlags.Confused, BattleScheduledEventKind.ConfusionEnd, Resist.Confusion, 3), rng);
+
+    /// <summary>Attempts to put the opposing active fighter to sleep with a source-strength counter.</summary>
+    /// <param name="attackerSide">Side applying sleep.</param>
+    /// <param name="chance">Base application chance.</param>
+    /// <param name="strength">Sleep strength stored on success.</param>
+    /// <param name="rng">Shared battle random source.</param>
+    /// <returns>Whether sleep was applied or refreshed.</returns>
+    public bool InflictSleep(BattleSide attackerSide, int chance, int strength, IBattleRng rng) =>
+        _statusCoordinator.InflictControl(attackerSide, chance, strength, new(FighterFlags.Asleep, BattleScheduledEventKind.SleepEnd, Resist.Sleep, 2), rng);
+
+    /// <summary>Clears all three control statuses and their scheduled expiries from one fighter.</summary>
+    /// <param name="side">Side containing the cured fighter.</param>
+    /// <param name="fighterSlot">Slot of the cured fighter.</param>
+    public void CureControlStatuses(BattleSide side, int fighterSlot)
+        => _statusCoordinator.CureControlStatuses(side, fighterSlot);
+
+    /// <summary>Tests whether the active player loses its turn to paralysis and spends that turn when it does.</summary>
+    /// <param name="rng">Shared battle random source.</param>
+    /// <returns>Whether paralysis consumed the turn.</returns>
+    public bool TryLosePlayerTurnToParalysis(IBattleRng rng)
     {
-        BattleFighter? fighter = FighterAt(side, fighterSlot);
-        if (fighter is not null)
+        if (!_statusCoordinator.LosesPlayerTurnToParalysis(rng))
         {
-            fighter.Flags &= ~FighterFlags.Poisoned;
+            return false;
         }
 
-        _turnScheduler.RemovePoison(side, fighterSlot);
+        AdvancePlayerTurn();
+        return true;
     }
+
+    /// <summary>Tests whether a hit wakes the active fighter of one side and removes its pending sleep expiry.</summary>
+    /// <param name="side">Side whose active fighter received the hit.</param>
+    /// <param name="damage">Resolved damage value.</param>
+    /// <param name="rng">Shared battle random source.</param>
+    /// <returns>Whether sleep ended.</returns>
+    public bool TryWakeOnHit(BattleSide side, int damage, IBattleRng rng)
+        => _statusCoordinator.TryWakeOnHit(side, damage, rng);
 
     /// <summary>
     /// The active partner uses a battle item. The effect is applied to
@@ -263,7 +290,7 @@ public sealed class BattleState
     public bool PlayerItem(BattleItem item)
     {
         var attacker = ActivePlayerFighter;
-        if (attacker is not { IsKnockedOut: false })
+        if (attacker is not { IsKnockedOut: false } || (attacker.Flags & FighterFlags.Confused) != 0)
         {
             return false;
         }
@@ -281,7 +308,7 @@ public sealed class BattleState
     {
         var attacker = ActivePlayerFighter;
         var defender = ActiveEnemyFighter;
-        if (attacker is not { IsKnockedOut: false } || defender == null)
+        if (attacker is not { IsKnockedOut: false } || defender == null || (attacker.Flags & (FighterFlags.Asleep | FighterFlags.Confused | FighterFlags.NoSwitch)) != 0)
         {
             return false;
         }
@@ -379,6 +406,27 @@ public sealed class BattleState
         }
     }
 
+    /// <summary>Gets the active fighter on one side.</summary>
+    /// <param name="side">Requested side.</param>
+    /// <returns>The active fighter, if one exists.</returns>
+    internal BattleFighter? FighterFor(BattleSide side) =>
+        side == BattleSide.Player ? ActivePlayerFighter : ActiveEnemyFighter;
+
+    /// <summary>Gets a fighter by side and slot without throwing on invalid input.</summary>
+    /// <param name="side">Requested side.</param>
+    /// <param name="slot">Requested slot.</param>
+    /// <returns>Fighter at the slot, if valid.</returns>
+    internal BattleFighter? FighterAt(BattleSide side, int slot)
+    {
+        BattleFighter?[] fighters = side == BattleSide.Player ? Players : Enemies;
+        return slot >= 0 && slot < fighters.Length ? fighters[slot] : null;
+    }
+
+    /// <summary>Gets the active slot of one side.</summary>
+    /// <param name="side">Requested side.</param>
+    /// <returns>The active slot, or -1 when no fighter is active.</returns>
+    internal int ActiveSlot(BattleSide side) => side == BattleSide.Player ? ActivePlayer : ActiveEnemy;
+
     /// <summary>Seeds the EU relative queue with the encounter opening rule.</summary>
     /// <param name="ambushChance">Encounter ambush probability, or zero when disabled.</param>
     /// <param name="rng">Shared injected battle random source.</param>
@@ -397,6 +445,7 @@ public sealed class BattleState
         if (result.Landed)
         {
             target.TakeDamage(result.Damage);
+            _ = TryWakeOnHit(BattleSide.Enemy, result.Damage, rng);
             _enemyTurn.TryCounter(result.Damage, rng);
             ResolveEnemySlot();
         }
@@ -424,64 +473,8 @@ public sealed class BattleState
         var own = side == BattleSide.Player ? ActivePlayerFighter : ActiveEnemyFighter;
         var other = side == BattleSide.Player ? ActiveEnemyFighter : ActivePlayerFighter;
         _turnScheduler.EnqueueActionTurn(side, kind, BattleFighterTiming.SpeedOf(own), BattleFighterTiming.SpeedOf(other), BattleFighterTiming.SpiritOf(own), rng ?? new BattleDefaultOpeningRng());
-        ProcessDueStatuses();
+        _statusCoordinator.ProcessDueEvents();
     }
-
-    /// <summary>Consumes every due poison event before the next ordinary action resumes.</summary>
-    private void ProcessDueStatuses()
-    {
-        while (_turnScheduler.Count > 0 && _turnScheduler.NextKind == BattleScheduledEventKind.PoisonDamage)
-        {
-            ProcessPoisonDamage(_turnScheduler.PopNext());
-        }
-    }
-
-    /// <summary>Resolves one poison event and re-arms it unless the affected fighter is knocked out.</summary>
-    /// <param name="scheduled">Due poison event.</param>
-    private void ProcessPoisonDamage(BattleScheduledEvent scheduled)
-    {
-        BattleFighter? fighter = FighterAt(scheduled.Side, scheduled.FighterSlot);
-        if (fighter is null || (fighter.Flags & FighterFlags.Poisoned) == 0 || fighter.IsKnockedOut)
-        {
-            return;
-        }
-
-        if (ActiveSlot(scheduled.Side) == scheduled.FighterSlot)
-        {
-            fighter.RefreshStats();
-            fighter.TakeDamage(BattlePoisonRules.Damage(scheduled.Value, fighter));
-            CheckOutcome();
-        }
-
-        if (fighter.IsKnockedOut)
-        {
-            fighter.Flags &= ~FighterFlags.Poisoned;
-            return;
-        }
-
-        _turnScheduler.EnqueuePoison(scheduled.Side, scheduled.FighterSlot, scheduled.Value);
-    }
-
-    /// <summary>Gets the active fighter on one side.</summary>
-    /// <param name="side">Requested side.</param>
-    /// <returns>The active fighter, if one exists.</returns>
-    private BattleFighter? FighterFor(BattleSide side) =>
-        side == BattleSide.Player ? ActivePlayerFighter : ActiveEnemyFighter;
-
-    /// <summary>Gets a fighter by side and slot without throwing on invalid input.</summary>
-    /// <param name="side">Requested side.</param>
-    /// <param name="slot">Requested slot.</param>
-    /// <returns>Fighter at the slot, if valid.</returns>
-    private BattleFighter? FighterAt(BattleSide side, int slot)
-    {
-        BattleFighter?[] fighters = side == BattleSide.Player ? Players : Enemies;
-        return slot >= 0 && slot < fighters.Length ? fighters[slot] : null;
-    }
-
-    /// <summary>Gets the active slot of one side.</summary>
-    /// <param name="side">Requested side.</param>
-    /// <returns>The active slot, or -1 when no fighter is active.</returns>
-    private int ActiveSlot(BattleSide side) => side == BattleSide.Player ? ActivePlayer : ActiveEnemy;
 
     /// <summary>The enemy side brings in its next living
     /// fighter when the active one falls to a hit. This reinforcement is distinct from the

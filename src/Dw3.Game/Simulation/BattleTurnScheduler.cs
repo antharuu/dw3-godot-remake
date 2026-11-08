@@ -84,6 +84,24 @@ public sealed class BattleTurnScheduler
     public void RemovePoison(BattleSide side, int fighterSlot) =>
         Remove(BattleScheduledEventKind.PoisonDamage, side, fighterSlot);
 
+    /// <summary>Creates or refreshes a control-status expiry for one fighter.</summary>
+    /// <param name="kind">Control-status expiry kind.</param>
+    /// <param name="side">Side containing the affected fighter.</param>
+    /// <param name="fighterSlot">Slot of the affected fighter.</param>
+    /// <param name="delay">Qualified delay until the status ends.</param>
+    public void EnqueueControlExpiry(BattleScheduledEventKind kind, BattleSide side, int fighterSlot, int delay)
+    {
+        Remove(kind, side, fighterSlot);
+        Add(new BattleScheduledEvent(kind, side, Math.Max(delay, 0), fighterSlot));
+    }
+
+    /// <summary>Removes one control-status expiry for a fighter.</summary>
+    /// <param name="kind">Control-status expiry kind.</param>
+    /// <param name="side">Side containing the affected fighter.</param>
+    /// <param name="fighterSlot">Slot of the affected fighter.</param>
+    public void RemoveControlExpiry(BattleScheduledEventKind kind, BattleSide side, int fighterSlot) =>
+        Remove(kind, side, fighterSlot);
+
     /// <summary>Pops the next event using the slot-sensitive EU tie rule.</summary>
     /// <returns>The selected event with its pre-pop relative delay.</returns>
     public BattleScheduledEvent PopNext()

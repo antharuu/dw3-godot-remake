@@ -90,6 +90,17 @@ public sealed class BattleFlowController
             return false;
         }
 
+        if (!IsCommandEnabled(command))
+        {
+            return false;
+        }
+
+        if (State.TryLosePlayerTurnToParalysis(rng))
+        {
+            AdvancePhase();
+            return true;
+        }
+
         var actor = State.ActivePlayerFighter;
         bool spent = command switch
         {
@@ -138,13 +149,15 @@ public sealed class BattleFlowController
     {
         var fighter = State.ActivePlayerFighter;
         bool asleep = fighter is { } f && (f.Flags & FighterFlags.Asleep) != 0;
+        bool confused = fighter is { } h && (h.Flags & FighterFlags.Confused) != 0;
         bool noDigivolve = fighter is { } g && (g.Flags & FighterFlags.NoDigivolve) != 0;
+        bool noSwitch = fighter is { } i && (i.Flags & FighterFlags.NoSwitch) != 0;
         bool knockedOut = fighter is not { IsKnockedOut: false };
         return
         [
-            Line(0, !knockedOut && !asleep), Line(1, !knockedOut && !asleep),
-            Line(2, !knockedOut && !asleep && !noDigivolve), Line(3, !knockedOut),
-            Line(4, !knockedOut), Line(5, !knockedOut),
+            Line(0, !knockedOut && !asleep), Line(1, !knockedOut && !asleep && !confused),
+            Line(2, !knockedOut && !asleep && !confused && !noDigivolve), Line(3, !knockedOut && !confused && !noSwitch),
+            Line(4, !knockedOut && !confused), Line(5, !knockedOut && !asleep && !confused && !noSwitch),
         ];
     }
 
@@ -156,6 +169,16 @@ public sealed class BattleFlowController
     {
         State.Outcome = outcome;
         Phase = BattleFlowPhase.Ended;
+    }
+
+    /// <summary>Gets whether a root command is enabled for the active fighter, matching the displayed line.</summary>
+    /// <param name="command">Root command being submitted by an input or API caller.</param>
+    /// <returns>Whether the command is enabled and may reach the simulation.</returns>
+    private bool IsCommandEnabled(BattleCommand command)
+    {
+        IReadOnlyList<BattleMenuLine> lines = RootMenuLines();
+        int index = (int)command;
+        return index >= 0 && index < lines.Count && lines[index].Enabled;
     }
 
     /// <summary>Consumes one of <paramref name="itemId"/> from the bag and applies its effect
