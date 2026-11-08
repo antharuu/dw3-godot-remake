@@ -70,6 +70,44 @@ public sealed class BattleHitSequenceTests
         Assert.True(Assert.IsType<BattleFighter>(state.ActivePlayerFighter).Hp < playerHp);
     }
 
+    /// <summary>Verifies that the triple-hit equipment modifier makes a plain technique produce three ordered events.</summary>
+    [Fact]
+    public void PlayerTechnique_TripleHitModifier_PlainTechnique_ReturnsThreeHitEvents()
+    {
+        BattleState state = CreateStateWithPlayerTripleHit(enemyHp: 100);
+        var technique = new TechData
+        {
+            Accuracy = 128,
+            Power = 1,
+        };
+
+        Assert.True(state.PlayerTechnique(technique, new SequenceRng(0)));
+
+        Assert.Equal(3, state.LastHitEvents.Count);
+        Assert.All(state.LastHitEvents, hit => Assert.False(hit.IsCounter));
+        Assert.All(state.LastHitEvents, hit => Assert.True(hit.Landed));
+    }
+
+    /// <summary>Verifies that the triple-hit modifier does not apply to counter-attacks even when the counter attacker carries the modifier.</summary>
+    [Fact]
+    public void PlayerAttack_EnemyWithTripleHit_CounterReactionIsStillSingleHit()
+    {
+        BattleState state = CreateStateWithEnemyTripleHit(enemyHp: 100);
+        BattleFighter enemy = Assert.IsType<BattleFighter>(state.ActiveEnemyFighter);
+        enemy.Counter = new BattleTableAction(1, 3, 0);
+        enemy.Techs = [77, 0, 0];
+        state.Techs = new Dictionary<int, TechData>
+        {
+            [77] = new TechData { Accuracy = 128, EffectPower = 64 },
+        };
+
+        Assert.True(state.PlayerAttack(new TechData { Accuracy = 128, Power = 1 }, new SequenceRng(0, 0)));
+
+        // 1 player hit + 1 counter — TripleHit on enemy stats does not expand the counter
+        Assert.Equal(2, state.LastHitEvents.Count);
+        Assert.True(state.LastHitEvents[1].IsCounter);
+    }
+
     private static BattleState CreateState(int enemyHp)
     {
         var stats = new BattleStats { Level = 10 };
@@ -79,6 +117,38 @@ public sealed class BattleHitSequenceTests
         var setup = new BattleSetup();
         setup.Partners[0] = new PartnerSeed { Id = 1, Hp = 100, MaxHp = 100, Mp = 100, MaxMp = 100, Stats = stats };
         setup.Enemies[0] = new BattleEnemy { Fighter = 2, Hp = enemyHp, Mp = 100, Strength = 16, BaseStats = stats };
+        return BattleState.InitFighters(setup, digimon: 1, new SequenceRng(127));
+    }
+
+    private static BattleState CreateStateWithPlayerTripleHit(int enemyHp)
+    {
+        var playerStats = new BattleStats { Level = 10, TripleHit = 1 };
+        playerStats.Stats[BattleStat.Attack] = 20;
+        playerStats.Stats[BattleStat.Defense] = 20;
+        playerStats.Stats[BattleStat.Speed] = 100;
+        var enemyStats = new BattleStats { Level = 10 };
+        enemyStats.Stats[BattleStat.Attack] = 20;
+        enemyStats.Stats[BattleStat.Defense] = 1;
+        enemyStats.Stats[BattleStat.Speed] = 100;
+        var setup = new BattleSetup();
+        setup.Partners[0] = new PartnerSeed { Id = 1, Hp = 100, MaxHp = 100, Mp = 100, MaxMp = 100, Stats = playerStats };
+        setup.Enemies[0] = new BattleEnemy { Fighter = 2, Hp = enemyHp, Mp = 100, Strength = 16, BaseStats = enemyStats };
+        return BattleState.InitFighters(setup, digimon: 1, new SequenceRng(127));
+    }
+
+    private static BattleState CreateStateWithEnemyTripleHit(int enemyHp)
+    {
+        var playerStats = new BattleStats { Level = 10 };
+        playerStats.Stats[BattleStat.Attack] = 20;
+        playerStats.Stats[BattleStat.Defense] = 20;
+        playerStats.Stats[BattleStat.Speed] = 100;
+        var enemyStats = new BattleStats { Level = 10, TripleHit = 1 };
+        enemyStats.Stats[BattleStat.Attack] = 20;
+        enemyStats.Stats[BattleStat.Defense] = 20;
+        enemyStats.Stats[BattleStat.Speed] = 100;
+        var setup = new BattleSetup();
+        setup.Partners[0] = new PartnerSeed { Id = 1, Hp = 100, MaxHp = 100, Mp = 100, MaxMp = 100, Stats = playerStats };
+        setup.Enemies[0] = new BattleEnemy { Fighter = 2, Hp = enemyHp, Mp = 100, Strength = 16, BaseStats = enemyStats };
         return BattleState.InitFighters(setup, digimon: 1, new SequenceRng(127));
     }
 

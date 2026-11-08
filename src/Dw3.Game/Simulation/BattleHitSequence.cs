@@ -31,14 +31,14 @@ internal sealed class BattleHitSequence
 
     /// <summary>Resolves one action or counter sequence against its original target.</summary>
     /// <param name="side">Side rolling the hits.</param>
-    /// <param name="tech">Technique that determines the count.</param>
+    /// <param name="tech">Technique that determines the count and is traced with every event.</param>
+    /// <param name="attackerStats">The attacker's resolved stats, used for the triple-hit count. Pass null for a counter-attack.</param>
     /// <param name="target">Fixed target for the sequence.</param>
     /// <param name="isCounter">Whether events append to an action as its counter-reaction.</param>
     /// <param name="resolve">Function resolving one hit's accuracy and raw damage.</param>
-    /// <param name="checkOutcome">Updates the battle outcome after a landed hit.</param>
-    /// <param name="hasOutcome">Reports whether the battle has ended.</param>
+    /// <param name="checkAndReportOutcome">Updates the battle outcome and returns whether the battle has now ended.</param>
     /// <returns>Total HP actually removed.</returns>
-    public int Resolve(BattleSide side, TechData tech, BattleFighter target, bool isCounter, Func<BattleHitResult> resolve, Action checkOutcome, Func<bool> hasOutcome)
+    public int Resolve(BattleSide side, TechData tech, BattleStats? attackerStats, BattleFighter target, bool isCounter, Func<BattleHitResult> resolve, Func<bool> checkAndReportOutcome)
     {
         if (!isCounter)
         {
@@ -46,36 +46,47 @@ internal sealed class BattleHitSequence
         }
 
         int damage = 0;
-        for (int index = 0; index < HitCountFor(tech); index++)
+        for (int index = 0; index < HitCountFor(tech, attackerStats, isCounter); index++)
         {
-            if (target.IsKnockedOut || hasOutcome())
+            if (target.IsKnockedOut || checkAndReportOutcome())
             {
                 break;
             }
 
             damage += ResolveHit(side, tech, target, isCounter, index, resolve());
-            checkOutcome();
+            _ = checkAndReportOutcome();
         }
 
         return damage;
     }
 
-    /// <summary>Returns the source-defined count for multi-hit and double-magic techniques, otherwise one.</summary>
+    /// <summary>Returns the source-defined count for multi-hit, double-magic and triple-hit techniques, otherwise one.</summary>
     /// <param name="tech">Technique whose effect selects the sequence rule.</param>
+    /// <param name="attackerStats">The attacker's resolved stats, used to check the triple-hit equipment modifier. Null for a counter-attack (counters are always single-hit).</param>
+    /// <param name="isCounter">Whether the sequence is a counter-reaction; counter-attacks are always single-hit regardless of the attacker's equipment.</param>
     /// <returns>At least one hit.</returns>
     /// <remarks>
-    /// <para><see cref="BattleStats.TripleHit"/> is copied by <see cref="BattleStatResolver"/> and
-    /// <see cref="DamageCalculator"/> applies its 4/10 per-hit damage cut, but the matching
-    /// three-hit count expansion is not wired here: <see cref="BattleStats.TripleHit"/> count
-    /// ownership has not been qualified against the real source contract and is an explicit
-    /// residual until that contract is established.</para>
+    /// <para><see cref="BattleStats.TripleHit"/> is set by equipment. When non-zero, a plain damaging
+    /// technique (effect below <see cref="BattleConst.TechEffectFirst"/> and not a scripted element
+    /// technique) hits three times at 4/10 damage per hit. <see cref="DamageCalculator"/> applies
+    /// the per-hit cut independently; this method wires the matching count expansion.
+    /// Counter-attacks and techniques with a special effect are excluded from the expansion.</para>
     /// </remarks>
-    private static int HitCountFor(TechData tech) => tech.Effect switch
+    private static int HitCountFor(TechData tech, BattleStats? attackerStats, bool isCounter) => tech.Effect switch
     {
         BattleTechniqueEffect.MultiHit => Math.Max(tech.HitCount, 1),
         BattleTechniqueEffect.DoubleMagic => 2,
-        _ => 1,
+        _ => !isCounter && IsTripleHitPlain(tech, attackerStats) ? 3 : 1,
     };
+
+    /// <summary>Returns <see langword="true"/> when the triple-hit equipment modifier applies to this technique.</summary>
+    /// <param name="tech">Technique being used.</param>
+    /// <param name="attackerStats">The attacker's resolved stats.</param>
+    /// <returns><see langword="true"/> for a plain damaging technique with the attacker's triple-hit set and no scripted element override.</returns>
+    private static bool IsTripleHitPlain(TechData tech, BattleStats? attackerStats) =>
+        tech.Effect < BattleConst.TechEffectFirst
+        && (attackerStats?.TripleHit ?? 0) != 0
+        && tech.Script is not (>= 11 and <= 12);
 
     /// <summary>Applies and records one resolved hit.</summary>
     /// <param name="side">Side rolling the hit.</param>

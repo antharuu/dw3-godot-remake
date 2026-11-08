@@ -69,7 +69,7 @@ public sealed class EnemyTurnResolver(BattleState state)
             return;
         }
 
-        int damage = state.ResolveHitSequence(BattleSide.Enemy, tech, target, false, () => state.Hits(rng).Basic(tech, attacker, target, enemyAttacker: true));
+        int damage = state.ResolveHitSequence(BattleSide.Enemy, tech, attacker.Stats, target, false, () => state.Hits(rng).Basic(tech, attacker, target, enemyAttacker: true));
         WakePlayerAfterHits(damage, rng);
 
         EndTurn();
@@ -104,7 +104,7 @@ public sealed class EnemyTurnResolver(BattleState state)
         }
 
         attacker.Mp -= tech.Mp;
-        int damage = state.ResolveHitSequence(BattleSide.Enemy, tech, target, false, () => state.Hits(rng).Technique(tech, attacker, target, enemyAttacker: true));
+        int damage = state.ResolveHitSequence(BattleSide.Enemy, tech, attacker.Stats, target, false, () => state.Hits(rng).Technique(tech, attacker, target, enemyAttacker: true));
         WakePlayerAfterHits(damage, rng);
         ApplyEnemyEffectAfterHits(tech, rng);
 
@@ -178,7 +178,7 @@ public sealed class EnemyTurnResolver(BattleState state)
             return;
         }
 
-        int damage = state.ResolveHitSequence(BattleSide.Enemy, tech, target, true, () => state.Hits(rng).Counter(tech, attacker, target, receivedDamage));
+        int damage = state.ResolveHitSequence(BattleSide.Enemy, tech, attacker.Stats, target, true, () => state.Hits(rng).Counter(tech, attacker, target, receivedDamage));
         WakePlayerAfterHits(damage, rng);
         state.ConsumeCharge(BattleSide.Enemy);
 

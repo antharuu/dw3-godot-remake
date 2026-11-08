@@ -499,18 +499,27 @@ public sealed class BattleState
     /// <summary>Resolves and traces a fixed target's hit sequence, preserving the source stop on a knock-out.</summary>
     /// <param name="side">Side rolling the hits.</param>
     /// <param name="tech">Technique that determines the sequence count.</param>
+    /// <param name="attackerStats">The attacker's resolved stats for the triple-hit equipment check. Pass null for a counter-attack.</param>
     /// <param name="target">Fighter receiving the sequence.</param>
     /// <param name="isCounter">Whether events append as a counter-reaction.</param>
     /// <param name="resolve">Function resolving one hit's accuracy and raw damage.</param>
     /// <returns>Total HP actually removed by the sequence.</returns>
-    internal int ResolveHitSequence(BattleSide side, TechData tech, BattleFighter target, bool isCounter, Func<BattleHitResult> resolve) =>
-        _hitSequence.Resolve(side, tech, target, isCounter, resolve, CheckOutcome, () => Outcome != BattleOutcome.None);
+    internal int ResolveHitSequence(BattleSide side, TechData tech, BattleStats? attackerStats, BattleFighter target, bool isCounter, Func<BattleHitResult> resolve) =>
+        _hitSequence.Resolve(side, tech, attackerStats, target, isCounter, resolve, CheckAndReportOutcome);
 
     /// <summary>Seeds the EU relative queue with the encounter opening rule.</summary>
     /// <param name="ambushChance">Encounter ambush probability, or zero when disabled.</param>
     /// <param name="rng">Shared injected battle random source.</param>
     private void SeedTurnClock(int ambushChance, IBattleRng rng) =>
         _turnScheduler.InitializeOpening(BattleFighterTiming.SpeedOf(ActivePlayerFighter), BattleFighterTiming.SpeedOf(ActiveEnemyFighter), ambushChance, rng);
+
+    /// <summary>Checks the battle outcome and returns whether the battle has ended. Used as the combined callback for hit sequences.</summary>
+    /// <returns><see langword="true"/> when the battle outcome is no longer <see cref="BattleOutcome.None"/>.</returns>
+    private bool CheckAndReportOutcome()
+    {
+        CheckOutcome();
+        return Outcome != BattleOutcome.None;
+    }
 
     /// <summary>Resolves all of the player's ordered hits, then permits at most one enemy counter-reaction.</summary>
     /// <param name="target">Enemy targeted for the whole action.</param>
@@ -520,7 +529,7 @@ public sealed class BattleState
     /// <param name="technique">Whether to use the magic-aware technique resolver.</param>
     private void LandPlayerHits(BattleFighter target, TechData tech, BattleFighter attacker, IBattleRng rng, bool technique)
     {
-        int damage = ResolveHitSequence(BattleSide.Player, tech, target, false, () => ResolvePlayerHit(tech, attacker, target, rng, technique));
+        int damage = ResolveHitSequence(BattleSide.Player, tech, attacker.Stats, target, false, () => ResolvePlayerHit(tech, attacker, target, rng, technique));
         ApplyPlayerEffectAfterHits(tech, damage, rng);
         CheckOutcome();
         ReactToPlayerHits(target, damage, rng);
