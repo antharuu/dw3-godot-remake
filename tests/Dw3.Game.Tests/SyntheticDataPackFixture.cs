@@ -11,7 +11,7 @@ internal static class SyntheticDataPackFixture
     // These values are protocol tags required by BattleDataPackLoader, not disc-derived fixture data.
     public const string SupportedEncounterEdition = "SLES-03936";
     public const string EncounterSchema = "m6-encounter-v1";
-    public const string BattleSchema = "m9b-battle-v2";
+    public const string BattleSchema = "m9b-battle-v3";
     public const string DigivolutionSchema = "m9b-digivolution-v2";
     public const string BattleHudSchema = "m6-battle-hud-v3";
     public const string BattleReportSchema = "m6-battle-report-sprites-v1";

@@ -317,13 +317,13 @@ public sealed class BattleDataPackLoader : IDisposable
         return BattleLoadoutJsonParser.ParseTextTable(path, subject);
     }
 
-    /// <summary>Opens <c>battle/battle.json</c> and checks that its <c>schema</c> field is <c>m9b-battle-v2</c> before handing it out, so a pack built by an older extractor is rejected instead of half-parsed.</summary>
+    /// <summary>Opens <c>battle/battle.json</c> and checks that its <c>schema</c> field is <c>m9b-battle-v3</c> before handing it out, so a pack built by an older extractor is rejected instead of half-parsed.</summary>
     /// <returns>The parsed document, owned by the caller, who must dispose it.</returns>
     /// <exception cref="CacheResourceException">The file is missing or unreadable, or the schema tag does not match.</exception>
     private JsonDocument ReadBattleJson()
     {
         JsonDocument document = ReadJson("battle/battle.json", "battle data");
-        if (document.RootElement.GetProperty("schema").GetString() != "m9b-battle-v2")
+        if (document.RootElement.GetProperty("schema").GetString() != "m9b-battle-v3")
         {
             document.Dispose();
             throw Invalid("battle data schema mismatch");

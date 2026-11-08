@@ -10,7 +10,7 @@ public static class DataPackSchema
     /// <summary>
     /// Gets the newest pack schema that this runtime can read.
     /// </summary>
-    public const int Version = 16;
+    public const int Version = 17;
 
     /// <summary>
     /// Creates the schema structures required by every data pack.
@@ -532,6 +532,7 @@ public static class DataPackSchema
             CREATE TABLE battle_techniques (id INTEGER PRIMARY KEY NOT NULL, mp INTEGER NOT NULL, power INTEGER NOT NULL, icon INTEGER NOT NULL, kind INTEGER NOT NULL, accuracy INTEGER NOT NULL, element INTEGER NOT NULL, family INTEGER NOT NULL);
             CREATE TABLE battle_enemy_table (id INTEGER PRIMARY KEY NOT NULL, item INTEGER NOT NULL, item_chance INTEGER NOT NULL, name_id INTEGER NOT NULL, family INTEGER NOT NULL);
             CREATE TABLE battle_items (id INTEGER PRIMARY KEY NOT NULL, data_pointer INTEGER NOT NULL, price INTEGER NOT NULL, sell_price INTEGER NOT NULL, kind INTEGER NOT NULL, type INTEGER NOT NULL, flags INTEGER NULL, effect_kind INTEGER NULL, amount INTEGER NULL);
+            CREATE TABLE battle_equipment (item_id INTEGER PRIMARY KEY NOT NULL, category TEXT NOT NULL, charisma INTEGER NOT NULL, equip_kind INTEGER NOT NULL, group_id INTEGER NOT NULL, partner_mask INTEGER NOT NULL, first_stat_amount INTEGER NULL, second_stat_amount INTEGER NULL, first_stat INTEGER NULL, second_stat INTEGER NULL, attack INTEGER NULL, defense INTEGER NULL, accuracy INTEGER NULL, evasion INTEGER NULL, hit_effect INTEGER NULL, status_chance INTEGER NULL, status_power INTEGER NULL, family INTEGER NULL, amount INTEGER NULL, stat INTEGER NULL, FOREIGN KEY (item_id) REFERENCES battle_items(id));
             CREATE TABLE battle_rewards (id INTEGER PRIMARY KEY NOT NULL, digimon_experience INTEGER NOT NULL, experience INTEGER NOT NULL, money INTEGER NOT NULL);
             CREATE TABLE digivolution_records (partner INTEGER NOT NULL, ordinal INTEGER NOT NULL, digimon_index INTEGER NOT NULL, digimon_id INTEGER NOT NULL, stat INTEGER NOT NULL, value INTEGER NOT NULL, PRIMARY KEY (partner, ordinal));
             CREATE TABLE digivolution_needs (partner INTEGER NOT NULL, ordinal INTEGER NOT NULL, need_ordinal INTEGER NOT NULL, digimon_index INTEGER NOT NULL, digimon_id INTEGER NOT NULL, level INTEGER NOT NULL, PRIMARY KEY (partner, ordinal, need_ordinal));

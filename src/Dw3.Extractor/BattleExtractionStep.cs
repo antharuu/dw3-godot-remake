@@ -101,7 +101,7 @@ internal static class BattleExtractionStep
         List<DigimonRecord> digimon = WriteDigimon(context, executable);
         List<TechniqueRecord> techniques = WriteTechniques(context, executable);
         IReadOnlyList<BattleTableRecord> table = WriteEnemyTable(context, disc.ReadFile(Require(entries, BattleTablePath)));
-        List<(ItemRecord Item, ItemEffect? Effect)> items = WriteItems(context, executable);
+        List<(ItemRecord Item, ItemEffect? Effect, EquipmentRecord? Equipment)> items = WriteItems(context, executable);
 
         byte[] report = disc.ReadFile(Require(entries, ReportPath));
         BattleReward[] rewards = WriteRewards(context, report);
@@ -178,19 +178,59 @@ internal static class BattleExtractionStep
     /// <param name="context">The data pack write context.</param>
     /// <param name="executable">The parsed PS1 executable; data pointers are RAM addresses inside it.</param>
     /// <returns>Each item with its effect, or null when it has none, in table order.</returns>
-    private static List<(ItemRecord Item, ItemEffect? Effect)> WriteItems(DataPackWriteContext context, PsxExecutable executable)
+    private static List<(ItemRecord Item, ItemEffect? Effect, EquipmentRecord? Equipment)> WriteItems(DataPackWriteContext context, PsxExecutable executable)
     {
-        var items = new List<(ItemRecord Item, ItemEffect? Effect)>();
+        var items = new List<(ItemRecord Item, ItemEffect? Effect, EquipmentRecord? Equipment)>();
         for (int i = 0; i < ItemCount; i++)
         {
             ItemRecord item = BattleDataDecoder.DecodeItem(executable.Slice(ItemsAddress + (uint)(i * BattleDataDecoder.ItemStride), BattleDataDecoder.ItemStride), 0);
-            ItemEffect? effect = item.DataPointer == 0 ? null : BattleDataDecoder.DecodeItemEffect(executable.Slice(item.DataPointer, BattleDataDecoder.ItemEffectStride), 0);
-            items.Add((item, effect));
+            EquipmentRecord? equipment = DecodeEquipment(item, executable);
+            ItemEffect? effect = equipment is null && item.DataPointer != 0 ? BattleDataDecoder.DecodeItemEffect(executable.Slice(item.DataPointer, BattleDataDecoder.ItemEffectStride), 0) : null;
+            items.Add((item, effect, equipment));
             Insert(context, "INSERT INTO battle_items (id,data_pointer,price,sell_price,kind,type,flags,effect_kind,amount) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)", i + 1, unchecked((int)item.DataPointer), item.Price, item.SellPrice, item.Kind, item.Type, effect is null ? DBNull.Value : effect.Flags, effect is null ? DBNull.Value : effect.Kind, effect is null ? DBNull.Value : effect.Amount);
+            WriteEquipment(context, i + 1, equipment);
         }
 
         return items;
     }
+
+    /// <summary>Decodes the variant equipment record selected by an item's source type.</summary>
+    /// <param name="item">The item whose type and data pointer select the equipment layout.</param>
+    /// <param name="executable">The executable containing the pointed-to record.</param>
+    /// <returns>The decoded equipment record, or null for a non-equipment item.</returns>
+    private static EquipmentRecord? DecodeEquipment(ItemRecord item, PsxExecutable executable) => item.Type switch
+    {
+        >= 2 and <= 14 => BattleDataDecoder.DecodeWeaponEquipment(executable.Slice(item.DataPointer, BattleDataDecoder.WeaponOrArmorStride), 0),
+        >= 15 and <= 20 => BattleDataDecoder.DecodeArmorEquipment(executable.Slice(item.DataPointer, BattleDataDecoder.WeaponOrArmorStride), 0),
+        >= 21 and <= 24 => BattleDataDecoder.DecodeAccessoryEquipment(executable.Slice(item.DataPointer, BattleDataDecoder.AccessoryStride), 0),
+        _ => null,
+    };
+
+    /// <summary>Persists one typed equipment variant with nulls for fields outside that variant's binary layout.</summary>
+    /// <param name="context">The data pack write context.</param>
+    /// <param name="itemId">One-based item-table identifier.</param>
+    /// <param name="equipment">The decoded equipment, or null for a non-equipment item.</param>
+    private static void WriteEquipment(DataPackWriteContext context, int itemId, EquipmentRecord? equipment)
+    {
+        if (equipment is null)
+        {
+            return;
+        }
+
+        Insert(context, "INSERT INTO battle_equipment (item_id,category,charisma,equip_kind,group_id,partner_mask,first_stat_amount,second_stat_amount,first_stat,second_stat,attack,defense,accuracy,evasion,hit_effect,status_chance,status_power,family,amount,stat) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)", EquipmentValues(itemId, equipment));
+    }
+
+    /// <summary>Maps each binary equipment variant to the nullable SQLite row contract.</summary>
+    /// <param name="itemId">One-based item-table identifier.</param>
+    /// <param name="equipment">Decoded typed equipment.</param>
+    /// <returns>Values in <c>battle_equipment</c> column order.</returns>
+    private static object[] EquipmentValues(int itemId, EquipmentRecord equipment) => equipment switch
+    {
+        WeaponEquipmentRecord weapon => [itemId, "weapon", weapon.Charisma, weapon.EquipKind, weapon.Group, weapon.PartnerMask, weapon.FirstStatAmount, weapon.SecondStatAmount, weapon.FirstStat, weapon.SecondStat, weapon.Attack, DBNull.Value, weapon.Accuracy, DBNull.Value, weapon.HitEffect, weapon.StatusChance, weapon.StatusPower, weapon.Family, DBNull.Value, DBNull.Value],
+        ArmorEquipmentRecord armor => [itemId, "armor", armor.Charisma, armor.EquipKind, armor.Group, armor.PartnerMask, armor.FirstStatAmount, armor.SecondStatAmount, armor.FirstStat, armor.SecondStat, DBNull.Value, armor.Defense, DBNull.Value, armor.Evasion, DBNull.Value, DBNull.Value, DBNull.Value, DBNull.Value, DBNull.Value, DBNull.Value],
+        AccessoryEquipmentRecord accessory => [itemId, "accessory", accessory.Charisma, accessory.EquipKind, accessory.Group, accessory.PartnerMask, DBNull.Value, DBNull.Value, DBNull.Value, DBNull.Value, DBNull.Value, DBNull.Value, DBNull.Value, DBNull.Value, DBNull.Value, DBNull.Value, DBNull.Value, DBNull.Value, accessory.Amount, accessory.Stat],
+        _ => throw new InvalidOperationException("Unknown equipment record variant."),
+    };
 
     /// <summary>
     /// Decodes the <see cref="RewardCount"/> reward records of the report overlay (at the overlay offset of
@@ -270,7 +310,7 @@ internal static class BattleExtractionStep
     /// <param name="items">All decoded item records with optional effect records.</param>
     /// <param name="rewards">All decoded battle reward records indexed by encounter.</param>
     /// <param name="growth">The growth curve tables (level exp, vital cuts, stat gains, resistance gains).</param>
-    private static void WriteBattleJson(DataPackWriteContext context, IReadOnlyList<DigimonRecord> digimon, IReadOnlyList<TechniqueRecord> techniques, IReadOnlyList<BattleTableRecord> table, IReadOnlyList<(ItemRecord Item, ItemEffect? Effect)> items, IReadOnlyList<BattleReward> rewards, BattleGrowthData growth)
+    private static void WriteBattleJson(DataPackWriteContext context, IReadOnlyList<DigimonRecord> digimon, IReadOnlyList<TechniqueRecord> techniques, IReadOnlyList<BattleTableRecord> table, IReadOnlyList<(ItemRecord Item, ItemEffect? Effect, EquipmentRecord? Equipment)> items, IReadOnlyList<BattleReward> rewards, BattleGrowthData growth)
     {
         string path = context.GetImagePath("battle/battle.json");
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);

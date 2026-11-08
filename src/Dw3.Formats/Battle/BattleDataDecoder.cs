@@ -29,6 +29,12 @@ public static class BattleDataDecoder
     /// <summary>Byte size of one item effect record (4 bytes).</summary>
     public const int ItemEffectStride = 4;
 
+    /// <summary>Byte size of one weapon or armour equipment record.</summary>
+    public const int WeaponOrArmorStride = 20;
+
+    /// <summary>Byte size of one accessory equipment record.</summary>
+    public const int AccessoryStride = 12;
+
     /// <summary>
     /// Decodes the battle growth tables from a contiguous region in the data span.
     /// Layout: 4 s32 level-experience thresholds, 4 vital-cut values, 9 vital-random values,
@@ -95,6 +101,66 @@ public static class BattleDataDecoder
     {
         EnsureRange(data, offset, ItemEffectStride, "Item effect");
         return new ItemEffect(data[offset], data[offset + 1], ReadU16(data, offset + 2));
+    }
+
+    /// <summary>Decodes a weapon's 20-byte equipment record.</summary>
+    /// <param name="data">Data span containing the record.</param>
+    /// <param name="offset">Byte offset of the record.</param>
+    /// <returns>The decoded weapon fields consumed by battle stat resolution.</returns>
+    public static WeaponEquipmentRecord DecodeWeaponEquipment(ReadOnlySpan<byte> data, int offset)
+    {
+        EnsureRange(data, offset, WeaponOrArmorStride, "Weapon equipment record");
+        return new WeaponEquipmentRecord(
+            ReadI16(data, offset),
+            data[offset + 2],
+            data[offset + 3],
+            data[offset + 4],
+            ReadU16(data, offset + 6),
+            ReadU16(data, offset + 8),
+            ReadU16(data, offset + 10),
+            data[offset + 12],
+            data[offset + 13],
+            data[offset + 14],
+            data[offset + 15],
+            data[offset + 16],
+            data[offset + 17],
+            data[offset + 18]);
+    }
+
+    /// <summary>Decodes an armour's 20-byte equipment record.</summary>
+    /// <param name="data">Data span containing the record.</param>
+    /// <param name="offset">Byte offset of the record.</param>
+    /// <returns>The decoded armour fields consumed by battle stat resolution.</returns>
+    public static ArmorEquipmentRecord DecodeArmorEquipment(ReadOnlySpan<byte> data, int offset)
+    {
+        EnsureRange(data, offset, WeaponOrArmorStride, "Armor equipment record");
+        return new ArmorEquipmentRecord(
+            ReadI16(data, offset),
+            data[offset + 2],
+            data[offset + 3],
+            data[offset + 4],
+            ReadU16(data, offset + 6),
+            ReadU16(data, offset + 8),
+            data[offset + 10],
+            data[offset + 11],
+            ReadI16(data, offset + 12),
+            data[offset + 16]);
+    }
+
+    /// <summary>Decodes an accessory's 12-byte equipment record.</summary>
+    /// <param name="data">Data span containing the record.</param>
+    /// <param name="offset">Byte offset of the record.</param>
+    /// <returns>The decoded accessory stat or passive magnitude.</returns>
+    public static AccessoryEquipmentRecord DecodeAccessoryEquipment(ReadOnlySpan<byte> data, int offset)
+    {
+        EnsureRange(data, offset, AccessoryStride, "Accessory equipment record");
+        return new AccessoryEquipmentRecord(
+            ReadI16(data, offset),
+            data[offset + 2],
+            data[offset + 3],
+            data[offset + 4],
+            ReadU16(data, offset + 6),
+            data[offset + 8]);
     }
 
     /// <summary>

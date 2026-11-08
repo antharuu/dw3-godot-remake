@@ -9,7 +9,7 @@ public static class BattleJsonWriter
 
     /// <summary>
     /// Serialises all battle data (creatures, techniques, enemy table, items, rewards and growth tables)
-    /// to a single JSON document with schema key <c>m9b-battle-v2</c>.
+    /// to a single JSON document with schema key <c>m9b-battle-v3</c>.
     /// </summary>
     /// <param name="digimon">Decoded creature table.</param>
     /// <param name="techniques">Decoded technique table.</param>
@@ -17,21 +17,43 @@ public static class BattleJsonWriter
     /// <param name="items">Decoded item records paired with their optional effect records.</param>
     /// <param name="rewards">Decoded battle reward records.</param>
     /// <param name="growth">Decoded battle growth tables.</param>
-    /// <returns>Indented camelCase JSON string conforming to the <c>m9b-battle-v2</c> schema.</returns>
+    /// <returns>Indented camelCase JSON string conforming to the <c>m9b-battle-v3</c> schema.</returns>
     public static string WriteBattle(
         IReadOnlyList<DigimonRecord> digimon,
         IReadOnlyList<TechniqueRecord> techniques,
         IReadOnlyList<BattleTableRecord> enemyTable,
-        IReadOnlyList<(ItemRecord Item, ItemEffect? Effect)> items,
+        IReadOnlyList<(ItemRecord Item, ItemEffect? Effect, EquipmentRecord? Equipment)> items,
         IReadOnlyList<BattleReward> rewards,
         BattleGrowthData growth) => JsonSerializer.Serialize(
             new
             {
-                schema = "m9b-battle-v2",
+                schema = "m9b-battle-v3",
                 digimon = digimon.Select(ProjectDigimon),
                 techniques = techniques.Select(ProjectTechnique),
                 enemyTable = enemyTable.Select(ProjectEnemy),
                 items = items.Select(ProjectItem),
+                equipmentConsumers = new
+                {
+                    weapon = new
+                    {
+                        statResolution = "BattleStats.Stats -> B9-029 stat resolver",
+                        family = "BattleStats.WeaponFamilies -> DamageCalculator.FamilyBonus",
+                        accuracy = "BattleStats.Accuracy -> BattleHitRules.PhysicalChance",
+                        statusPassive = "BattleStats.Statuses -> B9-030 status resolver",
+                    },
+                    armor = new
+                    {
+                        statResolution = "BattleStats.Stats -> B9-029 stat resolver",
+                        evasion = "BattleStats.Evasion -> BattleHitRules.PhysicalChance",
+                    },
+                    accessory = new
+                    {
+                        statResolution = "BattleStats.Stats -> B9-029 stat resolver",
+                        statusImmunity = "BattleStats.Resist[7..11] -> B9-030 status resolver",
+                        element = "BattleStats.Element/ElementPower -> DamageCalculator.ElementPowerBonus",
+                        reactionPassives = "BattleStats.Counter/TripleHit/CriticalBonus -> B9-034 reaction resolver",
+                    },
+                },
                 rewards = rewards.Select((value, index) => new { id = index, value.DigimonExperience, value.Experience, value.Money }),
                 growth = new { growth.LevelExperience, growth.VitalCuts, growth.VitalRandom, growth.StatGains, growth.ResistanceGains },
             },
@@ -140,7 +162,7 @@ public static class BattleJsonWriter
     /// <param name="value">Item record and the effect its data pointer addresses, if any.</param>
     /// <param name="index">Zero-based table position.</param>
     /// <returns>The serialisable projection.</returns>
-    private static object ProjectItem((ItemRecord Item, ItemEffect? Effect) value, int index) => new
+    private static object ProjectItem((ItemRecord Item, ItemEffect? Effect, EquipmentRecord? Equipment) value, int index) => new
     {
         id = index + 1,
         dataPointer = value.Item.DataPointer,
@@ -149,6 +171,19 @@ public static class BattleJsonWriter
         value.Item.Kind,
         value.Item.Type,
         effect = value.Effect is null ? null : new { value.Effect.Flags, value.Effect.Kind, value.Effect.Amount },
+        equipment = ProjectEquipment(value.Equipment),
+    };
+
+    /// <summary>Projects equipment variants without flattening their distinct binary contracts.</summary>
+    /// <param name="equipment">The optional decoded equipment record.</param>
+    /// <returns>A serializable equipment variant, or null for a non-equipment item.</returns>
+    private static object? ProjectEquipment(EquipmentRecord? equipment) => equipment switch
+    {
+        WeaponEquipmentRecord weapon => new { category = "weapon", weapon.Charisma, weapon.EquipKind, weapon.Group, weapon.PartnerMask, weapon.FirstStatAmount, weapon.SecondStatAmount, weapon.Attack, weapon.FirstStat, weapon.SecondStat, weapon.Accuracy, weapon.HitEffect, weapon.StatusChance, weapon.StatusPower, weapon.Family },
+        ArmorEquipmentRecord armor => new { category = "armor", armor.Charisma, armor.EquipKind, armor.Group, armor.PartnerMask, armor.FirstStatAmount, armor.SecondStatAmount, armor.FirstStat, armor.SecondStat, armor.Defense, armor.Evasion },
+        AccessoryEquipmentRecord accessory => new { category = "accessory", accessory.Charisma, accessory.EquipKind, accessory.Group, accessory.PartnerMask, accessory.Amount, accessory.Stat },
+        null => null,
+        _ => throw new InvalidOperationException("Unknown equipment record variant."),
     };
 
     /// <summary>Projects one tactic action to a serialisable anonymous object (target, condition, conditionArgument).</summary>

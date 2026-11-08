@@ -143,7 +143,9 @@ src/Dw3.Extractor/ZoneManifestData.cs
 src/Dw3.Extractor/ZoneManifestWriter.cs
 src/Dw3.Extractor/ZoneStageResult.cs
 src/Dw3.Extractor/ZoneWriteJob.cs
+src/Dw3.Formats/Battle/AccessoryEquipmentRecord.cs
 src/Dw3.Formats/Battle/ArchiveRange.cs
+src/Dw3.Formats/Battle/ArmorEquipmentRecord.cs
 src/Dw3.Formats/Battle/BattleAction.cs
 src/Dw3.Formats/Battle/BattleAnimationDecoder.cs
 src/Dw3.Formats/Battle/BattleBoneTracks.cs
@@ -187,6 +189,7 @@ src/Dw3.Formats/Battle/BattleTrackKey.cs
 src/Dw3.Formats/Battle/DigimonRecord.cs
 src/Dw3.Formats/Battle/EvolutionNeed.cs
 src/Dw3.Formats/Battle/EvolutionRecord.cs
+src/Dw3.Formats/Battle/EquipmentRecord.cs
 src/Dw3.Formats/Battle/FieldFramePartMeta.cs
 src/Dw3.Formats/Battle/FighterModelEntry.cs
 src/Dw3.Formats/Battle/FighterModelReference.cs
@@ -214,6 +217,7 @@ src/Dw3.Formats/Battle/MeshUv.cs
 src/Dw3.Formats/Battle/MeshVector.cs
 src/Dw3.Formats/Battle/ModelArchive.cs
 src/Dw3.Formats/Battle/TechniqueRecord.cs
+src/Dw3.Formats/Battle/WeaponEquipmentRecord.cs
 src/Dw3.Formats/Binary/BinarySpanReader.cs
 src/Dw3.Formats/Binary/Png/PngEncoder.cs
 src/Dw3.Formats/Binary/PsxExecutable.cs

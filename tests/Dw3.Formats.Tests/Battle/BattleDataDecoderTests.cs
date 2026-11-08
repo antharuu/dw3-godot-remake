@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Text.Json;
 using Dw3.Formats.Battle;
 using Xunit;
 
@@ -154,6 +155,38 @@ public sealed class BattleDataDecoderTests
     }
 
     [Fact]
+    public void DecodeEquipment_ReadsEachDistinctLayout()
+    {
+        byte[] weapon = new byte[BattleDataDecoder.WeaponOrArmorStride];
+        BinaryPrimitives.WriteInt16LittleEndian(weapon, -3);
+        BinaryPrimitives.WriteUInt16LittleEndian(weapon.AsSpan(6), 21);
+        BinaryPrimitives.WriteUInt16LittleEndian(weapon.AsSpan(10), 99);
+        weapon[14] = 7;
+        weapon[18] = 5;
+        byte[] armor = new byte[BattleDataDecoder.WeaponOrArmorStride];
+        BinaryPrimitives.WriteInt16LittleEndian(armor.AsSpan(12), 77);
+        armor[16] = 8;
+        byte[] accessory = new byte[BattleDataDecoder.AccessoryStride];
+        BinaryPrimitives.WriteUInt16LittleEndian(accessory.AsSpan(6), 45);
+        accessory[8] = 19;
+
+        WeaponEquipmentRecord decodedWeapon = BattleDataDecoder.DecodeWeaponEquipment(weapon, 0);
+        ArmorEquipmentRecord decodedArmor = BattleDataDecoder.DecodeArmorEquipment(armor, 0);
+        AccessoryEquipmentRecord decodedAccessory = BattleDataDecoder.DecodeAccessoryEquipment(accessory, 0);
+
+        Assert.Equal(-3, decodedWeapon.Charisma);
+        Assert.Equal(21, decodedWeapon.FirstStatAmount);
+        Assert.Equal(99, decodedWeapon.Attack);
+        Assert.Equal(7, decodedWeapon.Accuracy);
+        Assert.Equal(5, decodedWeapon.Family);
+        Assert.Equal(77, decodedArmor.Defense);
+        Assert.Equal(8, decodedArmor.Evasion);
+        Assert.Equal(45, decodedAccessory.Amount);
+        Assert.Equal(19, decodedAccessory.Stat);
+        Assert.Throws<FormatException>(() => BattleDataDecoder.DecodeAccessoryEquipment(accessory.AsSpan()[..11], 0));
+    }
+
+    [Fact]
     public void BattleJsonWriter_EmitsCompleteDeterministicBattleAndDigivolutionFacts()
     {
         var digimon = new DigimonRecord(383, [1], [2], [3], 4, [5], [6], [7], 8, 9, 10, 11, 12, 13, 14, [15], [16], [17], 18, 19);
@@ -166,11 +199,17 @@ public sealed class BattleDataDecoderTests
         var growth = new BattleGrowthData([57], [58], [59], [[60]], [61]);
         var evolution = new EvolutionRecord(1, 383, [new EvolutionNeed(0, 0, 0), new EvolutionNeed(1, 383, 62)], 63, 64);
 
-        string battleA = BattleJsonWriter.WriteBattle([digimon], [technique], [enemy], [(item, effect)], [reward], growth);
-        string battleB = BattleJsonWriter.WriteBattle([digimon], [technique], [enemy], [(item, effect)], [reward], growth);
+        string battleA = BattleJsonWriter.WriteBattle([digimon], [technique], [enemy], [(item, effect, (EquipmentRecord?)null)], [reward], growth);
+        string battleB = BattleJsonWriter.WriteBattle([digimon], [technique], [enemy], [(item, effect, (EquipmentRecord?)null)], [reward], growth);
         string digivolution = BattleJsonWriter.WriteDigivolution([digimon], [[evolution]]);
 
         Assert.Equal(battleA, battleB);
+        using JsonDocument contract = JsonDocument.Parse(battleA);
+        JsonElement consumers = contract.RootElement.GetProperty("equipmentConsumers");
+        Assert.Equal("BattleStats.WeaponFamilies -> DamageCalculator.FamilyBonus", consumers.GetProperty("weapon").GetProperty("family").GetString());
+        Assert.Equal("BattleStats.Accuracy -> BattleHitRules.PhysicalChance", consumers.GetProperty("weapon").GetProperty("accuracy").GetString());
+        Assert.Equal("BattleStats.Resist[7..11] -> B9-030 status resolver", consumers.GetProperty("accessory").GetProperty("statusImmunity").GetString());
+        Assert.Equal("BattleStats.Counter/TripleHit/CriticalBonus -> B9-034 reaction resolver", consumers.GetProperty("accessory").GetProperty("reactionPassives").GetString());
         Assert.Contains("\"digimon\"", battleA);
         Assert.Contains("\"items\"", battleA);
         Assert.Contains("\"rewards\"", battleA);
