@@ -106,7 +106,7 @@ public sealed class EnemyTurnResolver(BattleState state)
         attacker.Mp -= tech.Mp;
         int damage = state.ResolveHitSequence(BattleSide.Enemy, tech, target, false, () => state.Hits(rng).Technique(tech, attacker, target, enemyAttacker: true));
         WakePlayerAfterHits(damage, rng);
-        ApplyEnemyEffectAfterHits(tech, damage, rng);
+        ApplyEnemyEffectAfterHits(tech, rng);
 
         state.ConsumeCharge(BattleSide.Enemy);
         EndTurn();
@@ -276,11 +276,10 @@ public sealed class EnemyTurnResolver(BattleState state)
 
     /// <summary>Applies one supported non-multi technique effect after the enemy's landed sequence.</summary>
     /// <param name="tech">Technique whose effect may apply.</param>
-    /// <param name="damage">Total HP removed by the sequence.</param>
     /// <param name="rng">Shared battle random source.</param>
-    private void ApplyEnemyEffectAfterHits(TechData tech, int damage, IBattleRng rng)
+    private void ApplyEnemyEffectAfterHits(TechData tech, IBattleRng rng)
     {
-        if (damage > 0 && tech.Effect != BattleTechniqueEffect.MultiHit)
+        if (state.AnyActionHitLanded && tech.Effect != BattleTechniqueEffect.MultiHit)
         {
             state.ApplyTechniqueEffect(BattleSide.Enemy, tech, rng);
         }

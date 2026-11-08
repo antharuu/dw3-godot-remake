@@ -104,6 +104,10 @@ public sealed class BattleState
     /// <summary>Gets the side whose next queued turn wins the EU slot-sensitive selection.</summary>
     public BattleSide NextActor => _turnScheduler.Count == 0 ? BattleSide.Player : _turnScheduler.PeekNextTurnSide();
 
+    /// <summary>Gets a value indicating whether at least one non-counter hit in the most recently resolved sequence landed, regardless of integer damage.</summary>
+    /// <remarks>The gate for a technique's status effect is a landed hit, not positive aggregate damage; a hit whose integer damage rounds to zero still landed and must still apply its effect.</remarks>
+    internal bool AnyActionHitLanded => _hitSequence.AnyActionLanded;
+
     /// <summary>
     /// Fills the three partners (the first with the active Digimon)
     /// and the three enemies, loading HP/MP and resolving stats, then seeds the turn clock.
@@ -537,23 +541,24 @@ public sealed class BattleState
 
     /// <summary>Applies an ordinary landed technique effect once, while multi-hit itself is represented by its ordered events.</summary>
     /// <param name="tech">Technique that may carry a supported non-multi effect.</param>
-    /// <param name="damage">Total damage actually landed.</param>
+    /// <param name="damage">Total damage actually landed, used for the wake-on-hit roll only.</param>
     /// <param name="rng">Shared battle random source.</param>
     private void ApplyPlayerEffectAfterHits(TechData tech, int damage, IBattleRng rng)
     {
         if (damage > 0)
         {
             _ = TryWakeOnHit(BattleSide.Enemy, damage, rng);
-            if (tech.Effect != BattleTechniqueEffect.MultiHit)
-            {
-                ApplyTechniqueEffect(BattleSide.Player, tech, rng);
-            }
+        }
+
+        if (AnyActionHitLanded && tech.Effect != BattleTechniqueEffect.MultiHit)
+        {
+            ApplyTechniqueEffect(BattleSide.Player, tech, rng);
         }
     }
 
     /// <summary>Runs the one permissible enemy reaction after a living enemy received positive action damage.</summary>
     /// <param name="target">Enemy targeted by the action.</param>
-    /// <param name="damage">Total damage actually landed.</param>
+    /// <param name="damage">Total damage actually landed. The counter requires positive damage because it replies to received damage, not merely a landed hit.</param>
     /// <param name="rng">Shared battle random source.</param>
     private void ReactToPlayerHits(BattleFighter target, int damage, IBattleRng rng)
     {

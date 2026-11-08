@@ -5,6 +5,27 @@ internal sealed class BattleHitSequence
 {
     private readonly List<BattleHitEvent> _events = [];
 
+    /// <summary>Gets a value indicating whether at least one non-counter hit in the current sequence landed, regardless of integer damage.</summary>
+    /// <remarks>
+    /// The gate for a technique's status effect is a landed hit, not positive aggregate damage.
+    /// A hit whose integer damage rounds to zero still landed and must still apply its effect.
+    /// </remarks>
+    public bool AnyActionLanded
+    {
+        get
+        {
+            foreach (BattleHitEvent hit in _events)
+            {
+                if (hit.Landed && !hit.IsCounter)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+    }
+
     /// <summary>Gets the ordered events from the most recently started action and any appended counter-reaction.</summary>
     public IReadOnlyList<BattleHitEvent> Events => _events;
 
@@ -42,6 +63,13 @@ internal sealed class BattleHitSequence
     /// <summary>Returns the source-defined count for multi-hit and double-magic techniques, otherwise one.</summary>
     /// <param name="tech">Technique whose effect selects the sequence rule.</param>
     /// <returns>At least one hit.</returns>
+    /// <remarks>
+    /// <para><see cref="BattleStats.TripleHit"/> is copied by <see cref="BattleStatResolver"/> and
+    /// <see cref="DamageCalculator"/> applies its 4/10 per-hit damage cut, but the matching
+    /// three-hit count expansion is not wired here: <see cref="BattleStats.TripleHit"/> count
+    /// ownership has not been qualified against the real source contract and is an explicit
+    /// residual until that contract is established.</para>
+    /// </remarks>
     private static int HitCountFor(TechData tech) => tech.Effect switch
     {
         BattleTechniqueEffect.MultiHit => Math.Max(tech.HitCount, 1),

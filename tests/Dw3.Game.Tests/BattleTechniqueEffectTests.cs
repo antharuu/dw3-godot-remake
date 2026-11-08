@@ -85,6 +85,60 @@ public sealed class BattleTechniqueEffectTests
         Assert.Equal(0, Assert.IsType<BattleFighter>(state.ActiveEnemyFighter).Flags & FighterFlags.Poisoned);
     }
 
+    /// <summary>
+    /// Verifies that a player technique whose integer damage rounds to zero (attacker Attack=20,
+    /// defender Defense=200, Power=1 → 1×20/200=0) still applies its status effect because
+    /// the hit landed; the gate must be on Landed, not on positive aggregate damage.
+    /// </summary>
+    [Fact]
+    public void PlayerTechnique_LandedZeroDamagePoisonTechnique_AppliesPoisonRegardlessOfDamage()
+    {
+        BattleState state = CreateStateHighEnemyDefense();
+        var technique = new TechData
+        {
+            Accuracy = 128,
+            Effect = BattleTechniqueEffect.Poison,
+            EffectChance = 127,
+            EffectPower = 20,
+            Power = 1,
+        };
+
+        Assert.True(state.PlayerTechnique(technique, new SequenceRng(0, 0)));
+
+        var enemy = Assert.IsType<BattleFighter>(state.ActiveEnemyFighter);
+        Assert.Equal(100, enemy.Hp);
+        Assert.True(state.LastHitEvents.Count == 1 && state.LastHitEvents[0].Landed, "hit must have landed");
+        Assert.Equal(0, state.LastHitEvents[0].Damage);
+        Assert.NotEqual(0, enemy.Flags & FighterFlags.Poisoned);
+    }
+
+    /// <summary>
+    /// Verifies that an enemy technique whose integer damage rounds to zero (enemy Attack=5 after
+    /// strength scaling, player Defense=200, Power=1 → 1×1×5/200=0) still applies its status
+    /// effect because the hit landed; the gate must be on Landed, not on positive aggregate damage.
+    /// </summary>
+    [Fact]
+    public void EnemyTechnique_LandedZeroDamageSleepTechnique_AppliesSleepRegardlessOfDamage()
+    {
+        BattleState state = CreateStateHighPlayerDefense();
+        var technique = new TechData
+        {
+            Accuracy = 128,
+            Effect = BattleTechniqueEffect.Sleep,
+            EffectChance = 127,
+            EffectPower = 20,
+            Power = 1,
+        };
+
+        Assert.True(state.EnemyTechnique(technique, new SequenceRng(0, 0, 0)));
+
+        var player = Assert.IsType<BattleFighter>(state.ActivePlayerFighter);
+        Assert.Equal(100, player.Hp);
+        Assert.True(state.LastHitEvents.Count == 1 && state.LastHitEvents[0].Landed, "hit must have landed");
+        Assert.Equal(0, state.LastHitEvents[0].Damage);
+        Assert.NotEqual(0, player.Flags & FighterFlags.Asleep);
+    }
+
     private static BattleState CreateState()
     {
         var stats = new BattleStats();
@@ -94,6 +148,40 @@ public sealed class BattleTechniqueEffectTests
         var setup = new BattleSetup();
         setup.Partners[0] = new PartnerSeed { Id = 1, Hp = 100, MaxHp = 100, Mp = 100, MaxMp = 100, Stats = stats };
         setup.Enemies[0] = new BattleEnemy { Fighter = 2, Hp = 100, Mp = 100, Strength = 16, BaseStats = stats };
+        return BattleState.InitFighters(setup, digimon: 1, new SequenceRng(127));
+    }
+
+    /// <summary>Player Attack=20, enemy Defense=200 — technique with Power=1 lands but deals 1×20/200=0 integer damage.</summary>
+    private static BattleState CreateStateHighEnemyDefense()
+    {
+        var playerStats = new BattleStats();
+        playerStats.Stats[BattleStat.Attack] = 20;
+        playerStats.Stats[BattleStat.Defense] = 20;
+        playerStats.Stats[BattleStat.Speed] = 100;
+        var enemyStats = new BattleStats();
+        enemyStats.Stats[BattleStat.Attack] = 20;
+        enemyStats.Stats[BattleStat.Defense] = 200;
+        enemyStats.Stats[BattleStat.Speed] = 100;
+        var setup = new BattleSetup();
+        setup.Partners[0] = new PartnerSeed { Id = 1, Hp = 100, MaxHp = 100, Mp = 100, MaxMp = 100, Stats = playerStats };
+        setup.Enemies[0] = new BattleEnemy { Fighter = 2, Hp = 100, Mp = 100, Strength = 16, BaseStats = enemyStats };
+        return BattleState.InitFighters(setup, digimon: 1, new SequenceRng(127));
+    }
+
+    /// <summary>Player Defense=200, enemy BaseStats Attack=5 (Strength=16 → resolved 5×16/16=5) — technique Power=1 lands but deals 1×1×5/200=0 integer damage.</summary>
+    private static BattleState CreateStateHighPlayerDefense()
+    {
+        var playerStats = new BattleStats();
+        playerStats.Stats[BattleStat.Attack] = 20;
+        playerStats.Stats[BattleStat.Defense] = 200;
+        playerStats.Stats[BattleStat.Speed] = 100;
+        var enemyStats = new BattleStats();
+        enemyStats.Stats[BattleStat.Attack] = 5;
+        enemyStats.Stats[BattleStat.Defense] = 20;
+        enemyStats.Stats[BattleStat.Speed] = 100;
+        var setup = new BattleSetup();
+        setup.Partners[0] = new PartnerSeed { Id = 1, Hp = 100, MaxHp = 100, Mp = 100, MaxMp = 100, Stats = playerStats };
+        setup.Enemies[0] = new BattleEnemy { Fighter = 2, Hp = 100, Mp = 100, Strength = 16, BaseStats = enemyStats };
         return BattleState.InitFighters(setup, digimon: 1, new SequenceRng(127));
     }
 
