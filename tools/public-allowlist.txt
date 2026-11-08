@@ -1013,3 +1013,8 @@ src/Dw3.Game/Diagnostics/Battle/BattleHiddenParentCanvasProof.cs
 tests/Dw3.Game.Tests/BattleActionEvidenceTests.cs
 tests/Dw3.Game.Tests/BattleStageActionProofTests.cs
 docs/BATTLE_SCENE_DIAGNOSTICS.md
+src/Dw3.Game/Simulation/BattleFighter.cs
+src/Dw3.Game/Simulation/BattleHitResolver.cs
+src/Dw3.Game/Simulation/BattleStatResolver.cs
+src/Dw3.Game/Simulation/PartnerSeed.cs
+tests/Dw3.Game.Tests/BattleFighterStatResolutionTests.cs

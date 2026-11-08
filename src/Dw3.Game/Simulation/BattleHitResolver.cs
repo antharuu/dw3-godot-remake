@@ -18,6 +18,8 @@ public sealed class BattleHitResolver(ElementBoost boost, bool allowCritical, IB
     /// <returns>The landing and damage result.</returns>
     public BattleHitResult Basic(TechData tech, BattleFighter attacker, BattleFighter target, bool enemyAttacker)
     {
+        attacker.RefreshStats();
+        target.RefreshStats();
         bool landed = BattleHitRules.RollPhysical(tech, attacker.Stats, target.Stats, enemyAttacker, rng.NextValue());
         int crit = RollCrit(attacker, target, tech);
         int damage = DamageCalculator.ComputeDamage(tech, attacker.Stats, target.Stats, enemyAttacker, attacker.Strength, boost, crit);
@@ -37,6 +39,8 @@ public sealed class BattleHitResolver(ElementBoost boost, bool allowCritical, IB
             return Basic(tech, attacker, target, enemyAttacker);
         }
 
+        attacker.RefreshStats();
+        target.RefreshStats();
         bool landed = BattleHitRules.RollMagic(tech, attacker.Stats, target.Stats, rng.NextValue());
         int crit = RollMagicCrit(target, tech);
         int damage = DamageCalculator.ComputeMagicDamage(tech, attacker.Stats, target.Stats, enemyAttacker, attacker.Strength, boost, crit);
@@ -51,6 +55,8 @@ public sealed class BattleHitResolver(ElementBoost boost, bool allowCritical, IB
     /// <returns>The landing and damage result.</returns>
     public BattleHitResult Counter(TechData tech, BattleFighter attacker, BattleFighter target, int receivedDamage)
     {
+        attacker.RefreshStats();
+        target.RefreshStats();
         bool landed = BattleHitRules.RollPhysical(tech, attacker.Stats, target.Stats, enemyAttacker: true, rng.NextValue());
         if (!landed)
         {

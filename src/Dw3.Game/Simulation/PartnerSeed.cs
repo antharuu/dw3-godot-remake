@@ -23,6 +23,14 @@ public sealed class PartnerSeed
     /// <summary>Gets or sets the maximum MP.</summary>
     public int MaxMp { get; set; }
 
-    /// <summary>Gets or sets the resolved battle stats. The battle fighter shares this object instead of copying it.</summary>
+    /// <summary>Gets or sets the persistent partner totals and equipped modifiers for the base form.</summary>
     public BattleStats Stats { get; set; } = new();
+
+    /// <summary>Gets or sets complete stat sources by transformed Digimon id. An absent form retains <see cref="Stats"/>.</summary>
+    public IReadOnlyDictionary<int, BattleStats> FormStats { get; set; } = new Dictionary<int, BattleStats>();
+
+    /// <summary>Returns the persistent source for the fighter's current form without exposing a cached battle snapshot.</summary>
+    /// <param name="formId">Current Digimon form id.</param>
+    /// <returns>The form source when present, otherwise the partner's base source.</returns>
+    public BattleStats StatsFor(int formId) => FormStats.TryGetValue(formId, out BattleStats? stats) ? stats : Stats;
 }

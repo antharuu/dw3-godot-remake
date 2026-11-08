@@ -12,6 +12,9 @@ namespace Dw3Production.Simulation;
 /// </remarks>
 public sealed class BattleFighter
 {
+    private BattleStats _baseStats = new();
+    private PartnerSeed? _partner;
+
     /// <summary>Gets or sets the Digimon id the fighter currently is, which selects its model, name and techniques. It changes during a digivolution.</summary>
     public int Id { get; set; }
 
@@ -60,7 +63,7 @@ public sealed class BattleFighter
     /// <summary>Gets or sets the confusion counter, 0 when not confused. Half of it is added to the critical chance of hits against the fighter.</summary>
     public int Confusion { get; set; }
 
-    /// <summary>Gets or sets the resolved battle stats (see the remarks of the class).</summary>
+    /// <summary>Gets or sets the currently resolved battle stats.</summary>
     public BattleStats Stats { get; set; } = new();
 
     /// <summary>Gets or sets the enemy's strength multiplier in sixteenths (16 = ×1), 0 for a partner.</summary>
@@ -94,10 +97,10 @@ public sealed class BattleFighter
             MaxHp = seed.MaxHp,
             Mp = seed.Mp,
             MaxMp = seed.MaxMp,
+            _partner = seed,
+            _baseStats = seed.Stats,
             Stats = seed.Stats,
         };
-        fighter.Stats.Flags = fighter.Flags;
-        fighter.Stats.DamageBonus = fighter.Charge;
         return fighter;
     }
 
@@ -122,9 +125,16 @@ public sealed class BattleFighter
             Counter = enemy.Counter,
         };
         fighter.Stats = DamageCalculator.ComputeEnemyStats(enemy.BaseStats, enemy.Level, enemy.Strength);
-        fighter.Stats.Flags = fighter.Flags;
-        fighter.Stats.DamageBonus = fighter.Charge;
+        fighter._baseStats = fighter.Stats;
+        fighter.RefreshStats();
         return fighter;
+    }
+
+    /// <summary>Refreshes the stat snapshot used by the next rule calculation from the current form and mutable battle modifiers.</summary>
+    public void RefreshStats()
+    {
+        BattleStats source = _partner is null ? Stats : _baseStats;
+        Stats = BattleStatResolver.Resolve(source, _partner, Id, Flags, Charge, Boosts);
     }
 
     /// <summary>Takes <paramref name="damage"/> off the fighter's HP, which never drops below 0.</summary>
