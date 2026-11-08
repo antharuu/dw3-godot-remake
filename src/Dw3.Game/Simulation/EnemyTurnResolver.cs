@@ -69,12 +69,8 @@ public sealed class EnemyTurnResolver(BattleState state)
             return;
         }
 
-        BattleHitResult result = state.Hits(rng).Basic(tech, attacker, target, enemyAttacker: true);
-        if (result.Landed)
-        {
-            target.TakeDamage(result.Damage);
-            _ = state.TryWakeOnHit(BattleSide.Player, result.Damage, rng);
-        }
+        int damage = state.ResolveHitSequence(BattleSide.Enemy, tech, target, false, () => state.Hits(rng).Basic(tech, attacker, target, enemyAttacker: true));
+        WakePlayerAfterHits(damage, rng);
 
         EndTurn();
     }
@@ -108,13 +104,9 @@ public sealed class EnemyTurnResolver(BattleState state)
         }
 
         attacker.Mp -= tech.Mp;
-        BattleHitResult result = state.Hits(rng).Technique(tech, attacker, target, enemyAttacker: true);
-        if (result.Landed)
-        {
-            target.TakeDamage(result.Damage);
-            _ = state.TryWakeOnHit(BattleSide.Player, result.Damage, rng);
-            state.ApplyTechniqueEffect(BattleSide.Enemy, tech, rng);
-        }
+        int damage = state.ResolveHitSequence(BattleSide.Enemy, tech, target, false, () => state.Hits(rng).Technique(tech, attacker, target, enemyAttacker: true));
+        WakePlayerAfterHits(damage, rng);
+        ApplyEnemyEffectAfterHits(tech, damage, rng);
 
         state.ConsumeCharge(BattleSide.Enemy);
         EndTurn();
@@ -186,12 +178,9 @@ public sealed class EnemyTurnResolver(BattleState state)
             return;
         }
 
-        BattleHitResult result = state.Hits(rng).Counter(tech, attacker, target, receivedDamage);
-        if (result.Landed)
-        {
-            target.TakeDamage(result.Damage);
-            _ = state.TryWakeOnHit(BattleSide.Player, result.Damage, rng);
-        }
+        int damage = state.ResolveHitSequence(BattleSide.Enemy, tech, target, true, () => state.Hits(rng).Counter(tech, attacker, target, receivedDamage));
+        WakePlayerAfterHits(damage, rng);
+        state.ConsumeCharge(BattleSide.Enemy);
 
         state.CheckOutcome();
     }
@@ -272,6 +261,29 @@ public sealed class EnemyTurnResolver(BattleState state)
         }
 
         return state.Techs.TryGetValue(id, out var tech) ? tech : null;
+    }
+
+    /// <summary>Wakes the active player once after a sequence that actually dealt damage.</summary>
+    /// <param name="damage">Total HP removed by the sequence.</param>
+    /// <param name="rng">Shared battle random source.</param>
+    private void WakePlayerAfterHits(int damage, IBattleRng rng)
+    {
+        if (damage > 0)
+        {
+            _ = state.TryWakeOnHit(BattleSide.Player, damage, rng);
+        }
+    }
+
+    /// <summary>Applies one supported non-multi technique effect after the enemy's landed sequence.</summary>
+    /// <param name="tech">Technique whose effect may apply.</param>
+    /// <param name="damage">Total HP removed by the sequence.</param>
+    /// <param name="rng">Shared battle random source.</param>
+    private void ApplyEnemyEffectAfterHits(TechData tech, int damage, IBattleRng rng)
+    {
+        if (damage > 0 && tech.Effect != BattleTechniqueEffect.MultiHit)
+        {
+            state.ApplyTechniqueEffect(BattleSide.Enemy, tech, rng);
+        }
     }
 
     /// <summary>Counts the turn on the active enemy, re-arms the enemy cadence and re-checks the outcome.</summary>

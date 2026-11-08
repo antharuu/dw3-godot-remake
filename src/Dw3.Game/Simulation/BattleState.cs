@@ -29,6 +29,7 @@ public sealed class BattleState
     private readonly BattleTurnScheduler _turnScheduler = new();
     private readonly BattleStatusCoordinator _statusCoordinator;
     private readonly BattleModifierCoordinator _modifierCoordinator;
+    private readonly BattleHitSequence _hitSequence = new();
 
     /// <summary>Initializes a new instance of the <see cref="BattleState"/> class with empty sides and no outcome.</summary>
     public BattleState()
@@ -84,6 +85,9 @@ public sealed class BattleState
 
     /// <summary>Gets or sets a value indicating whether criticals roll; when false (default) damage is deterministic.</summary>
     public bool AllowCritical { get; set; }
+
+    /// <summary>Gets the ordered damage and reaction events from the most recently resolved damaging action.</summary>
+    public IReadOnlyList<BattleHitEvent> LastHitEvents => _hitSequence.Events;
 
     /// <summary>Gets the player side's remaining event delay.</summary>
     public int NextPlayerTurn => _turnScheduler.RemainingTurnDelay(BattleSide.Player);
@@ -148,7 +152,7 @@ public sealed class BattleState
             return false;
         }
 
-        LandPlayerHit(target, tech, Hits(rng).Basic(tech, attacker, target, enemyAttacker: false), rng);
+        LandPlayerHits(target, tech, attacker, rng, technique: false);
         return true;
     }
 
@@ -168,7 +172,7 @@ public sealed class BattleState
         attacker.RefreshStats();
         target.RefreshStats();
         attacker.Mp -= tech.Mp;
-        LandPlayerHit(target, tech, Hits(rng).Technique(tech, attacker, target, enemyAttacker: false), rng);
+        LandPlayerHits(target, tech, attacker, rng, technique: true);
         _modifierCoordinator.ConsumeCharge(BattleSide.Player);
         return true;
     }
@@ -488,34 +492,77 @@ public sealed class BattleState
     /// <returns>The active slot, or -1 when no fighter is active.</returns>
     internal int ActiveSlot(BattleSide side) => side == BattleSide.Player ? ActivePlayer : ActiveEnemy;
 
+    /// <summary>Resolves and traces a fixed target's hit sequence, preserving the source stop on a knock-out.</summary>
+    /// <param name="side">Side rolling the hits.</param>
+    /// <param name="tech">Technique that determines the sequence count.</param>
+    /// <param name="target">Fighter receiving the sequence.</param>
+    /// <param name="isCounter">Whether events append as a counter-reaction.</param>
+    /// <param name="resolve">Function resolving one hit's accuracy and raw damage.</param>
+    /// <returns>Total HP actually removed by the sequence.</returns>
+    internal int ResolveHitSequence(BattleSide side, TechData tech, BattleFighter target, bool isCounter, Func<BattleHitResult> resolve) =>
+        _hitSequence.Resolve(side, tech, target, isCounter, resolve, CheckOutcome, () => Outcome != BattleOutcome.None);
+
     /// <summary>Seeds the EU relative queue with the encounter opening rule.</summary>
     /// <param name="ambushChance">Encounter ambush probability, or zero when disabled.</param>
     /// <param name="rng">Shared injected battle random source.</param>
     private void SeedTurnClock(int ambushChance, IBattleRng rng) =>
         _turnScheduler.InitializeOpening(BattleFighterTiming.SpeedOf(ActivePlayerFighter), BattleFighterTiming.SpeedOf(ActiveEnemyFighter), ambushChance, rng);
 
-    /// <summary>
-    /// The common end of a player hit: the damage lands, the enemy may counter, a knocked-out
-    /// enemy is replaced by its next living fighter, and the player's turn is spent.
-    /// </summary>
-    /// <param name="target">The active enemy that takes the hit.</param>
-    /// <param name="technique">Technique which supplied the landed result.</param>
-    /// <param name="result">The resolved hit, which may miss after consuming its qualified random draws.</param>
-    /// <param name="rng">The battle's random source, for the counter.</param>
-    private void LandPlayerHit(BattleFighter target, TechData technique, BattleHitResult result, IBattleRng rng)
+    /// <summary>Resolves all of the player's ordered hits, then permits at most one enemy counter-reaction.</summary>
+    /// <param name="target">Enemy targeted for the whole action.</param>
+    /// <param name="tech">Technique that determines count, hit rule and effect.</param>
+    /// <param name="attacker">Player that started the action.</param>
+    /// <param name="rng">Shared battle random source.</param>
+    /// <param name="technique">Whether to use the magic-aware technique resolver.</param>
+    private void LandPlayerHits(BattleFighter target, TechData tech, BattleFighter attacker, IBattleRng rng, bool technique)
     {
-        if (result.Landed)
-        {
-            target.TakeDamage(result.Damage);
-            _ = TryWakeOnHit(BattleSide.Enemy, result.Damage, rng);
-            ApplyTechniqueEffect(BattleSide.Player, technique, rng);
-            _enemyTurn.TryCounter(result.Damage, rng);
-            ResolveEnemySlot();
-        }
-
+        int damage = ResolveHitSequence(BattleSide.Player, tech, target, false, () => ResolvePlayerHit(tech, attacker, target, rng, technique));
+        ApplyPlayerEffectAfterHits(tech, damage, rng);
+        CheckOutcome();
+        ReactToPlayerHits(target, damage, rng);
         MarkFought();
         AdvancePlayerTurn();
         CheckOutcome();
+    }
+
+    /// <summary>Resolves one player hit with the selected basic or technique accuracy rule.</summary>
+    /// <param name="tech">Technique being used.</param>
+    /// <param name="attacker">Player using it.</param>
+    /// <param name="target">Enemy receiving it.</param>
+    /// <param name="rng">Shared battle random source.</param>
+    /// <param name="technique">Whether the technique resolver is required.</param>
+    /// <returns>The resolved hit result.</returns>
+    private BattleHitResult ResolvePlayerHit(TechData tech, BattleFighter attacker, BattleFighter target, IBattleRng rng, bool technique) =>
+        technique ? Hits(rng).Technique(tech, attacker, target, enemyAttacker: false) : Hits(rng).Basic(tech, attacker, target, enemyAttacker: false);
+
+    /// <summary>Applies an ordinary landed technique effect once, while multi-hit itself is represented by its ordered events.</summary>
+    /// <param name="tech">Technique that may carry a supported non-multi effect.</param>
+    /// <param name="damage">Total damage actually landed.</param>
+    /// <param name="rng">Shared battle random source.</param>
+    private void ApplyPlayerEffectAfterHits(TechData tech, int damage, IBattleRng rng)
+    {
+        if (damage > 0)
+        {
+            _ = TryWakeOnHit(BattleSide.Enemy, damage, rng);
+            if (tech.Effect != BattleTechniqueEffect.MultiHit)
+            {
+                ApplyTechniqueEffect(BattleSide.Player, tech, rng);
+            }
+        }
+    }
+
+    /// <summary>Runs the one permissible enemy reaction after a living enemy received positive action damage.</summary>
+    /// <param name="target">Enemy targeted by the action.</param>
+    /// <param name="damage">Total damage actually landed.</param>
+    /// <param name="rng">Shared battle random source.</param>
+    private void ReactToPlayerHits(BattleFighter target, int damage, IBattleRng rng)
+    {
+        if (damage > 0 && !target.IsKnockedOut && Outcome == BattleOutcome.None)
+        {
+            _enemyTurn.TryCounter(damage, rng);
+        }
+
+        ResolveEnemySlot();
     }
 
     /// <summary>Re-arms the player cadence after an ordinary completed action.</summary>

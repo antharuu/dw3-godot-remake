@@ -574,6 +574,8 @@ src/Dw3.Game/Simulation/BattleFlowController.cs
 src/Dw3.Game/Simulation/BattleFlowPhase.cs
 src/Dw3.Game/Simulation/BattleHitResult.cs
 src/Dw3.Game/Simulation/BattleHitResolver.cs
+src/Dw3.Game/Simulation/BattleHitEvent.cs
+src/Dw3.Game/Simulation/BattleHitSequence.cs
 src/Dw3.Game/Simulation/BattleHitRules.cs
 src/Dw3.Game/Simulation/BattleItem.cs
 src/Dw3.Game/Simulation/BattleItemEffects.cs
@@ -773,6 +775,7 @@ tests/Dw3.Game.Tests/BattleEnemyAiVectorCodec.cs
 tests/Dw3.Game.Tests/BattleEnemyAiVectorGenerator.cs
 tests/Dw3.Game.Tests/BattleEnemyAiVectorTests.cs
 tests/Dw3.Game.Tests/BattleHitResolverTests.cs
+tests/Dw3.Game.Tests/BattleHitSequenceTests.cs
 tests/Dw3.Game.Tests/BattleTechniqueEffectTests.cs
 tests/Dw3.Game.Tests/BattlePoisonStatusTests.cs
 tests/Dw3.Game.Tests/BattleGrowthVectorGenerator.cs
