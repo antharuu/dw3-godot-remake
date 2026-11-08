@@ -147,6 +147,69 @@ public sealed class BattleModifierTests
         Assert.False(state.ApplySpecialStatus(BattleSide.Player, fighterSlot: 2, new SequenceRng()));
     }
 
+    [Fact]
+    public void EnemyChargeIsConsumedByEnemyTechnique()
+    {
+        BattleState state = CreateState();
+        var tech = new TechData { Power = 10, Icon = BattleConst.TechPhysical, Mp = 0, Accuracy = 128 };
+
+        state.SetCharge(BattleSide.Enemy, 64);
+        Assert.True(state.EnemyTechnique(tech, new SequenceRng()));
+
+        Assert.Equal(80, state.Players[0]!.Hp);
+        Assert.Equal(0, state.Enemies[0]!.Charge);
+    }
+
+    [Fact]
+    public void StatusExpiryBeforeModifierClearsBothThroughScheduler()
+    {
+        BattleState state = CreateState();
+        var basicTech = new TechData { Power = 0, Icon = BattleConst.TechPhysical, Accuracy = 128 };
+
+        // ParalysisEnd and AttackBoostEnd both get delay 3400 with the given rng values.
+        // Paralysis is enqueued first, so it wins the head position on equal delay.
+        Assert.True(state.InflictParalysis(BattleSide.Enemy, 127, 0, new SequenceRng()));
+        Assert.True(state.ApplyStatModifier(BattleSide.Player, 0, BattleStat.Attack, 64, new SequenceRng(2000)));
+
+        // Advance the queue until both events reach the head simultaneously.
+        state.EnemyAttack(basicTech, new SequenceRng());
+        Assert.True(state.PlayerSwitch(1));
+        state.EnemyAttack(basicTech, new SequenceRng());
+        Assert.True(state.PlayerSwitch(0));
+        state.EnemyAttack(basicTech, new SequenceRng());
+        Assert.True(state.PlayerSwitch(1));
+
+        // This enemy attack triggers ProcessDueEvents with ParalysisEnd at head;
+        // the modifier that follows must also be drained before the next actor is exposed.
+        state.EnemyAttack(basicTech, new SequenceRng());
+
+        // The following switch pops the unprocessed AttackBoostEnd in the buggy code.
+        Assert.True(state.PlayerSwitch(0));
+
+        Assert.Equal(0, state.Players[0]!.Flags & FighterFlags.Paralyzed);
+        Assert.Equal(0, state.Players[0]!.Boosts[0]);
+    }
+
+    [Fact]
+    public void ModifierExpiryBeforeStatusClearsBothThroughScheduler()
+    {
+        BattleState state = CreateState();
+        var basicTech = new TechData { Power = 0, Icon = BattleConst.TechPhysical, Accuracy = 128 };
+
+        // AttackBoostEnd (delay 1400) enqueued before ParalysisEnd (delay 3400).
+        // Modifier wins the head; both must be cleared by the time the next actor arrives.
+        Assert.True(state.ApplyStatModifier(BattleSide.Player, 0, BattleStat.Attack, 64, new SequenceRng()));
+        Assert.True(state.InflictParalysis(BattleSide.Enemy, 127, 0, new SequenceRng()));
+
+        state.EnemyAttack(basicTech, new SequenceRng());
+        Assert.True(state.PlayerSwitch(1));
+        state.EnemyAttack(basicTech, new SequenceRng());
+        Assert.True(state.PlayerSwitch(0));
+        state.EnemyAttack(basicTech, new SequenceRng());
+
+        Assert.Equal(0, state.Players[0]!.Boosts[0]);
+    }
+
     private static BattleState CreateState(int formAttack = 0)
     {
         var baseStats = new BattleStats();

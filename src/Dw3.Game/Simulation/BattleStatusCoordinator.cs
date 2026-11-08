@@ -155,12 +155,17 @@ public sealed class BattleStatusCoordinator(BattleState state, BattleTurnSchedul
     }
 
     /// <summary>Consumes all status events due before the next ordinary action.</summary>
-    public void ProcessDueEvents()
+    /// <returns>Whether at least one status event was processed.</returns>
+    public bool ProcessDueEvents()
     {
+        bool any = false;
         while (scheduler.Count > 0 && IsStatusEvent(scheduler.NextKind))
         {
             ProcessEvent(scheduler.PopNext());
+            any = true;
         }
+
+        return any;
     }
 
     /// <summary>Stores one control-status strength in its matching fighter field.</summary>

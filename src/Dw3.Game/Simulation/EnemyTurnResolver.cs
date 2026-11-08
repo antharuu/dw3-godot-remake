@@ -115,6 +115,7 @@ public sealed class EnemyTurnResolver(BattleState state)
             _ = state.TryWakeOnHit(BattleSide.Player, result.Damage, rng);
         }
 
+        state.ConsumeCharge(BattleSide.Enemy);
         EndTurn();
         return true;
     }

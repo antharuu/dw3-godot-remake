@@ -456,6 +456,10 @@ public sealed class BattleState
         }
     }
 
+    /// <summary>Consumes the active fighter's pending charge after a technique.</summary>
+    /// <param name="side">Side whose active fighter's charge is cleared.</param>
+    internal void ConsumeCharge(BattleSide side) => _modifierCoordinator.ConsumeCharge(side);
+
     /// <summary>Gets the active fighter on one side.</summary>
     /// <param name="side">Requested side.</param>
     /// <returns>The active fighter, if one exists.</returns>
@@ -519,6 +523,7 @@ public sealed class BattleState
     /// <param name="rng">Random source when the family needs a draw, otherwise null.</param>
     private void ScheduleTurn(BattleSide side, BattleActionDelayKind kind, IBattleRng? rng)
     {
+        ProcessDueEvents();
         _ = _turnScheduler.PopNext();
         var own = side == BattleSide.Player ? ActivePlayerFighter : ActiveEnemyFighter;
         var other = side == BattleSide.Player ? ActiveEnemyFighter : ActivePlayerFighter;
@@ -529,16 +534,21 @@ public sealed class BattleState
     /// <summary>Consumes every due modifier and status event before the next ordinary action.</summary>
     private void ProcessDueEvents()
     {
-        while (true)
+        bool any;
+        do
         {
-            if (_modifierCoordinator.ProcessNextExpiry())
+            any = false;
+            while (_modifierCoordinator.ProcessNextExpiry())
             {
-                continue;
+                any = true;
             }
 
-            _statusCoordinator.ProcessDueEvents();
-            return;
+            if (_statusCoordinator.ProcessDueEvents())
+            {
+                any = true;
+            }
         }
+        while (any);
     }
 
     /// <summary>The enemy side brings in its next living
