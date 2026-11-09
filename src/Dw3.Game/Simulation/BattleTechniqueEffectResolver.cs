@@ -33,6 +33,9 @@ public static class BattleTechniqueEffectResolver
             case BattleTechniqueEffect.Sleep:
                 _ = state.InflictSleep(attackerSide, technique.EffectChance, technique.EffectPower, rng);
                 return true;
+            case BattleTechniqueEffect.KnockOut:
+                _ = state.TryImmediateKnockOut(attackerSide, technique.EffectChance, rng);
+                return true;
             case BattleTechniqueEffect.Drain:
                 _ = BattleResourceEffects.DrainHp(state, attackerSide, technique.EffectChance, technique.EffectPower, landedDamage, rng);
                 return true;

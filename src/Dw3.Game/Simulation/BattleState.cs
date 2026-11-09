@@ -338,6 +338,14 @@ public sealed class BattleState
     public bool InflictSleep(BattleSide attackerSide, int chance, int strength, IBattleRng rng) =>
         _statusCoordinator.InflictControl(attackerSide, chance, strength, new(FighterFlags.Asleep, BattleScheduledEventKind.SleepEnd, Resist.Sleep, 2), rng);
 
+    /// <summary>Attempts the named immediate-knock-out contract against the opposing active fighter.</summary>
+    /// <param name="attackerSide">Side that landed the effect-6 technique.</param>
+    /// <param name="chance">Extracted base application chance.</param>
+    /// <param name="rng">Shared battle random source.</param>
+    /// <returns><see langword="true"/> when the effect roll sets the target HP to zero, otherwise <see langword="false"/> without target mutation.</returns>
+    public bool TryImmediateKnockOut(BattleSide attackerSide, int chance, IBattleRng rng) =>
+        BattleKnockOutResolver.TryApply(this, attackerSide, chance, rng);
+
     /// <summary>Clears all three control statuses and their scheduled expiries from one fighter.</summary>
     /// <param name="side">Side containing the cured fighter.</param>
     /// <param name="fighterSlot">Slot of the cured fighter.</param>

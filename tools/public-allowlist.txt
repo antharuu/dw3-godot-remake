@@ -579,6 +579,7 @@ src/Dw3.Game/Simulation/BattleHitSequence.cs
 src/Dw3.Game/Simulation/BattleHitRules.cs
 src/Dw3.Game/Simulation/BattleItem.cs
 src/Dw3.Game/Simulation/BattleItemEffects.cs
+src/Dw3.Game/Simulation/BattleKnockOutResolver.cs
 src/Dw3.Game/Simulation/BattleList.cs
 src/Dw3.Game/Simulation/BattleMenuController.cs
 src/Dw3.Game/Simulation/BattleMenuDriver.cs

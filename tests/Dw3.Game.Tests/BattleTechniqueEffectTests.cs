@@ -551,6 +551,86 @@ public sealed class BattleTechniqueEffectTests
         Assert.Equal([0, 0, 0], state.Players[0]!.PersistentStatuses);
     }
 
+    /// <summary>Verifies that effect 6 immediately knocks out the active enemy at one HP and brings its living reserve into the active slot.</summary>
+    [Fact]
+    public void PlayerTechnique_LandedImmediateKnockOut_EliminatesOneHpEnemyAndActivatesReserve()
+    {
+        BattleState state = CreateState(enemyHp: 1, includeEnemyReserve: true);
+        var technique = new TechData { Accuracy = 128, Effect = BattleTechniqueEffect.KnockOut, EffectChance = 127, Power = 1 };
+
+        Assert.True(state.PlayerTechnique(technique, new SequenceRng(0, 0)));
+
+        Assert.Equal(0, state.Enemies[0]!.Hp);
+        Assert.Equal(1, state.ActiveEnemy);
+        Assert.Equal(100, state.Enemies[1]!.Hp);
+        Assert.Equal(BattleOutcome.None, state.Outcome);
+    }
+
+    /// <summary>Verifies that effect 6 immediately knocks out the active player from maximum HP and records defeat with no reserve.</summary>
+    [Fact]
+    public void EnemyTechnique_LandedImmediateKnockOut_EliminatesMaxHpPlayerAndLosesWithoutReserve()
+    {
+        BattleState state = CreateState();
+        state.Players[1] = null;
+        var technique = new TechData { Accuracy = 128, Effect = BattleTechniqueEffect.KnockOut, EffectChance = 127, Power = 1 };
+
+        Assert.True(state.EnemyTechnique(technique, new SequenceRng(0, 0)));
+
+        Assert.Equal(0, state.Players[0]!.Hp);
+        Assert.Equal(BattleOutcome.Lost, state.Outcome);
+    }
+
+    /// <summary>Verifies that a failed effect-6 roll after a landed hit keeps the target at maximum HP.</summary>
+    [Fact]
+    public void PlayerTechnique_FailedImmediateKnockOutRoll_DoesNotMutateTarget()
+    {
+        BattleState state = CreateState();
+        var target = Assert.IsType<BattleFighter>(state.ActiveEnemyFighter);
+        var technique = new TechData { Accuracy = 128, Effect = BattleTechniqueEffect.KnockOut, EffectChance = 1, Power = 0 };
+
+        Assert.True(state.PlayerTechnique(technique, new SequenceRng(0, 1)));
+
+        Assert.Equal(target.MaxHp, target.Hp);
+        Assert.Equal(BattleOutcome.None, state.Outcome);
+    }
+
+    /// <summary>Verifies that a missed effect-6 technique neither rolls immediate knock-out nor changes its target.</summary>
+    [Fact]
+    public void PlayerTechnique_MissedImmediateKnockOut_DoesNotMutateTarget()
+    {
+        BattleState state = CreateState();
+        var target = Assert.IsType<BattleFighter>(state.ActiveEnemyFighter);
+        var technique = new TechData { Accuracy = 0, Effect = BattleTechniqueEffect.KnockOut, EffectChance = 127, Power = 1 };
+        var rng = new CountingRng(127, 0);
+
+        Assert.True(state.PlayerTechnique(technique, rng));
+
+        Assert.Equal(100, target.Hp);
+        Assert.Equal(1, rng.CallCount);
+    }
+
+    /// <summary>Verifies that the named immediate-knock-out contract rejects absent and already-invalid targets before random input or mutation.</summary>
+    [Fact]
+    public void TryImmediateKnockOut_InvalidTarget_IsRefusedWithoutRandomInput()
+    {
+        BattleState absentTargetState = CreateState();
+        absentTargetState.Enemies[0] = null;
+        absentTargetState.ActiveEnemy = -1;
+        var absentRng = new CountingRng(0);
+
+        Assert.False(absentTargetState.TryImmediateKnockOut(BattleSide.Player, 127, absentRng));
+        Assert.Equal(0, absentRng.CallCount);
+
+        BattleState knockedOutTargetState = CreateState();
+        var target = Assert.IsType<BattleFighter>(knockedOutTargetState.ActiveEnemyFighter);
+        target.Hp = 0;
+        var knockedOutRng = new CountingRng(0);
+
+        Assert.False(knockedOutTargetState.TryImmediateKnockOut(BattleSide.Player, 127, knockedOutRng));
+        Assert.Equal(0, knockedOutRng.CallCount);
+        Assert.Equal(0, target.Hp);
+    }
+
     /// <summary>Verifies that catalogue effect 1 is explicitly accepted as an ordinary action instead of falling through the unsupported-effect default.</summary>
     [Fact]
     public void TechniqueEffect_ExplicitNoSpecialEffect_IsRecognizedWithoutMutation()
