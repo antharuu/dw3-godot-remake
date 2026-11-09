@@ -69,7 +69,7 @@ public sealed class EnemyTurnResolver(BattleState state)
             return;
         }
 
-        int damage = state.ResolveHitSequence(BattleSide.Enemy, tech, attacker.Stats, target, false, () => state.Hits(rng).Basic(tech, attacker, target, enemyAttacker: true));
+        int damage = state.ResolveHitSequence(BattleSide.Enemy, tech, attacker.Stats, target, false, _ => state.Hits(rng).Basic(tech, attacker, target, enemyAttacker: true));
         WakePlayerAfterHits(damage, rng);
 
         EndTurn();
@@ -86,7 +86,7 @@ public sealed class EnemyTurnResolver(BattleState state)
     {
         var attacker = state.ActiveEnemyFighter;
         var target = state.ActivePlayerFighter;
-        if (attacker is not { IsKnockedOut: false } || target is not { IsKnockedOut: false } || !BattleTechniqueEffectResolver.CanExecute(BattleSide.Enemy, tech))
+        if (attacker is not { IsKnockedOut: false } || target is not { IsKnockedOut: false } || !BattleTechniqueEffectResolver.CanExecute(BattleSide.Enemy, tech) || !DoubleMagicTechniqueSelector.HasRequiredDamageEntries(tech, state.Techs))
         {
             return false;
         }
@@ -112,7 +112,7 @@ public sealed class EnemyTurnResolver(BattleState state)
             return true;
         }
 
-        int damage = state.ResolveHitSequence(BattleSide.Enemy, tech, attacker.Stats, target, false, () => state.Hits(rng).Technique(tech, attacker, target, enemyAttacker: true));
+        int damage = state.ResolveHitSequence(BattleSide.Enemy, tech, attacker.Stats, target, false, hitIndex => state.Hits(rng).Technique(tech, DoubleMagicTechniqueSelector.DamageTechniqueForHit(tech, state.Techs, hitIndex), attacker, target, enemyAttacker: true));
         WakePlayerAfterHits(damage, rng);
         ApplyEnemyEffectAfterHits(tech, state.LastResolvedDamage, rng);
 
@@ -186,7 +186,7 @@ public sealed class EnemyTurnResolver(BattleState state)
             return;
         }
 
-        int damage = state.ResolveHitSequence(BattleSide.Enemy, tech, attacker.Stats, target, true, () => state.Hits(rng).Counter(tech, attacker, target, receivedDamage));
+        int damage = state.ResolveHitSequence(BattleSide.Enemy, tech, attacker.Stats, target, true, _ => state.Hits(rng).Counter(tech, attacker, target, receivedDamage));
         WakePlayerAfterHits(damage, rng);
         state.ConsumeCharge(BattleSide.Enemy);
 

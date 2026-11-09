@@ -33,17 +33,27 @@ public sealed class BattleHitResolver(ElementBoost boost, bool allowCritical, IB
     /// <param name="enemyAttacker">Whether the attacker is on the enemy side.</param>
     /// <returns>The landing and damage result.</returns>
     public BattleHitResult Technique(TechData tech, BattleFighter attacker, BattleFighter target, bool enemyAttacker)
+        => Technique(tech, tech, attacker, target, enemyAttacker);
+
+    /// <summary>Resolves a technique with separate source records for its accuracy and magic-damage fields.</summary>
+    /// <param name="accuracyTech">Technique supplying icon, accuracy, and magic critical fields.</param>
+    /// <param name="damageTech">Technique supplying the magic damage fields.</param>
+    /// <param name="attacker">The fighter that uses the technique.</param>
+    /// <param name="target">The fighter it targets.</param>
+    /// <param name="enemyAttacker">Whether the attacker is on the enemy side.</param>
+    /// <returns>The landing and damage result.</returns>
+    public BattleHitResult Technique(TechData accuracyTech, TechData damageTech, BattleFighter attacker, BattleFighter target, bool enemyAttacker)
     {
-        if (tech.Icon != BattleConst.TechMagic)
+        if (accuracyTech.Icon != BattleConst.TechMagic)
         {
-            return Basic(tech, attacker, target, enemyAttacker);
+            return Basic(damageTech, attacker, target, enemyAttacker);
         }
 
         attacker.RefreshStats();
         target.RefreshStats();
-        bool landed = BattleHitRules.RollMagic(tech, attacker.Stats, target.Stats, rng.NextValue());
-        int crit = RollMagicCrit(target, tech);
-        int damage = DamageCalculator.ComputeMagicDamage(tech, attacker.Stats, target.Stats, enemyAttacker, attacker.Strength, boost, crit);
+        bool landed = BattleHitRules.RollMagic(accuracyTech, attacker.Stats, target.Stats, rng.NextValue());
+        int crit = RollMagicCrit(target, accuracyTech);
+        int damage = DamageCalculator.ComputeMagicDamage(damageTech, attacker.Stats, target.Stats, enemyAttacker, attacker.Strength, boost, crit);
         return new BattleHitResult(landed, damage);
     }
 

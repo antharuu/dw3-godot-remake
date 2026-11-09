@@ -174,7 +174,7 @@ public sealed class BattleState
     {
         var attacker = ActivePlayerFighter;
         var target = ActiveEnemyFighter;
-        if (attacker is not { IsKnockedOut: false } || target == null || !BattleTechniqueEffectResolver.CanExecute(BattleSide.Player, tech) || tech.Mp > attacker.Mp || (attacker.Flags & (FighterFlags.Asleep | FighterFlags.Confused)) != 0)
+        if (attacker is not { IsKnockedOut: false } || target == null || !BattleTechniqueEffectResolver.CanExecute(BattleSide.Player, tech) || !DoubleMagicTechniqueSelector.HasRequiredDamageEntries(tech, Techs) || tech.Mp > attacker.Mp || (attacker.Flags & (FighterFlags.Asleep | FighterFlags.Confused)) != 0)
         {
             return false; // an unaffordable technique does not spend the turn
         }
@@ -558,9 +558,9 @@ public sealed class BattleState
     /// <param name="attackerStats">The attacker's resolved stats for the triple-hit equipment check. Pass null for a counter-attack.</param>
     /// <param name="target">Fighter receiving the sequence.</param>
     /// <param name="isCounter">Whether events append as a counter-reaction.</param>
-    /// <param name="resolve">Function resolving one hit's accuracy and raw damage.</param>
+    /// <param name="resolve">Function resolving one indexed hit's accuracy and raw damage.</param>
     /// <returns>Total HP actually removed by the sequence.</returns>
-    internal int ResolveHitSequence(BattleSide side, TechData tech, BattleStats? attackerStats, BattleFighter target, bool isCounter, Func<BattleHitResult> resolve) =>
+    internal int ResolveHitSequence(BattleSide side, TechData tech, BattleStats? attackerStats, BattleFighter target, bool isCounter, Func<int, BattleHitResult> resolve) =>
         _hitSequence.Resolve(side, tech, attackerStats, target, isCounter, resolve, CheckAndReportOutcome);
 
     /// <summary>The enemy side brings in its next living fighter when the active one falls to a hit or periodic damage.</summary>
@@ -600,7 +600,7 @@ public sealed class BattleState
     /// <param name="technique">Whether to use the magic-aware technique resolver.</param>
     private void LandPlayerHits(BattleFighter target, TechData tech, BattleFighter attacker, IBattleRng rng, bool technique)
     {
-        int damage = ResolveHitSequence(BattleSide.Player, tech, attacker.Stats, target, false, () => ResolvePlayerHit(tech, attacker, target, rng, technique));
+        int damage = ResolveHitSequence(BattleSide.Player, tech, attacker.Stats, target, false, hitIndex => ResolvePlayerHit(tech, DoubleMagicTechniqueSelector.DamageTechniqueForHit(tech, Techs, hitIndex), attacker, target, rng, technique));
         ApplyPlayerEffectAfterHits(tech, damage, _hitSequence.ResolvedDamage, rng);
         CheckOutcome();
         ReactToPlayerHits(target, damage, rng);
@@ -610,14 +610,15 @@ public sealed class BattleState
     }
 
     /// <summary>Resolves one player hit with the selected basic or technique accuracy rule.</summary>
-    /// <param name="tech">Technique being used.</param>
+    /// <param name="accuracyTechnique">Technique supplying the accuracy rule.</param>
+    /// <param name="damageTechnique">Technique supplying the damage fields.</param>
     /// <param name="attacker">Player using it.</param>
     /// <param name="target">Enemy receiving it.</param>
     /// <param name="rng">Shared battle random source.</param>
     /// <param name="technique">Whether the technique resolver is required.</param>
     /// <returns>The resolved hit result.</returns>
-    private BattleHitResult ResolvePlayerHit(TechData tech, BattleFighter attacker, BattleFighter target, IBattleRng rng, bool technique) =>
-        technique ? Hits(rng).Technique(tech, attacker, target, enemyAttacker: false) : Hits(rng).Basic(tech, attacker, target, enemyAttacker: false);
+    private BattleHitResult ResolvePlayerHit(TechData accuracyTechnique, TechData damageTechnique, BattleFighter attacker, BattleFighter target, IBattleRng rng, bool technique) =>
+        technique ? Hits(rng).Technique(accuracyTechnique, damageTechnique, attacker, target, enemyAttacker: false) : Hits(rng).Basic(damageTechnique, attacker, target, enemyAttacker: false);
 
     /// <summary>Applies an ordinary landed technique effect once, while multi-hit itself is represented by its ordered events.</summary>
     /// <param name="tech">Technique that may carry a supported non-multi effect.</param>

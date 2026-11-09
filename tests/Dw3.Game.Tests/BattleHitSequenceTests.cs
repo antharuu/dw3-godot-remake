@@ -108,12 +108,174 @@ public sealed class BattleHitSequenceTests
         Assert.True(state.LastHitEvents[1].IsCounter);
     }
 
-    private static BattleState CreateState(int enemyHp)
+    /// <summary>Verifies that Double Magic rolls accuracy from the primary entry but resolves its two hits with the distinct source damage entries.</summary>
+    [Fact]
+    public void PlayerTechnique_DoubleMagic_UsesBothRequiredDamageEntriesAndSpendsMpOnce()
+    {
+        BattleState state = CreateState(enemyHp: 100, firstElementResistance: 100, secondElementResistance: 300);
+        BattleFighter player = Assert.IsType<BattleFighter>(state.ActivePlayerFighter);
+        BattleFighter enemy = Assert.IsType<BattleFighter>(state.ActiveEnemyFighter);
+        state.Techs = new Dictionary<int, TechData>
+        {
+            [BattleTechniqueEffect.DoubleMagicFirstDamageTechniqueId] = MagicDamageTechnique(element: 2),
+            [BattleTechniqueEffect.DoubleMagicSecondDamageTechniqueId] = MagicDamageTechnique(element: 3),
+        };
+        var primary = new TechData
+        {
+            Accuracy = 128,
+            Effect = BattleTechniqueEffect.DoubleMagic,
+            Icon = BattleConst.TechMagic,
+            Mp = 7,
+            Power = 80,
+        };
+
+        Assert.True(state.PlayerTechnique(primary, new SequenceRng(0, 0)));
+
+        Assert.Equal(93, player.Mp);
+        Assert.Equal([10, 5], state.LastHitEvents.Select(hit => hit.Damage));
+        Assert.Equal(85, enemy.Hp);
+    }
+
+    /// <summary>Verifies that Double Magic consumes one primary accuracy roll per hit and never applies alternate damage after a miss.</summary>
+    [Fact]
+    public void PlayerTechnique_DoubleMagic_MissUsesPrimaryAccuracyAndLeavesEnemyUnchanged()
+    {
+        BattleState state = CreateState(enemyHp: 100);
+        state.Techs = DoubleMagicDamageTechniques();
+        var primary = new TechData
+        {
+            Accuracy = 0,
+            Effect = BattleTechniqueEffect.DoubleMagic,
+            Icon = BattleConst.TechMagic,
+            Mp = 7,
+            Power = 80,
+        };
+
+        Assert.True(state.PlayerTechnique(primary, new SequenceRng(127, 127)));
+
+        Assert.Equal([false, false], state.LastHitEvents.Select(hit => hit.Landed));
+        Assert.All(state.LastHitEvents, hit => Assert.Equal(0, hit.Damage));
+        Assert.Equal(100, Assert.IsType<BattleFighter>(state.ActiveEnemyFighter).Hp);
+    }
+
+    /// <summary>Verifies that the enemy path selects the same two source damage entries while retaining the primary technique's accuracy and one MP cost.</summary>
+    [Fact]
+    public void EnemyTechnique_DoubleMagic_UsesBothRequiredDamageEntriesAndSpendsMpOnce()
+    {
+        BattleState state = CreateState(enemyHp: 100, firstElementResistance: 100, secondElementResistance: 300);
+        BattleFighter enemy = Assert.IsType<BattleFighter>(state.ActiveEnemyFighter);
+        BattleFighter player = Assert.IsType<BattleFighter>(state.ActivePlayerFighter);
+        state.Techs = DoubleMagicDamageTechniques();
+        var primary = new TechData
+        {
+            Accuracy = 128,
+            Effect = BattleTechniqueEffect.DoubleMagic,
+            Icon = BattleConst.TechMagic,
+            Mp = 7,
+            Power = 80,
+        };
+
+        Assert.True(state.EnemyTechnique(primary, new SequenceRng(0, 0)));
+
+        Assert.Equal(93, enemy.Mp);
+        Assert.Equal([10, 5], state.LastHitEvents.Select(hit => hit.Damage));
+        Assert.Equal(85, player.Hp);
+    }
+
+    /// <summary>Verifies that a lethal first Double Magic hit follows the existing sequence stop and does not roll the second hit.</summary>
+    [Fact]
+    public void PlayerTechnique_DoubleMagic_LethalFirstHitStopsBeforeSecondHit()
+    {
+        BattleState state = CreateState(enemyHp: 5);
+        state.Techs = new Dictionary<int, TechData>
+        {
+            [BattleTechniqueEffect.DoubleMagicFirstDamageTechniqueId] = new TechData { Icon = BattleConst.TechMagic, Power = 100 },
+            [BattleTechniqueEffect.DoubleMagicSecondDamageTechniqueId] = new TechData { Icon = BattleConst.TechMagic, Power = 100 },
+        };
+        var primary = new TechData { Accuracy = 128, Effect = BattleTechniqueEffect.DoubleMagic, Icon = BattleConst.TechMagic };
+
+        Assert.True(state.PlayerTechnique(primary, new SequenceRng(0, 0)));
+
+        Assert.Single(state.LastHitEvents);
+        Assert.Equal(BattleOutcome.Won, state.Outcome);
+    }
+
+    /// <summary>Verifies that missing Double Magic damage data is rejected before MP, hits, or random input mutate the battle.</summary>
+    [Fact]
+    public void PlayerTechnique_DoubleMagicWithoutBothDamageEntries_IsRefusedBeforeResources()
+    {
+        BattleState state = CreateState(enemyHp: 100);
+        BattleFighter player = Assert.IsType<BattleFighter>(state.ActivePlayerFighter);
+        var rng = new CountingRng(0);
+        state.Techs = new Dictionary<int, TechData>
+        {
+            [BattleTechniqueEffect.DoubleMagicFirstDamageTechniqueId] = MagicDamageTechnique(element: 2),
+        };
+        var primary = new TechData
+        {
+            Accuracy = 128,
+            Effect = BattleTechniqueEffect.DoubleMagic,
+            Icon = BattleConst.TechMagic,
+            Mp = 7,
+        };
+
+        Assert.False(state.PlayerTechnique(primary, rng));
+
+        Assert.Equal(100, player.Mp);
+        Assert.Empty(state.LastHitEvents);
+        Assert.Equal(0, rng.CallCount);
+    }
+
+    /// <summary>Verifies that the enemy also refuses incomplete Double Magic data before MP or random input mutate the battle.</summary>
+    [Fact]
+    public void EnemyTechnique_DoubleMagicWithoutBothDamageEntries_IsRefusedBeforeResources()
+    {
+        BattleState state = CreateState(enemyHp: 100);
+        BattleFighter enemy = Assert.IsType<BattleFighter>(state.ActiveEnemyFighter);
+        var rng = new CountingRng(0);
+        state.Techs = new Dictionary<int, TechData>
+        {
+            [BattleTechniqueEffect.DoubleMagicSecondDamageTechniqueId] = MagicDamageTechnique(element: 3),
+        };
+        var primary = new TechData
+        {
+            Accuracy = 128,
+            Effect = BattleTechniqueEffect.DoubleMagic,
+            Icon = BattleConst.TechMagic,
+            Mp = 9,
+        };
+
+        Assert.False(state.EnemyTechnique(primary, rng));
+
+        Assert.Equal(100, enemy.Mp);
+        Assert.Empty(state.LastHitEvents);
+        Assert.Equal(0, rng.CallCount);
+    }
+
+    /// <summary>Creates the source-keyed pair of fabricated Double Magic damage records.</summary>
+    private static Dictionary<int, TechData> DoubleMagicDamageTechniques() => new()
+    {
+        [BattleTechniqueEffect.DoubleMagicFirstDamageTechniqueId] = MagicDamageTechnique(element: 2),
+        [BattleTechniqueEffect.DoubleMagicSecondDamageTechniqueId] = MagicDamageTechnique(element: 3),
+    };
+
+    /// <summary>Creates an alternate magic damage record whose element makes the selected source entry observable through resistance.</summary>
+    private static TechData MagicDamageTechnique(int element) => new()
+    {
+        Element = element,
+        Icon = BattleConst.TechMagic,
+        Power = 10,
+    };
+
+    private static BattleState CreateState(int enemyHp, int firstElementResistance = 100, int secondElementResistance = 100)
     {
         var stats = new BattleStats { Level = 10 };
         stats.Stats[BattleStat.Attack] = 20;
         stats.Stats[BattleStat.Defense] = 20;
+        stats.Stats[BattleStat.Spirit] = 20;
         stats.Stats[BattleStat.Speed] = 100;
+        stats.Resist[0] = firstElementResistance;
+        stats.Resist[1] = secondElementResistance;
         var setup = new BattleSetup();
         setup.Partners[0] = new PartnerSeed { Id = 1, Hp = 100, MaxHp = 100, Mp = 100, MaxMp = 100, Stats = stats };
         setup.Enemies[0] = new BattleEnemy { Fighter = 2, Hp = enemyHp, Mp = 100, Strength = 16, BaseStats = stats };
@@ -157,5 +319,18 @@ public sealed class BattleHitSequenceTests
         private readonly Queue<int> _values = new(values);
 
         public int NextValue() => _values.Count > 0 ? _values.Dequeue() : 0;
+    }
+
+    private sealed class CountingRng(params int[] values) : IBattleRng
+    {
+        private readonly Queue<int> _values = new(values);
+
+        public int CallCount { get; private set; }
+
+        public int NextValue()
+        {
+            CallCount++;
+            return _values.Count > 0 ? _values.Dequeue() : 0;
+        }
     }
 }

@@ -54,6 +54,12 @@ public static class BattleTechniqueEffect
     /// <summary>Runs a two-hit magic action.</summary>
     public const int DoubleMagic = 31;
 
+    /// <summary>Source catalogue id for Double Magic's first separate magic-damage entry.</summary>
+    public const int DoubleMagicFirstDamageTechniqueId = 441;
+
+    /// <summary>Source catalogue id for Double Magic's second separate magic-damage entry.</summary>
+    public const int DoubleMagicSecondDamageTechniqueId = 442;
+
     /// <summary>Raises one partner status at random.</summary>
     public const int RaiseOneStatus = 32;
 

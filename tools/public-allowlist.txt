@@ -617,6 +617,7 @@ src/Dw3.Game/Simulation/BattleTurnSchedulerRules.cs
 src/Dw3.Game/Simulation/BattleViewBuilder.cs
 src/Dw3.Game/Simulation/ClimbAnimation.cs
 src/Dw3.Game/Simulation/ClimbAnimationSample.cs
+src/Dw3.Game/Simulation/DoubleMagicTechniqueSelector.cs
 src/Dw3.Game/Simulation/ClimbController.cs
 src/Dw3.Game/Simulation/CriticalHitRules.cs
 src/Dw3.Game/Simulation/DamageCalculator.cs

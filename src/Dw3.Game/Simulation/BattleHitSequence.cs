@@ -41,10 +41,10 @@ internal sealed class BattleHitSequence
     /// <param name="attackerStats">The attacker's resolved stats, used for the triple-hit count. Pass null for a counter-attack.</param>
     /// <param name="target">Fixed target for the sequence.</param>
     /// <param name="isCounter">Whether events append to an action as its counter-reaction.</param>
-    /// <param name="resolve">Function resolving one hit's accuracy and raw damage.</param>
+    /// <param name="resolve">Function resolving an indexed hit's accuracy and raw damage.</param>
     /// <param name="checkAndReportOutcome">Updates the battle outcome and returns whether the battle has now ended.</param>
     /// <returns>Total HP actually removed.</returns>
-    public int Resolve(BattleSide side, TechData tech, BattleStats? attackerStats, BattleFighter target, bool isCounter, Func<BattleHitResult> resolve, Func<bool> checkAndReportOutcome)
+    public int Resolve(BattleSide side, TechData tech, BattleStats? attackerStats, BattleFighter target, bool isCounter, Func<int, BattleHitResult> resolve, Func<bool> checkAndReportOutcome)
     {
         if (!isCounter)
         {
@@ -60,7 +60,7 @@ internal sealed class BattleHitSequence
                 break;
             }
 
-            damage += ResolveHit(side, tech, target, isCounter, index, resolve());
+            damage += ResolveHit(side, tech, target, isCounter, index, resolve(index));
             _ = checkAndReportOutcome();
         }
 

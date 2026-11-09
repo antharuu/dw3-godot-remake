@@ -19,6 +19,8 @@ public static class BattleTechniqueEffectResolver
         {
             case BattleTechniqueEffect.NoSpecialEffect:
                 return true;
+            case BattleTechniqueEffect.DoubleMagic:
+                return true;
             case BattleTechniqueEffect.Poison:
                 _ = state.InflictPoison(attackerSide, technique.EffectChance, technique.EffectPower, rng);
                 return true;
@@ -67,6 +69,7 @@ public static class BattleTechniqueEffectResolver
     public static bool CanExecute(BattleSide attackerSide, TechData technique) => technique.Effect switch
     {
         BattleTechniqueEffect.NoSpecialEffect => technique.Icon is BattleConst.TechPhysical or BattleConst.TechMagic,
+        BattleTechniqueEffect.DoubleMagic => technique.Icon == BattleConst.TechMagic,
         BattleTechniqueEffect.DrainMp => attackerSide == BattleSide.Enemy,
         BattleTechniqueEffect.Steal => attackerSide == BattleSide.Player,
         _ => technique.Icon <= BattleConst.TechMagic,
@@ -78,6 +81,7 @@ public static class BattleTechniqueEffectResolver
     public static bool RequiresHitSequence(TechData technique) => technique.Effect switch
     {
         BattleTechniqueEffect.NoSpecialEffect => true,
+        BattleTechniqueEffect.DoubleMagic => true,
         BattleTechniqueEffect.DrainMp or BattleTechniqueEffect.EnemyOnly => false,
         _ => true,
     };
