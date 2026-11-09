@@ -500,6 +500,57 @@ public sealed class BattleTechniqueEffectTests
         Assert.Equal([3, 3, 3], state.Players[0]!.PersistentStatuses);
     }
 
+    /// <summary>Verifies that every landed status-raise family persists on a lethal hit without mutating a reserve partner or enemy.</summary>
+    /// <param name="effect">Status-raise family exercised after the hit.</param>
+    /// <param name="randomValues">Accuracy, selection when needed, and source chance rolls.</param>
+    /// <param name="expectedStatuses">Persistent status values expected on the active partner.</param>
+    [Theory]
+    [InlineData(BattleTechniqueEffect.RaiseOneStatus, new[] { 0, 1, 0 }, new[] { 0, 3, 0 })]
+    [InlineData(BattleTechniqueEffect.RaiseEachStatus, new[] { 0, 0, 0, 0 }, new[] { 3, 3, 3 })]
+    [InlineData(BattleTechniqueEffect.RaiseAllStatus, new[] { 0, 0 }, new[] { 3, 3, 3 })]
+    public void PlayerTechnique_LethalStatusRaise_PersistsOnlyOnTheActivePartner(int effect, int[] randomValues, int[] expectedStatuses)
+    {
+        BattleState state = CreateState(enemyHp: 5, includeEnemyReserve: true);
+        var technique = new TechData { Accuracy = 128, Effect = effect, EffectChance = 127, EffectPower = 3, Power = 20 };
+
+        Assert.True(state.PlayerTechnique(technique, new SequenceRng(randomValues)));
+
+        Assert.Equal(5, Assert.Single(state.LastHitEvents).Damage);
+        Assert.Equal(0, state.Enemies[0]!.Hp);
+        Assert.Equal(BattleOutcome.None, state.Outcome);
+        Assert.Equal(expectedStatuses, state.Players[0]!.PersistentStatuses);
+        Assert.Equal([0, 0, 0], state.Players[1]!.PersistentStatuses);
+        Assert.Equal(100, state.Enemies[1]!.Hp);
+    }
+
+    /// <summary>Verifies that an all-status raise remains persistent when its one landed hit wins the battle.</summary>
+    [Fact]
+    public void PlayerTechnique_LethalRaiseAllStatus_WinsAndPreservesTheHitDamage()
+    {
+        BattleState state = CreateState(enemyHp: 5, includeEnemyReserve: false);
+        var technique = new TechData { Accuracy = 128, Effect = BattleTechniqueEffect.RaiseAllStatus, EffectChance = 127, EffectPower = 3, Power = 20 };
+
+        Assert.True(state.PlayerTechnique(technique, new SequenceRng(0, 0)));
+
+        Assert.Equal(5, Assert.Single(state.LastHitEvents).Damage);
+        Assert.Equal(BattleOutcome.Won, state.Outcome);
+        Assert.Equal([3, 3, 3], state.Players[0]!.PersistentStatuses);
+        Assert.Equal([0, 0, 0], state.Players[1]!.PersistentStatuses);
+    }
+
+    /// <summary>Verifies that a status raise remains refused before an action when no active enemy exists.</summary>
+    [Fact]
+    public void PlayerTechnique_StatusRaiseWithoutActiveEnemy_DoesNotSpendOrPersist()
+    {
+        BattleState state = CreateState();
+        state.Enemies[0] = null;
+        var technique = new TechData { Accuracy = 128, Effect = BattleTechniqueEffect.RaiseAllStatus, EffectChance = 127, EffectPower = 3, Power = 20 };
+
+        Assert.False(state.PlayerTechnique(technique, new SequenceRng(0, 0)));
+
+        Assert.Equal([0, 0, 0], state.Players[0]!.PersistentStatuses);
+    }
+
     /// <summary>Verifies that an enemy-only effect spends the technique turn without resolving damage for either side.</summary>
     [Fact]
     public void EnemyOnlyTechnique_SkipsTheGenericHitSequence()
@@ -513,7 +564,9 @@ public sealed class BattleTechniqueEffectTests
         Assert.Equal(96, state.Players[0]!.Mp);
     }
 
-    private static BattleState CreateState()
+    private static BattleState CreateState() => CreateState(enemyHp: 100, includeEnemyReserve: false);
+
+    private static BattleState CreateState(int enemyHp, bool includeEnemyReserve)
     {
         var stats = new BattleStats();
         stats.Stats[BattleStat.Attack] = 20;
@@ -522,7 +575,8 @@ public sealed class BattleTechniqueEffectTests
         var setup = new BattleSetup();
         setup.Partners[0] = new PartnerSeed { Id = 1, Hp = 100, MaxHp = 100, Mp = 100, MaxMp = 100, Stats = stats };
         setup.Partners[1] = new PartnerSeed { Id = 3, Hp = 100, MaxHp = 100, Mp = 100, MaxMp = 100, Stats = stats };
-        setup.Enemies[0] = new BattleEnemy { Fighter = 2, Hp = 100, Mp = 100, Strength = 16, BaseStats = stats };
+        setup.Enemies[0] = new BattleEnemy { Fighter = 2, Hp = enemyHp, Mp = 100, Strength = 16, BaseStats = stats };
+        setup.Enemies[1] = includeEnemyReserve ? new BattleEnemy { Fighter = 4, Hp = 100, Mp = 100, Strength = 16, BaseStats = stats } : null;
         return BattleState.InitFighters(setup, digimon: 1, new SequenceRng(127));
     }
 

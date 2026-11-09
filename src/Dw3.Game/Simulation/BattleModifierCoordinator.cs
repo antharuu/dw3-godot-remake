@@ -134,7 +134,7 @@ public sealed class BattleModifierCoordinator(BattleState state, BattleTurnSched
     {
         BattleFighter? target = state.ActivePlayerFighter;
         BattleFighter? enemy = state.ActiveEnemyFighter;
-        if (target is not { IsKnockedOut: false } || enemy is not { IsKnockedOut: false })
+        if (target is not { IsKnockedOut: false } || enemy is null)
         {
             return false;
         }
