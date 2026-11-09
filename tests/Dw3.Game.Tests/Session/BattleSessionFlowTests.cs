@@ -17,7 +17,7 @@ public sealed class BattleSessionFlowTests
         DigivolutionData digivolutions = Digivolutions();
         BattleFlowController first = Build(session, digivolutions);
 
-        Assert.Equal([2], first.PlayerDigivolutions);
+        Assert.Equal([1, 2], first.PlayerDigivolutions);
         Assert.Equal([2], first.PlayerTechniques.Select(technique => technique.Id));
         Assert.False(first.Choose(BattleCommand.Digivolve, 3, new FixedRng()));
         Assert.False(first.Choose(BattleCommand.Digivolve, 1, new FixedRng()));
@@ -27,28 +27,52 @@ public sealed class BattleSessionFlowTests
         Assert.Equal(2, first.NameIds[2]);
         Assert.Equal(25, first.State.ActivePlayerFighter.Stats.Stats[BattleStat.Attack]);
         Assert.Equal([1], first.PlayerTechniques.Select(technique => technique.Id));
+        AdvanceEnemyTurn(first);
+        Assert.True(first.Choose(BattleCommand.Digivolve, 1, new FixedRng()));
+        Assert.Equal(1, first.State.ActivePlayerFighter.Id);
+        Assert.Equal(10, first.State.ActivePlayerFighter.Stats.Stats[BattleStat.Attack]);
+        Assert.Equal([2], first.PlayerTechniques.Select(technique => technique.Id));
 
         GameHost.BattleSetupCoordinator.CommitResolvedBattle(session, first);
         BattleFlowController second = Build(session, digivolutions);
 
-        Assert.Equal(2, second.State.ActivePlayerFighter!.Id);
-        Assert.Equal(25, second.State.ActivePlayerFighter.Stats.Stats[BattleStat.Attack]);
-        Assert.Empty(second.PlayerDigivolutions);
+        Assert.Equal(1, second.State.ActivePlayerFighter!.Id);
+        Assert.Equal(10, second.State.ActivePlayerFighter.Stats.Stats[BattleStat.Attack]);
+        Assert.Equal([1, 2], second.PlayerDigivolutions);
         Assert.False(second.Choose(BattleCommand.Digivolve, 1, new FixedRng()));
     }
 
-    /// <summary>Rejects an owned form from the production menu when its extracted stat gate is not met.</summary>
+    /// <summary>Refreshes the real session catalogue after selecting a partner sharing the same base form id.</summary>
     [Fact]
-    public void ProductionDigivolution_RejectsOwnedFormWhenExtractedConditionFails()
+    public void ProductionSwitch_RebuildsTheSelectedPartnersCatalogueWhenBaseFormsMatch()
     {
-        PlayerSession session = CreateDigivolutionSession();
-        var digivolutions = new DigivolutionData(
-            [new PartnerDigivolution(0, 1, [new DigivolutionEntry(1, 2, [], Stat: 1, Value: 26)])],
-            new DigivolutionBlast([]));
+        PlayerSession session = CreateSharedBaseFormSession();
+        BattleFlowController flow = Build(session, Digivolutions());
 
-        BattleFlowController flow = Build(session, digivolutions);
+        Assert.True(flow.Choose(BattleCommand.Switch, 1, new FixedRng()));
+        Assert.Equal(1, flow.State.ActivePlayerFighter!.Id);
+        Assert.Equal(30, flow.State.ActivePlayerFighter.Stats.Stats[BattleStat.Attack]);
+        Assert.Equal([1, 3], flow.PlayerDigivolutions);
+        Assert.Equal([3], flow.PlayerTechniques.Select(technique => technique.Id));
+        Assert.Equal(3, flow.NameIds[3]);
 
-        Assert.Empty(flow.PlayerDigivolutions);
+        AdvanceEnemyTurn(flow);
+        Assert.True(flow.Choose(BattleCommand.Digivolve, 3, new FixedRng()));
+        Assert.Equal(3, flow.State.ActivePlayerFighter.Id);
+        Assert.Equal([3], flow.PlayerTechniques.Select(technique => technique.Id));
+    }
+
+    /// <summary>Refuses an unknown target without changing the active partner.</summary>
+    [Fact]
+    public void ProductionDigivolution_RejectsUnknownFormBeforeMutation()
+    {
+        PlayerSession session = new(
+            [new PlayerSessionPartner(new PartnerSeed { Id = 1, Hp = 50, MaxHp = 100, Mp = 10, MaxMp = 10, Stats = Stats() }, [1], [1, 2], []), Partner(2, 100, 10), Partner(3, 100, 10)],
+            new Dictionary<int, int> { [42] = 1 });
+
+        BattleFlowController flow = Build(session, Digivolutions());
+
+        Assert.Equal([1], flow.PlayerDigivolutions);
         Assert.False(flow.Choose(BattleCommand.Digivolve, 2, new FixedRng()));
         Assert.Equal(1, flow.State.ActivePlayerFighter!.Id);
     }
@@ -116,6 +140,20 @@ public sealed class BattleSessionFlowTests
             new Dictionary<int, int> { [42] = 1 });
     }
 
+    /// <summary>Builds two partners with one base id but distinct owned forms and learned techniques.</summary>
+    /// <returns>Session proving catalogues belong to party slots rather than base form ids.</returns>
+    private static PlayerSession CreateSharedBaseFormSession()
+    {
+        BattleStats firstStats = Stats();
+        BattleStats secondStats = Stats();
+        secondStats.Stats[BattleStat.Attack] = 30;
+        var first = new PartnerSeed { Id = 1, Hp = 50, MaxHp = 100, Mp = 10, MaxMp = 10, Stats = firstStats, FormStats = new Dictionary<int, BattleStats> { [2] = firstStats } };
+        var second = new PartnerSeed { Id = 1, Hp = 60, MaxHp = 100, Mp = 10, MaxMp = 10, Stats = secondStats, FormStats = new Dictionary<int, BattleStats> { [3] = secondStats } };
+        return new PlayerSession(
+            [new PlayerSessionPartner(first, [1, 2], [1, 2], []), new PlayerSessionPartner(second, [1, 3], [3], []), Partner(3, 100, 10)],
+            new Dictionary<int, int> { [42] = 1 });
+    }
+
     /// <summary>Creates one session slot with supplied current battle resources.</summary>
     /// <param name="id">Partner Digimon id.</param>
     /// <param name="hp">Current HP.</param>
@@ -127,7 +165,7 @@ public sealed class BattleSessionFlowTests
     /// <returns>Partner and enemy records for the consecutive battle.</returns>
     private static FighterData Fighters()
     {
-        DigimonData[] partners = [Digimon(1), Digimon(2, [2, 1]), Digimon(3)];
+        DigimonData[] partners = [Digimon(1, [1, 2, 3]), Digimon(2, [2, 1]), Digimon(3, [1, 3])];
         return new FighterData(
             partners.ToDictionary(partner => partner.Id),
             partners,
@@ -140,7 +178,7 @@ public sealed class BattleSessionFlowTests
 
     /// <summary>Builds decoded techniques for the basic attack and MP-consuming technique command.</summary>
     /// <returns>Technique catalog.</returns>
-    private static TechniqueData Techniques() => new(new Dictionary<int, Dw3Production.Conversion.TechData> { [1] = Tech(0, 1), [2] = Tech(3, 1000) });
+    private static TechniqueData Techniques() => new(new Dictionary<int, Dw3Production.Conversion.TechData> { [1] = Tech(0, 1), [2] = Tech(3, 1000), [3] = Tech(4, 1000) });
 
     /// <summary>Builds the extracted ownership and level gates for the first partner's normal form menu.</summary>
     /// <returns>Digivolution data with one eligible and one unknown target.</returns>

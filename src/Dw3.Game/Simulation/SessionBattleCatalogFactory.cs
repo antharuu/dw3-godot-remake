@@ -11,14 +11,12 @@ public static class SessionBattleCatalogFactory
     /// <param name="session">Persistent player session owning forms and techniques.</param>
     /// <param name="fighters">Decoded form and name data.</param>
     /// <param name="techs">Decoded technique data.</param>
-    /// <param name="digivolutions">Optional extracted evolution requirements.</param>
     /// <param name="text">Decoded technique text.</param>
     public static void ConfigureActivePartner(
         BattleFlowController flow,
         PlayerSession session,
         FighterData fighters,
         TechniqueData techs,
-        DigivolutionData? digivolutions,
         BattleTextData text)
     {
         ArgumentNullException.ThrowIfNull(flow);
@@ -27,29 +25,51 @@ public static class SessionBattleCatalogFactory
         ArgumentNullException.ThrowIfNull(techs);
         ArgumentNullException.ThrowIfNull(text);
 
-        PlayerSessionPartner? partner = session.Partners[0];
+        flow.ActivePartnerCatalogRefresher = () => RefreshActivePartner(flow, session, fighters, techs, text);
+    }
+
+    /// <summary>Rebuilds the active fighter's forms, techniques and names from its matching session partner.</summary>
+    /// <param name="flow">Flow receiving the active partner catalogue.</param>
+    /// <param name="session">Persistent player session owning forms and techniques.</param>
+    /// <param name="fighters">Decoded form and name data.</param>
+    /// <param name="techs">Decoded technique data.</param>
+    /// <param name="text">Decoded technique text.</param>
+    private static void RefreshActivePartner(
+        BattleFlowController flow,
+        PlayerSession session,
+        FighterData fighters,
+        TechniqueData techs,
+        BattleTextData text)
+    {
+        PlayerSessionPartner? partner = ActivePartner(flow, session);
         if (partner is null)
         {
             return;
         }
 
-        IReadOnlyList<int> forms = EligibleForms(partner, digivolutions);
-        flow.PlayerDigivolutions = [.. forms.Where(form => form != partner.BattleSeed.Id)];
+        IReadOnlyList<int> forms = EligibleForms(partner);
+        flow.PlayerDigivolutions = forms;
         flow.EnforceDigivolutionCatalog = true;
         ConfigureActions(flow, partner, forms, fighters, techs, new BattleTextCatalog(text));
         AddFormNames(flow, forms, fighters);
     }
 
-    /// <summary>Returns owned forms filtered by extracted requirements when the production data is available.</summary>
-    /// <param name="partner">Persistent active partner.</param>
-    /// <param name="digivolutions">Optional extracted evolution requirements.</param>
-    /// <returns>Owned eligible forms.</returns>
-    private static IReadOnlyList<int> EligibleForms(PlayerSessionPartner partner, DigivolutionData? digivolutions)
+    /// <summary>Returns the active partner selected by the battle state.</summary>
+    /// <param name="flow">Flow that owns the active party index.</param>
+    /// <param name="session">Persistent session owning party slots.</param>
+    /// <returns>The matching session partner, or null for an empty slot.</returns>
+    private static PlayerSessionPartner? ActivePartner(BattleFlowController flow, PlayerSession session)
     {
-        PartnerDigivolution? source = digivolutions?.Partners.FirstOrDefault(entry => entry.BaseId == partner.OriginFormId);
-        return source is null
-            ? partner.KnownForms
-            : DigivolutionEligibility.AvailableForms(source, partner.KnownForms, partner.BattleSeed.Stats);
+        int active = flow.State.ActivePlayer;
+        return active >= 0 && active < session.Partners.Length ? session.Partners[active] : null;
+    }
+
+    /// <summary>Returns forms already equipped by the active partner without reapplying learning requirements.</summary>
+    /// <param name="partner">Persistent active partner.</param>
+    /// <returns>Owned selectable forms.</returns>
+    private static IReadOnlyList<int> EligibleForms(PlayerSessionPartner partner)
+    {
+        return DigivolutionEligibility.AvailableForms(partner);
     }
 
     /// <summary>Creates form-bound action catalogues and applies an explicit learned-technique restriction.</summary>

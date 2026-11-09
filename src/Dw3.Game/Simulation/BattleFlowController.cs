@@ -39,6 +39,9 @@ public sealed class BattleFlowController
     /// <summary>Gets or sets source-backed basic attacks keyed by the active partner form.</summary>
     public IReadOnlyDictionary<int, TechData> PlayerBasicTechByForm { get; set; } = new Dictionary<int, TechData>();
 
+    /// <summary>Gets or sets the session-backed callback that rebuilds active-partner catalogues before form actions refresh.</summary>
+    public Action? ActivePartnerCatalogRefresher { get; set; }
+
     /// <summary>Gets or sets the battle item catalogue keyed by item id. An item missing from it cannot be used.</summary>
     public IReadOnlyDictionary<int, BattleItem> Items { get; set; } = new Dictionary<int, BattleItem>();
 
@@ -82,6 +85,27 @@ public sealed class BattleFlowController
         RefreshActivePartnerCatalog();
         Phase = State.NextActor == BattleSide.Player ? BattleFlowPhase.PlayerCommand : BattleFlowPhase.EnemyTurn;
         ClearMessage();
+    }
+
+    /// <summary>Refreshes session-backed forms and form-selected actions after a transformation or switch.</summary>
+    public void RefreshActivePartnerCatalog()
+    {
+        ActivePartnerCatalogRefresher?.Invoke();
+        BattleFighter? active = State.ActivePlayerFighter;
+        if (active is null)
+        {
+            return;
+        }
+
+        if (PlayerBasicTechByForm.TryGetValue(active.Id, out TechData? basic))
+        {
+            PlayerBasicTech = basic;
+        }
+
+        if (PlayerTechniquesByForm.TryGetValue(active.Id, out IReadOnlyList<BattleTechnique>? techniques))
+        {
+            PlayerTechniques = techniques;
+        }
     }
 
     /// <summary>Resolves the player's command and advances the phase. <paramref name="arg"/> is
@@ -251,26 +275,6 @@ public sealed class BattleFlowController
 
         SetMessage("basicAttack", NameTokens(actor));
         return true;
-    }
-
-    /// <summary>Refreshes form-selected player actions after a session-backed transformation or switch.</summary>
-    private void RefreshActivePartnerCatalog()
-    {
-        BattleFighter? active = State.ActivePlayerFighter;
-        if (active is null)
-        {
-            return;
-        }
-
-        if (PlayerBasicTechByForm.TryGetValue(active.Id, out TechData? basic))
-        {
-            PlayerBasicTech = basic;
-        }
-
-        if (PlayerTechniquesByForm.TryGetValue(active.Id, out IReadOnlyList<BattleTechnique>? techniques))
-        {
-            PlayerTechniques = techniques;
-        }
     }
 
     /// <summary>

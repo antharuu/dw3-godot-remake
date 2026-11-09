@@ -24,14 +24,15 @@ public partial class GameHost
         {
             BattleFlowController flow = _host.BattleFlow;
             BattleFighter? active = flow.State.ActivePlayerFighter;
-            if (active is null || active.Id == _host._battleCatalogForId)
+            if (active is null || flow.State.ActivePlayer == _host._battleCatalogForPartner)
             {
                 return;
             }
 
-            _host._battleCatalogForId = active.Id;
+            _host._battleCatalogForPartner = flow.State.ActivePlayer;
             if (flow.EnforceDigivolutionCatalog)
             {
+                flow.RefreshActivePartnerCatalog();
                 return;
             }
 

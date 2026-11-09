@@ -85,7 +85,7 @@ public partial class GameHost
                 nameIds,
                 new BattleTextCatalog(input.Text));
             WireCatalogs(flow, input.Items, input.Session.Inventory);
-            SessionBattleCatalogFactory.ConfigureActivePartner(flow, input.Session, input.Fighters, input.Techs, input.Digivolutions, input.Text);
+            SessionBattleCatalogFactory.ConfigureActivePartner(flow, input.Session, input.Fighters, input.Techs, input.Text);
             activeDigimon = party[0];
             return flow;
         }

@@ -167,7 +167,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
 
     private bool _battlePrevDown;
 
-    private int _battleCatalogForId = -1;
+    private int _battleCatalogForPartner = -1;
 
     private int _battleRenderedPlayerId = -1;
 
@@ -582,7 +582,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
         _battleFlow = flow;
         _lastBattleEncounter = encounter;
         _lastBattleEnemyIds = [.. flow.State.Enemies.Select(enemy => enemy?.Id ?? 0)];
-        _battleCatalogForId = -1;
+        _battleCatalogForPartner = -1;
         _battlePrevUp = false;
         _battlePrevDown = false;
         _battleReport = null;
