@@ -59,9 +59,11 @@ internal static class BattleAudioExtractionStep
             byte[] bodyArchive = disc.ReadFile(Require(entries, source.BodyPath));
             SoundBankHeader header = SoundBankHeaderDecoder.Decode(headerArchive);
             PlayStationSequence sequence = PlayStationSequenceDecoder.Decode(headerArchive);
+            IReadOnlyList<DecodedSpuAdpcmSample> samples = SoundBankBodyDecoder.Decode(headerArchive, bodyArchive);
             WriteFile(context, $"{OutputSubdirectory}/{source.Name}.mp", headerArchive);
             WriteFile(context, $"{OutputSubdirectory}/{source.Name}.mv", bodyArchive);
-            banks.Add(new ExtractedSoundBank(source, header, sequence, headerArchive, bodyArchive));
+            WriteWaves(context, source.Name, samples);
+            banks.Add(new ExtractedSoundBank(source, header, sequence, headerArchive, bodyArchive, samples));
         }
 
         WriteManifest(context, banks);
@@ -78,6 +80,19 @@ internal static class BattleAudioExtractionStep
         File.WriteAllBytes(path, bytes);
     }
 
+    /// <summary>Writes each independently decoded VAB body as a local PCM WAV file.</summary>
+    /// <param name="context">The data-pack write context.</param>
+    /// <param name="bankName">Stable bank name.</param>
+    /// <param name="samples">Decoded SPU samples to serialize.</param>
+    private static void WriteWaves(DataPackWriteContext context, string bankName, IReadOnlyList<DecodedSpuAdpcmSample> samples)
+    {
+        for (int index = 0; index < samples.Count; index++)
+        {
+            byte[] wav = WavePcm16Encoder.EncodeMono(samples[index].PcmSamples, 44100);
+            WriteFile(context, $"{OutputSubdirectory}/{bankName}/{index:D3}.wav", wav);
+        }
+    }
+
     /// <summary>Writes the source paths, hashes, and decoded VAB metadata for every bank pair.</summary>
     /// <param name="context">The data-pack write context.</param>
     /// <param name="banks">Decoded source pairs.</param>
@@ -85,7 +100,7 @@ internal static class BattleAudioExtractionStep
     {
         string path = context.GetImagePath($"{OutputSubdirectory}/manifest.json");
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        File.WriteAllText(path, JsonSerializer.Serialize(new { schema = "battle-audio-vab-v1", banks = banks.Select(BankManifest) }, IndentedJson) + "\n", new UTF8Encoding(false));
+        File.WriteAllText(path, JsonSerializer.Serialize(new { schema = "battle-audio-vab-v2", banks = banks.Select(BankManifest) }, IndentedJson) + "\n", new UTF8Encoding(false));
     }
 
     /// <summary>Builds one serializable manifest row without retaining a direct disc handle.</summary>
@@ -102,6 +117,7 @@ internal static class BattleAudioExtractionStep
         bodySha256 = Convert.ToHexStringLower(SHA256.HashData(bank.BodyArchive)),
         vab = bank.Header,
         sep = SequenceManifest(bank.Sequence),
+        samples = bank.Samples.Select((sample, index) => new { index, wavPath = $"{OutputSubdirectory}/{bank.Source.Name}/{index:D3}.wav", pcmSamples = sample.PcmSamples.Length, encodedBytes = sample.EncodedBytesConsumed, loops = sample.Loops, loopStartSample = sample.LoopStartSample }),
     };
 
     /// <summary>Builds one stable SEP metadata projection without retaining event payload bytes.</summary>
@@ -153,5 +169,6 @@ internal static class BattleAudioExtractionStep
         SoundBankHeader Header,
         PlayStationSequence Sequence,
         byte[] HeaderArchive,
-        byte[] BodyArchive);
+        byte[] BodyArchive,
+        IReadOnlyList<DecodedSpuAdpcmSample> Samples);
 }

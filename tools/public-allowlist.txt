@@ -180,6 +180,10 @@ src/Dw3.Formats/Battle/BattleStageJsonWriter.cs
 src/Dw3.Formats/Battle/BattleStageLightEntry.cs
 src/Dw3.Formats/Battle/SoundBankHeader.cs
 src/Dw3.Formats/Battle/SoundBankHeaderDecoder.cs
+src/Dw3.Formats/Battle/DecodedSpuAdpcmSample.cs
+src/Dw3.Formats/Battle/SoundBankBodyDecoder.cs
+src/Dw3.Formats/Battle/SpuAdpcmDecoder.cs
+src/Dw3.Formats/Battle/WavePcm16Encoder.cs
 src/Dw3.Formats/Battle/PlayStationSequence.cs
 src/Dw3.Formats/Battle/PlayStationSequenceDecoder.cs
 src/Dw3.Formats/Battle/PlayStationSequenceEventKind.cs
@@ -748,6 +752,7 @@ tests/Dw3.Formats.Tests/Battle/BattleHudStageReportTests.cs
 tests/Dw3.Formats.Tests/Battle/BattleModelAssetsTests.cs
 tests/Dw3.Formats.Tests/Battle/BattleModelDecoderTests.cs
 tests/Dw3.Formats.Tests/Battle/SoundBankHeaderDecoderTests.cs
+tests/Dw3.Formats.Tests/Battle/SpuAdpcmDecoderTests.cs
 tests/Dw3.Formats.Tests/Battle/PlayStationSequenceDecoderTests.cs
 tests/Dw3.Formats.Tests/Binary/BinarySpanReaderTests.cs
 tests/Dw3.Formats.Tests/Binary/Png/PngEncoderTests.cs
