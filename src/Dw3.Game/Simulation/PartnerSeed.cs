@@ -29,6 +29,9 @@ public sealed class PartnerSeed
     /// <summary>Gets or sets complete stat sources by transformed Digimon id. An absent form retains <see cref="Stats"/>.</summary>
     public IReadOnlyDictionary<int, BattleStats> FormStats { get; set; } = new Dictionary<int, BattleStats>();
 
+    /// <summary>Gets or sets the three persistent partner status values that techniques 32 through 34 raise.</summary>
+    public int[] PersistentStatuses { get; set; } = new int[3];
+
     /// <summary>Returns the persistent source for the fighter's current form without exposing a cached battle snapshot.</summary>
     /// <param name="formId">Current Digimon form id.</param>
     /// <returns>The form source when present, otherwise the partner's base source.</returns>

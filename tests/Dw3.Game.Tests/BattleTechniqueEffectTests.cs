@@ -386,6 +386,133 @@ public sealed class BattleTechniqueEffectTests
         Assert.Null(state.TakePendingStolenItem());
     }
 
+    /// <summary>Verifies that a landed enemy NoSwitch technique locks only the active player and spends its exact chance roll.</summary>
+    [Fact]
+    public void EnemyTechnique_LandedNoSwitch_LocksOnlyActivePlayer()
+    {
+        BattleState state = CreateState();
+        var player = Assert.IsType<BattleFighter>(state.ActivePlayerFighter);
+        var rng = new CountingRng(0, 0, 0);
+        var technique = new TechData { Accuracy = 128, Effect = BattleTechniqueEffect.NoSwitch, EffectChance = 127, EffectPower = 100, Power = 1 };
+
+        Assert.True(state.EnemyTechnique(technique, rng));
+
+        Assert.NotEqual(0, player.Flags & FighterFlags.NoSwitch);
+        Assert.Equal(3, rng.CallCount);
+    }
+
+    /// <summary>Verifies that a failed NoDigivolve chance consumes no duration random draw and leaves the active player unrestricted.</summary>
+    [Fact]
+    public void EnemyTechnique_FailedNoDigivolve_DoesNotScheduleOrLock()
+    {
+        BattleState state = CreateState();
+        var player = Assert.IsType<BattleFighter>(state.ActivePlayerFighter);
+        var rng = new CountingRng(0, 127);
+        var technique = new TechData { Accuracy = 128, Effect = BattleTechniqueEffect.NoDigivolve, EffectChance = 127, EffectPower = 1, Power = 1 };
+
+        Assert.True(state.EnemyTechnique(technique, rng));
+
+        Assert.Equal(0, player.Flags & FighterFlags.NoDigivolve);
+        Assert.Equal(2, rng.CallCount);
+    }
+
+    /// <summary>Verifies that a landed player attack-lowering technique changes only the active enemy by its extracted power.</summary>
+    [Fact]
+    public void PlayerTechnique_LandedLowerAttack_LowersOnlyTheActiveEnemy()
+    {
+        BattleState state = CreateState();
+        var enemy = Assert.IsType<BattleFighter>(state.ActiveEnemyFighter);
+        var technique = new TechData { Accuracy = 128, Effect = BattleTechniqueEffect.LowerAttack, EffectPower = 64, Power = 1 };
+
+        Assert.True(state.PlayerTechnique(technique, new CountingRng(0, 0, 0)));
+
+        Assert.Equal(-10, enemy.Boosts[0]);
+        Assert.Equal(10, enemy.Stats.Stats[BattleStat.Attack]);
+    }
+
+    /// <summary>Verifies that a blocked player attack-lowering technique lands without changing the enemy or consuming an expiry roll.</summary>
+    [Fact]
+    public void PlayerTechnique_BlockedLowerAttack_DoesNotModifyTheEnemy()
+    {
+        BattleState state = CreateState();
+        state.Blocks[BattleConst.BlockLowerAttack] = 1;
+        var enemy = Assert.IsType<BattleFighter>(state.ActiveEnemyFighter);
+        var rng = new CountingRng(0, 0);
+        var technique = new TechData { Accuracy = 128, Effect = BattleTechniqueEffect.LowerAttack, EffectPower = 64, Power = 1 };
+
+        Assert.True(state.PlayerTechnique(technique, rng));
+
+        Assert.Equal(0, enemy.Boosts[0]);
+        Assert.Equal(20, enemy.Stats.Stats[BattleStat.Attack]);
+        Assert.Equal(1, rng.CallCount);
+    }
+
+    /// <summary>Verifies that restriction expiry clears only its own flag before the next command is exposed.</summary>
+    [Fact]
+    public void EnemyTechnique_NoSwitch_ExpiresWithoutClearingNoDigivolve()
+    {
+        BattleState state = CreateState();
+        var player = Assert.IsType<BattleFighter>(state.ActivePlayerFighter);
+        player.Flags |= FighterFlags.NoDigivolve;
+        var technique = new TechData { Accuracy = 128, Effect = BattleTechniqueEffect.NoSwitch, EffectChance = 127, EffectPower = 1, Power = 1 };
+
+        Assert.True(state.EnemyTechnique(technique, new CountingRng(0, 0, 0)));
+        state.EnemyAttack(new TechData { Accuracy = 128, Power = 0 }, new CountingRng());
+
+        Assert.Equal(0, player.Flags & FighterFlags.NoSwitch);
+        Assert.NotEqual(0, player.Flags & FighterFlags.NoDigivolve);
+    }
+
+    /// <summary>Verifies that one successful status raise uses its selected persistent partner status without changing a reserve.</summary>
+    [Fact]
+    public void PlayerTechnique_RaiseOneStatus_ChangesSelectedActivePartnerStatusOnly()
+    {
+        BattleState state = CreateState();
+        var technique = new TechData { Accuracy = 128, Effect = BattleTechniqueEffect.RaiseOneStatus, EffectChance = 127, EffectPower = 7, Power = 1 };
+
+        Assert.True(state.PlayerTechnique(technique, new CountingRng(0, 1, 0)));
+
+        Assert.Equal([0, 7, 0], state.Players[0]!.PersistentStatuses);
+        Assert.Equal([0, 0, 0], state.Players[1]!.PersistentStatuses);
+    }
+
+    /// <summary>Verifies that each-status raises roll independently and leave failed statuses unchanged.</summary>
+    [Fact]
+    public void PlayerTechnique_RaiseEachStatus_RollsEveryStatusIndependently()
+    {
+        BattleState state = CreateState();
+        var technique = new TechData { Accuracy = 128, Effect = BattleTechniqueEffect.RaiseEachStatus, EffectChance = 64, EffectPower = 5, Power = 1 };
+
+        Assert.True(state.PlayerTechnique(technique, new CountingRng(0, 0, 0, 64, 63)));
+
+        Assert.Equal([5, 5, 0], state.Players[0]!.PersistentStatuses);
+    }
+
+    /// <summary>Verifies that an all-status raise has one chance roll and changes every active partner status together.</summary>
+    [Fact]
+    public void PlayerTechnique_RaiseAllStatus_SuccessRaisesEveryActivePartnerStatus()
+    {
+        BattleState state = CreateState();
+        var technique = new TechData { Accuracy = 128, Effect = BattleTechniqueEffect.RaiseAllStatus, EffectChance = 127, EffectPower = 3, Power = 1 };
+
+        Assert.True(state.PlayerTechnique(technique, new CountingRng(0, 0, 0)));
+
+        Assert.Equal([3, 3, 3], state.Players[0]!.PersistentStatuses);
+    }
+
+    /// <summary>Verifies that an enemy-only effect spends the technique turn without resolving damage for either side.</summary>
+    [Fact]
+    public void EnemyOnlyTechnique_SkipsTheGenericHitSequence()
+    {
+        BattleState state = CreateState();
+        var technique = new TechData { Accuracy = 128, Effect = BattleTechniqueEffect.EnemyOnly, Mp = 4, Power = 99 };
+
+        Assert.True(state.PlayerTechnique(technique, new CountingRng()));
+
+        Assert.Equal(100, state.Enemies[0]!.Hp);
+        Assert.Equal(96, state.Players[0]!.Mp);
+    }
+
     private static BattleState CreateState()
     {
         var stats = new BattleStats();
@@ -394,6 +521,7 @@ public sealed class BattleTechniqueEffectTests
         stats.Stats[BattleStat.Speed] = 100;
         var setup = new BattleSetup();
         setup.Partners[0] = new PartnerSeed { Id = 1, Hp = 100, MaxHp = 100, Mp = 100, MaxMp = 100, Stats = stats };
+        setup.Partners[1] = new PartnerSeed { Id = 3, Hp = 100, MaxHp = 100, Mp = 100, MaxMp = 100, Stats = stats };
         setup.Enemies[0] = new BattleEnemy { Fighter = 2, Hp = 100, Mp = 100, Strength = 16, BaseStats = stats };
         return BattleState.InitFighters(setup, digimon: 1, new SequenceRng(127));
     }

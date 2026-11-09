@@ -38,6 +38,21 @@ public static class BattleTechniqueEffectResolver
             case BattleTechniqueEffect.DrainMp:
                 _ = BattleResourceEffects.DrainMp(state, attackerSide, technique.EffectPower);
                 return true;
+            case BattleTechniqueEffect.NoSwitch:
+            case BattleTechniqueEffect.NoDigivolve:
+                _ = attackerSide == BattleSide.Enemy && state.ApplyRestriction(technique.Effect, technique.EffectChance, technique.EffectPower, rng);
+                return true;
+            case BattleTechniqueEffect.LowerAttack:
+            case BattleTechniqueEffect.LowerDefense:
+                _ = state.ApplyStatLowering(attackerSide, technique.Effect, technique.EffectPower, rng);
+                return true;
+            case BattleTechniqueEffect.RaiseOneStatus:
+            case BattleTechniqueEffect.RaiseEachStatus:
+            case BattleTechniqueEffect.RaiseAllStatus:
+                _ = state.ApplyStatusRaise(technique.Effect, technique.EffectChance, technique.EffectPower, rng);
+                return true;
+            case BattleTechniqueEffect.EnemyOnly:
+                return true;
             default:
                 return false;
         }
@@ -57,5 +72,5 @@ public static class BattleTechniqueEffectResolver
     /// <summary>Returns whether the technique uses the generic hit path before its effect.</summary>
     /// <param name="technique">Technique to test.</param>
     /// <returns><see langword="true"/> when a hit sequence must land before the effect can fire.</returns>
-    public static bool RequiresHitSequence(TechData technique) => technique.Effect != BattleTechniqueEffect.DrainMp;
+    public static bool RequiresHitSequence(TechData technique) => technique.Effect is not BattleTechniqueEffect.DrainMp and not BattleTechniqueEffect.EnemyOnly;
 }

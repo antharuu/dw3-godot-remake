@@ -263,6 +263,33 @@ public sealed class BattleState
     public bool ApplySpecialStatus(BattleSide side, int fighterSlot, IBattleRng rng) =>
         _modifierCoordinator.ApplySpecialStatus(side, fighterSlot, rng);
 
+    /// <summary>Attempts to apply one landed enemy restriction to the active player.</summary>
+    /// <param name="effect">Restriction effect identifier.</param>
+    /// <param name="chance">Extracted success chance.</param>
+    /// <param name="power">Extracted duration multiplier.</param>
+    /// <param name="rng">Shared battle random source.</param>
+    /// <returns>Whether the restriction was applied or refreshed.</returns>
+    public bool ApplyRestriction(int effect, int chance, int power, IBattleRng rng) =>
+        _modifierCoordinator.ApplyRestriction(effect, chance, power, rng);
+
+    /// <summary>Applies one landed attack or defense decrease to the opposing active fighter.</summary>
+    /// <param name="attackerSide">Side that landed the technique.</param>
+    /// <param name="effect">Extracted decrease effect identifier.</param>
+    /// <param name="power">Extracted decrease in 128ths.</param>
+    /// <param name="rng">Shared battle random source.</param>
+    /// <returns>Whether the opponent accepted the decrease.</returns>
+    public bool ApplyStatLowering(BattleSide attackerSide, int effect, int power, IBattleRng rng) =>
+        _modifierCoordinator.ApplyStatLowering(attackerSide, effect, power, rng);
+
+    /// <summary>Raises persistent statuses on the active player through one landed status-raise technique.</summary>
+    /// <param name="effect">Extracted status-raise effect identifier.</param>
+    /// <param name="chance">Extracted base chance.</param>
+    /// <param name="power">Extracted additive status amount.</param>
+    /// <param name="rng">Shared battle random source.</param>
+    /// <returns>Whether at least one status increased.</returns>
+    public bool ApplyStatusRaise(int effect, int chance, int power, IBattleRng rng) =>
+        _modifierCoordinator.ApplyStatusRaise(effect, chance, power, rng);
+
     /// <summary>Sets the active fighter's charge for its next technique.</summary>
     /// <param name="side">Side containing the active fighter.</param>
     /// <param name="value">Charge in sixty-fourths of damage.</param>

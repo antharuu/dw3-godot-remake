@@ -83,6 +83,71 @@ public sealed class BattleModifierCoordinator(BattleState state, BattleTurnSched
         return true;
     }
 
+    /// <summary>Applies an enemy technique's temporary lock to the active player after its chance succeeds.</summary>
+    /// <param name="effect">Restriction effect identifier.</param>
+    /// <param name="chance">Extracted chance, out of 128.</param>
+    /// <param name="power">Extracted duration multiplier.</param>
+    /// <param name="rng">Shared battle random source for the chance and successful duration.</param>
+    /// <returns>Whether a living active player accepted a successful supported restriction.</returns>
+    public bool ApplyRestriction(int effect, int chance, int power, IBattleRng rng)
+    {
+        if (!TryRestriction(effect, out int flag, out BattleScheduledEventKind expiry))
+        {
+            return false;
+        }
+
+        BattleFighter? target = state.ActivePlayerFighter;
+        if (target is not { IsKnockedOut: false } || (rng.NextValue() & 0x7F) >= chance)
+        {
+            return false;
+        }
+
+        target.Flags |= flag;
+        scheduler.EnqueueControlExpiry(expiry, BattleSide.Player, state.ActivePlayer, RestrictionDelay(power, rng));
+        return true;
+    }
+
+    /// <summary>Applies a landed attack or defense decrease to the opposing active fighter.</summary>
+    /// <param name="attackerSide">Side that landed the lowering technique.</param>
+    /// <param name="effect">Extracted lowering effect identifier.</param>
+    /// <param name="power">Extracted decrease in 128ths.</param>
+    /// <param name="rng">Shared battle random source used only by a successful expiry.</param>
+    /// <returns>Whether the supported decrease changed an eligible target.</returns>
+    public bool ApplyStatLowering(BattleSide attackerSide, int effect, int power, IBattleRng rng)
+    {
+        if (!TryLoweredStat(effect, out int stat) || (attackerSide == BattleSide.Player && state.Blocks[stat == BattleStat.Attack ? BattleConst.BlockLowerAttack : BattleConst.BlockLowerDefense] != 0))
+        {
+            return false;
+        }
+
+        BattleSide targetSide = BattlePoisonRules.Opposite(attackerSide);
+        return ApplyStatModifier(targetSide, state.ActiveSlot(targetSide), stat, -power, fromTechnique: true, rng);
+    }
+
+    /// <summary>Raises persistent statuses on the active player by the exact status-effect contract.</summary>
+    /// <param name="effect">Extracted status-raise effect identifier.</param>
+    /// <param name="chance">Extracted base chance.</param>
+    /// <param name="power">Extracted additive status amount.</param>
+    /// <param name="rng">Shared battle random source for selection and status rolls.</param>
+    /// <returns>Whether at least one persistent status was raised.</returns>
+    public bool ApplyStatusRaise(int effect, int chance, int power, IBattleRng rng)
+    {
+        BattleFighter? target = state.ActivePlayerFighter;
+        BattleFighter? enemy = state.ActiveEnemyFighter;
+        if (target is not { IsKnockedOut: false } || enemy is not { IsKnockedOut: false })
+        {
+            return false;
+        }
+
+        return effect switch
+        {
+            BattleTechniqueEffect.RaiseOneStatus => RaiseOne(target, chance, power, enemy, rng),
+            BattleTechniqueEffect.RaiseEachStatus => RaiseEach(target, chance, power, enemy, rng),
+            BattleTechniqueEffect.RaiseAllStatus => RaiseAll(target, chance, power, enemy, rng),
+            _ => false,
+        };
+    }
+
     /// <summary>Consumes a fighter's pending charge after its next technique begins.</summary>
     /// <param name="side">Side containing the fighter.</param>
     public void ConsumeCharge(BattleSide side)
@@ -156,7 +221,117 @@ public sealed class BattleModifierCoordinator(BattleState state, BattleTurnSched
     /// <summary>Gets whether an event ends one temporary battle modifier.</summary>
     /// <param name="kind">Queued event kind.</param>
     /// <returns>Whether the kind belongs to this coordinator.</returns>
-    private static bool IsModifierEvent(BattleScheduledEventKind kind) => kind is BattleScheduledEventKind.AttackBoostEnd or BattleScheduledEventKind.DefenseBoostEnd or BattleScheduledEventKind.SpeedBoostEnd or BattleScheduledEventKind.ElementBoostEnd or BattleScheduledEventKind.SpecialEnd;
+    private static bool IsModifierEvent(BattleScheduledEventKind kind) => kind is BattleScheduledEventKind.AttackBoostEnd or BattleScheduledEventKind.DefenseBoostEnd or BattleScheduledEventKind.SpeedBoostEnd or BattleScheduledEventKind.ElementBoostEnd or BattleScheduledEventKind.SpecialEnd or BattleScheduledEventKind.NoSwitchEnd or BattleScheduledEventKind.NoDigivolveEnd;
+
+    /// <summary>Maps a supported restriction effect to its fighter flag and expiry event.</summary>
+    /// <param name="effect">Extracted technique effect.</param>
+    /// <param name="flag">Flag applied while the restriction is active.</param>
+    /// <param name="expiry">Scheduled event that ends the restriction.</param>
+    /// <returns>Whether the effect is a supported restriction.</returns>
+    private static bool TryRestriction(int effect, out int flag, out BattleScheduledEventKind expiry)
+    {
+        flag = effect == BattleTechniqueEffect.NoSwitch ? FighterFlags.NoSwitch : FighterFlags.NoDigivolve;
+        expiry = effect == BattleTechniqueEffect.NoSwitch ? BattleScheduledEventKind.NoSwitchEnd : BattleScheduledEventKind.NoDigivolveEnd;
+        return effect is BattleTechniqueEffect.NoSwitch or BattleTechniqueEffect.NoDigivolve;
+    }
+
+    /// <summary>Maps a lowering effect to the stat it changes.</summary>
+    /// <param name="effect">Extracted technique effect.</param>
+    /// <param name="stat">Target stat when supported.</param>
+    /// <returns>Whether the effect lowers a supported stat.</returns>
+    private static bool TryLoweredStat(int effect, out int stat)
+    {
+        stat = effect == BattleTechniqueEffect.LowerAttack ? BattleStat.Attack : BattleStat.Defense;
+        return effect is BattleTechniqueEffect.LowerAttack or BattleTechniqueEffect.LowerDefense;
+    }
+
+    /// <summary>Raises one of the first two persistent statuses after selecting it before the chance roll.</summary>
+    /// <param name="target">Active player whose persistent status is changed.</param>
+    /// <param name="chance">Base chance before the wisdom adjustment.</param>
+    /// <param name="power">Additive status value.</param>
+    /// <param name="enemy">Active enemy supplying the wisdom adjustment.</param>
+    /// <param name="rng">Shared random stream.</param>
+    /// <returns>Whether the selected status increased.</returns>
+    private static bool RaiseOne(BattleFighter target, int chance, int power, BattleFighter enemy, IBattleRng rng)
+    {
+        int index = rng.NextValue() % 2;
+        if (!RollStatusRaise(chance, target, enemy, rng))
+        {
+            return false;
+        }
+
+        target.PersistentStatuses[index] += power;
+        return true;
+    }
+
+    /// <summary>Rolls and raises each persistent status independently.</summary>
+    /// <param name="target">Active player whose persistent statuses are changed.</param>
+    /// <param name="chance">Base chance before the wisdom adjustment.</param>
+    /// <param name="power">Additive status value.</param>
+    /// <param name="enemy">Active enemy supplying the wisdom adjustment.</param>
+    /// <param name="rng">Shared random stream.</param>
+    /// <returns>Whether at least one status increased.</returns>
+    private static bool RaiseEach(BattleFighter target, int chance, int power, BattleFighter enemy, IBattleRng rng)
+    {
+        bool raised = false;
+        for (int index = 0; index < target.PersistentStatuses.Length; index++)
+        {
+            if (RollStatusRaise(chance, target, enemy, rng))
+            {
+                target.PersistentStatuses[index] += power;
+                raised = true;
+            }
+        }
+
+        return raised;
+    }
+
+    /// <summary>Raises every persistent status after one qualified status chance roll.</summary>
+    /// <param name="target">Active player whose persistent statuses are changed.</param>
+    /// <param name="chance">Base chance before the wisdom adjustment.</param>
+    /// <param name="power">Additive status value.</param>
+    /// <param name="enemy">Active enemy supplying the wisdom adjustment.</param>
+    /// <param name="rng">Shared random stream.</param>
+    /// <returns>Whether every status increased.</returns>
+    private static bool RaiseAll(BattleFighter target, int chance, int power, BattleFighter enemy, IBattleRng rng)
+    {
+        if (!RollStatusRaise(chance, target, enemy, rng))
+        {
+            return false;
+        }
+
+        for (int index = 0; index < target.PersistentStatuses.Length; index++)
+        {
+            target.PersistentStatuses[index] += power;
+        }
+
+        return true;
+    }
+
+    /// <summary>Rolls the source status chance with the active partners' wisdom delta.</summary>
+    /// <param name="chance">Base chance before the wisdom adjustment.</param>
+    /// <param name="target">Active player supplying the positive wisdom term.</param>
+    /// <param name="enemy">Active enemy supplying the negative wisdom term.</param>
+    /// <param name="rng">Shared random stream.</param>
+    /// <returns>Whether the adjusted chance roll succeeded.</returns>
+    private static bool RollStatusRaise(int chance, BattleFighter target, BattleFighter enemy, IBattleRng rng) =>
+        (rng.NextValue() & 0x7F) < chance + ((target.Stats.Stats[BattleStat.Wisdom] - enemy.Stats.Stats[BattleStat.Wisdom]) / 8);
+
+    /// <summary>Maps a restriction expiry event to the flag it clears.</summary>
+    /// <param name="kind">Scheduled event kind.</param>
+    /// <param name="flag">Flag to clear when the event is supported.</param>
+    /// <returns>Whether the event ends a restriction.</returns>
+    private static bool TryRestrictionEnd(BattleScheduledEventKind kind, out int flag)
+    {
+        flag = kind == BattleScheduledEventKind.NoSwitchEnd ? FighterFlags.NoSwitch : FighterFlags.NoDigivolve;
+        return kind is BattleScheduledEventKind.NoSwitchEnd or BattleScheduledEventKind.NoDigivolveEnd;
+    }
+
+    /// <summary>Calculates the source restriction duration from its extracted multiplier.</summary>
+    /// <param name="power">Extracted duration multiplier.</param>
+    /// <param name="rng">Shared battle random source.</param>
+    /// <returns>Delay in battle-time units.</returns>
+    private static int RestrictionDelay(int power, IBattleRng rng) => ((rng.NextValue() % 101) + 100) * power;
 
     /// <summary>Clears the one modifier addressed by an expiry event.</summary>
     /// <param name="scheduled">Consumed modifier expiry.</param>
@@ -169,6 +344,16 @@ public sealed class BattleModifierCoordinator(BattleState state, BattleTurnSched
         }
 
         BattleFighter? fighter = state.FighterAt(scheduled.Side, scheduled.FighterSlot);
+        if (TryRestrictionEnd(scheduled.Kind, out int flag))
+        {
+            if (fighter is not null)
+            {
+                fighter.Flags &= ~flag;
+            }
+
+            return;
+        }
+
         if (scheduled.Kind == BattleScheduledEventKind.SpecialEnd)
         {
             if (fighter is { } special)

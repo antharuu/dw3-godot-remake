@@ -42,6 +42,9 @@ public sealed class BattleFighter
     /// <summary>Gets or sets the four stat boost levels of the fighter. A negative value is a lowered stat, which enemy conditions 15..17 test on entries 0..2.</summary>
     public int[] Boosts { get; set; } = new int[4];
 
+    /// <summary>Gets the persistent partner status values shared with the source party slot, or an isolated empty set for enemies.</summary>
+    public int[] PersistentStatuses { get; private set; } = new int[3];
+
     /// <summary>Gets or sets the item id attached to the fighter, 0 for none.</summary>
     public int Item { get; set; }
 
@@ -103,6 +106,7 @@ public sealed class BattleFighter
             _partner = seed,
             _baseStats = seed.Stats,
             Stats = seed.Stats,
+            PersistentStatuses = seed.PersistentStatuses,
         };
         return fighter;
     }

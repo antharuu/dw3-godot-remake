@@ -24,6 +24,12 @@ public enum BattleScheduledEventKind
     /// <summary>Expiry of one fighter's sleep.</summary>
     SleepEnd,
 
+    /// <summary>Expiry of one fighter's temporary switch restriction.</summary>
+    NoSwitchEnd,
+
+    /// <summary>Expiry of one fighter's temporary digivolution restriction.</summary>
+    NoDigivolveEnd,
+
     /// <summary>Expiry of one fighter's temporary attack modifier.</summary>
     AttackBoostEnd,
 
