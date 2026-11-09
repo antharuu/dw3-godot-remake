@@ -8,22 +8,22 @@ public static class BattleResourceEffects
     /// <param name="side">Attacker side.</param>
     /// <param name="chance">Chance in 128ths.</param>
     /// <param name="power">Share in 128ths.</param>
-    /// <param name="damage">Damage removed.</param>
+    /// <param name="resolvedDamage">Formula damage before HP clamping, used as the base for the heal even when the hit was lethal.</param>
     /// <param name="rng">Battle RNG.</param>
     /// <returns>Whether the drain roll succeeded.</returns>
-    public static bool DrainHp(BattleState state, BattleSide side, int chance, int power, int damage, IBattleRng rng)
+    public static bool DrainHp(BattleState state, BattleSide side, int chance, int power, int resolvedDamage, IBattleRng rng)
     {
         BattleFighter? attacker = state.FighterFor(side);
         BattleFighter? target = state.FighterFor(BattlePoisonRules.Opposite(side));
         if ((side == BattleSide.Player && state.Blocks[BattleConst.BlockDrain] != 0)
             || attacker is not { IsKnockedOut: false }
-            || target is not { IsKnockedOut: false }
+            || target is null
             || (rng.NextValue() & 127) >= chance)
         {
             return false;
         }
 
-        attacker.Hp = Math.Min(attacker.Hp + (damage * (attacker.Special ? power * 2 : power) / 128), attacker.MaxHp);
+        attacker.Hp = Math.Min(attacker.Hp + (resolvedDamage * (attacker.Special ? power * 2 : power) / 128), attacker.MaxHp);
         return true;
     }
 

@@ -5,6 +5,9 @@ internal sealed class BattleHitSequence
 {
     private readonly List<BattleHitEvent> _events = [];
 
+    /// <summary>Aggregate formula damage before HP clamping across all non-counter landed hits in the last started action. Used by the drain formula, which must heal from the calculated value even when the hit was lethal.</summary>
+    private int _resolvedDamage;
+
     /// <summary>Gets a value indicating whether at least one non-counter hit in the current sequence landed, regardless of integer damage.</summary>
     /// <remarks>
     /// The gate for a technique's status effect is a landed hit, not positive aggregate damage.
@@ -29,6 +32,9 @@ internal sealed class BattleHitSequence
     /// <summary>Gets the ordered events from the most recently started action and any appended counter-reaction.</summary>
     public IReadOnlyList<BattleHitEvent> Events => _events;
 
+    /// <summary>Gets the aggregate formula damage before HP clamping across all non-counter landed hits in the last started action. Counter hits are excluded because only the initiating action feeds the drain formula.</summary>
+    public int ResolvedDamage => _resolvedDamage;
+
     /// <summary>Resolves one action or counter sequence against its original target.</summary>
     /// <param name="side">Side rolling the hits.</param>
     /// <param name="tech">Technique that determines the count and is traced with every event.</param>
@@ -43,6 +49,7 @@ internal sealed class BattleHitSequence
         if (!isCounter)
         {
             _events.Clear();
+            _resolvedDamage = 0;
         }
 
         int damage = 0;
@@ -99,6 +106,11 @@ internal sealed class BattleHitSequence
     private int ResolveHit(BattleSide side, TechData tech, BattleFighter target, bool isCounter, int index, BattleHitResult result)
     {
         int damage = result.Landed ? Math.Min(result.Damage, target.Hp) : 0;
+        if (!isCounter && result.Landed)
+        {
+            _resolvedDamage += result.Damage; // accumulate formula value before clamping for drain
+        }
+
         if (damage > 0)
         {
             target.TakeDamage(damage);

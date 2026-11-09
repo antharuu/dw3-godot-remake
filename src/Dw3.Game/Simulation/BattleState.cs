@@ -111,6 +111,9 @@ public sealed class BattleState
     /// <remarks>The gate for a technique's status effect is a landed hit, not positive aggregate damage; a hit whose integer damage rounds to zero still landed and must still apply its effect.</remarks>
     internal bool AnyActionHitLanded => _hitSequence.AnyActionLanded;
 
+    /// <summary>Gets the aggregate formula damage before HP clamping from the last resolved hit sequence, used to feed the drain formula after a lethal hit.</summary>
+    internal int LastResolvedDamage => _hitSequence.ResolvedDamage;
+
     /// <summary>
     /// Fills the three partners (the first with the active Digimon)
     /// and the three enemies, loading HP/MP and resolving stats, then seeds the turn clock.
@@ -497,9 +500,9 @@ public sealed class BattleState
     /// <param name="attackerSide">Side that landed the technique.</param>
     /// <param name="technique">Technique supplying the extracted effect fields.</param>
     /// <param name="rng">Shared battle random source.</param>
-    /// <param name="landedDamage">Aggregate HP removed by the action's sequence.</param>
-    internal void ApplyTechniqueEffect(BattleSide attackerSide, TechData technique, IBattleRng rng, int landedDamage) =>
-        _ = BattleTechniqueEffectResolver.ApplyLanded(this, attackerSide, technique, rng, landedDamage);
+    /// <param name="resolvedDamage">Aggregate formula damage before HP clamping from the action's sequence, used by the drain formula.</param>
+    internal void ApplyTechniqueEffect(BattleSide attackerSide, TechData technique, IBattleRng rng, int resolvedDamage) =>
+        _ = BattleTechniqueEffectResolver.ApplyLanded(this, attackerSide, technique, rng, resolvedDamage);
 
     /// <summary>Gets the active fighter on one side.</summary>
     /// <param name="side">Requested side.</param>
@@ -571,7 +574,7 @@ public sealed class BattleState
     private void LandPlayerHits(BattleFighter target, TechData tech, BattleFighter attacker, IBattleRng rng, bool technique)
     {
         int damage = ResolveHitSequence(BattleSide.Player, tech, attacker.Stats, target, false, () => ResolvePlayerHit(tech, attacker, target, rng, technique));
-        ApplyPlayerEffectAfterHits(tech, damage, rng);
+        ApplyPlayerEffectAfterHits(tech, damage, _hitSequence.ResolvedDamage, rng);
         CheckOutcome();
         ReactToPlayerHits(target, damage, rng);
         MarkFought();
@@ -591,9 +594,10 @@ public sealed class BattleState
 
     /// <summary>Applies an ordinary landed technique effect once, while multi-hit itself is represented by its ordered events.</summary>
     /// <param name="tech">Technique that may carry a supported non-multi effect.</param>
-    /// <param name="damage">Total damage actually landed, used for the wake-on-hit roll only.</param>
+    /// <param name="damage">Total HP actually removed by the action, used for the wake-on-hit roll only.</param>
+    /// <param name="resolvedDamage">Total formula damage before HP clamping, fed to the drain formula.</param>
     /// <param name="rng">Shared battle random source.</param>
-    private void ApplyPlayerEffectAfterHits(TechData tech, int damage, IBattleRng rng)
+    private void ApplyPlayerEffectAfterHits(TechData tech, int damage, int resolvedDamage, IBattleRng rng)
     {
         if (damage > 0)
         {
@@ -602,7 +606,7 @@ public sealed class BattleState
 
         if (AnyActionHitLanded && tech.Effect != BattleTechniqueEffect.MultiHit)
         {
-            ApplyTechniqueEffect(BattleSide.Player, tech, rng, damage);
+            ApplyTechniqueEffect(BattleSide.Player, tech, rng, resolvedDamage);
         }
     }
 

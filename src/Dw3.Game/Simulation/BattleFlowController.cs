@@ -264,7 +264,7 @@ public sealed class BattleFlowController
         if (stolenItem.HasValue)
         {
             ItemStock.TryGetValue(stolenItem.Value, out int existing);
-            ItemStock[stolenItem.Value] = existing + 1;
+            ItemStock[stolenItem.Value] = Math.Min(existing + 1, BattleConst.MaxItemCount);
         }
 
         SetMessage("technique", NameTokens(actor), technique.Text?.Tokens ?? []);

@@ -62,4 +62,7 @@ public static class BattleConst
 
     /// <summary>Index in an encounter's block flags of the flag that forbids running away.</summary>
     public const int BlockRunAway = 11;
+
+    /// <summary>Maximum quantity of one item a party may hold. The source caps the receiver stock at this value when a steal lands.</summary>
+    public const int MaxItemCount = 99;
 }

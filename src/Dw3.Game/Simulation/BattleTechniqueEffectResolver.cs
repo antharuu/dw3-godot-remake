@@ -11,7 +11,7 @@ public static class BattleTechniqueEffectResolver
     /// <param name="attackerSide">Side that landed the technique.</param>
     /// <param name="technique">Technique holding the extracted effect fields.</param>
     /// <param name="rng">Shared battle random stream.</param>
-    /// <param name="landedDamage">HP actually removed by this action's landed sequence.</param>
+    /// <param name="landedDamage">Formula damage before HP clamping from the action's landed sequence, used by the drain formula.</param>
     /// <returns>Whether this bounded resolver supports the effect, regardless of its resistance roll.</returns>
     public static bool ApplyLanded(BattleState state, BattleSide attackerSide, TechData technique, IBattleRng rng, int landedDamage)
     {

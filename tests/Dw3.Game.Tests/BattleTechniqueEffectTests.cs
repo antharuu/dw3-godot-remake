@@ -193,6 +193,30 @@ public sealed class BattleTechniqueEffectTests
         Assert.Equal(1, rng.CallCount);
     }
 
+    /// <summary>
+    /// Verifies that a drain technique that KOs the target still heals the attacker from the
+    /// formula-resolved damage, not from the HP actually removed (which is clamped to the target's
+    /// remaining HP). With attacker HP=50, resolved damage=20 and EffectPower=128 the heal must be 20
+    /// (attacker reaches 70), never 5 (clamped damage) or 0 (guard rejected on KO).
+    /// </summary>
+    [Fact]
+    public void PlayerTechnique_LethalDrainHit_RestoresAttackerUsingResolvedDamage()
+    {
+        BattleState state = CreateState();
+        var player = Assert.IsType<BattleFighter>(state.ActivePlayerFighter);
+        var enemy = Assert.IsType<BattleFighter>(state.ActiveEnemyFighter);
+        player.Hp = 50;
+        enemy.Hp = 5;
+        var technique = new TechData { Accuracy = 128, Effect = BattleTechniqueEffect.Drain, EffectChance = 127, EffectPower = 128, Power = 20 };
+
+        Assert.True(state.PlayerTechnique(technique, new SequenceRng(0, 0)));
+
+        Assert.Equal(0, enemy.Hp);
+        var singleEvent = Assert.Single(state.LastHitEvents); // exactly one hit event
+        Assert.Equal(5, singleEvent.Damage); // BattleHitEvent.Damage = HP actually removed (unchanged)
+        Assert.Equal(70, player.Hp); // 50 + resolved(20)*128/128 = 70, NOT 50 (guard) or 55 (clamped*factor)
+    }
+
     /// <summary>Verifies that a successful player steal transfers the enemy-held item and clears the source holder.</summary>
     [Fact]
     public void PlayerTechnique_SuccessfulSteal_TransfersTheHeldItem()
@@ -316,6 +340,34 @@ public sealed class BattleTechniqueEffectTests
         Assert.True(flow.Choose(BattleCommand.Technique, techniqueId, new SequenceRng(0, 0)));
 
         Assert.Equal(1, flow.ItemStock.GetValueOrDefault(77));
+    }
+
+    /// <summary>
+    /// Verifies that stealing when the player already holds 99 of an item caps the stock at 99,
+    /// removes the item from the enemy and clears the pending state — the source contract retires
+    /// the enemy item regardless of the receiver stock, and the receiver must not overflow past 99.
+    /// </summary>
+    [Fact]
+    public void ChooseTechnique_StealAtMaxStock_CapsStockAt99AndRemovesEnemyItem()
+    {
+        BattleState state = CreateState();
+        var enemy = Assert.IsType<BattleFighter>(state.ActiveEnemyFighter);
+        enemy.Item = 77;
+        enemy.ItemChance = 1024;
+        const int techniqueId = 1;
+        var stealTech = new TechData { Accuracy = 128, Effect = BattleTechniqueEffect.Steal, EffectChance = 64, Power = 20 };
+        var flow = new BattleFlowController
+        {
+            PlayerTechniques = [new BattleTechnique(techniqueId, "Steal", stealTech)],
+            ItemStock = new Dictionary<int, int> { [77] = 99 },
+        };
+        flow.Start(state);
+
+        Assert.True(flow.Choose(BattleCommand.Technique, techniqueId, new SequenceRng(0, 0)));
+
+        Assert.Equal(99, flow.ItemStock.GetValueOrDefault(77)); // must NOT go to 100
+        Assert.Equal(0, enemy.Item); // item still removed from enemy
+        Assert.Null(state.PendingStolenItem); // consumed by flow
     }
 
     /// <summary>Verifies that TakePendingStolenItem returns the item on the first call and null on the second, proving exactly-once consumption.</summary>

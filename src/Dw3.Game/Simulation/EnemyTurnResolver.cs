@@ -114,7 +114,7 @@ public sealed class EnemyTurnResolver(BattleState state)
 
         int damage = state.ResolveHitSequence(BattleSide.Enemy, tech, attacker.Stats, target, false, () => state.Hits(rng).Technique(tech, attacker, target, enemyAttacker: true));
         WakePlayerAfterHits(damage, rng);
-        ApplyEnemyEffectAfterHits(tech, damage, rng);
+        ApplyEnemyEffectAfterHits(tech, state.LastResolvedDamage, rng);
 
         state.ConsumeCharge(BattleSide.Enemy);
         EndTurn();
