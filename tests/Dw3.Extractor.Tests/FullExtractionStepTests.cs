@@ -150,7 +150,7 @@ public sealed class FullExtractionStepTests : IDisposable
             [
                 "zones", "collision", "player", "water", "climb", "drop", "cue", "icon", "npc", "text", "font",
                 "dialogue", "talk-box", "encounter", "battle", "digivolution", "battle-models", "battle-stages",
-                "battle-hud", "battle-report",
+                "battle-hud", "battle-audio", "battle-report",
             ],
             FullExtractionStep.Domains.Select(domain => domain.Name));
     }
