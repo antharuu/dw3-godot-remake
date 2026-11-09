@@ -11,8 +11,9 @@ public static class BattleTechniqueEffectResolver
     /// <param name="attackerSide">Side that landed the technique.</param>
     /// <param name="technique">Technique holding the extracted effect fields.</param>
     /// <param name="rng">Shared battle random stream.</param>
+    /// <param name="landedDamage">HP actually removed by this action's landed sequence.</param>
     /// <returns>Whether this bounded resolver supports the effect, regardless of its resistance roll.</returns>
-    public static bool ApplyLanded(BattleState state, BattleSide attackerSide, TechData technique, IBattleRng rng)
+    public static bool ApplyLanded(BattleState state, BattleSide attackerSide, TechData technique, IBattleRng rng, int landedDamage)
     {
         switch (technique.Effect)
         {
@@ -28,8 +29,33 @@ public static class BattleTechniqueEffectResolver
             case BattleTechniqueEffect.Sleep:
                 _ = state.InflictSleep(attackerSide, technique.EffectChance, technique.EffectPower, rng);
                 return true;
+            case BattleTechniqueEffect.Drain:
+                _ = BattleResourceEffects.DrainHp(state, attackerSide, technique.EffectChance, technique.EffectPower, landedDamage, rng);
+                return true;
+            case BattleTechniqueEffect.Steal:
+                _ = BattleResourceEffects.Steal(state, attackerSide, technique.EffectChance, rng);
+                return true;
+            case BattleTechniqueEffect.DrainMp:
+                _ = BattleResourceEffects.DrainMp(state, attackerSide, technique.EffectPower);
+                return true;
             default:
                 return false;
         }
     }
+
+    /// <summary>Returns whether this side owns the target contract of the selected action.</summary>
+    /// <param name="attackerSide">Side attempting the technique.</param>
+    /// <param name="technique">Technique to check.</param>
+    /// <returns><see langword="true"/> when this side may execute the technique's effect.</returns>
+    public static bool CanExecute(BattleSide attackerSide, TechData technique) => technique.Effect switch
+    {
+        BattleTechniqueEffect.DrainMp => attackerSide == BattleSide.Enemy,
+        BattleTechniqueEffect.Steal => attackerSide == BattleSide.Player,
+        _ => technique.Icon <= BattleConst.TechMagic,
+    };
+
+    /// <summary>Returns whether the technique uses the generic hit path before its effect.</summary>
+    /// <param name="technique">Technique to test.</param>
+    /// <returns><see langword="true"/> when a hit sequence must land before the effect can fire.</returns>
+    public static bool RequiresHitSequence(TechData technique) => technique.Effect != BattleTechniqueEffect.DrainMp;
 }

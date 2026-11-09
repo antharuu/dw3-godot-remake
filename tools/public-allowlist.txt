@@ -608,6 +608,7 @@ src/Dw3.Game/Simulation/BattleSwitchRules.cs
 src/Dw3.Game/Simulation/BattleStageResolver.cs
 src/Dw3.Game/Simulation/BattleTableAction.cs
 src/Dw3.Game/Simulation/BattleTechnique.cs
+src/Dw3.Game/Simulation/BattleResourceEffects.cs
 src/Dw3.Game/Simulation/BattleTechniqueEffect.cs
 src/Dw3.Game/Simulation/BattleTechniqueEffectResolver.cs
 src/Dw3.Game/Simulation/BattleTickCoordinator.cs

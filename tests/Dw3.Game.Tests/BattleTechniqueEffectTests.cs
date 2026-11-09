@@ -162,6 +162,178 @@ public sealed class BattleTechniqueEffectTests
         Assert.NotEqual(0, player.Flags & FighterFlags.Asleep);
     }
 
+    /// <summary>Verifies that a landed drain technique restores the attacker by its extracted share of actual damage without exceeding maximum HP.</summary>
+    [Fact]
+    public void PlayerTechnique_LandedDrain_RestoresAttackerByEffectPowerAndCapsAtMaximum()
+    {
+        BattleState state = CreateState();
+        var player = Assert.IsType<BattleFighter>(state.ActivePlayerFighter);
+        player.Hp = 90;
+        var technique = new TechData { Accuracy = 128, Effect = BattleTechniqueEffect.Drain, EffectChance = 127, EffectPower = 128, Power = 20 };
+
+        Assert.True(state.PlayerTechnique(technique, new SequenceRng(0, 0)));
+
+        Assert.Equal(player.MaxHp, player.Hp);
+    }
+
+    /// <summary>Verifies that a player drain blocked by the encounter neither heals nor consumes an effect RNG draw.</summary>
+    [Fact]
+    public void PlayerTechnique_BlockedDrain_DoesNotHealOrConsumeEffectRandom()
+    {
+        BattleState state = CreateState();
+        state.Blocks[BattleConst.BlockDrain] = 1;
+        var player = Assert.IsType<BattleFighter>(state.ActivePlayerFighter);
+        player.Hp = 50;
+        var rng = new CountingRng(0, 0);
+        var technique = new TechData { Accuracy = 128, Effect = BattleTechniqueEffect.Drain, EffectChance = 127, EffectPower = 128, Power = 20 };
+
+        Assert.True(state.PlayerTechnique(technique, rng));
+
+        Assert.Equal(50, player.Hp);
+        Assert.Equal(1, rng.CallCount);
+    }
+
+    /// <summary>Verifies that a successful player steal transfers the enemy-held item and clears the source holder.</summary>
+    [Fact]
+    public void PlayerTechnique_SuccessfulSteal_TransfersTheHeldItem()
+    {
+        BattleState state = CreateState();
+        var enemy = Assert.IsType<BattleFighter>(state.ActiveEnemyFighter);
+        enemy.Item = 77;
+        enemy.ItemChance = 1024;
+        var technique = new TechData { Accuracy = 128, Effect = BattleTechniqueEffect.Steal, EffectChance = 64, Power = 20 };
+
+        Assert.True(state.PlayerTechnique(technique, new SequenceRng(0, 0)));
+
+        Assert.Equal(77, state.PendingStolenItem);
+        Assert.Equal(0, enemy.Item);
+    }
+
+    /// <summary>Verifies that no item holder makes a steal refusal without an additional effect random draw or state change.</summary>
+    [Fact]
+    public void PlayerTechnique_StealWithoutHeldItem_DoesNotConsumeEffectRandom()
+    {
+        BattleState state = CreateState();
+        var rng = new CountingRng(0, 0);
+        var technique = new TechData { Accuracy = 128, Effect = BattleTechniqueEffect.Steal, EffectChance = 64, Power = 20 };
+
+        Assert.True(state.PlayerTechnique(technique, rng));
+
+        Assert.Null(state.PendingStolenItem);
+        Assert.Equal(1, rng.CallCount);
+    }
+
+    /// <summary>Verifies that the enemy MP drain takes its extracted maximum-MP share, transfers only the available amount and caps the recipient.</summary>
+    [Fact]
+    public void EnemyTechnique_DrainMp_TransfersAvailableShareAndCapsRecipient()
+    {
+        BattleState state = CreateState();
+        var player = Assert.IsType<BattleFighter>(state.ActivePlayerFighter);
+        var enemy = Assert.IsType<BattleFighter>(state.ActiveEnemyFighter);
+        player.Mp = 30;
+        enemy.Mp = 90;
+        var technique = new TechData { Effect = BattleTechniqueEffect.DrainMp, EffectPower = 64 };
+
+        Assert.True(state.EnemyTechnique(technique, new SequenceRng()));
+
+        Assert.Equal(0, player.Mp);
+        Assert.Equal(enemy.MaxMp, enemy.Mp);
+        Assert.Empty(state.LastHitEvents);
+    }
+
+    /// <summary>Verifies that a player cannot execute the enemy-targeted MP drain and therefore spends neither MP nor turn RNG.</summary>
+    [Fact]
+    public void PlayerTechnique_EnemyTargetedDrainMp_IsRefusedBeforeResources()
+    {
+        BattleState state = CreateState();
+        var player = Assert.IsType<BattleFighter>(state.ActivePlayerFighter);
+        var rng = new CountingRng(0);
+        var technique = new TechData { Mp = 20, Effect = BattleTechniqueEffect.DrainMp, EffectPower = 64 };
+
+        Assert.False(state.PlayerTechnique(technique, rng));
+
+        Assert.Equal(100, player.Mp);
+        Assert.Equal(0, rng.CallCount);
+    }
+
+    /// <summary>Verifies that an effect resolver refuses an absent target without changing fighters or consuming random input.</summary>
+    [Fact]
+    public void TechniqueEffect_MissingTarget_IsRefusedWithoutRandomInput()
+    {
+        var state = new BattleState
+        {
+            Players = [new BattleFighter { Hp = 100, MaxHp = 100 }],
+            ActivePlayer = 0,
+            ActiveEnemy = -1,
+        };
+        var rng = new CountingRng(0);
+
+        Assert.True(BattleTechniqueEffectResolver.ApplyLanded(state, BattleSide.Player, new TechData { Effect = BattleTechniqueEffect.Drain, EffectChance = 127, EffectPower = 128 }, rng, 10));
+
+        Assert.Equal(100, Assert.IsType<BattleFighter>(state.ActivePlayerFighter).Hp);
+        Assert.Equal(0, rng.CallCount);
+    }
+
+    /// <summary>Verifies that a successful steal via the flow controller adds the item to ItemStock and clears the pending state.</summary>
+    [Fact]
+    public void ChooseTechnique_SuccessfulSteal_AddsItemToFlowControllerStockAndClearsPending()
+    {
+        BattleState state = CreateState();
+        var enemy = Assert.IsType<BattleFighter>(state.ActiveEnemyFighter);
+        enemy.Item = 77;
+        enemy.ItemChance = 1024;
+        const int techniqueId = 1;
+        var stealTech = new TechData { Accuracy = 128, Effect = BattleTechniqueEffect.Steal, EffectChance = 64, Power = 20 };
+        var flow = new BattleFlowController
+        {
+            PlayerTechniques = [new BattleTechnique(techniqueId, "Steal", stealTech)],
+        };
+        flow.Start(state);
+
+        Assert.True(flow.Choose(BattleCommand.Technique, techniqueId, new SequenceRng(0, 0)));
+
+        Assert.Equal(1, flow.ItemStock.GetValueOrDefault(77));
+        Assert.Null(state.PendingStolenItem);
+    }
+
+    /// <summary>Verifies that a second steal on an item-less enemy adds nothing further to ItemStock.</summary>
+    [Fact]
+    public void ChooseTechnique_RepeatedStealOnEmptyEnemy_DoesNotIncrementStock()
+    {
+        BattleState state = CreateState();
+        var enemy = Assert.IsType<BattleFighter>(state.ActiveEnemyFighter);
+        enemy.Item = 77;
+        enemy.ItemChance = 1024;
+        const int techniqueId = 1;
+        var stealTech = new TechData { Accuracy = 128, Effect = BattleTechniqueEffect.Steal, EffectChance = 64, Power = 20 };
+        var flow = new BattleFlowController
+        {
+            PlayerTechniques = [new BattleTechnique(techniqueId, "Steal", stealTech)],
+        };
+        flow.Start(state);
+        Assert.True(flow.Choose(BattleCommand.Technique, techniqueId, new SequenceRng(0, 0)));
+        flow.EnemyAct(new SequenceRng());
+        Assert.True(flow.Choose(BattleCommand.Technique, techniqueId, new SequenceRng(0, 0)));
+
+        Assert.Equal(1, flow.ItemStock.GetValueOrDefault(77));
+    }
+
+    /// <summary>Verifies that TakePendingStolenItem returns the item on the first call and null on the second, proving exactly-once consumption.</summary>
+    [Fact]
+    public void TakePendingStolenItem_ReturnsItemOnFirstCallAndNullOnSecond()
+    {
+        BattleState state = CreateState();
+        var enemy = Assert.IsType<BattleFighter>(state.ActiveEnemyFighter);
+        enemy.Item = 77;
+        enemy.ItemChance = 1024;
+        var technique = new TechData { Accuracy = 128, Effect = BattleTechniqueEffect.Steal, EffectChance = 64, Power = 20 };
+
+        Assert.True(state.PlayerTechnique(technique, new SequenceRng(0, 0)));
+
+        Assert.Equal(77, state.TakePendingStolenItem());
+        Assert.Null(state.TakePendingStolenItem());
+    }
+
     private static BattleState CreateState()
     {
         var stats = new BattleStats();
@@ -213,5 +385,18 @@ public sealed class BattleTechniqueEffectTests
         private readonly Queue<int> _values = new(values);
 
         public int NextValue() => _values.Count > 0 ? _values.Dequeue() : 0;
+    }
+
+    private sealed class CountingRng(params int[] values) : IBattleRng
+    {
+        private readonly Queue<int> _values = new(values);
+
+        public int CallCount { get; private set; }
+
+        public int NextValue()
+        {
+            CallCount++;
+            return _values.Count > 0 ? _values.Dequeue() : 0;
+        }
     }
 }

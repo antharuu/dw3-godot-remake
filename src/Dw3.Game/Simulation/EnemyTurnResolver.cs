@@ -86,7 +86,7 @@ public sealed class EnemyTurnResolver(BattleState state)
     {
         var attacker = state.ActiveEnemyFighter;
         var target = state.ActivePlayerFighter;
-        if (attacker is not { IsKnockedOut: false } || target is not { IsKnockedOut: false })
+        if (attacker is not { IsKnockedOut: false } || target is not { IsKnockedOut: false } || !BattleTechniqueEffectResolver.CanExecute(BattleSide.Enemy, tech))
         {
             return false;
         }
@@ -104,9 +104,17 @@ public sealed class EnemyTurnResolver(BattleState state)
         }
 
         attacker.Mp -= tech.Mp;
+        if (!BattleTechniqueEffectResolver.RequiresHitSequence(tech))
+        {
+            state.ApplyTechniqueEffect(BattleSide.Enemy, tech, rng, 0);
+            state.ConsumeCharge(BattleSide.Enemy);
+            EndTurn();
+            return true;
+        }
+
         int damage = state.ResolveHitSequence(BattleSide.Enemy, tech, attacker.Stats, target, false, () => state.Hits(rng).Technique(tech, attacker, target, enemyAttacker: true));
         WakePlayerAfterHits(damage, rng);
-        ApplyEnemyEffectAfterHits(tech, rng);
+        ApplyEnemyEffectAfterHits(tech, damage, rng);
 
         state.ConsumeCharge(BattleSide.Enemy);
         EndTurn();
@@ -279,12 +287,13 @@ public sealed class EnemyTurnResolver(BattleState state)
 
     /// <summary>Applies one supported non-multi technique effect after the enemy's landed sequence.</summary>
     /// <param name="tech">Technique whose effect may apply.</param>
+    /// <param name="damage">Aggregate damage landed by the sequence.</param>
     /// <param name="rng">Shared battle random source.</param>
-    private void ApplyEnemyEffectAfterHits(TechData tech, IBattleRng rng)
+    private void ApplyEnemyEffectAfterHits(TechData tech, int damage, IBattleRng rng)
     {
         if (state.AnyActionHitLanded && tech.Effect != BattleTechniqueEffect.MultiHit)
         {
-            state.ApplyTechniqueEffect(BattleSide.Enemy, tech, rng);
+            state.ApplyTechniqueEffect(BattleSide.Enemy, tech, rng, damage);
         }
     }
 

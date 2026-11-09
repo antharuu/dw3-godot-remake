@@ -225,6 +225,8 @@ public static class BattleSetupFactory
                 Techs = [.. battleEntry.Techs],
                 Actions = [.. battleEntry.Actions.Select(ToAction)],
                 Counter = ToAction(battleEntry.Counter),
+                Item = battleEntry.Item,
+                ItemChance = battleEntry.ItemChance,
             };
         }
 

@@ -260,6 +260,13 @@ public sealed class BattleFlowController
             return false;
         }
 
+        int? stolenItem = State.TakePendingStolenItem();
+        if (stolenItem.HasValue)
+        {
+            ItemStock.TryGetValue(stolenItem.Value, out int existing);
+            ItemStock[stolenItem.Value] = existing + 1;
+        }
+
         SetMessage("technique", NameTokens(actor), technique.Text?.Tokens ?? []);
         return true;
     }

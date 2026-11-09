@@ -89,6 +89,9 @@ public sealed class BattleState
     /// <summary>Gets the ordered damage and reaction events from the most recently resolved damaging action.</summary>
     public IReadOnlyList<BattleHitEvent> LastHitEvents => _hitSequence.Events;
 
+    /// <summary>Gets the item successfully taken by the most recent player steal, consumed once by the caller when it commits the transfer.</summary>
+    public int? PendingStolenItem { get; private set; }
+
     /// <summary>Gets the player side's remaining event delay.</summary>
     public int NextPlayerTurn => _turnScheduler.RemainingTurnDelay(BattleSide.Player);
 
@@ -168,7 +171,7 @@ public sealed class BattleState
     {
         var attacker = ActivePlayerFighter;
         var target = ActiveEnemyFighter;
-        if (attacker is not { IsKnockedOut: false } || target == null || tech.Mp > attacker.Mp || (attacker.Flags & (FighterFlags.Asleep | FighterFlags.Confused)) != 0)
+        if (attacker is not { IsKnockedOut: false } || target == null || !BattleTechniqueEffectResolver.CanExecute(BattleSide.Player, tech) || tech.Mp > attacker.Mp || (attacker.Flags & (FighterFlags.Asleep | FighterFlags.Confused)) != 0)
         {
             return false; // an unaffordable technique does not spend the turn
         }
@@ -176,6 +179,15 @@ public sealed class BattleState
         attacker.RefreshStats();
         target.RefreshStats();
         attacker.Mp -= tech.Mp;
+        if (!BattleTechniqueEffectResolver.RequiresHitSequence(tech))
+        {
+            ApplyTechniqueEffect(BattleSide.Player, tech, rng, 0);
+            MarkFought();
+            AdvancePlayerTurn();
+            CheckOutcome();
+            return true;
+        }
+
         LandPlayerHits(target, tech, attacker, rng, technique: true);
         _modifierCoordinator.ConsumeCharge(BattleSide.Player);
         return true;
@@ -468,12 +480,26 @@ public sealed class BattleState
     /// <param name="side">Side whose active fighter's charge is cleared.</param>
     internal void ConsumeCharge(BattleSide side) => _modifierCoordinator.ConsumeCharge(side);
 
+    /// <summary>Records an item stolen from the enemy fighter so the host can commit the transfer to the player's stock.</summary>
+    /// <param name="itemId">Item id taken from the enemy.</param>
+    internal void SetPendingStolenItem(int itemId) => PendingStolenItem = itemId;
+
+    /// <summary>Removes and returns the pending stolen item, clearing it for the next turn.</summary>
+    /// <returns>The item id, or <see langword="null"/> when nothing was stolen this turn.</returns>
+    internal int? TakePendingStolenItem()
+    {
+        int? item = PendingStolenItem;
+        PendingStolenItem = null;
+        return item;
+    }
+
     /// <summary>Applies one supported technique effect after its damage has landed.</summary>
     /// <param name="attackerSide">Side that landed the technique.</param>
     /// <param name="technique">Technique supplying the extracted effect fields.</param>
     /// <param name="rng">Shared battle random source.</param>
-    internal void ApplyTechniqueEffect(BattleSide attackerSide, TechData technique, IBattleRng rng) =>
-        _ = BattleTechniqueEffectResolver.ApplyLanded(this, attackerSide, technique, rng);
+    /// <param name="landedDamage">Aggregate HP removed by the action's sequence.</param>
+    internal void ApplyTechniqueEffect(BattleSide attackerSide, TechData technique, IBattleRng rng, int landedDamage) =>
+        _ = BattleTechniqueEffectResolver.ApplyLanded(this, attackerSide, technique, rng, landedDamage);
 
     /// <summary>Gets the active fighter on one side.</summary>
     /// <param name="side">Requested side.</param>
@@ -576,7 +602,7 @@ public sealed class BattleState
 
         if (AnyActionHitLanded && tech.Effect != BattleTechniqueEffect.MultiHit)
         {
-            ApplyTechniqueEffect(BattleSide.Player, tech, rng);
+            ApplyTechniqueEffect(BattleSide.Player, tech, rng, damage);
         }
     }
 
@@ -610,8 +636,8 @@ public sealed class BattleState
     {
         ProcessDueEvents();
         _ = _turnScheduler.PopNext();
-        var own = side == BattleSide.Player ? ActivePlayerFighter : ActiveEnemyFighter;
-        var other = side == BattleSide.Player ? ActiveEnemyFighter : ActivePlayerFighter;
+        var own = FighterFor(side);
+        var other = FighterFor(BattlePoisonRules.Opposite(side));
         _turnScheduler.EnqueueActionTurn(side, kind, BattleFighterTiming.SpeedOf(own), BattleFighterTiming.SpeedOf(other), BattleFighterTiming.SpiritOf(own), rng ?? new BattleDefaultOpeningRng());
         ProcessDueEvents();
     }

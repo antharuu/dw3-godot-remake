@@ -45,6 +45,9 @@ public sealed class BattleFighter
     /// <summary>Gets or sets the item id attached to the fighter, 0 for none.</summary>
     public int Item { get; set; }
 
+    /// <summary>Gets or sets the fighter-table chance of yielding its held item, in 1024ths.</summary>
+    public int ItemChance { get; set; }
+
     /// <summary>Gets or sets a value indicating whether the fighter is in a temporary form. Its techniques then cost no MP and their menu names come from the temporary form.</summary>
     public bool Temporary { get; set; }
 
@@ -123,6 +126,8 @@ public sealed class BattleFighter
             Techs = enemy.Techs,
             Actions = enemy.Actions,
             Counter = enemy.Counter,
+            Item = enemy.Item,
+            ItemChance = enemy.ItemChance,
         };
         fighter.Stats = DamageCalculator.ComputeEnemyStats(enemy.BaseStats, enemy.Level, enemy.Strength);
         fighter._baseStats = fighter.Stats;

@@ -30,4 +30,10 @@ public sealed class BattleEnemy
 
     /// <summary>Gets or sets the counter-attack the enemy uses when hit. A condition of 0 means no counter.</summary>
     public BattleTableAction Counter { get; set; }
+
+    /// <summary>Gets or sets the item held by this enemy's fighter-table entry, 0 when it holds none.</summary>
+    public int Item { get; set; }
+
+    /// <summary>Gets or sets the chance in 1024ths that this enemy yields its held item to a steal technique.</summary>
+    public int ItemChance { get; set; }
 }
