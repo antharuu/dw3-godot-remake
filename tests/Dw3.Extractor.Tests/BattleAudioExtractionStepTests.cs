@@ -25,7 +25,17 @@ public sealed class BattleAudioExtractionStepTests : IDisposable
         using JsonDocument manifest = JsonDocument.Parse(File.ReadAllText(Path.Combine(audio, "manifest.json")));
         Assert.Equal("battle-audio-vab-v1", manifest.RootElement.GetProperty("schema").GetString());
         Assert.Equal(3, manifest.RootElement.GetProperty("banks").GetArrayLength());
-        Assert.Equal(18, manifest.RootElement.GetProperty("banks")[1].GetProperty("vab").GetProperty("SampleCount").GetInt32());
+        JsonElement battle = manifest.RootElement.GetProperty("banks")[1];
+        Assert.Equal(18, battle.GetProperty("vab").GetProperty("SampleCount").GetInt32());
+        JsonElement sep = battle.GetProperty("sep");
+        Assert.Equal(1, sep.GetProperty("trackCount").GetInt32());
+        JsonElement track = sep.GetProperty("tracks")[0];
+        Assert.Equal(0, track.GetProperty("number").GetInt32());
+        Assert.Equal(2, track.GetProperty("events").GetProperty("eventCount").GetInt32());
+        Assert.True(track.GetProperty("events").GetProperty("hasEndOfTrack").GetBoolean());
+        Assert.Equal(
+            ["number", "headerOffset", "eventsOffset", "endOffset", "ticksPerQuarterNote", "tempoMicrosecondsPerQuarterNote", "events"],
+            track.EnumerateObject().Select(property => property.Name));
         Assert.True(File.Exists(Path.Combine(audio, "battle.mp")));
         Assert.True(File.Exists(Path.Combine(audio, "battle.mv")));
     }
@@ -64,16 +74,35 @@ public sealed class BattleAudioExtractionStepTests : IDisposable
 
     private static byte[] HeaderArchive()
     {
-        byte[] archive = new byte[40];
+        byte[] vab = new byte[32];
+        BinaryPrimitives.WriteUInt32LittleEndian(vab, 0x56414270U);
+        BinaryPrimitives.WriteUInt32LittleEndian(vab.AsSpan(4), 7U);
+        BinaryPrimitives.WriteUInt32LittleEndian(vab.AsSpan(12), 32U);
+        BinaryPrimitives.WriteUInt16LittleEndian(vab.AsSpan(18), 11);
+        BinaryPrimitives.WriteUInt16LittleEndian(vab.AsSpan(20), 23);
+        BinaryPrimitives.WriteUInt16LittleEndian(vab.AsSpan(22), 18);
+        vab[24] = 120;
+        vab[25] = 64;
+        byte[] sep = new byte[26];
+        BinaryPrimitives.WriteUInt32BigEndian(sep, 0x70514553U);
+        BinaryPrimitives.WriteUInt16BigEndian(sep.AsSpan(8), 0x01E0);
+        sep[10] = 0x02;
+        sep[11] = 0x49;
+        sep[12] = 0xF0;
+        sep[13] = 0x04;
+        sep[14] = 0x04;
+        sep[19] = 0x00;
+        sep[20] = 0xC1;
+        sep[21] = 0x07;
+        sep[22] = 0x00;
+        sep[23] = 0xFF;
+        sep[24] = 0x2F;
+        sep[25] = 0x00;
+        byte[] archive = new byte[8 + vab.Length + sep.Length];
         BinaryPrimitives.WriteUInt32LittleEndian(archive, 8U);
-        BinaryPrimitives.WriteUInt32LittleEndian(archive.AsSpan(8), 0x56414270U);
-        BinaryPrimitives.WriteUInt32LittleEndian(archive.AsSpan(12), 7U);
-        BinaryPrimitives.WriteUInt32LittleEndian(archive.AsSpan(20), 32U);
-        BinaryPrimitives.WriteUInt16LittleEndian(archive.AsSpan(26), 11);
-        BinaryPrimitives.WriteUInt16LittleEndian(archive.AsSpan(28), 23);
-        BinaryPrimitives.WriteUInt16LittleEndian(archive.AsSpan(30), 18);
-        archive[32] = 120;
-        archive[33] = 64;
+        BinaryPrimitives.WriteUInt32LittleEndian(archive.AsSpan(4), (uint)(8 + vab.Length));
+        vab.CopyTo(archive, 8);
+        sep.CopyTo(archive, 8 + vab.Length);
         return archive;
     }
 }

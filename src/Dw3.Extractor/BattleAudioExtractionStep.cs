@@ -58,9 +58,10 @@ internal static class BattleAudioExtractionStep
             byte[] headerArchive = disc.ReadFile(Require(entries, source.HeaderPath));
             byte[] bodyArchive = disc.ReadFile(Require(entries, source.BodyPath));
             SoundBankHeader header = SoundBankHeaderDecoder.Decode(headerArchive);
+            PlayStationSequence sequence = PlayStationSequenceDecoder.Decode(headerArchive);
             WriteFile(context, $"{OutputSubdirectory}/{source.Name}.mp", headerArchive);
             WriteFile(context, $"{OutputSubdirectory}/{source.Name}.mv", bodyArchive);
-            banks.Add(new ExtractedSoundBank(source, header, headerArchive, bodyArchive));
+            banks.Add(new ExtractedSoundBank(source, header, sequence, headerArchive, bodyArchive));
         }
 
         WriteManifest(context, banks);
@@ -100,6 +101,40 @@ internal static class BattleAudioExtractionStep
         headerSha256 = Convert.ToHexStringLower(SHA256.HashData(bank.HeaderArchive)),
         bodySha256 = Convert.ToHexStringLower(SHA256.HashData(bank.BodyArchive)),
         vab = bank.Header,
+        sep = SequenceManifest(bank.Sequence),
+    };
+
+    /// <summary>Builds one stable SEP metadata projection without retaining event payload bytes.</summary>
+    /// <param name="sequence">Validated SEP structural metadata.</param>
+    /// <returns>A JSON-serializable projection containing offsets, timing, and event counts only.</returns>
+    private static object SequenceManifest(PlayStationSequence sequence) => new
+    {
+        offset = sequence.Offset,
+        length = sequence.Length,
+        trackCount = sequence.Tracks.Count,
+        tracks = sequence.Tracks.Select(TrackManifest),
+    };
+
+    /// <summary>Builds one stable metadata projection for a SEP track.</summary>
+    /// <param name="track">Validated track metadata and safe event summary.</param>
+    /// <returns>A JSON-serializable projection without source event contents.</returns>
+    private static object TrackManifest(PlayStationSequenceTrack track) => new
+    {
+        number = track.Number,
+        headerOffset = track.HeaderOffset,
+        eventsOffset = track.EventsOffset,
+        endOffset = track.EndOffset,
+        ticksPerQuarterNote = track.TicksPerQuarterNote,
+        tempoMicrosecondsPerQuarterNote = track.TempoMicrosecondsPerQuarterNote,
+        events = new
+        {
+            eventCount = track.Events.EventCount,
+            channelEventCount = track.Events.ChannelEventCount,
+            metaEventCount = track.Events.MetaEventCount,
+            systemEventCount = track.Events.SystemEventCount,
+            totalDeltaTicks = track.Events.TotalDeltaTicks,
+            hasEndOfTrack = track.Events.HasEndOfTrack,
+        },
     };
 
     /// <summary>Finds a required ISO member by its canonical path.</summary>
@@ -112,6 +147,11 @@ internal static class BattleAudioExtractionStep
     /// <summary>Canonical ISO members forming one VAB header and SPU body pair.</summary>
     private sealed record SoundBankSource(string Name, string HeaderPath, string BodyPath);
 
-    /// <summary>Decoded and retained bytes for one source pair while the data pack is written.</summary>
-    private sealed record ExtractedSoundBank(SoundBankSource Source, SoundBankHeader Header, byte[] HeaderArchive, byte[] BodyArchive);
+    /// <summary>Decoded metadata and retained bytes for one source pair while the data pack is written.</summary>
+    private sealed record ExtractedSoundBank(
+        SoundBankSource Source,
+        SoundBankHeader Header,
+        PlayStationSequence Sequence,
+        byte[] HeaderArchive,
+        byte[] BodyArchive);
 }
