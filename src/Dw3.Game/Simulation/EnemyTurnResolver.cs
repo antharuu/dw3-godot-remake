@@ -114,7 +114,7 @@ public sealed class EnemyTurnResolver(BattleState state)
 
         int damage = state.ResolveHitSequence(BattleSide.Enemy, tech, attacker.Stats, target, false, hitIndex => state.Hits(rng).Technique(tech, DoubleMagicTechniqueSelector.DamageTechniqueForHit(tech, state.Techs, hitIndex), attacker, target, enemyAttacker: true));
         WakePlayerAfterHits(damage, rng);
-        ApplyEnemyEffectAfterHits(tech, state.LastResolvedDamage, rng);
+        ApplyEnemyEffectAfterHits(tech, target, state.LastResolvedDamage, rng);
 
         state.ConsumeCharge(BattleSide.Enemy);
         EndTurn();
@@ -287,13 +287,14 @@ public sealed class EnemyTurnResolver(BattleState state)
 
     /// <summary>Applies one supported non-multi technique effect after the enemy's landed sequence.</summary>
     /// <param name="tech">Technique whose effect may apply.</param>
+    /// <param name="target">Original player target of the valid hit sequence.</param>
     /// <param name="damage">Aggregate damage landed by the sequence.</param>
     /// <param name="rng">Shared battle random source.</param>
-    private void ApplyEnemyEffectAfterHits(TechData tech, int damage, IBattleRng rng)
+    private void ApplyEnemyEffectAfterHits(TechData tech, BattleFighter target, int damage, IBattleRng rng)
     {
         if (state.AnyActionHitLanded && tech.Effect != BattleTechniqueEffect.MultiHit)
         {
-            state.ApplyTechniqueEffect(BattleSide.Enemy, tech, rng, damage);
+            state.ApplyTechniqueEffect(BattleSide.Enemy, tech, rng, damage, target);
         }
     }
 

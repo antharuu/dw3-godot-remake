@@ -12,8 +12,9 @@ public static class BattleTechniqueEffectResolver
     /// <param name="technique">Technique holding the extracted effect fields.</param>
     /// <param name="rng">Shared battle random stream.</param>
     /// <param name="landedDamage">Formula damage before HP clamping from the action's landed sequence, used by the drain formula.</param>
+    /// <param name="landedTarget">Original target of a valid landed hit, retained for effect-6 after lethal ordinary damage.</param>
     /// <returns>Whether this bounded resolver supports the effect, regardless of its resistance roll.</returns>
-    public static bool ApplyLanded(BattleState state, BattleSide attackerSide, TechData technique, IBattleRng rng, int landedDamage)
+    public static bool ApplyLanded(BattleState state, BattleSide attackerSide, TechData technique, IBattleRng rng, int landedDamage, BattleFighter? landedTarget = null)
     {
         switch (technique.Effect)
         {
@@ -34,7 +35,7 @@ public static class BattleTechniqueEffectResolver
                 _ = state.InflictSleep(attackerSide, technique.EffectChance, technique.EffectPower, rng);
                 return true;
             case BattleTechniqueEffect.KnockOut:
-                _ = state.TryImmediateKnockOut(attackerSide, technique.EffectChance, rng);
+                ApplyKnockOut(state, attackerSide, technique.EffectChance, rng, landedTarget);
                 return true;
             case BattleTechniqueEffect.Drain:
                 _ = BattleResourceEffects.DrainHp(state, attackerSide, technique.EffectChance, technique.EffectPower, landedDamage, rng);
@@ -88,4 +89,17 @@ public static class BattleTechniqueEffectResolver
         BattleTechniqueEffect.DrainMp or BattleTechniqueEffect.EnemyOnly => false,
         _ => true,
     };
+
+    /// <summary>Applies effect 6 through its normal direct contract or the narrower post-hit contract.</summary>
+    /// <param name="state">Battle receiving the effect.</param>
+    /// <param name="attackerSide">Side that landed the technique.</param>
+    /// <param name="chance">Extracted source chance.</param>
+    /// <param name="rng">Shared battle random stream.</param>
+    /// <param name="landedTarget">Original target captured by the valid action, if any.</param>
+    private static void ApplyKnockOut(BattleState state, BattleSide attackerSide, int chance, IBattleRng rng, BattleFighter? landedTarget)
+    {
+        _ = landedTarget is null
+            ? state.TryImmediateKnockOut(attackerSide, chance, rng)
+            : BattleKnockOutResolver.TryApplyAfterLandedHit(state, attackerSide, landedTarget, chance, rng);
+    }
 }

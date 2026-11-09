@@ -631,6 +631,52 @@ public sealed class BattleTechniqueEffectTests
         Assert.Equal(0, target.Hp);
     }
 
+    /// <summary>Verifies that effect 6 consumes its source roll after each valid player hit, including an ordinary hit that already knocked the enemy out.</summary>
+    /// <param name="enemyHp">HP of the original enemy target before the landed hit.</param>
+    /// <param name="includeEnemyReserve">Whether the enemy can relay to a living reserve after the action.</param>
+    /// <param name="expectedOutcome">Outcome after the player action.</param>
+    [Theory]
+    [InlineData(100, false, BattleOutcome.Won)]
+    [InlineData(1, true, BattleOutcome.None)]
+    public void PlayerTechnique_ImmediateKnockOut_ConsumesEffectRollAfterNonLethalOrLethalHit(int enemyHp, bool includeEnemyReserve, BattleOutcome expectedOutcome)
+    {
+        BattleState state = CreateState(enemyHp, includeEnemyReserve);
+        var rng = new CountingRng(0, 0);
+        var technique = new TechData { Icon = BattleConst.TechPhysical, Accuracy = 128, Effect = BattleTechniqueEffect.KnockOut, EffectChance = 127, Power = 1 };
+
+        Assert.True(state.PlayerTechnique(technique, rng));
+
+        Assert.Equal(1, Assert.Single(state.LastHitEvents).Damage);
+        Assert.Equal(0, state.Enemies[0]!.Hp);
+        Assert.Equal(expectedOutcome, state.Outcome);
+        Assert.Equal(2, rng.CallCount);
+        Assert.Equal(includeEnemyReserve ? 1 : -1, state.ActiveEnemy);
+    }
+
+    /// <summary>Verifies that effect 6 consumes its source roll after each valid enemy hit, including an ordinary hit that already knocked the partner out.</summary>
+    /// <param name="playerHp">HP of the original player target before the landed hit.</param>
+    /// <param name="includePlayerReserve">Whether the player can relay to a living reserve after the action.</param>
+    /// <param name="expectedOutcome">Outcome after the enemy action.</param>
+    [Theory]
+    [InlineData(100, false, BattleOutcome.Lost)]
+    [InlineData(1, true, BattleOutcome.None)]
+    public void EnemyTechnique_ImmediateKnockOut_ConsumesEffectRollAfterNonLethalOrLethalHit(int playerHp, bool includePlayerReserve, BattleOutcome expectedOutcome)
+    {
+        BattleState state = CreateState();
+        state.Players[0]!.Hp = playerHp;
+        state.Players[1] = includePlayerReserve ? state.Players[1] : null;
+        var rng = new CountingRng(0, 0);
+        var technique = new TechData { Icon = BattleConst.TechPhysical, Accuracy = 128, Effect = BattleTechniqueEffect.KnockOut, EffectChance = 127, Power = 1 };
+
+        Assert.True(state.EnemyTechnique(technique, rng));
+
+        Assert.Equal(1, Assert.Single(state.LastHitEvents).Damage);
+        Assert.Equal(0, state.Players[0]!.Hp);
+        Assert.Equal(expectedOutcome, state.Outcome);
+        Assert.Equal(2, rng.CallCount);
+        Assert.Equal(0, state.ActivePlayer);
+    }
+
     /// <summary>Verifies that catalogue effect 1 is explicitly accepted as an ordinary action instead of falling through the unsupported-effect default.</summary>
     [Fact]
     public void TechniqueEffect_ExplicitNoSpecialEffect_IsRecognizedWithoutMutation()

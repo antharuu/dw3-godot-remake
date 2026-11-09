@@ -536,8 +536,9 @@ public sealed class BattleState
     /// <param name="technique">Technique supplying the extracted effect fields.</param>
     /// <param name="rng">Shared battle random source.</param>
     /// <param name="resolvedDamage">Aggregate formula damage before HP clamping from the action's sequence, used by the drain formula.</param>
-    internal void ApplyTechniqueEffect(BattleSide attackerSide, TechData technique, IBattleRng rng, int resolvedDamage) =>
-        _ = BattleTechniqueEffectResolver.ApplyLanded(this, attackerSide, technique, rng, resolvedDamage);
+    /// <param name="landedTarget">Original target retained by a valid hit sequence for post-hit effects.</param>
+    internal void ApplyTechniqueEffect(BattleSide attackerSide, TechData technique, IBattleRng rng, int resolvedDamage, BattleFighter? landedTarget = null) =>
+        _ = BattleTechniqueEffectResolver.ApplyLanded(this, attackerSide, technique, rng, resolvedDamage, landedTarget);
 
     /// <summary>Gets the active fighter on one side.</summary>
     /// <param name="side">Requested side.</param>
@@ -609,7 +610,7 @@ public sealed class BattleState
     private void LandPlayerHits(BattleFighter target, TechData tech, BattleFighter attacker, IBattleRng rng, bool technique)
     {
         int damage = ResolveHitSequence(BattleSide.Player, tech, attacker.Stats, target, false, hitIndex => ResolvePlayerHit(tech, DoubleMagicTechniqueSelector.DamageTechniqueForHit(tech, Techs, hitIndex), attacker, target, rng, technique));
-        ApplyPlayerEffectAfterHits(tech, damage, _hitSequence.ResolvedDamage, rng);
+        ApplyPlayerEffectAfterHits(tech, target, damage, _hitSequence.ResolvedDamage, rng);
         CheckOutcome();
         ReactToPlayerHits(target, damage, rng);
         MarkFought();
@@ -630,10 +631,11 @@ public sealed class BattleState
 
     /// <summary>Applies an ordinary landed technique effect once, while multi-hit itself is represented by its ordered events.</summary>
     /// <param name="tech">Technique that may carry a supported non-multi effect.</param>
+    /// <param name="target">Original enemy target of the valid hit sequence.</param>
     /// <param name="damage">Total HP actually removed by the action, used for the wake-on-hit roll only.</param>
     /// <param name="resolvedDamage">Total formula damage before HP clamping, fed to the drain formula.</param>
     /// <param name="rng">Shared battle random source.</param>
-    private void ApplyPlayerEffectAfterHits(TechData tech, int damage, int resolvedDamage, IBattleRng rng)
+    private void ApplyPlayerEffectAfterHits(TechData tech, BattleFighter target, int damage, int resolvedDamage, IBattleRng rng)
     {
         if (damage > 0)
         {
@@ -642,7 +644,7 @@ public sealed class BattleState
 
         if (AnyActionHitLanded && tech.Effect != BattleTechniqueEffect.MultiHit)
         {
-            ApplyTechniqueEffect(BattleSide.Player, tech, rng, resolvedDamage);
+            ApplyTechniqueEffect(BattleSide.Player, tech, rng, resolvedDamage, target);
         }
     }
 
