@@ -45,6 +45,27 @@ public static class BattleTechniqueEffect
     /// <summary>Temporarily forbids digivolution.</summary>
     public const int NoDigivolve = 14;
 
+    /// <summary>Runs an active or side HP item-tech.</summary>
+    public const int ItemHeal = 15;
+
+    /// <summary>Queues the item-tech automatic recovery.</summary>
+    public const int ItemAutoRecovery = 16;
+
+    /// <summary>Cures poison through an active or side item-tech.</summary>
+    public const int ItemCurePoison = 17;
+
+    /// <summary>Cures paralysis through an active or side item-tech.</summary>
+    public const int ItemCureParalysis = 18;
+
+    /// <summary>Cures confusion through an active or side item-tech.</summary>
+    public const int ItemCureConfusion = 19;
+
+    /// <summary>Cures every supported status through an active or side item-tech.</summary>
+    public const int ItemCureAll = 20;
+
+    /// <summary>Revives knocked-out existing partners.</summary>
+    public const int ItemRevive = 21;
+
     /// <summary>Temporarily lowers attack.</summary>
     public const int LowerAttack = 26;
 
@@ -74,4 +95,7 @@ public static class BattleTechniqueEffect
 
     /// <summary>Runs the encounter-specific battle-ending action.</summary>
     public const int EndBattle = 35;
+
+    /// <summary>Revives and fully restores every existing partner.</summary>
+    public const int ItemFullRestore = 36;
 }

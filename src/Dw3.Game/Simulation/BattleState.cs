@@ -92,6 +92,9 @@ public sealed class BattleState
     /// <summary>Gets the item successfully taken by the most recent player steal, consumed once by the caller when it commits the transfer.</summary>
     public int? PendingStolenItem { get; private set; }
 
+    /// <summary>Gets the source-defined deferred recovery requested by item-tech 0xBD, or null when none is pending.</summary>
+    public BattleAutoRecovery? PendingAutoRecovery { get; private set; }
+
     /// <summary>Gets the player side's remaining event delay.</summary>
     public int NextPlayerTurn => _turnScheduler.RemainingTurnDelay(BattleSide.Player);
 
@@ -539,6 +542,10 @@ public sealed class BattleState
         PendingStolenItem = null;
         return item;
     }
+
+    /// <summary>Records an accepted source-deferred item recovery without touching inventory stock.</summary>
+    /// <param name="recovery">The active fighter and source technique that will recover later.</param>
+    internal void QueueAutoRecovery(BattleAutoRecovery recovery) => PendingAutoRecovery = recovery;
 
     /// <summary>Applies one supported technique effect after its damage has landed.</summary>
     /// <param name="attackerSide">Side that landed the technique.</param>

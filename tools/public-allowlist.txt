@@ -561,6 +561,7 @@ src/Dw3.Game/Simulation/AreaBattle.cs
 src/Dw3.Game/Simulation/AreaMap.cs
 src/Dw3.Game/Simulation/BattleActionDelay.cs
 src/Dw3.Game/Simulation/BattleActionDelayKind.cs
+src/Dw3.Game/Simulation/BattleAutoRecovery.cs
 src/Dw3.Game/Simulation/BattleCommand.cs
 src/Dw3.Game/Simulation/BattleConst.cs
 src/Dw3.Game/Simulation/BattleControlStatusDefinition.cs
@@ -580,6 +581,9 @@ src/Dw3.Game/Simulation/BattleHitSequence.cs
 src/Dw3.Game/Simulation/BattleHitRules.cs
 src/Dw3.Game/Simulation/BattleItem.cs
 src/Dw3.Game/Simulation/BattleItemEffects.cs
+src/Dw3.Game/Simulation/BattleItemTechniqueConsumer.cs
+src/Dw3.Game/Simulation/BattleItemTechniqueRequest.cs
+src/Dw3.Game/Simulation/BattleItemTechniqueUseResult.cs
 src/Dw3.Game/Simulation/BattleKnockOutResolver.cs
 src/Dw3.Game/Simulation/BattleList.cs
 src/Dw3.Game/Simulation/BattleMenuController.cs
@@ -783,6 +787,7 @@ tests/Dw3.Game.Tests/BattleEnemyAiVectorGenerator.cs
 tests/Dw3.Game.Tests/BattleEnemyAiVectorTests.cs
 tests/Dw3.Game.Tests/BattleHitResolverTests.cs
 tests/Dw3.Game.Tests/BattleHitSequenceTests.cs
+tests/Dw3.Game.Tests/BattleItemTechniqueConsumerTests.cs
 tests/Dw3.Game.Tests/BattleTechniqueEffectTests.cs
 tests/Dw3.Game.Tests/BattlePoisonStatusTests.cs
 tests/Dw3.Game.Tests/BattleOutcomeTransitionTests.cs
