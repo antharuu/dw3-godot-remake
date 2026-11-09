@@ -82,6 +82,7 @@ src/Dw3.Extractor/ActionExtractionStep.cs
 src/Dw3.Extractor/ActionFrame.cs
 src/Dw3.Extractor/ActionSet.cs
 src/Dw3.Extractor/BattleExtractionStep.cs
+src/Dw3.Extractor/BattleAudioExtractionStep.cs
 src/Dw3.Extractor/BattleHudExtractionStep.cs
 src/Dw3.Extractor/BattleModelDomainWriter.cs
 src/Dw3.Extractor/BattleModelExtraction.cs
@@ -177,6 +178,8 @@ src/Dw3.Formats/Battle/BattleStageDecoder.cs
 src/Dw3.Formats/Battle/BattleStageInfo.cs
 src/Dw3.Formats/Battle/BattleStageJsonWriter.cs
 src/Dw3.Formats/Battle/BattleStageLightEntry.cs
+src/Dw3.Formats/Battle/SoundBankHeader.cs
+src/Dw3.Formats/Battle/SoundBankHeaderDecoder.cs
 src/Dw3.Formats/Battle/BattleTableRecord.cs
 src/Dw3.Formats/Battle/BattleTexture.cs
 src/Dw3.Formats/Battle/BattleTextureCombination.cs
@@ -720,6 +723,7 @@ tests/Dw3.Extractor.Tests/BattleReportJsonWriterTests.cs
 tests/Dw3.Extractor.Tests/EncounterWritersTests.cs
 tests/Dw3.Extractor.Tests/BattleModelDomainWriterTests.cs
 tests/Dw3.Extractor.Tests/CliTests.cs
+tests/Dw3.Extractor.Tests/BattleAudioExtractionStepTests.cs
 tests/Dw3.Extractor.Tests/CollisionManifestWriterTests.cs
 tests/Dw3.Extractor.Tests/DialogueAnalysisCommandTests.cs
 tests/Dw3.Extractor.Tests/DialogueDomainWriterTests.cs
@@ -736,6 +740,7 @@ tests/Dw3.Formats.Tests/Battle/BattleDataDecoderTests.cs
 tests/Dw3.Formats.Tests/Battle/BattleHudStageReportTests.cs
 tests/Dw3.Formats.Tests/Battle/BattleModelAssetsTests.cs
 tests/Dw3.Formats.Tests/Battle/BattleModelDecoderTests.cs
+tests/Dw3.Formats.Tests/Battle/SoundBankHeaderDecoderTests.cs
 tests/Dw3.Formats.Tests/Binary/BinarySpanReaderTests.cs
 tests/Dw3.Formats.Tests/Binary/Png/PngEncoderTests.cs
 tests/Dw3.Formats.Tests/Binary/RlenDecoderTests.cs
