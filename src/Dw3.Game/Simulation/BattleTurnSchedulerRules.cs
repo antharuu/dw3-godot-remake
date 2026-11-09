@@ -3,12 +3,29 @@ namespace Dw3Production.Simulation;
 /// <summary>Provides source-qualified selection and opening rules for <see cref="BattleTurnScheduler"/>.</summary>
 internal static class BattleTurnSchedulerRules
 {
-    /// <summary>Tests the optional encounter ambush chance.</summary>
-    /// <param name="ambushChance">Encounter chance, zero when disabled.</param>
+    /// <summary>Tests the optional encounter ambush chance after its source level scaling.</summary>
+    /// <param name="ambushChance">Raw encounter chance, zero when disabled.</param>
+    /// <param name="playerLevel">Current level of the first active partner.</param>
+    /// <param name="enemyLevel">Level of the first active enemy.</param>
     /// <param name="rng">Injected shared source.</param>
     /// <returns>Whether the enemy receives the opening turn.</returns>
-    internal static bool IsAmbush(int ambushChance, IBattleRng rng) =>
-        ambushChance > 0 && (rng.NextValue() % 128) < ambushChance;
+    internal static bool IsAmbush(int ambushChance, int playerLevel, int enemyLevel, IBattleRng rng)
+    {
+        if (ambushChance == 0)
+        {
+            return false;
+        }
+
+        int roll = rng.NextValue() % 128;
+        if (roll == 0)
+        {
+            return true;
+        }
+
+        int gap = 32 - playerLevel;
+        int chance = ambushChance * (gap - enemyLevel) / 32;
+        return roll < chance;
+    }
 
     /// <summary>Returns the event kind associated with a turn side.</summary>
     /// <param name="side">Battle side.</param>

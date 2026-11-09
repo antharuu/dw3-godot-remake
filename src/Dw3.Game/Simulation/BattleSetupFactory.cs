@@ -13,6 +13,22 @@ public static class BattleSetupFactory
     /// bits above hold learning flags, so every text and technique lookup must apply it first.</summary>
     public const int SkillIdMask = 0x1FFF;
 
+    /// <summary>Copies every encounter-owned rule field into a battle setup before the shared state is created.</summary>
+    /// <param name="entry">Decoded encounter that supplies opening and restriction values.</param>
+    /// <param name="setup">Prepared setup receiving the bounded encounter values.</param>
+    public static void ApplyEncounterSettings(EncounterEntry entry, BattleSetup setup)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+        ArgumentNullException.ThrowIfNull(setup);
+        setup.AmbushChance = entry.AmbushChance;
+        setup.EncounterKind = entry.Kind;
+        Array.Clear(setup.Blocks);
+        for (var index = 0; index < Math.Min(entry.Blocks.Count, setup.Blocks.Length); index++)
+        {
+            setup.Blocks[index] = entry.Blocks[index];
+        }
+    }
+
     /// <summary>Strips the learning flags from a partner skill word.</summary>
     /// <param name="skill">Skill word as stored in the Digimon table.</param>
     /// <returns>The technique id, 0..0x1FFF. 0 means an empty skill slot.</returns>

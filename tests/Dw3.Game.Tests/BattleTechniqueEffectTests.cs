@@ -47,6 +47,29 @@ public sealed class BattleTechniqueEffectTests
         Assert.NotEqual(0, Assert.IsType<BattleFighter>(state.ActiveEnemyFighter).Flags & flag);
     }
 
+    /// <summary>Verifies that encounter blocks reject their matching player-originated control effect through the real technique path.</summary>
+    [Theory]
+    [InlineData(BattleTechniqueEffect.Paralysis, 1, FighterFlags.Paralyzed)]
+    [InlineData(BattleTechniqueEffect.Confusion, 2, FighterFlags.Confused)]
+    [InlineData(BattleTechniqueEffect.Sleep, 3, FighterFlags.Asleep)]
+    public void PlayerTechnique_BlockedControlEffect_DoesNotApplyTheBlockedStatus(int effect, int block, int flag)
+    {
+        BattleState state = CreateState();
+        state.Blocks[block] = 1;
+        var technique = new TechData
+        {
+            Accuracy = 128,
+            Effect = effect,
+            EffectChance = 127,
+            EffectPower = 20,
+            Power = 1,
+        };
+
+        Assert.True(state.PlayerTechnique(technique, new SequenceRng(0, 0, 0)));
+
+        Assert.Equal(0, Assert.IsType<BattleFighter>(state.ActiveEnemyFighter).Flags & flag);
+    }
+
     /// <summary>Verifies that an enemy technique uses the same supported control mapping against the active player.</summary>
     [Fact]
     public void EnemyTechnique_LandedSleepEffect_InflictsSleepOnPlayer()

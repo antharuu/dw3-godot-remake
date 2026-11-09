@@ -2,6 +2,7 @@ using System.Reflection;
 using Dw3Production;
 using Dw3Production.Simulation;
 using Xunit;
+using EncounterEntry = Dw3Production.Conversion.EncounterEntry;
 
 namespace Dw3.Game.Tests;
 
@@ -34,6 +35,20 @@ public sealed class BattleHostOpeningTests
 
         Assert.Equal(1, rng.DrawCount);
         Assert.Equal(expected, state.NextActor);
+    }
+
+    /// <summary>Verifies that encounter-only opening fields are copied together before the production state is built.</summary>
+    [Fact]
+    public void ApplyEncounterSettings_CopiesAmbushKindAndEveryBlock()
+    {
+        var setup = new BattleSetup();
+        var encounter = new EncounterEntry(47, [], [], 19, 6, [1, 0, 2, 0, 0, 3, 0, 4, 0, 5, 0, 6]);
+
+        BattleSetupFactory.ApplyEncounterSettings(encounter, setup);
+
+        Assert.Equal(19, setup.AmbushChance);
+        Assert.Equal(6, setup.EncounterKind);
+        Assert.Equal([1, 0, 2, 0, 0, 3, 0, 4, 0, 5, 0, 6], setup.Blocks);
     }
 
     private static BattleSetup Setup()

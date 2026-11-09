@@ -19,6 +19,40 @@ public sealed class BattleTurnSchedulerTests
         Assert.Equal(0, scheduler.Elapsed);
     }
 
+    /// <summary>Verifies that an encounter ambush uses the source level-scaled chance before it changes the opening side.</summary>
+    [Fact]
+    public void InitializeOpening_AmbushUsesTheLevelScaledChance()
+    {
+        var scheduler = new BattleTurnScheduler();
+
+        scheduler.InitializeOpening(
+            playerSpeed: 100,
+            enemySpeed: 100,
+            ambushChance: 32,
+            playerLevel: 16,
+            enemyLevel: 8,
+            new SequenceRng(7));
+
+        Assert.Equal(BattleSide.Enemy, scheduler.PopNext().Side);
+    }
+
+    /// <summary>Verifies that a nonzero roll does not ambush when the source level scaling reduces the chance below it.</summary>
+    [Fact]
+    public void InitializeOpening_AmbushDoesNotUseTheRawEncounterChance()
+    {
+        var scheduler = new BattleTurnScheduler();
+
+        scheduler.InitializeOpening(
+            playerSpeed: 100,
+            enemySpeed: 100,
+            ambushChance: 32,
+            playerLevel: 16,
+            enemyLevel: 8,
+            new SequenceRng(8, 127));
+
+        Assert.Equal(BattleSide.Player, scheduler.PopNext().Side);
+    }
+
     [Fact]
     public void PopNextUsesTheLaterTurnSlotForAnEqualDueTime()
     {

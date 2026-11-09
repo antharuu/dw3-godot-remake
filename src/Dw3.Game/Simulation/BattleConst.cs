@@ -30,6 +30,33 @@ public static class BattleConst
     /// <summary>Index in an encounter's block flags of the flag that prevents player-originated poison.</summary>
     public const int BlockPoison = 0;
 
+    /// <summary>Index in an encounter's block flags of the flag that prevents player-originated paralysis.</summary>
+    public const int BlockParalysis = 1;
+
+    /// <summary>Index in an encounter's block flags of the flag that prevents player-originated confusion.</summary>
+    public const int BlockConfusion = 2;
+
+    /// <summary>Index in an encounter's block flags of the flag that prevents player-originated sleep.</summary>
+    public const int BlockSleep = 3;
+
+    /// <summary>Index in an encounter's block flags of the flag that prevents player-originated knock-out effects.</summary>
+    public const int BlockKnockOut = 4;
+
+    /// <summary>Index in an encounter's block flags of the flag that prevents player-originated drain effects.</summary>
+    public const int BlockDrain = 5;
+
+    /// <summary>Index in an encounter's block flags of the flag that prevents player-originated steal effects.</summary>
+    public const int BlockSteal = 7;
+
+    /// <summary>Index in an encounter's block flags of the flag that prevents player-originated attack lowering.</summary>
+    public const int BlockLowerAttack = 8;
+
+    /// <summary>Index in an encounter's block flags of the flag that prevents player-originated defense lowering.</summary>
+    public const int BlockLowerDefense = 9;
+
+    /// <summary>Index in an encounter's block flags of the flag that prevents player-originated speed lowering.</summary>
+    public const int BlockLowerSpeed = 10;
+
     /// <summary>Elemental resistance slot paired with poison resistance.</summary>
     public const int PoisonElementResistance = 1;
 

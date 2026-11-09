@@ -24,10 +24,20 @@ public sealed class BattleTurnScheduler
     /// <param name="ambushChance">Encounter ambush chance, zero when disabled.</param>
     /// <param name="rng">Injected shared battle random source.</param>
     public void InitializeOpening(int playerSpeed, int enemySpeed, int ambushChance, IBattleRng rng)
+        => InitializeOpening(playerSpeed, enemySpeed, ambushChance, playerLevel: 1, enemyLevel: 1, rng);
+
+    /// <summary>Clears the queue and initializes the normal or source-level-scaled ambush opening.</summary>
+    /// <param name="playerSpeed">Active player speed.</param>
+    /// <param name="enemySpeed">Active enemy speed.</param>
+    /// <param name="ambushChance">Raw encounter ambush chance, zero when disabled.</param>
+    /// <param name="playerLevel">Level used by the source ambush scaling.</param>
+    /// <param name="enemyLevel">Enemy level used by the source ambush scaling.</param>
+    /// <param name="rng">Injected shared battle random source.</param>
+    public void InitializeOpening(int playerSpeed, int enemySpeed, int ambushChance, int playerLevel, int enemyLevel, IBattleRng rng)
     {
         Reset();
         int playerDelay = BattleActionDelay.Calculate(BattleActionDelayKind.NormalTurn, playerSpeed, enemySpeed, 0, rng);
-        if (BattleTurnSchedulerRules.IsAmbush(ambushChance, rng))
+        if (BattleTurnSchedulerRules.IsAmbush(ambushChance, playerLevel, enemyLevel, rng))
         {
             EnqueueTurn(BattleSide.Enemy, 0);
             EnqueueTurn(BattleSide.Player, playerDelay / 2);

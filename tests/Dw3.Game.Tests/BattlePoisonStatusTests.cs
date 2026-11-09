@@ -83,6 +83,25 @@ public sealed class BattlePoisonStatusTests
         Assert.Equal(BattleOutcome.Won, state.Outcome);
     }
 
+    /// <summary>Verifies that periodic damage uses the same enemy-reserve relay as an offensive knock-out.</summary>
+    [Fact]
+    public void PoisonTick_KnocksOutActiveEnemy_ActivatesTheNextLivingReserve()
+    {
+        BattleState state = CreateState(enemyHp: 5);
+        state.Enemies[1] = BattleFighter.FromEnemy(Enemy(id: 4, hp: 100, poisonResistance: 0));
+        Assert.True(state.InflictPoison(BattleSide.Player, chance: 127, power: 20, new SequenceRng(0)));
+
+        for (var round = 0; round < 5; round++)
+        {
+            AdvanceOneRound(state);
+        }
+
+        Assert.Equal(0, Assert.IsType<BattleFighter>(state.Enemies[0]).Hp);
+        Assert.Equal(1, state.ActiveEnemy);
+        Assert.Equal(4, Assert.IsType<BattleFighter>(state.ActiveEnemyFighter).Id);
+        Assert.Equal(BattleOutcome.None, state.Outcome);
+    }
+
     private static void AdvanceOneRound(BattleState state)
     {
         Assert.True(state.PlayerSwitch(state.ActivePlayer == 0 ? 1 : 0));

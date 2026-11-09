@@ -61,6 +61,11 @@ public sealed class BattleStatusCoordinator(BattleState state, BattleTurnSchedul
     /// <returns>Whether the status was applied.</returns>
     public bool InflictControl(BattleSide attackerSide, int chance, int strength, BattleControlStatusDefinition definition, IBattleRng rng)
     {
+        if (attackerSide == BattleSide.Player && IsEncounterBlocked(definition.Flag))
+        {
+            return false;
+        }
+
         BattleFighter? attacker = state.FighterFor(attackerSide);
         BattleFighter? target = state.FighterFor(BattlePoisonRules.Opposite(attackerSide));
         if (attacker is not { IsKnockedOut: false } || target is not { IsKnockedOut: false })
@@ -194,6 +199,21 @@ public sealed class BattleStatusCoordinator(BattleState state, BattleTurnSchedul
     private static bool IsStatusEvent(BattleScheduledEventKind kind) =>
         kind is BattleScheduledEventKind.PoisonDamage or BattleScheduledEventKind.ParalysisEnd or BattleScheduledEventKind.ConfusionEnd or BattleScheduledEventKind.SleepEnd;
 
+    /// <summary>Tests whether the encounter forbids the player-originated control status represented by one fighter flag.</summary>
+    /// <param name="flag">Control status flag that a technique would apply.</param>
+    /// <returns>Whether the matching encounter block is nonzero.</returns>
+    private bool IsEncounterBlocked(int flag)
+    {
+        int block = flag switch
+        {
+            FighterFlags.Paralyzed => BattleConst.BlockParalysis,
+            FighterFlags.Confused => BattleConst.BlockConfusion,
+            FighterFlags.Asleep => BattleConst.BlockSleep,
+            _ => -1,
+        };
+        return block >= 0 && state.Blocks[block] != 0;
+    }
+
     /// <summary>Processes one persistent-status event.</summary>
     /// <param name="scheduled">Due event.</param>
     private void ProcessEvent(BattleScheduledEvent scheduled)
@@ -222,6 +242,7 @@ public sealed class BattleStatusCoordinator(BattleState state, BattleTurnSchedul
             fighter.RefreshStats();
             fighter.TakeDamage(BattlePoisonRules.Damage(scheduled.Value, fighter));
             state.CheckOutcome();
+            state.ResolveEnemyReserve();
         }
 
         if (fighter.IsKnockedOut)

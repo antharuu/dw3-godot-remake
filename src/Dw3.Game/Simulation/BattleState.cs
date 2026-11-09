@@ -73,7 +73,7 @@ public sealed class BattleState
     /// fighter table techniques on its turn and its counter-attack.</summary>
     public IReadOnlyDictionary<int, TechData> Techs { get; set; } = new Dictionary<int, TechData>();
 
-    /// <summary>Gets or sets the twelve block flags of the encounter. Only <see cref="BattleConst.BlockRunAway"/> is applied today.</summary>
+    /// <summary>Gets or sets the twelve block flags of the encounter that restrict player-originated effects and fleeing.</summary>
     public int[] Blocks { get; set; } = new int[12];
 
     /// <summary>Gets or sets how the battle ended. Once set to a value other than <see cref="BattleOutcome.None"/> it is never replaced by the outcome check.</summary>
@@ -507,11 +507,26 @@ public sealed class BattleState
     internal int ResolveHitSequence(BattleSide side, TechData tech, BattleStats? attackerStats, BattleFighter target, bool isCounter, Func<BattleHitResult> resolve) =>
         _hitSequence.Resolve(side, tech, attackerStats, target, isCounter, resolve, CheckAndReportOutcome);
 
+    /// <summary>The enemy side brings in its next living fighter when the active one falls to a hit or periodic damage.</summary>
+    internal void ResolveEnemyReserve()
+    {
+        if (ActiveEnemyFighter is { IsKnockedOut: true })
+        {
+            ActiveEnemy = BattleRoster.NextLivingIndex(Enemies, ActiveEnemy);
+        }
+    }
+
     /// <summary>Seeds the EU relative queue with the encounter opening rule.</summary>
     /// <param name="ambushChance">Encounter ambush probability, or zero when disabled.</param>
     /// <param name="rng">Shared injected battle random source.</param>
     private void SeedTurnClock(int ambushChance, IBattleRng rng) =>
-        _turnScheduler.InitializeOpening(BattleFighterTiming.SpeedOf(ActivePlayerFighter), BattleFighterTiming.SpeedOf(ActiveEnemyFighter), ambushChance, rng);
+        _turnScheduler.InitializeOpening(
+            BattleFighterTiming.SpeedOf(ActivePlayerFighter),
+            BattleFighterTiming.SpeedOf(ActiveEnemyFighter),
+            ambushChance,
+            ActivePlayerFighter?.Stats.Level ?? 0,
+            ActiveEnemyFighter?.Stats.Level ?? 0,
+            rng);
 
     /// <summary>Checks the battle outcome and returns whether the battle has ended. Used as the combined callback for hit sequences.</summary>
     /// <returns><see langword="true"/> when the battle outcome is no longer <see cref="BattleOutcome.None"/>.</returns>
@@ -576,7 +591,7 @@ public sealed class BattleState
             _enemyTurn.TryCounter(damage, rng);
         }
 
-        ResolveEnemySlot();
+        ResolveEnemyReserve();
     }
 
     /// <summary>Re-arms the player cadence after an ordinary completed action.</summary>
@@ -619,17 +634,6 @@ public sealed class BattleState
             }
         }
         while (any);
-    }
-
-    /// <summary>The enemy side brings in its next living
-    /// fighter when the active one falls to a hit. This reinforcement is distinct from the
-    /// enemy's own voluntary switch action (<see cref="EnemySwitch"/>).</summary>
-    private void ResolveEnemySlot()
-    {
-        if (ActiveEnemyFighter is { IsKnockedOut: true })
-        {
-            ActiveEnemy = BattleRoster.NextLivingIndex(Enemies, ActiveEnemy);
-        }
     }
 
     /// <summary>Records that the active partner took a turn, so it gets a share of the experience.</summary>

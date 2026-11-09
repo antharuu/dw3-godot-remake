@@ -41,12 +41,11 @@ public partial class GameHost
             {
                 Battle = encounterIndex,
                 Stage = BattleStageResolver.Resolve(encounters, encounterIndex),
-                EncounterKind = entry.Kind,
                 Partners = BattleSetupFactory.BuildParty(fighters, TestTeamGrowth.Level, party),
                 Enemies = BattleSetupFactory.BuildEnemies(encounters, encounterIndex, fighters),
                 Blocks = new int[12],
             };
-            CopyBlocks(entry, setup);
+            BattleSetupFactory.ApplyEncounterSettings(entry, setup);
             BattleFlowController flow = BattleSetupFactory.BuildFlow(
                 fighters,
                 techs,
@@ -69,17 +68,6 @@ public partial class GameHost
         {
             ArgumentNullException.ThrowIfNull(rng);
             return BattleState.InitFighters(setup, digimon, rng);
-        }
-
-        /// <summary>Copies the encounter's bounded block list into the simulation setup.</summary>
-        /// <param name="entry">Decoded encounter entry.</param>
-        /// <param name="setup">Setup receiving the block values.</param>
-        private static void CopyBlocks(EncounterEntry entry, BattleSetup setup)
-        {
-            for (var i = 0; i < Math.Min(entry.Blocks.Count, setup.Blocks.Length); i++)
-            {
-                setup.Blocks[i] = entry.Blocks[i];
-            }
         }
     }
 }
