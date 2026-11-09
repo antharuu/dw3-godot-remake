@@ -12,6 +12,9 @@ public enum BattleScheduledEventKind
     /// <summary>An immediate interrupt that precedes ordinary turns.</summary>
     Interrupt,
 
+    /// <summary>An enemy-triggered return of the active partner to its base form.</summary>
+    Dedigivolve,
+
     /// <summary>Recurring poison damage attached to one fighter.</summary>
     PoisonDamage,
 

@@ -566,6 +566,7 @@ src/Dw3.Game/Simulation/BattleConst.cs
 src/Dw3.Game/Simulation/BattleControlStatusDefinition.cs
 src/Dw3.Game/Simulation/BattleControlStatusRules.cs
 src/Dw3.Game/Simulation/BattleDefaultOpeningRng.cs
+src/Dw3.Game/Simulation/BattleDedigivolveResolver.cs
 src/Dw3.Game/Simulation/BattleEnemy.cs
 src/Dw3.Game/Simulation/BattleEnemyAi.cs
 src/Dw3.Game/Simulation/BattleFighter.cs

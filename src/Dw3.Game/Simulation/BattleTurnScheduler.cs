@@ -71,12 +71,18 @@ public sealed class BattleTurnScheduler
     /// <param name="kind">Immediate event class.</param>
     /// <param name="side">Side associated with the event.</param>
     /// <param name="requestedDelay">The requested priority delay, normally one.</param>
-    public void EnqueuePriority(BattleScheduledEventKind kind, BattleSide side, int requestedDelay)
+    /// <param name="fighterSlot">Fighter affected by the priority event, or -1 for a side-wide event.</param>
+    public void EnqueuePriority(BattleScheduledEventKind kind, BattleSide side, int requestedDelay, int fighterSlot = -1)
     {
         int shift = Math.Max(requestedDelay, 2);
         ShiftAll(shift);
-        Add(new BattleScheduledEvent(kind, side, 1));
+        Add(new BattleScheduledEvent(kind, side, 1, fighterSlot));
     }
+
+    /// <summary>Queues the active partner's source-priority forced return to its base form.</summary>
+    /// <param name="fighterSlot">Active player slot selected when the enemy action landed.</param>
+    public void EnqueueDedigivolve(int fighterSlot) =>
+        EnqueuePriority(BattleScheduledEventKind.Dedigivolve, BattleSide.Player, requestedDelay: 1, fighterSlot);
 
     /// <summary>Creates or refreshes one fighter's pending poison damage event.</summary>
     /// <param name="side">Side containing the poisoned fighter.</param>

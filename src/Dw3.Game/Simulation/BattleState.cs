@@ -518,6 +518,14 @@ public sealed class BattleState
     /// <param name="side">Side whose active fighter's charge is cleared.</param>
     internal void ConsumeCharge(BattleSide side) => _modifierCoordinator.ConsumeCharge(side);
 
+    /// <summary>Queues the accepted enemy-only effect-7 transition for the active partner.</summary>
+    /// <param name="attackerSide">Side attempting the forced return.</param>
+    /// <param name="chance">Extracted effect chance in 128ths.</param>
+    /// <param name="rng">Shared battle random source.</param>
+    /// <returns><see langword="true"/> when an eligible active partner accepted the source roll.</returns>
+    internal bool TryQueueDedigivolve(BattleSide attackerSide, int chance, IBattleRng rng) =>
+        BattleDedigivolveResolver.TryQueue(attackerSide, ActivePlayer, ActivePlayerFighter, chance, rng, _turnScheduler);
+
     /// <summary>Records an item stolen from the enemy fighter so the host can commit the transfer to the player's stock.</summary>
     /// <param name="itemId">Item id taken from the enemy.</param>
     internal void SetPendingStolenItem(int itemId) => PendingStolenItem = itemId;

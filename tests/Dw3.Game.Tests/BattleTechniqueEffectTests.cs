@@ -551,6 +551,137 @@ public sealed class BattleTechniqueEffectTests
         Assert.Equal([0, 0, 0], state.Players[0]!.PersistentStatuses);
     }
 
+    /// <summary>Verifies that an accepted enemy effect-7 action returns the transformed active partner to its base form without changing HP or MP.</summary>
+    [Fact]
+    public void EnemyTechnique_AcceptedDedigivolve_ReturnsOnlyTheTransformedActivePartnerToBaseForm()
+    {
+        BattleState state = CreateState();
+        BattleFighter player = Assert.IsType<BattleFighter>(state.ActivePlayerFighter);
+        player.Id = 99;
+        player.Hp = 71;
+        player.Mp = 43;
+        player.Charge = 32;
+        var technique = new TechData { Icon = 2, Accuracy = 128, Effect = BattleTechniqueEffect.Dedigivolve, EffectChance = 127, Power = 0 };
+
+        Assert.True(state.EnemyTechnique(technique, new SequenceRng(0, 0)));
+
+        Assert.Equal(1, player.Id);
+        Assert.Equal(71, player.Hp);
+        Assert.Equal(43, player.Mp);
+        Assert.Equal(0, player.Charge);
+    }
+
+    /// <summary>Verifies that a rejected effect-7 chance preserves the transformed partner and consumes only the landed-hit and chance draws.</summary>
+    [Fact]
+    public void EnemyTechnique_RejectedDedigivolveRoll_PreservesTheTransformedPartner()
+    {
+        BattleState state = CreateState();
+        BattleFighter player = Assert.IsType<BattleFighter>(state.ActivePlayerFighter);
+        player.Id = 99;
+        player.Temporary = true;
+        player.Hp = 71;
+        player.Mp = 43;
+        player.Charge = 32;
+        var rng = new CountingRng(0, 1);
+        var technique = new TechData { Accuracy = 128, Effect = BattleTechniqueEffect.Dedigivolve, EffectChance = 1, Power = 0 };
+
+        Assert.True(state.EnemyTechnique(technique, rng));
+
+        Assert.Equal(99, player.Id);
+        Assert.True(player.Temporary);
+        Assert.Equal(71, player.Hp);
+        Assert.Equal(43, player.Mp);
+        Assert.Equal(32, player.Charge);
+        Assert.Equal(2, rng.CallCount);
+    }
+
+    /// <summary>Verifies that a partner in its base form refuses effect 7 before its chance roll and preserves temporary battle resources.</summary>
+    [Fact]
+    public void EnemyTechnique_BaseFormDedigivolve_DoesNotConsumeEffectChanceOrMutate()
+    {
+        BattleState state = CreateState();
+        BattleFighter player = Assert.IsType<BattleFighter>(state.ActivePlayerFighter);
+        player.Charge = 32;
+        var rng = new CountingRng(0, 0);
+        var technique = new TechData { Accuracy = 128, Effect = BattleTechniqueEffect.Dedigivolve, EffectChance = 127, Power = 0 };
+
+        Assert.True(state.EnemyTechnique(technique, rng));
+
+        Assert.Equal(1, player.Id);
+        Assert.Equal(32, player.Charge);
+        Assert.Equal(1, rng.CallCount);
+    }
+
+    /// <summary>Verifies that a temporary transformed form follows the same source-form boundary and loses only its temporary form state.</summary>
+    [Fact]
+    public void EnemyTechnique_TemporaryDedigivolve_ClearsTemporaryFormWithoutChangingHpOrMp()
+    {
+        BattleState state = CreateState();
+        BattleFighter player = Assert.IsType<BattleFighter>(state.ActivePlayerFighter);
+        player.Id = 99;
+        player.Temporary = true;
+        player.Hp = 71;
+        player.Mp = 43;
+        var technique = new TechData { Accuracy = 128, Effect = BattleTechniqueEffect.Dedigivolve, EffectChance = 127, Power = 0 };
+
+        Assert.True(state.EnemyTechnique(technique, new SequenceRng(0, 0)));
+
+        Assert.Equal(1, player.Id);
+        Assert.False(player.Temporary);
+        Assert.Equal(71, player.Hp);
+        Assert.Equal(43, player.Mp);
+    }
+
+    /// <summary>Verifies that player-side effect-7 invocation is refused before MP or random input changes.</summary>
+    [Fact]
+    public void PlayerTechnique_Dedigivolve_IsRefusedBeforeResources()
+    {
+        BattleState state = CreateState();
+        BattleFighter player = Assert.IsType<BattleFighter>(state.ActivePlayerFighter);
+        player.Id = 99;
+        var rng = new CountingRng(0);
+        var technique = new TechData { Accuracy = 128, Effect = BattleTechniqueEffect.Dedigivolve, EffectChance = 127, Mp = 20, Power = 0 };
+
+        Assert.False(state.PlayerTechnique(technique, rng));
+
+        Assert.Equal(100, player.Mp);
+        Assert.Equal(99, player.Id);
+        Assert.Equal(0, rng.CallCount);
+    }
+
+    /// <summary>Verifies that an enemy effect-7 invocation without an active target is refused before resources or random input change.</summary>
+    [Fact]
+    public void EnemyTechnique_DedigivolveWithoutActivePlayer_IsRefusedBeforeResources()
+    {
+        BattleState state = CreateState();
+        BattleFighter enemy = Assert.IsType<BattleFighter>(state.ActiveEnemyFighter);
+        state.Players[0] = null;
+        state.ActivePlayer = -1;
+        var rng = new CountingRng(0);
+        var technique = new TechData { Accuracy = 128, Effect = BattleTechniqueEffect.Dedigivolve, EffectChance = 127, Mp = 20, Power = 0 };
+
+        Assert.False(state.EnemyTechnique(technique, rng));
+
+        Assert.Equal(100, enemy.Mp);
+        Assert.Equal(0, rng.CallCount);
+    }
+
+    /// <summary>Verifies that an accepted forced return is queued and does not mutate before its priority transition is consumed.</summary>
+    [Fact]
+    public void DedigivolveTransition_AcceptedEffect_DefersMutationUntilItsPriorityEvent()
+    {
+        BattleState state = CreateState();
+        BattleFighter player = Assert.IsType<BattleFighter>(state.ActivePlayerFighter);
+        player.Id = 99;
+        var scheduler = new BattleTurnScheduler();
+
+        Assert.True(BattleDedigivolveResolver.TryQueue(BattleSide.Enemy, 0, player, 127, new SequenceRng(0), scheduler));
+        Assert.Equal(99, player.Id);
+        Assert.Equal(BattleScheduledEventKind.Dedigivolve, scheduler.NextKind);
+        Assert.True(BattleDedigivolveResolver.ProcessNext(state, scheduler));
+        Assert.Equal(1, player.Id);
+    }
+
     /// <summary>Verifies that effect 6 immediately knocks out the active enemy at one HP and brings its living reserve into the active slot.</summary>
     [Fact]
     public void PlayerTechnique_LandedImmediateKnockOut_EliminatesOneHpEnemyAndActivatesReserve()

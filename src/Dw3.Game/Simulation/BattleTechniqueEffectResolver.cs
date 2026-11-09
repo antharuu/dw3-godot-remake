@@ -37,6 +37,9 @@ public static class BattleTechniqueEffectResolver
             case BattleTechniqueEffect.KnockOut:
                 ApplyKnockOut(state, attackerSide, technique.EffectChance, rng, landedTarget);
                 return true;
+            case BattleTechniqueEffect.Dedigivolve:
+                _ = state.TryQueueDedigivolve(attackerSide, technique.EffectChance, rng);
+                return true;
             case BattleTechniqueEffect.Drain:
                 _ = BattleResourceEffects.DrainHp(state, attackerSide, technique.EffectChance, technique.EffectPower, landedDamage, rng);
                 return true;
@@ -74,6 +77,7 @@ public static class BattleTechniqueEffectResolver
     {
         BattleTechniqueEffect.NoSpecialEffect => technique.Icon is BattleConst.TechPhysical or BattleConst.TechMagic,
         BattleTechniqueEffect.DoubleMagic => technique.Icon == BattleConst.TechMagic,
+        BattleTechniqueEffect.Dedigivolve => attackerSide == BattleSide.Enemy,
         BattleTechniqueEffect.DrainMp => attackerSide == BattleSide.Enemy,
         BattleTechniqueEffect.Steal => attackerSide == BattleSide.Player,
         _ => technique.Icon <= BattleConst.TechMagic,

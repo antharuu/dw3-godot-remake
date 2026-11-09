@@ -21,6 +21,9 @@ public static class BattleTechniqueEffect
     /// <summary>Attempts an immediate knock-out.</summary>
     public const int KnockOut = 6;
 
+    /// <summary>Lets an enemy return the active partner to its own base form.</summary>
+    public const int Dedigivolve = 7;
+
     /// <summary>Drains a share of the landed damage as HP.</summary>
     public const int Drain = 8;
 

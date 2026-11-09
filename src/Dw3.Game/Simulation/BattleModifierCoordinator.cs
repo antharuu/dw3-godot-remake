@@ -164,6 +164,11 @@ public sealed class BattleModifierCoordinator(BattleState state, BattleTurnSched
     /// <returns>Whether an expiry was consumed.</returns>
     public bool ProcessNextExpiry()
     {
+        if (BattleDedigivolveResolver.ProcessNext(state, scheduler))
+        {
+            return true;
+        }
+
         if (scheduler.Count == 0 || !IsModifierEvent(scheduler.NextKind))
         {
             return false;
