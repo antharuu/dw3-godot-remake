@@ -67,7 +67,7 @@ public sealed class BattleSessionFlowTests
     public void ProductionDigivolution_RejectsUnknownFormBeforeMutation()
     {
         PlayerSession session = new(
-            [new PlayerSessionPartner(new PartnerSeed { Id = 1, Hp = 50, MaxHp = 100, Mp = 10, MaxMp = 10, Stats = Stats() }, [1], [1, 2], []), Partner(2, 100, 10), Partner(3, 100, 10)],
+            [new PlayerSessionPartner(new PartnerSeed { Id = 1, Hp = 50, MaxHp = 100, Mp = 10, MaxMp = 10, Stats = Stats() }, [1], [], [1, 2], []), Partner(2, 100, 10), Partner(3, 100, 10)],
             new Dictionary<int, int> { [42] = 1 });
 
         BattleFlowController flow = Build(session, Digivolutions());
@@ -75,6 +75,20 @@ public sealed class BattleSessionFlowTests
         Assert.Equal([1], flow.PlayerDigivolutions);
         Assert.False(flow.Choose(BattleCommand.Digivolve, 2, new FixedRng()));
         Assert.Equal(1, flow.State.ActivePlayerFighter!.Id);
+    }
+
+    /// <summary>Uses the host setup seam to reject an acquired but non-equipped form before mutation.</summary>
+    [Fact]
+    public void ProductionDigivolution_UsesExplicitSlotsAndRejectsAcquiredUnequippedForm()
+    {
+        PlayerSession session = CreateExplicitSlotSession();
+        BattleFlowController flow = Build(session);
+
+        Assert.Equal([10, 50, 20, 40], flow.PlayerDigivolutions);
+        Assert.False(flow.Choose(BattleCommand.Digivolve, 30, new FixedRng()));
+        Assert.Equal(10, flow.State.ActivePlayerFighter!.Id);
+        Assert.True(flow.Choose(BattleCommand.Digivolve, 50, new FixedRng()));
+        Assert.Equal(50, flow.State.ActivePlayerFighter.Id);
     }
 
     /// <summary>Uses production setup, catalog wiring, item use and resolution before creating the next battle.</summary>
@@ -136,7 +150,7 @@ public sealed class BattleSessionFlowTests
         alternate.Stats[BattleStat.Attack] = 25;
         var first = new PartnerSeed { Id = 1, Hp = 50, MaxHp = 100, Mp = 10, MaxMp = 10, Stats = baseStats, FormStats = new Dictionary<int, BattleStats> { [2] = alternate } };
         return new PlayerSession(
-            [new PlayerSessionPartner(first, [1, 2], [1, 2], []), Partner(2, 100, 10), Partner(3, 100, 10)],
+            [new PlayerSessionPartner(first, [1, 2], [2], [1, 2], []), Partner(2, 100, 10), Partner(3, 100, 10)],
             new Dictionary<int, int> { [42] = 1 });
     }
 
@@ -150,7 +164,26 @@ public sealed class BattleSessionFlowTests
         var first = new PartnerSeed { Id = 1, Hp = 50, MaxHp = 100, Mp = 10, MaxMp = 10, Stats = firstStats, FormStats = new Dictionary<int, BattleStats> { [2] = firstStats } };
         var second = new PartnerSeed { Id = 1, Hp = 60, MaxHp = 100, Mp = 10, MaxMp = 10, Stats = secondStats, FormStats = new Dictionary<int, BattleStats> { [3] = secondStats } };
         return new PlayerSession(
-            [new PlayerSessionPartner(first, [1, 2], [1, 2], []), new PlayerSessionPartner(second, [1, 3], [3], []), Partner(3, 100, 10)],
+            [new PlayerSessionPartner(first, [1, 2], [2], [1, 2], []), new PlayerSessionPartner(second, [1, 3], [3], [3], []), Partner(3, 100, 10)],
+            new Dictionary<int, int> { [42] = 1 });
+    }
+
+    /// <summary>Builds source-shaped acquired and equipped lists with a known but unselected form.</summary>
+    /// <returns>A session whose normal menu must expose base plus its three explicit slots.</returns>
+    private static PlayerSession CreateExplicitSlotSession()
+    {
+        var seed = new PartnerSeed
+        {
+            Id = 10,
+            Hp = 50,
+            MaxHp = 100,
+            Mp = 10,
+            MaxMp = 10,
+            Stats = Stats(),
+            FormStats = new Dictionary<int, BattleStats> { [20] = Stats(), [30] = Stats(), [40] = Stats(), [50] = Stats() },
+        };
+        return new PlayerSession(
+            [new PlayerSessionPartner(seed, [10, 20, 30, 40, 50], [50, 20, 40], [1, 2], []), Partner(2, 100, 10), Partner(3, 100, 10)],
             new Dictionary<int, int> { [42] = 1 });
     }
 
@@ -159,13 +192,17 @@ public sealed class BattleSessionFlowTests
     /// <param name="hp">Current HP.</param>
     /// <param name="mp">Current MP.</param>
     /// <returns>One persistent partner slot.</returns>
-    private static PlayerSessionPartner Partner(int id, int hp, int mp) => new(new PartnerSeed { Id = id, Hp = hp, MaxHp = 100, Mp = mp, MaxMp = 10, Stats = Stats() }, [id], [1, 2], []);
+    private static PlayerSessionPartner Partner(int id, int hp, int mp) => new(new PartnerSeed { Id = id, Hp = hp, MaxHp = 100, Mp = mp, MaxMp = 10, Stats = Stats() }, [id], [], [1, 2], []);
 
     /// <summary>Builds the smallest complete fighter catalog accepted by the production setup path.</summary>
     /// <returns>Partner and enemy records for the consecutive battle.</returns>
     private static FighterData Fighters()
     {
-        DigimonData[] partners = [Digimon(1, [1, 2, 3]), Digimon(2, [2, 1]), Digimon(3, [1, 3])];
+        DigimonData[] partners =
+        [
+            Digimon(1, [1, 2, 3]), Digimon(2, [2, 1]), Digimon(3, [1, 3]),
+            Digimon(10), Digimon(20), Digimon(30), Digimon(40), Digimon(50),
+        ];
         return new FighterData(
             partners.ToDictionary(partner => partner.Id),
             partners,

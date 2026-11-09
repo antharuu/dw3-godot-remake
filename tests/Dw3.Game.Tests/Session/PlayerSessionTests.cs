@@ -24,6 +24,7 @@ public sealed class PlayerSessionTests
                         Stats = new BattleStats(),
                     },
                     knownForms: [11, 12],
+                    equippedForms: [12],
                     knownTechniques: [101, 102],
                     equipmentIds: [7]),
             ],
@@ -42,6 +43,7 @@ public sealed class PlayerSessionTests
         Assert.Equal(9, secondPartner.Mp);
         Assert.Equal([0, 6, 0], secondPartner.PersistentStatuses);
         Assert.Equal([11, 12], session.Partners[0]!.KnownForms);
+        Assert.Equal([12], session.Partners[0]!.EquippedForms);
         Assert.Equal([101, 102], session.Partners[0]!.KnownTechniques);
         Assert.Equal([7], session.Partners[0]!.EquipmentIds);
         Assert.Equal(3, session.Inventory[42]);
@@ -52,7 +54,7 @@ public sealed class PlayerSessionTests
     public void BuildParty_ReturnsIndependentSlotsWithoutResettingTheSession()
     {
         var session = new PlayerSession(
-            [new PlayerSessionPartner(new PartnerSeed { Id = 11, Hp = 10, MaxHp = 10, Mp = 5, MaxMp = 5, Stats = new BattleStats() }, [11], [], [])],
+            [new PlayerSessionPartner(new PartnerSeed { Id = 11, Hp = 10, MaxHp = 10, Mp = 5, MaxMp = 5, Stats = new BattleStats() }, [11], [], [], [])],
             new Dictionary<int, int>());
 
         PartnerSeed?[] first = session.BuildParty();

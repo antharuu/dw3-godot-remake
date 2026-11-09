@@ -39,7 +39,7 @@ public sealed class PlayerSession
         var partners = new List<PlayerSessionPartner>();
         foreach (PartnerSeed seed in seeds.OfType<PartnerSeed>())
         {
-            partners.Add(new PlayerSessionPartner(seed, [seed.Id], [], []));
+            partners.Add(new PlayerSessionPartner(seed, [seed.Id], [], [], []));
         }
 
         return new PlayerSession(partners, items.Items.ToDictionary(item => item.Id, _ => 3));
