@@ -604,6 +604,7 @@ src/Dw3.Game/Simulation/BattleStat.cs
 src/Dw3.Game/Simulation/BattleState.cs
 src/Dw3.Game/Simulation/BattleStatusCoordinator.cs
 src/Dw3.Game/Simulation/BattleStats.cs
+src/Dw3.Game/Simulation/BattleSwitchRules.cs
 src/Dw3.Game/Simulation/BattleStageResolver.cs
 src/Dw3.Game/Simulation/BattleTableAction.cs
 src/Dw3.Game/Simulation/BattleTechnique.cs
@@ -780,6 +781,7 @@ tests/Dw3.Game.Tests/BattleHitResolverTests.cs
 tests/Dw3.Game.Tests/BattleHitSequenceTests.cs
 tests/Dw3.Game.Tests/BattleTechniqueEffectTests.cs
 tests/Dw3.Game.Tests/BattlePoisonStatusTests.cs
+tests/Dw3.Game.Tests/BattleOutcomeTransitionTests.cs
 tests/Dw3.Game.Tests/BattleGrowthVectorGenerator.cs
 tests/Dw3.Game.Tests/BattleGrowthVectorTests.cs
 tests/Dw3.Game.Tests/BattleMotionMachineVectorGenerator.cs

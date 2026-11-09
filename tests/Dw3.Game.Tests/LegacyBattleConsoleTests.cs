@@ -599,7 +599,7 @@ public sealed class LegacyBattleConsoleTests
         var state = SimpleBattle();
         bool fled = state.PlayerFlee(new NoRng());   // rng 0 < (0+1)*8 = 8
         Check(fled, "a roll of 0 under the base flee chance escapes");
-        Check(state.Outcome == BattleOutcome.Fled, "escaping ends the battle as fled");
+        Check(state.Outcome == BattleOutcome.PlayerFled, "escaping ends the battle as player fled");
         Check(state.RunAttempts == 1, "each flee attempt increments runAttempts");
     }
 

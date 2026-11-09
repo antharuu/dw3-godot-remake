@@ -214,7 +214,7 @@ public sealed class BattleState
     /// <returns><see langword="false"/> for an out-of-range, active, empty or knocked-out slot, otherwise <see langword="true"/>.</returns>
     public bool PlayerSwitch(int slot)
     {
-        if ((ActivePlayerFighter?.Flags & (FighterFlags.NoSwitch | FighterFlags.Confused)) != 0 || slot < 0 || slot >= Players.Length || slot == ActivePlayer || Players[slot] is not { Id: not 0, IsKnockedOut: false })
+        if (BattleSwitchRules.ActiveBlocksVoluntarySwitch(ActivePlayerFighter) || slot < 0 || slot >= Players.Length || slot == ActivePlayer || Players[slot] is not { Id: not 0, IsKnockedOut: false })
         {
             return false;
         }
@@ -381,7 +381,7 @@ public sealed class BattleState
             rng.NextValue());
         if (fled)
         {
-            Outcome = BattleOutcome.Fled;
+            Outcome = BattleOutcome.PlayerFled;
             return true;
         }
 

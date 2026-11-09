@@ -153,10 +153,12 @@ public sealed class BattleFlowController
         bool noDigivolve = fighter is { } g && (g.Flags & FighterFlags.NoDigivolve) != 0;
         bool noSwitch = fighter is { } i && (i.Flags & FighterFlags.NoSwitch) != 0;
         bool knockedOut = fighter is not { IsKnockedOut: false };
+        bool hasLivingReserve = State.Players.Where((_, index) => index != State.ActivePlayer).Any(BattleRoster.IsLiving);
+        bool switchEnabled = knockedOut ? hasLivingReserve : !confused && !noSwitch;
         return
         [
             Line(0, !knockedOut && !asleep), Line(1, !knockedOut && !asleep && !confused),
-            Line(2, !knockedOut && !asleep && !confused && !noDigivolve), Line(3, !knockedOut && !confused && !noSwitch),
+            Line(2, !knockedOut && !asleep && !confused && !noDigivolve), Line(3, switchEnabled),
             Line(4, !knockedOut && !confused), Line(5, !knockedOut && !asleep && !confused && !noSwitch),
         ];
     }

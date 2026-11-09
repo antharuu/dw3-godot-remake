@@ -67,7 +67,7 @@ public sealed class BattleEnemyAiTurnTests
         EnemyDecision decision = state.RunEnemyTurn(new ZeroRng());
 
         Assert.Equal(EnemyActionKind.RunAway, decision.Kind);
-        Assert.Equal(BattleOutcome.Fled, state.Outcome);
+        Assert.Equal(BattleOutcome.EnemyFled, state.Outcome);
     }
 
     /// <summary>Verifies that a player sleep condition wins priority over the unconditional fallback.</summary>

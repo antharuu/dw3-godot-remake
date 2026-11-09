@@ -6,8 +6,11 @@ public enum BattleOutcome
     /// <summary>The battle is still running.</summary>
     None,
 
-    /// <summary>One side ran away. The player returns to the field with no reward and no penalty.</summary>
-    Fled,
+    /// <summary>The player ran away. The party returns to the field with no reward or penalty.</summary>
+    PlayerFled,
+
+    /// <summary>The enemy ran away. The party returns to the field with no reward or penalty.</summary>
+    EnemyFled,
 
     /// <summary>Every enemy is knocked out. The fight report then grants experience, money and items.</summary>
     Won,

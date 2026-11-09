@@ -141,7 +141,7 @@ public sealed class LegacyBattleFlowConsoleTests
         var flow = Controller(SimpleBattle());
 
         Check(flow.Choose(BattleCommand.Flee, 0, new NoRng()), "fleeing is spendable when unblocked");
-        Check(flow.Outcome == BattleOutcome.Fled, "fleeing ends the battle as fled");
+        Check(flow.Outcome == BattleOutcome.PlayerFled, "fleeing ends the battle as player fled");
     }
 
     private static void TechniqueConsumesMpAndSpendsTurn()
@@ -396,7 +396,7 @@ public sealed class LegacyBattleFlowConsoleTests
             flow.EnemyAct(new NoRng());
         }
 
-        Check(flow.Outcome == BattleOutcome.Fled, "the enemy's run-away action ends the battle as fled");
+        Check(flow.Outcome == BattleOutcome.EnemyFled, "the enemy's run-away action ends the battle as enemy fled");
     }
 
     private static BattleState SimpleBattle(BattleFixture? fixture = null)

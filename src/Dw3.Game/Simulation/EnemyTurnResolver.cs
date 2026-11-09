@@ -150,7 +150,7 @@ public sealed class EnemyTurnResolver(BattleState state)
         bool fled = RunAwayRules.TestEnemyRunAway(attacker.Stats, defender.Stats, attacker.Flags, rng.NextValue());
         if (fled)
         {
-            state.Outcome = BattleOutcome.Fled;
+            state.Outcome = BattleOutcome.EnemyFled;
         }
         else
         {
