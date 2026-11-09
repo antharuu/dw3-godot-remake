@@ -551,6 +551,111 @@ public sealed class BattleTechniqueEffectTests
         Assert.Equal([0, 0, 0], state.Players[0]!.PersistentStatuses);
     }
 
+    /// <summary>Verifies that catalogue effect 1 is explicitly accepted as an ordinary action instead of falling through the unsupported-effect default.</summary>
+    [Fact]
+    public void TechniqueEffect_ExplicitNoSpecialEffect_IsRecognizedWithoutMutation()
+    {
+        BattleState state = CreateState();
+        var rng = new CountingRng(0);
+
+        Assert.True(BattleTechniqueEffectResolver.ApplyLanded(state, BattleSide.Player, new TechData { Effect = BattleTechniqueEffect.NoSpecialEffect }, rng, 0));
+
+        Assert.Equal(100, Assert.IsType<BattleFighter>(state.ActiveEnemyFighter).Hp);
+        Assert.Equal(0, rng.CallCount);
+    }
+
+    /// <summary>Verifies that an Icon2 catalogue action follows the player hit path, spends MP, and targets the active enemy without a secondary effect.</summary>
+    [Fact]
+    public void PlayerTechnique_ExplicitNoSpecialPhysicalHit_ConsumesMpAndDamagesEnemy()
+    {
+        BattleState state = CreateState();
+        var player = Assert.IsType<BattleFighter>(state.ActivePlayerFighter);
+        var enemy = Assert.IsType<BattleFighter>(state.ActiveEnemyFighter);
+
+        Assert.True(state.PlayerTechnique(PlainTechnique(BattleConst.TechPhysical, accuracy: 128, mp: 7), new SequenceRng(0)));
+
+        Assert.Equal(93, player.Mp);
+        Assert.Equal(80, enemy.Hp);
+        Assert.True(Assert.Single(state.LastHitEvents).Landed);
+    }
+
+    /// <summary>Verifies that an Icon3 catalogue action follows the player magic path and spends MP on a miss without applying a secondary effect.</summary>
+    [Fact]
+    public void PlayerTechnique_ExplicitNoSpecialMagicMiss_ConsumesMpAndLeavesEnemyUnchanged()
+    {
+        BattleState state = CreateState();
+        var player = Assert.IsType<BattleFighter>(state.ActivePlayerFighter);
+        var enemy = Assert.IsType<BattleFighter>(state.ActiveEnemyFighter);
+
+        Assert.True(state.PlayerTechnique(PlainTechnique(BattleConst.TechMagic, accuracy: 0, mp: 9), new SequenceRng(127)));
+
+        Assert.Equal(91, player.Mp);
+        Assert.Equal(100, enemy.Hp);
+        Assert.False(Assert.Single(state.LastHitEvents).Landed);
+    }
+
+    /// <summary>Verifies that an Icon3 catalogue action follows the enemy magic path, spends enemy MP, and targets the active player.</summary>
+    [Fact]
+    public void EnemyTechnique_ExplicitNoSpecialMagicHit_ConsumesMpAndDamagesPlayer()
+    {
+        BattleState state = CreateState();
+        var player = Assert.IsType<BattleFighter>(state.ActivePlayerFighter);
+        var enemy = Assert.IsType<BattleFighter>(state.ActiveEnemyFighter);
+
+        Assert.True(state.EnemyTechnique(PlainTechnique(BattleConst.TechMagic, accuracy: 128, mp: 8), new SequenceRng(0)));
+
+        Assert.Equal(92, enemy.Mp);
+        Assert.Equal(80, player.Hp);
+        Assert.True(Assert.Single(state.LastHitEvents).Landed);
+    }
+
+    /// <summary>Verifies that an Icon2 catalogue action follows the enemy physical path and spends MP on a miss without touching the player.</summary>
+    [Fact]
+    public void EnemyTechnique_ExplicitNoSpecialPhysicalMiss_ConsumesMpAndLeavesPlayerUnchanged()
+    {
+        BattleState state = CreateState();
+        var player = Assert.IsType<BattleFighter>(state.ActivePlayerFighter);
+        var enemy = Assert.IsType<BattleFighter>(state.ActiveEnemyFighter);
+
+        Assert.True(state.EnemyTechnique(PlainTechnique(BattleConst.TechPhysical, accuracy: 0, mp: 6), new SequenceRng(127)));
+
+        Assert.Equal(94, enemy.Mp);
+        Assert.Equal(100, player.Hp);
+        Assert.False(Assert.Single(state.LastHitEvents).Landed);
+    }
+
+    /// <summary>Verifies that effect 1 rejects an icon with no source action contract before consuming MP, touching a target, or drawing random input.</summary>
+    [Fact]
+    public void PlayerTechnique_ExplicitNoSpecialWithUnsupportedIcon_IsRefusedBeforeResources()
+    {
+        BattleState state = CreateState();
+        var player = Assert.IsType<BattleFighter>(state.ActivePlayerFighter);
+        var enemy = Assert.IsType<BattleFighter>(state.ActiveEnemyFighter);
+        var rng = new CountingRng(0);
+
+        Assert.False(state.PlayerTechnique(PlainTechnique(icon: 5, accuracy: 128, mp: 11), rng));
+
+        Assert.Equal(100, player.Mp);
+        Assert.Equal(100, enemy.Hp);
+        Assert.Equal(0, rng.CallCount);
+    }
+
+    /// <summary>Verifies that an enemy effect-1 action is refused without consuming MP or random input when its active player target is absent.</summary>
+    [Fact]
+    public void EnemyTechnique_ExplicitNoSpecialWithoutTarget_IsRefusedBeforeResources()
+    {
+        BattleState state = CreateState();
+        var enemy = Assert.IsType<BattleFighter>(state.ActiveEnemyFighter);
+        state.Players[0] = null;
+        state.ActivePlayer = -1;
+        var rng = new CountingRng(0);
+
+        Assert.False(state.EnemyTechnique(PlainTechnique(BattleConst.TechPhysical, accuracy: 128, mp: 12), rng));
+
+        Assert.Equal(100, enemy.Mp);
+        Assert.Equal(0, rng.CallCount);
+    }
+
     /// <summary>Verifies that an enemy-only effect spends the technique turn without resolving damage for either side.</summary>
     [Fact]
     public void EnemyOnlyTechnique_SkipsTheGenericHitSequence()
@@ -564,6 +669,16 @@ public sealed class BattleTechniqueEffectTests
         Assert.Equal(96, state.Players[0]!.Mp);
     }
 
+    /// <summary>Creates a fabricated effect-1 technique with an explicit source icon and no secondary-effect fields.</summary>
+    private static TechData PlainTechnique(int icon, int accuracy, int mp) => new()
+    {
+        Icon = icon,
+        Accuracy = accuracy,
+        Effect = BattleTechniqueEffect.NoSpecialEffect,
+        Mp = mp,
+        Power = 20,
+    };
+
     private static BattleState CreateState() => CreateState(enemyHp: 100, includeEnemyReserve: false);
 
     private static BattleState CreateState(int enemyHp, bool includeEnemyReserve)
@@ -571,6 +686,7 @@ public sealed class BattleTechniqueEffectTests
         var stats = new BattleStats();
         stats.Stats[BattleStat.Attack] = 20;
         stats.Stats[BattleStat.Defense] = 20;
+        stats.Stats[BattleStat.Spirit] = 20;
         stats.Stats[BattleStat.Speed] = 100;
         var setup = new BattleSetup();
         setup.Partners[0] = new PartnerSeed { Id = 1, Hp = 100, MaxHp = 100, Mp = 100, MaxMp = 100, Stats = stats };

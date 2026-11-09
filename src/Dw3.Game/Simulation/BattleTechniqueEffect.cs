@@ -3,6 +3,9 @@ namespace Dw3Production.Simulation;
 /// <summary>Technique effect identifiers from the extracted battle catalogue.</summary>
 public static class BattleTechniqueEffect
 {
+    /// <summary>Marks an ordinary physical or magic technique with no secondary effect.</summary>
+    public const int NoSpecialEffect = 1;
+
     /// <summary>Applies periodic poison to the opposing active fighter.</summary>
     public const int Poison = 2;
 

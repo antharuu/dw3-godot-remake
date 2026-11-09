@@ -17,6 +17,8 @@ public static class BattleTechniqueEffectResolver
     {
         switch (technique.Effect)
         {
+            case BattleTechniqueEffect.NoSpecialEffect:
+                return true;
             case BattleTechniqueEffect.Poison:
                 _ = state.InflictPoison(attackerSide, technique.EffectChance, technique.EffectPower, rng);
                 return true;
@@ -64,6 +66,7 @@ public static class BattleTechniqueEffectResolver
     /// <returns><see langword="true"/> when this side may execute the technique's effect.</returns>
     public static bool CanExecute(BattleSide attackerSide, TechData technique) => technique.Effect switch
     {
+        BattleTechniqueEffect.NoSpecialEffect => technique.Icon is BattleConst.TechPhysical or BattleConst.TechMagic,
         BattleTechniqueEffect.DrainMp => attackerSide == BattleSide.Enemy,
         BattleTechniqueEffect.Steal => attackerSide == BattleSide.Player,
         _ => technique.Icon <= BattleConst.TechMagic,
@@ -72,5 +75,10 @@ public static class BattleTechniqueEffectResolver
     /// <summary>Returns whether the technique uses the generic hit path before its effect.</summary>
     /// <param name="technique">Technique to test.</param>
     /// <returns><see langword="true"/> when a hit sequence must land before the effect can fire.</returns>
-    public static bool RequiresHitSequence(TechData technique) => technique.Effect is not BattleTechniqueEffect.DrainMp and not BattleTechniqueEffect.EnemyOnly;
+    public static bool RequiresHitSequence(TechData technique) => technique.Effect switch
+    {
+        BattleTechniqueEffect.NoSpecialEffect => true,
+        BattleTechniqueEffect.DrainMp or BattleTechniqueEffect.EnemyOnly => false,
+        _ => true,
+    };
 }
