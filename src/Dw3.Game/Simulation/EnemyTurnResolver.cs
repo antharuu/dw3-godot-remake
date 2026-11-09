@@ -200,7 +200,7 @@ public sealed class EnemyTurnResolver(BattleState state)
         }
 
         var decision = BattleEnemyAi.PickCounter(enemy, BuildContext(), rng);
-        var tech = decision.IsAttack || decision.IsTechnique ? ResolveTech(decision.TechId) : null;
+        var tech = ResolveTech(decision);
         if (tech != null)
         {
             Counter(tech, receivedDamage, rng);
@@ -218,7 +218,7 @@ public sealed class EnemyTurnResolver(BattleState state)
             return;
         }
 
-        var tech = decision.IsAttack || decision.IsTechnique ? ResolveTech(decision.TechId) : null;
+        var tech = ResolveTech(decision);
         switch (decision.Kind)
         {
             case EnemyActionKind.Attack when tech != null:
@@ -250,17 +250,20 @@ public sealed class EnemyTurnResolver(BattleState state)
         StarterDigimonIds = state.StarterDigimonIds,
     };
 
-    /// <summary>Looks a battle-table technique up in the catalogue; id 0 is an empty table slot.</summary>
-    /// <param name="id">The technique id from the table.</param>
-    /// <returns>The technique, or <see langword="null"/> for id 0 or an unknown id.</returns>
-    private TechData? ResolveTech(int id)
+    /// <summary>Looks an executable action's technique up in the catalogue.</summary>
+    /// <param name="decision">Action-table decision that may name a basic attack or technique.</param>
+    /// <returns>The technique, or <see langword="null"/> when the decision has no technique.</returns>
+    /// <exception cref="InvalidOperationException">The action names a technique absent from the loaded catalogue.</exception>
+    private TechData? ResolveTech(EnemyDecision decision)
     {
-        if (id == 0)
+        if (!decision.IsAttack && !decision.IsTechnique)
         {
             return null;
         }
 
-        return state.Techs.TryGetValue(id, out var tech) ? tech : null;
+        return state.Techs.TryGetValue(decision.TechId, out var tech)
+            ? tech
+            : throw new InvalidOperationException($"enemy-ai-technique-not-found action={decision.Kind} technique={decision.TechId}");
     }
 
     /// <summary>Wakes the active player once after a sequence that actually dealt damage.</summary>

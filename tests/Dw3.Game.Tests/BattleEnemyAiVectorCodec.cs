@@ -103,7 +103,7 @@ internal static class BattleEnemyAiVectorCodec
 
     /// <summary>
     /// Runs one case against the current implementation and returns its recorded output:
-    /// the result, the number of random values drawn, or the exception type thrown.
+    /// the result, the number of random values drawn, or the named enemy-AI error thrown.
     /// </summary>
     public static JsonObject Evaluate(JsonNode c)
     {
@@ -166,6 +166,10 @@ internal static class BattleEnemyAiVectorCodec
         catch (Exception e) when (e is IndexOutOfRangeException or ArgumentOutOfRangeException)
         {
             output = new JsonObject { ["throws"] = e.GetType().Name };
+        }
+        catch (InvalidOperationException e) when (e.Message.StartsWith("enemy-ai-", StringComparison.Ordinal))
+        {
+            output = new JsonObject { ["throws"] = e.Message };
         }
 
         output["rngCalls"] = rng.Calls;

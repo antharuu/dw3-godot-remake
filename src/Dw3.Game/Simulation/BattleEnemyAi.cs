@@ -12,10 +12,11 @@ public static class BattleEnemyAi
     /// <param name="ctx">Battle state exposed to condition evaluation.</param>
     /// <param name="rng">Random source for chance conditions.</param>
     /// <returns>
-    /// Whether the condition holds. Condition 0 and unknown ids always hold, so a malformed row
-    /// still acts. HP thresholds take <paramref name="arg"/> as a share of maximum HP in 128ths,
-    /// condition 1 is a chance of <paramref name="arg"/> in 128, and condition 18 holds every
-    /// <paramref name="arg"/> enemy turns. Only condition 1 draws from <paramref name="rng"/>.
+    /// Whether the condition holds. Condition 0 always holds. HP thresholds take
+    /// <paramref name="arg"/> as a share of maximum HP in 128ths, condition 1 is a chance of
+    /// <paramref name="arg"/> in 128, and condition 18 holds every <paramref name="arg"/> enemy
+    /// turns. Only condition 1 draws from <paramref name="rng"/>. An unknown condition fails
+    /// explicitly instead of silently selecting an unrelated action.
     /// </returns>
     public static bool TestEnemyCondition(int condition, int arg, EnemyAiContext ctx, IBattleRng rng)
     {
@@ -43,14 +44,14 @@ public static class BattleEnemyAi
             16 => enemy.Boosts[1] < 0,
             17 => enemy.Boosts[2] < 0,
             18 => arg != 0 && enemy.Turns % arg == 0,
-            _ => true,
+            _ => throw UnsupportedCondition(condition),
         };
     }
 
     /// <summary>Converts an action-table target kind into an executable decision.</summary>
     /// <param name="enemy">Enemy whose action is selected.</param>
     /// <param name="kind">Decoded action-table target kind: 1 attack, 2 and 3 the second and third techniques, 4 run away, 5..7 switch to a given slot, 8 switch to any living reserve.</param>
-    /// <returns>The decision with the technique id to use or the slot to switch to, or <see cref="EnemyDecision.None"/> for any other kind.</returns>
+    /// <returns>The decision with the technique id to use or the slot to switch to.</returns>
     public static EnemyDecision GetEnemyAction(BattleFighter enemy, int kind) => kind switch
     {
         1 => new(EnemyActionKind.Attack, enemy.Techs[0], -1),
@@ -61,7 +62,7 @@ public static class BattleEnemyAi
         6 => new(EnemyActionKind.SwitchTo1, 0, 1),
         7 => new(EnemyActionKind.SwitchTo2, 0, 2),
         8 => new(EnemyActionKind.SwitchToAny, 0, -1),
-        _ => EnemyDecision.None,
+        _ => throw UnsupportedAction(kind),
     };
 
     /// <summary>Selects the first eligible action row, or the table's untested fallback row.</summary>
@@ -121,8 +122,7 @@ public static class BattleEnemyAi
     {
         if (decision.SwitchSlot >= 0)
         {
-            int slot = decision.SwitchSlot;
-            return slot != activeEnemy && BattleRoster.IsLiving(enemies[slot]) ? slot : -1;
+            return ResolveFixedSwitch(decision.SwitchSlot, enemies, activeEnemy);
         }
 
         Span<int> candidates = stackalloc int[3];
@@ -176,4 +176,40 @@ public static class BattleEnemyAi
     /// <returns><see langword="true"/> when the slot satisfies the condition.</returns>
     private static bool IsRequestedReserve(BattleFighter? candidate, int requestedId) =>
         candidate is { Id: not 0, Hp: not 0 } && (requestedId == 0 || candidate.Id == requestedId);
+
+    /// <summary>Resolves a fixed switch target after validating that its slot exists.</summary>
+    /// <param name="slot">The requested switch slot.</param>
+    /// <param name="enemies">Enemy roster containing the candidate.</param>
+    /// <param name="activeEnemy">Currently active enemy slot.</param>
+    /// <returns>The requested slot when it is a living, distinct reserve, otherwise -1.</returns>
+    private static int ResolveFixedSwitch(int slot, IReadOnlyList<BattleFighter?> enemies, int activeEnemy)
+    {
+        if (slot >= enemies.Count)
+        {
+            throw InvalidSwitchSlot(slot, enemies.Count);
+        }
+
+        BattleFighter? candidate = enemies[slot];
+        BattleFighter? active = activeEnemy >= 0 && activeEnemy < enemies.Count ? enemies[activeEnemy] : null;
+        return slot != activeEnemy && BattleRoster.IsLiving(candidate) && candidate!.Id != active?.Id ? slot : -1;
+    }
+
+    /// <summary>Creates the named failure used for a condition absent from the qualified catalogue.</summary>
+    /// <param name="condition">The unsupported condition id.</param>
+    /// <returns>The failure to throw.</returns>
+    private static InvalidOperationException UnsupportedCondition(int condition) =>
+        new($"enemy-ai-unsupported-condition condition={condition}");
+
+    /// <summary>Creates the named failure used for an action target absent from the qualified catalogue.</summary>
+    /// <param name="target">The unsupported action target.</param>
+    /// <returns>The failure to throw.</returns>
+    private static InvalidOperationException UnsupportedAction(int target) =>
+        new($"enemy-ai-unsupported-action target={target}");
+
+    /// <summary>Creates the named failure used for a fixed switch slot outside the roster.</summary>
+    /// <param name="slot">The requested fixed switch slot.</param>
+    /// <param name="rosterCount">The number of roster slots available.</param>
+    /// <returns>The failure to throw.</returns>
+    private static InvalidOperationException InvalidSwitchSlot(int slot, int rosterCount) =>
+        new($"enemy-ai-invalid-switch-slot slot={slot} roster-count={rosterCount}");
 }

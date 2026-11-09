@@ -771,6 +771,8 @@ tests/Dw3.Formats.Tests/Water/StageObjectDecoderTests.cs
 tests/Dw3.Formats.Tests/Water/StageTileDecoderTests.cs
 tests/Dw3.Game.Tests/BattleDataPackLoaderTests.cs
 tests/Dw3.Game.Tests/BattleControlStatusTests.cs
+tests/Dw3.Game.Tests/BattleEnemyAiSelectionTests.cs
+tests/Dw3.Game.Tests/BattleEnemyAiTurnTests.cs
 tests/Dw3.Game.Tests/BattleEnemyAiVectorCodec.cs
 tests/Dw3.Game.Tests/BattleEnemyAiVectorGenerator.cs
 tests/Dw3.Game.Tests/BattleEnemyAiVectorTests.cs

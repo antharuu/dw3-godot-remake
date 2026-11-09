@@ -155,8 +155,8 @@ public sealed class BattleEnemyAiVectorGenerator
     // Conditions that ignore the battle state: the always-true ones and the random roll.
     private void ChanceConditionCases()
     {
-        // Always-true conditions: 0 and anything outside 1..18.
-        foreach (int cond in new[] { 0, -1, -128, 19, 20, 64, 255 })
+        // Condition 0 is the only unconditionally eligible condition in the qualified catalogue.
+        foreach (int cond in new[] { 0 })
         {
             Condition(cond, 7, Ctx(), [5], $"condition {cond} always holds");
         }
@@ -293,7 +293,7 @@ public sealed class BattleEnemyAiVectorGenerator
 
     private void ActionKindCases()
     {
-        foreach (int kind in Enumerable.Range(-1, 12))
+        foreach (int kind in Enumerable.Range(1, 8))
         {
             Add(
                 new JsonObject
@@ -335,7 +335,7 @@ public sealed class BattleEnemyAiVectorGenerator
     private void PickActionCases()
     {
         Pick("PickAction", Ctx(enemy: Enemy(actions: [])), [], "empty table");
-        Pick("PickAction", Ctx(enemy: Enemy(actions: [A(2, 99)])), [], "single action is the fallback");
+        Pick("PickAction", Ctx(enemy: Enemy(actions: [A(2, 0)])), [], "single action is the fallback");
         Pick("PickAction", Ctx(enemy: Enemy(actions: [A(4, 1, 0), A(3, 0)])), [10], "two actions, first fails");
         Pick("PickAction", Ctx(enemy: Enemy(actions: [A(4, 1, 128), A(3, 0)])), [10], "two actions, first holds");
         Pick("PickAction", Ctx(enemy: Enemy(actions: [A(2, 1, 0), A(3, 1, 0), A(4, 0)])), [0, 0], "three actions, fallback");
@@ -344,7 +344,7 @@ public sealed class BattleEnemyAiVectorGenerator
         Pick("PickAction", Ctx(enemy: Enemy(actions: [A(2, 1, 10), A(3, 1, 10), A(4, 1, 10), A(1, 0)])), [50, 5, 99], "second roll holds, third not drawn");
         Pick("PickAction", Ctx(enemy: Enemy(stats: new EnemyStats(Hp: 10, MaxHp: 1000), actions: [A(3, 2, 32), A(2, 0), A(1, 0), A(4, 0)])), [], "low hp picks technique");
         Pick("PickAction", Ctx(enemy: Enemy(stats: new EnemyStats(Hp: 900, MaxHp: 1000), actions: [A(3, 2, 32), A(2, 0), A(1, 0), A(4, 0)])), [], "high hp falls to second");
-        Pick("PickAction", Ctx(enemy: Enemy(actions: [A(9, 0), A(1, 0), A(1, 0), A(1, 0)])), [], "first holds with unknown kind");
+
         Pick(
             "PickAction",
             Ctx(
@@ -367,7 +367,7 @@ public sealed class BattleEnemyAiVectorGenerator
             var actions = new BattleTableAction[count];
             for (int k = 0; k < count; k++)
             {
-                actions[k] = A(_random.Next(-1, 10), _random.Next(0, 20), _random.Next(0, 160));
+                actions[k] = A(_random.Next(1, 9), _random.Next(0, 19), _random.Next(0, 160));
             }
 
             var ctx = RandomContext(actions, default);
@@ -380,16 +380,15 @@ public sealed class BattleEnemyAiVectorGenerator
         Pick("PickCounter", Ctx(enemy: Enemy(counter: A(1, 0))), [], "condition 0 is no counter");
         Pick("PickCounter", Ctx(enemy: Enemy(counter: A(1, 1, 128))), [3], "attack counter holds");
         Pick("PickCounter", Ctx(enemy: Enemy(counter: A(1, 1, 0))), [3], "attack counter fails");
-        foreach (int target in Enumerable.Range(-1, 11))
+        foreach (int target in Enumerable.Range(1, 8))
         {
             Pick("PickCounter", Ctx(enemy: Enemy(stats: new EnemyStats(Charge: 1), counter: A(target, 14))), [], $"counter target kind {target}");
         }
 
         Pick("PickCounter", Ctx(enemy: Enemy(stats: new EnemyStats(Charge: 0), counter: A(2, 14))), [], "technique counter without charge");
-        Pick("PickCounter", Ctx(enemy: Enemy(counter: A(2, 25))), [], "unknown condition counter holds");
         for (int i = 0; i < 40; i++)
         {
-            var counter = A(_random.Next(-1, 10), _random.Next(0, 20), _random.Next(0, 160));
+            var counter = A(_random.Next(1, 9), _random.Next(0, 19), _random.Next(0, 160));
             Pick("PickCounter", RandomContext([], counter), RandomRolls(2), $"seeded counter {i}");
         }
     }
