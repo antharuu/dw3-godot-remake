@@ -128,6 +128,7 @@ public sealed class BattleState
         {
             BattleId = setup.Battle,
             EncounterKind = setup.EncounterKind,
+            StarterDigimonIds = setup.StarterDigimonIds,
         };
         Array.Copy(setup.Blocks, state.Blocks, Math.Min(setup.Blocks.Length, state.Blocks.Length));
 
@@ -524,7 +525,7 @@ public sealed class BattleState
     /// <param name="rng">Shared battle random source.</param>
     /// <returns><see langword="true"/> when an eligible active partner accepted the source roll.</returns>
     internal bool TryQueueDedigivolve(BattleSide attackerSide, int chance, IBattleRng rng) =>
-        BattleDedigivolveResolver.TryQueue(attackerSide, ActivePlayer, ActivePlayerFighter, chance, rng, _turnScheduler);
+        BattleDedigivolveResolver.TryQueue(attackerSide, ActivePlayer, ActivePlayerFighter, StarterDigimonIds, chance, rng, _turnScheduler);
 
     /// <summary>Records an item stolen from the enemy fighter so the host can commit the transfer to the player's stock.</summary>
     /// <param name="itemId">Item id taken from the enemy.</param>

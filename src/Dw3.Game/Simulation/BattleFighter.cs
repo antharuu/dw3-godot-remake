@@ -87,9 +87,6 @@ public sealed class BattleFighter
     /// <summary>Gets a value indicating whether HP reached 0. A knocked-out fighter cannot act or be switched in.</summary>
     public bool IsKnockedOut => Hp <= 0;
 
-    /// <summary>Gets a value indicating whether this partner currently has a reversible non-base form.</summary>
-    public bool CanDedigivolve => _partner is not null && Id != _partner.Id;
-
     /// <summary>
     /// Loads a party member for the battle. The fighter shares the seed's resolved stats object,
     /// whose flags and damage bonus are reset to the fresh fighter's (no status, no charge).
@@ -141,6 +138,11 @@ public sealed class BattleFighter
         fighter.RefreshStats();
         return fighter;
     }
+
+    /// <summary>Tests whether this partner currently has a reversible form outside the registered base identities.</summary>
+    /// <param name="baseDigimonIds">Every base Digimon identity registered for the eight partner definitions.</param>
+    /// <returns><see langword="true"/> when the fighter is a partner in a non-base form.</returns>
+    public bool CanDedigivolve(IReadOnlyCollection<int> baseDigimonIds) => _partner is not null && !baseDigimonIds.Contains(Id);
 
     /// <summary>Refreshes the stat snapshot used by the next rule calculation from the current form and mutable battle modifiers.</summary>
     /// <remarks>

@@ -42,6 +42,7 @@ public partial class GameHost
                 Battle = encounterIndex,
                 Stage = BattleStageResolver.Resolve(encounters, encounterIndex),
                 Partners = BattleSetupFactory.BuildParty(fighters, TestTeamGrowth.Level, party),
+                StarterDigimonIds = [.. fighters.DigimonOrdered.Take(8).Select(digimon => digimon.Id)],
                 Enemies = BattleSetupFactory.BuildEnemies(encounters, encounterIndex, fighters),
                 Blocks = new int[12],
             };

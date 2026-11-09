@@ -7,13 +7,14 @@ public static class BattleDedigivolveResolver
     /// <param name="attackerSide">Side attempting the effect.</param>
     /// <param name="targetSlot">Active player slot captured by the action.</param>
     /// <param name="target">Active partner targeted by the action.</param>
+    /// <param name="baseDigimonIds">Every registered partner base identity, including partners absent from this battle.</param>
     /// <param name="chance">Extracted chance in 128ths.</param>
     /// <param name="rng">Shared battle random source.</param>
     /// <param name="scheduler">Battle queue that owns the deferred transition.</param>
     /// <returns><see langword="true"/> when the transition was queued.</returns>
-    public static bool TryQueue(BattleSide attackerSide, int targetSlot, BattleFighter? target, int chance, IBattleRng rng, BattleTurnScheduler scheduler)
+    public static bool TryQueue(BattleSide attackerSide, int targetSlot, BattleFighter? target, IReadOnlyCollection<int> baseDigimonIds, int chance, IBattleRng rng, BattleTurnScheduler scheduler)
     {
-        if (attackerSide != BattleSide.Enemy || targetSlot < 0 || target is not { IsKnockedOut: false, CanDedigivolve: true })
+        if (attackerSide != BattleSide.Enemy || targetSlot < 0 || target is not { IsKnockedOut: false } || !target.CanDedigivolve(baseDigimonIds))
         {
             return false;
         }
@@ -40,7 +41,7 @@ public static class BattleDedigivolveResolver
 
         BattleScheduledEvent scheduled = scheduler.PopNext();
         BattleFighter? target = state.FighterAt(scheduled.Side, scheduled.FighterSlot);
-        if (target is { CanDedigivolve: true })
+        if (target is not null && target.CanDedigivolve(state.StarterDigimonIds))
         {
             target.Dedigivolve();
         }

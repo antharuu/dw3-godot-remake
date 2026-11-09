@@ -612,6 +612,51 @@ public sealed class BattleTechniqueEffectTests
         Assert.Equal(1, rng.CallCount);
     }
 
+    /// <summary>Verifies that every registered base identity refuses enemy effect 7 before its chance roll, even when that base belongs to an absent partner.</summary>
+    [Theory]
+    [InlineData(1)]
+    [InlineData(3)]
+    [InlineData(0x17F)]
+    public void EnemyTechnique_RegisteredBaseFormDedigivolve_DoesNotConsumeEffectChanceOrMutate(int baseId)
+    {
+        BattleState state = CreateState();
+        state.StarterDigimonIds = [1, 3, 0x17F];
+        BattleFighter player = Assert.IsType<BattleFighter>(state.ActivePlayerFighter);
+        player.Id = baseId;
+        player.Hp = 71;
+        player.Mp = 43;
+        player.Charge = 32;
+        var rng = new CountingRng(0, 0);
+        var technique = new TechData { Icon = 2, Accuracy = 128, Effect = BattleTechniqueEffect.Dedigivolve, EffectChance = 127, Power = 0 };
+
+        Assert.True(state.EnemyTechnique(technique, rng));
+
+        Assert.Equal(baseId, player.Id);
+        Assert.Equal(71, player.Hp);
+        Assert.Equal(43, player.Mp);
+        Assert.Equal(32, player.Charge);
+        Assert.Equal(1, rng.CallCount);
+    }
+
+    /// <summary>Verifies that an unregistered non-base form remains eligible for effect 7.</summary>
+    [Fact]
+    public void EnemyTechnique_UnregisteredFormDedigivolve_ConsumesEffectChanceAndReturnsToOwnerBase()
+    {
+        BattleState state = CreateState();
+        state.StarterDigimonIds = [1, 3, 0x17F];
+        BattleFighter player = Assert.IsType<BattleFighter>(state.ActivePlayerFighter);
+        player.Id = 99;
+        player.Charge = 32;
+        var rng = new CountingRng(0, 0);
+        var technique = new TechData { Icon = 2, Accuracy = 128, Effect = BattleTechniqueEffect.Dedigivolve, EffectChance = 127, Power = 0 };
+
+        Assert.True(state.EnemyTechnique(technique, rng));
+
+        Assert.Equal(1, player.Id);
+        Assert.Equal(0, player.Charge);
+        Assert.Equal(2, rng.CallCount);
+    }
+
     /// <summary>Verifies that a temporary transformed form follows the same source-form boundary and loses only its temporary form state.</summary>
     [Fact]
     public void EnemyTechnique_TemporaryDedigivolve_ClearsTemporaryFormWithoutChangingHpOrMp()
@@ -675,7 +720,7 @@ public sealed class BattleTechniqueEffectTests
         player.Id = 99;
         var scheduler = new BattleTurnScheduler();
 
-        Assert.True(BattleDedigivolveResolver.TryQueue(BattleSide.Enemy, 0, player, 127, new SequenceRng(0), scheduler));
+        Assert.True(BattleDedigivolveResolver.TryQueue(BattleSide.Enemy, 0, player, [1, 3, 0x17F], 127, new SequenceRng(0), scheduler));
         Assert.Equal(99, player.Id);
         Assert.Equal(BattleScheduledEventKind.Dedigivolve, scheduler.NextKind);
         Assert.True(BattleDedigivolveResolver.ProcessNext(state, scheduler));
@@ -946,6 +991,7 @@ public sealed class BattleTechniqueEffectTests
         stats.Stats[BattleStat.Spirit] = 20;
         stats.Stats[BattleStat.Speed] = 100;
         var setup = new BattleSetup();
+        setup.StarterDigimonIds = [1, 3];
         setup.Partners[0] = new PartnerSeed { Id = 1, Hp = 100, MaxHp = 100, Mp = 100, MaxMp = 100, Stats = stats };
         setup.Partners[1] = new PartnerSeed { Id = 3, Hp = 100, MaxHp = 100, Mp = 100, MaxMp = 100, Stats = stats };
         setup.Enemies[0] = new BattleEnemy { Fighter = 2, Hp = enemyHp, Mp = 100, Strength = 16, BaseStats = stats };

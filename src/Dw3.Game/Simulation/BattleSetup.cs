@@ -22,6 +22,9 @@ public sealed class BattleSetup
     /// <summary>Gets or sets the three party slots. Slot 0 starts as the active partner, a null slot is empty.</summary>
     public PartnerSeed?[] Partners { get; set; } = new PartnerSeed?[3];
 
+    /// <summary>Gets or sets every base Digimon identity registered for the eight partner definitions.</summary>
+    public IReadOnlyCollection<int> StarterDigimonIds { get; set; } = [];
+
     /// <summary>Gets or sets the ambush chance of the encounter entry, copied as stored. The current battle rules do not apply it.</summary>
     public int AmbushChance { get; set; }
 
