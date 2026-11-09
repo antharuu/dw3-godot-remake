@@ -7,6 +7,7 @@ using Dw3Production.Input;
 using Dw3Production.Logging;
 using Dw3Production.Presentation;
 using Dw3Production.Scene;
+using Dw3Production.Session;
 using Dw3Production.Simulation;
 using Dw3Production.Startup;
 using Godot;
@@ -201,6 +202,8 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     private IReadOnlyList<int>? _partyDigimonIds;
 
     private IReadOnlyList<PartnerGrowthState>? _partyGrowth;
+
+    private PlayerSession? _playerSession;
 
     private BattleReportView? _battleReport;
 
@@ -440,6 +443,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
         _growthTables = assets.GrowthTables;
         _partyDigimonIds = assets.PartyDigimonIds;
         _partyGrowth = assets.PartyGrowth;
+        _playerSession = assets.PlayerSession;
         _zoneCache = new FieldZoneCache(assets.FieldLoader, assets.Npc.Occupants);
     }
 
@@ -756,6 +760,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     /// <param name="flow">Completed battle flow whose outcome and party state are read.</param>
     private void ResolveBattleOutcome(BattleFlowController flow)
     {
+        BattleSetupCoordinator.CommitResolvedBattle(_playerSession, flow);
         if (flow.Outcome != BattleOutcome.Won)
         {
             return;

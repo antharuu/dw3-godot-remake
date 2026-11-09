@@ -1,4 +1,5 @@
 using Dw3Production.Conversion;
+using Dw3Production.Session;
 using Dw3Production.Simulation;
 
 namespace Dw3Production.Startup;
@@ -76,6 +77,9 @@ internal sealed class RuntimeAssets
 
     /// <summary>Gets the starting growth state of the test team, in party order.</summary>
     public required IReadOnlyList<PartnerGrowthState> PartyGrowth { get; init; }
+
+    /// <summary>Gets the in-memory player session shared by battles started during this process.</summary>
+    public required PlayerSession PlayerSession { get; init; }
 
     /// <summary>Gets the field conversations and the dialogue font.</summary>
     public required DialogueData Dialogue { get; init; }

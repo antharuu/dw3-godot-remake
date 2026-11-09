@@ -1,5 +1,6 @@
 using Dw3.Data;
 using Dw3Production.Conversion;
+using Dw3Production.Session;
 using Dw3Production.Simulation;
 
 namespace Dw3Production.Startup;
@@ -81,6 +82,7 @@ internal static class RuntimeAssetsLoader
             GrowthTables = GrowthTablesBuilder.Build(rewards.Growth),
             PartyDigimonIds = partyIds,
             PartyGrowth = TestTeamGrowth.Create(partyIds, fighters),
+            PlayerSession = PlayerSession.CreateDebug(fighters, battleLoader.LoadBattleItems()),
             Dialogue = dialogueLoader.LoadDialogue(),
             DialogueFrames = dialogueLoader.LoadDialogueFrame(),
         };

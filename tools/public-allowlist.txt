@@ -1064,3 +1064,8 @@ src/Dw3.Game/Simulation/BattleHitResolver.cs
 src/Dw3.Game/Simulation/BattleStatResolver.cs
 src/Dw3.Game/Simulation/PartnerSeed.cs
 tests/Dw3.Game.Tests/BattleFighterStatResolutionTests.cs
+# Session-owned battle resources across consecutive fights
+src/Dw3.Game/Session/PlayerSession.cs
+src/Dw3.Game/Session/PlayerSessionPartner.cs
+tests/Dw3.Game.Tests/Session/BattleSessionFlowTests.cs
+tests/Dw3.Game.Tests/Session/PlayerSessionTests.cs

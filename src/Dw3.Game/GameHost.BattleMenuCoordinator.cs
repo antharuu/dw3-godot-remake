@@ -38,29 +38,6 @@ public partial class GameHost
                 : [];
         }
 
-        /// <summary>Injects the decoded item catalogue and debug stock into a new battle flow.</summary>
-        /// <param name="flow">Newly constructed battle flow.</param>
-        public void WireCatalogs(BattleFlowController flow)
-        {
-            var items = new Dictionary<int, BattleItem>();
-            var stock = new Dictionary<int, int>();
-            var itemText = new Dictionary<int, BattleTextLine>();
-            if (_host._battleItemsData is not null)
-            {
-                foreach (BattleItemData item in _host._battleItemsData.Items)
-                {
-                    BattleItem battleItem = BattleSetupFactory.ToItem(item);
-                    items[battleItem.Id] = battleItem;
-                    stock[battleItem.Id] = 3;
-                    itemText[battleItem.Id] = BattleTextCatalog.Tokens(item.Name, $"FSITMNAM id={item.NameId}");
-                }
-            }
-
-            flow.Items = items;
-            flow.ItemStock = stock;
-            flow.ItemText = itemText;
-        }
-
         /// <summary>Opens the forced partner-switch page after an active fighter is knocked out.</summary>
         public void OpenForcedSwitchMenu()
         {
