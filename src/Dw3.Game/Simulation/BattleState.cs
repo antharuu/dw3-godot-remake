@@ -29,6 +29,7 @@ public sealed class BattleState
     private readonly BattleTurnScheduler _turnScheduler = new();
     private readonly BattleStatusCoordinator _statusCoordinator;
     private readonly BattleModifierCoordinator _modifierCoordinator;
+    private readonly BattleAutoRecoveryCoordinator _autoRecoveryCoordinator;
     private readonly BattleHitSequence _hitSequence = new();
 
     /// <summary>Initializes a new instance of the <see cref="BattleState"/> class with empty sides and no outcome.</summary>
@@ -37,6 +38,7 @@ public sealed class BattleState
         _enemyTurn = new EnemyTurnResolver(this);
         _statusCoordinator = new BattleStatusCoordinator(this, _turnScheduler);
         _modifierCoordinator = new BattleModifierCoordinator(this, _turnScheduler);
+        _autoRecoveryCoordinator = new BattleAutoRecoveryCoordinator(this, _turnScheduler);
     }
 
     /// <summary>Gets or sets the three party slots. A null slot is empty.</summary>
@@ -93,7 +95,7 @@ public sealed class BattleState
     public int? PendingStolenItem { get; private set; }
 
     /// <summary>Gets the source-defined deferred recovery requested by item-tech 0xBD, or null when none is pending.</summary>
-    public BattleAutoRecovery? PendingAutoRecovery { get; private set; }
+    public BattleAutoRecovery? PendingAutoRecovery { get; internal set; }
 
     /// <summary>Gets the player side's remaining event delay.</summary>
     public int NextPlayerTurn => _turnScheduler.RemainingTurnDelay(BattleSide.Player);
@@ -543,9 +545,10 @@ public sealed class BattleState
         return item;
     }
 
-    /// <summary>Records an accepted source-deferred item recovery without touching inventory stock.</summary>
-    /// <param name="recovery">The active fighter and source technique that will recover later.</param>
-    internal void QueueAutoRecovery(BattleAutoRecovery recovery) => PendingAutoRecovery = recovery;
+    /// <summary>Arms source item recovery in the normal scheduler without touching inventory stock.</summary>
+    /// <param name="recovery">The stable fighter and source technique whose recovery is being armed or refreshed.</param>
+    internal void QueueAutoRecovery(BattleAutoRecovery recovery) =>
+        _autoRecoveryCoordinator.Arm(recovery);
 
     /// <summary>Applies one supported technique effect after its damage has landed.</summary>
     /// <param name="attackerSide">Side that landed the technique.</param>
@@ -716,6 +719,8 @@ public sealed class BattleState
             {
                 any = true;
             }
+
+            any = _autoRecoveryCoordinator.ProcessDueEvents() || any;
         }
         while (any);
     }

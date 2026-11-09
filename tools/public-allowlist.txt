@@ -582,6 +582,7 @@ src/Dw3.Game/Simulation/BattleHitRules.cs
 src/Dw3.Game/Simulation/BattleItem.cs
 src/Dw3.Game/Simulation/BattleItemEffects.cs
 src/Dw3.Game/Simulation/BattleItemTechniqueConsumer.cs
+src/Dw3.Game/Simulation/BattleAutoRecoveryCoordinator.cs
 src/Dw3.Game/Simulation/BattleItemTechniqueRequest.cs
 src/Dw3.Game/Simulation/BattleItemTechniqueUseResult.cs
 src/Dw3.Game/Simulation/BattleKnockOutResolver.cs

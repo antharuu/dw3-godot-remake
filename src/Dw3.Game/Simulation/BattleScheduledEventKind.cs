@@ -47,4 +47,10 @@ public enum BattleScheduledEventKind
 
     /// <summary>Expiry of one fighter's temporary special state.</summary>
     SpecialEnd,
+
+    /// <summary>Recurring recovery granted by item-tech 0xBD.</summary>
+    AutoRecovery,
+
+    /// <summary>Expiry of item-tech 0xBD's recurring recovery.</summary>
+    AutoRecoveryEnd,
 }

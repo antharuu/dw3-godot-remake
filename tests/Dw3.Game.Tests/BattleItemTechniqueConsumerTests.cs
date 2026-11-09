@@ -129,6 +129,43 @@ public sealed class BattleItemTechniqueConsumerTests
         Assert.Equal(new BattleAutoRecovery(BattleSide.Player, state.ActivePlayer, 0xBD), state.PendingAutoRecovery);
     }
 
+    /// <summary>Verifies that auto recovery ticks through the normal time queue and does not heal when it is armed.</summary>
+    [Fact]
+    public void Apply_AutoRecovery_HealsOnItsScheduledTick()
+    {
+        BattleState state = CreateState();
+        BattleFighter active = Assert.IsType<BattleFighter>(state.ActivePlayerFighter);
+        active.Hp = 50;
+        active.Stats.Stats[BattleStat.Spirit] = 100;
+
+        Assert.Equal(BattleItemTechniqueUseResult.Applied, BattleItemTechniqueConsumer.Apply(state, new(BattleSide.Player, 0xBD, 16, 0)));
+        Assert.Equal(50, active.Hp);
+
+        for (var count = 0; count < 5 && active.Hp == 50; count++)
+        {
+            Assert.True(state.PlayerAttack(new TechData { Accuracy = 128, Power = 1 }, new SequenceRng(0, 0)));
+        }
+
+        Assert.InRange(active.Hp, 56, 62);
+    }
+
+    /// <summary>Verifies that a nonpositive healing amount is refused without changing the target.</summary>
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-10)]
+    public void Apply_NonpositiveHeal_IsRefusedWithoutMutation(int amount)
+    {
+        BattleState state = CreateState();
+        BattleFighter active = Assert.IsType<BattleFighter>(state.ActivePlayerFighter);
+        active.Hp = 50;
+
+        BattleItemTechniqueUseResult result = BattleItemTechniqueConsumer.Apply(state, new(BattleSide.Player, 0xB8, 15, amount));
+
+        Assert.Equal(BattleItemTechniqueUseResult.NoBenefit, result);
+        Assert.Equal(50, active.Hp);
+        Assert.Null(state.PendingAutoRecovery);
+    }
+
     /// <summary>Verifies that named refusals leave all fighter resources and deferred recovery unchanged.</summary>
     [Fact]
     public void Apply_RefusedRequest_DoesNotMutateState()

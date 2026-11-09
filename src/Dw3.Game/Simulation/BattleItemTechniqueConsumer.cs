@@ -76,7 +76,7 @@ public static class BattleItemTechniqueConsumer
     /// <returns>Whether applying the request would cause a useful state change.</returns>
     private static bool HasBenefit(BattleState state, BattleItemTechniqueRequest request, int slot) => request.Effect switch
     {
-        BattleTechniqueEffect.ItemHeal => HealingTargets(state, request.TechniqueId, slot).Any(fighter => fighter.Hp < fighter.MaxHp),
+        BattleTechniqueEffect.ItemHeal => request.HealAmount > 0 && HealingTargets(state, request.TechniqueId, slot).Any(fighter => fighter.Hp < fighter.MaxHp),
         BattleTechniqueEffect.ItemAutoRecovery => HasAutoRecoveryBenefit(state, slot),
         BattleTechniqueEffect.ItemCurePoison or BattleTechniqueEffect.ItemCureParalysis or BattleTechniqueEffect.ItemCureConfusion or BattleTechniqueEffect.ItemCureAll => CureTargets(state, request.TechniqueId, slot).Any(fighter => (fighter.Flags & StatusFlag(request.Effect)) != 0),
         BattleTechniqueEffect.ItemRevive => state.Players.OfType<BattleFighter>().Any(fighter => fighter.IsKnockedOut),
@@ -87,9 +87,9 @@ public static class BattleItemTechniqueConsumer
     /// <summary>Tests whether auto recovery can queue useful deferred work for the selected living fighter.</summary>
     /// <param name="state">Battle state containing the selected player slot.</param>
     /// <param name="slot">Validated living active player slot.</param>
-    /// <returns>Whether the fighter lacks HP.</returns>
+    /// <returns>Whether a living target can receive or refresh the source persistent state.</returns>
     private static bool HasAutoRecoveryBenefit(BattleState state, int slot) =>
-        state.Players[slot] is { } fighter && fighter.Hp < fighter.MaxHp;
+        state.Players[slot] is { IsKnockedOut: false };
 
     /// <summary>Applies a previously validated item-tech family without making a second eligibility decision.</summary>
     /// <param name="state">Battle state receiving the effect.</param>

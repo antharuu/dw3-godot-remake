@@ -100,6 +100,52 @@ public sealed class BattleTurnScheduler
     public void RemovePoison(BattleSide side, int fighterSlot) =>
         Remove(BattleScheduledEventKind.PoisonDamage, side, fighterSlot);
 
+    /// <summary>Creates or refreshes the recurring recovery associated with one stable fighter slot.</summary>
+    /// <param name="side">Side containing the recovered fighter.</param>
+    /// <param name="fighterSlot">Stable slot that receives the recovery.</param>
+    public void EnqueueAutoRecovery(BattleSide side, int fighterSlot)
+    {
+        int existing = Find(BattleScheduledEventKind.AutoRecovery, side, fighterSlot);
+        if (existing >= 0 && _events[existing] is { } scheduled)
+        {
+            _events[existing] = scheduled with { Value = 0xBD };
+            return;
+        }
+
+        Add(new BattleScheduledEvent(BattleScheduledEventKind.AutoRecovery, side, 1000, fighterSlot, 0xBD));
+    }
+
+    /// <summary>Arms baseline equipment recovery for one stable fighter slot.</summary>
+    /// <param name="side">Side containing the recovered fighter.</param>
+    /// <param name="fighterSlot">Stable slot that receives the recovery.</param>
+    public void EnqueueEquipmentRecovery(BattleSide side, int fighterSlot)
+    {
+        int existing = Find(BattleScheduledEventKind.AutoRecovery, side, fighterSlot);
+        if (existing >= 0 && _events[existing] is { } scheduled)
+        {
+            _events[existing] = scheduled with { Value = 0 };
+            return;
+        }
+
+        Add(new BattleScheduledEvent(BattleScheduledEventKind.AutoRecovery, side, 1000, fighterSlot));
+    }
+
+    /// <summary>Removes the recurring recovery associated with one stable fighter slot.</summary>
+    /// <param name="side">Side containing the recovered fighter.</param>
+    /// <param name="fighterSlot">Stable slot whose recovery is ending.</param>
+    public void RemoveAutoRecovery(BattleSide side, int fighterSlot) =>
+        Remove(BattleScheduledEventKind.AutoRecovery, side, fighterSlot);
+
+    /// <summary>Creates or refreshes the side-wide expiry of item-tech 0xBD.</summary>
+    /// <param name="side">Side whose item recovery expires.</param>
+    /// <param name="fighterSlot">Stable target slot selected when the item was used.</param>
+    /// <param name="delay">Source-qualified delay until expiry.</param>
+    public void EnqueueAutoRecoveryEnd(BattleSide side, int fighterSlot, int delay)
+    {
+        Remove(BattleScheduledEventKind.AutoRecoveryEnd, side, fighterSlot);
+        Add(new BattleScheduledEvent(BattleScheduledEventKind.AutoRecoveryEnd, side, Math.Max(delay, 0), fighterSlot));
+    }
+
     /// <summary>Creates or refreshes a control-status expiry for one fighter.</summary>
     /// <param name="kind">Control-status expiry kind.</param>
     /// <param name="side">Side containing the affected fighter.</param>
@@ -237,6 +283,24 @@ public sealed class BattleTurnScheduler
     /// <summary>Adds time to every pending event for a priority insertion.</summary>
     /// <param name="shift">Units added to pending events.</param>
     private void ShiftAll(int shift) => ReplaceDelays(item => item.Delay + shift);
+
+    /// <summary>Finds one event identified by kind, side and stable fighter slot.</summary>
+    /// <param name="kind">Event kind being matched.</param>
+    /// <param name="side">Owning battle side.</param>
+    /// <param name="fighterSlot">Stable fighter slot.</param>
+    /// <returns>Backing queue index, or -1 when no matching event exists.</returns>
+    private int Find(BattleScheduledEventKind kind, BattleSide side, int fighterSlot)
+    {
+        for (var index = 0; index < Capacity; index++)
+        {
+            if (_events[index] is { } item && item.Kind == kind && item.Side == side && item.FighterSlot == fighterSlot)
+            {
+                return index;
+            }
+        }
+
+        return -1;
+    }
 
     /// <summary>Subtracts elapsed units from pending events after a pop.</summary>
     /// <param name="elapsed">Units removed from every remaining event.</param>

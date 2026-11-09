@@ -48,6 +48,9 @@ public sealed class BattleFighter
     /// <summary>Gets or sets the item id attached to the fighter, 0 for none.</summary>
     public int Item { get; set; }
 
+    /// <summary>Gets or sets a value indicating whether the fighter has the source equipment that supplies baseline recurring recovery.</summary>
+    public bool HasRecoveryEquipment { get; set; }
+
     /// <summary>Gets or sets the fighter-table chance of yielding its held item, in 1024ths.</summary>
     public int ItemChance { get; set; }
 
