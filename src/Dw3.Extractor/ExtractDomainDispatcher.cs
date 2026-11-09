@@ -34,6 +34,7 @@ internal static class ExtractDomainDispatcher
         ["battle-models"] = BattleModelExtractionStep.Extract,
         ["battle-stages"] = BattleStageExtractionStep.Extract,
         ["battle-hud"] = BattleHudExtractionStep.Extract,
+        ["battle-audio"] = BattleAudioExtractionStep.Extract,
         ["battle-report"] = BattleReportExtractionStep.Extract,
     };
 

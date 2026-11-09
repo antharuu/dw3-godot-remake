@@ -38,6 +38,7 @@ internal static class FullExtractionStep
         new("battle-models", (openDisc, output) => BattleModelExtractionStep.Extract(openDisc, output, TextWriter.Null, TextWriter.Null)),
         new("battle-stages", (openDisc, output) => BattleStageExtractionStep.Extract(openDisc, output, TextWriter.Null, TextWriter.Null)),
         new("battle-hud", (openDisc, output) => BattleHudExtractionStep.Extract(openDisc, output, TextWriter.Null, TextWriter.Null)),
+        new("battle-audio", (openDisc, output) => BattleAudioExtractionStep.Extract(openDisc, output, TextWriter.Null, TextWriter.Null)),
         new("battle-report", (openDisc, output) => BattleReportExtractionStep.Extract(openDisc, output, TextWriter.Null, TextWriter.Null)),
     ];
 
