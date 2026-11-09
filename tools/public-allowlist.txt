@@ -587,6 +587,8 @@ src/Dw3.Game/Simulation/BattleEnemyAi.cs
 src/Dw3.Game/Simulation/BattleFighter.cs
 src/Dw3.Game/Simulation/BattleFighterTiming.cs
 src/Dw3.Game/Simulation/BattleFlowController.cs
+src/Dw3.Game/Simulation/DigivolutionEligibility.cs
+src/Dw3.Game/Simulation/SessionBattleCatalogFactory.cs
 src/Dw3.Game/Simulation/BattleFlowPhase.cs
 src/Dw3.Game/Simulation/BattleHitResult.cs
 src/Dw3.Game/Simulation/BattleHitResolver.cs
@@ -835,6 +837,7 @@ tests/Dw3.Game.Tests/DamageCalculatorVectorTests.cs
 tests/Dw3.Game.Tests/DiagnosticProbeFamilyRunnerTests.cs
 tests/Dw3.Game.Tests/DialogueBubbleLayoutTests.cs
 tests/Dw3.Game.Tests/DialogueDataPackLoaderTests.cs
+tests/Dw3.Game.Tests/DigivolutionEligibilityTests.cs
 tests/Dw3.Game.Tests/DuplicationFactorizationTests.cs
 tests/Dw3.Game.Tests/Dw3.Game.Tests.csproj
 tests/Dw3.Game.Tests/ExtractionControllerTests.cs

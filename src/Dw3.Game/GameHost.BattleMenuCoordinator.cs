@@ -30,6 +30,11 @@ public partial class GameHost
             }
 
             _host._battleCatalogForId = active.Id;
+            if (flow.EnforceDigivolutionCatalog)
+            {
+                return;
+            }
+
             flow.PlayerBasicTech = BattleSetupFactory.PlayerBasicTech(_host.FighterData, _host.TechniqueData, active.Id);
             flow.PlayerTechniques = BattleSetupFactory.PlayerTechniques(_host.FighterData, _host.TechniqueData, active.Id, flow.Text ?? throw new InvalidOperationException("battle text unavailable"));
             int partnerIndex = BattleSetupFactory.DigimonIndexFor(_host.FighterData, active.Id);

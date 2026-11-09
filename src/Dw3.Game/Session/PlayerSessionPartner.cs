@@ -17,6 +17,7 @@ public sealed class PlayerSessionPartner
         IReadOnlyList<int> equipmentIds)
     {
         BattleSeed = battleSeed ?? throw new ArgumentNullException(nameof(battleSeed));
+        OriginFormId = BattleSeed.Id;
         KnownForms = [.. knownForms ?? throw new ArgumentNullException(nameof(knownForms))];
         KnownTechniques = [.. knownTechniques ?? throw new ArgumentNullException(nameof(knownTechniques))];
         EquipmentIds = [.. equipmentIds ?? throw new ArgumentNullException(nameof(equipmentIds))];
@@ -24,6 +25,9 @@ public sealed class PlayerSessionPartner
 
     /// <summary>Gets the canonical seed containing the partner's current HP, MP, stats and persistent statuses.</summary>
     public PartnerSeed BattleSeed { get; }
+
+    /// <summary>Gets the source-tree base form used to evaluate this partner's normal Digivolution entries.</summary>
+    public int OriginFormId { get; }
 
     /// <summary>Gets the Digimon forms the partner owns for battle menu eligibility.</summary>
     public IReadOnlyList<int> KnownForms { get; }

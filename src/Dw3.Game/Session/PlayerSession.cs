@@ -81,5 +81,6 @@ public sealed class PlayerSession
 
         partner.BattleSeed.Hp = fighter.Hp;
         partner.BattleSeed.Mp = fighter.Mp;
+        partner.BattleSeed.Id = fighter.Id;
     }
 }

@@ -30,6 +30,15 @@ public sealed class BattleFlowController
     /// for the Digivolve submenu. The host refreshes it when the active partner changes.</summary>
     public IReadOnlyList<int> PlayerDigivolutions { get; set; } = [];
 
+    /// <summary>Gets or sets a value indicating whether Digivolve commands must be present in the session-backed form catalogue.</summary>
+    public bool EnforceDigivolutionCatalog { get; set; }
+
+    /// <summary>Gets or sets source-backed technique menus keyed by the active partner form.</summary>
+    public IReadOnlyDictionary<int, IReadOnlyList<BattleTechnique>> PlayerTechniquesByForm { get; set; } = new Dictionary<int, IReadOnlyList<BattleTechnique>>();
+
+    /// <summary>Gets or sets source-backed basic attacks keyed by the active partner form.</summary>
+    public IReadOnlyDictionary<int, TechData> PlayerBasicTechByForm { get; set; } = new Dictionary<int, TechData>();
+
     /// <summary>Gets or sets the battle item catalogue keyed by item id. An item missing from it cannot be used.</summary>
     public IReadOnlyDictionary<int, BattleItem> Items { get; set; } = new Dictionary<int, BattleItem>();
 
@@ -70,6 +79,7 @@ public sealed class BattleFlowController
     {
         State = state;
         State.Techs = Techs;
+        RefreshActivePartnerCatalog();
         Phase = State.NextActor == BattleSide.Player ? BattleFlowPhase.PlayerCommand : BattleFlowPhase.EnemyTurn;
         ClearMessage();
     }
@@ -243,6 +253,26 @@ public sealed class BattleFlowController
         return true;
     }
 
+    /// <summary>Refreshes form-selected player actions after a session-backed transformation or switch.</summary>
+    private void RefreshActivePartnerCatalog()
+    {
+        BattleFighter? active = State.ActivePlayerFighter;
+        if (active is null)
+        {
+            return;
+        }
+
+        if (PlayerBasicTechByForm.TryGetValue(active.Id, out TechData? basic))
+        {
+            PlayerBasicTech = basic;
+        }
+
+        if (PlayerTechniquesByForm.TryGetValue(active.Id, out IReadOnlyList<BattleTechnique>? techniques))
+        {
+            PlayerTechniques = techniques;
+        }
+    }
+
     /// <summary>
     /// A technique from the submenu, by technique id. An unknown id or an unaffordable technique
     /// shows the "no MP" message and leaves the menu open.
@@ -277,11 +307,12 @@ public sealed class BattleFlowController
     /// <returns>Whether the command spent the turn.</returns>
     private bool ChooseDigivolve(BattleFighter? actor, int form)
     {
-        if (!State.PlayerDigivolve(form))
+        if ((EnforceDigivolutionCatalog && !PlayerDigivolutions.Contains(form)) || !State.PlayerDigivolve(form))
         {
             return RejectCommand();
         }
 
+        RefreshActivePartnerCatalog();
         SetMessage("digivolve", NameTokens(actor), NameTokens(State.ActivePlayerFighter));
         return true;
     }
@@ -296,6 +327,7 @@ public sealed class BattleFlowController
             return RejectCommand();
         }
 
+        RefreshActivePartnerCatalog();
         SetMessage("switch", NameTokens(State.ActivePlayerFighter));
         return true;
     }

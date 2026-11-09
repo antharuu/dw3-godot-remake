@@ -9,6 +9,50 @@ namespace Dw3.Game.Tests.Session;
 /// <summary>Verifies that the production setup and resolution seams carry one session across battles.</summary>
 public sealed class BattleSessionFlowTests
 {
+    /// <summary>Uses the production session path to reject unavailable forms and persist a real form change.</summary>
+    [Fact]
+    public void ProductionDigivolution_UsesKnownFormsRefreshesStatsAndPersistsTheSelectedForm()
+    {
+        PlayerSession session = CreateDigivolutionSession();
+        DigivolutionData digivolutions = Digivolutions();
+        BattleFlowController first = Build(session, digivolutions);
+
+        Assert.Equal([2], first.PlayerDigivolutions);
+        Assert.Equal([2], first.PlayerTechniques.Select(technique => technique.Id));
+        Assert.False(first.Choose(BattleCommand.Digivolve, 3, new FixedRng()));
+        Assert.False(first.Choose(BattleCommand.Digivolve, 1, new FixedRng()));
+        Assert.True(first.Choose(BattleCommand.Digivolve, 2, new FixedRng()));
+        Assert.Equal(2, first.State.ActivePlayerFighter!.Id);
+        Assert.Equal(10, first.State.ActivePlayerFighter.Mp);
+        Assert.Equal(2, first.NameIds[2]);
+        Assert.Equal(25, first.State.ActivePlayerFighter.Stats.Stats[BattleStat.Attack]);
+        Assert.Equal([1], first.PlayerTechniques.Select(technique => technique.Id));
+
+        GameHost.BattleSetupCoordinator.CommitResolvedBattle(session, first);
+        BattleFlowController second = Build(session, digivolutions);
+
+        Assert.Equal(2, second.State.ActivePlayerFighter!.Id);
+        Assert.Equal(25, second.State.ActivePlayerFighter.Stats.Stats[BattleStat.Attack]);
+        Assert.Empty(second.PlayerDigivolutions);
+        Assert.False(second.Choose(BattleCommand.Digivolve, 1, new FixedRng()));
+    }
+
+    /// <summary>Rejects an owned form from the production menu when its extracted stat gate is not met.</summary>
+    [Fact]
+    public void ProductionDigivolution_RejectsOwnedFormWhenExtractedConditionFails()
+    {
+        PlayerSession session = CreateDigivolutionSession();
+        var digivolutions = new DigivolutionData(
+            [new PartnerDigivolution(0, 1, [new DigivolutionEntry(1, 2, [], Stat: 1, Value: 26)])],
+            new DigivolutionBlast([]));
+
+        BattleFlowController flow = Build(session, digivolutions);
+
+        Assert.Empty(flow.PlayerDigivolutions);
+        Assert.False(flow.Choose(BattleCommand.Digivolve, 2, new FixedRng()));
+        Assert.Equal(1, flow.State.ActivePlayerFighter!.Id);
+    }
+
     /// <summary>Uses production setup, catalog wiring, item use and resolution before creating the next battle.</summary>
     [Fact]
     public void ConsecutiveProductionBattles_PreserveResolvedResourcesStatusesAndItemStock()
@@ -34,8 +78,9 @@ public sealed class BattleSessionFlowTests
 
     /// <summary>Builds a new flow through the host coordinator's engine-free production seam.</summary>
     /// <param name="session">Session reused by both battles.</param>
+    /// <param name="digivolutions">Optional extracted evolution requirements.</param>
     /// <returns>Production-configured and started battle flow.</returns>
-    private static BattleFlowController Build(PlayerSession session)
+    private static BattleFlowController Build(PlayerSession session, DigivolutionData? digivolutions = null)
     {
         return GameHost.BattleSetupCoordinator.BuildForSession(
             new GameHost.BattleSetupCoordinator.BattleSessionBuildInput(
@@ -46,7 +91,8 @@ public sealed class BattleSessionFlowTests
                 session,
                 Items(),
                 Text(),
-                new FixedRng()));
+                new FixedRng(),
+                digivolutions));
     }
 
     /// <summary>Builds the persistent three-partner session used by the production coordinator.</summary>
@@ -54,6 +100,20 @@ public sealed class BattleSessionFlowTests
     private static PlayerSession CreateSession()
     {
         return new PlayerSession([Partner(1, 50, 10), Partner(2, 100, 10), Partner(3, 100, 10)], new Dictionary<int, int> { [42] = 1 });
+    }
+
+    /// <summary>Builds a session where only form two is owned besides the current base form.</summary>
+    /// <returns>Session with a source-backed alternate stat snapshot.</returns>
+    private static PlayerSession CreateDigivolutionSession()
+    {
+        BattleStats baseStats = Stats();
+        baseStats.Level = 1;
+        var alternate = Stats();
+        alternate.Stats[BattleStat.Attack] = 25;
+        var first = new PartnerSeed { Id = 1, Hp = 50, MaxHp = 100, Mp = 10, MaxMp = 10, Stats = baseStats, FormStats = new Dictionary<int, BattleStats> { [2] = alternate } };
+        return new PlayerSession(
+            [new PlayerSessionPartner(first, [1, 2], [1, 2], []), Partner(2, 100, 10), Partner(3, 100, 10)],
+            new Dictionary<int, int> { [42] = 1 });
     }
 
     /// <summary>Creates one session slot with supplied current battle resources.</summary>
@@ -67,7 +127,7 @@ public sealed class BattleSessionFlowTests
     /// <returns>Partner and enemy records for the consecutive battle.</returns>
     private static FighterData Fighters()
     {
-        DigimonData[] partners = [Digimon(1), Digimon(2), Digimon(3)];
+        DigimonData[] partners = [Digimon(1), Digimon(2, [2, 1]), Digimon(3)];
         return new FighterData(
             partners.ToDictionary(partner => partner.Id),
             partners,
@@ -81,6 +141,19 @@ public sealed class BattleSessionFlowTests
     /// <summary>Builds decoded techniques for the basic attack and MP-consuming technique command.</summary>
     /// <returns>Technique catalog.</returns>
     private static TechniqueData Techniques() => new(new Dictionary<int, Dw3Production.Conversion.TechData> { [1] = Tech(0, 1), [2] = Tech(3, 1000) });
+
+    /// <summary>Builds the extracted ownership and level gates for the first partner's normal form menu.</summary>
+    /// <returns>Digivolution data with one eligible and one unknown target.</returns>
+    private static DigivolutionData Digivolutions() => new(
+        [new PartnerDigivolution(
+            Partner: 0,
+            BaseId: 1,
+            Evolutions:
+            [
+                new DigivolutionEntry(0, 2, [new EvolutionNeed(0, 1, 1)], Stat: 7, Value: 1),
+                new DigivolutionEntry(1, 3, [], Stat: 7, Value: 1),
+            ])],
+        new DigivolutionBlast([]));
 
     /// <summary>Builds the consumable healing item used through the flow's real item path.</summary>
     /// <returns>Battle item catalog.</returns>
@@ -108,9 +181,10 @@ public sealed class BattleSessionFlowTests
     }
 
     /// <summary>Builds a valid decoded partner record for the production fighter catalog.</summary>
-    /// <param name="id">Partner Digimon id.</param>
+    /// <param name="id">Partner form id.</param>
+    /// <param name="skills">Optional source skill slots for the form.</param>
     /// <returns>Partner data with the basic and technique-menu skills.</returns>
-    private static DigimonData Digimon(int id) => new(id, [10, 10, 10, 10, 100], new int[7], [1, 2], 0, new int[5], [], [], 0, 0, 0, 100, 10, 0, 0, new int[5], new int[7], [], id, 0, false);
+    private static DigimonData Digimon(int id, IReadOnlyList<int>? skills = null) => new(id, [10, 10, 10, 10, 100], new int[7], skills ?? [1, 2], 0, new int[5], [], [], 0, 0, 0, 100, 10, 0, 0, new int[5], new int[7], [], id, 0, false);
 
     /// <summary>Builds a decoded technique used by the normal production flow.</summary>
     /// <param name="mp">MP cost.</param>

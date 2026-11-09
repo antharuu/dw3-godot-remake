@@ -32,7 +32,7 @@ public partial class GameHost
             PlayerSession session = _host._playerSession ?? throw new CacheResourceException("CACHE_RESOURCE_UNAVAILABLE", "player session unavailable");
             BattleTextData text = _host._battleTextData ?? throw new CacheResourceException("CACHE_RESOURCE_UNAVAILABLE", "battle text manifest unavailable");
             BattleItemsData items = _host._battleItemsData ?? throw new CacheResourceException("CACHE_RESOURCE_UNAVAILABLE", "battle items manifest unavailable");
-            var input = new BattleSessionBuildInput(fighters, techs, encounters, encounterIndex, session, items, text, _host._battleRng);
+            var input = new BattleSessionBuildInput(fighters, techs, encounters, encounterIndex, session, items, text, _host._battleRng, _host.DigivolutionData);
             BattleFlowController flow = BuildUnstarted(input, out BattleSetup setup, out int activeDigimon);
             flow.Start(CreateOpeningState(setup, activeDigimon, _host._battleRng));
             _host._battleNameIds = new Dictionary<int, int>(flow.NameIds);
@@ -85,6 +85,7 @@ public partial class GameHost
                 nameIds,
                 new BattleTextCatalog(input.Text));
             WireCatalogs(flow, input.Items, input.Session.Inventory);
+            SessionBattleCatalogFactory.ConfigureActivePartner(flow, input.Session, input.Fighters, input.Techs, input.Digivolutions, input.Text);
             activeDigimon = party[0];
             return flow;
         }
@@ -130,7 +131,9 @@ public partial class GameHost
         internal static BattleState CreateOpeningState(BattleSetup setup, int digimon, IBattleRng rng)
         {
             ArgumentNullException.ThrowIfNull(rng);
-            return BattleState.InitFighters(setup, digimon, rng);
+            BattleState state = BattleState.InitFighters(setup, digimon, rng);
+            state.ActivePlayerFighter?.RefreshStats();
+            return state;
         }
 
         /// <summary>Groups every engine-free input needed to create one session-backed battle flow.</summary>
@@ -142,6 +145,7 @@ public partial class GameHost
         /// <param name="Items">Decoded battle item catalogue.</param>
         /// <param name="Text">Decoded battle text catalogue.</param>
         /// <param name="Rng">Shared host random stream.</param>
+        /// <param name="Digivolutions">Optional extracted form requirements used to filter session-owned forms.</param>
         internal sealed record BattleSessionBuildInput(
             FighterData Fighters,
             TechniqueData Techs,
@@ -150,6 +154,7 @@ public partial class GameHost
             PlayerSession Session,
             BattleItemsData Items,
             BattleTextData Text,
-            IBattleRng Rng);
+            IBattleRng Rng,
+            DigivolutionData? Digivolutions = null);
     }
 }
