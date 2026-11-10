@@ -35,22 +35,55 @@ public static class BattleActionScriptDecoder
         throw new FormatException($"battle action script entry {entry} has no end command");
     }
 
-    /// <summary>Maps one raw opcode and consumes its fixed-width argument words.</summary>
+    /// <summary>Maps one raw opcode and consumes its subcommand-specific argument words.</summary>
     /// <param name="data">Complete archive data.</param>
     /// <param name="raw">Raw signed opcode word.</param>
     /// <param name="cursor">Cursor advanced beyond the command.</param>
     /// <param name="end">Exclusive boundary of this archive entry.</param>
     /// <param name="entry">Archive-entry index for error messages.</param>
     /// <returns>The semantic command.</returns>
-    private static BattleActionCommand ReadCommand(byte[] data, short raw, ref int cursor, int end, int entry)
+    private static BattleActionCommand ReadCommand(byte[] data, short raw, ref int cursor, int end, int entry) => raw switch
     {
-        return raw switch
+        EndOpcode => new BattleActionCommand(BattleActionOpcode.End, []),
+        ModelOpcode => ReadModelCommand(data, ref cursor, end, entry),
+        SpriteEffectOpcode => ReadSpriteEffectCommand(data, ref cursor, end, entry),
+        WaitOpcode => new BattleActionCommand(BattleActionOpcode.Wait, ReadArguments(data, ref cursor, end, entry, raw, 1)),
+        _ => throw new FormatException($"battle action script entry {entry} has unsupported opcode 0x{raw:X}"),
+    };
+
+    /// <summary>Reads the qualified motion and visibility forms of model opcode two.</summary>
+    /// <param name="data">Complete archive data.</param>
+    /// <param name="cursor">Cursor advanced beyond the command.</param>
+    /// <param name="end">Exclusive boundary of this archive entry.</param>
+    /// <param name="entry">Archive-entry index for error messages.</param>
+    /// <returns>The semantic model command.</returns>
+    private static BattleActionCommand ReadModelCommand(byte[] data, ref int cursor, int end, int entry)
+    {
+        short subcommand = ReadWord(data, ref cursor, end, entry, "model subcommand");
+        short actor = ReadWord(data, ref cursor, end, entry, "model actor");
+        return subcommand switch
         {
-            EndOpcode => new BattleActionCommand(BattleActionOpcode.End, []),
-            ModelOpcode => new BattleActionCommand(BattleActionOpcode.Model, ReadArguments(data, ref cursor, end, entry, raw, 2)),
-            SpriteEffectOpcode => new BattleActionCommand(BattleActionOpcode.SpriteEffect, ReadArguments(data, ref cursor, end, entry, raw, 5)),
-            WaitOpcode => new BattleActionCommand(BattleActionOpcode.Wait, ReadArguments(data, ref cursor, end, entry, raw, 1)),
-            _ => throw new FormatException($"battle action script entry {entry} has unsupported opcode 0x{raw:X}"),
+            0 => new BattleActionCommand(BattleActionOpcode.Model, [subcommand, actor, ReadWord(data, ref cursor, end, entry, "model motion")]),
+            1 => new BattleActionCommand(BattleActionOpcode.Model, [subcommand, actor]),
+            _ => throw new FormatException($"battle action script entry {entry} has unsupported model subcommand {subcommand}"),
+        };
+    }
+
+    /// <summary>Reads the qualified start and load forms of sprite-effect opcode three.</summary>
+    /// <param name="data">Complete archive data.</param>
+    /// <param name="cursor">Cursor advanced beyond the command.</param>
+    /// <param name="end">Exclusive boundary of this archive entry.</param>
+    /// <param name="entry">Archive-entry index for error messages.</param>
+    /// <returns>The semantic sprite-effect command.</returns>
+    private static BattleActionCommand ReadSpriteEffectCommand(byte[] data, ref int cursor, int end, int entry)
+    {
+        short subcommand = ReadWord(data, ref cursor, end, entry, "sprite-effect subcommand");
+        short effect = ReadWord(data, ref cursor, end, entry, "sprite-effect reference");
+        return subcommand switch
+        {
+            0 => new BattleActionCommand(BattleActionOpcode.SpriteEffect, [subcommand, effect, .. ReadArguments(data, ref cursor, end, entry, SpriteEffectOpcode, 3)]),
+            1 => new BattleActionCommand(BattleActionOpcode.SpriteEffect, [subcommand, effect]),
+            _ => throw new FormatException($"battle action script entry {entry} has unsupported sprite-effect subcommand {subcommand}"),
         };
     }
 

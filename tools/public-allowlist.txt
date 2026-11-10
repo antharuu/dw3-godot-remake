@@ -1072,3 +1072,13 @@ src/Dw3.Game/Session/PlayerSession.cs
 src/Dw3.Game/Session/PlayerSessionPartner.cs
 tests/Dw3.Game.Tests/Session/BattleSessionFlowTests.cs
 tests/Dw3.Game.Tests/Session/PlayerSessionTests.cs
+# B9 action script extraction and pack loading
+src/Dw3.Extractor/BattleActionArchiveExtractor.cs
+src/Dw3.Extractor/BattleActionDomainWriter.cs
+src/Dw3.Extractor/BattleActionExtraction.cs
+src/Dw3.Formats/Battle/BattleActionCommand.cs
+src/Dw3.Formats/Battle/BattleActionOpcode.cs
+src/Dw3.Formats/Battle/BattleActionScript.cs
+src/Dw3.Formats/Battle/BattleActionScriptDecoder.cs
+src/Dw3.Game/Conversion/BattleActionManifestLoader.cs
+tests/Dw3.Formats.Tests/Battle/ActionScriptDecoderTests.cs

@@ -16,8 +16,10 @@ public sealed class BattleDataPackLoaderTests : IDisposable
         using var loader = new BattleDataPackLoader(new DataPackReader(_root));
 
         Assert.EndsWith("battle/models/fighter-383-model.json", loader.ModelPath(383).Replace('\\', '/'));
+        Assert.EndsWith("battle/actions/fighter-383.json", loader.ActionScriptPath(383).Replace('\\', '/'));
         Assert.EndsWith("battle/stages/stage-18-model.json", loader.StagePath(18).Replace('\\', '/'));
         Assert.Throws<CacheResourceException>(() => loader.ModelPath(51));
+        Assert.Throws<CacheResourceException>(() => loader.ActionScriptPath(51));
     }
 
     public void Dispose()
@@ -53,8 +55,10 @@ public sealed class BattleDataPackLoaderTests : IDisposable
             context =>
             {
                 Write(context, "battle/models/fighter-383-model.json", "{}");
+                Write(context, "battle/actions/fighter-383.json", "{}");
                 Write(context, "battle/stages/stage-18-model.json", "{}");
                 Execute(context, "INSERT INTO battle_models (fighter_id,entry_ordinal,record_index,kind,status,manifest_path) VALUES (383,0,0,0,'decoded','battle/models/fighter-383-model.json')");
+                Execute(context, "INSERT INTO battle_action_archives (fighter_id,effect_file,effect_entry,status,manifest_path) VALUES (383,1,0,'decoded','battle/actions/fighter-383.json')");
             });
     }
 }

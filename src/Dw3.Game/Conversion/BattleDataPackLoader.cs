@@ -51,6 +51,12 @@ public sealed class BattleDataPackLoader : IDisposable
         return path;
     }
 
+    /// <summary>Returns the validated action script manifest for one fighter.</summary>
+    /// <param name="fighterId">The numeric fighter id to look up.</param>
+    /// <returns>The absolute path to the action script JSON file.</returns>
+    /// <exception cref="CacheResourceException">The record is absent, unsupported, or its manifest is missing.</exception>
+    public string ActionScriptPath(int fighterId) => BattleActionManifestLoader.Load(_database, fighterId, RequireFile);
+
     /// <summary>Returns the absolute path to the battle stage model JSON for the given stage id.</summary>
     /// <param name="stageId">The numeric battle stage id.</param>
     /// <returns>The absolute path to the stage model JSON.</returns>

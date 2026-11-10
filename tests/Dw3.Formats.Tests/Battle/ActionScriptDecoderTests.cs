@@ -12,15 +12,15 @@ public sealed class ActionScriptDecoderTests
     public void DecodeReadsOnePhysicalTechniqueScript()
     {
         byte[] archive = Archive(
-            Script(2, 0, 3, 3, 0, 9999, 1, 2, 3, 11, 5, 0),
-            Script(2, 0, 7, 0));
+            Script(2, 0, 0, 3, 3, 0, 9999, 1, 2, 3, 11, 5, 0),
+            Script(2, 0, 0, 7, 0));
 
         BattleActionScript script = BattleActionScriptDecoder.Decode(archive, 0);
 
         Assert.Equal(0, script.Entry);
         Assert.Equal(4, script.Commands.Count);
         Assert.Equal(BattleActionOpcode.Model, script.Commands[0].Opcode);
-        Assert.Equal([0, 3], script.Commands[0].Arguments);
+        Assert.Equal([0, 0, 3], script.Commands[0].Arguments);
         Assert.Equal(BattleActionOpcode.SpriteEffect, script.Commands[1].Opcode);
         Assert.Equal([0, 9999, 1, 2, 3], script.Commands[1].Arguments);
         Assert.Equal(BattleActionOpcode.Wait, script.Commands[2].Opcode);
@@ -37,6 +37,54 @@ public sealed class ActionScriptDecoderTests
         FormatException error = Assert.Throws<FormatException>(() => BattleActionScriptDecoder.Decode(archive, 0));
 
         Assert.Equal("battle action script entry 0 command 0x3 is truncated", error.Message);
+    }
+
+    /// <summary>Consumes the motion number selected by model subcommand zero before reading the end opcode.</summary>
+    [Fact]
+    public void DecodeConsumesMotionNumberForModelSubcommandZero()
+    {
+        BattleActionScript script = BattleActionScriptDecoder.Decode(Archive(Script(2, 0, 0, 7, 0)), 0);
+
+        Assert.Collection(
+            script.Commands,
+            command =>
+            {
+                Assert.Equal(BattleActionOpcode.Model, command.Opcode);
+                Assert.Equal([0, 0, 7], command.Arguments);
+            },
+            command => Assert.Equal(BattleActionOpcode.End, command.Opcode));
+    }
+
+    /// <summary>Does not require coordinates for the sprite-effect loading subcommand.</summary>
+    [Fact]
+    public void DecodeConsumesOnlyLoadArgumentsForSpriteEffectSubcommandOne()
+    {
+        BattleActionScript script = BattleActionScriptDecoder.Decode(Archive(Script(3, 1, 9999, 0)), 0);
+
+        Assert.Collection(
+            script.Commands,
+            command =>
+            {
+                Assert.Equal(BattleActionOpcode.SpriteEffect, command.Opcode);
+                Assert.Equal([1, 9999], command.Arguments);
+            },
+            command => Assert.Equal(BattleActionOpcode.End, command.Opcode));
+    }
+
+    /// <summary>Consumes the model visibility control without treating the terminator as an argument.</summary>
+    [Fact]
+    public void DecodeConsumesVisibilityControlForModelSubcommandOne()
+    {
+        BattleActionScript script = BattleActionScriptDecoder.Decode(Archive(Script(2, 1, 0, 0)), 0);
+
+        Assert.Collection(
+            script.Commands,
+            command =>
+            {
+                Assert.Equal(BattleActionOpcode.Model, command.Opcode);
+                Assert.Equal([1, 0], command.Arguments);
+            },
+            command => Assert.Equal(BattleActionOpcode.End, command.Opcode));
     }
 
     /// <summary>Builds a u32-offset archive from independently supplied s16 script entries.</summary>

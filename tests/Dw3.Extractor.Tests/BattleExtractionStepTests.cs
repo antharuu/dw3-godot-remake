@@ -60,6 +60,8 @@ public sealed class BattleExtractionStepTests : IDisposable
         Assert.Equal(7L, Scalar(db, "SELECT count(*) FROM battle_text_tables WHERE entry_count = 1"));
         Assert.Equal(7L, Scalar(db, "SELECT count(*) FROM battle_text_tokens WHERE code = 18"));
         Assert.True(Scalar(db, "SELECT count(*) FROM battle_growth") is long rows && rows > 0);
+        Assert.Equal("decoded|battle/actions/fighter-1.json", Scalar(db, "SELECT status || '|' || manifest_path FROM battle_action_archives WHERE fighter_id = 1"));
+        Assert.Equal(2L, Scalar(db, "SELECT opcode_count FROM battle_action_scripts WHERE fighter_id = 1"));
         Assert.Contains("\"discPath\": \"AAA/DAT/COUNTRY/FRA/FSMFIGHT.BIN\"", File.ReadAllText(Path.Combine(_root, "data", "battle", "text", "fsmfight.json")));
         Assert.True(File.Exists(Path.Combine(_root, "data", "battle", "battle.json")));
         string battleJson = File.ReadAllText(Path.Combine(_root, "data", "battle", "battle.json"));
@@ -156,10 +158,23 @@ public sealed class BattleExtractionStepTests : IDisposable
         Fabricate.U16(table, 2, 2);
         Fabricate.U16(table, 4, 9);
 
+        var fighterTable = new byte[0x104];
+        Fabricate.U32(fighterTable, 4, 0x10);
+        Fabricate.U32(fighterTable, 8, 0x40);
+        Fabricate.U32(fighterTable, 12, 0x100);
+        Fabricate.U16(fighterTable, 0x10, 1);
+        Fabricate.U32(fighterTable, 0x40, 0x0300_0000);
+        Fabricate.U32(fighterTable, 0x44, 0x0300_0000);
+        Fabricate.U32(fighterTable, 0x48, 0x0300_0000);
+
         var disc = new FabricatedDisc()
             .Add("SLES_039.36", executable)
             .Add("AAA/PRO/SDIGIEDT.PRO", table)
-            .Add("AAA/PRO/STFGTREP.PRO", report);
+            .Add("AAA/PRO/STFGTREP.PRO", report)
+            .Add("AAA/DAT/FIGHT/FIGHTERS.BIN", fighterTable)
+            .Add("AAA/DAT/FIGHT/ACTIONS.BIN", Fabricate.Archive([[2, 0, 0, 0, 0, 0, 7, 0, 0, 0]]));
+        Fabricate.FileSector(executable, 0x1CC, disc.LbaOf("AAA/DAT/FIGHT/FIGHTERS.BIN"));
+        Fabricate.FileSector(executable, 0x300, disc.LbaOf("AAA/DAT/FIGHT/ACTIONS.BIN"));
         foreach (string name in new[] { "FSMFIGHT", "FSDIGNAM", "FSSKLNAM", "FSSKLINF", "FSITMNAM", "FSITMINF", "FSFGTRPT" })
         {
             disc.Add($"AAA/DAT/COUNTRY/FRA/{name}.BIN", Fabricate.TextTable([0x12]));

@@ -29,6 +29,7 @@ internal static class BattleExtractionStep
     private const uint GrowthAddress = 0x8008916C;
     private const int Partners = 8;
     private const int EvolutionsPerPartner = 44;
+    private const int FighterTableFileId = 0x1CC;
     private static readonly JsonSerializerOptions IndentedJsonOptions = new() { WriteIndented = true };
     private static readonly string[] FrenchTextPaths =
     [
@@ -107,6 +108,7 @@ internal static class BattleExtractionStep
         BattleReward[] rewards = WriteRewards(context, report);
         BattleGrowthData growth = BattleDataDecoder.DecodeGrowth(report, ReportOffset(GrowthAddress, 316, "growth tables"));
         WriteGrowth(context, growth);
+        BattleActionArchiveExtractor.Write(context, disc, entries, executable, FighterTableFileId);
         WriteBattleJson(context, digimon, techniques, table, items, rewards, growth);
         foreach (string path in FrenchTextPaths)
         {
