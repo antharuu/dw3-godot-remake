@@ -7,6 +7,98 @@ namespace Dw3.Formats.Tests.Battle;
 /// <summary>Tests the bounded decoding of fighter action-script archive entries.</summary>
 public sealed class ActionScriptDecoderTests
 {
+    // ── RED fixtures (must FAIL before the fix and PASS after) ───────────────
+
+    /// <summary>Rejects a camera command whose mode word is missing (truncated to opcode + time only).</summary>
+    [Fact]
+    public void DecodeRejectsCameraTruncatedWithNoMode()
+    {
+        // [5, 0] = opcode Camera (5) then time=0; mode is missing → truncated FormatException.
+        byte[] archive = Archive(Script(5, 0));
+
+        FormatException error = Assert.Throws<FormatException>(() => BattleActionScriptDecoder.Decode(archive, 0));
+
+        Assert.Contains("truncated", error.Message, StringComparison.Ordinal);
+    }
+
+    /// <summary>
+    /// Correctly segments a stage fade (mode 0) that also reads fade-out and fade-in words
+    /// before continuing to the following model and end commands.
+    /// The old Animate grammar misread [15,15] as a HitTrigger opcode.
+    /// </summary>
+    [Fact]
+    public void DecodeStageMode0ConsumesStageIdAndFades()
+    {
+        // Raw: Stage(mode=0, stageId=56, fadeOut=15, fadeIn=15), Model(sub=0, actor=0, motion=7), End
+        byte[] archive = Archive(Script(4, 0, 56, 15, 15, 2, 0, 0, 7, 0));
+
+        BattleActionScript script = BattleActionScriptDecoder.Decode(archive, 0);
+
+        Assert.Equal(3, script.Commands.Count);
+        Assert.Equal(BattleActionOpcode.Stage, script.Commands[0].Opcode);
+        Assert.Equal<short>([0, 56, 15, 15], script.Commands[0].Arguments);
+        Assert.Equal(BattleActionOpcode.Model, script.Commands[1].Opcode);
+        Assert.Equal<short>([0, 0, 7], script.Commands[1].Arguments);
+        Assert.Equal(BattleActionOpcode.End, script.Commands[2].Opcode);
+    }
+
+    // ── Positive-control fixtures ────────────────────────────────────────────
+
+    /// <summary>Decodes a full camera command with mode 0 and camera-id word.</summary>
+    [Fact]
+    public void DecodeCameraMode0ReadsTimeModAndId()
+    {
+        // [5, 15, 0, 2, 0] = Camera(time=15, mode=0, id=2), End
+        byte[] archive = Archive(Script(5, 15, 0, 2, 0));
+
+        BattleActionScript script = BattleActionScriptDecoder.Decode(archive, 0);
+
+        Assert.Collection(
+            script.Commands,
+            command =>
+            {
+                Assert.Equal(BattleActionOpcode.Camera, command.Opcode);
+                Assert.Equal<short>([15, 0, 2], command.Arguments);
+            },
+            command => Assert.Equal(BattleActionOpcode.End, command.Opcode));
+    }
+
+    /// <summary>Stage mode 1 (load) reads only mode and stage-id.</summary>
+    [Fact]
+    public void DecodeStageModeOneConsumesOnlyModeAndStageId()
+    {
+        // [4, 1, 56, 0] = Stage(mode=1, stageId=56), End
+        byte[] archive = Archive(Script(4, 1, 56, 0));
+
+        BattleActionScript script = BattleActionScriptDecoder.Decode(archive, 0);
+
+        Assert.Collection(
+            script.Commands,
+            command =>
+            {
+                Assert.Equal(BattleActionOpcode.Stage, command.Opcode);
+                Assert.Equal<short>([1, 56], command.Arguments);
+            },
+            command => Assert.Equal(BattleActionOpcode.End, command.Opcode));
+    }
+
+    /// <summary>Stage mode 0 and mode 1 in sequence without consuming adjacent opcodes.</summary>
+    [Fact]
+    public void DecodeStageLoadThenFadeInSequence()
+    {
+        // Stage(1,56) = load: 3 words; Stage(0,56,15,15) = fade: 5 words; End
+        byte[] archive = Archive(Script(4, 1, 56, 4, 0, 56, 15, 15, 0));
+
+        BattleActionScript script = BattleActionScriptDecoder.Decode(archive, 0);
+
+        Assert.Equal(3, script.Commands.Count);
+        Assert.Equal<short>([1, 56], script.Commands[0].Arguments);
+        Assert.Equal<short>([0, 56, 15, 15], script.Commands[1].Arguments);
+        Assert.Equal(BattleActionOpcode.End, script.Commands[2].Opcode);
+    }
+
+    // ── Existing format fixtures (opcodes preserved) ─────────────────────────
+
     /// <summary>Decodes the ordinary motion, sprite-effect, wait and terminator action sequence.</summary>
     [Fact]
     public void DecodeReadsOnePhysicalTechniqueScript()
@@ -87,82 +179,68 @@ public sealed class ActionScriptDecoderTests
             command => Assert.Equal(BattleActionOpcode.End, command.Opcode));
     }
 
-    /// <summary>Decodes the animate opcode (raw 4) with its two arguments without consuming the end word.</summary>
+    /// <summary>Model subcommand 2 (transform) reads sub, actor and one extra word.</summary>
     [Fact]
-    public void DecodeConsumesAnimateArgumentsBeforeEnd()
+    public void DecodeConsumesTransformWordForModelSubcommandTwo()
     {
-        BattleActionScript script = BattleActionScriptDecoder.Decode(Archive(Script(4, 1, 56, 0)), 0);
+        // [2, 2, 4, 5, 0] = Model(sub=2, actor=4, transform=5), End
+        BattleActionScript script = BattleActionScriptDecoder.Decode(Archive(Script(2, 2, 4, 5, 0)), 0);
 
         Assert.Collection(
             script.Commands,
             command =>
             {
-                Assert.Equal(BattleActionOpcode.Animate, command.Opcode);
-                Assert.Equal<short>([1, 56], command.Arguments);
+                Assert.Equal(BattleActionOpcode.Model, command.Opcode);
+                Assert.Equal<short>([2, 4, 5], command.Arguments);
             },
             command => Assert.Equal(BattleActionOpcode.End, command.Opcode));
     }
 
-    /// <summary>Decodes the apply opcode (raw 5) with no arguments and reads the end word as the next opcode.</summary>
+    /// <summary>Decodes both effect-model subcommands (load=1 and trigger=0) with their reference words.</summary>
     [Fact]
-    public void DecodeConsumesApplyWithNoArguments()
+    public void DecodeConsumesEffectModelLoadAndTrigger()
     {
-        BattleActionScript script = BattleActionScriptDecoder.Decode(Archive(Script(5, 0)), 0);
+        // EM(1, 108), EM(0, 108), End
+        BattleActionScript script = BattleActionScriptDecoder.Decode(Archive(Script(6, 1, 108, 6, 0, 108, 0)), 0);
 
-        Assert.Collection(
-            script.Commands,
-            command => Assert.Equal(BattleActionOpcode.Apply, command.Opcode),
-            command => Assert.Equal(BattleActionOpcode.End, command.Opcode));
+        Assert.Equal(3, script.Commands.Count);
+        Assert.Equal(BattleActionOpcode.EffectModel, script.Commands[0].Opcode);
+        Assert.Equal<short>([1, 108], script.Commands[0].Arguments);
+        Assert.Equal(BattleActionOpcode.EffectModel, script.Commands[1].Opcode);
+        Assert.Equal<short>([0, 108], script.Commands[1].Arguments);
+        Assert.Equal(BattleActionOpcode.End, script.Commands[2].Opcode);
     }
 
-    /// <summary>Decodes the configure opcode (raw 6) with its two arguments without consuming the end word.</summary>
+    /// <summary>Rejects an unsupported camera mode without inventing an opcode for it.</summary>
     [Fact]
-    public void DecodeConsumesConfigureArgumentsBeforeEnd()
+    public void DecodeRejectsCameraMode1AsUnsupportedForThisBatch()
     {
-        BattleActionScript script = BattleActionScriptDecoder.Decode(Archive(Script(6, 1, 101, 0)), 0);
+        // [5, 15, 1, 0] = Camera(time=15, mode=1) → unsupported
+        byte[] archive = Archive(Script(5, 15, 1, 0));
 
-        Assert.Collection(
-            script.Commands,
-            command =>
-            {
-                Assert.Equal(BattleActionOpcode.Configure, command.Opcode);
-                Assert.Equal<short>([1, 101], command.Arguments);
-            },
-            command => Assert.Equal(BattleActionOpcode.End, command.Opcode));
+        FormatException error = Assert.Throws<FormatException>(() => BattleActionScriptDecoder.Decode(archive, 0));
+
+        Assert.Contains("unsupported camera mode 1", error.Message, StringComparison.Ordinal);
     }
 
-    /// <summary>Decodes the hit-trigger opcode (raw 15) with its two arguments without consuming the end word.</summary>
-    [Fact]
-    public void DecodeConsumesHitTriggerArgumentsBeforeEnd()
-    {
-        BattleActionScript script = BattleActionScriptDecoder.Decode(Archive(Script(15, 15, 2, 0)), 0);
-
-        Assert.Collection(
-            script.Commands,
-            command =>
-            {
-                Assert.Equal(BattleActionOpcode.HitTrigger, command.Opcode);
-                Assert.Equal<short>([15, 2], command.Arguments);
-            },
-            command => Assert.Equal(BattleActionOpcode.End, command.Opcode));
-    }
-
-    /// <summary>Decodes the full first-batch basic-attack script pattern against a confirmed ROM fixture.</summary>
+    /// <summary>Decodes the full first-batch basic-attack script pattern against the confirmed ROM grammar.</summary>
     [Fact]
     public void DecodeReadsAttackScriptPattern()
     {
-        // Real-world attack script (selector 5) confirmed from fighter 3 effects sub-archive:
-        // SpriteEffect-load sprite 2, Animate actor-1 56 frames, Animate actor-0 56 frames,
-        // HitTrigger(15,2), End.  Words beyond End are animation data, not opcodes.
-        byte[] archive = Archive(Script(3, 1, 2, 4, 1, 56, 4, 0, 56, 15, 15, 2, 0, 99, 99, 99));
+        // SpriteEffect-load(2), Stage-load(1,56), Stage-fade(0,56,15,15), Model-motion(0,0,14), End.
+        // The old Animate grammar had stopped at the first 0 (model sub-command), misreading it as End.
+        byte[] archive = Archive(Script(3, 1, 2, 4, 1, 56, 4, 0, 56, 15, 15, 2, 0, 0, 14, 0));
 
         BattleActionScript script = BattleActionScriptDecoder.Decode(archive, 0);
 
         Assert.Equal(5, script.Commands.Count);
         Assert.Equal(BattleActionOpcode.SpriteEffect, script.Commands[0].Opcode);
-        Assert.Equal(BattleActionOpcode.Animate, script.Commands[1].Opcode);
-        Assert.Equal(BattleActionOpcode.Animate, script.Commands[2].Opcode);
-        Assert.Equal(BattleActionOpcode.HitTrigger, script.Commands[3].Opcode);
+        Assert.Equal(BattleActionOpcode.Stage, script.Commands[1].Opcode);
+        Assert.Equal<short>([1, 56], script.Commands[1].Arguments);
+        Assert.Equal(BattleActionOpcode.Stage, script.Commands[2].Opcode);
+        Assert.Equal<short>([0, 56, 15, 15], script.Commands[2].Arguments);
+        Assert.Equal(BattleActionOpcode.Model, script.Commands[3].Opcode);
+        Assert.Equal<short>([0, 0, 14], script.Commands[3].Arguments);
         Assert.Equal(BattleActionOpcode.End, script.Commands[4].Opcode);
     }
 

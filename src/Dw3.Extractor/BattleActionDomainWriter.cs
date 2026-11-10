@@ -7,7 +7,7 @@ namespace Dw3.Extractor;
 /// <summary>Writes bounded fighter action scripts into the battle data-pack contract.</summary>
 internal static class BattleActionDomainWriter
 {
-    private const string Schema = "m9b-battle-actions-v1";
+    private const string Schema = "m9b-battle-actions-v2";
 
     /// <summary>Persists every resolved action archive with an explicit decoded or unsupported status.</summary>
     /// <param name="context">Current data-pack write context.</param>

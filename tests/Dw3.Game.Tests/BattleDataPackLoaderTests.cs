@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Dw3.Data;
 using Dw3.Extractor;
 using Dw3.Formats.Battle;
@@ -24,6 +25,11 @@ public sealed class BattleDataPackLoaderTests : IDisposable
         Assert.Throws<CacheResourceException>(() => loader.ActionScriptPath(51, 5));
     }
 
+    /// <summary>
+    /// Verifies the full roundtrip: BattleActionDomainWriter writes a pack with one decoded,
+    /// one unsupported and one absent record, then BattleDataPackLoader resolves only the decoded
+    /// one. The resolved manifest file contains exactly the commands that were originally written.
+    /// </summary>
     [Fact]
     public void WriterRoundtripDecoded_UnsupportedAndAbsent()
     {
@@ -35,6 +41,21 @@ public sealed class BattleDataPackLoaderTests : IDisposable
         Assert.Equal(1L, Scalar(db, "SELECT count(*) FROM battle_action_archives WHERE fighter_id=383 AND status='unsupported'"));
         string decodedPath = loader.ActionScriptPath(383, 5);
         Assert.True(File.Exists(decodedPath), $"decoded manifest missing: {decodedPath}");
+
+        // Verify the JSON file written by the production writer carries the exact command list.
+        string json = File.ReadAllText(decodedPath);
+        using JsonDocument doc = JsonDocument.Parse(json);
+        JsonElement cmds = doc.RootElement.GetProperty("commands");
+        Assert.Equal(2, cmds.GetArrayLength());
+
+        // Command 0: Model(0,0,7)
+        Assert.Equal((int)BattleActionOpcode.Model, cmds[0].GetProperty("opcode").GetInt32());
+        int[] args0 = [.. cmds[0].GetProperty("arguments").EnumerateArray().Select(e => e.GetInt32())];
+        Assert.Equal([0, 0, 7], args0);
+
+        // Command 1: End
+        Assert.Equal((int)BattleActionOpcode.End, cmds[1].GetProperty("opcode").GetInt32());
+        Assert.Equal(0, cmds[1].GetProperty("arguments").GetArrayLength());
     }
 
     public void Dispose()
@@ -53,14 +74,6 @@ public sealed class BattleDataPackLoaderTests : IDisposable
         File.WriteAllText(path, content);
     }
 
-    private static void Execute(DataPackWriteContext context, string sql)
-    {
-        using SqliteCommand command = context.Database.CreateCommand();
-        command.Transaction = context.Transaction;
-        command.CommandText = sql;
-        command.ExecuteNonQuery();
-    }
-
     private static object? Scalar(SqliteConnection connection, string sql)
     {
         using SqliteCommand command = connection.CreateCommand();
@@ -76,7 +89,12 @@ public sealed class BattleDataPackLoaderTests : IDisposable
             {
                 WriteFile(context, "battle/models/fighter-383-model.json", "{}");
                 WriteFile(context, "battle/stages/stage-18-model.json", "{}");
-                Execute(context, "INSERT INTO battle_models (fighter_id,entry_ordinal,record_index,kind,status,manifest_path) VALUES (383,0,0,0,'decoded','battle/models/fighter-383-model.json')");
+                using (SqliteCommand command = context.Database.CreateCommand())
+                {
+                    command.Transaction = context.Transaction;
+                    command.CommandText = "INSERT INTO battle_models (fighter_id,entry_ordinal,record_index,kind,status,manifest_path) VALUES (383,0,0,0,'decoded','battle/models/fighter-383-model.json')";
+                    command.ExecuteNonQuery();
+                }
 
                 // Use the production domain writer — this is the roundtrip under test.
                 var decoded = new BattleActionScript(
