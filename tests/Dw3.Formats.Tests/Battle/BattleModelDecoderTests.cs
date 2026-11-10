@@ -38,8 +38,8 @@ public sealed class BattleModelDecoderTests
     {
         FighterModelTable table = FighterModelTable.Parse(FighterTable());
 
-        Assert.Equal(new FighterModelReference(501, 1, 0x05, false, 12, 3, 12, 9), table.Resolve(501));
-        Assert.Equal(new FighterModelReference(77, 2, FighterModelTable.EnemyKindMinimum, true, 40, 0x21, 41, 0x22), table.Resolve(77));
+        Assert.Equal(new FighterModelReference(501, 1, 0x05, false, 12, 3, 12, 9, 12, 11), table.Resolve(501));
+        Assert.Equal(new FighterModelReference(77, 2, FighterModelTable.EnemyKindMinimum, true, 40, 0x21, 41, 0x22, 42, 0x23), table.Resolve(77));
     }
 
     [Fact]
@@ -259,8 +259,10 @@ public sealed class BattleModelDecoderTests
         WriteEntry(data, 0x18, 0, 0, 0);
         WriteU32(data, 0x40 + (1 * FighterModelTable.PartnerStride), (12u << 16) | 3);
         WriteU32(data, 0x40 + (1 * FighterModelTable.PartnerStride) + 4, (12u << 16) | 9);
+        WriteU32(data, 0x40 + (1 * FighterModelTable.PartnerStride) + 8, (12u << 16) | 11);
         WriteU32(data, 0x100 + (2 * FighterModelTable.EnemyStride), (40u << 16) | 0x21);
         WriteU32(data, 0x100 + (2 * FighterModelTable.EnemyStride) + 4, (41u << 16) | 0x22);
+        WriteU32(data, 0x100 + (2 * FighterModelTable.EnemyStride) + 8, (42u << 16) | 0x23);
         return data;
     }
 

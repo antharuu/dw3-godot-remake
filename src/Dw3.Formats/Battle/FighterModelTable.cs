@@ -96,6 +96,7 @@ public sealed class FighterModelTable
         (FighterModelEntry entry, int record, bool isEnemy) = Locate(fighterId);
         uint model = BinaryPrimitives.ReadUInt32LittleEndian(_data.AsSpan(record, 4));
         uint motions = BinaryPrimitives.ReadUInt32LittleEndian(_data.AsSpan(record + 4, 4));
+        uint effects = BinaryPrimitives.ReadUInt32LittleEndian(_data.AsSpan(record + 8, 4));
         return new FighterModelReference(
             fighterId,
             entry.Index,
@@ -104,7 +105,9 @@ public sealed class FighterModelTable
             (int)(model >> 16),
             (int)(model & 0xFFFF),
             (int)(motions >> 16),
-            (int)(motions & 0xFFFF));
+            (int)(motions & 0xFFFF),
+            (int)(effects >> 16),
+            (int)(effects & 0xFFFF));
     }
 
     /// <summary>Reads placement, source cameras and face rectangles from the fighter record.</summary>
