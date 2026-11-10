@@ -87,6 +87,85 @@ public sealed class ActionScriptDecoderTests
             command => Assert.Equal(BattleActionOpcode.End, command.Opcode));
     }
 
+    /// <summary>Decodes the animate opcode (raw 4) with its two arguments without consuming the end word.</summary>
+    [Fact]
+    public void DecodeConsumesAnimateArgumentsBeforeEnd()
+    {
+        BattleActionScript script = BattleActionScriptDecoder.Decode(Archive(Script(4, 1, 56, 0)), 0);
+
+        Assert.Collection(
+            script.Commands,
+            command =>
+            {
+                Assert.Equal(BattleActionOpcode.Animate, command.Opcode);
+                Assert.Equal<short>([1, 56], command.Arguments);
+            },
+            command => Assert.Equal(BattleActionOpcode.End, command.Opcode));
+    }
+
+    /// <summary>Decodes the apply opcode (raw 5) with no arguments and reads the end word as the next opcode.</summary>
+    [Fact]
+    public void DecodeConsumesApplyWithNoArguments()
+    {
+        BattleActionScript script = BattleActionScriptDecoder.Decode(Archive(Script(5, 0)), 0);
+
+        Assert.Collection(
+            script.Commands,
+            command => Assert.Equal(BattleActionOpcode.Apply, command.Opcode),
+            command => Assert.Equal(BattleActionOpcode.End, command.Opcode));
+    }
+
+    /// <summary>Decodes the configure opcode (raw 6) with its two arguments without consuming the end word.</summary>
+    [Fact]
+    public void DecodeConsumesConfigureArgumentsBeforeEnd()
+    {
+        BattleActionScript script = BattleActionScriptDecoder.Decode(Archive(Script(6, 1, 101, 0)), 0);
+
+        Assert.Collection(
+            script.Commands,
+            command =>
+            {
+                Assert.Equal(BattleActionOpcode.Configure, command.Opcode);
+                Assert.Equal<short>([1, 101], command.Arguments);
+            },
+            command => Assert.Equal(BattleActionOpcode.End, command.Opcode));
+    }
+
+    /// <summary>Decodes the hit-trigger opcode (raw 15) with its two arguments without consuming the end word.</summary>
+    [Fact]
+    public void DecodeConsumesHitTriggerArgumentsBeforeEnd()
+    {
+        BattleActionScript script = BattleActionScriptDecoder.Decode(Archive(Script(15, 15, 2, 0)), 0);
+
+        Assert.Collection(
+            script.Commands,
+            command =>
+            {
+                Assert.Equal(BattleActionOpcode.HitTrigger, command.Opcode);
+                Assert.Equal<short>([15, 2], command.Arguments);
+            },
+            command => Assert.Equal(BattleActionOpcode.End, command.Opcode));
+    }
+
+    /// <summary>Decodes the full first-batch basic-attack script pattern against a confirmed ROM fixture.</summary>
+    [Fact]
+    public void DecodeReadsAttackScriptPattern()
+    {
+        // Real-world attack script (selector 5) confirmed from fighter 3 effects sub-archive:
+        // SpriteEffect-load sprite 2, Animate actor-1 56 frames, Animate actor-0 56 frames,
+        // HitTrigger(15,2), End.  Words beyond End are animation data, not opcodes.
+        byte[] archive = Archive(Script(3, 1, 2, 4, 1, 56, 4, 0, 56, 15, 15, 2, 0, 99, 99, 99));
+
+        BattleActionScript script = BattleActionScriptDecoder.Decode(archive, 0);
+
+        Assert.Equal(5, script.Commands.Count);
+        Assert.Equal(BattleActionOpcode.SpriteEffect, script.Commands[0].Opcode);
+        Assert.Equal(BattleActionOpcode.Animate, script.Commands[1].Opcode);
+        Assert.Equal(BattleActionOpcode.Animate, script.Commands[2].Opcode);
+        Assert.Equal(BattleActionOpcode.HitTrigger, script.Commands[3].Opcode);
+        Assert.Equal(BattleActionOpcode.End, script.Commands[4].Opcode);
+    }
+
     /// <summary>Builds a u32-offset archive from independently supplied s16 script entries.</summary>
     private static byte[] Archive(params short[][] entries)
     {

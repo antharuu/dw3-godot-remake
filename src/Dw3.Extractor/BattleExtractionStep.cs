@@ -108,7 +108,8 @@ internal static class BattleExtractionStep
         BattleReward[] rewards = WriteRewards(context, report);
         BattleGrowthData growth = BattleDataDecoder.DecodeGrowth(report, ReportOffset(GrowthAddress, 316, "growth tables"));
         WriteGrowth(context, growth);
-        BattleActionArchiveExtractor.Write(context, disc, entries, executable, FighterTableFileId);
+        IReadOnlySet<int> uniqueSelectors = techniques.Select(static t => (int)t.Script).ToHashSet();
+        BattleActionArchiveExtractor.Write(context, disc, entries, executable, FighterTableFileId, uniqueSelectors);
         WriteBattleJson(context, digimon, techniques, table, items, rewards, growth);
         foreach (string path in FrenchTextPaths)
         {

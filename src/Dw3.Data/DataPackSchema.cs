@@ -10,7 +10,7 @@ public static class DataPackSchema
     /// <summary>
     /// Gets the newest pack schema that this runtime can read.
     /// </summary>
-    public const int Version = 18;
+    public const int Version = 19;
 
     /// <summary>
     /// Creates the schema structures required by every data pack.
@@ -544,8 +544,8 @@ public static class DataPackSchema
             CREATE TABLE battle_model_textures (fighter_id INTEGER NOT NULL, texture_key INTEGER NOT NULL, mode INTEGER NOT NULL, page INTEGER NOT NULL, clut_x INTEGER NULL, clut_y INTEGER NULL, transparent_pixels INTEGER NOT NULL, stp_pixels INTEGER NOT NULL, image_path TEXT NOT NULL, PRIMARY KEY (fighter_id, texture_key), FOREIGN KEY (fighter_id) REFERENCES battle_models(fighter_id));
             CREATE TABLE battle_model_track_keys (fighter_id INTEGER NOT NULL, bone INTEGER NOT NULL, track INTEGER NOT NULL, ordinal INTEGER NOT NULL, frame INTEGER NOT NULL, x INTEGER NOT NULL, y INTEGER NOT NULL, z INTEGER NOT NULL, PRIMARY KEY (fighter_id, bone, track, ordinal), FOREIGN KEY (fighter_id, bone) REFERENCES battle_model_bones(fighter_id, bone));
             CREATE TABLE battle_model_motion_steps (fighter_id INTEGER NOT NULL, motion INTEGER NOT NULL, ordinal INTEGER NOT NULL, step_index INTEGER NOT NULL, count INTEGER NOT NULL, frame INTEGER NOT NULL, end_frame INTEGER NOT NULL, PRIMARY KEY (fighter_id, motion, ordinal), FOREIGN KEY (fighter_id) REFERENCES battle_models(fighter_id));
-            CREATE TABLE battle_action_archives (fighter_id INTEGER PRIMARY KEY NOT NULL, effect_file INTEGER NOT NULL, effect_entry INTEGER NOT NULL, status TEXT NOT NULL, reason TEXT NULL, manifest_path TEXT NULL);
-            CREATE TABLE battle_action_scripts (fighter_id INTEGER NOT NULL, entry_ordinal INTEGER NOT NULL, opcode_count INTEGER NOT NULL, PRIMARY KEY (fighter_id, entry_ordinal), FOREIGN KEY (fighter_id) REFERENCES battle_action_archives(fighter_id));
+            CREATE TABLE battle_action_archives (fighter_id INTEGER NOT NULL, script_selector INTEGER NOT NULL, effect_file INTEGER NOT NULL, effect_archive_entry INTEGER NOT NULL, status TEXT NOT NULL, reason TEXT NULL, manifest_path TEXT NULL, PRIMARY KEY (fighter_id, script_selector));
+            CREATE TABLE battle_action_scripts (fighter_id INTEGER NOT NULL, script_selector INTEGER NOT NULL, entry_ordinal INTEGER NOT NULL, opcode_count INTEGER NOT NULL, PRIMARY KEY (fighter_id, script_selector, entry_ordinal), FOREIGN KEY (fighter_id, script_selector) REFERENCES battle_action_archives(fighter_id, script_selector));
             """;
         command.ExecuteNonQuery();
     }

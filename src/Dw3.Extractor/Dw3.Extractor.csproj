@@ -9,5 +9,6 @@
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Dw3.Extractor.Tests" />
+    <InternalsVisibleTo Include="Dw3.Game.Tests" />
   </ItemGroup>
 </Project>

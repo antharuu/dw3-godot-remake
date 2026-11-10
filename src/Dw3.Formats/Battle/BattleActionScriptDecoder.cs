@@ -2,13 +2,17 @@ using System.Buffers.Binary;
 
 namespace Dw3.Formats.Battle;
 
-/// <summary>Decodes the established motion, sprite-effect, wait and end commands of fighter action archives.</summary>
+/// <summary>Decodes the established motion, sprite-effect, animate, apply, configure, wait, hit-trigger and end commands of fighter action archives.</summary>
 public static class BattleActionScriptDecoder
 {
     private const int EndOpcode = 0;
     private const int ModelOpcode = 2;
     private const int SpriteEffectOpcode = 3;
+    private const int AnimateOpcode = 4;
+    private const int ApplyOpcode = 5;
+    private const int ConfigureOpcode = 6;
     private const int WaitOpcode = 11;
+    private const int HitTriggerOpcode = 15;
 
     /// <summary>Decodes one archive entry without reading outside the entry's declared bounds.</summary>
     /// <param name="archive">Raw u32-offset archive data.</param>
@@ -47,7 +51,11 @@ public static class BattleActionScriptDecoder
         EndOpcode => new BattleActionCommand(BattleActionOpcode.End, []),
         ModelOpcode => ReadModelCommand(data, ref cursor, end, entry),
         SpriteEffectOpcode => ReadSpriteEffectCommand(data, ref cursor, end, entry),
+        AnimateOpcode => new BattleActionCommand(BattleActionOpcode.Animate, ReadArguments(data, ref cursor, end, entry, raw, 2)),
+        ApplyOpcode => new BattleActionCommand(BattleActionOpcode.Apply, []),
+        ConfigureOpcode => new BattleActionCommand(BattleActionOpcode.Configure, ReadArguments(data, ref cursor, end, entry, raw, 2)),
         WaitOpcode => new BattleActionCommand(BattleActionOpcode.Wait, ReadArguments(data, ref cursor, end, entry, raw, 1)),
+        HitTriggerOpcode => new BattleActionCommand(BattleActionOpcode.HitTrigger, ReadArguments(data, ref cursor, end, entry, raw, 2)),
         _ => throw new FormatException($"battle action script entry {entry} has unsupported opcode 0x{raw:X}"),
     };
 
