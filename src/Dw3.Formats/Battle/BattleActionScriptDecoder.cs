@@ -3,17 +3,20 @@ using System.Buffers.Binary;
 namespace Dw3.Formats.Battle;
 
 /// <summary>Decodes the established first-batch commands of fighter action archives:
-/// model (motion, visibility, transform), sprite-effect (start, load), stage (load, fade),
-/// camera (mode-0 position), effect-model (load, trigger), wait and end.</summary>
+/// model (motion, visibility), sprite-effect (start, load), stage (load, fade),
+/// camera (preset or explicit view), effect-model (load, start), sound, wait and end.</summary>
 public static class BattleActionScriptDecoder
 {
     private const int EndOpcode = 0;
+    private const int HitDispatchOpcode = 1;
     private const int ModelOpcode = 2;
     private const int SpriteEffectOpcode = 3;
     private const int StageOpcode = 4;
     private const int CameraOpcode = 5;
     private const int EffectModelOpcode = 6;
+    private const int SoundOpcode = 10;
     private const int WaitOpcode = 11;
+    private const int AlternateEndOpcode = 255;
 
     /// <summary>Decodes one archive entry without reading outside the entry's declared bounds.</summary>
     /// <param name="archive">Raw u32-offset archive data.</param>
@@ -31,7 +34,7 @@ public static class BattleActionScriptDecoder
             short rawOpcode = ReadWord(archive, ref cursor, end, entry, "opcode");
             BattleActionCommand command = ReadCommand(archive, rawOpcode, ref cursor, end, entry);
             commands.Add(command);
-            if (command.Opcode == BattleActionOpcode.End)
+            if (command.Opcode is BattleActionOpcode.End or BattleActionOpcode.AlternateEnd)
             {
                 return new BattleActionScript(entry, commands);
             }
@@ -49,17 +52,19 @@ public static class BattleActionScriptDecoder
     /// <returns>The semantic command.</returns>
     private static BattleActionCommand ReadCommand(byte[] data, short raw, ref int cursor, int end, int entry) => raw switch
     {
-        EndOpcode => new BattleActionCommand(BattleActionOpcode.End, []),
+        EndOpcode or AlternateEndOpcode => new BattleActionCommand((BattleActionOpcode)raw, []),
+        HitDispatchOpcode => new BattleActionCommand(BattleActionOpcode.HitDispatch, ReadArguments(data, ref cursor, end, entry, raw, 1)),
         ModelOpcode => ReadModelCommand(data, ref cursor, end, entry),
         SpriteEffectOpcode => ReadSpriteEffectCommand(data, ref cursor, end, entry),
         StageOpcode => ReadStageCommand(data, ref cursor, end, entry),
         CameraOpcode => ReadCameraCommand(data, ref cursor, end, entry),
         EffectModelOpcode => ReadEffectModelCommand(data, ref cursor, end, entry),
+        SoundOpcode => new BattleActionCommand(BattleActionOpcode.Sound, ReadArguments(data, ref cursor, end, entry, raw, 2)),
         WaitOpcode => new BattleActionCommand(BattleActionOpcode.Wait, ReadArguments(data, ref cursor, end, entry, raw, 1)),
         _ => throw new FormatException($"battle action script entry {entry} has unsupported opcode 0x{raw:X}"),
     };
 
-    /// <summary>Reads the qualified motion, visibility and transform forms of model opcode two.</summary>
+    /// <summary>Reads motion selection and the operand-free show/hide controls after the actor selector.</summary>
     /// <param name="data">Complete archive data.</param>
     /// <param name="cursor">Cursor advanced beyond the command.</param>
     /// <param name="end">Exclusive boundary of this archive entry.</param>
@@ -72,8 +77,7 @@ public static class BattleActionScriptDecoder
         return subcommand switch
         {
             0 => new BattleActionCommand(BattleActionOpcode.Model, [subcommand, actor, ReadWord(data, ref cursor, end, entry, "model motion")]),
-            1 => new BattleActionCommand(BattleActionOpcode.Model, [subcommand, actor]),
-            2 => new BattleActionCommand(BattleActionOpcode.Model, [subcommand, actor, ReadWord(data, ref cursor, end, entry, "model transform")]),
+            1 or 2 => new BattleActionCommand(BattleActionOpcode.Model, [subcommand, actor]),
             _ => throw new FormatException($"battle action script entry {entry} has unsupported model subcommand {subcommand}"),
         };
     }
@@ -121,7 +125,7 @@ public static class BattleActionScriptDecoder
 
     /// <summary>
     /// Reads the camera opcode (raw 5): time and mode are always present;
-    /// mode 0 also reads a camera-id word. Other modes are unsupported for this batch.
+    /// mode 0 reads a preset id, while mode 1 reads fourteen view and projection fields.
     /// </summary>
     /// <param name="data">Complete archive data.</param>
     /// <param name="cursor">Cursor advanced beyond the command.</param>
@@ -135,13 +139,16 @@ public static class BattleActionScriptDecoder
         return mode switch
         {
             0 => new BattleActionCommand(BattleActionOpcode.Camera, [time, mode, ReadWord(data, ref cursor, end, entry, "camera id")]),
+            1 => new BattleActionCommand(
+                BattleActionOpcode.Camera,
+                [time, mode, .. ReadArguments(data, ref cursor, end, entry, CameraOpcode, 14)]),
             _ => throw new FormatException($"battle action script entry {entry} has unsupported camera mode {mode}"),
         };
     }
 
     /// <summary>
-    /// Reads the effect-model opcode (raw 6): one subcommand word followed by one reference word,
-    /// covering the first-batch load (sub=1) and trigger (sub=0) forms.
+    /// Reads the effect-model reference, followed by position and rotation for the start form.
+    /// Loading consumes only its subcommand and reference, starting consumes six additional words.
     /// </summary>
     /// <param name="data">Complete archive data.</param>
     /// <param name="cursor">Cursor advanced beyond the command.</param>
@@ -154,7 +161,10 @@ public static class BattleActionScriptDecoder
         short reference = ReadWord(data, ref cursor, end, entry, "effect-model reference");
         return subcommand switch
         {
-            0 or 1 => new BattleActionCommand(BattleActionOpcode.EffectModel, [subcommand, reference]),
+            1 => new BattleActionCommand(BattleActionOpcode.EffectModel, [subcommand, reference]),
+            0 => new BattleActionCommand(
+                BattleActionOpcode.EffectModel,
+                [subcommand, reference, .. ReadArguments(data, ref cursor, end, entry, EffectModelOpcode, 6)]),
             _ => throw new FormatException($"battle action script entry {entry} has unsupported effect-model subcommand {subcommand}"),
         };
     }

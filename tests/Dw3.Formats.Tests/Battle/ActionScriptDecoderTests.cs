@@ -179,69 +179,126 @@ public sealed class ActionScriptDecoderTests
             command => Assert.Equal(BattleActionOpcode.End, command.Opcode));
     }
 
-    /// <summary>Model subcommand 2 (transform) reads sub, actor and one extra word.</summary>
+    /// <summary>Hiding a model preserves the following camera command and its complete operands.</summary>
     [Fact]
-    public void DecodeConsumesTransformWordForModelSubcommandTwo()
+    public void DecodeModelHidePreservesFollowingCamera()
     {
-        // [2, 2, 4, 5, 0] = Model(sub=2, actor=4, transform=5), End
-        BattleActionScript script = BattleActionScriptDecoder.Decode(Archive(Script(2, 2, 4, 5, 0)), 0);
+        BattleActionScript script = BattleActionScriptDecoder.Decode(Archive(Script(2, 2, 4, 5, 9, 0, 2, 0)), 0);
 
         Assert.Collection(
             script.Commands,
             command =>
             {
                 Assert.Equal(BattleActionOpcode.Model, command.Opcode);
-                Assert.Equal<short>([2, 4, 5], command.Arguments);
+                Assert.Equal<short>([2, 4], command.Arguments);
+            },
+            command =>
+            {
+                Assert.Equal(BattleActionOpcode.Camera, command.Opcode);
+                Assert.Equal<short>([9, 0, 2], command.Arguments);
             },
             command => Assert.Equal(BattleActionOpcode.End, command.Opcode));
     }
 
-    /// <summary>Decodes both effect-model subcommands (load=1 and trigger=0) with their reference words.</summary>
+    /// <summary>Consumes the complete effect position and rotation before the following wait command.</summary>
     [Fact]
     public void DecodeConsumesEffectModelLoadAndTrigger()
     {
-        // EM(1, 108), EM(0, 108), End
-        BattleActionScript script = BattleActionScriptDecoder.Decode(Archive(Script(6, 1, 108, 6, 0, 108, 0)), 0);
+        BattleActionScript script = BattleActionScriptDecoder.Decode(
+            Archive(Script(6, 1, 79, 6, 0, 79, 0, 2, 3, 4, 5, 6, 11, 9, 0)), 0);
 
-        Assert.Equal(3, script.Commands.Count);
+        Assert.Equal(4, script.Commands.Count);
         Assert.Equal(BattleActionOpcode.EffectModel, script.Commands[0].Opcode);
-        Assert.Equal<short>([1, 108], script.Commands[0].Arguments);
+        Assert.Equal<short>([1, 79], script.Commands[0].Arguments);
         Assert.Equal(BattleActionOpcode.EffectModel, script.Commands[1].Opcode);
-        Assert.Equal<short>([0, 108], script.Commands[1].Arguments);
-        Assert.Equal(BattleActionOpcode.End, script.Commands[2].Opcode);
+        Assert.Equal<short>([0, 79, 0, 2, 3, 4, 5, 6], script.Commands[1].Arguments);
+        Assert.Equal(BattleActionOpcode.Wait, script.Commands[2].Opcode);
+        Assert.Equal<short>([9], script.Commands[2].Arguments);
+        Assert.Equal(BattleActionOpcode.End, script.Commands[3].Opcode);
     }
 
-    /// <summary>Rejects an unsupported camera mode without inventing an opcode for it.</summary>
-    [Fact]
-    public void DecodeRejectsCameraMode1AsUnsupportedForThisBatch()
+    /// <summary>Rejects each incomplete prefix of the effect's position and rotation.</summary>
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(4)]
+    [InlineData(5)]
+    public void DecodeRejectsTruncatedEffectModelTransform(int coordinateCount)
     {
-        // [5, 15, 1, 0] = Camera(time=15, mode=1) → unsupported
+        short[] command = [6, 0, 79, 10, 20, 30, 40, 50, 60];
+        byte[] archive = Archive(command[..(3 + coordinateCount)]);
+
+        Assert.Throws<FormatException>(() => BattleActionScriptDecoder.Decode(archive, 0));
+    }
+
+    /// <summary>Rejects an explicit view whose coordinates and projection are incomplete.</summary>
+    [Fact]
+    public void DecodeRejectsTruncatedExplicitCamera()
+    {
         byte[] archive = Archive(Script(5, 15, 1, 0));
 
         FormatException error = Assert.Throws<FormatException>(() => BattleActionScriptDecoder.Decode(archive, 0));
 
-        Assert.Contains("unsupported camera mode 1", error.Message, StringComparison.Ordinal);
+        Assert.Contains("truncated", error.Message, StringComparison.Ordinal);
     }
 
-    /// <summary>Decodes the full first-batch basic-attack script pattern against the confirmed ROM grammar.</summary>
+    /// <summary>Preserves adjacent resource, stage and motion commands with fabricated identifiers and timings.</summary>
     [Fact]
     public void DecodeReadsAttackScriptPattern()
     {
-        // SpriteEffect-load(2), Stage-load(1,56), Stage-fade(0,56,15,15), Model-motion(0,0,14), End.
-        // The old Animate grammar had stopped at the first 0 (model sub-command), misreading it as End.
-        byte[] archive = Archive(Script(3, 1, 2, 4, 1, 56, 4, 0, 56, 15, 15, 2, 0, 0, 14, 0));
+        byte[] archive = Archive(Script(3, 1, 77, 4, 1, 9, 4, 0, 9, 3, 4, 2, 0, 0, 8, 0));
 
         BattleActionScript script = BattleActionScriptDecoder.Decode(archive, 0);
 
         Assert.Equal(5, script.Commands.Count);
         Assert.Equal(BattleActionOpcode.SpriteEffect, script.Commands[0].Opcode);
         Assert.Equal(BattleActionOpcode.Stage, script.Commands[1].Opcode);
-        Assert.Equal<short>([1, 56], script.Commands[1].Arguments);
+        Assert.Equal<short>([1, 9], script.Commands[1].Arguments);
         Assert.Equal(BattleActionOpcode.Stage, script.Commands[2].Opcode);
-        Assert.Equal<short>([0, 56, 15, 15], script.Commands[2].Arguments);
+        Assert.Equal<short>([0, 9, 3, 4], script.Commands[2].Arguments);
         Assert.Equal(BattleActionOpcode.Model, script.Commands[3].Opcode);
-        Assert.Equal<short>([0, 0, 14], script.Commands[3].Arguments);
+        Assert.Equal<short>([0, 0, 8], script.Commands[3].Arguments);
         Assert.Equal(BattleActionOpcode.End, script.Commands[4].Opcode);
+    }
+
+    /// <summary>Preserves the sound reference, timing and following command boundary.</summary>
+    [Fact]
+    public void DecodeSoundKeepsFollowingWait()
+    {
+        BattleActionScript script = BattleActionScriptDecoder.Decode(Archive(Script(10, 23, 4, 11, 6, 0)), 0);
+
+        Assert.Equal<short>([23, 4], script.Commands[0].Arguments);
+        Assert.Equal(10, (int)script.Commands[0].Opcode);
+        Assert.Equal(BattleActionOpcode.Wait, script.Commands[1].Opcode);
+        Assert.Equal(BattleActionOpcode.End, script.Commands[2].Opcode);
+    }
+
+    /// <summary>Preserves the explicit camera view without consuming the following model command.</summary>
+    [Fact]
+    public void DecodeExplicitCameraKeepsAllViewFields()
+    {
+        short[] view = [.. Enumerable.Range(11, 14).Select(value => (short)value)];
+        short[] words = [5, 9, 1, .. view, 2, 1, 0, 0];
+        BattleActionScript script = BattleActionScriptDecoder.Decode(Archive(words), 0);
+
+        Assert.Equal(BattleActionOpcode.Camera, script.Commands[0].Opcode);
+        Assert.Equal<short>([9, 1, .. view], script.Commands[0].Arguments);
+        Assert.Equal(BattleActionOpcode.Model, script.Commands[1].Opcode);
+        Assert.Equal<short>([1, 0], script.Commands[1].Arguments);
+        Assert.Equal(BattleActionOpcode.End, script.Commands[2].Opcode);
+    }
+
+    /// <summary>Preserves the hit selector and alternate terminator as distinct semantic commands.</summary>
+    [Fact]
+    public void DecodeHitDispatchKeepsAlternateTerminator()
+    {
+        BattleActionScript script = BattleActionScriptDecoder.Decode(Archive(Script(1, 5, 255)), 0);
+
+        Assert.Equal(1, (int)script.Commands[0].Opcode);
+        Assert.Equal<short>([5], script.Commands[0].Arguments);
+        Assert.Equal(255, (int)script.Commands[1].Opcode);
     }
 
     /// <summary>Builds a u32-offset archive from independently supplied s16 script entries.</summary>

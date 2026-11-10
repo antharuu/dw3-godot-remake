@@ -10,7 +10,7 @@ public static class DataPackSchema
     /// <summary>
     /// Gets the newest pack schema that this runtime can read.
     /// </summary>
-    public const int Version = 19;
+    public const int Version = 20;
 
     /// <summary>
     /// Creates the schema structures required by every data pack.
