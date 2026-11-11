@@ -14,6 +14,12 @@ public sealed record ActionSequenceContext(
     IReadOnlyList<BattleHitEvent> HitEvents,
     int ScriptSelector)
 {
+    /// <summary>Gets the technique's frozen action-sound index.</summary>
+    public int ScriptSound { get; init; }
+
+    /// <summary>Gets frozen sound-substitution results. Only marker 3 selects the miss sound.</summary>
+    public IReadOnlyList<int> SoundResults { get; init; } = [0, 0, 0, 0];
+
     /// <summary>Builds a context when the technique has a valid script selector, even without damage events;
     /// returns null otherwise. Callers assign the result to <c>PendingSequenceContext</c> without branching.</summary>
     /// <param name="side">Side that initiated the action.</param>
@@ -34,6 +40,30 @@ public sealed record ActionSequenceContext(
             return null;
         }
 
-        return new ActionSequenceContext(side, attackerId, targetId, [.. hitEvents], tech.Script);
+        return new ActionSequenceContext(side, attackerId, targetId, [.. hitEvents], tech.Script)
+        {
+            ScriptSound = tech.ScriptSound,
+            SoundResults = CaptureSoundResults(hitEvents),
+        };
+    }
+
+    /// <summary>Freezes hit and terminal miss markers without re-reading HP or drawing randomness.</summary>
+    /// <param name="hits">Already resolved ordered hits, excluding counter reactions.</param>
+    /// <returns>Three intermediate markers and one terminal marker.</returns>
+    private static int[] CaptureSoundResults(IReadOnlyList<BattleHitEvent> hits)
+    {
+        var ordered = hits.Where(hit => !hit.IsCounter).ToArray();
+        int[] results = [0, 0, 0, 0];
+        for (int index = 0; index < Math.Min(3, ordered.Length - 1); index++)
+        {
+            results[index] = ordered[index].Landed ? 0 : 3;
+        }
+
+        if (ordered.Length > 0)
+        {
+            results[3] = ordered[^1].Landed ? 1 : 3;
+        }
+
+        return results;
     }
 }

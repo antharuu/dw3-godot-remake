@@ -1,0 +1,80 @@
+using Dw3Production.Conversion;
+using Godot;
+
+namespace Dw3Production.Presentation;
+
+/// <summary>Plays prepared PCM through the engine mixer. Never opens the source disc.</summary>
+internal sealed class GodotBattleAudioBackend : IBattleAudioBackend, IDisposable
+{
+    private readonly Node _root;
+    private readonly BattleAudioVoicePool _pool;
+    private readonly BattleAudioPump _pump;
+
+    /// <summary>Initializes a new instance of the <see cref="GodotBattleAudioBackend"/> class.</summary>
+    /// <param name="root">Node owning physical audio players.</param>
+    public GodotBattleAudioBackend(Node root)
+    {
+        _root = root;
+        _pool = new BattleAudioVoicePool(Start, handle => ((GodotVoiceHandle)handle).Stop());
+        _pump = new BattleAudioPump { Advance = _pool.Advance };
+        root.AddChild(_pump);
+    }
+
+    /// <summary>Gets current physical channel usage for lifecycle diagnostics.</summary>
+    public int ActiveCount => _pool.ActiveCount;
+
+    /// <inheritdoc/>
+    public IVoiceHandle Play(AudioProgramEntry entry) => _pool.Play(entry);
+
+    /// <inheritdoc/>
+    public void StopVoice(IVoiceHandle handle) => _pool.StopVoice(handle);
+
+    /// <summary>Ends a battle without replacing this backend.</summary>
+    public void StopAll() => _pool.StopAll();
+
+    /// <inheritdoc/>
+    public void Dispose()
+    {
+        StopAll();
+        _pump.Advance = null;
+        _pump.QueueFree();
+    }
+
+    /// <summary>Creates a real mixer player with decoded loop, gain, pan and pitch attributes.</summary>
+    /// <param name="entry">Resolved sound and sample.</param>
+    /// <returns>Physical voice, not an acknowledgement fake.</returns>
+    private GodotVoiceHandle Start(AudioProgramEntry entry)
+    {
+        var stream = AudioStreamWav.LoadFromFile(entry.WavPath)
+            ?? throw new IOException($"Invalid battle WAV: {entry.WavPath}");
+        if (stream.Format != AudioStreamWav.FormatEnum.Format16Bits || stream.Stereo || stream.Data.Length == 0)
+        {
+            stream.Dispose();
+            throw new FormatException($"Expected nonempty prepared mono PCM16: {entry.WavPath}");
+        }
+
+        if (entry.Loops && (entry.LoopStart < 0 || entry.LoopStart >= stream.Data.Length / 2))
+        {
+            stream.Dispose();
+            throw new FormatException("Battle sample has an invalid loop marker.");
+        }
+
+        stream.Data = BattleAudioPcm.Pan(stream.Data, ((entry.Pan - 64) / 64f) + entry.PanOffset);
+        stream.Stereo = true;
+        stream.LoopMode = entry.Loops ? AudioStreamWav.LoopModeEnum.Forward : AudioStreamWav.LoopModeEnum.Disabled;
+        stream.LoopBegin = entry.LoopStart;
+        stream.LoopEnd = stream.Data.Length / 4;
+        var player = new AudioStreamPlayer
+        {
+            Stream = stream,
+            VolumeLinear = entry.Volume / 127f * entry.BankGain,
+            PitchScale = MathF.Pow(2, (entry.Note - entry.CenterNote - (entry.PitchShift / 128f)) / 12f),
+        };
+        _root.AddChild(player);
+        var voice = new GodotVoiceHandle(player, stream);
+        GD.Print($"battle-audio-start id={entry.EncodedId:X8} program={entry.Program} tone={entry.Tone} sample={entry.SampleIndex} note={entry.Note} pitch={player.PitchScale} gain={player.VolumeLinear} pan={entry.Pan} priority={entry.Priority} loop={entry.Loops} loopStart={entry.LoopStart} duration={entry.DurationFrames}");
+        player.Finished += voice.Stop;
+        player.Play();
+        return voice;
+    }
+}

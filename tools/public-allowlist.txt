@@ -1143,3 +1143,22 @@ tests/Dw3.Game.Tests/Session/BlastProductionFlowTests.cs
 tests/Dw3.Game.Tests/Session/BlastProductionLifecycleTests.cs
 tests/Dw3.Game.Tests/Session/BlastQueueInspector.cs
 tests/Dw3.Game.Tests/Session/BlastReceivedDamageTests.cs
+
+# Physical action-audio checkpoint
+docs/BATTLE_ACTION_AUDIO.md
+src/Dw3.Formats/Battle/BattleSoundTableDecoder.cs
+src/Dw3.Formats/Battle/VabProgramTone.cs
+src/Dw3.Game/BattleAudioBackendProbe.tscn
+src/Dw3.Game/BattleAudioProbe.tscn
+src/Dw3.Game/Conversion/BattleActionAudioLoader.cs
+src/Dw3.Game/Presentation/BattleAudioBackendProbe.cs
+src/Dw3.Game/Presentation/BattleAudioPcm.cs
+src/Dw3.Game/Presentation/BattleAudioProbe.cs
+src/Dw3.Game/Presentation/BattleAudioPump.cs
+src/Dw3.Game/Presentation/BattleAudioRuntime.cs
+src/Dw3.Game/Presentation/BattleAudioVoicePool.cs
+src/Dw3.Game/Presentation/GodotBattleAudioBackend.cs
+src/Dw3.Game/Presentation/GodotVoiceHandle.cs
+tests/Dw3.Formats.Tests/Battle/VabToneCatalogTests.cs
+tests/Dw3.Game.Tests/BattleAudioLifetimeTests.cs
+tests/Dw3.Game.Tests/BattleAudioSubstitutionTests.cs

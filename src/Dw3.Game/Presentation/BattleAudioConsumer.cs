@@ -4,13 +4,14 @@ using Dw3Production.Simulation;
 namespace Dw3Production.Presentation;
 
 /// <summary>Handles <see cref="SoundRequestEvent"/> commands from the action timeline.
-/// Each distinct SoundId starts one voice per action; the same pending request does not launch a second voice.
-/// All active voices are stopped when the action ends.</summary>
+/// Each distinct request starts one voice per action. Pending retries preserve reference identity.
+/// Natural notes survive End, while cancellation stops all voices.</summary>
 public sealed class BattleAudioConsumer
 {
     private readonly IReadOnlyDictionary<int, AudioProgramEntry> _programs;
     private readonly IBattleAudioBackend _backend;
-    private readonly Dictionary<int, IVoiceHandle> _activeVoices = [];
+    private readonly HashSet<SoundRequestEvent> _acknowledged = new(ReferenceEqualityComparer.Instance);
+    private readonly List<IVoiceHandle> _activeVoices = [];
 
     /// <summary>Initializes a new instance of the <see cref="BattleAudioConsumer"/> class.</summary>
     /// <param name="programs">Program-index-to-entry mapping loaded from the audio manifest.</param>
@@ -38,24 +39,40 @@ public sealed class BattleAudioConsumer
         return ConsumeSound(sound);
     }
 
+    /// <summary>Releases request identities at End without truncating a natural note.</summary>
+    /// <param name="cancelled">Whether all voices must be interrupted.</param>
+    public void Finish(bool cancelled)
+    {
+        if (cancelled)
+        {
+            StopAll();
+        }
+        else
+        {
+            _acknowledged.Clear();
+            _activeVoices.RemoveAll(voice => voice.IsComplete);
+        }
+    }
+
     /// <summary>Stops all active voices and clears tracking state.
-    /// Called by <see cref="BattleRendererSequencePlayback.CancelEffects"/> at the end of each action.</summary>
+    /// Used for cancellation and combat teardown, not ordinary End.</summary>
     public void StopAll()
     {
-        foreach (IVoiceHandle voice in _activeVoices.Values)
+        foreach (IVoiceHandle voice in _activeVoices)
         {
             _backend.StopVoice(voice);
         }
 
         _activeVoices.Clear();
+        _acknowledged.Clear();
     }
 
-    /// <summary>Starts or re-acknowledges a sound request without launching duplicate voices for the same SoundId.</summary>
+    /// <summary>Starts or re-acknowledges a sound request without launching duplicate voices for the same request.</summary>
     /// <param name="sound">The sound request from the script.</param>
     /// <returns>Applied if the voice was started or is already active; Unavailable if no program entry exists.</returns>
     private SequenceAcknowledgement ConsumeSound(SoundRequestEvent sound)
     {
-        if (_activeVoices.ContainsKey(sound.SoundId))
+        if (_acknowledged.Contains(sound))
         {
             return SequenceAcknowledgement.Applied;
         }
@@ -65,8 +82,10 @@ public sealed class BattleAudioConsumer
             return SequenceAcknowledgement.Unavailable;
         }
 
-        IVoiceHandle handle = _backend.Play(entry);
-        _activeVoices[sound.SoundId] = handle;
+        IVoiceHandle handle = _backend.Play(entry with { DurationFrames = sound.Timing });
+        _activeVoices.RemoveAll(voice => voice.IsComplete);
+        _activeVoices.Add(handle);
+        _acknowledged.Add(sound);
         return SequenceAcknowledgement.Applied;
     }
 }

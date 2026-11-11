@@ -20,6 +20,8 @@ public sealed class BattleRenderer : IDisposable
 
     private readonly CanvasLayer _layer;
 
+    private readonly BattleAudioRuntime _audio;
+
     private readonly Node3D _world;
 
     private readonly Camera3D _camera;
@@ -69,9 +71,12 @@ public sealed class BattleRenderer : IDisposable
     /// <paramref name="root"/>.
     /// </summary>
     /// <param name="root">Node that receives the battle canvas layer.</param>
-    public BattleRenderer(Node root)
+    /// <param name="dataRoot">Prepared pack directory, or the standard user location.</param>
+    public BattleRenderer(Node root, string? dataRoot = null)
     {
         SequencePlayback = new BattleRendererSequencePlayback(this, _fighters);
+        _audio = new BattleAudioRuntime(root, dataRoot ?? Dw3.Data.UserPaths.GetDataDirectory());
+        SequencePlayback.RegisterAudioConsumer(_audio.Consume, _audio.Finish);
         _layer = new CanvasLayer { Layer = 300, Visible = false };
         root.AddChild(_layer);
 
@@ -134,6 +139,9 @@ public sealed class BattleRenderer : IDisposable
     /// <summary>Gets the physical action consumer and its exclusive ownership state.</summary>
     internal BattleRendererSequencePlayback SequencePlayback { get; }
 
+    /// <summary>Gets physical channel usage for offscreen lifecycle evidence.</summary>
+    internal int ActiveAudioVoices => _audio.ActiveCount;
+
     /// <summary>Gets the unmodified main source camera for diagnostic actor translation.</summary>
     internal Camera3D CameraForProbe => _camera;
 
@@ -159,7 +167,11 @@ public sealed class BattleRenderer : IDisposable
     public void Show() => _layer.Visible = true;
 
     /// <summary>Hides the battle canvas without releasing its loaded scene.</summary>
-    public void Hide() => _layer.Visible = false;
+    public void Hide()
+    {
+        _audio.StopAll();
+        _layer.Visible = false;
+    }
 
     /// <summary>Probe-only HUD suppression for a model/stage-only framebuffer comparison.</summary>
     /// <param name="visible">Whether the HUD should be included in the capture.</param>
@@ -791,6 +803,7 @@ public sealed class BattleRenderer : IDisposable
     /// <summary>Frees the whole battle scene.</summary>
     public void Dispose()
     {
+        _audio.Dispose();
         _partnerView.Dispose();
         _layer.QueueFree();
     }

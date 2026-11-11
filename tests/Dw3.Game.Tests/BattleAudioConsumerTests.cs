@@ -51,6 +51,33 @@ public sealed class BattleAudioConsumerTests : IDisposable
     }
 
     [Fact]
+    public void Consume_DistinctEqualRequests_StartsBothOccurrences()
+    {
+        WritePack(programCount: 1, programs: [(ProgramIndex: 0, SampleRef: 1)]);
+        var backend = new DryRunAudioBackend();
+        BattleAudioConsumer consumer = BuildConsumer(backend);
+        var first = new SoundRequestEvent(BattleSide.Player, 0, 0);
+        var second = new SoundRequestEvent(BattleSide.Player, 0, 0);
+        consumer.Consume(first);
+        consumer.Consume(first);
+        consumer.Consume(second);
+        Assert.Equal(2, backend.Events.Count(ev => ev.Started));
+    }
+
+    [Fact]
+    public void NormalEnd_TrailingVoiceSurvives_ThenCancellationStopsTheSameBackend()
+    {
+        WritePack(programCount: 1, programs: [(ProgramIndex: 0, SampleRef: 1)]);
+        var backend = new DryRunAudioBackend();
+        var consumer = BuildConsumer(backend);
+        consumer.Consume(new SoundRequestEvent(BattleSide.Player, 0, 0));
+        consumer.Finish(cancelled: false);
+        Assert.DoesNotContain(backend.Events, ev => !ev.Started);
+        consumer.Finish(cancelled: true);
+        Assert.Single(backend.Events, ev => !ev.Started);
+    }
+
+    [Fact]
     public void Consume_MissingSoundId_ReturnsUnavailable()
     {
         WritePack(programCount: 1, programs: [(ProgramIndex: 0, SampleRef: 1)]);
