@@ -58,6 +58,10 @@ public sealed class BattleTickCoordinator
             _host.DeactivatePlayerCamera();
             _host.EnemyAct();
         }
+        else if (flow.Phase == BattleFlowPhase.ActionSequence)
+        {
+            _host.TickActionSequence();
+        }
     }
 
     /// <summary>Applies a terminal outcome and starts the victory report after its fade.</summary>

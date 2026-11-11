@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using Dw3.Data.Battle;
 using Dw3.Formats.Battle;
 using Xunit;
 

@@ -1,1 +1,6 @@
-<Project Sdk="Microsoft.NET.Sdk" />
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="../Dw3.Data/Dw3.Data.csproj" />
+  </ItemGroup>
+</Project>
+

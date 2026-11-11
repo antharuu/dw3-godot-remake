@@ -33,6 +33,9 @@ public partial class GameHost
     void IBattleTickHost.EnemyAct() => BattleFlow.EnemyAct(_battleRng);
 
     /// <inheritdoc/>
+    void IBattleTickHost.TickActionSequence() => TickBattleActionSequence();
+
+    /// <inheritdoc/>
     void IBattleTickHost.RefreshModels() => RefreshBattlePresentationModels();
 
     /// <inheritdoc/>

@@ -48,6 +48,15 @@ internal sealed class BattleFighterRoster
     public BattleModel Require(int fighterId) =>
         Find(fighterId) ?? throw new InvalidOperationException($"battle model fighter={fighterId} is not built");
 
+    /// <summary>Resolves the fighter model that is the actor of a sequence event.
+    /// For the attacker side: actor 0 = that side's model, actor != 0 = the other side.
+    /// Returns null when the resolved model is not built.</summary>
+    /// <param name="attackerIsEnemy">Whether the script's owner is the enemy side.</param>
+    /// <param name="actor">Raw actor index from the script.</param>
+    /// <returns>The resolved model, or null.</returns>
+    public BattleModel? SequenceActorModel(bool attackerIsEnemy, int actor) =>
+        attackerIsEnemy == (actor == 0) ? Enemy : Player;
+
     /// <summary>Poses every model at one source frame.</summary>
     /// <param name="frame">Source animation frame.</param>
     public void PoseAll(int frame)

@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Dw3.Data;
+using Dw3.Data.Battle;
 using Dw3.Extractor;
-using Dw3.Formats.Battle;
 using Dw3Production.Conversion;
 using Microsoft.Data.Sqlite;
 using Xunit;

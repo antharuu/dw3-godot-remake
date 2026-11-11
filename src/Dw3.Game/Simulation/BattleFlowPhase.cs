@@ -10,6 +10,9 @@ public enum BattleFlowPhase
     /// <summary>The active enemy acts. Only this phase accepts <see cref="BattleFlowController.EnemyAct"/>.</summary>
     EnemyTurn,
 
+    /// <summary>An action-script timeline is running. No command input is accepted; the host ticks the sequence.</summary>
+    ActionSequence,
+
     /// <summary>The battle has an outcome and no more turns are played.</summary>
     Ended,
 }

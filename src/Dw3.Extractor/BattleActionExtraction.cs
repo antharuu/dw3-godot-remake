@@ -1,4 +1,4 @@
-using Dw3.Formats.Battle;
+using Dw3.Data.Battle;
 
 namespace Dw3.Extractor;
 

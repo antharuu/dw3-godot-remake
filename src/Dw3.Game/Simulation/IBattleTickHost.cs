@@ -30,6 +30,10 @@ public interface IBattleTickHost
     /// <summary>Resolves one enemy action.</summary>
     void EnemyAct();
 
+    /// <summary>Advances the active action-sequence timeline by one frame and handles its events.
+    /// Called by the coordinator every tick while <see cref="BattleFlowController.Phase"/> is <c>ActionSequence</c>.</summary>
+    void TickActionSequence();
+
     /// <summary>Refreshes models after fighter changes.</summary>
     void RefreshModels();
 

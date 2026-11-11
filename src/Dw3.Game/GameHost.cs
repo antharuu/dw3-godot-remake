@@ -633,6 +633,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
         _battleMenuCoordinator.RefreshActivePartnerCatalogs();
         _battleMenu.OpenRoot(flow.RootMenuLines());
         _frameCoordinator.NotifyLoadingStart();
+        InitBattleSequenceRunner(new PackActionScriptProvider(BattleLoader));
         QuietLog.Info($"battle-start {why} encounter={encounter} enemies=[{string.Join(",", _lastBattleEnemyIds)}] party=[{string.Join(",", flow.State.Players.Where(p => p is not null).Select(p => p!.Id))}] level={TestTeamGrowth.Level}");
     }
 
@@ -674,6 +675,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
         _fightReportInput = null;
         _battleResolved = false;
         _state.BattleActive = false;
+        TearDownBattleSequenceRunner();
 
         // The battle never moves the player, so a win or a flight returns to the field at the
         // previous position. A defeat reaches the title screen (MODE_TITLE), not the field, as

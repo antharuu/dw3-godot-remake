@@ -67,6 +67,10 @@ public sealed class BattleFlowController
     /// <summary>Gets whose turn it is, or <see cref="BattleFlowPhase.Ended"/> once an outcome is known.</summary>
     public BattleFlowPhase Phase { get; private set; } = BattleFlowPhase.PlayerCommand;
 
+    /// <summary>Gets the pending action-sequence context captured after a damaging command commits.
+    /// Null when no sequence is pending. The host must call <see cref="ConsumeSequenceContext"/> before ticking.</summary>
+    public ActionSequenceContext? PendingSequenceContext { get; private set; }
+
     /// <summary>Gets the debug label of the last message, written to the action log. Empty when no message is shown.</summary>
     public string Message { get; private set; } = string.Empty;
 
@@ -166,7 +170,11 @@ public sealed class BattleFlowController
             return;
         }
 
+        // Capture identities before the action mutates state (KO may swap the active fighters).
+        int attackerId = State.ActiveEnemyFighter?.Id ?? 0;
+        int targetId = State.ActivePlayerFighter?.Id ?? 0;
         var decision = State.RunEnemyTurn(rng);
+        TryCaptureEnemySequenceContext(decision, attackerId, targetId);
         var enemy = State.ActiveEnemyFighter;
         SetMessage(decision.Kind is EnemyActionKind.Technique1 or EnemyActionKind.Technique2 ? "technique" : "actor", NameTokens(enemy));
         AdvancePhase();
@@ -207,6 +215,26 @@ public sealed class BattleFlowController
         Phase = BattleFlowPhase.Ended;
     }
 
+    /// <summary>Consumes and returns the pending sequence context captured after a damaging command committed.
+    /// Clears <see cref="PendingSequenceContext"/>. When null is returned the phase must not be ActionSequence.</summary>
+    /// <returns>The pending context, or null when no sequence was queued.</returns>
+    public ActionSequenceContext? ConsumeSequenceContext()
+    {
+        var ctx = PendingSequenceContext;
+        PendingSequenceContext = null;
+        return ctx;
+    }
+
+    /// <summary>Completes a running action sequence and advances to the next turn phase.
+    /// Must be called by the host when the timeline's End opcode fires or when it is cancelled.</summary>
+    public void CompleteActionSequence()
+    {
+        PendingSequenceContext = null;
+
+        // AdvancePhase checks PendingSequenceContext (now null) so it will not re-enter ActionSequence.
+        AdvancePhase();
+    }
+
     /// <summary>Gets whether a root command is enabled for the active fighter, matching the displayed line.</summary>
     /// <param name="command">Root command being submitted by an input or API caller.</param>
     /// <returns>Whether the command is enabled and may reach the simulation.</returns>
@@ -237,24 +265,77 @@ public sealed class BattleFlowController
         return true;
     }
 
-    /// <summary>Moves to the next phase after a spent turn: <see cref="BattleFlowPhase.Ended"/> with a won or lost message once an outcome exists, otherwise the turn of whichever side the state schedules next. The message is cleared when the player gets the menu back.</summary>
+    /// <summary>Captures an enemy action sequence context when the decision was a damaging hit with a valid script.
+    /// Identities are frozen before the state mutates.</summary>
+    /// <param name="decision">The resolved enemy decision.</param>
+    /// <param name="attackerId">Enemy fighter id captured before the action.</param>
+    /// <param name="targetId">Player fighter id captured before the action.</param>
+    private void TryCaptureEnemySequenceContext(EnemyDecision decision, int attackerId, int targetId)
+    {
+        if (decision.IsAttack || decision.IsTechnique)
+        {
+            PendingSequenceContext = ActionSequenceContext.TryCapture(
+                BattleSide.Enemy, ResolveEnemyTech(decision), attackerId, targetId, State.LastHitEvents);
+        }
+    }
+
+    /// <summary>Resolves the technique used by the enemy decision: the basic attack or a table technique.</summary>
+    /// <param name="decision">The resolved enemy decision.</param>
+    /// <returns>The resolved technique, or null when the technique id is unknown.</returns>
+    private TechData? ResolveEnemyTech(EnemyDecision decision)
+    {
+        if (decision.IsAttack)
+        {
+            return EnemyBasicTech;
+        }
+
+        Techs.TryGetValue(decision.TechId, out var tech);
+        return tech;
+    }
+
+    /// <summary>Captures a player sequence context when the technique has a valid script selector.</summary>
+    /// <param name="tech">The technique used for the action.</param>
+    /// <param name="attackerId">Player fighter id captured before the action.</param>
+    /// <param name="targetId">Enemy fighter id captured before the action.</param>
+    private void TryCapturePlayerSequenceContext(TechData tech, int attackerId, int targetId) =>
+        PendingSequenceContext = ActionSequenceContext.TryCapture(
+            BattleSide.Player, tech, attackerId, targetId, State.LastHitEvents);
+
+    /// <summary>Moves to the next phase after a spent turn: <see cref="BattleFlowPhase.Ended"/> with a won or lost message once an outcome exists, <see cref="BattleFlowPhase.ActionSequence"/> when a sequence context was captured, otherwise the turn of whichever side the state schedules next. The message is cleared when the player gets the menu back.</summary>
     private void AdvancePhase()
     {
         if (State.Outcome != BattleOutcome.None)
         {
-            if (State.Outcome == BattleOutcome.Won)
-            {
-                SetMessage("won");
-            }
-            else if (State.Outcome == BattleOutcome.Lost)
-            {
-                SetMessage("lost");
-            }
-
+            SetOutcomeMessage();
             Phase = BattleFlowPhase.Ended;
             return;
         }
 
+        if (PendingSequenceContext is not null)
+        {
+            Phase = BattleFlowPhase.ActionSequence;
+            return;
+        }
+
+        TransitionToNextTurn();
+    }
+
+    /// <summary>Sets the outcome message text when the battle ended with a win or loss.</summary>
+    private void SetOutcomeMessage()
+    {
+        if (State.Outcome == BattleOutcome.Won)
+        {
+            SetMessage("won");
+        }
+        else if (State.Outcome == BattleOutcome.Lost)
+        {
+            SetMessage("lost");
+        }
+    }
+
+    /// <summary>Transitions to the next player or enemy turn without checking for pending sequences or outcomes.</summary>
+    private void TransitionToNextTurn()
+    {
         Phase = State.NextActor == BattleSide.Player ? BattleFlowPhase.PlayerCommand : BattleFlowPhase.EnemyTurn;
         if (Phase == BattleFlowPhase.PlayerCommand)
         {
@@ -268,11 +349,14 @@ public sealed class BattleFlowController
     /// <returns>Whether the command spent the turn.</returns>
     private bool ChooseAttack(BattleFighter? actor, IBattleRng rng)
     {
+        int attackerId = State.ActivePlayerFighter?.Id ?? 0;
+        int targetId = State.ActiveEnemyFighter?.Id ?? 0;
         if (!State.PlayerAttack(PlayerBasicTech, rng))
         {
             return false;
         }
 
+        TryCapturePlayerSequenceContext(PlayerBasicTech, attackerId, targetId);
         SetMessage("basicAttack", NameTokens(actor));
         return true;
     }
@@ -288,6 +372,8 @@ public sealed class BattleFlowController
     private bool ChooseTechnique(BattleFighter? actor, int techniqueId, IBattleRng rng)
     {
         var technique = PlayerTechniques.FirstOrDefault(candidate => candidate.Id == techniqueId);
+        int attackerId = State.ActivePlayerFighter?.Id ?? 0;
+        int targetId = State.ActiveEnemyFighter?.Id ?? 0;
         if (technique is null || !State.PlayerTechnique(technique.Tech, rng))
         {
             SetMessage("noMp");
@@ -301,6 +387,7 @@ public sealed class BattleFlowController
             ItemStock[stolenItem.Value] = Math.Min(existing + 1, BattleConst.MaxItemCount);
         }
 
+        TryCapturePlayerSequenceContext(technique.Tech, attackerId, targetId);
         SetMessage("technique", NameTokens(actor), technique.Text?.Tokens ?? []);
         return true;
     }

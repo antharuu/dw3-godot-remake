@@ -53,6 +53,10 @@ public sealed class BattleTickCoordinatorTests
         {
         }
 
+        public void TickActionSequence()
+        {
+        }
+
         public void MarkBattleResolved()
         {
         }

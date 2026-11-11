@@ -1,4 +1,5 @@
 using Dw3Production.Conversion;
+using Dw3Production.Logging;
 using Dw3Production.Simulation;
 using Godot;
 
@@ -346,7 +347,8 @@ public sealed class BattleRenderer : IDisposable
 
     /// <summary>Reports the maximum matrix and scale difference against the pose oracle.</summary>
     /// <returns>The greatest difference, or positive infinity when no model is built.</returns>
-    public float RotationOracleMaxDiff() => ModelCount == 0 ? float.PositiveInfinity : _fighters.Models.Max(model => model.RotationOracleMaxDiff());
+    public float RotationOracleMaxDiff() =>
+        _fighters.Models.Select(m => m.RotationOracleMaxDiff()).DefaultIfEmpty(float.PositiveInfinity).Max();
 
     /// <summary>Screen-winding versus source-normal agreement for a decoded fighter.</summary>
     /// <param name="fighterId">Identifier of the fighter to evaluate.</param>
@@ -628,6 +630,40 @@ public sealed class BattleRenderer : IDisposable
         ApplyShotVisibility();
     }
 
+    /// <summary>Handles a hit-dispatch event from an action-sequence timeline.
+    /// Routes hit results to the HUD HP bar animation; actual visual flash/spark are handled by B9-054.</summary>
+    /// <param name="ev">The dispatched hit event carrying pre-resolved hit results.</param>
+    public void OnHitDispatched(HitDispatchedEvent ev)
+    {
+        ArgumentNullException.ThrowIfNull(ev);
+
+        // The HP bar update and strike-landed visual are owned by B9-054/055.
+        // This seam exists so the host can connect them without changing the renderer's layout.
+        QuietLog.Info($"sequence-hit-dispatch attacker={ev.AttackerId} target={ev.TargetId} hits={ev.HitEvents.Count} dispatch-index={ev.DispatchIndex} model-count={_fighters.Models.Count}");
+    }
+
+    /// <summary>Handles a model motion or visibility request from an action-sequence timeline.
+    /// Resolves the target model from the actor field and applies the subcommand.</summary>
+    /// <param name="ev">The motion/visibility event from the script.</param>
+    public void OnSequenceMotion(ModelMotionEvent ev)
+    {
+        ArgumentNullException.ThrowIfNull(ev);
+        bool attackerIsEnemy = ev.AttackerSide == BattleSide.Enemy;
+        _fighters.SequenceActorModel(attackerIsEnemy, ev.Actor)?.ApplySubcommand(ev.Subcommand, ev.Motion);
+    }
+
+    /// <summary>Handles a camera request event from an action-sequence timeline.
+    /// Camera trajectory execution belongs to B9-052; this seam records the request and
+    /// prevents the command-menu camera from overriding the sequence's camera state.</summary>
+    /// <param name="ev">The camera request event from the script.</param>
+    public void OnSequenceCameraRequest(CameraRequestEvent ev)
+    {
+        ArgumentNullException.ThrowIfNull(ev);
+
+        // Trajectory execution is owned by B9-052. The seam exists for wiring without future renaming.
+        QuietLog.Info($"sequence-camera-request mode={(ev.Arguments.Count > 0 ? ev.Arguments[0] : (short)0)} args={ev.Arguments.Count} built={Built}");
+    }
+
     /// <summary>Describes the active command shot camera for diagnostics.</summary>
     /// <returns>A textual summary of the shot camera state.</returns>
     public string ShotCameraSummary() => _commandCamera.Summary();
@@ -726,11 +762,12 @@ public sealed class BattleRenderer : IDisposable
         }
 
         var commandTurn = value.Phase == BattleFlowPhase.PlayerCommand;
+        var sequenceOwnsCamera = value.Phase == BattleFlowPhase.ActionSequence;
         if (commandTurn)
         {
             StepShotCamera(elapsed);
         }
-        else
+        else if (!sequenceOwnsCamera)
         {
             StopShotCamera();
         }

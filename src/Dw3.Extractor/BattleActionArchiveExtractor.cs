@@ -1,4 +1,5 @@
 using Dw3.Data;
+using Dw3.Data.Battle;
 using Dw3.Disc;
 using Dw3.Formats.Battle;
 using Dw3.Formats.Binary;
