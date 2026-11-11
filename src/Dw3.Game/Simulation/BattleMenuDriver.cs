@@ -72,6 +72,7 @@ public sealed class BattleMenuDriver
     {
         if (_host.Input.ConsumeCancelPressed())
         {
+            _host.Input.ConsumeActionPressed();
             _host.CancelMenu();
             return;
         }

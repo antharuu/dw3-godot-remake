@@ -1184,3 +1184,15 @@ src/Dw3.Game/Presentation/GodotVoiceHandle.cs
 tests/Dw3.Formats.Tests/Battle/VabToneCatalogTests.cs
 tests/Dw3.Game.Tests/BattleAudioLifetimeTests.cs
 tests/Dw3.Game.Tests/BattleAudioSubstitutionTests.cs
+docs/ROOT_MENU_PROOF.md
+src/Dw3.Game/Diagnostics/Battle/NativeMenuCommandsProof.cs
+src/Dw3.Game/Diagnostics/Battle/NativeMenuLifecycleProof.cs
+src/Dw3.Game/Diagnostics/Battle/NativeMenuPhaseProof.cs
+src/Dw3.Game/Diagnostics/Battle/NativeMenuSession.cs
+src/Dw3.Game/Diagnostics/Battle/NativeRootMenuProof.cs
+src/Dw3.Game/Diagnostics/Battle/NativeRootMenuProof.tscn
+src/Dw3.Game/Diagnostics/GameHost.NativeMenuFixture.cs
+src/Dw3.Game/Input/BattleInputGate.cs
+src/Dw3.Game/Input/InputButtonLatch.cs
+src/Dw3.Game/Input/InputButtonRouter.cs
+tests/Dw3.Game.Tests/InputButtonLatchTests.cs

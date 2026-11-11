@@ -1,5 +1,6 @@
 using Dw3Production.Diagnostics;
 using Dw3Production.Diagnostics.Field;
+using Dw3Production.Input;
 using Dw3Production.Logging;
 using Godot;
 
@@ -37,7 +38,7 @@ public partial class GameHost
             return;
         }
 
-        _input.Handle(@event);
+        BattleInputGate.Handle(_input, @event, _battleFlow, _fightReportController is not null);
     }
 
     /// <summary>Synchronizes input focus and clears stale held actions on focus loss.</summary>

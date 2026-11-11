@@ -10,6 +10,7 @@ namespace Dw3Production.Input;
 public sealed class InputAdapter
 {
     private const float StickDeadZone = 0.5f;
+    private readonly InputButtonRouter _buttons = new();
     private bool _keyLeft;
     private bool _keyRight;
     private bool _keyUp;
@@ -32,7 +33,7 @@ public sealed class InputAdapter
     /// <param name="inputEvent">The Godot input event to process.</param>
     public void Handle(InputEvent inputEvent)
     {
-        if (!HasFocus)
+        if (_buttons.Handle(inputEvent, State, HasFocus) || !HasFocus)
         {
             return;
         }
@@ -73,6 +74,7 @@ public sealed class InputAdapter
         _stickRight = false;
         _stickUp = false;
         _stickDown = false;
+        _buttons.Suspend();
         State.Clear();
     }
 
@@ -140,29 +142,6 @@ public sealed class InputAdapter
             case Key.Down:
                 _keyDown = pressed;
                 break;
-            case Key.Enter:
-                if (pressed)
-                {
-                    State.PressAction();
-                }
-                else
-                {
-                    State.ReleaseAction();
-                }
-
-                return;
-            case Key.X:
-                // Circle / cancel (the battle menu's back button), AZERTY-friendly.
-                if (pressed)
-                {
-                    State.PressCancel();
-                }
-                else
-                {
-                    State.ReleaseCancel();
-                }
-
-                return;
 
             // Keyboard aliases for PSX L1/R1. PageUp/PageDown do not collide with exploration.
             case Key.Pageup:
@@ -210,29 +189,7 @@ public sealed class InputAdapter
     /// <param name="buttonEvent">A controller button event.</param>
     private void HandleJoypadButton(InputEventJoypadButton buttonEvent)
     {
-        if (buttonEvent.ButtonIndex == JoyButton.A)
-        {
-            if (buttonEvent.Pressed)
-            {
-                State.PressAction();
-            }
-            else
-            {
-                State.ReleaseAction();
-            }
-        }
-        else if (buttonEvent.ButtonIndex == JoyButton.B)
-        {
-            if (buttonEvent.Pressed)
-            {
-                State.PressCancel();
-            }
-            else
-            {
-                State.ReleaseCancel();
-            }
-        }
-        else if (buttonEvent.ButtonIndex == JoyButton.LeftShoulder && buttonEvent.Pressed)
+        if (buttonEvent.ButtonIndex == JoyButton.LeftShoulder && buttonEvent.Pressed)
         {
             State.PressPreviousPage();
         }
