@@ -181,6 +181,8 @@ src/Dw3.Formats/Battle/BattleStageLightEntry.cs
 src/Dw3.Formats/Battle/SoundBankHeader.cs
 src/Dw3.Formats/Battle/SoundBankHeaderDecoder.cs
 src/Dw3.Formats/Battle/DecodedSpuAdpcmSample.cs
+src/Dw3.Formats/Battle/VabToneAttributes.cs
+src/Dw3.Formats/Battle/VabProgramTableDecoder.cs
 src/Dw3.Formats/Battle/SoundBankBodyDecoder.cs
 src/Dw3.Formats/Battle/SpuAdpcmDecoder.cs
 src/Dw3.Formats/Battle/WavePcm16Encoder.cs
@@ -754,6 +756,7 @@ tests/Dw3.Formats.Tests/Battle/BattleHudStageReportTests.cs
 tests/Dw3.Formats.Tests/Battle/BattleModelAssetsTests.cs
 tests/Dw3.Formats.Tests/Battle/BattleModelDecoderTests.cs
 tests/Dw3.Formats.Tests/Battle/SoundBankHeaderDecoderTests.cs
+tests/Dw3.Formats.Tests/Battle/VabProgramTableDecoderTests.cs
 tests/Dw3.Formats.Tests/Battle/SpuAdpcmDecoderTests.cs
 tests/Dw3.Formats.Tests/Battle/PlayStationSequenceDecoderTests.cs
 tests/Dw3.Formats.Tests/Binary/BinarySpanReaderTests.cs
@@ -1108,6 +1111,13 @@ tests/Dw3.Game.Tests/BattleActionTimelineTests.cs
 tests/Dw3.Game.Tests/BattleFlowActionSequenceTests.cs
 docs/ACTION_PLAYBACK.md
 src/Dw3.Game/Presentation/BattleRendererSequencePlayback.cs
+src/Dw3.Game/Presentation/BattleAudioConsumer.cs
+src/Dw3.Game/Presentation/IBattleAudioBackend.cs
+src/Dw3.Game/Presentation/IVoiceHandle.cs
+src/Dw3.Game/Presentation/DryRunAudioBackend.cs
+# B9-061 action sounds, voice and audio priorities
+src/Dw3.Game/Conversion/AudioProgramEntry.cs
+src/Dw3.Game/Conversion/BattleAudioManifestLoader.cs
 src/Dw3.Game/Presentation/BattleSequenceCamera.cs
 src/Dw3.Game/Presentation/BattleSequenceCameraTransition.cs
 src/Dw3.Game/Simulation/BattleActionValidation.cs
@@ -1117,7 +1127,10 @@ src/Dw3.Game/Simulation/SequenceAcknowledgement.cs
 tests/Dw3.Game.Tests/BattleActionManifestValidationTests.cs
 tests/Dw3.Game.Tests/BattleSequenceCameraTests.cs
 tests/Dw3.Game.Tests/BattleSequencePackPlaybackTests.cs
+tests/Dw3.Game.Tests/BattleAudioConsumerTests.cs
+tests/Dw3.Game.Tests/BattleAudioSequenceProofTests.cs
 tests/Dw3.Game.Tests/SequenceTestPlayback.cs
+tests/Dw3.Game.Tests/AudioTestPlayback.cs
 # B9-041 blast digivolution gauge, trigger, duration and return
 src/Dw3.Game/Simulation/BattleBlastGaugeRules.cs
 src/Dw3.Game/Simulation/BattleBlastResolver.cs

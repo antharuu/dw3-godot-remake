@@ -23,7 +23,7 @@ public sealed class BattleAudioExtractionStepTests : IDisposable
         Assert.Equal("{\"event\":\"domain-complete\",\"domain\":\"battle-audio\"}" + Environment.NewLine, output.ToString());
         string audio = Path.Combine(_root, "data", "battle", "audio");
         using JsonDocument manifest = JsonDocument.Parse(File.ReadAllText(Path.Combine(audio, "manifest.json")));
-        Assert.Equal("battle-audio-vab-v2", manifest.RootElement.GetProperty("schema").GetString());
+        Assert.Equal("battle-audio-vab-v3", manifest.RootElement.GetProperty("schema").GetString());
         Assert.Equal(3, manifest.RootElement.GetProperty("banks").GetArrayLength());
         JsonElement battle = manifest.RootElement.GetProperty("banks")[1];
         Assert.Equal(1, battle.GetProperty("vab").GetProperty("SampleCount").GetInt32());
