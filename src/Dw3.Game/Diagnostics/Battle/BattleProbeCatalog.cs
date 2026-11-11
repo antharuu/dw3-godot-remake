@@ -11,6 +11,7 @@ internal static class BattleProbeCatalog
     {
         "RunBattleCameraProbe" => new BattleCameraProbe(host),
         "RunBattleMotionProbe" => new BattleMotionProbe(host),
+        "RunBattleActionProbe" when Environment.GetEnvironmentVariable("DW3_BATTLE_ACTION_PHYSICAL") == "1" => new BattlePhysicalAttackProbe(host),
         "RunBattleActionProbe" => new BattleActionProbe(host),
         "RunBattleFontProbe" => new BattleFontProbe(host),
         "RunBattleEntranceProbe" => new BattleEntranceProbe(host),

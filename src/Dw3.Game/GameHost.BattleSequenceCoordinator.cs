@@ -17,6 +17,7 @@ public partial class GameHost
     /// <param name="provider">Script provider backed by the battle data pack.</param>
     private void InitBattleSequenceRunner(IActionScriptProvider provider)
     {
+        _battleRenderer?.ConfigureActionAssets(BattleLoader);
         _sequenceRunner = new BattleSequenceRunner(BattleFlow, provider);
         _sequenceRunner.SetRenderer(_battleRenderer);
     }

@@ -70,6 +70,10 @@ public sealed class BattleExtractionStepTests : IDisposable
         Assert.Equal("BattleStats.WeaponFamilies -> DamageCalculator.FamilyBonus", consumers.GetProperty("weapon").GetProperty("family").GetString());
         Assert.Equal("BattleStats.Resist[7..11] -> B9-030 status resolver", consumers.GetProperty("accessory").GetProperty("statusImmunity").GetString());
         Assert.Equal("BattleStats.Counter/TripleHit/CriticalBonus -> B9-034 reaction resolver", consumers.GetProperty("accessory").GetProperty("reactionPassives").GetString());
+        Assert.True(File.Exists(Path.Combine(_root, "data", "battle", "impact", "frame-7-row-0.png")));
+        using var impact = JsonDocument.Parse(File.ReadAllText(Path.Combine(_root, "data", "battle", "impact", "effect-2.json")));
+        Assert.Equal("battle-impact-v1", impact.RootElement.GetProperty("schema").GetString());
+        Assert.Equal(1, impact.RootElement.GetProperty("animations").GetArrayLength());
         Assert.Equal(0, disc.OpenHandles);
     }
 
@@ -180,6 +184,7 @@ public sealed class BattleExtractionStepTests : IDisposable
             .Add("AAA/DAT/FIGHT/ACTIONS.BIN", actionsFile);
         Fabricate.FileSector(executable, 0x1CC, disc.LbaOf("AAA/DAT/FIGHT/FIGHTERS.BIN"));
         Fabricate.FileSector(executable, 0x300, disc.LbaOf("AAA/DAT/FIGHT/ACTIONS.BIN"));
+        FabricatedImpact.Add(disc, executable);
         foreach (string name in new[] { "FSMFIGHT", "FSDIGNAM", "FSSKLNAM", "FSSKLINF", "FSITMNAM", "FSITMINF", "FSFGTRPT" })
         {
             disc.Add($"AAA/DAT/COUNTRY/FRA/{name}.BIN", Fabricate.TextTable([0x12]));

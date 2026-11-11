@@ -26,6 +26,9 @@ public sealed class BattleActionTimeline
     /// <summary>Gets or sets the physical completion callback. Missing models are not ready.</summary>
     public Func<int, bool> MotionReady { get; set; } = _ => false;
 
+    /// <summary>Gets or sets the independent jump-child readiness callback.</summary>
+    public Func<int, bool> JumpReady { get; set; } = _ => true;
+
     /// <summary>Gets or sets consumer acknowledgement. False keeps the command pending without publishing it.</summary>
     public Func<BattleSequenceEvent, bool> Acknowledge { get; set; } = _ => true;
 
@@ -107,6 +110,7 @@ public sealed class BattleActionTimeline
     private bool Ready(BattleActionCommand command) => command.Opcode switch
     {
         BattleActionOpcode.Model when command.Arguments is [0, var actor, 0] => MotionReady(actor),
+        BattleActionOpcode.Model when command.Arguments is [5, var actor, 0] => JumpReady(actor),
         BattleActionOpcode.End or BattleActionOpcode.AlternateEnd => ChildrenReady(),
         _ => true,
     };
@@ -122,6 +126,9 @@ public sealed class BattleActionTimeline
             BattleActionOpcode.End or BattleActionOpcode.AlternateEnd => new SequenceEndedEvent(_context.AttackerSide, _context.AttackerId, _context.TargetId),
             BattleActionOpcode.HitDispatch => new HitDispatchedEvent(_context.AttackerSide, _context.AttackerId, _context.TargetId, _context.HitEvents, a[0]),
             BattleActionOpcode.Model when a is [0, _, 0] => null,
+            BattleActionOpcode.Model when a is [5, _, 0] => null,
+            BattleActionOpcode.Model when a is [5, var actor, var kind, ..] => new ModelJumpEvent(_context.AttackerSide, actor, kind, a.Count == 4 ? a[3] : 0),
+            BattleActionOpcode.Model when a[0] is 3 or 7 or 8 => new ModelTravelEvent(_context.AttackerSide, a),
             BattleActionOpcode.Model => new ModelMotionEvent(_context.AttackerSide, a[0], a[1], a.Count == 3 ? a[2] : 0),
             BattleActionOpcode.SpriteEffect => new SpriteEffectEvent(_context.AttackerSide, a),
             BattleActionOpcode.Stage => new StageChangeEvent(a),

@@ -47,12 +47,12 @@ Restoring that resource allows the same already resolved action to resume withou
 draw. A technique explicitly lacking a script remains separate and does not enter playback.
 Teardown cancels physical work and abandons the old runner before a new battle is initialized.
 
-Sprite, stage, effect-model, audio and reaction renderers register an asset consumer plus
-child-readiness and cancellation callbacks. An unregistered backend is unavailable. This
-executor does not claim those assets were rendered or their audio played. The deterministic
-backend in tests acknowledges synchronization requests only. Camera interpolation currently
-uses the existing presentation clock. Source-frame/PAL calibration and complete visual parity
-are not established by these tests.
+The renderer now owns the basic attack's travel, jumps, target reaction scripts and common
+contact sprite children. Other sprite, stage, effect-model and audio families keep the
+chained asset-consumer seam. An unregistered backend is unavailable. The deterministic
+backend in engine-free tests acknowledges synchronization requests only. Camera interpolation
+uses the presentation clock. Source-frame/PAL calibration and complete visual parity are
+not established by these tests.
 
 ## Verification
 
@@ -62,3 +62,36 @@ host, including negative readiness controls, acknowledged camera state, final KO
 HP publication, repeated ticks, interruption and missing-resource recovery. Tests do not
 require a disc. Private real-input and offscreen physical-state evidence is kept outside the
 source repository and does not constitute acceptance of complete battle visual fidelity.
+
+## Basic attack physical contract
+
+Pack schema 21 preserves sparse motion slots instead of compacting absent entries. A source
+motion number therefore still identifies the same archive slot. Model commands retain their
+bounded travel operands and independent jump-child waits. Finishing a jump never satisfies a
+wait for a subsequently started motion. Cancellation restores root positions and the captured
+motion/idle selection. A normal End does not overwrite the authored terminal reaction pose.
+
+Hit dispatch starts the target's actual pack script: hit, defeated or miss. It consumes the
+frozen hit facts, including whether that original target was defeated, rather than looking up
+a replacement in the live roster. The shared physical consumer advances this child, and End
+waits for it. No damage or RNG is resolved in this path.
+
+The common contact effect is extracted as PNGs and expanded sprite-animation samples. Its
+sheet pivot, palette identity, additive blend, scale and rotation channels survive extraction.
+It is projected through the live battle camera and is a real retained drawing, not the generic
+flash. Other effect identifiers remain explicitly unavailable unless another registered family
+owns them. The optional-stage sentinel with no configured stage and a return to the unchanged
+original stage are qualified no-change operations, not simulated stage fades.
+
+For offscreen diagnostics, set `DW3_BATTLE_ACTION_PROBE=1` and
+`DW3_BATTLE_ACTION_PHYSICAL=1` with an explicit newly prepared `DW3_DATA_DIR`. The ordinary
+battle-action diagnostic remains unchanged without the second flag. The physical diagnostic
+uses real scripts, rules and renderer for both camps, normal/miss/fatal-with-reserve and repeated
+battles. HP, accuracy and AI preconditions are controlled fixtures. Simulation RNG is counted
+before and after playback. Its sound-only control acknowledgements are labelled as not played.
+This isolates graphics from the separately owned audio implementation, not an audio proof.
+
+Clock units remain distinct: runner advancement is a simulation tick, jump/travel increments
+are normalized source-time samples, fighter motion uses the retained presentation/PAL clock,
+and framebuffer capture waits on rendered frames. The diagnostic does not equate these units
+or claim original task scheduling, exact PAL cadence or a frame-matched PSX sequence oracle.

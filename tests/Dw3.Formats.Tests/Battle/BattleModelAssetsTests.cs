@@ -104,6 +104,26 @@ public sealed class BattleModelAssetsTests
     }
 
     [Fact]
+    public void Motions_PreserveAbsentSlotsBeforeLaterMotions()
+    {
+        byte[] entry = Concat(
+            U32(16),
+            U32(0),
+            U32(32),
+            U32(0),
+            Step(0, 1, 10, 10),
+            Step(0x7FFF, 0, 0, 0),
+            Step(0, 1, 20, 20),
+            Step(0x7FFF, 0, 0, 0));
+
+        var motions = BattleAnimationDecoder.DecodeMotions(entry, 0, entry.Length);
+
+        Assert.Equal(3, motions.Count);
+        Assert.Empty(motions[1]);
+        Assert.Equal(20, motions[2][0].Frame);
+    }
+
+    [Fact]
     public void Motions_RejectEmptyAndUnterminatedRegions()
     {
         Assert.Throws<FormatException>(() => BattleAnimationDecoder.DecodeMotions(new byte[32], 0, 32));

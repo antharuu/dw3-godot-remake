@@ -471,6 +471,7 @@ public sealed class BattleRenderer : IDisposable
         for (var frame = 0; frame < elapsed; frame++)
         {
             _fighters.Step(1);
+            SequencePlayback.StepPhysical();
             _stage?.Step(1);
             SynchronizePartnerPresentation();
         }
@@ -794,6 +795,10 @@ public sealed class BattleRenderer : IDisposable
         _partnerView.Dispose();
         _layer.QueueFree();
     }
+
+    /// <summary>Binds contact assets from the same local pack as the action provider.</summary>
+    /// <param name="loader">Validated battle pack loader.</param>
+    internal void ConfigureActionAssets(Conversion.BattleDataPackLoader loader) => SequencePlayback.ConfigureImpact(new BattleImpactPlayback(_layer, _camera, loader));
 
     /// <summary>Gets a live model without changing product placement.</summary>
     /// <param name="fighter">Fighter identifier to inspect.</param>

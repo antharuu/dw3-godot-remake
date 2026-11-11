@@ -30,13 +30,14 @@ internal static class BattleActionArchiveExtractor
         foreach (FighterModelEntry fighter in fighters.Entries)
         {
             FighterModelReference reference = fighters.Resolve(fighter.FighterId);
-            foreach (int selector in scriptSelectors)
+            foreach (int selector in scriptSelectors.Concat([1, 2, 3, 4]).Distinct().Order())
             {
                 actions.Add(Decode(reference, selector, files, archives));
             }
         }
 
         BattleActionDomainWriter.Write(context, actions);
+        BattleImpactExtractor.Write(context, files);
     }
 
     /// <summary>

@@ -164,6 +164,35 @@ public sealed class ActionScriptDecoderTests
             command => Assert.Equal(BattleActionOpcode.End, command.Opcode));
     }
 
+    /// <summary>Consumes the jump kind and distance only for the qualified distance jump without shifting the terminator.</summary>
+    [Theory]
+    [InlineData(3, 4)]
+    [InlineData(7, 1)]
+    [InlineData(8, 1)]
+    public void DecodeModelTravelConsumesExactWidth(int subcommand, int width)
+    {
+        short[] words = [2, (short)subcommand, 0, .. Enumerable.Repeat((short)0, width), 11, 7, 255];
+        var script = BattleActionScriptDecoder.Decode(Archive(words), 0);
+        Assert.Equal(3, script.Commands.Count);
+        Assert.Equal(2 + width, script.Commands[0].Arguments.Count);
+        Assert.Equal(BattleActionOpcode.Wait, script.Commands[1].Opcode);
+    }
+
+    [Fact]
+    public void DecodeModelJumpKindFourConsumesDistance()
+    {
+        BattleActionScript script = BattleActionScriptDecoder.Decode(Archive(Script(2, 5, 0, 4, 123, 0)), 0);
+
+        Assert.Collection(
+            script.Commands,
+            command =>
+            {
+                Assert.Equal(BattleActionOpcode.Model, command.Opcode);
+                Assert.Equal<short>([5, 0, 4, 123], command.Arguments);
+            },
+            command => Assert.Equal(BattleActionOpcode.End, command.Opcode));
+    }
+
     /// <summary>Consumes the model visibility control without treating the terminator as an argument.</summary>
     [Fact]
     public void DecodeConsumesVisibilityControlForModelSubcommandOne()
@@ -300,6 +329,28 @@ public sealed class ActionScriptDecoderTests
         Assert.Equal(1, (int)script.Commands[0].Opcode);
         Assert.Equal<short>([5], script.Commands[0].Arguments);
         Assert.Equal(255, (int)script.Commands[1].Opcode);
+    }
+
+    [Fact]
+    public void DecodeTravelVariantsPreserveZeroCoordinatesAndNextCommands()
+    {
+        BattleActionScript script = BattleActionScriptDecoder.Decode(Archive(Script(2, 3, 0, 0, -12, 0, 9, 2, 7, 0, 0, 2, 8, 4, 7, 255)), 0);
+        Assert.Equal(4, script.Commands.Count);
+        Assert.Equal<short>([3, 0, 0, -12, 0, 9], script.Commands[0].Arguments);
+        Assert.Equal<short>([7, 0, 0], script.Commands[1].Arguments);
+        Assert.Equal<short>([8, 4, 7], script.Commands[2].Arguments);
+        Assert.Equal(BattleActionOpcode.AlternateEnd, script.Commands[3].Opcode);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    public void DecodeTravelRejectsEachTruncatedTransform(int coordinates)
+    {
+        short[] words = [2, 3, 0, 0, -12, 0, 9];
+        Assert.Throws<FormatException>(() => BattleActionScriptDecoder.Decode(Archive(words[..(3 + coordinates)]), 0));
     }
 
     /// <summary>Builds a u32-offset archive from independently supplied s16 script entries.</summary>

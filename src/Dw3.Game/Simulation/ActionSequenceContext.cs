@@ -14,6 +14,9 @@ public sealed record ActionSequenceContext(
     IReadOnlyList<BattleHitEvent> HitEvents,
     int ScriptSelector)
 {
+    /// <summary>Gets the resolved optional action stage, minus one for no stage change.</summary>
+    public int ScriptStage { get; init; } = -1;
+
     /// <summary>Builds a context when the technique has a valid script selector, even without damage events;
     /// returns null otherwise. Callers assign the result to <c>PendingSequenceContext</c> without branching.</summary>
     /// <param name="side">Side that initiated the action.</param>
@@ -34,6 +37,6 @@ public sealed record ActionSequenceContext(
             return null;
         }
 
-        return new ActionSequenceContext(side, attackerId, targetId, [.. hitEvents], tech.Script);
+        return new ActionSequenceContext(side, attackerId, targetId, [.. hitEvents], tech.Script) { ScriptStage = tech.ScriptStage == 0 ? -1 : tech.ScriptStage };
     }
 }

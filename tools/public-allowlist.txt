@@ -1143,3 +1143,20 @@ tests/Dw3.Game.Tests/Session/BlastProductionFlowTests.cs
 tests/Dw3.Game.Tests/Session/BlastProductionLifecycleTests.cs
 tests/Dw3.Game.Tests/Session/BlastQueueInspector.cs
 tests/Dw3.Game.Tests/Session/BlastReceivedDamageTests.cs
+
+# Basic attack physical playback and contact extraction
+src/Dw3.Extractor/BattleImpactExtractor.cs
+src/Dw3.Formats/Battle/BattleSpriteAnimationDecoder.cs
+src/Dw3.Game/Diagnostics/Battle/BattleAttackProofRng.cs
+src/Dw3.Game/Diagnostics/Battle/BattlePhysicalAttackProbe.cs
+src/Dw3.Game/Presentation/BattleImpactPlayback.cs
+src/Dw3.Game/Presentation/BattleImpactVisual.cs
+src/Dw3.Game/Presentation/BattleJumpMotion.cs
+src/Dw3.Game/Presentation/BattleReactionPlayback.cs
+src/Dw3.Game/Presentation/BattleTravelMotion.cs
+src/Dw3.Game/Simulation/ModelJumpEvent.cs
+src/Dw3.Game/Simulation/ModelTravelEvent.cs
+tests/Dw3.Extractor.Tests/FabricatedImpact.cs
+tests/Dw3.Formats.Tests/Battle/BattleSpriteAnimationTests.cs
+tests/Dw3.Game.Tests/BattleJumpMotionTests.cs
+tests/Dw3.Game.Tests/BattleTravelMotionTests.cs

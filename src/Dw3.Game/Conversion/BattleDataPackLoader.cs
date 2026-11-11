@@ -64,6 +64,10 @@ public sealed class BattleDataPackLoader : IDisposable
     /// <exception cref="CacheResourceException">The file is absent from the data pack.</exception>
     public string StagePath(int stageId) => RequireFile($"battle/stages/stage-{stageId}-model.json", $"battle stage {stageId}");
 
+    /// <summary>Returns the extracted common impact manifest.</summary>
+    /// <returns>Validated path within the data pack.</returns>
+    public string ImpactPath() => RequireFile("battle/impact/effect-2.json", "battle contact effect");
+
     /// <summary>Loads and validates the encounter manifest from the data pack.</summary>
     /// <returns>The fully decoded <see cref="EncounterData"/>.</returns>
     /// <exception cref="CacheResourceException">The manifest is absent or its JSON contract is violated.</exception>

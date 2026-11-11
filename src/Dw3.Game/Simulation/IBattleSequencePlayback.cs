@@ -15,6 +15,11 @@ public interface IBattleSequencePlayback
     /// <returns>True only when the model is present and its motion completed.</returns>
     bool MotionReady(int actor);
 
+    /// <summary>Tests the separate jump child, which is ready when no jump is active.</summary>
+    /// <param name="actor">Script actor selector.</param>
+    /// <returns>Whether the jump child has landed.</returns>
+    bool JumpReady(int actor) => true;
+
     /// <summary>Consumes a request or reports pending/unavailable without claiming it was applied.</summary>
     /// <param name="request">Typed request.</param>
     /// <returns>Explicit acknowledgement.</returns>

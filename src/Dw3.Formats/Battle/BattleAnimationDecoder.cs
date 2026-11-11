@@ -73,8 +73,9 @@ public static class BattleAnimationDecoder
         var motions = new List<IReadOnlyList<BattleMotionStep>>(offsets.Count);
         for (int index = 0; index < offsets.Count; index++)
         {
-            int limit = start + (index + 1 < offsets.Count ? offsets[index + 1] : end - start);
-            motions.Add(ReadMotion(data, start + offsets[index], limit, index + 1));
+            int relative = offsets[index];
+            int limit = offsets.Where(value => value > relative).Select(value => start + value).DefaultIfEmpty(end).Min();
+            motions.Add(relative == 0 ? [] : ReadMotion(data, start + relative, limit, index + 1));
         }
 
         return motions;
@@ -123,20 +124,26 @@ public static class BattleAnimationDecoder
     private static List<int> ReadMotionOffsets(byte[] data, int start, int end)
     {
         var offsets = new List<int>();
-        for (int index = 0; index < MaximumMotions && start + (index * 4) + 4 <= end; index++)
+        int tableEnd = end - start;
+        for (int index = 0; index < MaximumMotions && (index + 1) * 4 <= tableEnd; index++)
         {
             int value = checked((int)ReadU32(data, start + (index * 4)));
-            if (value == 0)
-            {
-                continue;
-            }
-
-            if (value < 4 * (index + 1) || value >= end - start)
+            if (value != 0 && (value < 4 * (index + 1) || value >= end - start))
             {
                 break;
             }
 
+            if (value != 0)
+            {
+                tableEnd = Math.Min(tableEnd, value);
+            }
+
             offsets.Add(value);
+        }
+
+        while (offsets.Count > 0 && offsets[^1] == 0)
+        {
+            offsets.RemoveAt(offsets.Count - 1);
         }
 
         return offsets;

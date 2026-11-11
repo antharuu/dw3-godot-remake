@@ -78,8 +78,30 @@ public static class BattleActionScriptDecoder
         {
             0 => new BattleActionCommand(BattleActionOpcode.Model, [subcommand, actor, ReadWord(data, ref cursor, end, entry, "model motion")]),
             1 or 2 => new BattleActionCommand(BattleActionOpcode.Model, [subcommand, actor]),
+            3 => new BattleActionCommand(BattleActionOpcode.Model, [subcommand, actor, .. ReadArguments(data, ref cursor, end, entry, ModelOpcode, 4)]),
+            7 or 8 => new BattleActionCommand(BattleActionOpcode.Model, [subcommand, actor, ReadWord(data, ref cursor, end, entry, "model travel time")]),
+            5 => ReadJumpCommand(data, ref cursor, end, entry, subcommand, actor),
             _ => throw new FormatException($"battle action script entry {entry} has unsupported model subcommand {subcommand}"),
         };
+    }
+
+    /// <summary>Reads a jump command, whose distance is present only for jump kind four.</summary>
+    /// <param name="data">Complete archive data.</param>
+    /// <param name="cursor">Cursor advanced beyond the jump operands.</param>
+    /// <param name="end">Exclusive boundary of this archive entry.</param>
+    /// <param name="entry">Archive-entry index for error messages.</param>
+    /// <param name="subcommand">The raw model jump subcommand.</param>
+    /// <param name="actor">The script actor selector.</param>
+    /// <returns>The semantic model jump command.</returns>
+    private static BattleActionCommand ReadJumpCommand(byte[] data, ref int cursor, int end, int entry, short subcommand, short actor)
+    {
+        short kind = ReadWord(data, ref cursor, end, entry, "model jump kind");
+        if (kind == 4)
+        {
+            return new BattleActionCommand(BattleActionOpcode.Model, [subcommand, actor, kind, ReadWord(data, ref cursor, end, entry, "model jump distance")]);
+        }
+
+        return new BattleActionCommand(BattleActionOpcode.Model, [subcommand, actor, kind]);
     }
 
     /// <summary>Reads the qualified start and load forms of sprite-effect opcode three.</summary>

@@ -28,13 +28,20 @@ internal sealed class BattleSequenceRunner
     /// <summary>Gets the recoverable failure, distinct from a normal physical wait.</summary>
     public string? Failure { get; private set; }
 
+    /// <summary>Gets the next command index for a private playback trace.</summary>
+    public int DiagnosticCursor => _timeline?.Cursor ?? -1;
+
     /// <summary>Binds the physical consumer, including deterministic synchronization controls in tests.</summary>
     /// <param name="playback">Consumer which owns camera and physical callbacks.</param>
     public void SetPlayback(IBattleSequencePlayback playback) => _playback = playback;
 
     /// <summary>Binds the active renderer's sequence consumer.</summary>
     /// <param name="renderer">Renderer, or null during teardown.</param>
-    public void SetRenderer(BattleRenderer? renderer) => _playback = renderer?.SequencePlayback;
+    public void SetRenderer(BattleRenderer? renderer)
+    {
+        _playback = renderer?.SequencePlayback;
+        renderer?.SequencePlayback.ConfigureReactions(_scripts);
+    }
 
     /// <summary>Advances the same playback seam called by the fixed-tick host.</summary>
     public void Tick()
@@ -95,6 +102,7 @@ internal sealed class BattleSequenceRunner
             _timeline = new BattleActionTimeline(script, context)
             {
                 MotionReady = actor => _playback?.MotionReady(actor) == true,
+                JumpReady = actor => _playback?.JumpReady(actor) == true,
                 ChildrenReady = () => _playback?.ChildrenReady != false,
                 Acknowledge = Acknowledge,
             };
