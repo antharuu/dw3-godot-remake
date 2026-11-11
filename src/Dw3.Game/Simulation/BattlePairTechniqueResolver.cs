@@ -21,14 +21,14 @@ public static class BattlePairTechniqueResolver
         BattleFighter? active = state.ActivePlayerFighter;
         BattleFighter? incoming = state.FighterAt(BattleSide.Player, incomingSlot);
         BattleFighter? target = state.ActiveEnemyFighter;
-        if (!BattlePairTechniqueRules.CanExecute(active, incoming, target, incomingSlot, incomingNameId, definition, tech))
+        if (active is null || incoming is null || target is null || !BattlePairTechniqueRules.CanExecute(active, incoming, target, incomingSlot, incomingNameId, definition, tech))
         {
             return false;
         }
 
-        active!.Mp -= tech.Mp;
-        incoming!.Mp -= tech.Mp;
-        state.ResolvePairTechniqueHits(active, target!, tech, rng);
+        active.Mp -= tech.Mp;
+        incoming.Mp -= tech.Mp;
+        state.ResolvePairTechniqueHits(active, target, tech, rng);
         state.MarkPairIncomingFought(incomingSlot);
         if (BattleRoster.AnyLiving(state.Enemies))
         {
