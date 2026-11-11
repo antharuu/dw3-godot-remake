@@ -169,6 +169,11 @@ public sealed class BattleModifierCoordinator(BattleState state, BattleTurnSched
             return true;
         }
 
+        if (BattleBlastResolver.ProcessNext(state, scheduler))
+        {
+            return true;
+        }
+
         if (scheduler.Count == 0 || !IsModifierEvent(scheduler.NextKind))
         {
             return false;

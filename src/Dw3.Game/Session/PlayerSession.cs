@@ -81,6 +81,7 @@ public sealed class PlayerSession
 
         partner.BattleSeed.Hp = fighter.Hp;
         partner.BattleSeed.Mp = fighter.Mp;
-        partner.BattleSeed.Id = fighter.Id;
+        partner.BattleSeed.Id = fighter.Temporary ? fighter.PrevId : fighter.Id;
+        partner.BattleSeed.BlastGauge = 0;
     }
 }

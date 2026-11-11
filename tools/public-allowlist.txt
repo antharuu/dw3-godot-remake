@@ -1117,3 +1117,7 @@ tests/Dw3.Game.Tests/BattleActionManifestValidationTests.cs
 tests/Dw3.Game.Tests/BattleSequenceCameraTests.cs
 tests/Dw3.Game.Tests/BattleSequencePackPlaybackTests.cs
 tests/Dw3.Game.Tests/SequenceTestPlayback.cs
+# B9-041 blast digivolution gauge, trigger, duration and return
+src/Dw3.Game/Simulation/BattleBlastGaugeRules.cs
+src/Dw3.Game/Simulation/BattleBlastResolver.cs
+tests/Dw3.Game.Tests/BattleBlastTests.cs
