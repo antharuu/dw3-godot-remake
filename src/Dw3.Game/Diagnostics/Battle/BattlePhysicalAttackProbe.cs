@@ -188,6 +188,7 @@ internal sealed class BattlePhysicalAttackProbe : BattleProbe
         var runner = new BattleSequenceRunner(flow, new PackActionScriptProvider(loader));
         runner.SetRenderer(Host.Renderer);
         int draws = rng.Count;
+        int contacts = 0;
         var roster = Host.Renderer.SequencePlayback.DiagnosticRoster;
         var homes = roster.Models.ToDictionary(model => model, model => model.Root.Position);
         var camera = Host.Renderer.CameraForProbe.Transform;
@@ -202,12 +203,21 @@ internal sealed class BattlePhysicalAttackProbe : BattleProbe
             }
 
             await Host.NextFrameDrawn();
+            int drawnContacts = Host.Renderer.SequencePlayback.DiagnosticImpactCount;
+            if (drawnContacts > contacts)
+            {
+                contacts = drawnContacts;
+                await BattleProbeCapture.CaptureRawAsync(Host, captures, $"{label}-contact-{contacts}.png");
+                GD.Print($"B9052_CONTACT {label} tick={tick} actual-children={contacts}");
+            }
+
             if (tick is 25 or 93 or 97 or 110 or 150 or 210)
             {
                 await BattleProbeCapture.CaptureRawAsync(Host, captures, $"{label}-{tick}.png");
             }
         }
 
+        ProbeRequirement.Require(contacts > 0, "no real contact child was rendered");
         ProbeRequirement.Require(flow.Phase != BattleFlowPhase.ActionSequence, $"{label} sequence stalled");
         ProbeRequirement.Require(rng.Count == draws, "playback redrew simulation RNG");
         ProbeRequirement.Require(homes.All(pair => pair.Key.Root.Position.IsEqualApprox(pair.Value)), "positions not restored");

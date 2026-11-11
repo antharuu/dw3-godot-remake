@@ -28,6 +28,9 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
     /// <summary>Gets the private diagnostic roster.</summary>
     public BattleFighterRoster DiagnosticRoster => _fighters;
 
+    /// <summary>Gets the number of real contact children for synchronized offscreen capture.</summary>
+    public int DiagnosticImpactCount => _impact?.StartedChildrenCount ?? 0;
+
     /// <summary>Gets a value indicating whether a sequence exclusively owns the physical camera.</summary>
     public bool OwnsCamera => _context is not null;
 

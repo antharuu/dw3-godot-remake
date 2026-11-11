@@ -24,6 +24,9 @@ internal sealed class BattleImpactPlayback
         _loader = loader;
     }
 
+    /// <summary>Gets the number of real contact drawings started in this action.</summary>
+    public int StartedChildrenCount => _children.Count;
+
     /// <summary>Gets a value indicating whether every contact child finished.</summary>
     public bool IsComplete => _children.All(child => child.Visual.IsComplete);
 

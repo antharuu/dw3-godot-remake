@@ -84,10 +84,13 @@ owns them. The optional-stage sentinel with no configured stage and a return to 
 original stage are qualified no-change operations, not simulated stage fades.
 
 For offscreen diagnostics, set `DW3_BATTLE_ACTION_PROBE=1` and
-`DW3_BATTLE_ACTION_PHYSICAL=1` with an explicit newly prepared `DW3_DATA_DIR`. The ordinary
+`DW3_BATTLE_ACTION_PHYSICAL=1`, `DW3_RNG_SEED=12345` and an explicit newly prepared
+`DW3_DATA_DIR`. The ordinary
 battle-action diagnostic remains unchanged without the second flag. The physical diagnostic
-uses real scripts, rules and renderer for both camps, normal/miss/fatal-with-reserve and repeated
-battles. HP, accuracy and AI preconditions are controlled fixtures. Simulation RNG is counted
+uses real scripts, rules and renderer for both camps, normal/miss/fatal-with-reserve, repeated
+actions in the same battle and final victory/defeat. Contact captures are triggered by an
+actual started sprite child rather than a guessed screenshot time. HP, accuracy and AI
+preconditions are controlled fixtures. Simulation RNG is counted
 before and after playback. Its sound-only control acknowledgements are labelled as not played.
 This isolates graphics from the separately owned audio implementation, not an audio proof.
 
