@@ -1106,3 +1106,14 @@ src/Dw3.Game/Simulation/SpriteEffectEvent.cs
 src/Dw3.Game/Simulation/StageChangeEvent.cs
 tests/Dw3.Game.Tests/BattleActionTimelineTests.cs
 tests/Dw3.Game.Tests/BattleFlowActionSequenceTests.cs
+docs/ACTION_PLAYBACK.md
+src/Dw3.Game/Presentation/BattleRendererSequencePlayback.cs
+src/Dw3.Game/Presentation/BattleSequenceCamera.cs
+src/Dw3.Game/Simulation/BattleActionValidation.cs
+src/Dw3.Game/Simulation/BattleSequencePresentation.cs
+src/Dw3.Game/Simulation/IBattleSequencePlayback.cs
+src/Dw3.Game/Simulation/SequenceAcknowledgement.cs
+tests/Dw3.Game.Tests/BattleActionManifestValidationTests.cs
+tests/Dw3.Game.Tests/BattleSequenceCameraTests.cs
+tests/Dw3.Game.Tests/BattleSequencePackPlaybackTests.cs
+tests/Dw3.Game.Tests/SequenceTestPlayback.cs

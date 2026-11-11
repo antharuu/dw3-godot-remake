@@ -14,7 +14,7 @@ public sealed record ActionSequenceContext(
     IReadOnlyList<BattleHitEvent> HitEvents,
     int ScriptSelector)
 {
-    /// <summary>Builds a context when the technique has a valid script selector and produced at least one hit event;
+    /// <summary>Builds a context when the technique has a valid script selector, even without damage events;
     /// returns null otherwise. Callers assign the result to <c>PendingSequenceContext</c> without branching.</summary>
     /// <param name="side">Side that initiated the action.</param>
     /// <param name="tech">Technique; must have a positive Script selector to qualify.</param>
@@ -29,7 +29,7 @@ public sealed record ActionSequenceContext(
         int targetId,
         IReadOnlyList<BattleHitEvent> hitEvents)
     {
-        if (tech is not { Script: > 0 } || hitEvents.Count == 0)
+        if (tech is not { Script: > 0 })
         {
             return null;
         }

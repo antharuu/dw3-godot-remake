@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Dw3.Data.Battle;
+using Dw3Production.Simulation;
 
 namespace Dw3Production.Conversion;
 
@@ -19,9 +20,11 @@ public static class BattleActionScriptJsonParser
         try
         {
             using var document = JsonDocument.Parse(json);
-            return ParseDocument(document.RootElement, context);
+            var script = ParseDocument(document.RootElement, context);
+            BattleActionValidation.Validate(script);
+            return script;
         }
-        catch (JsonException error)
+        catch (Exception error) when (error is JsonException or InvalidOperationException)
         {
             throw new FormatException($"{context}: JSON parse error: {error.Message}", error);
         }
@@ -94,6 +97,11 @@ public static class BattleActionScriptJsonParser
         }
 
         var opcode = (BattleActionOpcode)rawOpcode;
+
+        if (!element.TryGetProperty("arguments", out var requiredArgs) || requiredArgs.ValueKind != JsonValueKind.Array)
+        {
+            throw new FormatException($"{context}: missing command arguments array");
+        }
 
         var arguments = new List<short>();
         if (element.TryGetProperty("arguments", out var argsProp) &&

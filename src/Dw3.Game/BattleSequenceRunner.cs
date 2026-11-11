@@ -1,40 +1,50 @@
-using Dw3.Data.Battle;
 using Dw3Production.Conversion;
-using Dw3Production.Logging;
 using Dw3Production.Presentation;
 using Dw3Production.Simulation;
 
 namespace Dw3Production;
 
-/// <summary>Manages the action-sequence lifecycle for one battle, loading scripts from the pack
-/// and advancing the timeline frame by frame. Isolated from <see cref="GameHost"/> so its branching
-/// logic is counted separately for DW3001.</summary>
+/// <summary>Owns one action playback lifecycle without re-running rules or silently completing missing scripts.</summary>
 internal sealed class BattleSequenceRunner
 {
     private readonly BattleFlowController _flow;
     private readonly IActionScriptProvider _scripts;
+    private readonly BattleState _state;
     private BattleActionTimeline? _timeline;
-    private BattleRenderer? _renderer;
+    private IBattleSequencePlayback? _playback;
 
     /// <summary>Initializes a new instance of the <see cref="BattleSequenceRunner"/> class.</summary>
-    /// <param name="flow">Active battle flow whose sequence context and phases are driven.</param>
-    /// <param name="scripts">Provider that loads decoded action scripts on demand.</param>
+    /// <param name="flow">Active battle.</param>
+    /// <param name="scripts">Pack-backed script provider.</param>
     public BattleSequenceRunner(BattleFlowController flow, IActionScriptProvider scripts)
     {
         ArgumentNullException.ThrowIfNull(flow);
         ArgumentNullException.ThrowIfNull(scripts);
         _flow = flow;
+        _state = flow.State;
         _scripts = scripts;
     }
 
-    /// <summary>Binds or clears the renderer that receives sequence events each frame.</summary>
-    /// <param name="renderer">Active renderer, or null when the battle renderer is not set up.</param>
-    public void SetRenderer(BattleRenderer? renderer) => _renderer = renderer;
+    /// <summary>Gets the recoverable failure, distinct from a normal physical wait.</summary>
+    public string? Failure { get; private set; }
 
-    /// <summary>Advances the sequence by one frame: loads the script on the first frame, fires events,
-    /// and completes the flow phase when the End opcode is reached.</summary>
+    /// <summary>Binds the physical consumer, including deterministic synchronization controls in tests.</summary>
+    /// <param name="playback">Consumer which owns camera and physical callbacks.</param>
+    public void SetPlayback(IBattleSequencePlayback playback) => _playback = playback;
+
+    /// <summary>Binds the active renderer's sequence consumer.</summary>
+    /// <param name="renderer">Renderer, or null during teardown.</param>
+    public void SetRenderer(BattleRenderer? renderer) => _playback = renderer?.SequencePlayback;
+
+    /// <summary>Advances the same playback seam called by the fixed-tick host.</summary>
     public void Tick()
     {
+        if (_flow.State != _state || _flow.Phase != BattleFlowPhase.ActionSequence)
+        {
+            Cancel();
+            return;
+        }
+
         if (_timeline is null && !TryStartTimeline())
         {
             return;
@@ -45,89 +55,105 @@ internal sealed class BattleSequenceRunner
             return;
         }
 
-        var events = current.Advance(1);
-        RouteEvents(events);
+        current.Advance();
         if (current.IsComplete)
         {
+            _playback?.Finish(cancelled: false);
             _timeline = null;
             _flow.CompleteActionSequence();
         }
     }
 
-    /// <summary>Routes one event to the renderer, delegating to the right handler per event type.
-    /// Static so it carries no implicit complexity for the class-level DW3001 count.</summary>
-    /// <param name="renderer">Active renderer.</param>
-    /// <param name="ev">Typed event from the timeline.</param>
-    private static void RouteOneEvent(BattleRenderer renderer, BattleSequenceEvent ev)
+    /// <summary>Cancels children and presentation ownership. Does not fabricate successful sequence completion.</summary>
+    public void Cancel()
     {
-        switch (ev)
-        {
-            case HitDispatchedEvent hit:
-                renderer.OnHitDispatched(hit);
-                break;
-            case ModelMotionEvent motion:
-                renderer.OnSequenceMotion(motion);
-                break;
-            case CameraRequestEvent camera:
-                renderer.OnSequenceCameraRequest(camera);
-                break;
-            default:
-                break;
-        }
+        _timeline?.Cancel();
+        _timeline = null;
+        _playback?.Finish(cancelled: true);
     }
 
-    /// <summary>Loads the pending context and builds the timeline on the first sequence frame.
-    /// Returns false when no script is available and the sequence has already been completed.</summary>
-    /// <returns>True when the timeline is ready for advancement.</returns>
+    /// <summary>Loads and validates before consuming the context. Missing resources keep an explicit recoverable failure.</summary>
+    /// <returns>Whether playback started.</returns>
     private bool TryStartTimeline()
     {
-        var ctx = _flow.ConsumeSequenceContext();
-        if (ctx is null)
+        var context = _flow.PendingSequenceContext;
+        if (context is null)
         {
-            _flow.CompleteActionSequence();
+            Fail("action-sequence-context-missing");
             return false;
         }
 
-        var script = LoadScript(ctx.AttackerId, ctx.ScriptSelector);
-        if (script is null)
+        try
         {
-            _flow.CompleteActionSequence();
+            var script = _scripts.TryLoad(context.AttackerId, context.ScriptSelector);
+            if (script is null)
+            {
+                Fail($"action-script-required-unavailable fighter={context.AttackerId} selector={context.ScriptSelector}");
+                return false;
+            }
+
+            _timeline = new BattleActionTimeline(script, context)
+            {
+                MotionReady = actor => _playback?.MotionReady(actor) == true,
+                ChildrenReady = () => _playback?.ChildrenReady != false,
+                Acknowledge = Acknowledge,
+            };
+            _playback?.Begin(context);
+            _flow.ConsumeSequenceContext();
+            Failure = null;
+            return true;
+        }
+        catch (Exception error) when (error is IOException or FormatException or CacheResourceException)
+        {
+            Fail($"action-script-invalid: {error.Message}");
             return false;
         }
-
-        _timeline = new BattleActionTimeline(script, ctx);
-        return true;
     }
 
-    /// <summary>Loads the action script from the provider, returning null on cache miss or error.</summary>
-    /// <param name="fighterId">Fighter whose script is requested.</param>
-    /// <param name="selector">Technique script-selector.</param>
-    /// <returns>The decoded script, or null.</returns>
-    private BattleActionScript? LoadScript(int fighterId, int selector)
+    /// <summary>Routes every event family and only publishes consumer-confirmed application.</summary>
+    /// <param name="request">Typed request.</param>
+    /// <returns>Whether the command was consumed.</returns>
+    private bool Acknowledge(BattleSequenceEvent request)
     {
         try
         {
-            return _scripts.TryLoad(fighterId, selector);
+            return AcknowledgeAvailable(request);
         }
-        catch (Exception ex)
+        catch (Exception error) when (error is FormatException or IOException or CacheResourceException)
         {
-            QuietLog.Info($"action-script-load-error fighter={fighterId} sel={selector}: {ex.Message}");
-            return null;
+            Fail($"action-resource-unavailable: {error.Message}");
+            return false;
         }
     }
 
-    /// <summary>Routes typed events to the renderer for supported families; silently skips others.</summary>
-    /// <param name="events">Events from the timeline this frame.</param>
-    private void RouteEvents(IReadOnlyList<BattleSequenceEvent> events)
+    /// <summary>Consumes one physical request without skipping unavailable backends.</summary>
+    /// <param name="request">Stable request identity retained across pending retries.</param>
+    /// <returns>Whether the consumer applied it.</returns>
+    private bool AcknowledgeAvailable(BattleSequenceEvent request)
     {
-        if (_renderer is null)
+        var result = _playback?.Consume(request) ??
+            (request is SequenceEndedEvent ? SequenceAcknowledgement.Applied : SequenceAcknowledgement.Unavailable);
+        if (result == SequenceAcknowledgement.Unavailable)
         {
-            return;
+            Fail($"action-consumer-unavailable request={request.GetType().Name}");
+        }
+        else
+        {
+            Failure = null;
         }
 
-        foreach (var ev in events)
+        return result == SequenceAcknowledgement.Applied;
+    }
+
+    /// <summary>Reports a changed diagnostic once rather than spamming each pending tick.</summary>
+    /// <param name="diagnostic">Recoverable failure.</param>
+    private void Fail(string diagnostic)
+    {
+        if (Failure != diagnostic)
         {
-            RouteOneEvent(_renderer, ev);
+            Console.Error.WriteLine(diagnostic);
         }
+
+        Failure = diagnostic;
     }
 }

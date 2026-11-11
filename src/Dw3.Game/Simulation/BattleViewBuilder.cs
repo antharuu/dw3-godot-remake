@@ -26,6 +26,12 @@ public static class BattleViewBuilder
             flow.State.Enemies,
             flow.State.ActiveEnemy,
             nameFor);
+        if (flow.Phase == BattleFlowPhase.ActionSequence)
+        {
+            players = [.. flow.SequencePresentation.Players.Select(f => f with { Name = nameFor(f.Id) })];
+            enemies = [.. flow.SequencePresentation.Enemies.Select(f => f with { Name = nameFor(f.Id) })];
+        }
+
         BattleMenuView? visibleMenu = flow.Phase == BattleFlowPhase.PlayerCommand ? menu : null;
         return new BattleView(
             flow.Phase,
@@ -44,7 +50,7 @@ public static class BattleViewBuilder
     /// <param name="activeIndex">Active slot index.</param>
     /// <param name="nameFor">Decoded-name resolver.</param>
     /// <returns>Presentation fighter slots preserving empty entries.</returns>
-    private static List<BattleFighterView> BuildFighters(
+    internal static List<BattleFighterView> BuildFighters(
         BattleFighter?[] fighters,
         int activeIndex,
         Func<int, BattleTextLine> nameFor)

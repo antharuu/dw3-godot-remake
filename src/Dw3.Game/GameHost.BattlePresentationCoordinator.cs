@@ -22,7 +22,7 @@ public partial class GameHost
         public void RefreshModels()
         {
             BattleFlowController? flow = _host._battleFlow;
-            if (flow is null || _host._battleRenderer is null)
+            if (flow is null || _host._battleRenderer is null || flow.Phase == BattleFlowPhase.ActionSequence)
             {
                 return;
             }

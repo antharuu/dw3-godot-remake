@@ -1,5 +1,4 @@
 using Dw3Production.Conversion;
-using Dw3Production.Logging;
 using Dw3Production.Simulation;
 using Godot;
 
@@ -72,6 +71,7 @@ public sealed class BattleRenderer : IDisposable
     /// <param name="root">Node that receives the battle canvas layer.</param>
     public BattleRenderer(Node root)
     {
+        SequencePlayback = new BattleRendererSequencePlayback(this, _fighters);
         _layer = new CanvasLayer { Layer = 300, Visible = false };
         root.AddChild(_layer);
 
@@ -130,6 +130,9 @@ public sealed class BattleRenderer : IDisposable
 
     /// <summary>Gets the number of real battle models built (player + any decoded enemy).</summary>
     public int ModelCount => _fighters.Models.Count;
+
+    /// <summary>Gets the physical action consumer and its exclusive ownership state.</summary>
+    internal BattleRendererSequencePlayback SequencePlayback { get; }
 
     /// <summary>Gets the unmodified main source camera for diagnostic actor translation.</summary>
     internal Camera3D CameraForProbe => _camera;
@@ -559,7 +562,8 @@ public sealed class BattleRenderer : IDisposable
     /// This is the path used by the player command shot camera.</summary>
     /// <param name="view">Composed camera view to apply.</param>
     /// <param name="snap">Whether to apply the view immediately.</param>
-    public void SetSourceCamera(SourceBattleCameraView view, bool snap = true)
+    /// <param name="frames">Authored transition duration in presentation units.</param>
+    public void SetSourceCamera(SourceBattleCameraView view, bool snap = true, int frames = 1)
     {
         var position = BattleSceneMath.ComposeCameraPosition(view, reference: false);
         var reference = BattleSceneMath.ComposeCameraPosition(view, reference: true);
@@ -567,7 +571,7 @@ public sealed class BattleRenderer : IDisposable
             new Vector3(position.X, position.Y, position.Z),
             new Vector3(reference.X, reference.Y, reference.Z),
             view.Projection,
-            1f,
+            1f / Math.Max(1, frames),
             snap);
         ApplyCamera();
     }
@@ -625,43 +629,44 @@ public sealed class BattleRenderer : IDisposable
     /// scene during the player's command turn (see <see cref="BattleCommandCamera"/>).</summary>
     public void SetCommandMenuCamera()
     {
+        if (SequencePlayback.OwnsCamera)
+        {
+            return;
+        }
+
         _shotClock.Reset();
         SetSourceCamera(_commandCamera.Start(FighterCameras(enemy: false), FighterCameras(enemy: true)), snap: true);
         ApplyShotVisibility();
     }
 
     /// <summary>Handles a hit-dispatch event from an action-sequence timeline.
-    /// Routes hit results to the HUD HP bar animation; actual visual flash/spark are handled by B9-054.</summary>
+    /// Reaction requests are consumed by the registered effect backend, not by the HUD.</summary>
     /// <param name="ev">The dispatched hit event carrying pre-resolved hit results.</param>
-    public void OnHitDispatched(HitDispatchedEvent ev)
-    {
-        ArgumentNullException.ThrowIfNull(ev);
-
-        // The HP bar update and strike-landed visual are owned by B9-054/055.
-        // This seam exists so the host can connect them without changing the renderer's layout.
-        QuietLog.Info($"sequence-hit-dispatch attacker={ev.AttackerId} target={ev.TargetId} hits={ev.HitEvents.Count} dispatch-index={ev.DispatchIndex} model-count={_fighters.Models.Count}");
-    }
+    public void OnHitDispatched(HitDispatchedEvent ev) => SequencePlayback.Consume(ev);
 
     /// <summary>Handles a model motion or visibility request from an action-sequence timeline.
     /// Resolves the target model from the actor field and applies the subcommand.</summary>
     /// <param name="ev">The motion/visibility event from the script.</param>
     public void OnSequenceMotion(ModelMotionEvent ev)
     {
-        ArgumentNullException.ThrowIfNull(ev);
-        bool attackerIsEnemy = ev.AttackerSide == BattleSide.Enemy;
-        _fighters.SequenceActorModel(attackerIsEnemy, ev.Actor)?.ApplySubcommand(ev.Subcommand, ev.Motion);
+        SequencePlayback.ApplyMotion(ev);
     }
 
     /// <summary>Handles a camera request event from an action-sequence timeline.
-    /// Camera trajectory execution belongs to B9-052; this seam records the request and
-    /// prevents the command-menu camera from overriding the sequence's camera state.</summary>
+    /// Applies cut or authored fade through the physical camera state. Sequence ownership
+    /// prevents command-menu and overview updates from overriding it.</summary>
     /// <param name="ev">The camera request event from the script.</param>
     public void OnSequenceCameraRequest(CameraRequestEvent ev)
     {
         ArgumentNullException.ThrowIfNull(ev);
 
-        // Trajectory execution is owned by B9-052. The seam exists for wiring without future renaming.
-        QuietLog.Info($"sequence-camera-request mode={(ev.Arguments.Count > 0 ? ev.Arguments[0] : (short)0)} args={ev.Arguments.Count} built={Built}");
+        var views = new BattleShotCameraViews
+        {
+            GetEnemyView = () => BattleSequenceCamera.FighterView(FighterCameras(false), FighterCameras(true).Count - 1),
+            GetFighterView = (side, index) => BattleSequenceCamera.FighterView(FighterCameras(side != 0), index),
+        };
+        BattleSequenceCamera.Apply(ev, views, _cameraFade);
+        ApplyCamera();
     }
 
     /// <summary>Describes the active command shot camera for diagnostics.</summary>
@@ -687,6 +692,11 @@ public sealed class BattleRenderer : IDisposable
     /// <param name="delta">Elapsed presentation time in seconds.</param>
     public void StepShotCamera(float delta)
     {
+        if (SequencePlayback.OwnsCamera)
+        {
+            return;
+        }
+
         var sourceTicks = _shotClock.Advance(delta);
         for (var tick = 0; tick < sourceTicks; tick++)
         {
@@ -703,6 +713,11 @@ public sealed class BattleRenderer : IDisposable
     /// <summary>Stops the command shot camera and restores both fighters' visibility.</summary>
     public void StopShotCamera()
     {
+        if (SequencePlayback.OwnsCamera)
+        {
+            return;
+        }
+
         _shotClock.Reset();
         if (_commandCamera.Stop() is { } overview)
         {
@@ -762,15 +777,7 @@ public sealed class BattleRenderer : IDisposable
         }
 
         var commandTurn = value.Phase == BattleFlowPhase.PlayerCommand;
-        var sequenceOwnsCamera = value.Phase == BattleFlowPhase.ActionSequence;
-        if (commandTurn)
-        {
-            StepShotCamera(elapsed);
-        }
-        else if (!sequenceOwnsCamera)
-        {
-            StopShotCamera();
-        }
+        SequencePlayback.StepMenuCamera(value.Phase, elapsed);
 
         PresentPartnerView(commandTurn);
         _modelLayer.Rebuild(_camera, _fighters.Models);
