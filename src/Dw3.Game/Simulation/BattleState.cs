@@ -189,13 +189,13 @@ public sealed class BattleState
     {
         var attacker = ActivePlayerFighter;
         var target = ActiveEnemyFighter;
-        if (attacker is not { IsKnockedOut: false } || target == null || !BattleTechniqueEffectResolver.CanExecute(BattleSide.Player, tech) || !DoubleMagicTechniqueSelector.HasRequiredDamageEntries(tech, Techs) || tech.Mp > attacker.Mp || (attacker.Flags & (FighterFlags.Asleep | FighterFlags.Confused)) != 0)
+        if (!BattleTechniqueUseRules.CanUse(attacker, target, tech, Techs))
         {
             return false; // an unaffordable technique does not spend the turn
         }
 
-        attacker.RefreshStats();
-        target.RefreshStats();
+        attacker!.RefreshStats();
+        target!.RefreshStats();
         attacker.Mp -= tech.Mp;
         if (!BattleTechniqueEffectResolver.RequiresHitSequence(tech))
         {
@@ -251,6 +251,31 @@ public sealed class BattleState
 
         ActivePlayer = slot;
         AdvancePlayerTurn();
+        return true;
+    }
+
+    /// <summary>Runs a source-qualified pair technique with a living reserve, charging both partners and bringing the reserve in after the hit resolves.</summary>
+    /// <param name="incomingSlot">Reserve slot whose selected form matches the pair relation.</param>
+    /// <param name="definition">Source relation that identifies the required incoming partner name.</param>
+    /// <param name="incomingNameId">Name-table id of the incoming form.</param>
+    /// <param name="tech">Resolved pair technique whose MP cost is charged to both partners.</param>
+    /// <param name="rng">Shared battle random source used by the technique hit sequence.</param>
+    /// <returns>Whether the pair action was legal and completed.</returns>
+    public bool PlayerPairTechnique(int incomingSlot, PairTechniqueDefinition definition, int incomingNameId, TechData tech, IBattleRng rng)
+    {
+        BattleFighter? active = ActivePlayerFighter;
+        BattleFighter? incoming = FighterAt(BattleSide.Player, incomingSlot);
+        BattleFighter? target = ActiveEnemyFighter;
+        if (!BattlePairTechniqueRules.CanExecute(active, incoming, target, incomingSlot, incomingNameId, definition, tech))
+        {
+            return false;
+        }
+
+        active!.Mp -= tech.Mp;
+        incoming!.Mp -= tech.Mp;
+        LandPlayerHits(target!, tech, active, rng, technique: true);
+        ActivePlayer = incomingSlot;
+        MarkFought();
         return true;
     }
 
