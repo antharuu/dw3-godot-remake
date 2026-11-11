@@ -1,5 +1,6 @@
 using Dw3Production.Simulation;
 using Xunit;
+using Conversion = Dw3Production.Conversion;
 
 namespace Dw3.Game.Tests;
 
@@ -30,7 +31,21 @@ public sealed class BattlePairTechniqueTests
         Assert.True(enemy.Hp < enemyHpBefore);
         Assert.Equal(1, state.ActivePlayer);
         Assert.Equal(IncomingFormId, state.ActivePlayerFighter?.Id);
-        Assert.True(state.Fought[0]);
+        Assert.False(state.Fought[0]);
+        Assert.True(state.Fought[1]);
+    }
+
+    /// <summary>When a pair technique ends the fight, the source marks only the incoming partner and does not perform the switch.</summary>
+    [Fact]
+    public void PairTechnique_FinalEnemyDefeated_MarksIncomingWithoutSwitching()
+    {
+        BattleState state = CreateState(enemyHp: 1);
+
+        bool spent = UsePair(state);
+
+        Assert.True(spent);
+        Assert.Equal(0, state.ActivePlayer);
+        Assert.False(state.Fought[0]);
         Assert.True(state.Fought[1]);
     }
 
@@ -83,20 +98,40 @@ public sealed class BattlePairTechniqueTests
         Assert.Equal(0, state.ActivePlayer);
     }
 
+    /// <summary>Pair definition creation reads the decoded active-form pair fields rather than inferring a relation from ids.</summary>
+    [Fact]
+    public void PairTechniqueDefinition_SourcePairFields_CreateNameMatchedDefinition()
+    {
+        Conversion.DigimonData active = CreateDigimon(ActiveFormId, PairTechniqueId, IncomingNameId, 21);
+        Conversion.DigimonData incoming = CreateDigimon(IncomingFormId, 0, 0, IncomingNameId);
+        var fighters = new Conversion.FighterData(
+            new Dictionary<int, Conversion.DigimonData> { [active.Id] = active, [incoming.Id] = incoming },
+            [active, incoming],
+            []);
+
+        PairTechniqueDefinition? definition = PairTechniqueCatalog.ForActiveForm(fighters, ActiveFormId);
+
+        Assert.Equal(new PairTechniqueDefinition(PairTechniqueId, IncomingNameId), definition);
+        Assert.Null(PairTechniqueCatalog.ForActiveForm(fighters, IncomingFormId));
+    }
+
+    private static Conversion.DigimonData CreateDigimon(int id, int pairTechnique, int pairPartner, int nameId) =>
+        new(id, [], [], [1], pairTechnique, [], [], [], 0, pairPartner, 0, 0, 0, 0, 0, [], [], [], nameId, 0, false);
+
     private static bool UsePair(BattleState state)
     {
         TechData technique = Assert.IsType<TechData>(state.Techs[PairTechniqueId]);
         return state.PlayerPairTechnique(1, new PairTechniqueDefinition(PairTechniqueId, IncomingNameId), IncomingNameId, technique, new FixedRng());
     }
 
-    private static BattleState CreateState(int activeMp = 9999, int incomingMp = 9999, int incomingHp = 300)
+    private static BattleState CreateState(int activeMp = 9999, int incomingMp = 9999, int incomingHp = 300, int enemyHp = 10000)
     {
         BattleStats playerStats = CreateStats(attack: 100, defense: 100);
         BattleStats enemyStats = CreateStats(attack: 1, defense: 1);
         var setup = new BattleSetup();
         setup.Partners[0] = new PartnerSeed { Id = ActiveFormId, Hp = 300, MaxHp = 300, Mp = activeMp, MaxMp = 9999, Stats = playerStats };
         setup.Partners[1] = new PartnerSeed { Id = IncomingFormId, Hp = incomingHp, MaxHp = 300, Mp = incomingMp, MaxMp = 9999, Stats = playerStats };
-        setup.Enemies[0] = new BattleEnemy { Fighter = 99, Hp = 1000, Mp = 0, Strength = 16, BaseStats = enemyStats };
+        setup.Enemies[0] = new BattleEnemy { Fighter = 99, Hp = enemyHp, Mp = 0, Strength = 16, BaseStats = enemyStats };
         BattleState state = BattleState.InitFighters(setup, ActiveFormId, new FixedRng());
         state.Techs = new Dictionary<int, TechData>
         {
