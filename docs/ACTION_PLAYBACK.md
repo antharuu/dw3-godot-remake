@@ -32,8 +32,13 @@ terminal battle phase.
 
 The renderer consumes camera presets and explicit composed views through
 `BattleSequenceCamera.Apply`. Cut and authored fade update the physical interpolation state.
+Fades interpolate authored position, reference, translation and rotation fields with a
+4096-unit fixed-point fraction before composing the world transform, rather than interpolating
+two already-rotated world endpoints. The truncated step can require an extra tick.
 While playback owns the camera, menu activation, menu stepping and overview restoration
 cannot overwrite it. Completion and interruption restore the opening overview and visibility.
+Nonzero authored view roll is explicitly unsupported in this first-lot contract rather than
+accepted without a physical consumer.
 
 ## Missing resources and remaining owners
 

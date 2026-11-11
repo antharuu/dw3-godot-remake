@@ -75,9 +75,6 @@ public static class BattleSequenceCamera
     internal static void Apply(CameraRequestEvent request, BattleShotCameraViews views, BattleCameraFade camera)
     {
         var view = Resolve(request, views);
-        var position = BattleSceneMath.ComposeCameraPosition(view, reference: false);
-        var target = BattleSceneMath.ComposeCameraPosition(view, reference: true);
-        int time = request.Arguments[0];
-        camera.Begin(new Godot.Vector3(position.X, position.Y, position.Z), new Godot.Vector3(target.X, target.Y, target.Z), view.Projection, 1f / Math.Max(1, time), time == 0);
+        camera.BeginSource(view, request.Arguments[0]);
     }
 }

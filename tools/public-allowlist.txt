@@ -1109,6 +1109,7 @@ tests/Dw3.Game.Tests/BattleFlowActionSequenceTests.cs
 docs/ACTION_PLAYBACK.md
 src/Dw3.Game/Presentation/BattleRendererSequencePlayback.cs
 src/Dw3.Game/Presentation/BattleSequenceCamera.cs
+src/Dw3.Game/Presentation/BattleSequenceCameraTransition.cs
 src/Dw3.Game/Simulation/BattleActionValidation.cs
 src/Dw3.Game/Simulation/BattleSequencePresentation.cs
 src/Dw3.Game/Simulation/IBattleSequencePlayback.cs

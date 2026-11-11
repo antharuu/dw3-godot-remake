@@ -20,6 +20,7 @@ public sealed class BattleActionManifestValidationTests
     [InlineData(5, "[0,0,9]")]
     [InlineData(5, "[0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0]")]
     [InlineData(10, "[1,-1]")]
+    [InlineData(5, "[0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,300]")]
     public void UnsupportedOrInvalidOperandsRejectBeforePlayback(int opcode, string arguments)
     {
         string json = JsonSerializer.Serialize(new

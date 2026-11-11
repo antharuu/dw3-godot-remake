@@ -544,6 +544,7 @@ public sealed class BattleRenderer : IDisposable
     /// <param name="snap">Whether to apply the view immediately.</param>
     public void SetSourceCamera(BattleModel.BattleCameraView view, int frames = 60, bool snap = false)
     {
+        _cameraFade.RememberSource(BattleSequenceCamera.FighterView([view], 0));
         var position = BattleSceneMath.CameraPosition(view.CamPos[0], view.CamPos[1], view.CamPos[2]);
         var reference = BattleSceneMath.CameraPosition(view.CamRef[0], view.CamRef[1], view.CamRef[2]);
         _cameraFade.Begin(
@@ -565,6 +566,7 @@ public sealed class BattleRenderer : IDisposable
     /// <param name="frames">Authored transition duration in presentation units.</param>
     public void SetSourceCamera(SourceBattleCameraView view, bool snap = true, int frames = 1)
     {
+        _cameraFade.RememberSource(view);
         var position = BattleSceneMath.ComposeCameraPosition(view, reference: false);
         var reference = BattleSceneMath.ComposeCameraPosition(view, reference: true);
         _cameraFade.Begin(
