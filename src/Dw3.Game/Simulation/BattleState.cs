@@ -71,6 +71,15 @@ public sealed class BattleState
     /// <summary>Gets or sets the Digimon ids of the eight partners (the first eight entries of the Digimon table), tested by enemy AI condition 8.</summary>
     public IReadOnlyCollection<int> StarterDigimonIds { get; set; } = [];
 
+    /// <summary>Gets or sets the blast form id by base Digimon id, used by the gauge trigger to select the temporary form. An absent or zero entry skips the blast for that form.</summary>
+    public IReadOnlyDictionary<int, int> BlastFormsById { get; set; } = new Dictionary<int, int>();
+
+    /// <summary>Gets or sets the tier-boundary level list from the digivolution blast configuration. The default matches the source-extracted boundaries [4, 19, 39, 70].</summary>
+    public IReadOnlyList<int> BlastTierLevels { get; set; } = [4, 19, 39, 70];
+
+    /// <summary>Gets or sets the callback invoked whenever the active partner's Digimon id changes outside a normal command (blast trigger or blast return). The <see cref="BattleFlowController"/> wires this to its catalog refresh.</summary>
+    public Action? ActiveFormChangedCallback { get; set; }
+
     /// <summary>Gets or sets the technique catalogue (id -> resolved technique), for resolving the enemy's
     /// fighter table techniques on its turn and its counter-attack.</summary>
     public IReadOnlyDictionary<int, TechData> Techs { get; set; } = new Dictionary<int, TechData>();
@@ -600,6 +609,14 @@ public sealed class BattleState
         }
     }
 
+    /// <summary>Charges the blast gauge from the last player action's total damage and triggers the blast if the threshold is reached.</summary>
+    /// <param name="totalDamage">Total HP removed from the enemy by the action (never negative).</param>
+    internal void TickBlastGauge(int totalDamage) =>
+        BattleBlastResolver.TryTickAndTrigger(this, ActivePlayer, ActivePlayerFighter, totalDamage, _turnScheduler);
+
+    /// <summary>Invokes the active-form-changed callback so that the presentation layer can refresh its catalog.</summary>
+    internal void NotifyActiveFormChanged() => ActiveFormChangedCallback?.Invoke();
+
     /// <summary>Seeds the EU relative queue with the encounter opening rule.</summary>
     /// <param name="ambushChance">Encounter ambush probability, or zero when disabled.</param>
     /// <param name="rng">Shared injected battle random source.</param>
@@ -629,6 +646,7 @@ public sealed class BattleState
     private void LandPlayerHits(BattleFighter target, TechData tech, BattleFighter attacker, IBattleRng rng, bool technique)
     {
         int damage = ResolveHitSequence(BattleSide.Player, tech, attacker.Stats, target, false, hitIndex => ResolvePlayerHit(tech, DoubleMagicTechniqueSelector.DamageTechniqueForHit(tech, Techs, hitIndex), attacker, target, rng, technique));
+        TickBlastGauge(damage);
         ApplyPlayerEffectAfterHits(tech, target, damage, _hitSequence.ResolvedDamage, rng);
         CheckOutcome();
         ReactToPlayerHits(target, damage, rng);

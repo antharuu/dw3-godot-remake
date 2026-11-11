@@ -57,6 +57,9 @@ public sealed class BattleFighter
     /// <summary>Gets or sets a value indicating whether the fighter is in a temporary form. Its techniques then cost no MP and their menu names come from the temporary form.</summary>
     public bool Temporary { get; set; }
 
+    /// <summary>Gets or sets the blast digivolution gauge, 0 to 1000. It charges during player actions that deal damage and triggers the blast when it reaches <see cref="BattleBlastGaugeRules.GaugeThreshold"/>.</summary>
+    public int BlastGauge { get; set; }
+
     /// <summary>Gets or sets a value indicating whether the fighter is a special one, which doubles its critical hit bonus.</summary>
     public bool Special { get; set; }
 
@@ -106,6 +109,7 @@ public sealed class BattleFighter
             MaxHp = seed.MaxHp,
             Mp = seed.Mp,
             MaxMp = seed.MaxMp,
+            BlastGauge = seed.BlastGauge,
             _partner = seed,
             _baseStats = seed.Stats,
             Stats = seed.Stats,

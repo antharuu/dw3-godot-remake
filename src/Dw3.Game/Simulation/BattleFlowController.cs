@@ -86,6 +86,7 @@ public sealed class BattleFlowController
     {
         State = state;
         State.Techs = Techs;
+        State.ActiveFormChangedCallback = RefreshActivePartnerCatalog;
         RefreshActivePartnerCatalog();
         Phase = State.NextActor == BattleSide.Player ? BattleFlowPhase.PlayerCommand : BattleFlowPhase.EnemyTurn;
         ClearMessage();

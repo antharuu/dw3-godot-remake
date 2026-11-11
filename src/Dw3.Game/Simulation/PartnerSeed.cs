@@ -29,6 +29,9 @@ public sealed class PartnerSeed
     /// <summary>Gets or sets complete stat sources by transformed Digimon id. An absent form retains <see cref="Stats"/>.</summary>
     public IReadOnlyDictionary<int, BattleStats> FormStats { get; set; } = new Dictionary<int, BattleStats>();
 
+    /// <summary>Gets or sets the blast digivolution gauge carried between battles, 0 to 1000. The battle fighter initializes from this value and writes it back when the battle is committed.</summary>
+    public int BlastGauge { get; set; }
+
     /// <summary>Gets or sets the three persistent partner status values that techniques 32 through 34 raise.</summary>
     public int[] PersistentStatuses { get; set; } = new int[3];
 

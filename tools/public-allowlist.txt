@@ -1106,3 +1106,7 @@ src/Dw3.Game/Simulation/SpriteEffectEvent.cs
 src/Dw3.Game/Simulation/StageChangeEvent.cs
 tests/Dw3.Game.Tests/BattleActionTimelineTests.cs
 tests/Dw3.Game.Tests/BattleFlowActionSequenceTests.cs
+# B9-041 blast digivolution gauge, trigger, duration and return
+src/Dw3.Game/Simulation/BattleBlastGaugeRules.cs
+src/Dw3.Game/Simulation/BattleBlastResolver.cs
+tests/Dw3.Game.Tests/BattleBlastTests.cs

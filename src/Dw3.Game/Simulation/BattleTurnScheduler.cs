@@ -84,6 +84,12 @@ public sealed class BattleTurnScheduler
     public void EnqueueDedigivolve(int fighterSlot) =>
         EnqueuePriority(BattleScheduledEventKind.Dedigivolve, BattleSide.Player, requestedDelay: 1, fighterSlot);
 
+    /// <summary>Schedules the timed return of a blast-transformed partner to its pre-blast form.</summary>
+    /// <param name="fighterSlot">Active player slot that entered the blast form.</param>
+    /// <param name="delay">Return delay derived from the partner's blast tier.</param>
+    public void EnqueueBlastReturn(int fighterSlot, int delay) =>
+        EnqueueControlExpiry(BattleScheduledEventKind.BlastReturn, BattleSide.Player, fighterSlot, delay);
+
     /// <summary>Creates or refreshes one fighter's pending poison damage event.</summary>
     /// <param name="side">Side containing the poisoned fighter.</param>
     /// <param name="fighterSlot">Slot of the poisoned fighter.</param>
