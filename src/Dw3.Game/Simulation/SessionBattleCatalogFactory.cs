@@ -50,8 +50,10 @@ public static class SessionBattleCatalogFactory
         IReadOnlyList<int> forms = EligibleForms(partner);
         flow.PlayerDigivolutions = forms;
         flow.EnforceDigivolutionCatalog = true;
-        ConfigureActions(flow, partner, forms, fighters, techs, new BattleTextCatalog(text));
-        AddFormNames(flow, forms, fighters);
+        int current = flow.State.ActivePlayerFighter?.Id ?? partner.BattleSeed.Id;
+        int[] actionForms = [.. forms.Append(current).Distinct()];
+        ConfigureActions(flow, partner, actionForms, fighters, techs, new BattleTextCatalog(text));
+        AddFormNames(flow, actionForms, fighters);
     }
 
     /// <summary>Returns the active partner selected by the battle state.</summary>
@@ -89,14 +91,10 @@ public static class SessionBattleCatalogFactory
     {
         var basics = new Dictionary<int, TechData>();
         var techniques = new Dictionary<int, IReadOnlyList<BattleTechnique>>();
-        var knownTechniques = new HashSet<int>(partner.KnownTechniques);
         foreach (int form in forms)
         {
             basics[form] = BattleSetupFactory.PlayerBasicTech(fighters, techs, form);
-            IReadOnlyList<BattleTechnique> formTechniques = BattleSetupFactory.PlayerTechniques(fighters, techs, form, text);
-            techniques[form] = knownTechniques.Count == 0
-                ? formTechniques
-                : [.. formTechniques.Where(technique => knownTechniques.Contains(technique.Id))];
+            techniques[form] = BattleSessionTechniques.Resolve(partner, flow.State.ActivePlayerFighter, form, fighters, techs, text);
         }
 
         flow.PlayerBasicTechByForm = basics;

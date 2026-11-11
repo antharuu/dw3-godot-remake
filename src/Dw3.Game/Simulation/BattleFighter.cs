@@ -18,6 +18,9 @@ public sealed class BattleFighter
     /// <summary>Gets or sets the Digimon id the fighter currently is, which selects its model, name and techniques. It changes during a digivolution.</summary>
     public int Id { get; set; }
 
+    /// <summary>Gets the prepared Blast inputs associated with the persistent party slot.</summary>
+    public BattleBlastConfiguration? Blast => _partner?.Blast;
+
     /// <summary>Gets or sets the fighter's own Digimon id, kept while <see cref="Id"/> holds a temporary form so the form can be undone.</summary>
     public int PrevId { get; set; }
 
@@ -57,7 +60,7 @@ public sealed class BattleFighter
     /// <summary>Gets or sets a value indicating whether the fighter is in a temporary form. Its techniques then cost no MP and their menu names come from the temporary form.</summary>
     public bool Temporary { get; set; }
 
-    /// <summary>Gets or sets the blast digivolution gauge, 0 to 1000. It charges during player actions that deal damage and triggers the blast when it reaches <see cref="BattleBlastGaugeRules.GaugeThreshold"/>.</summary>
+    /// <summary>Gets or sets the blast digivolution gauge, 0 to 1000. It charges after qualifying received enemy damage and triggers the blast when it reaches <see cref="BattleBlastGaugeRules.GaugeThreshold"/>.</summary>
     public int BlastGauge { get; set; }
 
     /// <summary>Gets or sets a value indicating whether the fighter is a special one, which doubles its critical hit bonus.</summary>
@@ -92,6 +95,9 @@ public sealed class BattleFighter
 
     /// <summary>Gets a value indicating whether HP reached 0. A knocked-out fighter cannot act or be switched in.</summary>
     public bool IsKnockedOut => Hp <= 0;
+
+    /// <summary>Gets or sets the shared action stream retained until this partner's queued Blast starts.</summary>
+    internal IBattleRng? PendingBlastRng { get; set; }
 
     /// <summary>
     /// Loads a party member for the battle. The fighter shares the seed's resolved stats object,
@@ -170,6 +176,11 @@ public sealed class BattleFighter
         Charge = 0;
         RefreshStats();
     }
+
+    /// <summary>Returns a technique's resource cost, waived for a temporary Blast form.</summary>
+    /// <param name="technique">Technique selected for execution.</param>
+    /// <returns>Zero while temporary, otherwise its decoded MP cost.</returns>
+    public int TechniqueMpCost(TechData technique) => Temporary ? 0 : technique.Mp;
 
     /// <summary>Takes <paramref name="damage"/> off the fighter's HP, which never drops below 0.</summary>
     /// <param name="damage">The hit's damage, as the damage formulas return it.</param>

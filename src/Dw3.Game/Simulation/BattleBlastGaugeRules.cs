@@ -1,55 +1,72 @@
 namespace Dw3Production.Simulation;
 
-/// <summary>
-/// Source-qualified rules for the blast digivolution gauge: gain per hit,
-/// trigger threshold, tier selection and duration mapping.
-/// </summary>
-/// <remarks>
-/// Qualified from B9-076 checkpoint 992: damage 22 → gain 2, gauge 999 → 1001 (clamped to 1000).
-/// TierLevels [4, 19, 39, 70] select one of five durations; tier is the count of boundaries
-/// that the partner's level meets or exceeds, mapping level 25 to tier 2 (3 s).
-/// </remarks>
+/// <summary>Integer rules for received-damage Blast charge and permanent-partner form selection.</summary>
 public static class BattleBlastGaugeRules
 {
-    /// <summary>Gets the gauge value at which the blast digivolution is triggered.</summary>
+    /// <summary>Gauge threshold that requests one temporary transformation.</summary>
     public const int GaugeThreshold = 1000;
 
-    /// <summary>Computes the gauge gain from a single player action's total damage.</summary>
-    /// <param name="damage">Total HP removed from the enemy by the action (never negative).</param>
-    /// <returns>Integer gain added to the gauge, zero when damage is zero.</returns>
-    public static int ComputeGain(int damage) => damage / 10;
+    /// <summary>Computes HP-relative charge, applying each accessory to the running integer gain.</summary>
+    /// <param name="damage">Qualified damage reported by the completed enemy action.</param>
+    /// <param name="maxHp">Maximum HP of the receiving partner.</param>
+    /// <param name="accessories">Two accessory slots in their equipped order.</param>
+    /// <returns>Non-negative charge capped at the gauge threshold.</returns>
+    public static int ComputeGain(int damage, int maxHp, IReadOnlyList<int>? accessories = null)
+    {
+        if (damage <= 0 || maxHp <= 0)
+        {
+            return 0;
+        }
 
-    /// <summary>Clamps a raw gauge total so it never exceeds the threshold.</summary>
-    /// <param name="gauge">Raw value after adding gain.</param>
-    /// <returns>Value in [0, <see cref="GaugeThreshold"/>].</returns>
-    public static int ClampGauge(int gauge) => Math.Min(gauge, GaugeThreshold);
+        long percent = Math.Min((long)damage * 100 / maxHp, 1000);
+        long gain = percent * percent / 20;
+        foreach (int accessory in (accessories ?? []).Take(2))
+        {
+            gain += accessory switch
+            {
+                0x149 => gain / 5,
+                0x14A => gain * 4 / 10,
+                _ => 0,
+            };
+        }
 
-    /// <summary>Returns whether a gauge change crosses the trigger threshold for the first time.</summary>
-    /// <param name="previousGauge">Gauge before the last gain was added.</param>
-    /// <param name="newGauge">Gauge after gain was added and clamped.</param>
-    /// <returns><see langword="true"/> when the previous value was below the threshold and the new value reaches it.</returns>
-    public static bool IsTriggered(int previousGauge, int newGauge) =>
-        previousGauge < GaugeThreshold && newGauge >= GaugeThreshold;
+        return (int)Math.Min(gain, GaugeThreshold);
+    }
 
-    /// <summary>Selects the blast tier from the partner's level and the tier-boundary table.</summary>
-    /// <param name="tierLevels">Ordered level boundaries from <see cref="Dw3Production.Conversion.DigivolutionBlast"/>.</param>
-    /// <param name="level">Partner's current battle level.</param>
-    /// <returns>Tier index (0 = lowest, count = highest), always in [0, tierLevels.Count].</returns>
+    /// <summary>Clamps persistent gauge values to the supported range.</summary>
+    /// <param name="gauge">Raw gauge value.</param>
+    /// <returns>A value between zero and the trigger threshold.</returns>
+    public static int ClampGauge(int gauge) => Math.Clamp(gauge, 0, GaugeThreshold);
+
+    /// <summary>Tests whether the last gain reached the threshold for the first time.</summary>
+    /// <param name="previousGauge">Gauge before charging.</param>
+    /// <param name="newGauge">Gauge after charging.</param>
+    /// <returns>Whether the threshold was crossed.</returns>
+    public static bool IsTriggered(int previousGauge, int newGauge) => previousGauge < GaugeThreshold && newGauge >= GaugeThreshold;
+
+    /// <summary>Selects a form tier from the permanent partner level, not the active form level.</summary>
+    /// <param name="tierLevels">Ascending exclusive upper bounds of the first tiers.</param>
+    /// <param name="level">Permanent partner level.</param>
+    /// <returns>The selected form tier.</returns>
     public static int SelectTier(IReadOnlyList<int> tierLevels, int level)
     {
         ArgumentNullException.ThrowIfNull(tierLevels);
         return tierLevels.Count(boundary => level >= boundary);
     }
 
-    /// <summary>Maps a blast tier to its scheduled return delay kind.</summary>
-    /// <param name="tier">Tier returned by <see cref="SelectTier"/>.</param>
-    /// <returns>Blast delay family for the return scheduler.</returns>
-    public static BattleActionDelayKind DelayKindForTier(int tier) => tier switch
+    /// <summary>Selects the return family by permanent partner ordinal rather than form tier.</summary>
+    /// <param name="partner">Zero-based permanent partner ordinal.</param>
+    /// <returns>The corresponding event-delay family.</returns>
+    public static BattleActionDelayKind DelayKindForPartner(int partner) => partner switch
     {
         0 => BattleActionDelayKind.BlastTwoSeconds,
         1 => BattleActionDelayKind.BlastTwoAndHalfSeconds,
         2 => BattleActionDelayKind.BlastThreeSeconds,
         3 => BattleActionDelayKind.BlastThreeAndHalfSeconds,
-        _ => BattleActionDelayKind.BlastFourSeconds,
+        4 => BattleActionDelayKind.BlastFourSeconds,
+        5 => BattleActionDelayKind.RandomStatusExpiry,
+        6 => BattleActionDelayKind.Paralysis,
+        7 => BattleActionDelayKind.Confusion,
+        _ => throw new ArgumentOutOfRangeException(nameof(partner)),
     };
 }

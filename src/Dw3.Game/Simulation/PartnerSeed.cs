@@ -11,6 +11,9 @@ public sealed class PartnerSeed
     /// <summary>Gets or sets the partner's Digimon id, from its entry in the Digimon table. For slot 0 the battle may override it with the Digimon the partner currently is.</summary>
     public int Id { get; set; }
 
+    /// <summary>Gets or sets pack-resolved Blast inputs for this permanent partner.</summary>
+    public BattleBlastConfiguration? Blast { get; set; }
+
     /// <summary>Gets or sets the HP the partner enters the battle with.</summary>
     public int Hp { get; set; }
 

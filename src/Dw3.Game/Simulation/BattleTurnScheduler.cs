@@ -86,7 +86,7 @@ public sealed class BattleTurnScheduler
 
     /// <summary>Schedules the timed return of a blast-transformed partner to its pre-blast form.</summary>
     /// <param name="fighterSlot">Active player slot that entered the blast form.</param>
-    /// <param name="delay">Return delay derived from the partner's blast tier.</param>
+    /// <param name="delay">Return delay derived from the permanent partner definition.</param>
     public void EnqueueBlastReturn(int fighterSlot, int delay) =>
         EnqueueControlExpiry(BattleScheduledEventKind.BlastReturn, BattleSide.Player, fighterSlot, delay);
 

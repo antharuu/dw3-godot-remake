@@ -43,7 +43,9 @@ public static class BattleDedigivolveResolver
         BattleFighter? target = state.FighterAt(scheduled.Side, scheduled.FighterSlot);
         if (target is not null && target.CanDedigivolve(state.StarterDigimonIds))
         {
+            BattleBlastResolver.Cancel(state, scheduled.FighterSlot, scheduler);
             target.Dedigivolve();
+            state.NotifyActiveFormChanged();
         }
 
         return true;
