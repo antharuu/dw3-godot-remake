@@ -1,10 +1,9 @@
 using Dw3.Data.Battle;
-using Dw3Production.Logging;
 
 namespace Dw3Production.Conversion;
 
 /// <summary>Loads action scripts from the validated user data pack.
-/// Returns null on cache miss or unsupported script so the caller can skip the sequence gracefully.</summary>
+/// Returns null for unavailable or invalid resources. Required callers must retain a diagnosed failure, not skip playback.</summary>
 public sealed class PackActionScriptProvider : IActionScriptProvider
 {
     private readonly BattleDataPackLoader _loader;
@@ -32,7 +31,7 @@ public sealed class PackActionScriptProvider : IActionScriptProvider
         }
         catch (CacheResourceException error)
         {
-            QuietLog.Info($"action-script-unavailable fighter={fighterId} sel={scriptSelector}: {error.Message}");
+            Console.Error.WriteLine($"action-script-unavailable fighter={fighterId} sel={scriptSelector}: {error.Message}");
             return null;
         }
 
@@ -42,7 +41,7 @@ public sealed class PackActionScriptProvider : IActionScriptProvider
         }
         catch (Exception error) when (error is IOException or FormatException)
         {
-            QuietLog.Info($"action-script-invalid fighter={fighterId} sel={scriptSelector}: {error.Message}");
+            Console.Error.WriteLine($"action-script-invalid fighter={fighterId} sel={scriptSelector}: {error.Message}");
             return null;
         }
     }

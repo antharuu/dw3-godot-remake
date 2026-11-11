@@ -71,6 +71,9 @@ public sealed class BattleFlowController
     /// Null when no sequence is pending. The host must call <see cref="ConsumeSequenceContext"/> before ticking.</summary>
     public ActionSequenceContext? PendingSequenceContext { get; private set; }
 
+    /// <summary>Gets the roster displayed until script completion.</summary>
+    public BattleSequencePresentation SequencePresentation { get; } = new();
+
     /// <summary>Gets the debug label of the last message, written to the action log. Empty when no message is shown.</summary>
     public string Message { get; private set; } = string.Empty;
 
@@ -84,6 +87,7 @@ public sealed class BattleFlowController
     /// <param name="state">The initialised state, whose technique catalogue is replaced by <see cref="Techs"/>.</param>
     public void Start(BattleState state)
     {
+        PendingSequenceContext = null;
         State = state;
         State.Techs = Techs;
         State.ActiveFormChangedCallback = RefreshActivePartnerCatalog;
@@ -140,6 +144,7 @@ public sealed class BattleFlowController
             return true;
         }
 
+        SequencePresentation.Capture(State);
         var actor = State.ActivePlayerFighter;
         bool spent = command switch
         {
@@ -170,6 +175,8 @@ public sealed class BattleFlowController
         {
             return;
         }
+
+        SequencePresentation.Capture(State);
 
         // Capture identities before the action mutates state (KO may swap the active fighters).
         int attackerId = State.ActiveEnemyFighter?.Id ?? 0;
@@ -212,6 +219,7 @@ public sealed class BattleFlowController
     /// <param name="outcome">Outcome written to the battle state.</param>
     public void EndBattle(BattleOutcome outcome)
     {
+        PendingSequenceContext = null;
         State.Outcome = outcome;
         Phase = BattleFlowPhase.Ended;
     }
@@ -305,16 +313,16 @@ public sealed class BattleFlowController
     /// <summary>Moves to the next phase after a spent turn: <see cref="BattleFlowPhase.Ended"/> with a won or lost message once an outcome exists, <see cref="BattleFlowPhase.ActionSequence"/> when a sequence context was captured, otherwise the turn of whichever side the state schedules next. The message is cleared when the player gets the menu back.</summary>
     private void AdvancePhase()
     {
+        if (PendingSequenceContext is not null)
+        {
+            Phase = BattleFlowPhase.ActionSequence;
+            return;
+        }
+
         if (State.Outcome != BattleOutcome.None)
         {
             SetOutcomeMessage();
             Phase = BattleFlowPhase.Ended;
-            return;
-        }
-
-        if (PendingSequenceContext is not null)
-        {
-            Phase = BattleFlowPhase.ActionSequence;
             return;
         }
 

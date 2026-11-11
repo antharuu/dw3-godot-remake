@@ -24,6 +24,7 @@ public partial class GameHost
     /// <summary>Tears down the runner when a battle ends.</summary>
     private void TearDownBattleSequenceRunner()
     {
+        _sequenceRunner?.Cancel();
         _sequenceRunner = null;
     }
 }

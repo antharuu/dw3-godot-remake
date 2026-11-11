@@ -13,7 +13,12 @@ internal static class BattleModelSequenceMotion
         switch (subcommand)
         {
             case 0:
-                model.SetMotion(motion, restart: false);
+                if (motion > 0)
+                {
+                    int selected = motion == 1 ? (model.Motion?.IdleMotion ?? 0) + 1 : motion + 1;
+                    model.SetMotion(selected, restart: motion != 1);
+                }
+
                 break;
             case 1:
                 model.SetVisibleForProbe(true);

@@ -13,15 +13,15 @@ public sealed class BattleBlastTests
 
     // ── gauge rules ──────────────────────────────────────────────────────────
 
-    /// <summary>Oracle B9-076: damage 22 → gain 2 (floor division by 10).</summary>
+    /// <summary>Received damage is squared after taking its integer percentage of maximum HP.</summary>
     [Theory]
     [InlineData(9, 0)]
-    [InlineData(10, 1)]
+    [InlineData(10, 0)]
     [InlineData(22, 2)]
-    [InlineData(109, 10)]
-    public void GaugeGain_FloorDividesBy10(int damage, int expectedGain)
+    [InlineData(109, 64)]
+    public void GaugeGain_UsesIntegerHpPercentage(int damage, int expectedGain)
     {
-        Assert.Equal(expectedGain, BattleBlastGaugeRules.ComputeGain(damage));
+        Assert.Equal(expectedGain, BattleBlastGaugeRules.ComputeGain(damage, 300));
     }
 
     /// <summary>Gauge never exceeds the trigger threshold after clamping.</summary>
@@ -68,46 +68,45 @@ public sealed class BattleBlastTests
         Assert.Equal(4, BattleBlastGaugeRules.SelectTier(tiers, 100));
     }
 
-    /// <summary>Each tier maps to its fixed blast delay family in ascending duration order.</summary>
+    /// <summary>The first five permanent partner definitions select fixed return families.</summary>
     [Theory]
     [InlineData(0, BattleActionDelayKind.BlastTwoSeconds)]
     [InlineData(1, BattleActionDelayKind.BlastTwoAndHalfSeconds)]
     [InlineData(2, BattleActionDelayKind.BlastThreeSeconds)]
     [InlineData(3, BattleActionDelayKind.BlastThreeAndHalfSeconds)]
     [InlineData(4, BattleActionDelayKind.BlastFourSeconds)]
-    [InlineData(99, BattleActionDelayKind.BlastFourSeconds)]
-    public void DelayKindForTier_MapsExpectedFamilies(int tier, BattleActionDelayKind expected)
+    public void DelayKindForPartner_MapsExpectedFamilies(int tier, BattleActionDelayKind expected)
     {
-        Assert.Equal(expected, BattleBlastGaugeRules.DelayKindForTier(tier));
+        Assert.Equal(expected, BattleBlastGaugeRules.DelayKindForPartner(tier));
     }
 
     // ── oracle chain trigger ─────────────────────────────────────────────────
 
     /// <summary>Oracle B9-076 checkpoint 992: gauge 999 + damage 22 → gain 2 → clamp 1000 → blast fires, form 383→392, temporary=1.</summary>
     [Fact]
-    public void PlayerAttack_OracleChain_GaugeChargesAndBlastFires()
+    public void ReceivedEnemyAttack_ThresholdChain_GaugeChargesAndBlastFires()
     {
         BattleState state = CreateBlastState(gaugePreset: 999, playerMaxHp: 300);
         var player = Assert.IsType<BattleFighter>(state.ActivePlayerFighter);
 
         Assert.Equal(BaseFormId, player.Id);
         Assert.Equal(999, player.BlastGauge);
-        state.PlayerAttack(AttackTech(power: 22), new FixedAccurateRng());
+        state.EnemyAttack(AttackTech(power: 22), new FixedAccurateRng());
 
         Assert.Equal(BlastFormId, player.Id);
         Assert.True(player.Temporary);
         Assert.Equal(BaseFormId, player.PrevId);
-        Assert.Equal(0, player.BlastGauge);
+        Assert.Equal(1000, player.BlastGauge);
     }
 
     /// <summary>Gauge below threshold after a hit: blast does not fire and gauge increases.</summary>
     [Fact]
-    public void PlayerAttack_GaugeBelowThreshold_NoBlast()
+    public void ReceivedEnemyAttack_GaugeBelowThreshold_NoBlast()
     {
         BattleState state = CreateBlastState(gaugePreset: 0, playerMaxHp: 300);
         var player = Assert.IsType<BattleFighter>(state.ActivePlayerFighter);
 
-        state.PlayerAttack(AttackTech(power: 22), new FixedAccurateRng());
+        state.EnemyAttack(AttackTech(power: 22), new FixedAccurateRng());
 
         Assert.Equal(BaseFormId, player.Id);
         Assert.False(player.Temporary);
@@ -124,16 +123,15 @@ public sealed class BattleBlastTests
         BattleState state = CreateBlastState(gaugePreset: 999, playerMaxHp: 300);
         var player = Assert.IsType<BattleFighter>(state.ActivePlayerFighter);
 
-        state.PlayerAttack(AttackTech(power: 22), new FixedAccurateRng());
+        state.EnemyAttack(AttackTech(power: 22), new FixedAccurateRng());
         Assert.True(player.Temporary);
         int formAfterBlast = player.Id;
 
-        AdvanceEnemyTurn(state);
-        state.PlayerAttack(AttackTech(power: 100), new FixedAccurateRng());
+        BattleBlastResolver.TryTickAndTrigger(state, 0, player, 100, new BattleTurnScheduler(), new FixedAccurateRng());
 
         Assert.Equal(formAfterBlast, player.Id);
         Assert.True(player.Temporary);
-        Assert.Equal(0, player.BlastGauge);
+        Assert.Equal(1000, player.BlastGauge);
     }
 
     // ── blast return after duration ──────────────────────────────────────────
@@ -145,7 +143,7 @@ public sealed class BattleBlastTests
         BattleState state = CreateBlastState(gaugePreset: 999, playerMaxHp: 300);
         var player = Assert.IsType<BattleFighter>(state.ActivePlayerFighter);
 
-        state.PlayerAttack(AttackTech(power: 22), new FixedAccurateRng());
+        state.EnemyAttack(AttackTech(power: 22), new FixedAccurateRng());
         Assert.True(player.Temporary);
 
         DrainBlastReturn(state);
@@ -163,7 +161,7 @@ public sealed class BattleBlastTests
         var player = Assert.IsType<BattleFighter>(state.ActivePlayerFighter);
 
         Assert.Equal(OtherFormId, player.Id);
-        state.PlayerAttack(AttackTech(power: 22), new FixedAccurateRng());
+        state.EnemyAttack(AttackTech(power: 22), new FixedAccurateRng());
         Assert.Equal(OtherFormId, player.PrevId);
         Assert.Equal(BlastFormId, player.Id);
 
@@ -181,7 +179,7 @@ public sealed class BattleBlastTests
     {
         BattleState state = CreateBlastState(gaugePreset: 999, playerMaxHp: 300);
         var player = Assert.IsType<BattleFighter>(state.ActivePlayerFighter);
-        state.PlayerAttack(AttackTech(power: 22), new FixedAccurateRng());
+        state.EnemyAttack(AttackTech(power: 22), new FixedAccurateRng());
         Assert.True(player.Temporary);
 
         var seed = new PartnerSeed { Id = BaseFormId, Hp = 300, MaxHp = 300, BlastGauge = 999 };
@@ -193,9 +191,9 @@ public sealed class BattleBlastTests
         Assert.Equal(0, seed.BlastGauge);
     }
 
-    /// <summary>CommitBattle without blast commits the current form and resets the gauge.</summary>
+    /// <summary>CommitBattle without Blast preserves the current form and its accumulated gauge.</summary>
     [Fact]
-    public void CommitBattle_NormalFormAtBattleEnd_CommitsCurrentFormAndZeroGauge()
+    public void CommitBattle_NormalFormAtBattleEnd_CommitsCurrentFormAndPreservesGauge()
     {
         var seed = new PartnerSeed { Id = BaseFormId, Hp = 100, MaxHp = 100, BlastGauge = 500 };
         var partner = new PlayerSessionPartner(seed, [BaseFormId, OtherFormId], [OtherFormId], [], []);
@@ -206,7 +204,7 @@ public sealed class BattleBlastTests
         session.CommitBattle([fighter]);
 
         Assert.Equal(OtherFormId, seed.Id);
-        Assert.Equal(0, seed.BlastGauge);
+        Assert.Equal(500, seed.BlastGauge);
     }
 
     // ── blast form stats ─────────────────────────────────────────────────────
@@ -223,7 +221,7 @@ public sealed class BattleBlastTests
         BattleState state = CreateBlastState(gaugePreset: 999, playerMaxHp: 300, blastFormStats: blastStats);
         var player = Assert.IsType<BattleFighter>(state.ActivePlayerFighter);
 
-        state.PlayerAttack(AttackTech(power: 22), new FixedAccurateRng());
+        state.EnemyAttack(AttackTech(power: 22), new FixedAccurateRng());
 
         Assert.True(player.Temporary);
         Assert.Equal(99, player.Stats.Stats[BattleStat.Attack]);
@@ -238,7 +236,7 @@ public sealed class BattleBlastTests
         BattleState state = CreateBlastState(gaugePreset: 999, playerMaxHp: 300, blastFormsById: new Dictionary<int, int>());
         var player = Assert.IsType<BattleFighter>(state.ActivePlayerFighter);
 
-        state.PlayerAttack(AttackTech(power: 22), new FixedAccurateRng());
+        state.EnemyAttack(AttackTech(power: 22), new FixedAccurateRng());
 
         Assert.Equal(BaseFormId, player.Id);
         Assert.False(player.Temporary);
@@ -268,7 +266,7 @@ public sealed class BattleBlastTests
         int slot1FormBefore = slot1?.Id ?? 0;
         int slot1GaugeBefore = slot1?.BlastGauge ?? 0;
 
-        state.PlayerAttack(AttackTech(power: 22), new FixedAccurateRng());
+        state.EnemyAttack(AttackTech(power: 22), new FixedAccurateRng());
 
         Assert.Equal(slot1FormBefore, slot1?.Id ?? 0);
         Assert.Equal(slot1GaugeBefore, slot1?.BlastGauge ?? 0);
@@ -302,6 +300,7 @@ public sealed class BattleBlastTests
             Mp = 100,
             MaxMp = 100,
             BlastGauge = gaugePreset,
+            Blast = blastFormsById is { Count: 0 } ? null : new(BlastFormId, 0, []),
             Stats = playerStats,
             FormStats = formStats,
         };
@@ -319,11 +318,6 @@ public sealed class BattleBlastTests
         setup.Enemies[0] = new BattleEnemy { Fighter = 99, Hp = 1000, Mp = 100, Strength = 16, BaseStats = enemyStats };
 
         var state = BattleState.InitFighters(setup, startFormId, new FixedAccurateRng());
-        state.BlastFormsById = blastFormsById ?? new Dictionary<int, int>
-        {
-            [BaseFormId] = BlastFormId,
-            [OtherFormId] = BlastFormId,
-        };
         return state;
     }
 

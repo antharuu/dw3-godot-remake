@@ -84,6 +84,7 @@ public sealed class BattleStatusCoordinator(BattleState state, BattleTurnSchedul
         int appliedStrength = attacker.Special ? strength * 2 : strength;
         target.Flags |= definition.Flag;
         StoreStrength(target, definition.ExpiryKind, appliedStrength);
+        state.LastControlStrength = appliedStrength;
         int delay = BattleControlStatusRules.ExpiryDelay(definition.ExpiryKind, attacker, target, appliedStrength, rng);
         scheduler.EnqueueControlExpiry(definition.ExpiryKind, targetSide, state.ActiveSlot(targetSide), delay);
         return true;

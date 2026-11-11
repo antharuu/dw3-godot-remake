@@ -19,7 +19,7 @@ namespace Dw3Production.Simulation;
 /// side decides its turn from its fighter table (<see cref="BattleEnemyAi"/>, through
 /// <see cref="EnemyTurnResolver"/>): attack, technique, switch or run away, plus the
 /// counter-attack its counter field triggers when the player's hit lands. The blast (a
-/// temporary gauge-triggered digivolution, not a command) remains out of scope. Persistent
+/// temporary gauge-triggered digivolution, not a command) uses the same scheduler. Persistent
 /// poison plus the sleep, paralysis and confusion control statuses are coordinated by
 /// <see cref="BattleStatusCoordinator"/>.</para>
 /// </remarks>
@@ -71,12 +71,6 @@ public sealed class BattleState
     /// <summary>Gets or sets the Digimon ids of the eight partners (the first eight entries of the Digimon table), tested by enemy AI condition 8.</summary>
     public IReadOnlyCollection<int> StarterDigimonIds { get; set; } = [];
 
-    /// <summary>Gets or sets the blast form id by base Digimon id, used by the gauge trigger to select the temporary form. An absent or zero entry skips the blast for that form.</summary>
-    public IReadOnlyDictionary<int, int> BlastFormsById { get; set; } = new Dictionary<int, int>();
-
-    /// <summary>Gets or sets the tier-boundary level list from the digivolution blast configuration. The default matches the source-extracted boundaries [4, 19, 39, 70].</summary>
-    public IReadOnlyList<int> BlastTierLevels { get; set; } = [4, 19, 39, 70];
-
     /// <summary>Gets or sets the callback invoked whenever the active partner's Digimon id changes outside a normal command (blast trigger or blast return). The <see cref="BattleFlowController"/> wires this to its catalog refresh.</summary>
     public Action? ActiveFormChangedCallback { get; set; }
 
@@ -120,6 +114,9 @@ public sealed class BattleState
 
     /// <summary>Gets the side whose next queued turn wins the EU slot-sensitive selection.</summary>
     public BattleSide NextActor => _turnScheduler.Count == 0 ? BattleSide.Player : _turnScheduler.PeekNextTurnSide();
+
+    /// <summary>Gets or sets the most recently scheduled control-status strength used by shared event-delay families.</summary>
+    internal int LastControlStrength { get; set; }
 
     /// <summary>Gets a value indicating whether at least one non-counter hit in the most recently resolved sequence landed, regardless of integer damage.</summary>
     /// <remarks>The gate for a technique's status effect is a landed hit, not positive aggregate damage; a hit whose integer damage rounds to zero still landed and must still apply its effect.</remarks>
@@ -189,14 +186,14 @@ public sealed class BattleState
     {
         var attacker = ActivePlayerFighter;
         var target = ActiveEnemyFighter;
-        if (!BattleTechniqueUseRules.CanUse(attacker, target, tech, Techs))
+if (attacker is not { IsKnockedOut: false } || target == null || !BattleTechniqueEffectResolver.CanExecute(BattleSide.Player, tech) || !DoubleMagicTechniqueSelector.HasRequiredDamageEntries(tech, Techs) || attacker.TechniqueMpCost(tech) > attacker.Mp || (attacker.Flags & (FighterFlags.Asleep | FighterFlags.Confused)) != 0)
         {
             return false; // an unaffordable technique does not spend the turn
         }
 
-        attacker!.RefreshStats();
-        target!.RefreshStats();
-        attacker.Mp -= tech.Mp;
+        attacker.RefreshStats();
+        target.RefreshStats();
+        attacker.Mp -= attacker.TechniqueMpCost(tech);
         if (!BattleTechniqueEffectResolver.RequiresHitSequence(tech))
         {
             ApplyTechniqueEffect(BattleSide.Player, tech, rng, 0);
@@ -226,6 +223,7 @@ public sealed class BattleState
             return false;
         }
 
+        BattleBlastResolver.Cancel(this, ActivePlayer, _turnScheduler);
         attacker.Id = form;
         attacker.RefreshStats();
         MarkFought();
@@ -249,6 +247,7 @@ public sealed class BattleState
             return false;
         }
 
+        BattleBlastResolver.Cancel(this, ActivePlayer, _turnScheduler);
         ActivePlayer = slot;
         AdvancePlayerTurn();
         return true;
@@ -539,6 +538,7 @@ public sealed class BattleState
     /// </summary>
     internal void CheckOutcome()
     {
+        BattleBlastResolver.CancelInactive(this, _turnScheduler, false);
         if (Outcome != BattleOutcome.None)
         {
             return;
@@ -634,13 +634,17 @@ public sealed class BattleState
         }
     }
 
-    /// <summary>Charges the blast gauge from the last player action's total damage and triggers the blast if the threshold is reached.</summary>
-    /// <param name="totalDamage">Total HP removed from the enemy by the action (never negative).</param>
-    internal void TickBlastGauge(int totalDamage) =>
-        BattleBlastResolver.TryTickAndTrigger(this, ActivePlayer, ActivePlayerFighter, totalDamage, _turnScheduler);
+    /// <summary>Charges the blast gauge from the last qualifying enemy action and triggers the blast if the threshold is reached.</summary>
+    /// <param name="totalDamage">Qualified damage reported by the enemy action.</param>
+    /// <param name="rng">Shared random stream for partner-specific return delays.</param>
+    internal void TickBlastGauge(int totalDamage, IBattleRng rng) =>
+        BattleBlastResolver.TryTickAndTrigger(this, ActivePlayer, ActivePlayerFighter, totalDamage, _turnScheduler, rng);
 
     /// <summary>Invokes the active-form-changed callback so that the presentation layer can refresh its catalog.</summary>
     internal void NotifyActiveFormChanged() => ActiveFormChangedCallback?.Invoke();
+
+    /// <summary>Restores temporary partners and cancels their return events before committing a finished battle.</summary>
+    internal void EndTemporaryForms() => BattleBlastResolver.CancelInactive(this, _turnScheduler, true);
 
     /// <summary>Seeds the EU relative queue with the encounter opening rule.</summary>
     /// <param name="ambushChance">Encounter ambush probability, or zero when disabled.</param>
@@ -671,7 +675,6 @@ public sealed class BattleState
     private void LandPlayerHits(BattleFighter target, TechData tech, BattleFighter attacker, IBattleRng rng, bool technique)
     {
         int damage = ResolveHitSequence(BattleSide.Player, tech, attacker.Stats, target, false, hitIndex => ResolvePlayerHit(tech, DoubleMagicTechniqueSelector.DamageTechniqueForHit(tech, Techs, hitIndex), attacker, target, rng, technique));
-        TickBlastGauge(damage);
         ApplyPlayerEffectAfterHits(tech, target, damage, _hitSequence.ResolvedDamage, rng);
         CheckOutcome();
         ReactToPlayerHits(target, damage, rng);

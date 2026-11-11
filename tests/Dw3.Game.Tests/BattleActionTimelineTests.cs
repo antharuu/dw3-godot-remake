@@ -7,6 +7,115 @@ namespace Dw3.Game.Tests;
 /// <summary>Unit tests for BattleActionTimeline — the engine-free sequence executor.</summary>
 public sealed class BattleActionTimelineTests
 {
+    [Fact]
+    public void MotionZero_WaitsWithoutPublishingImpactOrEnd()
+    {
+        var script = MinimalScript(
+            (BattleActionOpcode.Model, [0, 0, 0]),
+            (BattleActionOpcode.HitDispatch, [0]),
+            (BattleActionOpcode.AlternateEnd, []));
+        var timeline = new BattleActionTimeline(script, TestContext());
+
+        Assert.Empty(timeline.Advance());
+        Assert.Empty(timeline.Advance(10));
+        Assert.Equal(0, timeline.Cursor);
+        Assert.False(timeline.IsComplete);
+    }
+
+    [Fact]
+    public void MotionReady_ReleasesImpactOnceWithoutMotionZeroRequest()
+    {
+        var script = MinimalScript(
+            (BattleActionOpcode.Model, [0, 0, 0]),
+            (BattleActionOpcode.HitDispatch, [0]),
+            (BattleActionOpcode.End, []));
+        var timeline = new BattleActionTimeline(script, TestContext());
+        bool ready = false;
+        timeline.MotionReady = _ => ready;
+        Assert.Empty(timeline.Advance(20));
+        ready = true;
+        Assert.Collection(timeline.Advance(), e => Assert.IsType<HitDispatchedEvent>(e), e => Assert.IsType<SequenceEndedEvent>(e));
+        Assert.Empty(timeline.Advance(20));
+    }
+
+    [Fact]
+    public void UnsupportedAndUnterminatedScripts_RejectBeforeAnyEffect()
+    {
+        Assert.Throws<FormatException>(() => new BattleActionTimeline(
+            MinimalScript(((BattleActionOpcode)123, []), (BattleActionOpcode.End, [])), TestContext()));
+        Assert.Throws<FormatException>(() => new BattleActionTimeline(
+            MinimalScript((BattleActionOpcode.Sound, [1, 0])), TestContext()));
+        Assert.Throws<FormatException>(() => new BattleActionTimeline(
+            MinimalScript((BattleActionOpcode.Model, [0]), (BattleActionOpcode.End, [])), TestContext()));
+    }
+
+    [Fact]
+    public void AcknowledgementAndChildren_BlockCursorAndEndIndependently()
+    {
+        var script = MinimalScript((BattleActionOpcode.Sound, [1, 0]), (BattleActionOpcode.End, []));
+        bool accepted = false;
+        bool childrenDone = false;
+        var timeline = new BattleActionTimeline(script, TestContext())
+        {
+            Acknowledge = _ => accepted,
+            ChildrenReady = () => childrenDone,
+        };
+        Assert.Empty(timeline.Advance(10));
+        Assert.Equal(0, timeline.Cursor);
+        accepted = true;
+        Assert.IsType<SoundRequestEvent>(Assert.Single(timeline.Advance()));
+        Assert.False(timeline.IsComplete);
+        Assert.Empty(timeline.Advance(10));
+        childrenDone = true;
+        Assert.IsType<SequenceEndedEvent>(Assert.Single(timeline.Advance()));
+        Assert.Empty(timeline.Advance());
+    }
+
+    [Fact]
+    public void RequiredScriptWithoutDamageEventsStillGetsAContext()
+    {
+        var context = ActionSequenceContext.TryCapture(BattleSide.Player, new TechData { Script = 5 }, 10, 20, []);
+        Assert.NotNull(context);
+        Assert.Equal(5, context.ScriptSelector);
+        Assert.Null(ActionSequenceContext.TryCapture(BattleSide.Player, new TechData { Script = 0 }, 10, 20, []));
+    }
+
+    [Fact]
+    public void PendingConsumerReceivesTheSameRequestUntilAcknowledged()
+    {
+        var timeline = new BattleActionTimeline(MinimalScript((BattleActionOpcode.Sound, [1, 0]), (BattleActionOpcode.End, [])), TestContext());
+        var observed = new List<BattleSequenceEvent>();
+        timeline.Acknowledge = request =>
+        {
+            observed.Add(request);
+            return false;
+        };
+        timeline.Advance(3);
+        Assert.Equal(3, observed.Count);
+        Assert.Same(observed[0], observed[1]);
+        Assert.Same(observed[1], observed[2]);
+    }
+
+    [Fact]
+    public void PreResolvedMissZeroDamageAndCounterRemainDistinct()
+    {
+        BattleHitEvent[] hits =
+        [
+            new(BattleSide.Player, 0, false, 0, 0, false),
+            new(BattleSide.Player, 1, true, 0, 0, false),
+            new(BattleSide.Enemy, 0, true, 8, 0, true),
+        ];
+        var context = new ActionSequenceContext(BattleSide.Player, 10, 20, hits, 5);
+        var timeline = new BattleActionTimeline(MinimalScript((BattleActionOpcode.HitDispatch, [5]), (BattleActionOpcode.End, [])), context);
+        var dispatched = Assert.Single(timeline.Advance().OfType<HitDispatchedEvent>());
+        Assert.False(dispatched.HitEvents[0].Landed);
+        Assert.True(dispatched.HitEvents[1].Landed);
+        Assert.Equal(0, dispatched.HitEvents[1].Damage);
+        Assert.True(dispatched.HitEvents[2].IsCounter);
+        Assert.Equal(BattleSide.Enemy, dispatched.HitEvents[2].AttackerSide);
+        Assert.Empty(timeline.Advance(20));
+    }
+
     // ── Completion and state ──────────────────────────────────────────────────
     [Fact]
     public void EndOpcode_TerminatesImmediately()
@@ -74,6 +183,7 @@ public sealed class BattleActionTimelineTests
         Assert.Empty(frame2);
         Assert.False(timeline.IsComplete);
 
+        Assert.Empty(timeline.Advance(1));
         var frame3 = timeline.Advance(1);
 
         // Frame 3: wait expired, End fires
@@ -82,11 +192,12 @@ public sealed class BattleActionTimelineTests
     }
 
     [Fact]
-    public void WaitZero_IsNoOp_EndFiresImmediately()
+    public void WaitZero_InitializesBeforeNextTickCompletes()
     {
         var script = MinimalScript((BattleActionOpcode.Wait, [0]), (BattleActionOpcode.End, []));
         var timeline = new BattleActionTimeline(script, TestContext());
 
+        Assert.Empty(timeline.Advance(1));
         var events = timeline.Advance(1);
 
         Assert.True(timeline.IsComplete);
@@ -144,7 +255,7 @@ public sealed class BattleActionTimelineTests
     public void Camera_EmitsCameraRequestEvent()
     {
         var script = MinimalScript(
-            (BattleActionOpcode.Camera, [0, 1]),
+            (BattleActionOpcode.Camera, [0, 0, 0]),
             (BattleActionOpcode.End, []));
         var timeline = new BattleActionTimeline(script, TestContext());
 

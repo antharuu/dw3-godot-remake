@@ -61,7 +61,7 @@ public sealed class BattleFlowActionSequenceTests
     }
 
     [Fact]
-    public void NullScriptProvider_SequenceCompletesImmediately()
+    public void NullScriptProvider_DoesNotCompleteRequiredSequence()
     {
         var flow = BuildFlowOnPlayerTurn();
         var host = new SequenceTrackingHost(flow, new StubScriptProvider(null));
@@ -70,9 +70,10 @@ public sealed class BattleFlowActionSequenceTests
         flow.Choose(BattleCommand.Attack, 0, new FixedRng());
         Assert.Equal(BattleFlowPhase.ActionSequence, flow.Phase);
 
-        // Single tick with null script: sequence completes gracefully
         coordinator.Tick();
-        Assert.NotEqual(BattleFlowPhase.ActionSequence, flow.Phase);
+        coordinator.Tick();
+        Assert.Equal(BattleFlowPhase.ActionSequence, flow.Phase);
+        Assert.NotNull(flow.PendingSequenceContext);
     }
 
     [Fact]
@@ -108,7 +109,33 @@ public sealed class BattleFlowActionSequenceTests
         Assert.False(host.ActivateCalled);
     }
 
-    private static BattleFlowController BuildFlowOnPlayerTurn()
+    [Fact]
+    public void FinalKnockout_StillPlaysSequenceBeforeOutcome()
+    {
+        var flow = BuildFlowOnPlayerTurn();
+        Assert.IsType<BattleFighter>(flow.State.ActiveEnemyFighter).Hp = 1;
+        flow.PlayerBasicTech = new TechData { Script = 5, Accuracy = 100, Power = 100 };
+        flow.Choose(BattleCommand.Attack, 0, new FixedRng());
+        Assert.Equal(BattleOutcome.Won, flow.Outcome);
+        Assert.Equal(BattleFlowPhase.ActionSequence, flow.Phase);
+    }
+
+    [Fact]
+    public void PresentationHp_WaitsForSequenceCompletionNotHitRequest()
+    {
+        var flow = BuildFlowOnPlayerTurn();
+        flow.PlayerBasicTech = new TechData { Script = 5, Accuracy = 100, Power = 100 };
+        int before = Assert.IsType<BattleFighter>(flow.State.ActiveEnemyFighter).Hp;
+        flow.Choose(BattleCommand.Attack, 0, new FixedRng());
+        var view = BattleViewBuilder.Build(flow, new BattleMenuView(BattleMenuKind.Root, 0, 0, 6, 1, [], null, null, null), null, _ => BattleTextLine.Missing);
+        Assert.Equal(before, view.Enemies[0].Hp);
+        Assert.True(Assert.IsType<BattleFighter>(flow.State.Enemies[0]).Hp < before);
+        flow.CompleteActionSequence();
+        var after = BattleViewBuilder.Build(flow, new BattleMenuView(BattleMenuKind.Root, 0, 0, 6, 1, [], null, null, null), null, _ => BattleTextLine.Missing);
+        Assert.Equal(Assert.IsType<BattleFighter>(flow.State.Enemies[0]).Hp, after.Enemies[0].Hp);
+    }
+
+    internal static BattleFlowController BuildFlowOnPlayerTurn()
     {
         var setup = new BattleSetup();
 
@@ -140,25 +167,20 @@ public sealed class BattleFlowActionSequenceTests
         return new BattleActionScript(5, commands);
     }
 
-    private sealed class StubScriptProvider : IActionScriptProvider
-    {
-        private readonly BattleActionScript? _script;
-
-        public StubScriptProvider(BattleActionScript? script = null) => _script = script;
-
-        public BattleActionScript? TryLoad(int fighterId, int scriptSelector) => _script;
-    }
-
-    private sealed class SequenceTrackingHost : IBattleTickHost
+    internal sealed class SequenceTrackingHost : IBattleTickHost
     {
         private readonly BattleSequenceRunner? _runner;
 
-        public SequenceTrackingHost(BattleFlowController flow, IActionScriptProvider? provider = null)
+        public SequenceTrackingHost(BattleFlowController flow, IActionScriptProvider? provider = null, IBattleSequencePlayback? playback = null)
         {
             Flow = flow;
             if (provider is not null)
             {
                 _runner = new BattleSequenceRunner(flow, provider);
+                if (playback is not null)
+                {
+                    _runner.SetPlayback(playback);
+                }
             }
         }
 
@@ -221,6 +243,15 @@ public sealed class BattleFlowActionSequenceTests
         public void TickFightReport()
         {
         }
+    }
+
+    private sealed class StubScriptProvider : IActionScriptProvider
+    {
+        private readonly BattleActionScript? _script;
+
+        public StubScriptProvider(BattleActionScript? script = null) => _script = script;
+
+        public BattleActionScript? TryLoad(int fighterId, int scriptSelector) => _script;
     }
 
     private sealed class FixedRng : IBattleRng

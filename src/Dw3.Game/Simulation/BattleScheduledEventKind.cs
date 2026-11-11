@@ -54,6 +54,9 @@ public enum BattleScheduledEventKind
     /// <summary>Expiry of item-tech 0xBD's recurring recovery.</summary>
     AutoRecoveryEnd,
 
+    /// <summary>Immediate gauge-triggered transformation consumed by the normal battle queue.</summary>
+    BlastStart,
+
     /// <summary>Expiry of a temporary blast digivolution: the partner reverts to its pre-blast form.</summary>
     BlastReturn,
 }

@@ -71,6 +71,7 @@ public sealed class EnemyTurnResolver(BattleState state)
 
         int damage = state.ResolveHitSequence(BattleSide.Enemy, tech, attacker.Stats, target, false, _ => state.Hits(rng).Basic(tech, attacker, target, enemyAttacker: true));
         WakePlayerAfterHits(damage, rng);
+        state.TickBlastGauge(damage, rng);
 
         EndTurn();
     }
@@ -115,6 +116,7 @@ public sealed class EnemyTurnResolver(BattleState state)
         int damage = state.ResolveHitSequence(BattleSide.Enemy, tech, attacker.Stats, target, false, hitIndex => state.Hits(rng).Technique(tech, DoubleMagicTechniqueSelector.DamageTechniqueForHit(tech, state.Techs, hitIndex), attacker, target, enemyAttacker: true));
         WakePlayerAfterHits(damage, rng);
         ApplyEnemyEffectAfterHits(tech, target, state.LastResolvedDamage, rng);
+        state.TickBlastGauge(damage, rng);
 
         state.ConsumeCharge(BattleSide.Enemy);
         EndTurn();
@@ -188,6 +190,7 @@ public sealed class EnemyTurnResolver(BattleState state)
 
         int damage = state.ResolveHitSequence(BattleSide.Enemy, tech, attacker.Stats, target, true, _ => state.Hits(rng).Counter(tech, attacker, target, receivedDamage));
         WakePlayerAfterHits(damage, rng);
+        state.TickBlastGauge(receivedDamage, rng);
         state.ConsumeCharge(BattleSide.Enemy);
 
         state.CheckOutcome();

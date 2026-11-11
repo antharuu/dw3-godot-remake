@@ -57,6 +57,7 @@ public partial class GameHost
         /// <returns>Configured but not started battle flow.</returns>
         internal static BattleFlowController BuildUnstarted(BattleSessionBuildInput input, out BattleSetup setup, out int activeDigimon)
         {
+            BattleBlastCatalog.Configure(input.Session, input.Fighters);
             int[] party = [.. input.Session.BuildParty().OfType<PartnerSeed>().Select(seed => seed.Id)];
             if (party.Length != 3)
             {
@@ -101,6 +102,7 @@ public partial class GameHost
                 return;
             }
 
+            flow.State.EndTemporaryForms();
             session.CommitBattle(flow.State.Players);
         }
 
