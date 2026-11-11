@@ -14,6 +14,7 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
     private ActionSequenceContext? _context;
     private BattleReactionPlayback? _reaction;
     private BattleImpactPlayback? _impact;
+    private Action<bool>? _finishAudio;
 
     /// <summary>Initializes a new instance of the <see cref="BattleRendererSequencePlayback"/> class.</summary>
     /// <param name="renderer">Owning renderer.</param>
@@ -61,10 +62,18 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
     public void RegisterAudioConsumer(BattleAudioConsumer audio)
     {
         ArgumentNullException.ThrowIfNull(audio);
+        RegisterAudioConsumer(audio.Consume, cancelled => audio.Finish(cancelled));
+    }
+
+    /// <summary>Registers the lazy production runtime using the same asset chaining seam.</summary>
+    /// <param name="consume">Audio request consumer.</param>
+    /// <param name="finish">Action-end or cancellation callback.</param>
+    public void RegisterAudioConsumer(Func<BattleSequenceEvent, SequenceAcknowledgement> consume, Action<bool> finish)
+    {
         var previous = AssetConsumer;
         AssetConsumer = request =>
         {
-            SequenceAcknowledgement result = audio.Consume(request);
+            SequenceAcknowledgement result = consume(request);
             if (result != SequenceAcknowledgement.Unavailable)
             {
                 return result;
@@ -72,12 +81,7 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
 
             return previous?.Invoke(request) ?? SequenceAcknowledgement.Unavailable;
         };
-        var previousCancel = CancelEffects;
-        CancelEffects = () =>
-        {
-            audio.StopAll();
-            previousCancel?.Invoke();
-        };
+        _finishAudio += finish;
     }
 
     /// <inheritdoc/>
@@ -205,6 +209,7 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
     /// <inheritdoc/>
     public void Finish(bool cancelled)
     {
+        _finishAudio?.Invoke(cancelled);
         if (_context is null)
         {
             return;

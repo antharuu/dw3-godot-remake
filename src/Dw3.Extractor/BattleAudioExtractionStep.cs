@@ -68,6 +68,9 @@ internal static class BattleAudioExtractionStep
         }
 
         WriteManifest(context, banks);
+        byte[] overlay = disc.ReadFile(Require(entries, "AAA/PRO/FIGHTSTG.PRO"));
+        WriteFile(context, $"{OutputSubdirectory}/sounds.json", JsonSerializer.SerializeToUtf8Bytes(
+            new { schema = "battle-action-sounds-v1", ids = BattleSoundTableDecoder.Decode(overlay) }, IndentedJson));
     }
 
     /// <summary>Decodes the first active tone for each program index from the VAB entry in the MP archive.</summary>
@@ -118,7 +121,7 @@ internal static class BattleAudioExtractionStep
     {
         string path = context.GetImagePath($"{OutputSubdirectory}/manifest.json");
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        File.WriteAllText(path, JsonSerializer.Serialize(new { schema = "battle-audio-vab-v3", banks = banks.Select(BankManifest) }, IndentedJson) + "\n", new UTF8Encoding(false));
+        File.WriteAllText(path, JsonSerializer.Serialize(new { schema = "battle-audio-vab-v4", banks = banks.Select(BankManifest) }, IndentedJson) + "\n", new UTF8Encoding(false));
     }
 
     /// <summary>Builds one serializable manifest row without retaining a direct disc handle.</summary>
@@ -136,8 +139,18 @@ internal static class BattleAudioExtractionStep
         vab = bank.Header,
         sep = SequenceManifest(bank.Sequence),
         programs = ProgramManifest(bank),
+        tones = ToneManifest(bank),
         samples = bank.Samples.Select((sample, index) => new { index, wavPath = $"{OutputSubdirectory}/{bank.Source.Name}/{index:D3}.wav", pcmSamples = sample.PcmSamples.Length, encodedBytes = sample.EncodedBytesConsumed, loops = sample.Loops, loopStartSample = sample.LoopStartSample }),
     };
+
+    /// <summary>Writes every declared tone with sparse physical program indices.</summary>
+    /// <param name="bank">Prepared bank and its raw VAB archive.</param>
+    /// <returns>Complete tone rows rather than a first-tone approximation.</returns>
+    private static object ToneManifest(ExtractedSoundBank bank)
+    {
+        ArchiveRange range = ModelArchive.ReadBounds(bank.HeaderArchive)[0];
+        return VabProgramTableDecoder.DecodeAll(bank.HeaderArchive.AsSpan(range.Start, range.End - range.Start), bank.Header.ProgramCount);
+    }
 
     /// <summary>Projects the program-to-tone table as a compact array of resolved entries for programs with an active tone and non-zero sample reference.</summary>
     /// <param name="bank">Extracted bank with decoded program tones.</param>

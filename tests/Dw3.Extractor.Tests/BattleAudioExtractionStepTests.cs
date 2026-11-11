@@ -23,7 +23,7 @@ public sealed class BattleAudioExtractionStepTests : IDisposable
         Assert.Equal("{\"event\":\"domain-complete\",\"domain\":\"battle-audio\"}" + Environment.NewLine, output.ToString());
         string audio = Path.Combine(_root, "data", "battle", "audio");
         using JsonDocument manifest = JsonDocument.Parse(File.ReadAllText(Path.Combine(audio, "manifest.json")));
-        Assert.Equal("battle-audio-vab-v3", manifest.RootElement.GetProperty("schema").GetString());
+        Assert.Equal("battle-audio-vab-v4", manifest.RootElement.GetProperty("schema").GetString());
         Assert.Equal(3, manifest.RootElement.GetProperty("banks").GetArrayLength());
         JsonElement battle = manifest.RootElement.GetProperty("banks")[1];
         Assert.Equal(1, battle.GetProperty("vab").GetProperty("SampleCount").GetInt32());
@@ -37,6 +37,14 @@ public sealed class BattleAudioExtractionStepTests : IDisposable
             ["number", "headerOffset", "eventsOffset", "endOffset", "ticksPerQuarterNote", "tempoMicrosecondsPerQuarterNote", "events"],
             track.EnumerateObject().Select(property => property.Name));
         Assert.Equal(1, manifest.RootElement.GetProperty("banks")[1].GetProperty("samples").GetArrayLength());
+        var catalog = Dw3Production.Conversion.BattleActionAudioLoader.Load(new Dw3.Data.DataPackReader(_root));
+        var action = Assert.Single(catalog);
+        Assert.Equal(52, action.Key);
+        Assert.Equal(0, action.Value.Program);
+        Assert.Equal(0, action.Value.Tone);
+        Assert.Equal(0, action.Value.SampleIndex);
+        Assert.Equal(60, action.Value.Note);
+        Assert.Equal(0, action.Value.Priority);
         Assert.True(File.Exists(Path.Combine(audio, "battle.mp")));
         Assert.True(File.Exists(Path.Combine(audio, "battle.mv")));
         Assert.Equal("RIFF", System.Text.Encoding.ASCII.GetString(File.ReadAllBytes(Path.Combine(audio, "battle", "000.wav")), 0, 4));
@@ -66,6 +74,9 @@ public sealed class BattleAudioExtractionStepTests : IDisposable
 
     private static void AddBanks(FabricatedDisc disc)
     {
+        byte[] overlay = new byte[Dw3.Formats.Battle.BattleSoundTableDecoder.TableOffset + (92 * 4)];
+        BinaryPrimitives.WriteUInt32LittleEndian(overlay.AsSpan(Dw3.Formats.Battle.BattleSoundTableDecoder.TableOffset + (52 * 4)), 0x8004003C);
+        disc.Add("AAA/PRO/FIGHTSTG.PRO", overlay);
         disc.Add("AAA/DAT/SOUND/COMMON/MPCOMMON.BIN", HeaderArchive());
         disc.Add("AAA/DAT/SOUND/COMMON/MVCOMMON.BIN", BodyArchive());
         disc.Add("AAA/DAT/SOUND/BATL00/MPBATL00.BIN", HeaderArchive());
@@ -104,6 +115,18 @@ public sealed class BattleAudioExtractionStepTests : IDisposable
         BinaryPrimitives.WriteUInt16LittleEndian(vab.Slice(22), 1);
         vab[24] = 120;
         vab[25] = 64;
+        for (int program = 0; program < 11; program++)
+        {
+            vab[32 + (program * 16)] = 1;
+            vab[33 + (program * 16)] = 127;
+            vab[36 + (program * 16)] = 64;
+            int toneOffset = 2080 + (program * 512);
+            vab[toneOffset + 2] = 127;
+            vab[toneOffset + 3] = 64;
+            vab[toneOffset + 4] = 60;
+            BinaryPrimitives.WriteInt16LittleEndian(vab.Slice(toneOffset + 22), 1);
+        }
+
         BinaryPrimitives.WriteUInt16LittleEndian(vab.Slice(vabBytes - 510), 4);
         sep.CopyTo(archive, 8 + vabBytes);
         return archive;
@@ -115,6 +138,7 @@ public sealed class BattleAudioExtractionStepTests : IDisposable
         BinaryPrimitives.WriteUInt32LittleEndian(body, 4U);
         body[4] = 12;
         body[5] = 0;
+        body[6] = 0x11;
         body[20] = 12;
         body[21] = 1;
         return body;

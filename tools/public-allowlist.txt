@@ -618,6 +618,8 @@ src/Dw3.Game/Simulation/BattleOutcome.cs
 src/Dw3.Game/Simulation/BattleOutcomeRequest.cs
 src/Dw3.Game/Simulation/BattleOutcomeResolution.cs
 src/Dw3.Game/Simulation/BattleOutcomeResolver.cs
+src/Dw3.Game/Simulation/BattlePairTechniqueResolver.cs
+src/Dw3.Game/Simulation/BattlePairTechniqueRules.cs
 src/Dw3.Game/Simulation/BattlePoisonRules.cs
 src/Dw3.Game/Simulation/BattleReward.cs
 src/Dw3.Game/Simulation/BattleRoster.cs
@@ -641,6 +643,8 @@ src/Dw3.Game/Simulation/BattleTickCoordinator.cs
 src/Dw3.Game/Simulation/BattleTurnScheduler.cs
 src/Dw3.Game/Simulation/BattleTurnSchedulerRules.cs
 src/Dw3.Game/Simulation/BattleViewBuilder.cs
+src/Dw3.Game/Simulation/PairTechniqueCatalog.cs
+src/Dw3.Game/Simulation/PairTechniqueDefinition.cs
 src/Dw3.Game/Simulation/ClimbAnimation.cs
 src/Dw3.Game/Simulation/ClimbAnimationSample.cs
 src/Dw3.Game/Simulation/DoubleMagicTechniqueSelector.cs
@@ -816,6 +820,7 @@ tests/Dw3.Game.Tests/BattleItemTechniqueConsumerTests.cs
 tests/Dw3.Game.Tests/BattleTechniqueEffectTests.cs
 tests/Dw3.Game.Tests/BattlePoisonStatusTests.cs
 tests/Dw3.Game.Tests/BattleOutcomeTransitionTests.cs
+tests/Dw3.Game.Tests/BattlePairTechniqueTests.cs
 tests/Dw3.Game.Tests/BattleGrowthVectorGenerator.cs
 tests/Dw3.Game.Tests/BattleGrowthVectorTests.cs
 tests/Dw3.Game.Tests/BattleMotionMachineVectorGenerator.cs
@@ -827,6 +832,7 @@ tests/Dw3.Game.Tests/BattleSkeletonBlendTests.cs
 tests/Dw3.Game.Tests/BattleSkeletonTransformCacheTests.cs
 tests/Dw3.Game.Tests/BattlePresentationMathTests.cs
 tests/Dw3.Game.Tests/BattleTickCoordinatorTests.cs
+tests/Dw3.Game.Tests/BattleMenuRootNavigationTests.cs
 tests/Dw3.Game.Tests/BattleProbeCatalogTests.cs
 tests/Dw3.Game.Tests/BattleSilhouetteMetricsTests.cs
 tests/Dw3.Game.Tests/BattleShotCameraVectorGenerator.cs
@@ -1160,3 +1166,21 @@ tests/Dw3.Extractor.Tests/FabricatedImpact.cs
 tests/Dw3.Formats.Tests/Battle/BattleSpriteAnimationTests.cs
 tests/Dw3.Game.Tests/BattleJumpMotionTests.cs
 tests/Dw3.Game.Tests/BattleTravelMotionTests.cs
+# Physical action-audio checkpoint
+docs/BATTLE_ACTION_AUDIO.md
+src/Dw3.Formats/Battle/BattleSoundTableDecoder.cs
+src/Dw3.Formats/Battle/VabProgramTone.cs
+src/Dw3.Game/BattleAudioBackendProbe.tscn
+src/Dw3.Game/BattleAudioProbe.tscn
+src/Dw3.Game/Conversion/BattleActionAudioLoader.cs
+src/Dw3.Game/Presentation/BattleAudioBackendProbe.cs
+src/Dw3.Game/Presentation/BattleAudioPcm.cs
+src/Dw3.Game/Presentation/BattleAudioProbe.cs
+src/Dw3.Game/Presentation/BattleAudioPump.cs
+src/Dw3.Game/Presentation/BattleAudioRuntime.cs
+src/Dw3.Game/Presentation/BattleAudioVoicePool.cs
+src/Dw3.Game/Presentation/GodotBattleAudioBackend.cs
+src/Dw3.Game/Presentation/GodotVoiceHandle.cs
+tests/Dw3.Formats.Tests/Battle/VabToneCatalogTests.cs
+tests/Dw3.Game.Tests/BattleAudioLifetimeTests.cs
+tests/Dw3.Game.Tests/BattleAudioSubstitutionTests.cs

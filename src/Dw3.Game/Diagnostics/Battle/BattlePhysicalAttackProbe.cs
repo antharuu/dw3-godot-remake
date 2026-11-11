@@ -32,7 +32,7 @@ internal sealed class BattlePhysicalAttackProbe : BattleProbe
     {
         Host.ApplyS200();
         using var loader = new BattleDataPackLoader(new DataPackReader(System.Environment.GetEnvironmentVariable("DW3_DATA_DIR") ?? throw new InvalidOperationException("Explicit proof pack is required.")));
-        foreach (string mode in new[] { "normal", "miss", "fatal-reserve", "repeat" })
+        foreach (string mode in new[] { "normal", "miss", "fatal-reserve" })
         {
             Host.StartDebugBattle();
             await Host.NextFrameDrawn();
@@ -51,8 +51,19 @@ internal sealed class BattlePhysicalAttackProbe : BattleProbe
             await RunPlayerAsync(loader, mode, captures);
             ProbeRequirement.Require(Host.Flow.Phase == BattleFlowPhase.EnemyTurn, $"enemy turn unavailable {Host.Flow.Phase}");
             await RunEnemyAsync(loader, mode, captures);
+            if (mode == "normal")
+            {
+                for (int repetition = 0; repetition < 4 && Host.Flow.Phase == BattleFlowPhase.PlayerCommand; repetition++)
+                {
+                    await RunPlayerAsync(loader, $"repeat-{repetition}", captures);
+                }
+
+                ProbeRequirement.Require(Host.Flow.Phase == BattleFlowPhase.EnemyTurn, "repeated player actions did not yield an enemy turn");
+                await RunEnemyAsync(loader, "repeat", captures);
+            }
         }
 
+        await RunFinalCasesAsync(loader);
         GD.Print("B9052_PASS two-camps normal/miss/fatal-reserve/repeat physical-only audio-control-not-played");
     }
 
@@ -64,7 +75,7 @@ internal sealed class BattlePhysicalAttackProbe : BattleProbe
     {
         var hit = flow.State.LastHitEvents.First(hit => !hit.IsCounter);
         ProbeRequirement.Require(hit.Landed == (mode != "miss"), $"wrong landed branch {mode}: {hit}");
-        ProbeRequirement.Require(target.IsKnockedOut == (mode == "fatal-reserve"), $"wrong KO branch {mode}: {hit}");
+        ProbeRequirement.Require(target.IsKnockedOut == mode.StartsWith("fatal", StringComparison.Ordinal), $"wrong KO branch {mode}: {hit}");
         GD.Print($"B9052_BRANCH {mode} hit={hit} target-hp={target.Hp} phase={flow.Phase}");
     }
 
@@ -95,6 +106,11 @@ internal sealed class BattlePhysicalAttackProbe : BattleProbe
             target.Hp = 1;
         }
 
+        if (mode == "fatal-final")
+        {
+            target.Hp = 1;
+        }
+
         int accuracy = flow.PlayerBasicTech.Accuracy;
         flow.PlayerBasicTech.Accuracy = mode == "miss" ? 1 : accuracy;
         var rng = new BattleAttackProofRng(mode == "miss" ? 127 : 0);
@@ -113,7 +129,7 @@ internal sealed class BattlePhysicalAttackProbe : BattleProbe
     {
         var flow = Host.Flow;
         var target = Player;
-        if (mode == "fatal-reserve")
+        if (mode.StartsWith("fatal", StringComparison.Ordinal))
         {
             target.Hp = 1;
         }
@@ -123,6 +139,38 @@ internal sealed class BattlePhysicalAttackProbe : BattleProbe
         await PlayAsync(loader, rng, mode + "-enemy", captures);
         VerifyBranch(mode, flow, target);
         _reserve = flow.State.ActiveEnemyFighter;
+    }
+
+    /// <summary>Exercises final victory and defeat without allowing either to bypass the physical action.</summary>
+    /// <param name="loader">Real extracted action pack.</param>
+    /// <returns>Completion after both final actions reach End.</returns>
+    private async Task RunFinalCasesAsync(BattleDataPackLoader loader)
+    {
+        var captures = Host.PrepareCaptureDirectory("probe/battle-physical/final");
+        Host.StartDebugBattle();
+        await Host.NextFrameDrawn();
+        Host.Renderer.ConfigureActionAssets(loader);
+        ConfigureControls();
+        await BattleProbeCapture.CaptureAsync(Host, captures, "before-victory.png");
+        await RunPlayerAsync(loader, "fatal-final", captures);
+        ProbeRequirement.Require(Host.Flow.Outcome == BattleOutcome.Won, "final player attack did not produce victory");
+        Host.StartDebugBattle();
+        await Host.NextFrameDrawn();
+        Host.Renderer.ConfigureActionAssets(loader);
+        ConfigureControls();
+        Enemy.Hp = Enemy.MaxHp = 9000;
+        Enemy.Counter = default;
+        Enemy.Actions = [new BattleTableAction(1, 0, 0)];
+        await BattleProbeCapture.CaptureAsync(Host, captures, "before-defeat.png");
+        await RunPlayerAsync(loader, "normal", captures);
+        foreach (var reserve in Host.Flow.State.Players.Skip(1).OfType<BattleFighter>())
+        {
+            reserve.Hp = 0;
+        }
+
+        await RunEnemyAsync(loader, "fatal-final", captures);
+        ProbeRequirement.Require(Host.Flow.Outcome == BattleOutcome.Lost, "final enemy attack did not produce defeat");
+        GD.Print("B9052_FINAL victory-and-defeat-after-physical-End");
     }
 
     /// <summary>Exercises the real loader, timeline, scene, contact children and restoration without RNG draws.</summary>

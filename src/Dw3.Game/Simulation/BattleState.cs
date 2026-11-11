@@ -253,6 +253,16 @@ public sealed class BattleState
         return true;
     }
 
+    /// <summary>Runs a source-qualified pair technique with a living reserve, charging both partners and bringing the reserve in after the hit resolves.</summary>
+    /// <param name="incomingSlot">Reserve slot whose selected form matches the pair relation.</param>
+    /// <param name="definition">Source relation that identifies the required incoming partner name.</param>
+    /// <param name="incomingNameId">Name-table id of the incoming form.</param>
+    /// <param name="tech">Resolved pair technique whose MP cost is charged to both partners.</param>
+    /// <param name="rng">Shared battle random source used by the technique hit sequence.</param>
+    /// <returns>Whether the pair action was legal and completed.</returns>
+    public bool PlayerPairTechnique(int incomingSlot, PairTechniqueDefinition definition, int incomingNameId, TechData tech, IBattleRng rng) =>
+        BattlePairTechniqueResolver.TryExecute(this, incomingSlot, definition, incomingNameId, tech, rng);
+
     /// <summary>Applies one temporary attack, defense, or speed modifier to a living fighter.</summary>
     /// <param name="side">Side containing the fighter.</param>
     /// <param name="fighterSlot">Target fighter slot.</param>
@@ -584,6 +594,26 @@ public sealed class BattleState
         return slot >= 0 && slot < fighters.Length ? fighters[slot] : null;
     }
 
+    /// <summary>Resolves one already-authorized pair technique hit sequence without marking the outgoing partner as fought.</summary>
+    /// <param name="active">Validated active partner.</param>
+    /// <param name="target">Validated active enemy.</param>
+    /// <param name="tech">Technique charged to both partners.</param>
+    /// <param name="rng">Shared action random source.</param>
+    internal void ResolvePairTechniqueHits(BattleFighter active, BattleFighter target, TechData tech, IBattleRng rng) =>
+        LandPairTechniqueHits(target, tech, active, rng);
+
+    /// <summary>Records the incoming partner as having fought, including when the pair technique ends the battle.</summary>
+    /// <param name="incomingSlot">Validated selected reserve slot.</param>
+    internal void MarkPairIncomingFought(int incomingSlot) => Fought[incomingSlot] = true;
+
+    /// <summary>Brings the incoming partner in after a pair technique when an enemy remains.</summary>
+    /// <param name="incomingSlot">Validated selected reserve slot.</param>
+    internal void ActivatePairIncoming(int incomingSlot)
+    {
+        ActivePlayer = incomingSlot;
+        NotifyActiveFormChanged();
+    }
+
     /// <summary>Gets the active slot of one side.</summary>
     /// <param name="side">Requested side.</param>
     /// <returns>The active slot, or -1 when no fighter is active.</returns>
@@ -654,6 +684,21 @@ public sealed class BattleState
         CheckOutcome();
         ReactToPlayerHits(target, damage, rng);
         MarkFought();
+        AdvancePlayerTurn();
+        CheckOutcome();
+    }
+
+    /// <summary>Resolves a pair technique's damage and post-hit effects without crediting the outgoing partner.</summary>
+    /// <param name="target">Enemy targeted by the pair technique.</param>
+    /// <param name="tech">Pair technique resolved through the normal technique pipeline.</param>
+    /// <param name="attacker">Outgoing partner participating in the technique.</param>
+    /// <param name="rng">Shared battle random source.</param>
+    private void LandPairTechniqueHits(BattleFighter target, TechData tech, BattleFighter attacker, IBattleRng rng)
+    {
+        int damage = ResolveHitSequence(BattleSide.Player, tech, attacker.Stats, target, false, hitIndex => ResolvePlayerHit(tech, DoubleMagicTechniqueSelector.DamageTechniqueForHit(tech, Techs, hitIndex), attacker, target, rng, technique: true));
+        ApplyPlayerEffectAfterHits(tech, target, damage, _hitSequence.ResolvedDamage, rng);
+        CheckOutcome();
+        ReactToPlayerHits(target, damage, rng);
         AdvancePlayerTurn();
         CheckOutcome();
     }

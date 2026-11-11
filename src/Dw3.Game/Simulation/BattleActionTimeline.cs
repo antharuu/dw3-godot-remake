@@ -8,6 +8,7 @@ public sealed class BattleActionTimeline
     private readonly BattleActionScript _script;
     private readonly ActionSequenceContext _context;
     private int _cursor;
+    private int _soundsPlayed;
     private int _waitFrames;
     private bool _complete;
     private BattleSequenceEvent? _pendingRequest;
@@ -115,6 +116,22 @@ public sealed class BattleActionTimeline
         _ => true,
     };
 
+    /// <summary>Resolves hit-dependent indices from frozen context once per distinct opcode.</summary>
+    /// <param name="index">Script sound index or substitution opcode.</param>
+    /// <param name="duration">Source key-off ticks, zero for natural completion.</param>
+    /// <returns>Stable resolved request, retained during pending retries.</returns>
+    private SoundRequestEvent BuildSound(int index, int duration)
+    {
+        if (index is 0x62 or 0x63)
+        {
+            int hit = index == 0x63 ? 3 : Math.Min(_soundsPlayed, 3);
+            index = _context.SoundResults[hit] == 3 ? 0x38 : _context.ScriptSound;
+            _soundsPlayed++;
+        }
+
+        return new SoundRequestEvent(_context.AttackerSide, index, duration);
+    }
+
     /// <summary>Builds the typed request without mutating rules or drawing RNG.</summary>
     /// <param name="command">Validated command.</param>
     /// <returns>Request, or null for a physical wait or explicit delay.</returns>
@@ -134,7 +151,7 @@ public sealed class BattleActionTimeline
             BattleActionOpcode.Stage => new StageChangeEvent(a),
             BattleActionOpcode.Camera => new CameraRequestEvent(_context.AttackerSide, a),
             BattleActionOpcode.EffectModel => new EffectModelEvent(_context.AttackerSide, a),
-            BattleActionOpcode.Sound => new SoundRequestEvent(_context.AttackerSide, a[0], a[1]),
+            BattleActionOpcode.Sound => BuildSound(a[0], a[1]),
             BattleActionOpcode.Wait => null,
             _ => throw new FormatException($"Unsupported action opcode {command.Opcode}."),
         };

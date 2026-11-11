@@ -50,6 +50,64 @@ public static class VabProgramTableDecoder
         return result;
     }
 
+    /// <summary>Decodes populated physical programs using their tone counts and compact tone rows.
+    /// Priority is an arbitration attribute, not a presence flag.</summary>
+    /// <param name="vabEntry">Complete VAB header entry.</param>
+    /// <param name="programCount">Declared populated program count.</param>
+    /// <returns>All explicitly declared tones with physical indices.</returns>
+    public static IReadOnlyList<VabProgramTone> DecodeAll(ReadOnlySpan<byte> vabEntry, ushort programCount)
+    {
+        int required = HeaderBytes + ProgramTableBytes + (programCount * ToneSlots * ToneAttributeBytes) + SampleLengthTableBytes;
+        if (vabEntry.Length < required || programCount > ProgramSlots)
+        {
+            throw new FormatException("VAB program tables are truncated or invalid.");
+        }
+
+        var result = new List<VabProgramTone>();
+        int compact = 0;
+        for (int program = 0; program < ProgramSlots; program++)
+        {
+            var attributes = vabEntry.Slice(HeaderBytes + (program * ProgramAttributeBytes), ProgramAttributeBytes);
+            int count = attributes[0];
+            if (count == 0)
+            {
+                continue;
+            }
+
+            if (count > ToneSlots || compact >= programCount)
+            {
+                throw new FormatException("VAB declared program/tone count is inconsistent.");
+            }
+
+            int offset = HeaderBytes + ProgramTableBytes + (compact++ * ToneSlots * ToneAttributeBytes);
+            for (int tone = 0; tone < count; tone++)
+            {
+                result.Add(new VabProgramTone(program, tone, attributes[1], attributes[4], ReadTone(vabEntry.Slice(offset + (tone * ToneAttributeBytes), ToneAttributeBytes))));
+            }
+        }
+
+        if (compact != programCount)
+        {
+            throw new FormatException("VAB populated program count does not match header.");
+        }
+
+        return result;
+    }
+
+    /// <summary>Reads a declared tone independently of its priority.</summary>
+    /// <param name="tone">One 32-byte tone.</param>
+    /// <returns>Decoded parameters.</returns>
+    private static VabToneAttributes ReadTone(ReadOnlySpan<byte> tone) => new(
+        tone[0],
+        tone[ToneVolume],
+        tone[TonePan],
+        tone[ToneCenterNote],
+        (sbyte)tone[TonePitchShift],
+        tone[ToneMinNote],
+        tone[ToneMaxNote],
+        BinaryPrimitives.ReadInt16LittleEndian(tone.Slice(ToneProgramRef, 2)),
+        BinaryPrimitives.ReadInt16LittleEndian(tone.Slice(ToneSampleRef, 2)));
+
     /// <summary>Returns the first tone in the program's sixteen slots whose priority is non-zero, or null.</summary>
     /// <param name="toneTable">The full compacted tone table (programCount × 16 × 32 bytes).</param>
     /// <param name="programIndex">Zero-based program index.</param>

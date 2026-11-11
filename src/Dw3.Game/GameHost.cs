@@ -596,7 +596,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
         // Build the presentation from the source fighter ids of the active partner and enemy.
         if (_battleRenderer is null)
         {
-            _battleRenderer = new BattleRenderer(this);
+            _battleRenderer = new BattleRenderer(this, _dataRoot);
             var playerId = flow.State.Players[0]?.Id ?? 0;
             var enemyId = flow.State.Enemies.FirstOrDefault(enemy => enemy is not null)?.Id ?? 0;
             _battleRenderer.BuildModels(
