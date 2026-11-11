@@ -33,6 +33,32 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
     /// <summary>Gets or sets the consumer for asset families owned by the effect/audio renderers.</summary>
     public Func<BattleSequenceEvent, SequenceAcknowledgement>? AssetConsumer { get; set; }
 
+    /// <summary>Registers an audio consumer as the handler for <see cref="SoundRequestEvent"/> requests.
+    /// Chains with any previously registered asset consumer.
+    /// Also chains <see cref="CancelEffects"/> to stop all active voices when the action ends.</summary>
+    /// <param name="audio">The audio consumer to register.</param>
+    public void RegisterAudioConsumer(BattleAudioConsumer audio)
+    {
+        ArgumentNullException.ThrowIfNull(audio);
+        var previous = AssetConsumer;
+        AssetConsumer = request =>
+        {
+            SequenceAcknowledgement result = audio.Consume(request);
+            if (result != SequenceAcknowledgement.Unavailable)
+            {
+                return result;
+            }
+
+            return previous?.Invoke(request) ?? SequenceAcknowledgement.Unavailable;
+        };
+        var previousCancel = CancelEffects;
+        CancelEffects = () =>
+        {
+            audio.StopAll();
+            previousCancel?.Invoke();
+        };
+    }
+
     /// <inheritdoc/>
     public void Begin(ActionSequenceContext context)
     {

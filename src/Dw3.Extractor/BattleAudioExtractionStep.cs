@@ -60,13 +60,31 @@ internal static class BattleAudioExtractionStep
             SoundBankHeader header = SoundBankHeaderDecoder.Decode(headerArchive);
             PlayStationSequence sequence = PlayStationSequenceDecoder.Decode(headerArchive);
             IReadOnlyList<DecodedSpuAdpcmSample> samples = SoundBankBodyDecoder.Decode(headerArchive, bodyArchive);
+            VabToneAttributes?[] programs = DecodePrograms(headerArchive, header.ProgramCount);
             WriteFile(context, $"{OutputSubdirectory}/{source.Name}.mp", headerArchive);
             WriteFile(context, $"{OutputSubdirectory}/{source.Name}.mv", bodyArchive);
             WriteWaves(context, source.Name, samples);
-            banks.Add(new ExtractedSoundBank(source, header, sequence, headerArchive, bodyArchive, samples));
+            banks.Add(new ExtractedSoundBank(source, header, sequence, headerArchive, bodyArchive, samples, programs));
         }
 
         WriteManifest(context, banks);
+    }
+
+    /// <summary>Decodes the first active tone for each program index from the VAB entry in the MP archive.</summary>
+    /// <param name="headerArchive">Raw MP archive bytes.</param>
+    /// <param name="programCount">Number of programs declared by the VAB header.</param>
+    /// <returns>Array of VabToneAttributes indexed by program slot; null means no active tone.</returns>
+    private static VabToneAttributes?[] DecodePrograms(byte[] headerArchive, ushort programCount)
+    {
+        IReadOnlyList<ArchiveRange> archiveEntries = ModelArchive.ReadBounds(headerArchive);
+        if (archiveEntries.Count == 0 || archiveEntries[0].Start == archiveEntries[0].End)
+        {
+            return new VabToneAttributes?[128];
+        }
+
+        ArchiveRange vabRange = archiveEntries[0];
+        ReadOnlySpan<byte> vabEntry = headerArchive.AsSpan(vabRange.Start, vabRange.End - vabRange.Start);
+        return VabProgramTableDecoder.Decode(vabEntry, programCount);
     }
 
     /// <summary>Writes one extracted proprietary bank member below the data-pack image root.</summary>
@@ -100,7 +118,7 @@ internal static class BattleAudioExtractionStep
     {
         string path = context.GetImagePath($"{OutputSubdirectory}/manifest.json");
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        File.WriteAllText(path, JsonSerializer.Serialize(new { schema = "battle-audio-vab-v2", banks = banks.Select(BankManifest) }, IndentedJson) + "\n", new UTF8Encoding(false));
+        File.WriteAllText(path, JsonSerializer.Serialize(new { schema = "battle-audio-vab-v3", banks = banks.Select(BankManifest) }, IndentedJson) + "\n", new UTF8Encoding(false));
     }
 
     /// <summary>Builds one serializable manifest row without retaining a direct disc handle.</summary>
@@ -117,8 +135,34 @@ internal static class BattleAudioExtractionStep
         bodySha256 = Convert.ToHexStringLower(SHA256.HashData(bank.BodyArchive)),
         vab = bank.Header,
         sep = SequenceManifest(bank.Sequence),
+        programs = ProgramManifest(bank),
         samples = bank.Samples.Select((sample, index) => new { index, wavPath = $"{OutputSubdirectory}/{bank.Source.Name}/{index:D3}.wav", pcmSamples = sample.PcmSamples.Length, encodedBytes = sample.EncodedBytesConsumed, loops = sample.Loops, loopStartSample = sample.LoopStartSample }),
     };
+
+    /// <summary>Projects the program-to-tone table as a compact array of resolved entries for programs with an active tone and non-zero sample reference.</summary>
+    /// <param name="bank">Extracted bank with decoded program tones.</param>
+    /// <returns>Enumerable of JSON-serializable program entries.</returns>
+    private static IEnumerable<object> ProgramManifest(ExtractedSoundBank bank)
+    {
+        for (int index = 0; index < bank.Programs.Length; index++)
+        {
+            VabToneAttributes? tone = bank.Programs[index];
+            if (tone is null || tone.SampleRef <= 0)
+            {
+                continue;
+            }
+
+            yield return new
+            {
+                index,
+                sampleIndex = tone.SampleRef - 1,
+                volume = tone.Volume,
+                pan = tone.Pan,
+                centerNote = tone.CenterNote,
+                pitchShift = tone.PitchShift,
+            };
+        }
+    }
 
     /// <summary>Builds one stable SEP metadata projection without retaining event payload bytes.</summary>
     /// <param name="sequence">Validated SEP structural metadata.</param>
@@ -170,5 +214,6 @@ internal static class BattleAudioExtractionStep
         PlayStationSequence Sequence,
         byte[] HeaderArchive,
         byte[] BodyArchive,
-        IReadOnlyList<DecodedSpuAdpcmSample> Samples);
+        IReadOnlyList<DecodedSpuAdpcmSample> Samples,
+        VabToneAttributes?[] Programs);
 }
