@@ -1082,3 +1082,27 @@ src/Dw3.Formats/Battle/BattleActionScript.cs
 src/Dw3.Formats/Battle/BattleActionScriptDecoder.cs
 src/Dw3.Game/Conversion/BattleActionManifestLoader.cs
 tests/Dw3.Formats.Tests/Battle/ActionScriptDecoderTests.cs
+# B9-051 action-sequence executor, timeline and typed events
+src/Dw3.Data/Battle/BattleActionCommand.cs
+src/Dw3.Data/Battle/BattleActionOpcode.cs
+src/Dw3.Data/Battle/BattleActionScript.cs
+src/Dw3.Formats/Battle/BattleActionScriptJsonParser.cs
+src/Dw3.Game/BattleSequenceRunner.cs
+src/Dw3.Game/Conversion/BattleActionScriptJsonParser.cs
+src/Dw3.Game/Conversion/IActionScriptProvider.cs
+src/Dw3.Game/Conversion/PackActionScriptProvider.cs
+src/Dw3.Game/GameHost.BattleSequenceCoordinator.cs
+src/Dw3.Game/Presentation/BattleModelSequenceMotion.cs
+src/Dw3.Game/Simulation/ActionSequenceContext.cs
+src/Dw3.Game/Simulation/BattleActionTimeline.cs
+src/Dw3.Game/Simulation/BattleSequenceEvent.cs
+src/Dw3.Game/Simulation/CameraRequestEvent.cs
+src/Dw3.Game/Simulation/EffectModelEvent.cs
+src/Dw3.Game/Simulation/HitDispatchedEvent.cs
+src/Dw3.Game/Simulation/ModelMotionEvent.cs
+src/Dw3.Game/Simulation/SequenceEndedEvent.cs
+src/Dw3.Game/Simulation/SoundRequestEvent.cs
+src/Dw3.Game/Simulation/SpriteEffectEvent.cs
+src/Dw3.Game/Simulation/StageChangeEvent.cs
+tests/Dw3.Game.Tests/BattleActionTimelineTests.cs
+tests/Dw3.Game.Tests/BattleFlowActionSequenceTests.cs
