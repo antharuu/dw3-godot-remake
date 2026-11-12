@@ -202,7 +202,7 @@ internal static class TextExtractionStep
     /// in the data pack image tree, covering all styles, all eight CLUT palettes, and both atlas pages.
     /// </summary>
     /// <param name="context">Write context for the destination data pack.</param>
-    /// <param name="styles">Decoded font style metrics (determines the outer style loop count).</param>
+    /// <param name="styles">Decoded font styles, each supplying its own glyph CLUT origin.</param>
     /// <param name="atlas">Decoded font atlas providing page pixel data and CLUT palettes.</param>
     private static void WriteAtlasPngPages(DataPackWriteContext context, IReadOnlyList<FontStyleMetrics> styles, FontAtlas atlas)
     {
@@ -216,7 +216,7 @@ internal static class TextExtractionStep
                 {
                     string pngPath = $"font/font-style-{styleId}-palette-{paletteIdx}-page-{pageIdx}.png";
                     FontAtlasPage page = atlas.Pages[pageIdx];
-                    byte[] rgba = FontAtlasDecoder.RenderPage(page, atlas.Palettes[paletteIdx]);
+                    byte[] rgba = FontStyleAtlasRenderer.Render(page, atlas.Pages[0], styles[styleIdx].Glyphs[0], paletteIdx);
                     byte[] png = PngEncoder.Encode(page.Width, page.Height, rgba);
                     string fullPath = context.GetImagePath(pngPath);
                     Directory.CreateDirectory(Path.GetDirectoryName(fullPath)!);

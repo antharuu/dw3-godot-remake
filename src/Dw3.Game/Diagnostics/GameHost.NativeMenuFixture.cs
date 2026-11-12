@@ -21,5 +21,6 @@ public partial class GameHost
         _battleTextData = text;
         _battleItemsData = items;
         _battleRng = random;
+        _battleNameIds = new Dictionary<int, int>(flow.NameIds);
     }
 }
