@@ -812,7 +812,42 @@ public sealed class BattleRenderer : IDisposable
 
     /// <summary>Binds contact assets from the same local pack as the action provider.</summary>
     /// <param name="loader">Validated battle pack loader.</param>
-    internal void ConfigureActionAssets(Conversion.BattleDataPackLoader loader) => SequencePlayback.ConfigureImpact(new BattleImpactPlayback(_layer, _camera, loader));
+    internal void ConfigureActionAssets(Conversion.BattleDataPackLoader loader)
+    {
+        SequencePlayback.ConfigureImpact(new BattleImpactPlayback(_layer, _camera, loader));
+        SequencePlayback.ConfigureStage(new BattleSequenceStagePlayback(this, loader));
+    }
+
+    /// <summary>Gets the exact active arena retained while optional action stages play.</summary>
+    /// <returns>The active arena, or null before battle setup.</returns>
+    internal BattleModel? GetSequenceStage() => _stage;
+
+    /// <summary>Loads a stage for a sequence without resetting the battle entrance or camera.</summary>
+    /// <param name="path">Registered stage model path.</param>
+    /// <returns>A model posed at its first authored frame.</returns>
+    internal BattleModel LoadSequenceStage(string path)
+    {
+        var model = BattleModel.Load(_world, path);
+        model.Pose(model.MotionKeyframes(0)[0]);
+        return model;
+    }
+
+    /// <summary>Changes only the arena model, preserving the encounter's fighters and lighting.</summary>
+    /// <param name="model">Retained arena to display.</param>
+    internal void SwapSequenceStage(BattleModel model)
+    {
+        _stage?.Root.Hide();
+        _stage = model;
+        model.Root.Visible = true;
+    }
+
+    /// <summary>Applies an action-stage fade without hiding the HUD or restarting the entrance.</summary>
+    /// <param name="level">Stage and screen-background brightness.</param>
+    internal void SetSequenceStageFade(float level)
+    {
+        _stage?.SetModelColor(_entranceFade.StageColor() * level);
+        _environment.Environment.BackgroundColor = _entranceFade.Background(_stage?.StageBgColor ?? Colors.Black) * level;
+    }
 
     /// <summary>Gets a live model without changing product placement.</summary>
     /// <param name="fighter">Fighter identifier to inspect.</param>
