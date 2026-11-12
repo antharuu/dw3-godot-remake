@@ -1158,6 +1158,7 @@ src/Dw3.Game/Diagnostics/Battle/BattlePhysicalAttackProbe.cs
 src/Dw3.Game/Diagnostics/Battle/BattlePhysicalEnemyTechniqueCase.cs
 src/Dw3.Game/Diagnostics/Battle/BattlePhysicalRegistry.cs
 src/Dw3.Game/Diagnostics/Battle/BattlePhysicalTechniqueAudit.cs
+src/Dw3.Game/Diagnostics/Battle/BattlePhysicalRollProbe.cs
 src/Dw3.Game/Diagnostics/Battle/BattlePhysicalTechniqueProbe.cs
 tests/Dw3.Game.Tests/BattleDynamicSpriteTests.cs
 src/Dw3.Game/Presentation/BattleImpactPlayback.cs

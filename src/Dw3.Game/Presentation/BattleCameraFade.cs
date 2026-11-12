@@ -19,6 +19,11 @@ internal sealed class BattleCameraFade
     private float _fade = 1f;
     private float _fadeStep = 1f;
     private bool _sourceActive;
+    private float _rollFrom;
+    private float _rollTo;
+
+    /// <summary>Gets the view twist in radians, distinct from the camera-parent rotation.</summary>
+    public float Roll { get; private set; }
 
     /// <summary>Gets the current camera position in Godot world units.</summary>
     public Vector3 Position { get; private set; } = new(0, 6.5f, 22f);
@@ -35,12 +40,15 @@ internal sealed class BattleCameraFade
     /// <param name="projection">Destination projection distance.</param>
     /// <param name="fadeStep">Fraction of the move covered per 60 Hz frame.</param>
     /// <param name="snap">True to jump to the destination at once.</param>
-    public void Begin(Vector3 position, Vector3 target, float projection, float fadeStep, bool snap)
+    /// <param name="roll">View twist in radians around the viewing axis.</param>
+    public void Begin(Vector3 position, Vector3 target, float projection, float fadeStep, bool snap, float roll = 0)
     {
         _sourceActive = false;
         _positionFrom = Position;
         _targetFrom = Target;
         _projectionFrom = Projection;
+        _rollFrom = Roll;
+        _rollTo = roll;
         _positionTo = position;
         _targetTo = target;
         _projectionTo = projection;
@@ -51,6 +59,7 @@ internal sealed class BattleCameraFade
             Position = _positionTo;
             Target = _targetTo;
             Projection = _projectionTo;
+            Roll = _rollTo;
         }
     }
 
@@ -89,6 +98,7 @@ internal sealed class BattleCameraFade
         Position = _positionFrom.Lerp(_positionTo, t);
         Target = _targetFrom.Lerp(_targetTo, t);
         Projection = Mathf.Lerp(_projectionFrom, _projectionTo, t);
+        Roll = Mathf.Lerp(_rollFrom, _rollTo, t);
     }
 
     /// <summary>Composes the interpolated authored frame exactly once for the physical camera.</summary>
@@ -99,5 +109,6 @@ internal sealed class BattleCameraFade
         Position = new Vector3(position.X, position.Y, position.Z);
         Target = new Vector3(target.X, target.Y, target.Z);
         Projection = _source.Current.Projection;
+        Roll = _source.Current.Rz * Mathf.Tau / 4096f;
     }
 }

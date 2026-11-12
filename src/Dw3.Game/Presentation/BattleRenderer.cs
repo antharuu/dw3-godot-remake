@@ -587,7 +587,8 @@ public sealed class BattleRenderer : IDisposable
             new Vector3(reference.X, reference.Y, reference.Z),
             view.Projection,
             1f / Math.Max(1, frames),
-            snap);
+            snap,
+            view.Rz * Mathf.Tau / 4096f);
         ApplyCamera();
     }
 
@@ -1024,6 +1025,7 @@ public sealed class BattleRenderer : IDisposable
     {
         _camera.Position = _cameraFade.Position;
         _camera.LookAt(_cameraFade.Target, Vector3.Up);
+        _camera.RotateObjectLocal(Vector3.Back, -_cameraFade.Roll);
         _camera.Fov = BattleSceneMath.VerticalFovDegrees(Math.Max(1, (int)MathF.Round(_cameraFade.Projection)));
     }
 

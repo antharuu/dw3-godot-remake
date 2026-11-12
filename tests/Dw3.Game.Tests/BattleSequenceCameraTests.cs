@@ -42,6 +42,31 @@ public sealed class BattleSequenceCameraTests
         Assert.Equal(transition.Current.Vpx, split.Current.Vpx);
     }
 
+    [Theory]
+    [InlineData(-2048)]
+    [InlineData(96)]
+    public void ViewTwistInterpolatesIndependentlyOfParentRotation(short roll)
+    {
+        var camera = new BattleCameraFade();
+        var views = new BattleShotCameraViews { GetEnemyView = () => new(), GetFighterView = (_, _) => new() };
+        short[] words = [2, 1, 256, 512, 768, 0, 0, 0, 0, 0, 0, 128, 256, 512, roll, 300];
+        var script = new Dw3.Data.Battle.BattleActionScript(
+            1,
+            [new(Dw3.Data.Battle.BattleActionOpcode.Camera, words), new(Dw3.Data.Battle.BattleActionOpcode.End, [])]);
+        BattleActionValidation.Validate(script);
+        BattleSequenceCamera.Apply(new CameraRequestEvent(BattleSide.Player, words), views, camera);
+        camera.Step(1f / 60);
+        Assert.Equal((roll / 2) * MathF.Tau / 4096f, camera.Roll, 5);
+        camera.Step(1f / 60);
+        Assert.Equal(roll * MathF.Tau / 4096f, camera.Roll, 5);
+        var expected = BattleSceneMath.ComposeCameraPosition(BattleSequenceCamera.Resolve(new CameraRequestEvent(BattleSide.Player, words), views), false);
+        Assert.Equal(expected.X, camera.Position.X, 4);
+        Assert.Equal(expected.Y, camera.Position.Y, 4);
+        Assert.Equal(expected.Z, camera.Position.Z, 4);
+        camera.Begin(camera.Position, camera.Target, 280, 1, true);
+        Assert.Equal(0, camera.Roll);
+    }
+
     [Fact]
     public void ExplicitCutAndFadeChangePhysicalCameraState()
     {

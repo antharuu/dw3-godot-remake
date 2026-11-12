@@ -69,7 +69,7 @@ public static class BattleActionValidation
             return 3;
         }
 
-        return arguments.Count == 16 && arguments[0] >= 0 && arguments[1] == 1 && arguments[14] == 0 && arguments[15] > 0 ? 16 : -1;
+        return arguments.Count == 16 && arguments[0] >= 0 && arguments[1] == 1 && arguments[15] > 0 ? 16 : -1;
     }
 
     /// <summary>Gets a width for the qualified load/start subcommands.</summary>

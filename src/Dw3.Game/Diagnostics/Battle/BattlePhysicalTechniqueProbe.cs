@@ -22,6 +22,13 @@ internal sealed class BattlePhysicalTechniqueProbe : BattleProbe
     /// <inheritdoc/>
     protected override string FailureCode => "B9053";
 
+    /// <summary>Gets the selected technique for bounded private composition batches.</summary>
+    private static int TechniqueId => int.Parse(System.Environment.GetEnvironmentVariable("DW3_PHYSICAL_TECHNIQUE") ?? "123", System.Globalization.CultureInfo.InvariantCulture);
+
+    /// <summary>Gets one explicitly selected natural owner or the original retained first lot.</summary>
+    private static IEnumerable<int> CandidateFighters => System.Environment.GetEnvironmentVariable("DW3_PHYSICAL_FIGHTER") is { Length: > 0 } fighter
+        ? [int.Parse(fighter, System.Globalization.CultureInfo.InvariantCulture)] : Fighters;
+
     /// <inheritdoc/>
     protected override async Task ExecuteAsync()
     {
@@ -29,7 +36,7 @@ internal sealed class BattlePhysicalTechniqueProbe : BattleProbe
         using var loader = new BattleDataPackLoader(new DataPackReader(System.Environment.GetEnvironmentVariable("DW3_DATA_DIR") ?? throw new InvalidOperationException("Explicit pack required.")));
         string root = Host.PrepareCaptureDirectory("probe/battle-technique");
         BattlePhysicalRegistry.Write(loader, root);
-        foreach (int fighter in Fighters.Where(fighter => Selected("DW3_PHYSICAL_FIGHTER", fighter.ToString(System.Globalization.CultureInfo.InvariantCulture))))
+        foreach (int fighter in CandidateFighters.Where(fighter => fighter != 178 || TechniqueId != 123))
         {
             foreach (string mode in Modes.Where(mode => Selected("DW3_PHYSICAL_MODE", mode)))
             {
@@ -37,7 +44,7 @@ internal sealed class BattlePhysicalTechniqueProbe : BattleProbe
             }
         }
 
-        if (Selected("DW3_PHYSICAL_FIGHTER", "178"))
+        if (TechniqueId == 123 && Selected("DW3_PHYSICAL_FIGHTER", "178"))
         {
             foreach (string mode in Modes.Where(mode => Selected("DW3_PHYSICAL_MODE", mode)))
             {
@@ -81,14 +88,14 @@ internal sealed class BattlePhysicalTechniqueProbe : BattleProbe
         Host.AdoptSheetFighter(player.Id);
         Host.Renderer.ConfigureActionAssets(loader);
         Host.Renderer.SequencePlayback.AssetConsumer = request => request is SoundRequestEvent ? SequenceAcknowledgement.Applied : SequenceAcknowledgement.Unavailable;
-        var technique = BattleSetupFactory.ToTech(loader.LoadTechs().Techs[123]);
+        var technique = BattleSetupFactory.ToTech(loader.LoadTechs().Techs[TechniqueId]);
         technique.Accuracy = mode == "miss" ? 1 : technique.Accuracy;
-        flow.PlayerTechniques = [new BattleTechnique(123, "extracted", technique)];
+        flow.PlayerTechniques = [new BattleTechnique(TechniqueId, "extracted", technique)];
         string captures = Path.Combine(root, $"{fighter}-{mode}");
         Directory.CreateDirectory(captures);
         await BattleProbeCapture.CaptureAsync(Host, captures, "before.png");
         var rng = new BattleAttackProofRng(mode == "miss" ? 127 : 0);
-        ProbeRequirement.Require(flow.Choose(BattleCommand.Technique, 123, rng), "technique refused");
+        ProbeRequirement.Require(flow.Choose(BattleCommand.Technique, TechniqueId, rng), "technique refused");
         ProbeRequirement.Require(flow.State.LastHitEvents.All(hit => hit.Landed == (mode != "miss")), "wrong branch");
         await PlayAsync(loader, rng, captures);
         ProbeRequirement.Require(player.Mp == 9000 - technique.Mp, "technique debited more than once");
@@ -111,7 +118,7 @@ internal sealed class BattlePhysicalTechniqueProbe : BattleProbe
         enemy.Actions = [new BattleTableAction(1, 0, 0)];
         flow.EnemyAct(rng);
         await PlayAsync(loader, rng, captures + "/reply");
-        ProbeRequirement.Require(flow.Choose(BattleCommand.Technique, 123, rng), "repeat refused");
+        ProbeRequirement.Require(flow.Choose(BattleCommand.Technique, TechniqueId, rng), "repeat refused");
         await PlayAsync(loader, rng, captures + "/repeat");
     }
 
