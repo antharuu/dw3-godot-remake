@@ -66,6 +66,45 @@ public sealed class BattleSequencePackPlaybackTests : IDisposable
     }
 
     [Fact]
+    public void PhysicalMultiHitTechnique_UsesItsDataSelectedScriptAndFrozenTarget()
+    {
+        WritePack();
+        using var loader = new BattleDataPackLoader(new DataPackReader(_root));
+        var flow = BattleFlowActionSequenceTests.BuildFlowOnPlayerTurn();
+        var technique = new TechData
+        {
+            Accuracy = 100,
+            Effect = BattleTechniqueEffect.MultiHit,
+            HitCount = 4,
+            Power = 1,
+            Script = 5,
+        };
+        flow.PlayerTechniques = [new BattleTechnique(289, "physical-multi", technique)];
+        var backend = new SequenceTestPlayback { Ready = true, AcceptAssets = true, ChildrenReady = true };
+        var runner = new BattleSequenceRunner(flow, new PackActionScriptProvider(loader));
+        runner.SetPlayback(backend);
+
+        Assert.True(flow.Choose(BattleCommand.Technique, 289, new CountingRng()));
+        ActionSequenceContext context = Assert.IsType<ActionSequenceContext>(flow.PendingSequenceContext);
+        Assert.Equal(10, context.AttackerId);
+        Assert.Equal(20, context.TargetId);
+        Assert.Equal(5, context.ScriptSelector);
+        Assert.Equal(4, context.HitEvents.Count);
+        Assert.All(context.HitEvents, hit => Assert.Equal(BattleTechniqueEffect.MultiHit, hit.Effect));
+
+        for (int tick = 0; tick < 10 && flow.Phase == BattleFlowPhase.ActionSequence; tick++)
+        {
+            runner.Tick();
+        }
+
+        Assert.Null(runner.Failure);
+        Assert.NotEqual(BattleFlowPhase.ActionSequence, flow.Phase);
+        var dispatch = Assert.Single(backend.Applied.OfType<HitDispatchedEvent>());
+        Assert.Equal(20, dispatch.TargetId);
+        Assert.Equal(4, dispatch.HitEvents.Count);
+    }
+
+    [Fact]
     public void CancelAndReentryDoNotPublishOrphanedEvents()
     {
         WritePack();
