@@ -59,6 +59,7 @@ public static class BattleActionScriptDecoder
         StageOpcode => ReadStageCommand(data, ref cursor, end, entry),
         CameraOpcode => ReadCameraCommand(data, ref cursor, end, entry),
         EffectModelOpcode => ReadEffectModelCommand(data, ref cursor, end, entry),
+        7 => new BattleActionCommand(BattleActionOpcode.Fade, ReadArguments(data, ref cursor, end, entry, raw, 2)),
         SoundOpcode => new BattleActionCommand(BattleActionOpcode.Sound, ReadArguments(data, ref cursor, end, entry, raw, 2)),
         WaitOpcode => new BattleActionCommand(BattleActionOpcode.Wait, ReadArguments(data, ref cursor, end, entry, raw, 1)),
         _ => throw new FormatException($"battle action script entry {entry} has unsupported opcode 0x{raw:X}"),
@@ -77,8 +78,9 @@ public static class BattleActionScriptDecoder
         return subcommand switch
         {
             0 => new BattleActionCommand(BattleActionOpcode.Model, [subcommand, actor, ReadWord(data, ref cursor, end, entry, "model motion")]),
-            1 or 2 => new BattleActionCommand(BattleActionOpcode.Model, [subcommand, actor]),
-            3 => new BattleActionCommand(BattleActionOpcode.Model, [subcommand, actor, .. ReadArguments(data, ref cursor, end, entry, ModelOpcode, 4)]),
+            1 or 2 or 9 => new BattleActionCommand(BattleActionOpcode.Model, [subcommand, actor]),
+            3 or 4 => new BattleActionCommand(BattleActionOpcode.Model, [subcommand, actor, .. ReadArguments(data, ref cursor, end, entry, ModelOpcode, 4)]),
+            6 => new BattleActionCommand(BattleActionOpcode.Model, [subcommand, actor, ReadWord(data, ref cursor, end, entry, "spawned fighter")]),
             7 or 8 => new BattleActionCommand(BattleActionOpcode.Model, [subcommand, actor, ReadWord(data, ref cursor, end, entry, "model travel time")]),
             5 => ReadJumpCommand(data, ref cursor, end, entry, subcommand, actor),
             _ => throw new FormatException($"battle action script entry {entry} has unsupported model subcommand {subcommand}"),

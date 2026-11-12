@@ -24,6 +24,9 @@ public enum BattleActionOpcode
     /// <summary>Loads or triggers a three-dimensional effect model. Raw opcode 6.</summary>
     EffectModel = 6,
 
+    /// <summary>Requests a screen fade whose rendering backend may remain unavailable.</summary>
+    Fade = 7,
+
     /// <summary>Selects a battle sound and its playback timing without resolving the audio payload.</summary>
     Sound = 10,
 

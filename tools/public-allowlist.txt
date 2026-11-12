@@ -826,6 +826,7 @@ tests/Dw3.Game.Tests/BattleGrowthVectorTests.cs
 tests/Dw3.Game.Tests/BattleMotionMachineVectorGenerator.cs
 tests/Dw3.Game.Tests/BattleMotionMachineVectorHarness.cs
 tests/Dw3.Game.Tests/BattleMotionMachineVectorTests.cs
+tests/Dw3.Game.Tests/BattleAdditionalActorTimelineTests.cs
 tests/Dw3.Game.Tests/BattleMotionCompletionTests.cs
 tests/Dw3.Game.Tests/BattleModifierTests.cs
 tests/Dw3.Game.Tests/BattleMotionCadenceTraceTests.cs
@@ -1161,6 +1162,10 @@ src/Dw3.Game/Diagnostics/Battle/BattlePhysicalEnemyTechniqueCase.cs
 src/Dw3.Game/Diagnostics/Battle/BattlePhysicalRegistry.cs
 src/Dw3.Game/Diagnostics/Battle/BattlePhysicalTechniqueAudit.cs
 src/Dw3.Game/Diagnostics/Battle/BattlePhysicalRollProbe.cs
+src/Dw3.Game/Diagnostics/Battle/BattlePhysicalActorProbe.cs
+src/Dw3.Game/Presentation/BattleSequenceActorPlayback.cs
+src/Dw3.Game/Simulation/ModelControlEvent.cs
+src/Dw3.Game/Simulation/ScreenFadeEvent.cs
 src/Dw3.Game/Diagnostics/Battle/BattlePhysicalStageCancellation.cs
 src/Dw3.Game/Diagnostics/Battle/BattlePhysicalTechniqueProbe.cs
 tests/Dw3.Game.Tests/BattleDynamicSpriteTests.cs

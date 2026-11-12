@@ -43,6 +43,11 @@ internal static class BattlePhysicalEnemyTechniqueCase
         player.Hp = player.MaxHp = mode.StartsWith("fatal", StringComparison.Ordinal) ? 1 : 9000;
         var tech = BattleSetupFactory.ToTech(loader.LoadTechs().Techs[identity.Technique]);
         tech.Accuracy = mode == "miss" ? 1 : tech.Accuracy;
+        if (slot == 0)
+        {
+            flow.EnemyBasicTech = tech;
+        }
+
         flow.Techs = new Dictionary<int, Dw3Production.Simulation.TechData> { [identity.Technique] = tech };
         flow.State.Techs = flow.Techs;
         if (mode == "fatal-final")

@@ -45,12 +45,8 @@ public static class BattleActionValidation
             BattleActionOpcode.HitDispatch when a is [>= 0 and <= 5] => 1,
             BattleActionOpcode.Wait when a is [>= 0] => 1,
             BattleActionOpcode.Sound when a is [>= 0, >= 0] => 2,
-            BattleActionOpcode.Model when a is [0, >= 0 and <= 6, >= 0] => 3,
-            BattleActionOpcode.Model when a is [1 or 2, >= 0 and <= 6] => 2,
-            BattleActionOpcode.Model when a is [3, >= 0 and <= 6, _, _, _, >= 0] => 6,
-            BattleActionOpcode.Model when a is [7 or 8, >= 0 and <= 6, >= 0] => 3,
-            BattleActionOpcode.Model when a is [5, >= 0 and <= 6, 0 or 1 or 2 or 3 or 5 or 6] => 3,
-            BattleActionOpcode.Model when a is [5, >= 0 and <= 6, 4, _] => 4,
+            BattleActionOpcode.Fade when a is [0 or 1, >= 0] => 2,
+            BattleActionOpcode.Model => ModelCount(a),
             BattleActionOpcode.SpriteEffect => FamilyCount(a, 5, 2),
             BattleActionOpcode.EffectModel => FamilyCount(a, 8, 2),
             BattleActionOpcode.Stage => FamilyCount(a, 4, 2),
@@ -58,6 +54,23 @@ public static class BattleActionValidation
             _ => -1,
         };
     }
+
+    /// <summary>Checks the exact supported widths of fighter lifecycle and movement commands.</summary>
+    /// <param name="arguments">Source model operands.</param>
+    /// <returns>Qualified width, or minus one.</returns>
+    private static int ModelCount(IReadOnlyList<short> arguments) => arguments switch
+    {
+        [0, >= 0 and <= 6, >= 0] => 3,
+        [1 or 2, >= 0 and <= 6] => 2,
+        [9, 2 or 3] => 2,
+        [6, 2 or 3, > 0] => 3,
+        [4, >= 0 and <= 4, _, _, _, >= 0] => 6,
+        [3, >= 0 and <= 6, _, _, _, >= 0] => 6,
+        [7 or 8, >= 0 and <= 6, >= 0] => 3,
+        [5, >= 0 and <= 6, 0 or 1 or 2 or 3 or 5 or 6] => 3,
+        [5, >= 0 and <= 6, 4, _] => 4,
+        _ => -1,
+    };
 
     /// <summary>Validates preset range and positive projection before requesting a physical camera.</summary>
     /// <param name="arguments">Camera operands.</param>

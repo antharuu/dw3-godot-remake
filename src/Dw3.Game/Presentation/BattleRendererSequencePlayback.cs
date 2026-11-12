@@ -16,6 +16,7 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
     private BattleReactionPlayback? _reaction;
     private BattleImpactPlayback? _impact;
     private BattleSequenceStagePlayback? _stage;
+    private BattleSequenceActorPlayback? _actors;
     private Action<bool>? _finishAudio;
 
     /// <summary>Initializes a new instance of the <see cref="BattleRendererSequencePlayback"/> class.</summary>
@@ -63,6 +64,14 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
     {
         _stage?.Clear();
         _stage = stage;
+    }
+
+    /// <summary>Installs the separate fighter lifecycle consumer without rebinding the active roster.</summary>
+    /// <param name="actors">Scene-bound actor consumer.</param>
+    public void ConfigureActors(BattleSequenceActorPlayback actors)
+    {
+        _actors?.Clear();
+        _actors = actors;
     }
 
     /// <summary>Binds the same pack provider used by the parent runner.</summary>
@@ -204,6 +213,7 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
         _reaction?.Step();
         _impact?.Step();
         _stage?.Step();
+        _actors?.Step();
         foreach (var pair in _moves)
         {
             if (!pair.Value.IsComplete)
@@ -236,6 +246,7 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
         _reaction?.Clear();
         _impact?.Clear();
         _stage?.Clear();
+        _actors?.Clear();
         foreach (var pair in _homes)
         {
             pair.Key.Root.Position = pair.Value.Position;
@@ -272,6 +283,8 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
                 return ApplyJump(jump);
             case ModelTravelEvent travel:
                 return ApplyTravel(travel);
+            case ModelControlEvent model:
+                return ApplyModelControl(model);
             case CameraRequestEvent camera:
                 _renderer.OnSequenceCameraRequest(camera);
                 return SequenceAcknowledgement.Applied;
@@ -307,7 +320,7 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
             return SequenceAcknowledgement.Pending;
         }
 
-        var target = _homes[model].Position;
+        var target = _homes.GetValueOrDefault(model).Position;
         if (a[0] == 3)
         {
             target = new Godot.Vector3(a[2], a[3], a[4]) / BattleSceneMath.Ps1UnitsPerGodotUnit;
@@ -321,6 +334,21 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
         _moves[model] = move;
         model.Root.Position = move.Position;
         return SequenceAcknowledgement.Applied;
+    }
+
+    /// <summary>Removes all motion and travel references before deleting an additional fighter.</summary>
+    /// <param name="request">Fighter lifecycle or rotation request.</param>
+    /// <returns>The independent actor consumer's acknowledgement.</returns>
+    private SequenceAcknowledgement ApplyModelControl(ModelControlEvent request)
+    {
+        if (request.Arguments[0] == 9 && _fighters.SequenceActorModel(request.AttackerSide == BattleSide.Enemy, request.Arguments[1]) is { } model)
+        {
+            _moves.Remove(model);
+            _jumps.Remove(model);
+            _motionStarts.Remove(model);
+        }
+
+        return _actors?.Consume(request) ?? SequenceAcknowledgement.Unavailable;
     }
 
     /// <summary>Starts the qualified kind-four jump on the requested physical actor.</summary>

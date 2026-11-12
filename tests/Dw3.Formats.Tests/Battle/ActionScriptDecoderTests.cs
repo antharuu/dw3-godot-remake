@@ -8,6 +8,27 @@ namespace Dw3.Formats.Tests.Battle;
 /// <summary>Tests the bounded decoding of fighter action-script archive entries.</summary>
 public sealed class ActionScriptDecoderTests
 {
+    [Fact]
+    public void DecodeKeepsAdditionalFighterLifecycleBoundaries()
+    {
+        byte[] archive = Archive(Script(2, 6, 2, 42, 2, 4, 2, 0, 1024, 0, 0, 2, 9, 2, 255));
+        var script = BattleActionScriptDecoder.Decode(archive, 0);
+        Assert.Equal(4, script.Commands.Count);
+        Assert.Equal<short>([6, 2, 42], script.Commands[0].Arguments);
+        Assert.Equal<short>([4, 2, 0, 1024, 0, 0], script.Commands[1].Arguments);
+        Assert.Equal<short>([9, 2], script.Commands[2].Arguments);
+        Assert.Equal(BattleActionOpcode.AlternateEnd, script.Commands[3].Opcode);
+    }
+
+    [Fact]
+    public void DecodePreservesFadeWithoutClaimingAConsumer()
+    {
+        var script = BattleActionScriptDecoder.Decode(Archive(Script(7, 0, 12, 255)), 0);
+        Assert.Equal((BattleActionOpcode)7, script.Commands[0].Opcode);
+        Assert.Equal<short>([0, 12], script.Commands[0].Arguments);
+        Assert.Equal(BattleActionOpcode.AlternateEnd, script.Commands[1].Opcode);
+    }
+
     // ── RED fixtures (must FAIL before the fix and PASS after) ───────────────
 
     /// <summary>Rejects a camera command whose mode word is missing (truncated to opcode + time only).</summary>

@@ -10,6 +10,7 @@ internal sealed class BattleFighterRoster
 {
     private readonly List<BattleModel> _models = [];
     private readonly HashSet<int> _probeHiddenFighters = [];
+    private readonly Dictionary<(bool Enemy, int Actor), BattleModel> _sequenceActors = [];
 
     /// <summary>Gets the built models in slot order.</summary>
     public IReadOnlyList<BattleModel> Models => _models;
@@ -28,6 +29,7 @@ internal sealed class BattleFighterRoster
     public void Clear()
     {
         _probeHiddenFighters.Clear();
+        _sequenceActors.Clear();
         foreach (var model in _models)
         {
             model.Root.QueueFree();
@@ -49,13 +51,50 @@ internal sealed class BattleFighterRoster
         Find(fighterId) ?? throw new InvalidOperationException($"battle model fighter={fighterId} is not built");
 
     /// <summary>Resolves the fighter model that is the actor of a sequence event.
-    /// For the attacker side: actor 0 = that side's model, actor != 0 = the other side.
-    /// Returns null when the resolved model is not built.</summary>
+    /// For the attacker side, actors zero and one select its retained model, actor four selects
+    /// the opponent, and actors two and three resolve separately loaded action-local fighters.
+    /// Returns null when the requested actor has not been built.</summary>
     /// <param name="attackerIsEnemy">Whether the script's owner is the enemy side.</param>
     /// <param name="actor">Raw actor index from the script.</param>
     /// <returns>The resolved model, or null.</returns>
-    public BattleModel? SequenceActorModel(bool attackerIsEnemy, int actor) =>
-        attackerIsEnemy == (actor == 0) ? Enemy : Player;
+    public BattleModel? SequenceActorModel(bool attackerIsEnemy, int actor) => actor switch
+    {
+        0 or 1 => attackerIsEnemy ? Enemy : Player,
+        4 => attackerIsEnemy ? Player : Enemy,
+        _ => _sequenceActors.GetValueOrDefault((attackerIsEnemy, actor)),
+    };
+
+    /// <summary>Registers a separately loaded fighter in an action-local slot without replacing either combatant.</summary>
+    /// <param name="enemy">Owning script side.</param>
+    /// <param name="actor">Additional actor slot.</param>
+    /// <param name="model">Decoded fighter model.</param>
+    public void AddSequenceActor(bool enemy, int actor, BattleModel model)
+    {
+        _sequenceActors.Add((enemy, actor), model);
+        _models.Add(model);
+    }
+
+    /// <summary>Destroys one action-local model, leaving the retained active combatants untouched.</summary>
+    /// <param name="enemy">Owning script side.</param>
+    /// <param name="actor">Action-local slot to release.</param>
+    public void RemoveSequenceActor(bool enemy, int actor)
+    {
+        if (_sequenceActors.Remove((enemy, actor), out var model))
+        {
+            _models.Remove(model);
+            model.Root.Visible = false;
+            model.Root.QueueFree();
+        }
+    }
+
+    /// <summary>Clears additional actors after either normal End or cancellation.</summary>
+    public void ClearSequenceActors()
+    {
+        foreach (var key in _sequenceActors.Keys.ToArray())
+        {
+            RemoveSequenceActor(key.Enemy, key.Actor);
+        }
+    }
 
     /// <summary>Poses every model at one source frame.</summary>
     /// <param name="frame">Source animation frame.</param>

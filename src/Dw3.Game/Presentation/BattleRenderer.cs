@@ -816,11 +816,26 @@ public sealed class BattleRenderer : IDisposable
     {
         SequencePlayback.ConfigureImpact(new BattleImpactPlayback(_layer, _camera, loader));
         SequencePlayback.ConfigureStage(new BattleSequenceStagePlayback(this, loader));
+        SequencePlayback.ConfigureActors(new BattleSequenceActorPlayback(this, _fighters, loader));
     }
 
     /// <summary>Gets the exact active arena retained while optional action stages play.</summary>
     /// <returns>The active arena, or null before battle setup.</returns>
     internal BattleModel? GetSequenceStage() => _stage;
+
+    /// <summary>Loads an additional fighter without replacing a combatant or silently using a capsule.</summary>
+    /// <param name="path">Registered fighter model document.</param>
+    /// <returns>A hidden model awaiting authored placement and visibility commands.</returns>
+    internal BattleModel LoadSequenceActor(string path)
+    {
+        var model = BattleModel.Load(_world, path);
+        model.Root.Visible = false;
+        model.Step(0);
+        return model;
+    }
+
+    /// <summary>Applies the encounter light set to newly loaded action-local fighters.</summary>
+    internal void RefreshSequenceLighting() => ApplyStageLights();
 
     /// <summary>Loads a stage for a sequence without resetting the battle entrance or camera.</summary>
     /// <param name="path">Registered stage model path.</param>
