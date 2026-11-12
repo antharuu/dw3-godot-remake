@@ -1024,8 +1024,8 @@ public sealed class BattleRenderer : IDisposable
     private void ApplyCamera()
     {
         _camera.Position = _cameraFade.Position;
-        _camera.LookAt(_cameraFade.Target, Vector3.Up);
-        _camera.RotateObjectLocal(Vector3.Back, -_cameraFade.Roll);
+        _camera.Basis = Basis.LookingAt(_cameraFade.Target - _cameraFade.Position, Vector3.Up)
+            * new Basis(Vector3.Back, -_cameraFade.Roll);
         _camera.Fov = BattleSceneMath.VerticalFovDegrees(Math.Max(1, (int)MathF.Round(_cameraFade.Projection)));
     }
 

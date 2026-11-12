@@ -67,6 +67,12 @@ internal sealed class BattlePhysicalRollProbe : BattleProbe
         consumer.Consume(new CameraRequestEvent(BattleSide.Player, zero));
         renderer.StepCamera(10);
         var unrolled = renderer.CameraForProbe.Transform;
+        for (int sample = 0; sample < 2000; sample++)
+        {
+            renderer.StepCamera(0);
+        }
+
+        ProbeRequirement.Require(renderer.CameraForProbe.Transform.IsEqualApprox(unrolled), "repeated camera application changed its basis");
         renderer.RasterForProbe.Rebuild(renderer.CameraForProbe, consumer.DiagnosticRoster.Models);
         await BattleProbeCapture.CaptureRawAsync(Host, root, $"{pair.Technique}-{pair.Fighter}-zero.png");
         consumer.Finish(true);

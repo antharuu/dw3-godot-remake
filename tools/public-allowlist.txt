@@ -826,6 +826,7 @@ tests/Dw3.Game.Tests/BattleGrowthVectorTests.cs
 tests/Dw3.Game.Tests/BattleMotionMachineVectorGenerator.cs
 tests/Dw3.Game.Tests/BattleMotionMachineVectorHarness.cs
 tests/Dw3.Game.Tests/BattleMotionMachineVectorTests.cs
+tests/Dw3.Game.Tests/BattleMotionCompletionTests.cs
 tests/Dw3.Game.Tests/BattleModifierTests.cs
 tests/Dw3.Game.Tests/BattleMotionCadenceTraceTests.cs
 tests/Dw3.Game.Tests/BattleSkeletonBlendTests.cs

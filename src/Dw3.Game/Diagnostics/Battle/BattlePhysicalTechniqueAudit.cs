@@ -42,7 +42,7 @@ internal sealed class BattlePhysicalTechniqueAudit
         int sprites = _script.Commands.Count(command => command.Opcode == BattleActionOpcode.SpriteEffect && command.Arguments[0] == 0);
         ProbeRequirement.Require(_requests.OfType<SpriteEffectEvent>().Count(sprite => sprite.Arguments[0] == 0) == sprites, "authored contacts not consumed");
         ProbeRequirement.Require(_homes.All(pair => pair.Key.Root.Position.IsEqualApprox(pair.Value)), "physical homes not restored");
-        ProbeRequirement.Require(_host.Renderer.CameraForProbe.Transform.IsEqualApprox(_camera), "camera not restored");
+        ProbeRequirement.Require(_host.Renderer.CameraForProbe.Transform.IsEqualApprox(_camera), $"camera not restored: expected={_camera} actual={_host.Renderer.CameraForProbe.Transform}");
         ProbeRequirement.Require(_state.All(item => item.Fighter.Hp == item.Hp && item.Fighter.Mp == item.Mp), "playback changed HP/MP");
         _host.Renderer.SequencePlayback.DiagnosticConsumed = null;
         _host.Renderer.SequencePlayback.DiagnosticReaction = null;

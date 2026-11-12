@@ -11,6 +11,7 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
     private readonly Dictionary<BattleModel, BattleJumpMotion> _jumps = [];
     private readonly Dictionary<BattleModel, (Godot.Vector3 Position, int Motion, int Idle)> _homes = [];
     private readonly Dictionary<BattleModel, BattleTravelMotion> _moves = [];
+    private readonly Dictionary<BattleModel, int> _motionStarts = [];
     private ActionSequenceContext? _context;
     private BattleReactionPlayback? _reaction;
     private BattleImpactPlayback? _impact;
@@ -119,7 +120,8 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
     public bool MotionReady(BattleSide side, int actor)
     {
         var model = _fighters.SequenceActorModel(side == BattleSide.Enemy, actor);
-        return model?.Motion?.MotionDone == true;
+        return model?.Motion is { } motion
+            && (motion.MotionDone || (_motionStarts.TryGetValue(model, out int start) && motion.CompletionCount > start));
     }
 
     /// <inheritdoc/>
@@ -175,6 +177,11 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
         }
 
         model.ApplySubcommand(request.Subcommand, request.Motion);
+        if (request.Subcommand == 0 && request.Motion > 0 && model.Motion is { } motion)
+        {
+            _motionStarts[model] = motion.CompletionCount;
+        }
+
         return SequenceAcknowledgement.Applied;
     }
 
@@ -227,6 +234,7 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
         _homes.Clear();
         _jumps.Clear();
         _moves.Clear();
+        _motionStarts.Clear();
         _context = null;
         _renderer.SetOpeningCamera();
         _fighters.RestoreVisibility();

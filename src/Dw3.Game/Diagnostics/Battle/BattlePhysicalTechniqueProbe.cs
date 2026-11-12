@@ -40,7 +40,14 @@ internal sealed class BattlePhysicalTechniqueProbe : BattleProbe
         {
             foreach (string mode in Modes.Where(mode => Selected("DW3_PHYSICAL_MODE", mode)))
             {
-                await RunCaseAsync(loader, root, fighter, mode);
+                if (System.Environment.GetEnvironmentVariable("DW3_PHYSICAL_ENEMY") == "1")
+                {
+                    await BattlePhysicalEnemyTechniqueCase.RunAsync(Host, loader, root, mode, (rng, captures) => PlayAsync(loader, rng, captures), (fighter, TechniqueId));
+                }
+                else
+                {
+                    await RunCaseAsync(loader, root, fighter, mode);
+                }
             }
         }
 
