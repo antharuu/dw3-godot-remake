@@ -132,6 +132,20 @@ public sealed class BattleActionTimeline
         return new SoundRequestEvent(_context.AttackerSide, index, duration);
     }
 
+    /// <summary>Substitutes only the dynamic sprite resource while preserving authored coordinates.</summary>
+    /// <param name="arguments">Validated source operands.</param>
+    /// <returns>Detached operands resolved from the committed technique.</returns>
+    private short[] ResolveSprite(IReadOnlyList<short> arguments)
+    {
+        short[] resolved = [.. arguments];
+        if (resolved[1] == 9999)
+        {
+            resolved[1] = checked((short)_context.ScriptEffect);
+        }
+
+        return resolved;
+    }
+
     /// <summary>Builds the typed request without mutating rules or drawing RNG.</summary>
     /// <param name="command">Validated command.</param>
     /// <returns>Request, or null for a physical wait or explicit delay.</returns>
@@ -147,7 +161,7 @@ public sealed class BattleActionTimeline
             BattleActionOpcode.Model when a is [5, var actor, var kind, ..] => new ModelJumpEvent(_context.AttackerSide, actor, kind, a.Count == 4 ? a[3] : 0),
             BattleActionOpcode.Model when a[0] is 3 or 7 or 8 => new ModelTravelEvent(_context.AttackerSide, a),
             BattleActionOpcode.Model => new ModelMotionEvent(_context.AttackerSide, a[0], a[1], a.Count == 3 ? a[2] : 0),
-            BattleActionOpcode.SpriteEffect => new SpriteEffectEvent(_context.AttackerSide, a),
+            BattleActionOpcode.SpriteEffect => new SpriteEffectEvent(_context.AttackerSide, ResolveSprite(a)),
             BattleActionOpcode.Stage => new StageChangeEvent(a),
             BattleActionOpcode.Camera => new CameraRequestEvent(_context.AttackerSide, a),
             BattleActionOpcode.EffectModel => new EffectModelEvent(_context.AttackerSide, a),

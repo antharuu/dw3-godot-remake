@@ -17,6 +17,9 @@ public sealed record ActionSequenceContext(
     /// <summary>Gets the resolved optional action stage, minus one for no stage change.</summary>
     public int ScriptStage { get; init; } = -1;
 
+    /// <summary>Gets the frozen technique sprite selector used by the dynamic effect marker.</summary>
+    public int ScriptEffect { get; init; }
+
     /// <summary>Gets the technique's frozen action-sound index.</summary>
     public int ScriptSound { get; init; }
 
@@ -46,6 +49,7 @@ public sealed record ActionSequenceContext(
         return new ActionSequenceContext(side, attackerId, targetId, [.. hitEvents], tech.Script)
         {
             ScriptStage = tech.ScriptStage == 0 ? -1 : tech.ScriptStage,
+            ScriptEffect = tech.ScriptEffect,
             ScriptSound = tech.ScriptSound,
             SoundResults = CaptureSoundResults(hitEvents),
         };

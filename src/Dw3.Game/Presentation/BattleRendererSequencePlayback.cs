@@ -46,9 +46,18 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
     /// <summary>Gets or sets the consumer for asset families owned by the effect/audio renderers.</summary>
     public Func<BattleSequenceEvent, SequenceAcknowledgement>? AssetConsumer { get; set; }
 
+    /// <summary>Gets or sets the observer of physically started and completed target reactions.</summary>
+    public Action<BattleHitEvent, int, int, bool>? DiagnosticReaction { get; set; }
+
+    /// <summary>Gets or sets the offscreen observer of physically acknowledged requests.</summary>
+    public Action<BattleSequenceEvent>? DiagnosticConsumed { get; set; }
+
     /// <summary>Binds the same pack provider used by the parent runner.</summary>
     /// <param name="scripts">Validated pack-backed action scripts.</param>
-    public void ConfigureReactions(IActionScriptProvider scripts) => _reaction = new BattleReactionPlayback(scripts, this);
+    public void ConfigureReactions(IActionScriptProvider scripts) => _reaction = new BattleReactionPlayback(scripts, this)
+    {
+        DiagnosticReaction = (hit, target, selector, complete) => DiagnosticReaction?.Invoke(hit, target, selector, complete),
+    };
 
     /// <summary>Registers the renderer-owned contact effect consumer without replacing other families.</summary>
     /// <param name="impact">Contact consumer bound to the same validated pack.</param>
@@ -130,29 +139,13 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
     /// <inheritdoc/>
     public SequenceAcknowledgement Consume(BattleSequenceEvent request)
     {
-        switch (request)
+        var result = ApplyRequest(request);
+        if (result == SequenceAcknowledgement.Applied)
         {
-            case StageChangeEvent stage:
-                return ConsumeImpact(stage);
-            case SpriteEffectEvent sprite:
-                return ConsumeImpact(sprite);
-            case ModelMotionEvent motion:
-                return ApplyMotion(motion);
-            case ModelJumpEvent jump:
-                return ApplyJump(jump);
-            case ModelTravelEvent travel:
-                return ApplyTravel(travel);
-            case CameraRequestEvent camera:
-                _renderer.OnSequenceCameraRequest(camera);
-                return SequenceAcknowledgement.Applied;
-            case HitDispatchedEvent hit when hit.DispatchIndex is >= 1 and <= 4:
-            case SequenceEndedEvent:
-                return SequenceAcknowledgement.Applied;
-            case HitDispatchedEvent hit:
-                return _reaction?.Begin(hit) ?? SequenceAcknowledgement.Unavailable;
-            default:
-                return AssetConsumer?.Invoke(request) ?? SequenceAcknowledgement.Unavailable;
+            DiagnosticConsumed?.Invoke(request);
         }
+
+        return result;
     }
 
     /// <summary>Advances menu ownership only outside action playback.</summary>
@@ -237,6 +230,36 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
         _context = null;
         _renderer.SetOpeningCamera();
         _fighters.RestoreVisibility();
+    }
+
+    /// <summary>Applies a request to its actual physical owner.</summary>
+    /// <param name="request">Frozen request.</param>
+    /// <returns>The owner's acknowledgement.</returns>
+    private SequenceAcknowledgement ApplyRequest(BattleSequenceEvent request)
+    {
+        switch (request)
+        {
+            case StageChangeEvent stage:
+                return ConsumeImpact(stage);
+            case SpriteEffectEvent sprite:
+                return ConsumeImpact(sprite);
+            case ModelMotionEvent motion:
+                return ApplyMotion(motion);
+            case ModelJumpEvent jump:
+                return ApplyJump(jump);
+            case ModelTravelEvent travel:
+                return ApplyTravel(travel);
+            case CameraRequestEvent camera:
+                _renderer.OnSequenceCameraRequest(camera);
+                return SequenceAcknowledgement.Applied;
+            case HitDispatchedEvent hit when hit.DispatchIndex is >= 1 and <= 4:
+            case SequenceEndedEvent:
+                return SequenceAcknowledgement.Applied;
+            case HitDispatchedEvent hit:
+                return _reaction?.Begin(hit) ?? SequenceAcknowledgement.Unavailable;
+            default:
+                return AssetConsumer?.Invoke(request) ?? SequenceAcknowledgement.Unavailable;
+        }
     }
 
     /// <summary>Chains contact requests without swallowing other registered effect families.</summary>
