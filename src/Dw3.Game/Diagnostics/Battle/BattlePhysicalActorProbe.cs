@@ -78,7 +78,8 @@ internal sealed class BattlePhysicalActorProbe : BattleProbe
         var timeline = new BattleActionTimeline(slice, context) { Acknowledge = request => consumer.Consume(request) == SequenceAcknowledgement.Applied, MotionReady = consumer.MotionReady, JumpReady = consumer.JumpReady, ChildrenReady = () => consumer.ChildrenReady };
         string captures = Path.Combine(root, $"{pair.Tech}-{pair.Owner}-{cancelled}");
         Directory.CreateDirectory(captures);
-        await PlayAsync(timeline, captures, cancelled);
+        float turn = source.Commands.First(command => command.Opcode == BattleActionOpcode.Model && command.Arguments is [4, 2 or 3, _, not 0, _, _]).Arguments[3] * Mathf.Tau / 4096f;
+        await PlayAsync(timeline, captures, cancelled, turn);
         consumer.Finish(cancelled);
         ProbeRequirement.Require(homes.Count == consumer.DiagnosticRoster.Models.Count && homes.All(item => item.Key.Root.Transform.IsEqualApprox(item.Value)), "actor cleanup replaced or moved combatants");
         ProbeRequirement.Require(renderer.CameraForProbe.Transform.IsEqualApprox(camera) && !consumer.OwnsCamera, "actor cleanup leaked camera ownership");
@@ -91,19 +92,23 @@ internal sealed class BattlePhysicalActorProbe : BattleProbe
     /// <param name="timeline">Source-order model/camera slice.</param>
     /// <param name="captures">Private case directory.</param>
     /// <param name="cancelled">Whether to interrupt the fusion display.</param>
+    /// <param name="turn">Authored nonzero rotation to observe on a real fighter root.</param>
     /// <returns>Completion after End or the intended cancellation point.</returns>
-    private async Task PlayAsync(BattleActionTimeline timeline, string captures, bool cancelled)
+    private async Task PlayAsync(BattleActionTimeline timeline, string captures, bool cancelled, float turn)
     {
         var renderer = Host.Renderer;
         var roster = renderer.SequencePlayback.DiagnosticRoster;
         var seen = new HashSet<int>();
         var visibleTicks = new Dictionary<int, int>();
+        var rotations = new Dictionary<Dw3Production.Presentation.BattleModel, float>();
+        bool rotated = false;
         var view = Host.BuildBattleView() ?? throw new InvalidOperationException("No battle view.");
         view = view with { Phase = BattleFlowPhase.ActionSequence };
         for (int tick = 0; tick < 5000 && !timeline.IsComplete; tick++)
         {
             timeline.Advance();
             renderer.Present(view, 1d / 60d);
+            rotated |= ObserveRotation(rotations, turn);
             foreach (var model in roster.Models.Skip(2).Where(model => model.Root.Visible && !seen.Contains(model.FighterId)))
             {
                 int samples = visibleTicks.GetValueOrDefault(model.FighterId) + 1;
@@ -132,6 +137,27 @@ internal sealed class BattlePhysicalActorProbe : BattleProbe
 
         ProbeRequirement.Require(timeline.IsComplete, $"actor slice stalled cursor={timeline.Cursor}");
         ProbeRequirement.Require(seen.Count == 2, $"additional fighters not physically displayed: {seen.Count}");
+        ProbeRequirement.Require(rotated, "authored Model4 rotation never reached the real actor root");
+        GD.Print($"B9053_ACTOR_ROTATION expected={turn} real-root-reached={rotated}");
+    }
+
+    /// <summary>Discriminates actual root rotation from acknowledging a decoded rotation command.</summary>
+    /// <param name="rotations">Initial root angles captured immediately after each spawn.</param>
+    /// <param name="turn">Authored turn relative to the spawned home orientation.</param>
+    /// <returns>Whether a real model reached the requested nonzero angle.</returns>
+    private bool ObserveRotation(Dictionary<Dw3Production.Presentation.BattleModel, float> rotations, float turn)
+    {
+        foreach (var model in Host.Renderer.SequencePlayback.DiagnosticRoster.Models.Skip(2))
+        {
+            rotations.TryAdd(model, model.Root.Rotation.Y);
+            float actual = Mathf.AngleDifference(rotations[model], model.Root.Rotation.Y);
+            if (Mathf.IsZeroApprox(Mathf.AngleDifference(turn, actual)))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>Requires the displayed model to contribute pixels, not merely hold a visible root flag.</summary>
