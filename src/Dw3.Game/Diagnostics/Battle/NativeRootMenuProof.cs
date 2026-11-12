@@ -19,6 +19,7 @@ public partial class NativeRootMenuProof : Node
             NativeMenuCommandsProof.Openers();
             NativeMenuCommandsProof.Unavailable();
             NativeMenuCommandsProof.Navigation();
+            NativeMenuCommandsProof.Lists();
             NativeMenuPhaseProof.AttackAndReentry();
             NativeMenuPhaseProof.Flee();
             NativeMenuPhaseProof.EnemyTurn();
@@ -39,7 +40,7 @@ public partial class NativeRootMenuProof : Node
         using var session = new NativeMenuSession();
         session.Tap(Key.Down);
         session.Tap(Key.Enter);
-        ProbeRequirement.Require(session.Menu.Menu == BattleMenuKind.Technique && session.Menu.Lines.Count == 1, "FIRST: production technique opener not reached");
+        ProbeRequirement.Require(session.Menu.Menu == BattleMenuKind.Technique && session.Menu.View.Lines.Count == 6, "FIRST: production technique opener not reached");
         session.Tap(Key.X);
         ProbeRequirement.Require(session.Menu.Menu == BattleMenuKind.Root && session.Menu.Lines.Count == 6, "FIRST: production cancellation not reached");
         ProbeRequirement.Require(session.Rng.Count == 0 && session.Flow.State.ActivePlayerFighter?.Mp == 50 && session.Flow.ItemStock[42] == 2, "FIRST: navigation spent resources");
