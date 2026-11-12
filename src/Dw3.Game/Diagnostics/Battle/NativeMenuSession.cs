@@ -102,7 +102,7 @@ internal sealed class NativeMenuSession : IDisposable
         {
             PlayerBasicTech = new TechData { Accuracy = 128, Power = 1 },
             EnemyBasicTech = new TechData { Accuracy = 128, Power = 1 },
-            PlayerTechniques = [new BattleTechnique(7, "synthetic", new TechData { Mp = 5 })],
+            PlayerTechniques = [.. Enumerable.Range(7, 7).Select(id => new BattleTechnique(id, "synthetic", new TechData { Mp = 5 }))],
             PlayerDigivolutions = [1, 4],
             ItemStock = new Dictionary<int, int> { [42] = 2 },
         };
