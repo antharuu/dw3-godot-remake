@@ -1180,6 +1180,7 @@ src/Dw3.Formats/Battle/VabProgramTone.cs
 src/Dw3.Game/BattleAudioBackendProbe.tscn
 src/Dw3.Game/BattleAudioProbe.tscn
 src/Dw3.Game/Conversion/BattleActionAudioLoader.cs
+src/Dw3.Game/Diagnostics/Battle/BattleAudioRecording.cs
 src/Dw3.Game/Presentation/BattleAudioBackendProbe.cs
 src/Dw3.Game/Presentation/BattleAudioPcm.cs
 src/Dw3.Game/Presentation/BattleAudioProbe.cs

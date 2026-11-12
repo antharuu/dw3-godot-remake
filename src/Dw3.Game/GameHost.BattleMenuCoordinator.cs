@@ -92,11 +92,6 @@ public partial class GameHost
             Func<int, BattleTextLine, BattleMenuLine>? line = null,
             BattleMenuStatusText? statusText = null)
         {
-            if (entries.Count == 0)
-            {
-                return;
-            }
-
             _host._battleSubmenuArgs.Clear();
             var lines = new List<BattleMenuLine>(entries.Count);
             foreach ((int arg, BattleTextLine text) in entries)

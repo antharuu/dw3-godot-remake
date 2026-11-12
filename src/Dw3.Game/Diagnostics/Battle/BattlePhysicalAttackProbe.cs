@@ -64,7 +64,7 @@ internal sealed class BattlePhysicalAttackProbe : BattleProbe
         }
 
         await RunFinalCasesAsync(loader);
-        GD.Print("B9052_PASS two-camps normal/miss/fatal-reserve/repeat physical-only audio-control-not-played");
+        GD.Print($"B9052_PASS two-camps normal/miss/fatal-reserve/repeat audio-recorded={BattleAudioRecording.Enabled}");
     }
 
     /// <summary>Requires the requested resolved branch rather than assuming an input produced it.</summary>
@@ -82,6 +82,11 @@ internal sealed class BattlePhysicalAttackProbe : BattleProbe
     /// <summary>Installs a named sound-only control without faking graphics or reactions.</summary>
     private void ConfigureControls()
     {
+        if (BattleAudioRecording.Enabled)
+        {
+            return;
+        }
+
         Host.Renderer.SequencePlayback.AssetConsumer = request =>
         {
             GD.Print($"B9052_CONTROL_ACK_NOT_RENDERED {request}");
@@ -181,6 +186,7 @@ internal sealed class BattlePhysicalAttackProbe : BattleProbe
     /// <returns>Completion after End returns control.</returns>
     private async Task PlayAsync(BattleDataPackLoader loader, BattleAttackProofRng rng, string label, string captures)
     {
+        using var audio = BattleAudioRecording.Start(Path.Combine(captures, label + "-mix.wav"));
         var flow = Host.Flow;
         ProbeRequirement.Require(flow.Phase == BattleFlowPhase.ActionSequence, "action has no real script");
         var context = flow.PendingSequenceContext ?? throw new InvalidOperationException("No pending context.");
@@ -223,6 +229,7 @@ internal sealed class BattlePhysicalAttackProbe : BattleProbe
         ProbeRequirement.Require(homes.All(pair => pair.Key.Root.Position.IsEqualApprox(pair.Value)), "positions not restored");
         ProbeRequirement.Require(Host.Renderer.CameraForProbe.Transform.IsEqualApprox(camera), "camera not restored");
         await BattleProbeCapture.CaptureRawAsync(Host, captures, $"{label}-returned.png");
+        audio?.Save();
         GD.Print($"B9052_RETURN {label} phase={flow.Phase} draws={draws}/{rng.Count} restore=exact captures={captures}");
     }
 

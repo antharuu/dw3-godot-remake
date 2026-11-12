@@ -94,6 +94,35 @@ internal static class NativeMenuCommandsProof
         GD.Print("NATIVE_ROOT_MENU_PROOF PASS navigation=up-down-clamp-hold-echo-root-cancel");
     }
 
+    /// <summary>Checks source-sized technique pages and empty technique and digivolution panes through normal host input.</summary>
+    public static void Lists()
+    {
+        using var session = new NativeMenuSession();
+        Select(session, 1);
+        session.Tap(Key.Enter);
+        ProbeRequirement.Require(session.Menu.Menu == BattleMenuKind.Technique, "technique list did not open");
+        ProbeRequirement.Require(session.Menu.PageCount == 2 && session.Menu.View.Lines.Count == 6, "technique first page is not source-sized");
+        session.Tap(Key.Pagedown);
+        ProbeRequirement.Require(session.Menu.First == 6 && session.Menu.Cursor == 0 && session.Menu.View.Lines.Count == 1, "technique last page is not reachable");
+        session.Tap(Key.X);
+
+        session.Flow.PlayerTechniques = [];
+        session.Menu.OpenRoot(session.Flow.RootMenuLines());
+        Select(session, 1);
+        session.Tap(Key.Enter);
+        ProbeRequirement.Require(session.Menu.Menu == BattleMenuKind.Technique && session.Menu.Lines.Count == 0, "empty technique pane did not open");
+        session.Tap(Key.X);
+
+        session.Flow.PlayerDigivolutions = [];
+        session.Menu.OpenRoot(session.Flow.RootMenuLines());
+        Select(session, 2);
+        session.Tap(Key.Enter);
+        ProbeRequirement.Require(session.Menu.Menu == BattleMenuKind.Digivolve && session.Menu.Lines.Count == 0, "empty digivolution pane did not open");
+        session.Tap(Key.X);
+        ProbeRequirement.Require(session.Menu.Menu == BattleMenuKind.Root, "empty list cancellation did not return to root");
+        GD.Print("NATIVE_ROOT_MENU_PROOF PASS lists=pagination-last-page-empty-technique-empty-digivolve-cancel");
+    }
+
     /// <summary>Navigates from root start using real press/release gestures.</summary>
     /// <param name="session">Native host fixture.</param>
     /// <param name="row">Desired root row.</param>
@@ -122,12 +151,15 @@ internal static class NativeMenuCommandsProof
         session.Flow.ItemStock.Clear();
         session.Flow.State.Players[1] = null;
         string before = Snapshot(session);
+        BattleMenuKind[] menus = [BattleMenuKind.Technique, BattleMenuKind.Digivolve, BattleMenuKind.Switch, BattleMenuKind.Item];
         for (int row = 1; row <= 4; row++)
         {
             session.Menu.OpenRoot(session.Flow.RootMenuLines());
             Select(session, row);
             session.Tap(Key.Enter);
-            ProbeRequirement.Require(session.Menu.Menu == BattleMenuKind.Root && Snapshot(session) == before, $"empty opener consumed row={row}");
+            ProbeRequirement.Require(session.Menu.Menu == menus[row - 1] && session.Menu.Lines.Count == 0 && Snapshot(session) == before, $"empty opener was not an empty pane row={row}");
+            session.Tap(Key.X);
+            ProbeRequirement.Require(session.Menu.Menu == BattleMenuKind.Root && Snapshot(session) == before, $"empty pane cancellation consumed row={row}");
         }
     }
 }

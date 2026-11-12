@@ -51,14 +51,15 @@ public sealed record ActionSequenceContext(
             ScriptStage = tech.ScriptStage == 0 ? -1 : tech.ScriptStage,
             ScriptEffect = tech.ScriptEffect,
             ScriptSound = tech.ScriptSound,
-            SoundResults = CaptureSoundResults(hitEvents),
+            SoundResults = CaptureSoundResults(hitEvents, tech.Effect),
         };
     }
 
     /// <summary>Freezes hit and terminal miss markers without re-reading HP or drawing randomness.</summary>
     /// <param name="hits">Already resolved ordered hits, excluding counter reactions.</param>
+    /// <param name="effect">Frozen technique effect, identifying the two-slot magic layout.</param>
     /// <returns>Three intermediate markers and one terminal marker.</returns>
-    private static int[] CaptureSoundResults(IReadOnlyList<BattleHitEvent> hits)
+    private static int[] CaptureSoundResults(IReadOnlyList<BattleHitEvent> hits, int effect)
     {
         var ordered = hits.Where(hit => !hit.IsCounter).ToArray();
         int[] results = [0, 0, 0, 0];
@@ -69,9 +70,28 @@ public sealed record ActionSequenceContext(
 
         if (ordered.Length > 0)
         {
-            results[3] = ordered[^1].Landed ? 1 : 3;
+            var last = ordered[^1];
+            results[3] = last.TargetDefeated ? 2 : TerminalSoundMarker(last, effect);
+            if (last.TargetDefeated && effect == BattleTechniqueEffect.DoubleMagic)
+            {
+                results[0] = ordered.Count(hit => hit.Landed) == 1 ? 3 : 0;
+            }
         }
 
         return results;
+    }
+
+    /// <summary>Distinguishes an ordinary terminal hit from the second magic slot without re-resolving rules.</summary>
+    /// <param name="hit">Frozen last result.</param>
+    /// <param name="effect">Frozen technique effect.</param>
+    /// <returns>Miss, intermediate magic hit, or ordinary terminal hit marker.</returns>
+    private static int TerminalSoundMarker(BattleHitEvent hit, int effect)
+    {
+        if (!hit.Landed)
+        {
+            return 3;
+        }
+
+        return effect == BattleTechniqueEffect.DoubleMagic ? 0 : 1;
     }
 }

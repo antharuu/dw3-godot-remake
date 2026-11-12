@@ -49,6 +49,27 @@ lifetime, channel bounds, priority preemption, PCM pan and frozen substitutions.
 Extractor tests exercise the production writer followed by the real action loader
 with fabricated disc data, including an action index above the VAB program count.
 
+## Real-action regression probe
+
+`DW3_ACTION_AUDIO_RECORD=1` on the physical basic-attack probe retains the actual
+renderer audio registration instead of the explicitly synchronization-only sound
+acknowledgements. It requires the Dummy driver and records each action's master
+bus into a private WAV. A silent recording fails rather than declaring playback.
+`DW3_DATA_DIR` names the parent of the pack's `data` directory.
+
+The first execution with the synchronization control produced peak zero and failed.
+With that control removed, the real player attack currently fails at its first
+sound command, index 10. The extracted catalog resolves it to a sequence identifier,
+not a key-on. The enemy's basic attack and the target's hit/KO reaction also include
+sequence identifiers. Thus the prior single key-on proof cannot establish complete
+action or KO audio. These non-music sequence cues require a scoped technical
+resolution of the existing sequence-playback ownership before this card can close.
+No sequence was replaced by a key-on or acknowledged as rendered.
+
+Frozen sound markers now distinguish terminal KO from ordinary landed hits and
+preserve the special two-slot magic layout, including early lethal single-hit
+resolution. Tests drive both substitution opcodes from those frozen results.
+
 ## Still required before B9-061 acceptance
 
 - Qualify and exercise the actual change and KO audio producers, including reaction
