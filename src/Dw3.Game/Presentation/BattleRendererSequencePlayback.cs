@@ -11,9 +11,11 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
     private readonly Dictionary<BattleModel, BattleJumpMotion> _jumps = [];
     private readonly Dictionary<BattleModel, (Godot.Vector3 Position, int Motion, int Idle)> _homes = [];
     private readonly Dictionary<BattleModel, BattleTravelMotion> _moves = [];
+    private readonly Dictionary<BattleModel, int> _motionStarts = [];
     private ActionSequenceContext? _context;
     private BattleReactionPlayback? _reaction;
     private BattleImpactPlayback? _impact;
+    private BattleSequenceStagePlayback? _stage;
     private Action<bool>? _finishAudio;
 
     /// <summary>Initializes a new instance of the <see cref="BattleRendererSequencePlayback"/> class.</summary>
@@ -30,6 +32,9 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
 
     /// <summary>Gets the number of real contact children for synchronized offscreen capture.</summary>
     public int DiagnosticImpactCount => _impact?.StartedChildrenCount ?? 0;
+
+    /// <summary>Gets the optional stage actually displayed by this action.</summary>
+    public int DiagnosticStage => _stage?.ActiveStage ?? 0;
 
     /// <summary>Gets a value indicating whether a sequence exclusively owns the physical camera.</summary>
     public bool OwnsCamera => _context is not null;
@@ -51,6 +56,14 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
 
     /// <summary>Gets or sets the offscreen observer of physically acknowledged requests.</summary>
     public Action<BattleSequenceEvent>? DiagnosticConsumed { get; set; }
+
+    /// <summary>Replaces the stage consumer only after restoring any retained encounter arena.</summary>
+    /// <param name="stage">Scene-bound optional-stage consumer.</param>
+    public void ConfigureStage(BattleSequenceStagePlayback stage)
+    {
+        _stage?.Clear();
+        _stage = stage;
+    }
 
     /// <summary>Binds the same pack provider used by the parent runner.</summary>
     /// <param name="scripts">Validated pack-backed action scripts.</param>
@@ -102,6 +115,7 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
         _renderer.StopShotCamera();
         _context = context;
         _impact?.Begin(context);
+        _stage?.Begin(context);
         foreach (var model in _fighters.Models)
         {
             _homes[model] = (model.Root.Position, model.Motion?.Motion ?? 1, model.Motion?.IdleMotion ?? 0);
@@ -119,7 +133,8 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
     public bool MotionReady(BattleSide side, int actor)
     {
         var model = _fighters.SequenceActorModel(side == BattleSide.Enemy, actor);
-        return model?.Motion?.MotionDone == true;
+        return model?.Motion is { } motion
+            && (motion.MotionDone || (_motionStarts.TryGetValue(model, out int start) && motion.CompletionCount > start));
     }
 
     /// <inheritdoc/>
@@ -175,6 +190,11 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
         }
 
         model.ApplySubcommand(request.Subcommand, request.Motion);
+        if (request.Subcommand == 0 && request.Motion > 0 && model.Motion is { } motion)
+        {
+            _motionStarts[model] = motion.CompletionCount;
+        }
+
         return SequenceAcknowledgement.Applied;
     }
 
@@ -183,6 +203,7 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
     {
         _reaction?.Step();
         _impact?.Step();
+        _stage?.Step();
         foreach (var pair in _moves)
         {
             if (!pair.Value.IsComplete)
@@ -214,6 +235,7 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
         CancelEffects?.Invoke();
         _reaction?.Clear();
         _impact?.Clear();
+        _stage?.Clear();
         foreach (var pair in _homes)
         {
             pair.Key.Root.Position = pair.Value.Position;
@@ -227,6 +249,7 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
         _homes.Clear();
         _jumps.Clear();
         _moves.Clear();
+        _motionStarts.Clear();
         _context = null;
         _renderer.SetOpeningCamera();
         _fighters.RestoreVisibility();
@@ -240,7 +263,7 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
         switch (request)
         {
             case StageChangeEvent stage:
-                return ConsumeImpact(stage);
+                return _stage?.Consume(stage) ?? ConsumeImpact(stage);
             case SpriteEffectEvent sprite:
                 return ConsumeImpact(sprite);
             case ModelMotionEvent motion:

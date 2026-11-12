@@ -58,6 +58,9 @@ public sealed class BattleMotionMachine
     /// <summary>Gets a value indicating whether the active motion reached its terminal marker.</summary>
     public bool MotionDone { get; private set; }
 
+    /// <summary>Gets the terminal-marker count, retained across automatic idle transitions for delayed script waits.</summary>
+    public int CompletionCount { get; private set; }
+
     /// <summary>Gets a value indicating whether a completed motion returns to the selected idle motion.</summary>
     public bool ToIdle { get; private set; }
 
@@ -148,6 +151,7 @@ public sealed class BattleMotionMachine
         else if (landedValue == FinishMarker)
         {
             MotionDone = true;
+            CompletionCount++;
         }
     }
 

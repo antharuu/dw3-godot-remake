@@ -40,7 +40,14 @@ internal sealed class BattlePhysicalTechniqueProbe : BattleProbe
         {
             foreach (string mode in Modes.Where(mode => Selected("DW3_PHYSICAL_MODE", mode)))
             {
-                await RunCaseAsync(loader, root, fighter, mode);
+                if (System.Environment.GetEnvironmentVariable("DW3_PHYSICAL_ENEMY") == "1")
+                {
+                    await BattlePhysicalEnemyTechniqueCase.RunAsync(Host, loader, root, mode, (rng, captures) => PlayAsync(loader, rng, captures), (fighter, TechniqueId));
+                }
+                else
+                {
+                    await RunCaseAsync(loader, root, fighter, mode);
+                }
             }
         }
 
@@ -97,6 +104,12 @@ internal sealed class BattlePhysicalTechniqueProbe : BattleProbe
         var rng = new BattleAttackProofRng(mode == "miss" ? 127 : 0);
         ProbeRequirement.Require(flow.Choose(BattleCommand.Technique, TechniqueId, rng), "technique refused");
         ProbeRequirement.Require(flow.State.LastHitEvents.All(hit => hit.Landed == (mode != "miss")), "wrong branch");
+        if (System.Environment.GetEnvironmentVariable("DW3_PHYSICAL_CANCEL") == "1")
+        {
+            await BattlePhysicalStageCancellation.RunAsync(Host, loader, rng, captures);
+            return;
+        }
+
         await PlayAsync(loader, rng, captures);
         ProbeRequirement.Require(player.Mp == 9000 - technique.Mp, "technique debited more than once");
         ProbeRequirement.Require(target.IsKnockedOut == mode.StartsWith("fatal", StringComparison.Ordinal), "wrong KO branch");

@@ -826,6 +826,7 @@ tests/Dw3.Game.Tests/BattleGrowthVectorTests.cs
 tests/Dw3.Game.Tests/BattleMotionMachineVectorGenerator.cs
 tests/Dw3.Game.Tests/BattleMotionMachineVectorHarness.cs
 tests/Dw3.Game.Tests/BattleMotionMachineVectorTests.cs
+tests/Dw3.Game.Tests/BattleMotionCompletionTests.cs
 tests/Dw3.Game.Tests/BattleModifierTests.cs
 tests/Dw3.Game.Tests/BattleMotionCadenceTraceTests.cs
 tests/Dw3.Game.Tests/BattleSkeletonBlendTests.cs
@@ -1126,6 +1127,7 @@ src/Dw3.Game/Presentation/DryRunAudioBackend.cs
 src/Dw3.Game/Conversion/AudioProgramEntry.cs
 src/Dw3.Game/Conversion/BattleAudioManifestLoader.cs
 src/Dw3.Game/Presentation/BattleSequenceCamera.cs
+src/Dw3.Game/Presentation/BattleSequenceStagePlayback.cs
 src/Dw3.Game/Presentation/BattleSequenceCameraTransition.cs
 src/Dw3.Game/Simulation/BattleActionValidation.cs
 src/Dw3.Game/Simulation/BattleSequencePresentation.cs
@@ -1159,6 +1161,7 @@ src/Dw3.Game/Diagnostics/Battle/BattlePhysicalEnemyTechniqueCase.cs
 src/Dw3.Game/Diagnostics/Battle/BattlePhysicalRegistry.cs
 src/Dw3.Game/Diagnostics/Battle/BattlePhysicalTechniqueAudit.cs
 src/Dw3.Game/Diagnostics/Battle/BattlePhysicalRollProbe.cs
+src/Dw3.Game/Diagnostics/Battle/BattlePhysicalStageCancellation.cs
 src/Dw3.Game/Diagnostics/Battle/BattlePhysicalTechniqueProbe.cs
 tests/Dw3.Game.Tests/BattleDynamicSpriteTests.cs
 src/Dw3.Game/Presentation/BattleImpactPlayback.cs
@@ -1179,6 +1182,7 @@ src/Dw3.Formats/Battle/VabProgramTone.cs
 src/Dw3.Game/BattleAudioBackendProbe.tscn
 src/Dw3.Game/BattleAudioProbe.tscn
 src/Dw3.Game/Conversion/BattleActionAudioLoader.cs
+src/Dw3.Game/Diagnostics/Battle/BattleAudioRecording.cs
 src/Dw3.Game/Presentation/BattleAudioBackendProbe.cs
 src/Dw3.Game/Presentation/BattleAudioPcm.cs
 src/Dw3.Game/Presentation/BattleAudioProbe.cs
