@@ -27,10 +27,15 @@ internal static class BattleListMenuPainter
         DrawMpStatus(canvas, menu, view.Players.FirstOrDefault(fighter => fighter.Active));
         DrawLines(canvas, menu, TechniqueLines);
         var selected = Selected(menu);
-        var palette = selected?.Enabled == false ? BattleHudPalette.Grey : BattleHudPalette.White;
-        canvas.Text.DrawLine(1, 0x14, 0xC2, selected?.DescriptionText, selected?.Description ?? string.Empty, rightAlign: false, palette: palette);
-        canvas.Text.DrawLine(1, 0x100, 0xD0, selected?.CostLabelText, string.Empty, rightAlign: false, palette: palette);
-        if (selected is not null && selected.Cost >= 0)
+        if (selected is null)
+        {
+            return;
+        }
+
+        var palette = selected.Enabled ? BattleHudPalette.White : BattleHudPalette.Grey;
+        canvas.Text.DrawLine(1, 0x14, 0xC2, selected.DescriptionText, selected.Description, rightAlign: false, palette: palette);
+        canvas.Text.DrawLine(1, 0x100, 0xD0, selected.CostLabelText, string.Empty, rightAlign: false, palette: palette);
+        if (selected.Cost >= 0)
         {
             canvas.Text.DrawWindow(1, 0x12B, 0xD0, selected.Cost.ToString(CultureInfo.InvariantCulture), rightAlign: true, palette: selected.Enabled ? BattleHudPalette.White : BattleHudPalette.Grey);
         }

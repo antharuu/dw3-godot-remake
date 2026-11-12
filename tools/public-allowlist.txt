@@ -1191,6 +1191,17 @@ tests/Dw3.Formats.Tests/Battle/VabToneCatalogTests.cs
 tests/Dw3.Game.Tests/BattleAudioLifetimeTests.cs
 tests/Dw3.Game.Tests/BattleAudioSubstitutionTests.cs
 docs/ROOT_MENU_PROOF.md
+docs/LIST_MENU_PROOF.md
+src/Dw3.Formats/Text/FontStyleAtlasRenderer.cs
+src/Dw3.Game/Diagnostics/Battle/NativeListCapture.cs
+src/Dw3.Game/Diagnostics/Battle/NativeListData.cs
+src/Dw3.Game/Diagnostics/Battle/NativeListDigivolveProof.cs
+src/Dw3.Game/Diagnostics/Battle/NativeListGlyphMask.cs
+src/Dw3.Game/Diagnostics/Battle/NativeListMenuProof.cs
+src/Dw3.Game/Diagnostics/Battle/NativeListMenuProof.tscn
+src/Dw3.Game/Diagnostics/Battle/NativeListRefusalProof.cs
+tests/Dw3.Extractor.Tests/FontAtlasPreparationTests.cs
+tests/Dw3.Formats.Tests/Text/FontStyleAtlasRendererTests.cs
 src/Dw3.Game/Diagnostics/Battle/NativeMenuCommandsProof.cs
 src/Dw3.Game/Diagnostics/Battle/NativeMenuLifecycleProof.cs
 src/Dw3.Game/Diagnostics/Battle/NativeMenuPhaseProof.cs

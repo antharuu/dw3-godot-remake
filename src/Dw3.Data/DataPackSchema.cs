@@ -9,8 +9,9 @@ public static class DataPackSchema
 {
     /// <summary>
     /// Gets the newest pack schema that this runtime can read.
+    /// Version 22 requires atlas images rendered with each font style's own CLUT origin.
     /// </summary>
-    public const int Version = 21;
+    public const int Version = 22;
 
     /// <summary>
     /// Creates the schema structures required by every data pack.

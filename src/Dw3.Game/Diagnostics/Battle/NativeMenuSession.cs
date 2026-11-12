@@ -25,8 +25,28 @@ internal sealed class NativeMenuSession : IDisposable
         Menu.OpenRoot(Flow.RootMenuLines());
     }
 
+    /// <summary>Initializes a new instance of the <see cref="NativeMenuSession"/> class from supplied data.</summary>
+    /// <param name="flow">Initialized flow whose catalogues are exercised unchanged.</param>
+    /// <param name="text">Prepared or fabricated text data.</param>
+    /// <param name="items">Prepared or fabricated item data.</param>
+    public NativeMenuSession(BattleFlowController flow, BattleTextData text, BattleItemsData items)
+    {
+        Flow = flow;
+        _host = new GameHost(flow, text, items, Rng);
+        Menu.OpenRoot(flow.RootMenuLines());
+    }
+
     /// <summary>Gets the real flow installed in the host.</summary>
     public BattleFlowController Flow { get; }
+
+    /// <summary>Gets the required active player for native assertions.</summary>
+    public BattleFighter Player => Flow.State.ActivePlayerFighter ?? throw new InvalidOperationException("Native fixture player missing.");
+
+    /// <summary>Gets the required active enemy for native assertions.</summary>
+    public BattleFighter Enemy => Flow.State.ActiveEnemyFighter ?? throw new InvalidOperationException("Native fixture enemy missing.");
+
+    /// <summary>Gets the required text catalogue for native assertions.</summary>
+    public BattleTextCatalog Text => Flow.Text ?? throw new InvalidOperationException("Native fixture text missing.");
 
     /// <summary>Gets the counting simulation random source.</summary>
     public BattleAttackProofRng Rng { get; } = new(0);
