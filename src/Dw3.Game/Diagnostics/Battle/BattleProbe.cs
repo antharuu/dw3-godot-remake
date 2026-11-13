@@ -39,6 +39,7 @@ internal abstract class BattleProbe
         catch (Exception error)
         {
             GD.PushError($"{FailureCode}_FAIL: {error.Message}");
+            GD.Print($"{FailureCode}_FAIL_DETAIL: {error}");
             exitCode = 3;
         }
 

@@ -10,8 +10,9 @@ namespace Dw3Production.Diagnostics.Battle;
 
 /// <summary>
 /// Validates a natural victory through the production frame loop: the physical action finishes before the
-/// battle ends, the reward is settled exactly once at that terminal tick, the report is read page by page with
-/// real Cross edges, the field is restored, and a following defeat reaches the title without a second reward.
+/// battle ends, the terminal tick only snapshots the reward, the report is read page by page with real Cross edges
+/// while the experience is credited once the EXP page is confirmed, the money when its page opens and the item when
+/// its page opens, the field is restored, and a following defeat reaches the title without a second reward.
 /// </summary>
 internal sealed class BattleReportProbe : BattleProbe
 {
@@ -20,6 +21,17 @@ internal sealed class BattleReportProbe : BattleProbe
 
     /// <summary>Upper bound of rendered frames for the victory fade to hand over to the report.</summary>
     private const int ReportEntryFrames = 120;
+
+    /// <summary>The source maximum of one item's stock.</summary>
+    private const int StockMax = 99;
+
+    /// <summary>The source maximum of a partner's experience.</summary>
+    private const int ExpMax = 999999;
+
+    private readonly BattleReportFixture _fixture = BattleReportFixture.FromEnvironment();
+    private BattleReportSessionSnapshot _before;
+    private FightReportInput? _awards;
+    private bool _leadExpPageSeen;
 
     /// <summary>Initializes a new instance of the <see cref="BattleReportProbe"/> class.</summary>
     /// <param name="host">Restricted live battle host.</param>
@@ -37,15 +49,15 @@ internal sealed class BattleReportProbe : BattleProbe
         ProbeRequirement.Require(Host.HasReportData, "rewards or growth state unavailable");
         var captureRoot = Host.PrepareCaptureDirectory("captures");
         VerifyMissingReward();
-        var before = await PrepareFieldAsync(captureRoot);
-        var settled = await WinAsync(before);
+        _before = await PrepareFieldAsync(captureRoot);
+        _awards = await WinAsync(_before);
         await EnterReportAsync(captureRoot);
-        var walker = new BattleReportPageWalker(Host, captureRoot);
+        var walker = new BattleReportPageWalker(Host, captureRoot, ObservePage);
         await walker.WalkAsync();
-        VerifyPages(walker.Entries, settled);
-        await VerifyReturnAsync(captureRoot, before, settled);
+        var settled = VerifyPages(walker.Entries, _awards);
+        await VerifyReturnAsync(captureRoot, _before, settled);
         await VerifyDefeatAsync(captureRoot, settled);
-        QuietLog.Info($"battle-report probe PASS encounter={Host.LastBattleEncounter} captures={captureRoot}/report-page-*.png");
+        QuietLog.Info($"battle-report probe PASS fixture={_fixture.Name} encounter={Host.LastBattleEncounter} captures={captureRoot}/report-page-*.png");
     }
 
     /// <summary>Formats one settled report partner for the checkpoint log.</summary>
@@ -73,20 +85,26 @@ internal sealed class BattleReportProbe : BattleProbe
         Host.State.SetFacing(1);
         Host.State.AnimationSet = 1;
         Host.State.AnimationDirection = 1;
+        _fixture.PrepareSession(Host);
         await Host.CaptureStillAsync(captureRoot, "battle-report-before.png");
-        var snapshot = Snapshot();
-        QuietLog.Info($"battle-report checkpoint=startup {snapshot}");
+        var snapshot = Snapshot(_fixture.PrizeItem);
+        QuietLog.Info($"battle-report checkpoint=startup fixture={_fixture} {snapshot}");
+        foreach (string line in BattleReportFixture.DescribeParty(Host))
+        {
+            QuietLog.Info($"battle-report checkpoint=party {line}");
+        }
+
         return snapshot;
     }
 
-    /// <summary>Starts encounter 200, attacks once, and steps rendered frames until the action and the battle end.</summary>
+    /// <summary>Starts the fixture's encounter, attacks once, and steps rendered frames until the action and the battle end.</summary>
     /// <param name="before">Session state before the battle.</param>
-    /// <returns>The session state right after the terminal settlement.</returns>
-    /// <exception cref="InvalidOperationException">The command, outcome, settlement or reward differs from the contract.</exception>
-    private async Task<BattleReportSessionSnapshot> WinAsync(BattleReportSessionSnapshot before)
+    /// <returns>The award snapshot the report plays.</returns>
+    /// <exception cref="InvalidOperationException">The command, outcome or reward differs from the contract, or the terminal tick credited the session.</exception>
+    private async Task<FightReportInput> WinAsync(BattleReportSessionSnapshot before)
     {
-        Host.StartDebugBattle();
-        ProbeRequirement.Require(Host.HasActiveBattle && Host.LastBattleEncounter == 200, "F8 did not start encounter 200");
+        _fixture.StartBattle(Host);
+        ProbeRequirement.Require(Host.HasActiveBattle && Host.LastBattleEncounter == _fixture.Encounter, $"the battle did not start encounter {_fixture.Encounter}");
         await Host.NextFrameDrawn();
         SetKey(Key.Enter, true);
         await StepBattleFrameAsync();
@@ -97,19 +115,46 @@ internal sealed class BattleReportProbe : BattleProbe
         ProbeRequirement.Require(
             Host.HasActiveBattle && Host.Flow.Phase == BattleFlowPhase.Ended && Host.Flow.Outcome == BattleOutcome.Won,
             $"battle did not end in a win frames={frames} phase={Host.Flow.Phase} outcome={Host.Flow.Outcome}");
-        var report = Host.BattleReport ?? throw new InvalidOperationException("the terminal tick did not settle a report");
+        var report = Host.BattleReport ?? throw new InvalidOperationException("the terminal tick did not resolve a report");
         var input = Host.FightReportInput ?? throw new InvalidOperationException("the terminal tick did not build the fight report input");
+        var reward = Host.ResolveReward(_fixture.Encounter);
         ProbeRequirement.Require(
-            report.Exp == 4 && report.Money == 50 && report.DigimonExp == 1,
-            $"encounter 200 reward drifted exp={report.Exp} money={report.Money} digimonExp={report.DigimonExp}");
-        var settled = Snapshot();
-        var leadGain = input.Partners[0].ExpGained;
-        ProbeRequirement.Require(settled.LeadExp == before.LeadExp + leadGain, $"lead exp {before.LeadExp}->{settled.LeadExp} differs from the reported +{leadGain}");
+            report.Exp == reward.Exp && report.DigimonExp == reward.DigimonExp && input.Item == _fixture.PrizeItem,
+            $"encounter {_fixture.Encounter} reward drifted exp={report.Exp} money={report.Money} digimonExp={report.DigimonExp} item={input.Item}");
+        var terminal = Snapshot(input.Item);
         ProbeRequirement.Require(
-            settled.Money == Math.Min(before.Money + input.Money, PlayerSession.MoneyMax),
-            $"wallet {before.Money}->{settled.Money} differs from the reward {input.Money}");
-        QuietLog.Info($"battle-report checkpoint=settled-once frames={frames} requested-money={input.Money} item={input.Item} {settled} partners=[{string.Join(",", input.Partners.Select(DescribePartner))}]");
-        return settled;
+            terminal.LeadExp == before.LeadExp && terminal.Money == before.Money && terminal.ItemCount == before.ItemCount,
+            $"the terminal tick credited the session before the report {before} -> {terminal}");
+        QuietLog.Info($"battle-report checkpoint=terminal-snapshot frames={frames} requested-money={input.Money} item={input.Item} {terminal} partners=[{string.Join(",", input.Partners.Select(DescribePartner))}]");
+        return input;
+    }
+
+    /// <summary>Checks the session at each report page against the original's credit stages.</summary>
+    /// <param name="entry">Waiting or confirmed message entry.</param>
+    /// <param name="confirmed">Whether the page was just confirmed.</param>
+    /// <exception cref="InvalidOperationException">A stage was credited early, late or twice.</exception>
+    private void ObservePage(int entry, bool confirmed)
+    {
+        var awards = _awards ?? throw new InvalidOperationException("no award snapshot");
+        var now = Snapshot(awards.Item);
+        QuietLog.Info($"battle-report checkpoint=session entry={entry} {(confirmed ? "confirmed" : "waiting")} {now}");
+        if (entry == 2 && !_leadExpPageSeen)
+        {
+            int expected = confirmed ? Math.Min(ExpMax, _before.LeadExp + awards.Partners[0].ExpGained) : _before.LeadExp;
+            ProbeRequirement.Require(now.LeadExp == expected, $"lead exp {now.LeadExp} differs from {expected} on its EXP page confirmed={confirmed}");
+            _leadExpPageSeen = confirmed;
+        }
+
+        if (confirmed)
+        {
+            // Frames stepped while Cross is held or released may already reach the next stage, so stages are checked on waiting pages.
+            return;
+        }
+
+        int money = entry is 10 or 11 ? Math.Min(PlayerSession.MoneyMax, _before.Money + awards.Money) : _before.Money;
+        ProbeRequirement.Require(now.Money == money, $"wallet {now.Money} differs from {money} while entry {entry} waits");
+        int stock = entry == 11 ? Math.Min(StockMax, _before.ItemCount + 1) : _before.ItemCount;
+        ProbeRequirement.Require(awards.Item == 0 || now.ItemCount == stock, $"stock {now.ItemCount} differs from {stock} while entry {entry} waits");
     }
 
     /// <summary>Steps rendered battle frames until the terminal phase, logging every phase change of the pending action.</summary>
@@ -152,16 +197,24 @@ internal sealed class BattleReportProbe : BattleProbe
         QuietLog.Info($"battle-report checkpoint=report-entry fade-frames={frames} {Snapshot()}");
     }
 
-    /// <summary>Checks the confirmed pages against the settled report: an EXP page first, then money, then the item when one was won.</summary>
+    /// <summary>Checks the confirmed pages against the awards and the session the report credited.</summary>
     /// <param name="entries">Confirmed message entries in reading order.</param>
-    /// <param name="settled">Session state after settlement.</param>
-    private void VerifyPages(IReadOnlyList<int> entries, BattleReportSessionSnapshot settled)
+    /// <param name="awards">Award snapshot the report played.</param>
+    /// <returns>The session state after the report.</returns>
+    private BattleReportSessionSnapshot VerifyPages(IReadOnlyList<int> entries, FightReportInput awards)
     {
         var listed = string.Join(",", entries);
         ProbeRequirement.Require(entries.Count > 0 && entries[0] == 2, $"the first report page is not the EXP message entries=[{listed}]");
         ProbeRequirement.Require(entries.Contains(10), $"the report skipped the money page entries=[{listed}]");
-        ProbeRequirement.Require(entries.Contains(11) == (settled.Item != 0), $"item page presence differs from item={settled.Item} entries=[{listed}]");
-        ProbeRequirement.Require(Snapshot() == settled, $"reading the report changed the settled session {settled} -> {Snapshot()}");
+        ProbeRequirement.Require(entries.Contains(11) == (awards.Item != 0), $"item page presence differs from item={awards.Item} entries=[{listed}]");
+        var settled = Snapshot(awards.Item);
+        ProbeRequirement.Require(
+            settled.LeadExp == Math.Min(ExpMax, _before.LeadExp + awards.Partners[0].ExpGained)
+                && settled.Money == Math.Min(PlayerSession.MoneyMax, _before.Money + awards.Money)
+                && (awards.Item == 0 || settled.ItemCount == Math.Min(StockMax, _before.ItemCount + 1)),
+            $"the report credited {_before} -> {settled} for exp+{awards.Partners[0].ExpGained} money+{awards.Money} item={awards.Item}");
+        QuietLog.Info($"battle-report checkpoint=settled-once {settled}");
+        return settled;
     }
 
     /// <summary>Verifies the report handed control back to the unchanged field without a second reward.</summary>
@@ -222,12 +275,17 @@ internal sealed class BattleReportProbe : BattleProbe
     /// <summary>Reads the session resources the report must change exactly once.</summary>
     /// <returns>The current snapshot.</returns>
     /// <exception cref="InvalidOperationException">The session has no lead partner growth.</exception>
-    private BattleReportSessionSnapshot Snapshot()
+    private BattleReportSessionSnapshot Snapshot() => Snapshot(_awards?.Item ?? _fixture.PrizeItem);
+
+    /// <summary>Reads the session resources, counting the stock of one item.</summary>
+    /// <param name="item">Item whose stock is read, 0 for none.</param>
+    /// <returns>The current snapshot.</returns>
+    /// <exception cref="InvalidOperationException">The session has no lead partner growth.</exception>
+    private BattleReportSessionSnapshot Snapshot(int item)
     {
         var lead = Host.PartyGrowth is [PartnerGrowthState growth, ..]
             ? growth
             : throw new InvalidOperationException("the session has no lead partner growth");
-        var item = Host.FightReportInput?.Item ?? 0;
         return new BattleReportSessionSnapshot(Host.State.Position, lead.Exp, lead.Level, Host.SessionMoney ?? 0, item, Host.SessionItemCount(item));
     }
 

@@ -153,6 +153,9 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
 
     private FightReportInput? _fightReportInput;
 
+    /// <summary>The staged settlement that credits the resolved victory during the report, or null.</summary>
+    private IFightReportSettlement? _fightReportSettlement;
+
     private int _battleReportFadeTicks;
 
     private int _lastBattleEncounter = -1;
@@ -584,6 +587,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
         _battleReport = null;
         _fightReportController = null;
         _fightReportInput = null;
+        _fightReportSettlement = null;
         _battleReportFadeTicks = 0;
         _battleResolved = false;
         _battlePlayerCameraActive = false;
@@ -671,6 +675,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
         _battleReport = null;
         _fightReportController = null;
         _fightReportInput = null;
+        _fightReportSettlement = null;
         _battleResolved = false;
         _state.BattleActive = false;
         TearDownBattleSequenceRunner();
@@ -755,8 +760,8 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     private void RefreshBattlePresentationModels() => _battlePresentationCoordinator.RefreshModels();
 
     /// <summary>Commits the battle's resources to the session and, on a victory, resolves the encounter's
-    /// real reward and delivers it: money, the won item and each partner's experience and growth go
-    /// to the session the next battle starts from, and the report views show the same amounts.
+    /// real reward and snapshots it: the report then credits each partner's experience and growth at its raise,
+    /// the money and the won item at their pages, to the session the next battle starts from.
     /// Flight and defeat resolve no reward.</summary>
     /// <param name="flow">Completed battle flow whose outcome and party state are read.</param>
     private void ResolveBattleOutcome(BattleFlowController flow)
@@ -769,6 +774,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
 
         _battleReport = resolution.Report;
         _fightReportInput = resolution.FightReport;
+        _fightReportSettlement = resolution.Settlement;
         _battleRenderer?.BeginVictoryAudio();
         QuietLog.Info($"{resolution.Log} session-money={_playerSession?.Money}");
     }
@@ -804,7 +810,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
         Dictionary<int, BattleTextLine> names = BuildReportNames();
         Dictionary<int, BattleTextLine> items = BuildReportItemNames();
         var lines = new FightReportMessageLineResolver(BattleText(), id => Lookup(names, id), id => Lookup(items, id));
-        return new FightReportController(_fightReportInput, lines.CountGlyphs);
+        return new FightReportController(_fightReportInput, lines.CountGlyphs, _fightReportSettlement);
 
         // Resolves a substitution name exactly as the report renderer does, the missing sentinel staying blank.
         static BattleTextLine Lookup(Dictionary<int, BattleTextLine> lines, int id) =>
@@ -814,7 +820,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     /// <summary>Builds the Digimon name map for fight report rendering from the resolved victory input.</summary>
     /// <returns>Map from fighter id to the decoded name line used in the fight report.</returns>
     private Dictionary<int, BattleTextLine> BuildReportNames() =>
-        FightReportNameCatalog.Build(_fightReportInput, NameLine);
+        FightReportNameCatalog.Build(_fightReportController, _fightReportInput, NameLine);
 
     /// <summary>Builds the FSITMNAM lookup consumed by the report's item-reward page.</summary>
     /// <returns>Map from item id to its extracted item-name line.</returns>

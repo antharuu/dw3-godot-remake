@@ -4,24 +4,62 @@ using Dw3Production.Simulation;
 namespace Dw3Production.Session;
 
 /// <summary>
-/// Settles a won battle's equipped-form progression for every partner that fought and maps it into the report.
+/// Settles a won battle's equipped-form progression for one raised partner and maps it into the report.
 /// The share uses the partner level before its own experience, and the used equipped slots counted over every
 /// partner that fought, so two partners fighting as the same form id count as two used slots.
 /// </summary>
 internal static class BattleFormSettlement
 {
-    /// <summary>Applies every eligible partner's used-slot progression and returns the enriched report.</summary>
+    /// <summary>Lists each report partner's used equipped slots at the battle's end, before any reward is applied.</summary>
     /// <param name="session">Persistent partners that own the form entries.</param>
     /// <param name="state">Completed battle state retaining used forms by party slot.</param>
-    /// <param name="victory">Encounter reward and decoded form and evolution data.</param>
-    /// <param name="report">Report whose partner levels are still the levels before this battle's experience.</param>
-    /// <returns>The report with equipped slots, form rows, unlocked forms and acquired-form counts.</returns>
-    public static FightReportInput Apply(PlayerSession session, BattleState state, BattleVictoryContext victory, FightReportInput report)
+    /// <param name="report">Report partners in party order.</param>
+    /// <returns>Used slot indices per report partner, empty for a partner that cannot receive rewards.</returns>
+    public static IReadOnlyList<int>[] UsedSlots(PlayerSession session, BattleState state, FightReportInput report) =>
+        [.. report.Partners.Select(partner => UsedSlots(PartnerAt(session, partner.PartyIndex), state, partner.PartyIndex))];
+
+    /// <summary>Snapshots the equipped slots and their current levels shown before the partner's raise.</summary>
+    /// <param name="session">Persistent party.</param>
+    /// <param name="report">Report partner row.</param>
+    /// <param name="partnerNumber">Partner number among the eight partners, selecting the report animation and name.</param>
+    /// <returns>The row carrying the pre-raise slot display.</returns>
+    public static FightReportPartner Snapshot(PlayerSession session, FightReportPartner report, int partnerNumber)
     {
-        IReadOnlyList<int>[] used = [.. report.Partners.Select(partner => UsedSlots(PartnerAt(session, partner.PartyIndex), state, partner.PartyIndex))];
-        int globalUsed = used.Sum(slots => slots.Count);
-        FightReportPartner[] partners = [.. report.Partners.Select((partner, index) => ApplyPartner(session, state, victory, partner, used[index], globalUsed))];
-        return report with { Partners = partners };
+        PlayerSessionPartner? partner = PartnerAt(session, report.PartyIndex);
+        if (partner is null)
+        {
+            return report;
+        }
+
+        IReadOnlyList<int> equipped = [.. partner.EquippedForms];
+        return report with
+        {
+            PartnerId = partnerNumber,
+            SlotDigimonIds = equipped,
+            SlotLevels = [.. equipped.Select(form => partner.FormProgress(form).Level)],
+        };
+    }
+
+    /// <summary>Applies one raised partner's used-slot progression and unlocks, then enriches its report row.</summary>
+    /// <param name="partner">Persistent partner being raised.</param>
+    /// <param name="victory">Encounter reward and decoded form and evolution data.</param>
+    /// <param name="report">Report row whose level is still the level before this battle's experience.</param>
+    /// <param name="used">The partner's used equipped slots.</param>
+    /// <param name="globalUsed">Used slots over every partner that fought.</param>
+    /// <returns>The row with form rows, unlocked forms and acquired-form count.</returns>
+    public static FightReportPartner ApplyPartner(PlayerSessionPartner partner, BattleVictoryContext victory, FightReportPartner report, IReadOnlyList<int> used, int globalUsed)
+    {
+        ArgumentNullException.ThrowIfNull(partner);
+        ArgumentNullException.ThrowIfNull(victory);
+        ArgumentNullException.ThrowIfNull(report);
+        var award = new FormExpAward(victory.Reward.DigimonExp, report.LevelBefore, globalUsed);
+        FormProgressionResult result = PartnerFormProgression.Apply(partner, used, award, victory.Fighters, EvolutionFor(victory.Digivolutions, partner));
+        return report with
+        {
+            FormSlots = result.Slots,
+            LearnedForms = [.. result.LearnedForms.Select(form => ToReportLearnedForm(partner, victory.Fighters, form))],
+            AcquiredFormCount = result.AcquiredFormCount,
+        };
     }
 
     /// <summary>Lists the equipped slot indices a reward-eligible partner fought as.</summary>
@@ -41,48 +79,16 @@ internal static class BattleFormSettlement
             .Where(slot => partner.EquippedForms[slot] != partner.OriginFormId && forms.Contains(partner.EquippedForms[slot]))];
     }
 
-    /// <summary>Applies one report partner's progression and snapshots it for report playback.</summary>
-    /// <param name="session">Persistent session holding the partner.</param>
-    /// <param name="state">Completed battle state.</param>
-    /// <param name="victory">Encounter reward and decoded data.</param>
-    /// <param name="report">Partner report row.</param>
-    /// <param name="used">The partner's used equipped slots.</param>
-    /// <param name="globalUsed">Used slots over every partner that fought.</param>
-    /// <returns>The enriched report row.</returns>
-    private static FightReportPartner ApplyPartner(PlayerSession session, BattleState state, BattleVictoryContext victory, FightReportPartner report, IReadOnlyList<int> used, int globalUsed)
-    {
-        PlayerSessionPartner? partner = PartnerAt(session, report.PartyIndex);
-        if (partner is null)
-        {
-            return report;
-        }
-
-        IReadOnlyList<int> equipped = [.. partner.EquippedForms];
-        if (!BattleOutcomeResolver.IsRewardEligible(state, report.PartyIndex))
-        {
-            return report with { SlotDigimonIds = equipped };
-        }
-
-        var award = new FormExpAward(victory.Reward.DigimonExp, report.LevelBefore, globalUsed);
-        FormProgressionResult result = PartnerFormProgression.Apply(partner, used, award, victory.Fighters, EvolutionFor(victory.Digivolutions, partner));
-        return report with
-        {
-            SlotDigimonIds = equipped,
-            SlotLevels = [.. equipped.Select(form => partner.FormProgress(form).Level)],
-            FormSlots = result.Slots,
-            LearnedForms = [.. result.LearnedForms.Select(form => ToReportLearnedForm(victory.Fighters, form))],
-            AcquiredFormCount = result.AcquiredFormCount,
-        };
-    }
-
-    /// <summary>Maps an unlocked form to the report's persistent and display identities.</summary>
+    /// <summary>Maps an unlocked form to the report's persistent and display identities and its new level.</summary>
+    /// <param name="partner">Partner that acquired the form.</param>
     /// <param name="fighters">Decoded fighter table containing the form name entry.</param>
     /// <param name="form">Newly acquired persistent form identifier.</param>
     /// <returns>The report row, preserving the form id when the decoded display record is absent.</returns>
-    private static FightReportLearnedForm ToReportLearnedForm(FighterData fighters, int form) =>
-        fighters.Digimon.TryGetValue(form, out DigimonData? data)
-            ? new FightReportLearnedForm(form, data.NameId)
-            : new FightReportLearnedForm(form, form);
+    private static FightReportLearnedForm ToReportLearnedForm(PlayerSessionPartner partner, FighterData fighters, int form) =>
+        new(form, fighters.Digimon.TryGetValue(form, out DigimonData? data) ? data.NameId : form)
+        {
+            Level = partner.FormProgress(form).Level,
+        };
 
     /// <summary>Returns the partner at one valid party index.</summary>
     /// <param name="session">Persistent party.</param>

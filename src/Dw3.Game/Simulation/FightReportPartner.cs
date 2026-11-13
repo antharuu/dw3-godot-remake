@@ -22,7 +22,8 @@ public sealed record FightReportPartner(
     /// <summary>Gets one settled row per used equipped slot, or an empty list when no slot was used.</summary>
     public IReadOnlyList<FightReportFormSlot> FormSlots { get; init; } = [];
 
-    /// <summary>Gets the levels of the three equipped forms as they were displayed after settlement, in source slot order.</summary>
+    /// <summary>Gets the levels of the equipped forms before the partner's raise, in source slot order. The panel shows a used
+    /// slot's new level from its form row once that slot's experience is given.</summary>
     public IReadOnlyList<int> SlotLevels { get; init; } = [];
 
     /// <summary>Gets the newly unlocked forms, or an empty list when none were acquired.</summary>

@@ -111,11 +111,12 @@ public partial class GameHost
             session.CommitBattle(flow.State.Players);
         }
 
-        /// <summary>Applies a terminal battle to the session: resources for every outcome, and the reward for a victory only.</summary>
-        /// <param name="session">Session receiving the resources and the reward, or null when none is loaded.</param>
+        /// <summary>Applies a terminal battle to the session: resources for every outcome, and for a victory only the
+        /// reward snapshot, whose settlement the report credits stage by stage.</summary>
+        /// <param name="session">Session receiving the resources and, through the settlement, the reward, or null when none is loaded.</param>
         /// <param name="flow">Terminal battle flow.</param>
         /// <param name="victory">Encounter reward inputs, read only when the battle was won.</param>
-        /// <returns>The delivered reward's report inputs, or null when the battle was not won.</returns>
+        /// <returns>The reward's report inputs and settlement, or null when the battle was not won.</returns>
         internal static BattleOutcomeResolution? ResolveOutcome(PlayerSession? session, BattleFlowController flow, Func<BattleVictoryContext> victory)
         {
             ArgumentNullException.ThrowIfNull(victory);

@@ -10,6 +10,7 @@ public sealed class FightReportController
     private readonly FightReportFade _footer = new();
     private readonly FightReportFade _exit = new();
     private readonly FightReportMessageBox _message;
+    private readonly IFightReportSettlement? _settlement;
     private FightReportPhase _phase;
     private int _time;
     private int _bgScroll;
@@ -20,10 +21,13 @@ public sealed class FightReportController
     /// <summary>Initializes a new instance of the <see cref="FightReportController"/> class.</summary>
     /// <param name="input">Completed battle reward data.</param>
     /// <param name="tokenCounter">Optional typed-glyph count of each message resolved with its substitutions, so the typewriter reveals the whole text.</param>
+    /// <param name="settlement">Optional staged settlement credited at each partner's raise, the money page and the item page.
+    /// Without one the input is played as already settled.</param>
     /// <exception cref="ArgumentNullException">Thrown when the input or its party list is null.</exception>
-    public FightReportController(FightReportInput input, Func<int, IReadOnlyList<int>, int>? tokenCounter = null)
+    public FightReportController(FightReportInput input, Func<int, IReadOnlyList<int>, int>? tokenCounter = null, IFightReportSettlement? settlement = null)
     {
         _input = input ?? throw new ArgumentNullException(nameof(input));
+        _settlement = settlement;
         ArgumentNullException.ThrowIfNull(input.Partners);
         _partners = [.. input.Partners.Select(partner => new FightReportPartnerPanel(partner))];
         _message = new FightReportMessageBox(input.MessageTokenCounts, tokenCounter);
@@ -32,6 +36,9 @@ public sealed class FightReportController
 
     /// <summary>Gets the state that should be drawn for the current display frame.</summary>
     public FightReportView View { get; private set; }
+
+    /// <summary>Gets each panel's current report row, settled once its partner was raised.</summary>
+    public IReadOnlyList<FightReportPartner> Sources => [.. _partners.Select(partner => partner.Source)];
 
     /// <summary>Gets diagnostic entries emitted while unsupported report details are encountered.</summary>
     public IReadOnlyList<string> Logs => _logs;
@@ -78,10 +85,11 @@ public sealed class FightReportController
         View = BuildView();
     }
 
-    /// <summary>Tests whether a panel needs the reward sequence for partner or used-form progression.</summary>
-    /// <param name="partner">Settled report partner.</param>
-    /// <returns>True when partner or form experience was awarded or a form was unlocked.</returns>
-    private static bool HasReward(FightReportPartner partner) => partner.ExpGained > 0 || partner.FormSlots.Any(slot => slot.ExpGained > 0) || partner.LearnedForms.Count > 0;
+    /// <summary>Tests whether a panel runs the reward sequence. The original selects only partners that earned experience,
+    /// so a partner without experience gets no form progression either.</summary>
+    /// <param name="partner">Report partner.</param>
+    /// <returns>True when partner experience was awarded.</returns>
+    private static bool HasReward(FightReportPartner partner) => partner.ExpGained > 0;
 
     /// <summary>Scrolls the background one pixel every other frame, wrapping at 96.</summary>
     private void TickBackground()
@@ -173,7 +181,7 @@ public sealed class FightReportController
         return FightReportPhase.ExpMessage;
     }
 
-    /// <summary>Once the experience message is read, starts the selected panel's experience sequence.</summary>
+    /// <summary>Once the experience message is read, credits the selected partner through the settlement and starts its panel's experience sequence.</summary>
     /// <returns>The raise phase once the message is read, otherwise the current phase.</returns>
     private FightReportPhase ExpMessage()
     {
@@ -183,6 +191,11 @@ public sealed class FightReportController
         }
 
         var partner = _partners[_partnerIndex];
+        if (_settlement is not null)
+        {
+            partner.Raise(_settlement.RaisePartner(partner.Source));
+        }
+
         partner.ExpSequenceStarted = true;
         partner.Phase = FightReportPartnerPhase.SlotExp;
         return FightReportPhase.RaisePartner;
@@ -203,7 +216,7 @@ public sealed class FightReportController
     }
 
     /// <summary>
-    /// Shows message 10 with the money won, then, once it is read, the item message when the
+    /// Credits the money and shows message 10 with it, then, once it is read, the item message when the
     /// battle dropped an item (item 0 means none) or the exit.
     /// </summary>
     /// <returns>The item or exit phase once the money message is read, otherwise the current phase.</returns>
@@ -211,6 +224,7 @@ public sealed class FightReportController
     {
         if (_message.IsEmpty)
         {
+            _settlement?.CreditMoney();
             _message.Start(10, _input.Money);
             return _phase;
         }
@@ -223,10 +237,11 @@ public sealed class FightReportController
         return _input.Item == 0 ? FightReportPhase.StartExit : FightReportPhase.ItemStart;
     }
 
-    /// <summary>Shows message 11 with the dropped item.</summary>
+    /// <summary>Credits the dropped item and shows message 11 with it.</summary>
     /// <returns>The item message phase.</returns>
     private FightReportPhase ItemStart()
     {
+        _settlement?.CreditItem();
         _message.Start(11, _input.Item);
         return FightReportPhase.ItemMessage;
     }

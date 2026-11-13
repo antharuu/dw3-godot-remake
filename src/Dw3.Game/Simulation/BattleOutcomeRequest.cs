@@ -14,17 +14,11 @@ public sealed class BattleOutcomeRequest
     /// <summary>Gets the encounter id used by the structured reward diagnostic.</summary>
     public int Encounter { get; init; }
 
-    /// <summary>Gets each party slot's persistent growth state, null for a slot that does not grow.</summary>
+    /// <summary>Gets each party slot's persistent growth state, read for the levels and experience before the reward, null for a slot that does not grow.</summary>
     public IReadOnlyList<PartnerGrowthState?>? PartyGrowth { get; init; }
 
-    /// <summary>Gets decoded growth tables.</summary>
-    public GrowthTables? GrowthTables { get; init; }
-
-    /// <summary>Gets the battle random source used by level-up stat rolls.</summary>
+    /// <summary>Gets the battle random source used by the enemy item drop.</summary>
     public required IBattleRng Random { get; init; }
-
-    /// <summary>Gets decoded partner growth metadata for a party slot.</summary>
-    public required Func<int, DigimonData> DigimonFor { get; init; }
 
     /// <summary>Gets decoded display text for a fighter id.</summary>
     public required Func<int, BattleTextLine> NameFor { get; init; }

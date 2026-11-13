@@ -103,12 +103,12 @@ internal static class FormProgressFixture
     }
 
     /// <summary>Builds the victory inputs.</summary>
-    /// <param name="digimonExp">Encounter form experience.</param>
+    /// <param name="digimonExp">Encounter form experience. The partner experience is 30, since the original runs a partner's form progression only when it earned experience.</param>
     /// <param name="tree">Optional first-partner evolution entries.</param>
     /// <param name="fighters">Optional replacement catalogue.</param>
     /// <returns>The production settlement context.</returns>
     public static BattleVictoryContext Victory(int digimonExp, IReadOnlyList<DigivolutionEntry>? tree = null, FighterData? fighters = null) => new(
-        new BattleReward(DigimonExp: digimonExp, Exp: 0, Money: 0),
+        new BattleReward(DigimonExp: digimonExp, Exp: 30, Money: 0),
         1,
         fighters ?? Fighters(),
         RewardSessionFixture.GrowthTables(),

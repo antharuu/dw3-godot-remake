@@ -144,7 +144,7 @@ public sealed class BattleFormRewardIntegrationTests
             ["4:", "5:12", "6:11", "8:8", "9:"],
             run.Messages.Where(message => message.Entry is >= 4 and <= 9).Select(message => $"{message.Entry}:{string.Join(",", message.Substitutions)}"));
         Assert.Equal(4, resolution.FightReport.Partners[0].AcquiredFormCount);
-        Assert.Equal([5, 1, 1], resolution.FightReport.Partners[0].SlotLevels);
+        Assert.Equal([4, 1, 1], resolution.FightReport.Partners[0].SlotLevels);
     }
 
     /// <summary>
@@ -226,7 +226,7 @@ public sealed class BattleFormRewardIntegrationTests
     /// <param name="victory">Victory inputs.</param>
     /// <returns>The delivered resolution.</returns>
     private static BattleOutcomeResolution Resolve(PlayerSession session, BattleFlowController flow, BattleVictoryContext victory) =>
-        GameHost.BattleSetupCoordinator.ResolveOutcome(session, flow, () => victory) ?? throw new InvalidOperationException("battle was not won");
+        (GameHost.BattleSetupCoordinator.ResolveOutcome(session, flow, () => victory) ?? throw new InvalidOperationException("battle was not won")).CommitAll();
 
     /// <summary>Returns one session partner.</summary>
     /// <param name="session">Persistent session.</param>

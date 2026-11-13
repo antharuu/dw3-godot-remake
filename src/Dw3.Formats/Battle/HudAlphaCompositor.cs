@@ -31,6 +31,19 @@ public static class HudAlphaCompositor
         return (canvas, minX, minY);
     }
 
+    /// <summary>
+    /// Composites <paramref name="parts"/> in the order SpriteDrawer's primitives reach the screen. It queues the frame's
+    /// part records from the last to the first, and each queued primitive is linked in front of the ordering-table entry,
+    /// so the first record is drawn first and the last record ends on top.
+    /// </summary>
+    /// <param name="parts">Rendered parts in frame-record order; at least one.</param>
+    /// <returns>The composed image and the bounding box origin relative to the frame anchor.</returns>
+    public static (HudRgbaImage Image, int MinX, int MinY) ComposeInDrawOrder(IReadOnlyList<HudRenderedPart> parts)
+    {
+        ArgumentNullException.ThrowIfNull(parts);
+        return ComposeBackToFront([.. parts.Reverse()]);
+    }
+
     /// <summary>Draws <paramref name="source"/> over <paramref name="destination"/> with its top-left corner at (x, y), clipping at the edges.</summary>
     /// <param name="destination">Canvas modified in place.</param>
     /// <param name="source">Image drawn on top.</param>

@@ -33,6 +33,7 @@ public sealed class FormExpSettlementTests
         BattleOutcomeResolution? resolution = GameHost.BattleSetupCoordinator.ResolveOutcome(session, flow, () => FormProgressFixture.Victory(digimonExp: 30));
 
         Assert.NotNull(resolution);
+        resolution.CommitAll();
         PlayerSessionPartner partner = Assert.IsType<PlayerSessionPartner>(session.Partners[0]);
         Assert.All(forms, form => Assert.Equal(expected, partner.FormProgress(form).Exp));
     }

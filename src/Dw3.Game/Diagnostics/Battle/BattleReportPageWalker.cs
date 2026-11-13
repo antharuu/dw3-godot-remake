@@ -25,6 +25,7 @@ internal sealed class BattleReportPageWalker
 
     private readonly IBattleProbeHost _host;
     private readonly string _captureRoot;
+    private readonly Action<int, bool>? _observe;
     private readonly List<int> _entries = [];
     private bool _wasWaiting;
     private int _frame;
@@ -34,10 +35,12 @@ internal sealed class BattleReportPageWalker
     /// <summary>Initializes a new instance of the <see cref="BattleReportPageWalker"/> class.</summary>
     /// <param name="host">Live battle host whose report owns input.</param>
     /// <param name="captureRoot">Directory receiving one PNG per report page.</param>
-    public BattleReportPageWalker(IBattleProbeHost host, string captureRoot)
+    /// <param name="observe">Optional check run with each page's entry when it waits (false) and once it was confirmed (true).</param>
+    public BattleReportPageWalker(IBattleProbeHost host, string captureRoot, Action<int, bool>? observe = null)
     {
         _host = host;
         _captureRoot = captureRoot;
+        _observe = observe;
     }
 
     /// <summary>Gets the message entries confirmed, in reading order.</summary>
@@ -60,12 +63,14 @@ internal sealed class BattleReportPageWalker
             var name = $"report-page-{page:00}-entry-{message.Entry:00}.png";
             await BattleProbeCapture.CaptureRawAsync(_host, _captureRoot, name);
             QuietLog.Info($"battle-report checkpoint=page index={page} frame={_frame} entry={message.Entry} values=[{string.Join(",", message.Substitutions)}] tokens={message.TokensRevealed}/{message.TokenCount} capture={name}");
+            _observe?.Invoke(message.Entry, false);
             if (page == 0)
             {
                 await HoldWithoutInputAsync();
             }
 
             await ConfirmAsync(message.Entry, page == 1 ? HeldFrames : 1);
+            _observe?.Invoke(message.Entry, true);
             page++;
         }
 

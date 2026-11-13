@@ -25,7 +25,7 @@ public static class GrowthCalculator
         var statTier = TierOf(level, StatTierStarts);
         for (var index = 0; index < state.BattleStats.Length; index++)
         {
-            var gain = tables.StatGains[statTier][curve.StatGrowth[index] + (rng.NextValue() % 5)];
+            var gain = tables.StatGain(statTier, curve.StatGrowth[index] + (rng.NextValue() % 5));
             state.BattleStats[index] = CapStat(state.BattleStats[index] + gain);
         }
 
@@ -36,7 +36,7 @@ public static class GrowthCalculator
 
         for (var index = 0; index < state.Resistances.Length; index++)
         {
-            var gain = tables.ResistGains[curve.ResistGrowth[index] + (rng.NextValue() % 4)];
+            var gain = tables.ResistGain(curve.ResistGrowth[index] + (rng.NextValue() % 4));
             state.Resistances[index] = CapStat(state.Resistances[index] + gain);
         }
     }

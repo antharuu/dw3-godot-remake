@@ -28,7 +28,6 @@ public sealed class BattleRewardResolutionTests
             Flow = flow,
             Reward = new BattleReward(DigimonExp: 1, Exp: 100, Money: 50),
             Random = new SequenceRng(0, 1023),
-            DigimonFor = _ => throw new Xunit.Sdk.XunitException("growth must not be read without tables"),
             NameFor = id => BattleTextCatalog.Tokens([], $"fighter-{id}"),
             Text = EmptyText(),
         });
@@ -59,7 +58,6 @@ public sealed class BattleRewardResolutionTests
             Flow = flow,
             Reward = new BattleReward(DigimonExp: 0, Exp: 0, Money: 50),
             Random = random,
-            DigimonFor = _ => throw new Xunit.Sdk.XunitException("growth must not be read without tables"),
             NameFor = id => BattleTextCatalog.Tokens([], $"fighter-{id}"),
             HasMoneyBonusEquipment = true,
             HasPrize = true,
@@ -94,7 +92,6 @@ public sealed class BattleRewardResolutionTests
             Flow = flow,
             Reward = new BattleReward(DigimonExp: 0, Exp: 200, Money: 0),
             Random = new SequenceRng(),
-            DigimonFor = _ => throw new Xunit.Sdk.XunitException("growth must not be read without tables"),
             NameFor = id => BattleTextCatalog.Tokens([], $"fighter-{id}"),
             HasExperienceBonusEquipment = index => index == 1,
             Text = EmptyText(),

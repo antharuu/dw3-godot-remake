@@ -69,12 +69,17 @@ public sealed partial class FightReportRenderer : IDisposable
         _fader.Color = new Color(0, 0, 0, Mathf.Clamp(view.ExitFade / 4096f, 0, 1));
     }
 
-    /// <summary>Draws report frames, partner rows, and message text.</summary>
+    /// <summary>
+    /// Draws the report in three ordered passes: the opaque sprites on this control, then the semi-transparent sprite texels
+    /// on an additive layer, as the original's semi-transparent sprites add to the screen, then every text window on top.
+    /// </summary>
     private sealed partial class ReportControl : Control
     {
-        private readonly Dictionary<int, ImageTexture[]> _frames = [];
+        private readonly FightReportSpriteSheet _sheet = new();
 
-        private readonly Dictionary<int, Vector2> _offsets = [];
+        private readonly FightReportLayer _additive;
+
+        private readonly FightReportLayer _textLayer;
 
         private readonly PsxTextPainter _text;
 
@@ -98,7 +103,13 @@ public sealed partial class FightReportRenderer : IDisposable
         public ReportControl()
         {
             MouseFilter = MouseFilterEnum.Ignore;
-            _text = new PsxTextPainter(this);
+            _additive = new FightReportLayer { Material = new CanvasItemMaterial { BlendMode = CanvasItemMaterial.BlendModeEnum.Add } };
+            _additive.Painter = DrawAdditivePass;
+            AddChild(_additive);
+            _textLayer = new FightReportLayer();
+            _textLayer.Painter = DrawTextPass;
+            AddChild(_textLayer);
+            _text = new PsxTextPainter(_textLayer);
         }
 
         /// <summary>Loads report frame textures and text metrics.</summary>
@@ -106,20 +117,7 @@ public sealed partial class FightReportRenderer : IDisposable
         /// <param name="font">Decoded font metrics.</param>
         public void Configure(BattleReportSprites sprites, FontData font)
         {
-            _frames.Clear();
-            _offsets.Clear();
-            foreach (var (id, frame) in sprites.Frames)
-            {
-                var images = frame.ClutRows.Select(Image.LoadFromFile).ToArray();
-                if (images.Any(image => image is null || image.IsEmpty()))
-                {
-                    throw new CacheResourceException("CACHE_RESOURCE_UNAVAILABLE", $"battle report frame unreadable frame={id}");
-                }
-
-                _frames[id] = [.. images.Select(image => ImageTexture.CreateFromImage(image))];
-                _offsets[id] = new Vector2(frame.OffsetX, frame.OffsetY);
-            }
-
+            _sheet.Load(sprites);
             var arrowImages = sprites.Arrow.ClutRows.Select(Image.LoadFromFile).ToArray();
             if (arrowImages.Any(image => image is null || image.IsEmpty()))
             {
@@ -132,7 +130,7 @@ public sealed partial class FightReportRenderer : IDisposable
             _text.SetFont(font);
         }
 
-        /// <summary>Stores report state and requests a redraw.</summary>
+        /// <summary>Stores report state and requests a redraw of every pass.</summary>
         /// <param name="view">Report view to render.</param>
         /// <param name="catalog">Text catalog for report messages.</param>
         /// <param name="names">Fighter names indexed by identifier.</param>
@@ -149,9 +147,11 @@ public sealed partial class FightReportRenderer : IDisposable
             _itemNames = itemNames;
             _messageResolver = new FightReportMessageLineResolver(catalog, ResolveFighterName, ResolveItemName);
             QueueRedraw();
+            _additive.QueueRedraw();
+            _textLayer.QueueRedraw();
         }
 
-        /// <summary>Draws the report background, partner rows, and message.</summary>
+        /// <summary>Draws the opaque pass: the background, the header and footer windows and every panel's opaque sprites.</summary>
         public override void _Draw()
         {
             if (_view is not { } view || _catalog is null)
@@ -164,7 +164,7 @@ public sealed partial class FightReportRenderer : IDisposable
             {
                 for (var x = view.BgScroll - 96; x < 320; x += 96)
                 {
-                    DrawFrame(0x1e, x, y);
+                    _sheet.DrawOpaque(this, 0x1e, new Vector2(x, y));
                 }
             }
 
@@ -172,11 +172,87 @@ public sealed partial class FightReportRenderer : IDisposable
             DrawScaledFrame(0x1d, new Vector2(0x0b, 0xbc), new Vector2(1, view.FooterFade / 4096f), new Vector2(0xa0, 0xce));
             for (var index = 0; index < view.Partners.Count; index++)
             {
-                DrawPartner(view.Partners[index], index);
+                DrawPartnerSprites(view.Partners[index], index * 50);
+            }
+        }
+
+        /// <summary>Returns the portrait frame for a number of animation steps. A sequence restarts at its first -1 entry.</summary>
+        /// <param name="sequence">The partner's up to seven frame ids, -1 ending it early.</param>
+        /// <param name="steps">Animation steps elapsed.</param>
+        /// <returns>The frame id, or null for an empty sequence.</returns>
+        private static int? PortraitFrame(int[] sequence, int steps)
+        {
+            var length = Array.IndexOf(sequence, -1);
+            length = length < 0 ? sequence.Length : length;
+            return length == 0 ? null : sequence[steps % length];
+        }
+
+        /// <summary>Draws the selection cursor, the current slot's cursor and the raise's level-up markers.</summary>
+        /// <param name="partner">Partner state to render.</param>
+        /// <param name="y">Panel vertical origin.</param>
+        /// <param name="draw">Frame drawer of the current pass.</param>
+        private static void DrawPartnerMarkers(FightReportPartnerView partner, int y, Action<int, Vector2, int> draw)
+        {
+            if (partner.Selected)
+            {
+                if (partner.Raising && partner.SlotCursor >= 0)
+                {
+                    draw(0x25, new Vector2(0x87, y + 0x26 + (partner.SlotCursor * 15)), partner.CursorFrame);
+                }
+
+                draw(0x24, new Vector2(0x11, y + 0x26), partner.CursorFrame);
+            }
+
+            if (!partner.Raising)
+            {
+                return;
+            }
+
+            for (var slot = 0; slot < partner.Slots.Count; slot++)
+            {
+                if (partner.Slots[slot].Blinking)
+                {
+                    draw(0x23, new Vector2(0xEF, y + 0x23 + (slot * 15)), partner.Slots[slot].BlinkFrame);
+                }
+            }
+
+            if (partner.LevelBlinking)
+            {
+                draw(0x22, new Vector2(0x63, y + 0x2B), partner.LevelBlinkFrame);
+            }
+        }
+
+        /// <summary>Draws the semi-transparent texels of every panel's cursors and blink markers.</summary>
+        /// <param name="layer">Additive layer.</param>
+        private void DrawAdditivePass(FightReportLayer layer)
+        {
+            if (_view is not { } view)
+            {
+                return;
+            }
+
+            for (var index = 0; index < view.Partners.Count; index++)
+            {
+                DrawPartnerMarkers(view.Partners[index], index * 50, (frame, position, row) => _sheet.DrawAdditive(layer, frame, position, row));
+            }
+        }
+
+        /// <summary>Draws every text window and the message arrow over the sprites.</summary>
+        /// <param name="layer">Text layer.</param>
+        private void DrawTextPass(FightReportLayer layer)
+        {
+            if (_view is not { } view || _catalog is null)
+            {
+                return;
+            }
+
+            for (var index = 0; index < view.Partners.Count; index++)
+            {
+                DrawPartnerText(view.Partners[index], index * 50);
             }
 
             DrawHeaderExp(view.HeaderExp);
-            DrawMessage(view.Message);
+            DrawMessage(layer, view.Message);
         }
 
         /// <summary>Draws the selected partner's experience and its FGTRPT label in the header windows.</summary>
@@ -192,44 +268,75 @@ public sealed partial class FightReportRenderer : IDisposable
             _text.DrawLine(3, 0x45, 0x17, _catalog.Report("expLabel"), false, 0);
         }
 
-        /// <summary>Draws one partner row and its optional selection cursor.</summary>
+        /// <summary>
+        /// Draws one partner panel's opaque sprites as the original's drawPartner does. Its sprites share one
+        /// ordering-table depth, where a later call is drawn behind an earlier one, so they are painted here in reverse
+        /// call order: the three slot bars, the panel frame, the portrait, then the slot and selection cursors and the
+        /// raise's blink markers.
+        /// </summary>
         /// <param name="partner">Partner state to render.</param>
-        /// <param name="index">Vertical row index.</param>
-        private void DrawPartner(FightReportPartnerView partner, int index)
+        /// <param name="y">Panel vertical origin.</param>
+        private void DrawPartnerSprites(FightReportPartnerView partner, int y)
         {
-            if (partner.Fade <= 0)
+            if (partner.Fade > 0)
+            {
+                DrawPanelSprites(partner, y, partner.Fade / 4096f);
+            }
+
+            DrawPartnerMarkers(partner, y, (frame, position, row) => _sheet.DrawOpaque(this, frame, position, row));
+        }
+
+        /// <summary>Draws one panel's text windows once it is fully shown.</summary>
+        /// <param name="partner">Partner state to render.</param>
+        /// <param name="y">Panel vertical origin.</param>
+        private void DrawPartnerText(FightReportPartnerView partner, int y)
+        {
+            if (!partner.TextVisible)
             {
                 return;
             }
 
-            var y = index * 50;
-            var alpha = partner.Fade / 4096f;
-            DrawFrame(0x1f, 17, y + 38, 0, new Color(1, 1, 1, alpha));
-            DrawFrame(0x22, 55, y + 42, 0, new Color(1, 1, 1, alpha));
-            DrawFrame(0x22, 135, y + 52, 0, new Color(1, 1, 1, alpha));
-            DrawFrame(0x22, 135, y + 67, 0, new Color(1, 1, 1, alpha));
-            DrawFrame(0x22, 135, y + 82, 0, new Color(1, 1, 1, alpha));
-            if (partner.PartnerId >= 0 && partner.PartnerId < _animations.Count)
-            {
-                var sequence = _animations[partner.PartnerId];
-                var frameIndex = sequence[Math.Min(partner.AnimationFrame % sequence.Length, sequence.Length - 1)];
-                if (frameIndex >= 0)
-                {
-                    DrawFrame(frameIndex, 20, y + 40, 0, new Color(1, 1, 1, alpha));
-                }
-            }
-
             if (_names.TryGetValue(partner.FighterId, out var name))
             {
-                _text.DrawLine(1, 61, y + 40, name, false, 0);
+                _text.DrawLine(1, 0x3D, y + 0x28, name, false, 0);
             }
 
             DrawPartnerNumbers(partner, y);
             DrawSlots(partner, y);
-            if (partner.Selected)
+        }
+
+        /// <summary>Draws the slot bars, the panel frame and the portrait, squeezed horizontally while the panel fades.</summary>
+        /// <param name="partner">Partner state to render.</param>
+        /// <param name="y">Panel vertical origin.</param>
+        /// <param name="scale">Horizontal fade scale, 1 when fully shown.</param>
+        private void DrawPanelSprites(FightReportPartnerView partner, int y, float scale)
+        {
+            for (var slot = 0; slot < partner.Slots.Count; slot++)
             {
-                DrawFrame(0x24 + (partner.CursorFrame % 2), 20, y + 40);
+                FightReportSlotView row = partner.Slots[slot];
+                var rowY = y + (slot * 15);
+                DrawSqueezedFrame(0x20, new Vector2(0x87, rowY + 0x26), scale, new Vector2(0x87, rowY + 0x2D), row.Blinking ? row.BlinkFrame : 0);
             }
+
+            var pivot = new Vector2(0x11, y + 0x3A);
+            DrawSqueezedFrame(0x1f, new Vector2(0x11, y + 0x26), scale, pivot, partner.LevelBlinking ? partner.LevelBlinkFrame : 0);
+            if (partner.PartnerId >= 0 && partner.PartnerId < _animations.Count && PortraitFrame(_animations[partner.PartnerId], partner.AnimationFrame) is int frame)
+            {
+                DrawSqueezedFrame(frame, new Vector2(0x14, y + 0x28), scale, pivot, 0);
+            }
+        }
+
+        /// <summary>Draws a frame scaled horizontally around a pivot, as the panel fade does.</summary>
+        /// <param name="frame">Frame identifier.</param>
+        /// <param name="position">Destination position at full scale.</param>
+        /// <param name="scale">Horizontal scale.</param>
+        /// <param name="pivot">Fixed point of the scale.</param>
+        /// <param name="row">Colour row.</param>
+        private void DrawSqueezedFrame(int frame, Vector2 position, float scale, Vector2 pivot, int row)
+        {
+            DrawSetTransform(new Vector2(pivot.X * (1 - scale), 0), 0, new Vector2(scale, 1));
+            _sheet.DrawOpaque(this, frame, position, row);
+            DrawSetTransform(Vector2.Zero, 0, Vector2.One);
         }
 
         /// <summary>Draws the source report's partner level and spaced experience windows.</summary>
@@ -247,7 +354,7 @@ public sealed partial class FightReportRenderer : IDisposable
             }
         }
 
-        /// <summary>Draws the three pre-unlock equipped-form rows with decoded names and settled levels.</summary>
+        /// <summary>Draws the occupied slot rows' decoded form names and levels.</summary>
         /// <param name="partner">Partner slot values to display.</param>
         /// <param name="y">Panel vertical origin.</param>
         private void DrawSlots(FightReportPartnerView partner, int y)
@@ -255,12 +362,10 @@ public sealed partial class FightReportRenderer : IDisposable
             for (var slotIndex = 0; slotIndex < partner.Slots.Count; slotIndex++)
             {
                 FightReportSlotView slot = partner.Slots[slotIndex];
-                if (!slot.Visible)
+                if (slot.Visible)
                 {
-                    continue;
+                    DrawSlot(slot, y + (slotIndex * 15));
                 }
-
-                DrawSlot(slot, y + (slotIndex * 15));
             }
         }
 
@@ -295,8 +400,9 @@ public sealed partial class FightReportRenderer : IDisposable
             : BattleTextLine.Missing;
 
         /// <summary>Draws the current report message and advance arrow.</summary>
+        /// <param name="layer">Text layer.</param>
         /// <param name="message">Optional message state to render.</param>
-        private void DrawMessage(FightReportMessage? message)
+        private void DrawMessage(FightReportLayer layer, FightReportMessage? message)
         {
             if (message is null || _messageResolver is null)
             {
@@ -307,7 +413,7 @@ public sealed partial class FightReportRenderer : IDisposable
             _text.DrawLine(1, 0x14, 0xc2, line, false, 0, message.TokensRevealed);
             if (message.ArrowVisible && _arrow is { Length: > 0 })
             {
-                DrawTexture(_arrow[message.ArrowFrame % _arrow.Length], new Vector2(0x123, 0xd0) + _arrowOffset);
+                layer.DrawTexture(_arrow[message.ArrowFrame % _arrow.Length], new Vector2(0x123, 0xd0) + _arrowOffset);
             }
         }
 
@@ -324,25 +430,8 @@ public sealed partial class FightReportRenderer : IDisposable
             }
 
             DrawSetTransform(position + pivot, 0, scale);
-            DrawFrame(frame, -pivot.X, -pivot.Y);
+            _sheet.DrawOpaque(this, frame, -pivot);
             DrawSetTransform(Vector2.Zero, 0, Vector2.One);
-        }
-
-        /// <summary>Draws one indexed report frame with an optional colour-row selection.</summary>
-        /// <param name="frame">Frame identifier to draw.</param>
-        /// <param name="x">Destination horizontal coordinate.</param>
-        /// <param name="y">Destination vertical coordinate.</param>
-        /// <param name="row">Colour-row index.</param>
-        /// <param name="modulate">Optional colour multiplier.</param>
-        private void DrawFrame(int frame, float x, float y, int row = 0, Color? modulate = null)
-        {
-            if (!_frames.TryGetValue(frame, out var rows))
-            {
-                return;
-            }
-
-            var offset = _offsets.TryGetValue(frame, out var value) ? value : Vector2.Zero;
-            DrawTexture(rows[Math.Clamp(row, 0, rows.Length - 1)], new Vector2(x, y) + offset, modulate ?? Colors.White);
         }
     }
 }

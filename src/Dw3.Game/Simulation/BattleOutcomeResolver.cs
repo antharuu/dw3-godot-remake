@@ -6,8 +6,10 @@ namespace Dw3Production.Simulation;
 /// <summary>Applies a victory reward and builds both battle-report representations.</summary>
 public static class BattleOutcomeResolver
 {
-    /// <summary>Shares experience among fighters that participated and applies growth.</summary>
-    /// <param name="request">Terminal battle, reward and party growth state.</param>
+    /// <summary>Shares experience among fighters that participated and snapshots the awards without applying them.</summary>
+    /// <remarks>The original report credits each partner's experience during its raise and the money and item at their
+    /// own pages, so growth is applied later through <see cref="ApplyPartnerGrowth"/> by the report settlement.</remarks>
+    /// <param name="request">Terminal battle, reward and party growth state, which is only read.</param>
     /// <returns>Battle HUD and detailed report inputs.</returns>
     public static BattleOutcomeResolution ResolveVictory(BattleOutcomeRequest request)
     {
@@ -32,6 +34,31 @@ public static class BattleOutcomeResolver
         var fightReport = new FightReportInput(reportPartners, money, item);
         string log = BuildLog(request.Encounter, request.Reward, eligible.Count, expShare, money, item, partners);
         return new BattleOutcomeResolution(report, fightReport, log);
+    }
+
+    /// <summary>Applies one partner's gained experience to its persistent growth, as the original report's raise does.</summary>
+    /// <param name="tables">Decoded growth tables, or null when they were not loaded.</param>
+    /// <param name="state">Mutable growth state, or null when the partner does not grow.</param>
+    /// <param name="digimon">Base form record whose growth curve the partner levels with.</param>
+    /// <param name="gained">Experience credited to the partner.</param>
+    /// <param name="random">Shared stream consumed by every level-up's random gains.</param>
+    /// <returns>True when the gain caused at least one level-up.</returns>
+    public static bool ApplyPartnerGrowth(GrowthTables? tables, PartnerGrowthState? state, DigimonData digimon, int gained, IBattleRng random)
+    {
+        ArgumentNullException.ThrowIfNull(digimon);
+        ArgumentNullException.ThrowIfNull(random);
+        if (gained <= 0 || state is null || tables is null)
+        {
+            return false;
+        }
+
+        var curve = new PartnerGrowthCurve(
+            digimon.ExpRate,
+            digimon.HpGrowth,
+            digimon.MpGrowth,
+            digimon.StatGrowth,
+            digimon.ResistGrowth);
+        return GrowthCalculator.AddExp(tables, state, curve, gained, random);
     }
 
     /// <summary>Tests whether one party slot fought and is still alive at battle end, the original reward condition.</summary>
@@ -67,15 +94,13 @@ public static class BattleOutcomeResolver
         PartnerGrowthState? before = GrowthAt(request, index);
         int levelBefore = before?.Level ?? TestTeamGrowth.Level;
         int expBefore = before?.Exp ?? 0;
-        bool leveled = ApplyGrowth(request, index, gained);
-        int level = GrowthAt(request, index)?.Level ?? TestTeamGrowth.Level;
         partners.Add(new BattlePartnerReportView(
             fighter.Id,
             request.NameFor(fighter.Id),
             gained,
-            level,
-            leveled));
-        reportPartners.Add(new FightReportPartner(index, index, fighter.Id, levelBefore, expBefore, gained, level, []));
+            levelBefore,
+            false));
+        reportPartners.Add(new FightReportPartner(index, index, fighter.Id, levelBefore, expBefore, gained, levelBefore, []));
     }
 
     /// <summary>Returns mutable growth state for a valid party slot.</summary>
@@ -86,29 +111,6 @@ public static class BattleOutcomeResolver
         request.PartyGrowth is not null && index < request.PartyGrowth.Count
             ? request.PartyGrowth[index]
             : null;
-
-    /// <summary>Applies gained experience when every decoded growth dependency is available.</summary>
-    /// <param name="request">Victory state.</param>
-    /// <param name="index">Party slot index.</param>
-    /// <param name="gained">Experience gained by the slot.</param>
-    /// <returns>True when the gain caused at least one level-up.</returns>
-    private static bool ApplyGrowth(BattleOutcomeRequest request, int index, int gained)
-    {
-        PartnerGrowthState? state = GrowthAt(request, index);
-        if (gained <= 0 || state is null || request.GrowthTables is null)
-        {
-            return false;
-        }
-
-        DigimonData digimon = request.DigimonFor(index);
-        var curve = new PartnerGrowthCurve(
-            digimon.ExpRate,
-            digimon.HpGrowth,
-            digimon.MpGrowth,
-            digimon.StatGrowth,
-            digimon.ResistGrowth);
-        return GrowthCalculator.AddExp(request.GrowthTables, state, curve, gained, request.Random);
-    }
 
     /// <summary>Applies the source one-fifth equipment bonus after sharing the encounter experience.</summary>
     /// <param name="expShare">Experience assigned to one eligible participant before equipment.</param>

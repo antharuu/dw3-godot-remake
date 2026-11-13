@@ -151,10 +151,10 @@ public sealed class BattleRewardSettlementTests
     /// <param name="reward">Encounter reward.</param>
     /// <param name="random">Optional counting stream.</param>
     /// <param name="prize">Optional forced prize.</param>
-    /// <returns>The delivered resolution.</returns>
+    /// <returns>The delivered resolution, every report stage committed.</returns>
     internal static BattleOutcomeResolution Resolve(PlayerSession session, BattleFlowController flow, BattleReward reward, IBattleRng? random = null, int? prize = null) =>
-        GameHost.BattleSetupCoordinator.ResolveOutcome(session, flow, () => Context(reward, random ?? new RewardSessionFixture.FixedRng(), prize))
-        ?? throw new Xunit.Sdk.XunitException("a won battle resolved no reward");
+        (GameHost.BattleSetupCoordinator.ResolveOutcome(session, flow, () => Context(reward, random ?? new RewardSessionFixture.FixedRng(), prize))
+        ?? throw new Xunit.Sdk.XunitException("a won battle resolved no reward")).CommitAll();
 
     /// <summary>Builds the victory context with real growth tables.</summary>
     /// <param name="reward">Encounter reward.</param>

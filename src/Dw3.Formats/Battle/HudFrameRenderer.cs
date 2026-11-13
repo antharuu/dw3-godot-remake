@@ -39,14 +39,7 @@ public static class HudFrameRenderer
     {
         ArgumentNullException.ThrowIfNull(parts);
         ArgumentNullException.ThrowIfNull(pages);
-        HudFrameHeader header = HudFrameHeader.Read(sheetBody, frameOffset);
-        var rendered = new HudRenderedPart[header.Count];
-        for (int i = 0; i < header.Count; i++)
-        {
-            (HudSpritePart part, short dx, short dy) = ReadPart(sheetBody, frameOffset, i, parts, "Sprite frame part record is out of range.");
-            rendered[i] = RenderPlacedPart(pages, part, header, clutRowOverride ?? 0, (dx, dy));
-        }
-
+        (HudFrameHeader header, HudRenderedPart[] rendered) = RenderParts(parts, sheetBody, frameOffset, pages, clutRowOverride ?? 0);
         (HudRgbaImage image, int minX, int minY) = HudAlphaCompositor.ComposeBackToFront(rendered);
         return (image.Pixels, image.Width, image.Height, minX, minY, header.Abr);
     }
@@ -84,8 +77,11 @@ public static class HudFrameRenderer
                 BinaryPrimitives.ReadInt16LittleEndian(record.Slice(4)));
         }
 
-        var (rgba, w, h, ox, oy, abr) = RenderFrame(parts, sheetBody, frameOffset, pages, clutRowOverride);
-        return (rgba, w, h, ox, oy, abr, meta);
+        (_, HudRenderedPart[] rendered) = RenderParts(parts, sheetBody, frameOffset, pages, clutRowOverride ?? 0);
+
+        // The report's frames overlap (the portrait plinth lies on the panel), so their parts keep SpriteDrawer's draw order.
+        (HudRgbaImage image, int minX, int minY) = HudAlphaCompositor.ComposeInDrawOrder(rendered);
+        return (image.Pixels, image.Width, image.Height, minX, minY, header.Abr, meta);
     }
 
     /// <summary>
@@ -186,6 +182,31 @@ public static class HudFrameRenderer
         }
 
         return new HudRgbaImage(RenderPart(pages, part, [.. palette], abr), part.Width, part.Height);
+    }
+
+    /// <summary>Renders each part of one frame record at its placement, in frame-record order.</summary>
+    /// <param name="parts">Parsed parts table.</param>
+    /// <param name="sheetBody">Sheet body bytes (starting 4 bytes into the raw file).</param>
+    /// <param name="frameOffset">Offset into sheetBody of the frame record.</param>
+    /// <param name="pages">4-bit texture pages (one or more).</param>
+    /// <param name="clutRow">CLUT row added to every part.</param>
+    /// <returns>The frame header and its rendered parts.</returns>
+    private static (HudFrameHeader Header, HudRenderedPart[] Parts) RenderParts(
+        IReadOnlyList<HudSpritePart> parts,
+        ReadOnlySpan<byte> sheetBody,
+        int frameOffset,
+        IReadOnlyList<HudTexturePage> pages,
+        int clutRow)
+    {
+        HudFrameHeader header = HudFrameHeader.Read(sheetBody, frameOffset);
+        var rendered = new HudRenderedPart[header.Count];
+        for (int i = 0; i < header.Count; i++)
+        {
+            (HudSpritePart part, short dx, short dy) = ReadPart(sheetBody, frameOffset, i, parts, "Sprite frame part record is out of range.");
+            rendered[i] = RenderPlacedPart(pages, part, header, clutRow, (dx, dy));
+        }
+
+        return (header, rendered);
     }
 
     /// <summary>Byte offset of part record <paramref name="index"/> of the frame at <paramref name="frameOffset"/>.</summary>

@@ -9,4 +9,8 @@ namespace Dw3Production.Simulation;
 public sealed record BattleOutcomeResolution(
     BattleReportView Report,
     FightReportInput FightReport,
-    string Log);
+    string Log)
+{
+    /// <summary>Gets the staged settlement that credits the snapshotted awards during the report, or null without a session.</summary>
+    public IFightReportSettlement? Settlement { get; init; }
+}

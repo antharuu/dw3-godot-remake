@@ -10,11 +10,14 @@ internal sealed class FightReportPartnerPanel(FightReportPartner source)
     private readonly bool[] _slotExpApplied = new bool[SlotCount];
     private readonly bool[] _slotLevelBlinks = new bool[SlotCount];
     private readonly int[] _slotBlinkFrames = new int[SlotCount];
+    private readonly int[] _slotIds = SlotIds(source);
+    private readonly int[] _slotLevels = SlotLevels(source);
+    private int _shownLevel = source.LevelBefore;
     private int _skillIndex;
     private int _learnedFormIndex;
 
-    /// <summary>Gets the partner's reward data.</summary>
-    public FightReportPartner Source { get; } = source;
+    /// <summary>Gets the partner's reward data, replaced by the settled row once the partner is raised.</summary>
+    public FightReportPartner Source { get; private set; } = source;
 
     /// <summary>Gets the fade of the whole panel.</summary>
     public FightReportFade Fade { get; } = new();
@@ -49,6 +52,9 @@ internal sealed class FightReportPartnerPanel(FightReportPartner source)
     /// <summary>Gets the number of partner experience-wheel frames elapsed.</summary>
     public int RollTime { get; private set; }
 
+    /// <summary>Gets a value indicating whether the panel runs its raise, the original's substates from 20 on.</summary>
+    private bool Raising => Phase >= FightReportPartnerPhase.SlotExp;
+
     /// <summary>Advances visible animations and one form or partner-report state transition.</summary>
     /// <param name="time">The report frame number.</param>
     /// <param name="messages">The shared report message box.</param>
@@ -66,25 +72,56 @@ internal sealed class FightReportPartnerPanel(FightReportPartner source)
         Phase = NextPhase(messages, logs);
     }
 
-    /// <summary>Builds the visible panel and maps settled form rows to display slots.</summary>
+    /// <summary>Replaces the snapshot row with the row the settlement credited when the partner's raise starts.</summary>
+    /// <param name="settled">The settled row of the same party slot.</param>
+    /// <exception cref="ArgumentException">The row belongs to another party slot.</exception>
+    public void Raise(FightReportPartner settled)
+    {
+        ArgumentNullException.ThrowIfNull(settled);
+        if (settled.PartyIndex != Source.PartyIndex)
+        {
+            throw new ArgumentException($"settled row for party slot {settled.PartyIndex} raised on panel {Source.PartyIndex}", nameof(settled));
+        }
+
+        Source = settled;
+    }
+
+    /// <summary>Builds the visible panel. Like the original, which refills its windows from the live partner every
+    /// raise frame, a slot shows its new level once its experience is given, the partner its new level once its own
+    /// experience is given, and a learned form its free slot row once announced.</summary>
     /// <returns>The panel view for this frame.</returns>
     public FightReportPartnerView ToView()
     {
         FightReportSlotView[] slots = [.. Enumerable.Range(0, SlotCount).Select(BuildSlotView)];
-        return new FightReportPartnerView(Source.PartyIndex, Source.PartnerId, Source.FighterId, Fade.Level, Selected, CursorFrame, LevelBlinkFrame, ShownExp, Source.LevelAfter, AnimationFrame, slots);
+        int slotCursor = Raising && SlotIndex < SlotCount && _slotIds[SlotIndex] > 0 ? SlotIndex : -1;
+        return new FightReportPartnerView(Source.PartyIndex, Source.PartnerId, Source.FighterId, Fade.Level, Selected, CursorFrame, LevelBlinkFrame, ShownExp, _shownLevel, AnimationFrame, slots)
+        {
+            Raising = Raising,
+            SlotCursor = slotCursor,
+            LevelBlinking = LevelBlink,
+            TextVisible = Fade.Level == FightReportFade.FullFade && Phase is not (FightReportPartnerPhase.ShowStart or FightReportPartnerPhase.ShowFade
+                or FightReportPartnerPhase.HideStart or FightReportPartnerPhase.HideFade or FightReportPartnerPhase.Hidden),
+        };
     }
 
-    /// <summary>Builds a source slot view or a hidden placeholder.</summary>
+    /// <summary>Copies the snapshot's equipped forms into the three slot rows, -1 marking a free row.</summary>
+    /// <param name="source">Snapshot row.</param>
+    /// <returns>Three slot form ids.</returns>
+    private static int[] SlotIds(FightReportPartner source) =>
+        [.. Enumerable.Range(0, SlotCount).Select(index => index < source.SlotDigimonIds.Count ? source.SlotDigimonIds[index] : -1)];
+
+    /// <summary>Copies the snapshot's equipped-form levels into the three slot rows.</summary>
+    /// <param name="source">Snapshot row.</param>
+    /// <returns>Three levels, zero when unknown.</returns>
+    private static int[] SlotLevels(FightReportPartner source) =>
+        [.. Enumerable.Range(0, SlotCount).Select(index => index < source.SlotLevels.Count ? source.SlotLevels[index] : 0)];
+
+    /// <summary>Builds a slot row view, hidden when the row holds no form.</summary>
     /// <param name="index">Source slot index.</param>
     /// <returns>The slot snapshot.</returns>
-    private FightReportSlotView BuildSlotView(int index) => index < Source.SlotDigimonIds.Count
-        ? new FightReportSlotView(Source.SlotDigimonIds[index], true, _slotExpApplied[index], _slotBlinkFrames[index], SlotLevel(index))
-        : new FightReportSlotView(-1, false, false, 0, 0);
-
-    /// <summary>Returns the settled level for an equipped source slot.</summary>
-    /// <param name="index">Equipped source slot index.</param>
-    /// <returns>The displayed level, or zero when a legacy input did not carry a slot snapshot.</returns>
-    private int SlotLevel(int index) => index < Source.SlotLevels.Count ? Source.SlotLevels[index] : 0;
+    private FightReportSlotView BuildSlotView(int index) => _slotIds[index] > 0
+        ? new FightReportSlotView(_slotIds[index], true, _slotExpApplied[index], _slotBlinkFrames[index], _slotLevels[index]) { Blinking = _slotLevelBlinks[index] }
+        : new FightReportSlotView(-1, false, false, _slotBlinkFrames[index], 0) { Blinking = _slotLevelBlinks[index] };
 
     /// <summary>Advances the selected cursor at its source cadence.</summary>
     /// <param name="time">The report frame number.</param>
@@ -179,6 +216,7 @@ internal sealed class FightReportPartnerPanel(FightReportPartner source)
         if (slot is not null)
         {
             _slotExpApplied[SlotIndex] = slot.ExpGained > 0;
+            _slotLevels[SlotIndex] = slot.LevelAfter;
         }
 
         return FightReportPartnerPhase.SlotLevel;
@@ -255,13 +293,14 @@ internal sealed class FightReportPartnerPanel(FightReportPartner source)
     /// <returns>The partner level-message wait or new-form phase.</returns>
     private FightReportPartnerPhase PartnerLevel(FightReportMessageBox messages)
     {
+        _shownLevel = Source.LevelAfter;
         if (Source.LevelAfter <= Source.LevelBefore)
         {
             return FightReportPartnerPhase.NewDigimon;
         }
 
         LevelBlink = true;
-        messages.Start(7, Source.PartnerId, Source.LevelAfter);
+        messages.Start(7, Source.FighterId, Source.LevelAfter);
         return FightReportPartnerPhase.LevelMessage;
     }
 
@@ -274,7 +313,9 @@ internal sealed class FightReportPartnerPanel(FightReportPartner source)
     {
         if (_learnedFormIndex < Source.LearnedForms.Count)
         {
-            messages.Start(8, Source.LearnedForms[_learnedFormIndex++].NameId);
+            FightReportLearnedForm form = Source.LearnedForms[_learnedFormIndex++];
+            TakeFreeSlot(form);
+            messages.Start(8, form.NameId);
             return FightReportPartnerPhase.NewDigimonMessage;
         }
 
@@ -285,6 +326,18 @@ internal sealed class FightReportPartnerPanel(FightReportPartner source)
         }
 
         return FightReportPartnerPhase.WaitBlinks;
+    }
+
+    /// <summary>Shows a learned form in the first free slot row, where the original equips it, and keeps the rows when all three are taken.</summary>
+    /// <param name="form">Newly acquired form.</param>
+    private void TakeFreeSlot(FightReportLearnedForm form)
+    {
+        int free = Array.FindIndex(_slotIds, id => id <= 0);
+        if (free >= 0)
+        {
+            _slotIds[free] = form.DigimonId;
+            _slotLevels[free] = form.Level;
+        }
     }
 
     /// <summary>Consumes a completed message before its continuation phase.</summary>

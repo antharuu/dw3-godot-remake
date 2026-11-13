@@ -16,7 +16,7 @@ public sealed class BattleRewardLifecycleTests
         PlayerSession session = RewardSessionFixture.CreateSession(new Dictionary<int, int> { [RewardSessionFixture.DropItem] = 2 });
         BattleFlowController flow = RewardSessionFixture.Build(session);
         RewardSessionFixture.Win(flow);
-        var host = new SettlingHost(flow, () => BattleRewardSettlementTests.Resolve(session, flow, new BattleReward(DigimonExp: 0, Exp: 40, Money: 50)));
+        var host = new SettlingHost(flow, () => GameHost.BattleSetupCoordinator.ResolveOutcome(session, flow, () => BattleRewardSettlementTests.Context(new BattleReward(DigimonExp: 0, Exp: 40, Money: 50), new RewardSessionFixture.FixedRng(), null)) ?? throw new InvalidOperationException("battle was not won"));
         var coordinator = new BattleTickCoordinator(host);
 
         for (int tick = 0; tick < 4000 && !host.Ended; tick++)
@@ -195,7 +195,7 @@ public sealed class BattleRewardLifecycleTests
         public bool AdvanceVictoryFade() => true;
 
         /// <inheritdoc/>
-        public void BeginFightReport() => _report = new FightReportController(_resolution!.FightReport);
+        public void BeginFightReport() => _report = new FightReportController(_resolution!.FightReport, null, _resolution.Settlement);
 
         /// <inheritdoc/>
         public void TickFightReport()

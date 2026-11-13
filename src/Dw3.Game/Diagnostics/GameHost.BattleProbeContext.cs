@@ -2,6 +2,7 @@ using Dw3Production.Conversion;
 using Dw3Production.Diagnostics.Battle;
 using Dw3Production.Input;
 using Dw3Production.Presentation;
+using Dw3Production.Session;
 using Dw3Production.Simulation;
 using Godot;
 
@@ -99,6 +100,12 @@ public partial class GameHost
 
         /// <inheritdoc/>
         public int? SessionMoney => _host._playerSession?.Money;
+
+        /// <inheritdoc/>
+        public PlayerSession? Session => _host._playerSession;
+
+        /// <inheritdoc/>
+        public BattleSetup? ActiveBattle => _host._activeBattle;
 
         /// <inheritdoc/>
         public int ReportFadeFrames => BattleReportFadeFrames;

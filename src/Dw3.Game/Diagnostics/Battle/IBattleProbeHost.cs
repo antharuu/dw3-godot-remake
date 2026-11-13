@@ -1,6 +1,7 @@
 using Dw3Production.Conversion;
 using Dw3Production.Input;
 using Dw3Production.Presentation;
+using Dw3Production.Session;
 using Dw3Production.Simulation;
 using Godot;
 
@@ -85,6 +86,12 @@ internal interface IBattleProbeHost
 
     /// <summary>Gets the persistent session wallet, or null before startup.</summary>
     int? SessionMoney { get; }
+
+    /// <summary>Gets the persistent player session a report fixture prepares, or null before startup.</summary>
+    PlayerSession? Session { get; }
+
+    /// <summary>Gets the active battle's setup, whose scripted prize a report fixture sets as a story battle's setup does, or null.</summary>
+    BattleSetup? ActiveBattle { get; }
 
     /// <summary>Gets the fixed victory-to-report fade duration in simulation steps.</summary>
     int ReportFadeFrames { get; }

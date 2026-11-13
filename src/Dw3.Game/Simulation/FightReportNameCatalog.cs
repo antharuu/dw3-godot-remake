@@ -13,13 +13,32 @@ public static class FightReportNameCatalog
         FightReportInput? input,
         Func<int, BattleTextLine> nameFor)
     {
-        if (input is null)
-        {
-            return [];
-        }
+        return input is null ? [] : Build(input.Partners, nameFor);
+    }
 
-        return input.Partners
-            .SelectMany(partner => partner.SlotDigimonIds.Prepend(partner.FighterId))
+    /// <summary>Maps the running report's current rows, or the resolved input before the report starts, to decoded names.</summary>
+    /// <param name="report">Running report, or null.</param>
+    /// <param name="input">Resolved report input, or null.</param>
+    /// <param name="nameFor">Decoded-name resolver.</param>
+    /// <returns>A fighter-id to display-name map.</returns>
+    public static Dictionary<int, BattleTextLine> Build(
+        FightReportController? report,
+        FightReportInput? input,
+        Func<int, BattleTextLine> nameFor) =>
+        report is null ? Build(input, nameFor) : Build(report.Sources, nameFor);
+
+    /// <summary>Maps every report partner, its equipped forms and the forms it learned to their decoded names.</summary>
+    /// <param name="partners">Current report rows, settled once raised.</param>
+    /// <param name="nameFor">Decoded-name resolver.</param>
+    /// <returns>A fighter-id to display-name map.</returns>
+    public static Dictionary<int, BattleTextLine> Build(
+        IEnumerable<FightReportPartner> partners,
+        Func<int, BattleTextLine> nameFor)
+    {
+        ArgumentNullException.ThrowIfNull(partners);
+        ArgumentNullException.ThrowIfNull(nameFor);
+        return partners
+            .SelectMany(partner => partner.SlotDigimonIds.Concat(partner.LearnedForms.Select(form => form.DigimonId)).Prepend(partner.FighterId))
             .Distinct()
             .ToDictionary(id => id, nameFor);
     }
