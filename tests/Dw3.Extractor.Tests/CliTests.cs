@@ -16,6 +16,17 @@ public sealed class CliTests
     }
 
     [Fact]
+    public void SchemaOptionReportsTheWriterSchemaWithoutOpeningDisc()
+    {
+        using var output = new StringWriter();
+
+        int exitCode = Cli.Run(["--schema-version"], output, TextWriter.Null);
+
+        Assert.Equal(0, exitCode);
+        Assert.Equal(Dw3.Data.DataPackSchema.Version.ToString(System.Globalization.CultureInfo.InvariantCulture) + Environment.NewLine, output.ToString());
+    }
+
+    [Fact]
     public void ExtractUsageListsSupportedDataDomains()
     {
         using var error = new StringWriter();

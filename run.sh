@@ -1,7 +1,7 @@
 #!/bin/sh
 # Development launcher for Dw3 Remake.
-# Run `dotnet build Dw3.sln` first. On first launch the game detects a missing or
-# outdated data pack and runs the extractor itself; no disc access happens here.
+# Build the runtime and extractor together before launching. On first launch the
+# game detects a missing or outdated data pack and runs the extractor itself.
 #
 # Optional environment variables:
 #   DW3_GODOT_BIN       — path to the Godot 4.7.2 mono binary (default: ~/Applications/Godot/...)
@@ -18,6 +18,10 @@ if [ ! -x "$GODOT_BIN" ]; then
   printf '%s\n' "GODOT_REQUIRED: expected Godot 4.7.2 mono at $GODOT_BIN (override DW3_GODOT_BIN)" >&2
   exit 2
 fi
+
+# Build both projects from this same checkout. A failed build must stop launch.
+dotnet build "$ROOT/src/Dw3.Game/Dw3.Game.csproj" --nologo
+dotnet build "$ROOT/src/Dw3.Extractor/Dw3.Extractor.csproj" --nologo
 
 # Expose the extractor binary so the game can spawn it on first launch.
 # DW3_EXTRACTOR can be overridden (e.g. for a production binary placed next to the game).

@@ -42,6 +42,13 @@ godot --path src/Dw3.Game
 On first launch the game asks for your disc and runs the extractor (a few minutes).
 The extracted data is stored in your user data folder and the disc is never needed again.
 
+On Linux, `./run.sh` builds the game and extractor from the same checkout before launch.
+It stops if either build fails. An overridden `DW3_EXTRACTOR` must report the same pack
+schema as the runtime or extraction is refused before reading the disc. If your checkout
+is behind, inspect `git status --short`, then use `git pull --ff-only` only if it can
+update without overwriting your work. Git stops on conflicting untracked files. Preserve
+those files rather than deleting them, then run `./run.sh` from the updated checkout.
+
 Controls and debug keys: [docs/CONTROLS.md](docs/CONTROLS.md). **F3** shows collisions and warps.
 Development, tests, probes, and F3 details: [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 

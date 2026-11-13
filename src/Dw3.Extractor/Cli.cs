@@ -29,6 +29,12 @@ public static class Cli
     /// <returns>POSIX exit code: 0 on success, 1 on extraction error, 2 on usage error.</returns>
     internal static int Run(IReadOnlyList<string> arguments, TextWriter output, TextWriter error, Func<string, IDiscSource> openDisc)
     {
+        if (arguments.Count == 1 && arguments[0] == "--schema-version")
+        {
+            output.WriteLine(Dw3.Data.DataPackSchema.Version.ToString(System.Globalization.CultureInfo.InvariantCulture));
+            return 0;
+        }
+
         if (arguments.Count == 1 && arguments[0] == "--version")
         {
             Version version = typeof(Cli).Assembly.GetName().Version

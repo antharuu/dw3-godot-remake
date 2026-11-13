@@ -10,6 +10,7 @@ namespace Dw3Production;
 public sealed class ExtractionController
 {
     private readonly IExtractorLauncher _launcher;
+    private readonly Func<string, bool> _isPackUsable;
 
     private ExtractionState _state = ExtractionState.Idle;
 
@@ -18,10 +19,12 @@ public sealed class ExtractionController
     /// with the launcher that will spawn the extractor.
     /// </summary>
     /// <param name="launcher">Launcher used to start the extractor child process.</param>
-    public ExtractionController(IExtractorLauncher launcher)
+    /// <param name="isPackUsable">Optional pack validation override for isolated tests.</param>
+    public ExtractionController(IExtractorLauncher launcher, Func<string, bool>? isPackUsable = null)
     {
         ArgumentNullException.ThrowIfNull(launcher);
         _launcher = launcher;
+        _isPackUsable = isPackUsable ?? Startup.DataPackValidator.IsUsable;
     }
 
     /// <summary>
@@ -55,12 +58,25 @@ public sealed class ExtractionController
         }
 
         _state = ExtractionState.Extracting;
+        bool completionSeen = false;
 
-        using var process = _launcher.Launch(discPath, outputDirectory);
+        IExtractorProcess process;
+        try
+        {
+            process = _launcher.Launch(discPath, outputDirectory);
+        }
+        catch (Exception error) when (error is InvalidOperationException or System.ComponentModel.Win32Exception or IOException)
+        {
+            _state = ExtractionState.Error;
+            Failed?.Invoke(error.Message);
+            return;
+        }
+
+        using var ownedProcess = process;
         string? line;
         while ((line = process.ReadLine()) is not null)
         {
-            ProcessLine(line);
+            ProcessLine(line, ref completionSeen);
 
             // Stop reading if the error handler transitioned us out of Extracting.
             if (_state == ExtractionState.Error)
@@ -71,8 +87,17 @@ public sealed class ExtractionController
         }
 
         int exitCode = process.WaitForExit();
-        if (_state == ExtractionState.Complete)
+        if (completionSeen && exitCode == 0)
         {
+            if (!_isPackUsable(outputDirectory))
+            {
+                _state = ExtractionState.Error;
+                Failed?.Invoke("Extracted data pack is missing, incomplete, corrupt, or incompatible.");
+                return;
+            }
+
+            _state = ExtractionState.Complete;
+            Completed?.Invoke();
             return;
         }
 
@@ -90,7 +115,8 @@ public sealed class ExtractionController
     /// property signal completion or failure. Non-JSON lines (diagnostic output) are ignored.
     /// </summary>
     /// <param name="json">Raw text line read from the extractor process stdout.</param>
-    private void ProcessLine(string json)
+    /// <param name="completionSeen">Whether the extractor has emitted its completion event.</param>
+    private void ProcessLine(string json, ref bool completionSeen)
     {
         if (string.IsNullOrWhiteSpace(json))
         {
@@ -118,8 +144,7 @@ public sealed class ExtractionController
                 string ev = evProp.GetString() ?? string.Empty;
                 if (string.Equals(ev, "complete", StringComparison.Ordinal))
                 {
-                    _state = ExtractionState.Complete;
-                    Completed?.Invoke();
+                    completionSeen = true;
                 }
                 else if (string.Equals(ev, "error", StringComparison.Ordinal))
                 {

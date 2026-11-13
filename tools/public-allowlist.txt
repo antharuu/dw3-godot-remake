@@ -882,6 +882,7 @@ tests/Dw3.Game.Tests/LegacyWarpConsoleTests.cs
 tests/Dw3.Game.Tests/RouteStallMonitorTests.cs
 tests/Dw3.Game.Tests/SessionStartResolverTests.cs
 tests/Dw3.Game.Tests/SyntheticDataPackFixture.cs
+tests/Dw3.Game.Tests/SystemExtractorLauncherTests.cs
 tests/Dw3.Game.Tests/TriggerSlotLocatorTests.cs
 tests/Dw3.Game.Tests/Vectors/battle-enemy-ai.json
 tests/Dw3.Game.Tests/Vectors/battle-growth.json
