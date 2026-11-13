@@ -41,6 +41,19 @@ public sealed class BattleDataPackLoaderTests : IDisposable
     }
 
     [Fact]
+    public void EffectModelPathRejectsMissingUnqualifiedEffectRecords()
+    {
+        BuildPack();
+        using var loader = new BattleDataPackLoader(new DataPackReader(_root));
+
+        var requiredError = Assert.Throws<CacheResourceException>(() => loader.EffectModelPath(65));
+        var unknownError = Assert.Throws<CacheResourceException>(() => loader.EffectModelPath(999));
+
+        Assert.StartsWith("CACHE_RESOURCE_UNAVAILABLE: battle effect model 65 is not source-qualified as absent", requiredError.Message, StringComparison.Ordinal);
+        Assert.StartsWith("CACHE_RESOURCE_UNAVAILABLE: battle effect model 999 is not source-qualified as absent", unknownError.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void EffectModelPathRejectsAnAvailableCorruptManifestDistinctly()
     {
         BuildPack();

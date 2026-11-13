@@ -54,32 +54,8 @@ public sealed class BattleDataPackLoader : IDisposable
     /// <summary>Returns the extracted effect-model manifest, or null only when the source registry has no such id.</summary>
     /// <param name="effectId">The script-visible shared effect-model id.</param>
     /// <returns>The validated manifest path, or null for qualified source absence.</returns>
-    /// <exception cref="CacheResourceException">The indexed record is corrupt or its prepared file is unavailable.</exception>
-    public string? EffectModelPath(int effectId)
-    {
-        using SqliteCommand command = _database.CreateCommand();
-        command.CommandText = "SELECT manifest_path FROM battle_effect_models WHERE effect_id=$id";
-        command.Parameters.AddWithValue("$id", effectId);
-        using SqliteDataReader row = command.ExecuteReader();
-        if (!row.Read())
-        {
-            return null;
-        }
-
-        if (row.IsDBNull(0))
-        {
-            throw Invalid($"battle effect model {effectId} has no manifest path");
-        }
-
-        string path = RequireFile(row.GetString(0), $"battle effect model {effectId}");
-        BattleEffectModelManifestValidator.Validate(path, effectId);
-        if (row.Read())
-        {
-            throw Invalid($"battle effect model {effectId} has duplicate records");
-        }
-
-        return path;
-    }
+    /// <exception cref="CacheResourceException">The indexed record is corrupt, unqualified, or its prepared file is unavailable.</exception>
+    public string? EffectModelPath(int effectId) => BattleEffectModelPathResolver.Resolve(_database, effectId, RequireFile);
 
     /// <summary>Returns the validated action script manifest for one fighter and technique script-selector.</summary>
     /// <param name="fighterId">The numeric fighter id to look up.</param>
