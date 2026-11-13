@@ -1398,3 +1398,12 @@ src/Dw3.Game/Diagnostics/Battle/BattleReportPageWalker.cs
 src/Dw3.Game/Diagnostics/Battle/BattleReportSessionSnapshot.cs
 src/Dw3.Game/Conversion/BattleTextGlyphCount.cs
 tests/Dw3.Game.Tests/BattleTextGlyphCountTests.cs
+src/Dw3.Game/Diagnostics/Battle/BattleEntranceSwitchProof.cs
+src/Dw3.Game/Presentation/BattleActorTransitionScene.cs
+src/Dw3.Game/Presentation/BattleEntrancePhase.cs
+src/Dw3.Game/Presentation/BattleEntranceSequence.cs
+src/Dw3.Game/Presentation/BattleEntranceView.cs
+src/Dw3.Game/Presentation/BattleRendererEntranceStage.cs
+src/Dw3.Game/Presentation/BattleWeakIdleRule.cs
+src/Dw3.Game/Presentation/IBattleEntranceStage.cs
+tests/Dw3.Game.Tests/BattleEntranceSequenceTests.cs

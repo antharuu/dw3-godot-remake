@@ -74,6 +74,9 @@ public partial class GameHost
         public int RenderedPlayerId => _host._battleRenderedPlayerId;
 
         /// <inheritdoc/>
+        public BattleEntranceSequence? ActorEntrance => _host._battlePresentationCoordinator.Entrance;
+
+        /// <inheritdoc/>
         public int LastBattleEncounter => _host._lastBattleEncounter;
 
         /// <inheritdoc/>

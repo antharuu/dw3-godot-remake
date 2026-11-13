@@ -364,13 +364,13 @@ internal sealed class BattleInputProbe : BattleProbe
         var switchedFlow = Host.Flow;
         ProbeRequirement.Require(switchedFlow.Phase == BattleFlowPhase.EnemyTurn, $"switch did not spend turn phase={switchedFlow.Phase}");
         Host.Input.Handle(new InputEventKey { Keycode = Key.Enter, Pressed = false });
-        Host.TickTestSimulation();
+        int entranceFrames = await new BattleEntranceSwitchProof(Host, captureRoot).RunAsync(outgoing: 383, incoming: 373);
         ProbeRequirement.Require(
             switchedFlow.State.ActivePlayerFighter?.Id == 373 && Host.RenderedPlayerId == 373,
             $"switch did not render Renamon active={switchedFlow.State.ActivePlayerFighter?.Id} rendered={Host.RenderedPlayerId}");
         var after = await BattleProbeCapture.CaptureAsync(Host, captureRoot, "switch-after-renamon.png");
         var changed = BattlePixelMetrics.CountRgbChanges(before, after, new Rect2(0, 0, before.GetWidth() / 2, before.GetHeight()));
         ProbeRequirement.Require(changed > 500, $"switch capture did not change enough pixels={changed}");
-        QuietLog.Info($"battle-input probe PASS battle-menu open=Switch lines=2 active=373 rendered=373 pixels={changed} captures={captureRoot}");
+        QuietLog.Info($"battle-input probe PASS battle-menu open=Switch lines=2 active=373 rendered=373 entrance_frames={entranceFrames} pixels={changed} captures={captureRoot}");
     }
 }

@@ -39,6 +39,9 @@ public partial class GameHost
     void IBattleTickHost.RefreshModels() => RefreshBattlePresentationModels();
 
     /// <inheritdoc/>
+    bool IBattleTickHost.TickActorTransition() => _battlePresentationCoordinator.TickTransition();
+
+    /// <inheritdoc/>
     void IBattleTickHost.ResolveOutcome() => ResolveBattleOutcome(BattleFlow);
 
     /// <inheritdoc/>

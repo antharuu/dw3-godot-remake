@@ -51,6 +51,10 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
     /// <summary>Gets the optional stage actually displayed by this action.</summary>
     public int DiagnosticStage => _stage?.ActiveStage ?? 0;
 
+    /// <summary>Gets or sets a value indicating whether an actor transition owns the camera and fighter visibility,
+    /// so the command shot camera neither moves the camera nor restores the hidden opponent.</summary>
+    public bool ActorTransitionActive { get; set; }
+
     /// <summary>Gets a value indicating whether a sequence exclusively owns the physical camera.</summary>
     public bool OwnsCamera => _context is not null;
 
@@ -218,6 +222,11 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
     /// <param name="elapsed">Elapsed presentation seconds.</param>
     public void StepMenuCamera(BattleFlowPhase phase, float elapsed)
     {
+        if (ActorTransitionActive)
+        {
+            return;
+        }
+
         if (phase == BattleFlowPhase.PlayerCommand)
         {
             _renderer.StepShotCamera(elapsed);

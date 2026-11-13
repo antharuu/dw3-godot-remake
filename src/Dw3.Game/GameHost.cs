@@ -179,8 +179,6 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     // incoming form and then Changement/Technique de paire.
     private int _battleSwitchPartner = -1;
 
-    private int _battlePendingChangeMotion;
-
     private bool _battleSwitchForced;
 
     // The diagnostic on-screen notice for a failed battle load, plus its last text (the
@@ -624,7 +622,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
             _battleRenderer.BuildStage(ResolveBattleStagePath(ResolveBattleStage(encounter)), ResolveBattleStage(encounter));
         }
 
-        RefreshBattlePresentationModels();
+        _battlePresentationCoordinator.RefreshModelsForBattleStart();
         _battleRenderer.RestartEntranceFade();
         _battleRenderer.SetOpeningCamera();
         _battleRenderer.Show();
@@ -870,7 +868,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     /// <returns>A snapshot of the current battle state for the renderer, or <see langword="null"/> when no battle is running.</returns>
     private BattleView? BuildBattleView() => _battleFlow is null
         ? null
-        : BattleViewBuilder.Build(_battleFlow, _battleMenu.View, _battleReport, NameLine);
+        : _battlePresentationCoordinator.Present(BattleViewBuilder.Build(_battleFlow, _battleMenu.View, _battleReport, NameLine));
 
     /// <summary>The decoded battle-model JSON for a fighter id from the validated data pack.
     /// <c>DW3_BATTLE_MODEL</c> overrides the player path for isolated probes.</summary>

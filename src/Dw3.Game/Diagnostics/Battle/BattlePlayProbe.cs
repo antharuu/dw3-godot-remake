@@ -104,12 +104,14 @@ internal sealed class BattlePlayProbe : BattleProbe
     {
         Host.Flow.Choose(BattleCommand.Switch, 1, Host.BattleRng);
         Host.TickTestSimulation();
+        await new BattleEntranceSwitchProof(Host, captureRoot).RunAsync(outgoing: 383, incoming: 373);
         ProbeRequirement.Require(
             Host.Flow.State.ActivePlayerFighter?.Id == 373 && Host.RenderedPlayerId == 373,
             $"switch did not replace Kotemon model active={Host.Flow.State.ActivePlayerFighter?.Id} rendered={Host.RenderedPlayerId}");
         var renamon = await BattleProbeCapture.CaptureAsync(Host, captureRoot, "battle-play-renamon.png");
         var switchPixels = BattlePixelMetrics.CountRgbChanges(kotemon, renamon, new Rect2(0, 0, kotemon.GetWidth() / 2, kotemon.GetHeight()));
         ProbeRequirement.Require(switchPixels > 500, $"switch model pixels did not change enough changed={switchPixels}");
+        await AdvanceToPlayerCommandAsync();
         Host.RefreshActivePartnerCatalogs();
         var forms = Host.Flow.PlayerDigivolutions;
         var form = forms.Count > 0 ? forms[0] : 0;
@@ -123,6 +125,21 @@ internal sealed class BattlePlayProbe : BattleProbe
         var evolutionPixels = BattlePixelMetrics.CountRgbChanges(renamon, evolution, new Rect2(0, 0, renamon.GetWidth() / 2, renamon.GetHeight()));
         ProbeRequirement.Require(evolutionPixels > 500, $"digivolution model pixels did not change enough changed={evolutionPixels}");
         QuietLog.Info($"battle-play model-transition kotemon=383 renamon=373 digivolution={form} switch_pixels={switchPixels} evolution_pixels={evolutionPixels}");
+    }
+
+    /// <summary>Plays the enemy turn that follows the switch through the production tick until the next command.</summary>
+    /// <returns>A task that completes when the player commands again.</returns>
+    private async Task AdvanceToPlayerCommandAsync()
+    {
+        int frames = 0;
+        for (; frames < 1200 && Host.Flow.Phase != BattleFlowPhase.PlayerCommand; frames++)
+        {
+            Host.TickTestSimulation();
+            Host.Renderer.Present(Host.BuildBattleView());
+            await Host.NextFrameDrawn();
+        }
+
+        ProbeRequirement.Require(Host.Flow.Phase == BattleFlowPhase.PlayerCommand, $"enemy turn after the switch did not return to command frames={frames} phase={Host.Flow.Phase}");
     }
 
     /// <summary>Confirms the root attack command and waits for the terminal victory presentation.</summary>

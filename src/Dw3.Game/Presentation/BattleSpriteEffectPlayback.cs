@@ -41,8 +41,12 @@ internal sealed class BattleSpriteEffectPlayback : IDisposable
     /// <summary>Gets the number of effects started since the last cleanup, identical effects counted separately.</summary>
     public int StartedCount { get; private set; }
 
+    /// <summary>Gets or sets the white level of a flash owned outside the action script, such as a fighter entrance's.
+    /// It is drawn with the script flashes on every physical step instead of being overwritten by them.</summary>
+    public int ExternalFlashLevel { get; set; }
+
     /// <summary>Gets the summed additive white level currently drawn.</summary>
-    public int FlashLevel => Math.Min(BattleWhiteFlash.FullLevel, _flashes.Sum(flash => flash.Level));
+    public int FlashLevel => Math.Min(BattleWhiteFlash.FullLevel, ExternalFlashLevel + _flashes.Sum(flash => flash.Level));
 
     /// <summary>Gets a value indicating whether every sprite child ended. The source script never waits for its fade.</summary>
     public bool IsComplete => _active.Count == 0;
@@ -130,7 +134,7 @@ internal sealed class BattleSpriteEffectPlayback : IDisposable
         _flashes.Clear();
         _currentFlash = null;
         StartedCount = 0;
-        _surface.Present(_active, 0);
+        _surface.Present(_active, FlashLevel);
     }
 
     /// <summary>Releases the drawing side.</summary>
