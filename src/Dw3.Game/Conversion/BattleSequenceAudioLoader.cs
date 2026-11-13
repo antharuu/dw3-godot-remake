@@ -6,6 +6,12 @@ namespace Dw3Production.Conversion;
 /// <summary>Loads prepared battle cues and music from private pack projections, never MP archives.</summary>
 public static class BattleSequenceAudioLoader
 {
+    /// <summary>Source sound bank of the last boss music (BOSS02, <c>MUSIC_LAST_BOSS</c>).</summary>
+    private const int LastBossBank = 0x24;
+
+    /// <summary>Source sound bank of the last boss second-form music (BOSS04, <c>MUSIC_LAST_BOSS_2</c>).</summary>
+    private const int LastBossSecondBank = 0x26;
+
     /// <summary>Resolves the original action sound index to a validated common-bank sequence.</summary>
     /// <param name="pack">Prepared user-data pack.</param>
     /// <param name="index">Action sound index.</param>
@@ -29,7 +35,7 @@ public static class BattleSequenceAudioLoader
     /// <returns>A looping music sequence, or null when the identity is not music.</returns>
     public static PreparedAudioSequence? LoadMusic(DataPackReader pack, uint id)
     {
-        if ((id & 0xE0000000) != 0x60000000 || BankNumber(id) is < 1 or > 3)
+        if ((id & 0xE0000000) != 0x60000000 || BankNumber(id) is not (1 or 2 or 3 or LastBossBank or LastBossSecondBank))
         {
             return null;
         }
@@ -74,6 +80,8 @@ public static class BattleSequenceAudioLoader
         1 => "common",
         2 => "battle",
         3 => "boss",
+        LastBossBank => "lastBoss",
+        LastBossSecondBank => "lastBoss2",
         _ => throw new FormatException($"Unsupported source sound bank {bank}."),
     };
 

@@ -104,7 +104,7 @@ internal sealed class BattlePlayProbe : BattleProbe
     {
         Host.Flow.Choose(BattleCommand.Switch, 1, Host.BattleRng);
         Host.TickTestSimulation();
-        await new BattleEntranceSwitchProof(Host, captureRoot).RunAsync(outgoing: 383, incoming: 373);
+        await BattleEntranceSwitchProof.RunAsync(Host, captureRoot, outgoing: 383, incoming: 373);
         ProbeRequirement.Require(
             Host.Flow.State.ActivePlayerFighter?.Id == 373 && Host.RenderedPlayerId == 373,
             $"switch did not replace Kotemon model active={Host.Flow.State.ActivePlayerFighter?.Id} rendered={Host.RenderedPlayerId}");

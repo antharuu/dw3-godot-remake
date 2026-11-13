@@ -22,27 +22,6 @@ public static class BattleRoster
         return -1;
     }
 
-    /// <summary>
-    /// Returns the next living slot after <paramref name="current"/>, wrapping around, so the
-    /// current slot itself is tried last. Returns -1 when no slot is living.
-    /// </summary>
-    /// <param name="fighters">The side's slots.</param>
-    /// <param name="current">The slot to start after.</param>
-    /// <returns>The slot index, or -1.</returns>
-    public static int NextLivingIndex(IReadOnlyList<BattleFighter?> fighters, int current)
-    {
-        for (int step = 1; step <= fighters.Count; step++)
-        {
-            int index = (current + step) % fighters.Count;
-            if (IsLiving(fighters[index]))
-            {
-                return index;
-            }
-        }
-
-        return -1;
-    }
-
     /// <summary>Returns whether at least one slot is living.</summary>
     /// <param name="fighters">The side's slots.</param>
     /// <returns><see langword="true"/> while the side can still fight.</returns>

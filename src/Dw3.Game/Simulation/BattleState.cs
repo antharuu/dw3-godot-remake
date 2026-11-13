@@ -679,12 +679,13 @@ public sealed class BattleState
     internal int ResolveHitSequence(BattleSide side, TechData tech, BattleStats? attackerStats, BattleFighter target, bool isCounter, Func<int, BattleHitResult> resolve) =>
         _hitSequence.Resolve(side, tech, attackerStats, target, isCounter, resolve, CheckAndReportOutcome);
 
-    /// <summary>The enemy side brings in its next living fighter when the active one falls to a hit or periodic damage.</summary>
+    /// <summary>The enemy side brings in its first living slot, scanned from slot 0 as the source knockout event
+    /// does, when the active one falls to a hit or periodic damage; a fighter it switched out earlier comes back first.</summary>
     internal void ResolveEnemyReserve()
     {
         if (ActiveEnemyFighter is { IsKnockedOut: true })
         {
-            ActiveEnemy = BattleRoster.NextLivingIndex(Enemies, ActiveEnemy);
+            ActiveEnemy = BattleRoster.FirstLivingIndex(Enemies);
         }
     }
 

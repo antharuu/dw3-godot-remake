@@ -110,6 +110,10 @@ public sealed class BattleFlowController
         ClearMessage();
     }
 
+    /// <summary>Hides the flow's message once a caller box replaced it, as the source closes each message box with
+    /// its caller (an entrance's caller names the incoming fighter in its own box).</summary>
+    public void DismissMessage() => ClearMessage();
+
     /// <summary>Refreshes session-backed forms and form-selected actions after a transformation or switch.</summary>
     public void RefreshActivePartnerCatalog()
     {

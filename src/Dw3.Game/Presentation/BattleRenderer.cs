@@ -57,6 +57,7 @@ public sealed class BattleRenderer : IDisposable
     private (int Polygons, int Culled, int UnsupportedAbr)? _lastOrderingLog;
 
     private BattleModel? _stage;
+    private int _stageId = -1;
 
     private string _lastModelLoadFailure = "unknown model loader failure";
 
@@ -134,6 +135,12 @@ public sealed class BattleRenderer : IDisposable
     /// <summary>Gets a value indicating whether true once a decoded fight stage is loaded and drawn as the background.</summary>
     public bool StageBuilt => _stage is not null;
 
+    /// <summary>Gets the fight stage id last built, for private offscreen proofs.</summary>
+    public int StageIdForProbe => _stageId;
+
+    /// <summary>Gets the playing battle music and its fade-out volume, for private offscreen proofs.</summary>
+    public (uint Id, float Volume) MusicStateForProbe => _audio.MusicState;
+
     /// <summary>Gets the number of real battle models built (player + any decoded enemy).</summary>
     public int ModelCount => _fighters.Models.Count;
 
@@ -157,6 +164,9 @@ public sealed class BattleRenderer : IDisposable
 
     /// <summary>Gets the unmodified main source camera for diagnostic actor translation.</summary>
     internal Camera3D CameraForProbe => _camera;
+
+    /// <summary>Gets how many entrance cues played, for offscreen proofs.</summary>
+    internal int EntranceCuePlaysForProbe => _audio.EntranceCuePlays;
 
     /// <summary>Gets the actual command executor for controlled offscreen evidence.</summary>
     internal BattleModelLayer RasterForProbe => _modelLayer;
@@ -186,12 +196,30 @@ public sealed class BattleRenderer : IDisposable
         _layer.Visible = false;
     }
 
-    /// <summary>Arms the source entrance cue once the incoming fighter model is ready.</summary>
-    public void BeginEntranceAudio() => _audio.BeginEntrance();
+    /// <summary>Arms the source entrance cue once the incoming fighter model is ready, or plays it now.</summary>
+    /// <param name="immediate">Whether the caller already waited the lead-in on its own clock.</param>
+    public void BeginEntranceAudio(bool immediate = false) => _audio.BeginEntrance(immediate);
 
     /// <summary>Starts the source-selected looping battle music.</summary>
     /// <param name="musicId">Encoded source music identity.</param>
     public void BeginBattleMusic(uint musicId) => _audio.BeginMusic(musicId);
+
+    /// <summary>Fades the battle music out when it is the given track.</summary>
+    /// <param name="musicId">Encoded source music identity.</param>
+    public void FadeOutBattleMusic(uint musicId) => _audio.FadeOutMusic(musicId);
+
+    /// <summary>Replaces the fight stage during a battle, as the source <c>setStage</c> with one-unit fades: the new
+    /// stage and its light set show at once, without the battle opening's fade from black.</summary>
+    /// <param name="stageJsonPath">Path to the extracted stage model document.</param>
+    /// <param name="stageId">Fight stage id.</param>
+    /// <returns><see langword="true"/> when the stage is ready to render.</returns>
+    public bool ChangeStage(string stageJsonPath, int stageId)
+    {
+        bool built = BuildStage(stageJsonPath, stageId);
+        _entranceFade.Complete();
+        ApplyEntranceFade();
+        return built;
+    }
 
     /// <summary>Transitions the battle track to the recovered victory jingle.</summary>
     public void BeginVictoryAudio() => _audio.BeginVictory();
@@ -229,6 +257,7 @@ public sealed class BattleRenderer : IDisposable
         {
             _stage?.Root.QueueFree();
             _stage = BattleModel.Load(_world, stageJsonPath);
+            _stageId = stageId;
 
             // The stage leaves the plain model control at identity. Model vertices, bones,
             // fighters and camera all share the same /256 PS1-to-Godot conversion.

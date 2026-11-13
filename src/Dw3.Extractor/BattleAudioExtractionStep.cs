@@ -18,9 +18,15 @@ internal static class BattleAudioExtractionStep
         new("common", "AAA/DAT/SOUND/COMMON/MPCOMMON.BIN", "AAA/DAT/SOUND/COMMON/MVCOMMON.BIN"),
         new("battle", "AAA/DAT/SOUND/BATL00/MPBATL00.BIN", "AAA/DAT/SOUND/BATL00/MVBATL00.BIN"),
         new("boss", "AAA/DAT/SOUND/BOSS00/MPBOSS00.BIN", "AAA/DAT/SOUND/BOSS00/MVBOSS00.BIN"),
+
+        // EU SOUND_BANK_FILES[0x24] (files 1375/1376): MUSIC_LAST_BOSS, faded out by fighter 0x1D3's entrance.
+        new("lastBoss", "AAA/DAT/SOUND/BOSS02/MPBOSS02.BIN", "AAA/DAT/SOUND/BOSS02/MVBOSS02.BIN"),
+
+        // EU SOUND_BANK_FILES[0x26] (files 1991/1995): MUSIC_LAST_BOSS_2, started by fighter 0x1D3's entrance.
+        new("lastBoss2", "AAA/DAT/SOUND/BOSS04/MPBOSS04.BIN", "AAA/DAT/SOUND/BOSS04/MVBOSS04.BIN"),
     ];
 
-    /// <summary>Extracts the three combat-relevant bank pairs and records their decoded VAB headers.</summary>
+    /// <summary>Extracts the combat-relevant bank pairs and records their decoded VAB headers.</summary>
     /// <param name="openDisc">Opens the supported disc.</param>
     /// <param name="outputDirectory">Root directory for the data pack.</param>
     /// <param name="output">Receives the completion event.</param>

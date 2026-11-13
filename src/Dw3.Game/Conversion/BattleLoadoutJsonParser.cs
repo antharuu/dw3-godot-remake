@@ -88,6 +88,7 @@ internal static class BattleLoadoutJsonParser
             ["basicAttack"] = Template(8, "actor"),
             ["damage"] = Template(11, "value"),
             ["digivolve"] = Template(55, "actor", "digimon"),
+            ["enemySwitch"] = Template(0x4D),
             ["fledPlayer"] = Template(67, "actor"),
             ["item"] = Template(9, "actor", "item"),
             ["lost"] = Template(83),
@@ -98,6 +99,7 @@ internal static class BattleLoadoutJsonParser
             ["recovered"] = Template(0x22, "value"),
             ["sideRecovered"] = Template(0x22, "value"),
             ["switch"] = Template(56, "actor"),
+            ["switchIn"] = Template(0x39, "actor"),
             ["technique"] = Template(9, "actor", "technique"),
             ["won"] = Template(82),
         };

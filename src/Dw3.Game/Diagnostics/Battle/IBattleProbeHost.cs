@@ -59,8 +59,20 @@ internal interface IBattleProbeHost
     /// <summary>Gets the fighter id currently rendered on the player side.</summary>
     int RenderedPlayerId { get; }
 
+    /// <summary>Gets the fighter id currently rendered on the enemy side.</summary>
+    int RenderedEnemyId { get; }
+
     /// <summary>Gets the actor entrance currently holding the battle flow, if any.</summary>
     BattleEntranceSequence? ActorEntrance { get; }
+
+    /// <summary>Gets the entrance call (caller messages and entrance) currently holding the battle flow, if any.</summary>
+    BattleEntranceCall? ActorEntranceCall { get; }
+
+    /// <summary>Gets the slots the battle scene currently shows.</summary>
+    (int Player, int Enemy) RenderedSlots { get; }
+
+    /// <summary>Gets the production interactive-frame host, driven by <see cref="BattleProductionFrameDriver"/>.</summary>
+    IInteractiveFrameHost FrameHost { get; }
 
     /// <summary>Gets the last entered battle encounter id.</summary>
     int LastBattleEncounter { get; }
@@ -126,6 +138,16 @@ internal interface IBattleProbeHost
     /// <summary>Starts an unmodified source encounter through the ordinary battle construction path.</summary>
     /// <param name="encounter">Encounter index from the local data pack.</param>
     void StartEncounterForProbe(int encounter);
+
+    /// <summary>Starts an unmodified source encounter with the music its field stage plays.</summary>
+    /// <param name="encounter">Encounter index from the local data pack.</param>
+    /// <param name="music">Encoded source music identity.</param>
+    void StartEncounterForProbe(int encounter, uint music);
+
+    /// <summary>Sets the Cross source of the entrance caller's messages under a scripted driver.</summary>
+    /// <param name="confirm">Returns whether Cross is pressed this unit, or <see langword="null"/> to close on the
+    /// arrow; <see langword="null"/> restores closing on the arrow.</param>
+    void SetEntranceConfirmForProbe(Func<bool?>? confirm);
 
     /// <summary>Resolves the decoded battle model file of a fighter.</summary>
     /// <param name="fighterId">Source fighter id.</param>
