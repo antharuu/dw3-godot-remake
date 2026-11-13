@@ -72,6 +72,7 @@ public sealed class BattleDataPackLoader : IDisposable
         }
 
         string path = RequireFile(row.GetString(0), $"battle effect model {effectId}");
+        BattleEffectModelManifestValidator.Validate(path, effectId);
         if (row.Read())
         {
             throw Invalid($"battle effect model {effectId} has duplicate records");

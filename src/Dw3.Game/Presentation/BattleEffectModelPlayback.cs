@@ -11,6 +11,8 @@ internal sealed class BattleEffectModelPlayback
     private readonly BattleDataPackLoader _loader;
     private readonly Dictionary<int, string?> _prepared = [];
     private readonly List<BattleModel> _active = [];
+    private readonly Dictionary<BattleModel, int> _ids = [];
+    private bool _lastClearHadHiddenRoots;
 
     /// <summary>Initializes a new instance of the <see cref="BattleEffectModelPlayback"/> class.</summary>
     /// <param name="renderer">Physical scene owner.</param>
@@ -26,6 +28,15 @@ internal sealed class BattleEffectModelPlayback
 
     /// <summary>Gets a value indicating whether every instantiated effect reached its authored terminal motion.</summary>
     public bool IsComplete => _active.All(model => model.Motion?.MotionDone == true);
+
+    /// <summary>Gets a value indicating whether the last cleanup hid every active root before queuing it for deletion.</summary>
+    public bool LastClearHadHiddenRoots => _lastClearHadHiddenRoots;
+
+    /// <summary>Returns the source effect id which created an active model for private lifecycle evidence.</summary>
+    /// <param name="model">The active model instance to identify.</param>
+    /// <returns>The original effect-model id.</returns>
+    /// <exception cref="KeyNotFoundException">The supplied model is not an active effect instance.</exception>
+    public int DiagnosticEffectId(BattleModel model) => _ids[model];
 
     /// <summary>Consumes a source load or start command.</summary>
     /// <param name="request">Validated effect-model operands.</param>
@@ -48,13 +59,16 @@ internal sealed class BattleEffectModelPlayback
     /// <summary>Frees every effect instance after normal completion or cancellation.</summary>
     public void Clear()
     {
+        _lastClearHadHiddenRoots = true;
         foreach (Node3D root in _active.Select(model => model.Root))
         {
             root.Visible = false;
+            _lastClearHadHiddenRoots &= !root.Visible;
             root.QueueFree();
         }
 
         _active.Clear();
+        _ids.Clear();
         _prepared.Clear();
     }
 
@@ -95,6 +109,7 @@ internal sealed class BattleEffectModelPlayback
         BattleModel model = _renderer.LoadSequenceEffect(path);
         ApplyTransform(model.Root, arguments);
         _active.Add(model);
+        _ids.Add(model, id);
         return SequenceAcknowledgement.Applied;
     }
 }

@@ -41,6 +41,17 @@ public sealed class BattleDataPackLoaderTests : IDisposable
     }
 
     [Fact]
+    public void EffectModelPathRejectsAnAvailableCorruptManifestDistinctly()
+    {
+        BuildPack();
+        using var loader = new BattleDataPackLoader(new DataPackReader(_root));
+
+        var error = Assert.Throws<CacheResourceException>(() => loader.EffectModelPath(40));
+
+        Assert.StartsWith("CACHE_INVALID: battle effect model 40 manifest invalid", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void WriterRoundtripDecoded_UnsupportedAndAbsent()
     {
         BuildPack();
@@ -106,11 +117,14 @@ public sealed class BattleDataPackLoaderTests : IDisposable
                     command.ExecuteNonQuery();
                 }
 
-                WriteFile(context, "battle/effects/effect-39-model.json", "{}");
+                WriteFile(context, "battle/effects/effect-39-model.json", "{\"format\":\"dw3-battle-effect-model-v1\",\"source_invariants\":{\"motion_1_first_step\":[0,0,0,0],\"motion_1_terminator\":[32767,0,0,0]}}");
+                WriteFile(context, "battle/effects/effect-40-model.json", "{}");
                 using (SqliteCommand command = context.Database.CreateCommand())
                 {
                     command.Transaction = context.Transaction;
                     command.CommandText = "INSERT INTO battle_effect_models (effect_id,model_file,model_entry,motion_file,motion_entry,texture_entry,bone_count,mesh_count,disc_path,sha256,manifest_path) VALUES (39,1,2,3,4,5,6,7,'synthetic','hash','battle/effects/effect-39-model.json')";
+                    command.ExecuteNonQuery();
+                    command.CommandText = "INSERT INTO battle_effect_models (effect_id,model_file,model_entry,motion_file,motion_entry,texture_entry,bone_count,mesh_count,disc_path,sha256,manifest_path) VALUES (40,1,2,3,4,5,6,7,'synthetic','hash','battle/effects/effect-40-model.json')";
                     command.ExecuteNonQuery();
                 }
 

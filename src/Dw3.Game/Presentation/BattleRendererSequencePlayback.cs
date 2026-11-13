@@ -35,6 +35,15 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
     /// <summary>Gets the number of real contact children for synchronized offscreen capture.</summary>
     public int DiagnosticImpactCount => _impact?.StartedChildrenCount ?? 0;
 
+    /// <summary>Gets the number of independently instantiated three-dimensional effect models.</summary>
+    public int DiagnosticEffectModelCount => _effects?.ActiveModels.Count ?? 0;
+
+    /// <summary>Gets the active effect roots for private lifecycle diagnostics.</summary>
+    public IReadOnlyList<BattleModel> DiagnosticEffectModels => _effects?.ActiveModels ?? [];
+
+    /// <summary>Gets a value indicating whether the last effect cleanup hid all roots before queueing their deletion.</summary>
+    public bool DiagnosticLastEffectClearHadHiddenRoots => _effects?.LastClearHadHiddenRoots == true;
+
     /// <summary>Gets the optional stage actually displayed by this action.</summary>
     public int DiagnosticStage => _stage?.ActiveStage ?? 0;
 
@@ -58,6 +67,12 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
 
     /// <summary>Gets or sets the offscreen observer of physically acknowledged requests.</summary>
     public Action<BattleSequenceEvent>? DiagnosticConsumed { get; set; }
+
+    /// <summary>Resolves the source id of one currently active effect model for private lifecycle diagnostics.</summary>
+    /// <param name="model">The active effect model.</param>
+    /// <returns>The script-visible effect id.</returns>
+    /// <exception cref="InvalidOperationException">No effect consumer is installed.</exception>
+    public int DiagnosticEffectId(BattleModel model) => _effects?.DiagnosticEffectId(model) ?? throw new InvalidOperationException("effect model consumer unavailable");
 
     /// <summary>Replaces the stage consumer only after restoring any retained encounter arena.</summary>
     /// <param name="stage">Scene-bound optional-stage consumer.</param>
