@@ -47,24 +47,36 @@ public partial class GameHost
     void IBattleMenuDriverHost.ChooseItem(int argument) => BattleFlow.Choose(BattleCommand.Item, argument, _battleRng);
 
     /// <inheritdoc/>
-    void IBattleMenuDriverHost.ConfirmPairSwitch()
+    void IBattleMenuDriverHost.ConfirmPairSwitch() => BattlePairSwitchConfirmation.Confirm(
+        _battleMenu.Cursor,
+        _battleSwitchPartner,
+        () => BattleFlow.Choose(BattleCommand.Switch, _battleSwitchPartner, _battleRng),
+        () => BattleFlow.ChoosePairTechnique(_battleSwitchPartner, _battleRng),
+        ConfirmSwitch,
+        ConfirmPair,
+        LogPairSwitchRefusal);
+
+    /// <summary>Completes an accepted ordinary partner switch.</summary>
+    private void ConfirmSwitch()
     {
-        if (_battleMenu.Cursor != 0 || _battleSwitchPartner < 0)
-        {
-            return;
-        }
+        _battlePendingChangeMotion = 13;
+        _battleSwitchForced = false;
+        QuietLog.Info($"battle-menu switch player={_battleSwitchPartner} action=5 consumes_turn=true");
+    }
 
-        if (BattleFlow.Choose(BattleCommand.Switch, _battleSwitchPartner, _battleRng))
-        {
-            _battlePendingChangeMotion = 13;
-            _battleSwitchForced = false;
-            QuietLog.Info($"battle-menu switch player={_battleSwitchPartner} action=5 consumes_turn=true");
-            return;
-        }
+    /// <summary>Completes an accepted source-qualified pair action.</summary>
+    private void ConfirmPair()
+    {
+        _battleSwitchForced = false;
+        QuietLog.Info($"battle-menu pair player={_battleSwitchPartner} consumes_turn=true");
+    }
 
+    /// <summary>Logs a refused switch or pair mutation without changing menu depth.</summary>
+    private void LogPairSwitchRefusal()
+    {
         BattleFighter? target = BattleFlow.State.Players[_battleSwitchPartner];
         _log.Warn(
-            "battle-menu-switch-refused",
+            "battle-menu-pair-switch-refused",
             $"slot={_battleSwitchPartner} active={BattleFlow.State.ActivePlayer} target={target?.Id} hp={target?.Hp}");
     }
 }

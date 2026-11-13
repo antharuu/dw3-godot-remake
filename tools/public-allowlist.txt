@@ -1232,3 +1232,11 @@ src/Dw3.Game/Input/BattleInputGate.cs
 src/Dw3.Game/Input/InputButtonLatch.cs
 src/Dw3.Game/Input/InputButtonRouter.cs
 tests/Dw3.Game.Tests/InputButtonLatchTests.cs
+# B9-045 pair menu host routing and forced KO proof
+src/Dw3.Game/Diagnostics/Battle/NativePairSwitchProof.cs
+src/Dw3.Game/Presentation/BattleMenuMpDigits.cs
+src/Dw3.Game/Presentation/BattlePairMenuEntries.cs
+src/Dw3.Game/Presentation/BattlePairSwitchConfirmation.cs
+src/Dw3.Game/Simulation/BattlePairTechniqueConsumer.cs
+src/Dw3.Game/Simulation/BattlePairTechniqueSelection.cs
+tests/Dw3.Game.Tests/BattlePairMenuIntegrationTests.cs

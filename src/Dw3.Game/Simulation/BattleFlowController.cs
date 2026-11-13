@@ -39,6 +39,9 @@ public sealed class BattleFlowController
     /// <summary>Gets or sets source-backed basic attacks keyed by the active partner form.</summary>
     public IReadOnlyDictionary<int, TechData> PlayerBasicTechByForm { get; set; } = new Dictionary<int, TechData>();
 
+    /// <summary>Gets or sets source-qualified pair relations keyed by the outgoing active form.</summary>
+    public IReadOnlyDictionary<int, PairTechniqueDefinition> PairTechniquesByForm { get; set; } = new Dictionary<int, PairTechniqueDefinition>();
+
     /// <summary>Gets or sets the session-backed callback that rebuilds active-partner catalogues before form actions refresh.</summary>
     public Action? ActivePartnerCatalogRefresher { get; set; }
 
@@ -165,6 +168,17 @@ public sealed class BattleFlowController
         return true;
     }
 
+    /// <summary>Resolves the active form's configured pair technique with one selected reserve partner.</summary>
+    /// <param name="incomingSlot">Party slot of the selected incoming partner.</param>
+    /// <param name="rng">The shared battle random source.</param>
+    /// <returns>Whether the source-qualified pair action spent the turn.</returns>
+    public bool ChoosePairTechnique(int incomingSlot, IBattleRng rng) => BattlePairTechniqueConsumer.TryChoose(this, incomingSlot, rng);
+
+    /// <summary>Returns whether a selected reserve currently satisfies the active form's source pair relation.</summary>
+    /// <param name="incomingSlot">Party slot proposed by the switch menu.</param>
+    /// <returns>Whether the pair command can be confirmed without mutating battle state.</returns>
+    public bool CanChoosePairTechnique(int incomingSlot) => BattlePairTechniqueSelection.TryResolve(this, incomingSlot, out _, out _, out _);
+
     /// <summary>Resolves the enemy's turn: it decides its action from its battle table
     /// (attack/technique/switch/run-away; its counter-attack fires inside the player's hit) and
     /// executes it, then advances the phase. Does nothing outside the enemy's turn.</summary>
@@ -243,6 +257,9 @@ public sealed class BattleFlowController
         // AdvancePhase checks PendingSequenceContext (now null) so it will not re-enter ActionSequence.
         AdvancePhase();
     }
+
+    /// <summary>Advances the shared phase machine after a pair action has spent the player's turn.</summary>
+    internal void AdvanceAfterPairTechnique() => AdvancePhase();
 
     /// <summary>Gets whether a root command is enabled for the active fighter, matching the displayed line.</summary>
     /// <param name="command">Root command being submitted by an input or API caller.</param>

@@ -24,6 +24,10 @@ public partial class NativeRootMenuProof : Node
             NativeMenuPhaseProof.Flee();
             NativeMenuPhaseProof.EnemyTurn();
             NativeMenuPhaseProof.NonMenuConsumers();
+            NativePairSwitchProof.VoluntarySwitch();
+            NativePairSwitchProof.PairAction();
+            NativePairSwitchProof.PairRefusals();
+            NativePairSwitchProof.ForcedReplacement();
             GD.Print("NATIVE_ROOT_MENU_PROOF PASS first=confirm-cancel ingress=GameHost._Input tick=GameHost.TickBattleMenu coordinator=production");
             GetTree().Quit(0);
         }
