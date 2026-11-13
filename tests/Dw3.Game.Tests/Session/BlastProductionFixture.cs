@@ -24,7 +24,7 @@ internal sealed class BlastProductionFixture : IDisposable
         seeds[0].MaxHp = 300;
         seeds[0].Hp = 300;
         seeds[0].BlastGauge = gauge;
-        Session = new PlayerSession([.. seeds.Select(seed => new PlayerSessionPartner(seed, [seed.Id, 109], [109], [], equipment ?? []))], new Dictionary<int, int>());
+        Session = new PlayerSession([.. seeds.Select(seed => new PlayerSessionPartner(seed, [seed.Id, 109], [109], [2], equipment ?? []))], new Dictionary<int, int>());
     }
 
     public FighterData Fighters { get; }

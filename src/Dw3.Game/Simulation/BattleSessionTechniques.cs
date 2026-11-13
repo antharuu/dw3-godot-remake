@@ -27,6 +27,6 @@ internal static class BattleSessionTechniques
 
         bool learnedForm = !temporary || partner.KnownForms.Contains(form);
         IReadOnlyList<int> formTechniques = partner.FormTechniques(form);
-        return [.. actions.Where(action => action.Id == signature || (learnedForm && (partner.KnownTechniques.Count == 0 || partner.KnownTechniques.Contains(action.Id) || formTechniques.Contains(action.Id))))];
+        return [.. actions.Where(action => action.Id == signature || (learnedForm && (partner.KnownTechniques.Contains(action.Id) || formTechniques.Contains(action.Id))))];
     }
 }

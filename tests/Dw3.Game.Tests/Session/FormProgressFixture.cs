@@ -27,21 +27,23 @@ internal static class FormProgressFixture
     /// <param name="level">Partner level before the battle's own experience.</param>
     /// <param name="known">Acquired forms besides the base, defaulting to the three equipped forms.</param>
     /// <param name="equipped">Equipped forms of the first partner, defaulting to forms 5, 6 and 7.</param>
+    /// <param name="knownTechniques">Partner-wide technique ids for the first partner, defaulting to [1, 2].</param>
     /// <returns>A session whose partners share the same equipped form ids.</returns>
-    public static PlayerSession Session(int level, IReadOnlyList<int>? known = null, IReadOnlyList<int>? equipped = null) =>
-        new([Partner(1, level, known, equipped), Partner(2, level, null, null), Partner(3, level, null, null)], new Dictionary<int, int>());
+    public static PlayerSession Session(int level, IReadOnlyList<int>? known = null, IReadOnlyList<int>? equipped = null, IReadOnlyList<int>? knownTechniques = null) =>
+        new([Partner(1, level, known, equipped, knownTechniques), Partner(2, level, null, null), Partner(3, level, null, null)], new Dictionary<int, int>());
 
     /// <summary>Builds one partner owning the fabricated forms.</summary>
     /// <param name="baseId">Base form id.</param>
     /// <param name="level">Partner level.</param>
     /// <param name="known">Acquired forms besides the base.</param>
     /// <param name="equipped">Equipped forms.</param>
+    /// <param name="knownTechniques">Partner-wide technique ids, defaulting to [1, 2].</param>
     /// <returns>A persistent partner.</returns>
-    public static PlayerSessionPartner Partner(int baseId, int level, IReadOnlyList<int>? known, IReadOnlyList<int>? equipped) => new(
+    public static PlayerSessionPartner Partner(int baseId, int level, IReadOnlyList<int>? known, IReadOnlyList<int>? equipped, IReadOnlyList<int>? knownTechniques = null) => new(
         RewardSessionFixture.Seed(baseId),
         [baseId, .. known ?? EquippedForms],
         equipped ?? EquippedForms,
-        [1, 2],
+        knownTechniques ?? [1, 2],
         [],
         new PartnerGrowthState { Level = level, MaxHp = 100, MaxMp = 10, BattleStats = [10, 10, 10, 10, 100, 5] });
 
