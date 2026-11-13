@@ -108,6 +108,7 @@ internal static class BattleLoadoutJsonParser
             ["expLabel"] = 1,
             ["itemGained"] = 11,
             ["levelGained"] = 4,
+            ["levelLabel"] = 3,
             ["moneyGained"] = 10,
             ["partnerLevel"] = 7,
             ["skillKnown"] = 6,

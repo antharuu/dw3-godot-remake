@@ -239,6 +239,12 @@ public sealed partial class FightReportRenderer : IDisposable
         {
             _text.DrawWindow(3, 91, y + 56, partner.Level.ToString(CultureInfo.InvariantCulture), true, 0);
             _text.DrawWindow(3, 103, y + 69, partner.ShownExp.ToString(CultureInfo.InvariantCulture), true, 0);
+            if (_catalog is not null)
+            {
+                // Source panel windows: the FGTRPT level label (entry 3) left of the level and the EXP label (entry 1) right of the EXP.
+                _text.DrawLine(3, 0x3E, y + 0x38, _catalog.Report("levelLabel"), false, 0);
+                _text.DrawLine(3, 0x6A, y + 0x45, _catalog.Report("expLabel"), false, 0);
+            }
         }
 
         /// <summary>Draws the three pre-unlock equipped-form rows with decoded names and settled levels.</summary>
