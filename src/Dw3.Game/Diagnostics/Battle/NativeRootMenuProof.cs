@@ -23,6 +23,9 @@ public partial class NativeRootMenuProof : Node
             NativeMenuCommandsProof.TechniqueExecution();
             NativeMenuCommandsProof.DigivolveExecution();
             NativeItemUseProof.ApplyHealingAndStatusItems();
+            NativePartnerItemMatrixProof.Run();
+            NativeOffensiveItemMatrixProof.Run();
+            NativeBlastProof.Run();
             NativePreparedItemTechniqueProof.RunWhenRequested();
             NativeMenuPhaseProof.AttackAndReentry();
             NativeMenuPhaseProof.Flee();

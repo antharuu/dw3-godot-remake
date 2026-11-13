@@ -124,34 +124,12 @@ internal static class NativeMenuCommandsProof
     }
 
     /// <summary>
-    /// Confirms a technique from the technique submenu through production host ingress and verifies
-    /// that MP is debited, an action sequence is captured (Script=5) and the turn is spent.
-    /// Also proves the grey zero-MP refusal does not debit resources.
+    /// Confirms a technique from the technique submenu through production host ingress, then proves the
+    /// grey zero-MP refusal and cancellation do not debit resources.
     /// </summary>
     public static void TechniqueExecution()
     {
-        // ── happy path: technique with Script > 0 creates ActionSequence ───
-        using var session = new NativeMenuSession();
-        var player = session.Player;
-        session.Flow.PlayerTechniques = [new BattleTechnique(7, "synthetic", new TechData { Mp = 5, Script = 5 })];
-        int mpBefore = player.Mp;
-        string snapshotBefore = Snapshot(session);
-
-        Select(session, 1);
-        session.Tap(Key.Enter);
-        ProbeRequirement.Require(session.Menu.Menu == BattleMenuKind.Technique, "technique submenu did not open from row 1");
-        ProbeRequirement.Require(session.Menu.CanConfirm, "first technique row is not available before execution");
-
-        session.Tap(Key.Enter);
-
-        ProbeRequirement.Require(
-            session.Flow.Phase == BattleFlowPhase.ActionSequence,
-            $"technique execution did not reach ActionSequence phase={session.Flow.Phase}");
-        ProbeRequirement.Require(player.Mp == mpBefore - 5, $"technique did not debit exactly 5 MP before={mpBefore} after={player.Mp}");
-        ProbeRequirement.Require(Snapshot(session) != snapshotBefore, "technique execution left snapshot unchanged");
-        int mpAfterHappy = player.Mp;
-
-        GD.Print($"NATIVE_ROOT_MENU_PROOF PASS technique=execution phase=ActionSequence mp={mpBefore}→{mpAfterHappy} script=5 ingress=GameHost._Input");
+        TechniqueHappyPath();
 
         // ── refusal path: zero-MP technique is grey, resources unchanged ────
         using var refusal = new NativeMenuSession();
@@ -256,5 +234,33 @@ internal static class NativeMenuCommandsProof
             session.Tap(Key.X);
             ProbeRequirement.Require(session.Menu.Menu == BattleMenuKind.Root && Snapshot(session) == before, $"empty pane cancellation consumed row={row}");
         }
+    }
+
+    /// <summary>
+    /// SYNTHETIC qualified positive technique (MP 5, accuracy 128, power 22 as in the qualified gauge vector, script 5) against a SYNTHETIC defense of 1 confirmed through host input:
+    /// observes the MP debit, the damage applied to the enemy, the ordered draws of the production hit consumer and
+    /// the captured action sequence.
+    /// </summary>
+    private static void TechniqueHappyPath()
+    {
+        using var session = new NativeMenuSession(fixture: new(setup => NativeMenuFixture.Enemy(setup).BaseStats.Stats[BattleStat.Defense] = 1));
+        var player = session.Player;
+        var enemy = session.Enemy;
+        session.Flow.PlayerTechniques = [new BattleTechnique(7, "synthetic", new TechData { Mp = 5, Accuracy = 128, Power = 22, HitCount = 1, Script = 5 })];
+        int mpBefore = player.Mp;
+        int enemyHpBefore = enemy.Hp;
+        int draws = session.Rng.Count;
+
+        Select(session, 1);
+        session.Tap(Key.Enter);
+        ProbeRequirement.Require(session.Menu.Menu == BattleMenuKind.Technique && session.Menu.CanConfirm, "technique submenu row 1 not available before execution");
+        ProbeRequirement.Require(session.Rng.Count == draws && enemy.Hp == enemyHpBefore, "technique navigation consumed draws or damaged");
+        session.Tap(Key.Enter);
+
+        ProbeRequirement.Require(session.Flow.Phase == BattleFlowPhase.ActionSequence && session.Flow.PendingSequenceContext is { AttackerId: 1, TargetId: 2 }, $"technique execution did not reach its sequence phase={session.Flow.Phase}");
+        ProbeRequirement.Require(player.Mp == mpBefore - 5, $"technique did not debit exactly 5 MP before={mpBefore} after={player.Mp}");
+        ProbeRequirement.Require(enemy.Hp == enemyHpBefore - 22, $"technique damage oracle 22 failed enemy-hp={enemyHpBefore}->{enemy.Hp}");
+        ProbeRequirement.Require(session.Rng.DrawsSince(draws) == "[0]", $"technique ordered draws {session.Rng.DrawsSince(draws)} differ from the single accuracy draw [0]");
+        GD.Print($"NATIVE_ROOT_MENU_PROOF PASS technique=execution fixture=SYNTHETIC phase=ActionSequence mp={mpBefore}->{player.Mp} enemy-hp={enemyHpBefore}->{enemy.Hp} rng={session.Rng.DrawsSince(draws)} script=5 ingress=GameHost._Input");
     }
 }

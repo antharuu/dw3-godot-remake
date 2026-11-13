@@ -1294,3 +1294,8 @@ tests/Dw3.Game.Tests/GodotReverbBusTests.cs
 tests/Dw3.Game.Tests/ReverbTailMeasurementTests.cs
 tests/Dw3.Game.Tests/SequenceNrpnDecoderTests.cs
 tests/Dw3.Game.Tests/BattleCommandExecutionTests.cs
+src/Dw3.Game/Diagnostics/Battle/NativeBlastProof.cs
+src/Dw3.Game/Diagnostics/Battle/NativeMenuFixture.cs
+src/Dw3.Game/Diagnostics/Battle/NativeOffensiveItemMatrixProof.cs
+src/Dw3.Game/Diagnostics/Battle/NativePartnerItemMatrixProof.cs
+src/Dw3.Game/Diagnostics/Battle/NativeTurnDriver.cs
