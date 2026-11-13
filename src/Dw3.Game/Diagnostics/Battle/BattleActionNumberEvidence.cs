@@ -55,7 +55,7 @@ internal sealed class BattleActionNumberEvidence
         {
             Page = result.Page;
             ShownTick = tick;
-            GD.Print($"B9056_NUMBER_SHOWN tick={tick} key={Page.Key} target_side={Page.TargetSide} target={Page.TargetId} numbers=[{string.Join(',', Page.Numbers)}] line0={_host.Flow.MessageText.Debug} line1={_host.Flow.MessageText.Second?.Debug}");
+            GD.Print($"B9056_NUMBER_SHOWN tick={tick} key={Page.Key} target_side={Page.TargetSide} target={Page.TargetId} named=[{string.Join(',', Page.NamedIds)}] numbers=[{string.Join(',', Page.Numbers)}] line0={_host.Flow.MessageText.Debug} line1={_host.Flow.MessageText.Second?.Debug}");
         }
 
         await CaptureRevealAsync(tick, result.Reveal);
@@ -75,6 +75,25 @@ internal sealed class BattleActionNumberEvidence
         ProbeRequirement.Require(page.TargetId == context.TargetId, "result names another fighter than the action's target");
         ProbeRequirement.Require(page.Key != "damage" || (page.Amount == formula && (lost == page.Amount || hpAfter == 0)), "printed damage differs from the rule result");
         ProbeRequirement.Require(page.Key == "missed" || NumberPixels > 0, "the number line drew no glyph");
+        ProbeRequirement.Require(ArrowTick > ShownTick && _host.Flow.ActionResult is null, "result message did not reveal its arrow and close");
+    }
+
+    /// <summary>Requires the shown page to match a healing technique's frozen result and the HP its user gained.</summary>
+    /// <param name="context">Frozen context of the healing action.</param>
+    /// <param name="hpBefore">User HP before the command resolved.</param>
+    /// <param name="hpAfter">User HP after the rules applied the heal.</param>
+    public void RequireRecoveryResult(ActionSequenceContext context, int hpBefore, int hpAfter)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+        BattleRecoveryOutcome recovery = context.Recovery ?? throw new InvalidOperationException("the action has no heal result");
+        BattleActionResultPage page = Page ?? throw new InvalidOperationException("no result message was shown");
+        int gained = hpAfter - hpBefore;
+        GD.Print($"B9057_RECOVERY_RULE key={page.Key} side={page.TargetSide} named=[{string.Join(',', page.NamedIds)}] amount={page.Amount} rule_amount={recovery.Amount} side_wide={recovery.SideWide} hp={hpBefore}->{hpAfter} gained={gained} number_pixels={NumberPixels} shown={ShownTick} arrow={ArrowTick}");
+        BattleFighter?[] side = recovery.Side == BattleSide.Player ? _host.Flow.State.Players : _host.Flow.State.Enemies;
+        GD.Print($"B9057_RECOVERY_SIDE {string.Join(' ', side.OfType<BattleFighter>().Select(fighter => $"{fighter.Id}:{fighter.Hp}/{fighter.MaxHp}"))}");
+        ProbeRequirement.Require(page.NamedIds.SequenceEqual(recovery.NamedIds) && page.TargetSide == recovery.Side, "result names other fighters than the healed ones");
+        ProbeRequirement.Require(recovery.Healed ? page.Amount == recovery.Amount && gained > 0 && gained <= page.Amount : page.Key == BattleActionResultPages.NoEffectKey && gained == 0, "printed heal differs from the rule result");
+        ProbeRequirement.Require(page.Key == BattleActionResultPages.NoEffectKey || NumberPixels > 0, "the number line drew no glyph");
         ProbeRequirement.Require(ArrowTick > ShownTick && _host.Flow.ActionResult is null, "result message did not reveal its arrow and close");
     }
 

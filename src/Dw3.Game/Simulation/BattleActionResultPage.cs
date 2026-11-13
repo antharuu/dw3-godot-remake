@@ -10,6 +10,9 @@ namespace Dw3Production.Simulation;
 /// <param name="Numbers">Values printed by the second line, in argument order.</param>
 public sealed record BattleActionResultPage(string Key, BattleSide TargetSide, int TargetId, IReadOnlyList<int> Numbers)
 {
+    /// <summary>Gets every fighter id the first line names, in order. A side heal names each hurt fighter, any other page its target.</summary>
+    public IReadOnlyList<int> NamedIds { get; init; } = [TargetId];
+
     /// <summary>Gets the first printed number, the damage shown by a single-hit message.</summary>
     public int Amount => Numbers.Count > 0 ? Numbers[0] : 0;
 }

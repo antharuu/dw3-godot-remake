@@ -98,6 +98,9 @@ public sealed class BattleState
     /// <summary>Gets the ordered damage and reaction events from the most recently resolved damaging action.</summary>
     public IReadOnlyList<BattleHitEvent> LastHitEvents => _hitSequence.Events;
 
+    /// <summary>Gets the frozen result of the most recent healing technique, taken once by the action that shows it.</summary>
+    public BattleRecoveryOutcome? LastRecovery { get; internal set; }
+
     /// <summary>Gets the item successfully taken by the most recent player steal, consumed once by the caller when it commits the transfer.</summary>
     public int? PendingStolenItem { get; private set; }
 
@@ -200,7 +203,7 @@ public sealed class BattleState
         attacker.Mp -= attacker.TechniqueMpCost(tech);
         if (!BattleTechniqueEffectResolver.RequiresHitSequence(tech))
         {
-            ApplyTechniqueEffect(BattleSide.Player, tech, rng, 0);
+            BattleNoHitTechnique.Resolve(this, BattleSide.Player, tech, rng);
             MarkFought();
             AdvancePlayerTurn();
             CheckOutcome();
@@ -563,6 +566,22 @@ public sealed class BattleState
         {
             Outcome = BattleOutcome.Lost;
         }
+    }
+
+    /// <summary>Takes the result of the most recent healing technique, leaving none for a later action.</summary>
+    /// <returns>The frozen heal result, or null when the last action healed nothing.</returns>
+    internal BattleRecoveryOutcome? TakeLastRecovery()
+    {
+        BattleRecoveryOutcome? recovery = LastRecovery;
+        LastRecovery = null;
+        return recovery;
+    }
+
+    /// <summary>Forgets the previous action's hits and heal result before a technique that rolls no hit.</summary>
+    internal void BeginNoHitAction()
+    {
+        _hitSequence.Clear();
+        LastRecovery = null;
     }
 
     /// <summary>Consumes the active fighter's pending charge after a technique.</summary>

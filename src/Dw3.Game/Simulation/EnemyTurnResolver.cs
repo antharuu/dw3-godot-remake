@@ -107,7 +107,7 @@ public sealed class EnemyTurnResolver(BattleState state)
         attacker.Mp -= tech.Mp;
         if (!BattleTechniqueEffectResolver.RequiresHitSequence(tech))
         {
-            state.ApplyTechniqueEffect(BattleSide.Enemy, tech, rng, 0);
+            BattleNoHitTechnique.Resolve(state, BattleSide.Enemy, tech, rng);
             state.ConsumeCharge(BattleSide.Enemy);
             EndTurn();
             return true;

@@ -1,9 +1,17 @@
+using Dw3Production.Simulation;
+
 namespace Dw3Production.Conversion;
 
 /// <summary>Builds render lines from the disc-decoded battle text tables. Text-window
 /// command 5 selects a substitution by its one-based argument, matching text-window behavior.</summary>
 public sealed class BattleTextCatalog
 {
+    /// <summary>MFIGHT entry before the fighter-list lines: entry base + count names that many fighters.</summary>
+    private const int FightersLineBase = 0x15;
+
+    /// <summary>Largest fighter count a fighter-list line names.</summary>
+    private const int MaxNamedFighters = 3;
+
     private readonly BattleTextData _data;
 
     /// <summary>Initializes a new instance of the <see cref="BattleTextCatalog"/> class with the given text data.</summary>
@@ -80,7 +88,7 @@ public sealed class BattleTextCatalog
             return BattleTextLine.Missing;
         }
 
-        var type = key switch { "technique" => 3, "damage" => 4, "multiHitDamage" => 16, "digivolve" => 12, "item" => 14, "won" or "lost" => 1, _ => 2 };
+        var type = key switch { "technique" => 3, "damage" => 4, "recovered" => 8, "multiHitDamage" => 16, "digivolve" => 12, "item" => 14, "won" or "lost" => 1, _ => 2 };
         if (type == 1)
         {
             return FromMenu(template.Entry, $"MFIGHT entry={template.Entry} message={key}");
@@ -90,6 +98,44 @@ public sealed class BattleTextCatalog
         var action = substitutions.Length > 1 ? substitutions[1..] : [];
         var second = new BattleTextLine(_data.Menu[template.Entry], action, $"MFIGHT entry={template.Entry} message={key}");
         return new BattleTextLine(_data.Menu[0x16], [actor], $"MFIGHT entry=22 message={key}", second, type);
+    }
+
+    /// <summary>
+    /// Builds the message of one action result page: a side heal names each hurt fighter through the fighter-list
+    /// line, every other page names its target before the key's line and numbers.
+    /// </summary>
+    /// <param name="page">Result page.</param>
+    /// <param name="name">Resolves a fighter id to its displayed name.</param>
+    /// <returns>The resolved line, or <see cref="BattleTextLine.Missing"/>.</returns>
+    public BattleTextLine ResultPage(BattleActionResultPage page, Func<int, IReadOnlyList<TextToken>> name)
+    {
+        ArgumentNullException.ThrowIfNull(page);
+        ArgumentNullException.ThrowIfNull(name);
+        IReadOnlyList<TextToken>[] numbers = [.. page.Numbers.Select(Number)];
+        return page.Key == BattleActionResultPages.SideRecoveredKey
+            ? FightersMessage(page.Key, [.. page.NamedIds.Select(name)], numbers)
+            : Message(page.Key, [name(page.TargetId), .. numbers]);
+    }
+
+    /// <summary>
+    /// Builds a message whose first line names up to three fighters through the fighter-list entry for their count
+    /// (source message type 9), and whose second line is the key's template with its values.
+    /// </summary>
+    /// <param name="key">The message template key of the second line, for example <c>sideRecovered</c>.</param>
+    /// <param name="names">Name token streams of the named fighters, in slot order.</param>
+    /// <param name="values">Substitutions of the second line.</param>
+    /// <returns>The resolved line, or <see cref="BattleTextLine.Missing"/> for an unknown key or fighter count.</returns>
+    public BattleTextLine FightersMessage(string key, IReadOnlyList<IReadOnlyList<TextToken>> names, params IReadOnlyList<TextToken>[] values)
+    {
+        ArgumentNullException.ThrowIfNull(names);
+        if (!_data.Messages.TryGetValue(key, out var template) || names.Count is < 1 or > MaxNamedFighters)
+        {
+            return BattleTextLine.Missing;
+        }
+
+        int entry = FightersLineBase + names.Count;
+        var second = new BattleTextLine(_data.Menu[template.Entry], values, $"MFIGHT entry={template.Entry} message={key}");
+        return new BattleTextLine(_data.Menu[entry], names, $"MFIGHT entry={entry} message={key} names={names.Count}", second, 9);
     }
 
     /// <summary>Looks up one entry of a text table without throwing, so a pack with a short table still renders the rest of the battle.</summary>

@@ -7,12 +7,26 @@ namespace Dw3Production.Simulation;
 /// </summary>
 public static class BattleActionResultPages
 {
+    /// <summary>Message key of a heal of the user's active fighter (source message type 8).</summary>
+    public const string RecoveredKey = "recovered";
+
+    /// <summary>Message key of a heal of the user's whole side, naming each hurt fighter (source message type 9).</summary>
+    public const string SideRecoveredKey = "sideRecovered";
+
+    /// <summary>Message key of a heal that restored nothing.</summary>
+    public const string NoEffectKey = "noEffect";
+
     /// <summary>Builds the result pages of an action.</summary>
     /// <param name="context">Frozen action context with its ordered hit events.</param>
     /// <returns>The pages to show in order, empty when the action has no damage resolution.</returns>
     public static IReadOnlyList<BattleActionResultPage> Build(ActionSequenceContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
+        if (context.Recovery is { } recovery)
+        {
+            return [RecoveryPage(recovery)];
+        }
+
         var pages = new List<BattleActionResultPage>();
         BattleHitEvent[] main = [.. context.HitEvents.Where(hit => !hit.IsCounter)];
         BattleSide defender = Opposite(context.AttackerSide);
@@ -64,6 +78,23 @@ public static class BattleActionResultPages
     private static BattleActionResultPage SingleHitPage(BattleHitEvent hit, BattleSide side, int target) => hit.Landed
         ? new BattleActionResultPage("damage", side, target, [hit.FormulaDamage])
         : new BattleActionResultPage("missed", side, target, []);
+
+    /// <summary>
+    /// Builds the page of a healing technique: the healed active fighter and its HP, the hurt fighters of the side
+    /// and the HP printed for them, or the user and the no-effect line.
+    /// </summary>
+    /// <param name="recovery">Frozen heal result.</param>
+    /// <returns>The page.</returns>
+    private static BattleActionResultPage RecoveryPage(BattleRecoveryOutcome recovery)
+    {
+        if (!recovery.Healed)
+        {
+            return new BattleActionResultPage(NoEffectKey, recovery.Side, recovery.NamedIds[0], []);
+        }
+
+        string key = recovery.SideWide ? SideRecoveredKey : RecoveredKey;
+        return new BattleActionResultPage(key, recovery.Side, recovery.NamedIds[0], [recovery.Amount]) { NamedIds = recovery.NamedIds };
+    }
 
     /// <summary>Returns the other side.</summary>
     /// <param name="side">One side.</param>

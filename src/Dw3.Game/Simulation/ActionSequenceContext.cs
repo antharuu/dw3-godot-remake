@@ -23,6 +23,9 @@ public sealed record ActionSequenceContext(
     /// <summary>Gets the technique's frozen action-sound index.</summary>
     public int ScriptSound { get; init; }
 
+    /// <summary>Gets the frozen result of a healing technique, or null for an action that heals nothing.</summary>
+    public BattleRecoveryOutcome? Recovery { get; init; }
+
     /// <summary>Gets frozen sound-substitution results. Only marker 3 selects the miss sound.</summary>
     public IReadOnlyList<int> SoundResults { get; init; } = [0, 0, 0, 0];
 
@@ -33,13 +36,15 @@ public sealed record ActionSequenceContext(
     /// <param name="attackerId">Attacker fighter id, frozen before any KO swap.</param>
     /// <param name="targetId">Target fighter id, frozen before any KO swap.</param>
     /// <param name="hitEvents">Pre-resolved hit events from the single RNG draw.</param>
+    /// <param name="recovery">Frozen result of a healing technique, or null.</param>
     /// <returns>A new context, or null when no script should run.</returns>
     public static ActionSequenceContext? TryCapture(
         BattleSide side,
         TechData? tech,
         int attackerId,
         int targetId,
-        IReadOnlyList<BattleHitEvent> hitEvents)
+        IReadOnlyList<BattleHitEvent> hitEvents,
+        BattleRecoveryOutcome? recovery = null)
     {
         if (tech is not { Script: > 0 })
         {
@@ -52,6 +57,7 @@ public sealed record ActionSequenceContext(
             ScriptEffect = tech.ScriptEffect,
             ScriptSound = tech.ScriptSound,
             SoundResults = CaptureSoundResults(hitEvents, tech.Effect),
+            Recovery = recovery,
         };
     }
 

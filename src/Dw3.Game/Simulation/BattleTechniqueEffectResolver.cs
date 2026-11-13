@@ -80,6 +80,7 @@ public static class BattleTechniqueEffectResolver
         BattleTechniqueEffect.Dedigivolve => attackerSide == BattleSide.Enemy,
         BattleTechniqueEffect.DrainMp => attackerSide == BattleSide.Enemy,
         BattleTechniqueEffect.Steal => attackerSide == BattleSide.Player,
+        BattleTechniqueEffect.ItemHeal => BattleTechniqueRecovery.Supports(technique),
         _ => technique.Icon <= BattleConst.TechMagic,
     };
 
@@ -90,7 +91,7 @@ public static class BattleTechniqueEffectResolver
     {
         BattleTechniqueEffect.NoSpecialEffect => true,
         BattleTechniqueEffect.DoubleMagic => true,
-        BattleTechniqueEffect.DrainMp or BattleTechniqueEffect.EnemyOnly => false,
+        BattleTechniqueEffect.DrainMp or BattleTechniqueEffect.EnemyOnly or BattleTechniqueEffect.ItemHeal => false,
         _ => true,
     };
 

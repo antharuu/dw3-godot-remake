@@ -21,6 +21,9 @@ public static class BattleConst
     /// <summary>Value of a technique's icon field that marks a magic technique, resolved with the spirit formula and the magic critical roll.</summary>
     public const int TechMagic = 3;
 
+    /// <summary>Value of a technique's icon field that marks an item technique: a heal, cure, revival or recovery that rolls no hit.</summary>
+    public const int TechItem = 4;
+
     /// <summary>Lowest technique effect id. A technique with a smaller effect only deals damage.</summary>
     public const int TechEffectFirst = 2;
 

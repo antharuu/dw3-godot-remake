@@ -65,6 +65,78 @@ internal sealed class BattleSpriteEffectProbe : BattleProbe
         ProbeRequirement.Require(evidence.FlashPeak is not { } flash || flash.White * 10 >= flash.Total * 9, "full white flash did not saturate the frame");
     }
 
+    /// <summary>Checks the shown result against the frozen damage or heal of the action.</summary>
+    /// <param name="numbers">Observed result message.</param>
+    /// <param name="rule">Frozen context, the fighter whose HP the rule changed, and that HP before resolution.</param>
+    private static void RequireResult(BattleActionNumberEvidence numbers, (ActionSequenceContext Context, BattleFighter Defender, int Hp) rule)
+    {
+        if (rule.Context.Recovery is null)
+        {
+            numbers.RequireRuleResult(rule.Context, rule.Hp, rule.Defender.Hp);
+        }
+        else
+        {
+            numbers.RequireRecoveryResult(rule.Context, rule.Hp, rule.Defender.Hp);
+        }
+    }
+
+    /// <summary>
+    /// Gives the swapped-in fighters their source names, as the production setup does for its own party forms and
+    /// encounter enemies, so the action and result messages name them.
+    /// </summary>
+    /// <param name="loader">Validated pack.</param>
+    /// <param name="flow">Battle flow whose name map is extended.</param>
+    /// <param name="player">Player fighter id, named from the Digimon table.</param>
+    /// <param name="enemy">Enemy fighter id, named from the battle table.</param>
+    private static void AdoptNames(BattleDataPackLoader loader, BattleFlowController flow, int player, int enemy)
+    {
+        FighterData fighters = loader.LoadFighters();
+        var names = new Dictionary<int, int>(flow.NameIds);
+        if (fighters.Digimon.TryGetValue(player, out DigimonData? partner))
+        {
+            names[player] = partner.NameId;
+        }
+
+        if (fighters.BattleTable.FirstOrDefault(entry => entry.Id == enemy) is { } opponent)
+        {
+            names[enemy] = opponent.NameId;
+        }
+
+        flow.NameIds = names;
+    }
+
+    /// <summary>
+    /// Returns the fighter whose HP the action's rule changes: the defender of a damaging technique, or the user of a
+    /// healing one, whose living side is first halved so the heal has something to restore.
+    /// </summary>
+    /// <param name="state">Battle state with both active fighters.</param>
+    /// <param name="tech">Technique about to be resolved.</param>
+    /// <param name="enemy">Whether the enemy uses the technique.</param>
+    /// <returns>The fighter whose HP the result message reports.</returns>
+    private static BattleFighter RuleFighter(BattleState state, Dw3Production.Simulation.TechData tech, bool enemy)
+    {
+        BattleFighter player = state.ActivePlayerFighter ?? throw new InvalidOperationException("No player.");
+        BattleFighter target = state.ActiveEnemyFighter ?? throw new InvalidOperationException("No enemy.");
+        if (!BattleTechniqueRecovery.Supports(tech))
+        {
+            return enemy ? player : target;
+        }
+
+        HurtSide(enemy ? state.Enemies : state.Players);
+        return enemy ? target : player;
+    }
+
+    /// <summary>Halves the HP of every living fighter of a healing technique's side, so a side heal names each of them.</summary>
+    /// <param name="side">Slots of the user's side.</param>
+    private static void HurtSide(IEnumerable<BattleFighter?> side)
+    {
+        foreach (BattleFighter fighter in side.OfType<BattleFighter>().Where(fighter => !fighter.IsKnockedOut))
+        {
+            fighter.Hp = fighter.MaxHp / 2;
+            GD.Print($"B9057_HURT fighter={fighter.Id} hp={fighter.Hp}/{fighter.MaxHp}");
+        }
+    }
+
     /// <summary>Starts a debug battle with the natural owner and resolves the technique through the real rules.</summary>
     /// <param name="loader">Validated pack.</param>
     /// <param name="captures">Private case directory.</param>
@@ -84,6 +156,7 @@ internal sealed class BattleSpriteEffectProbe : BattleProbe
         player.Hp = player.MaxHp = 9000;
         target.Hp = target.MaxHp = 9000;
         target.Counter = default;
+        AdoptNames(loader, flow, player.Id, target.Id);
         Host.Renderer.BuildModels(loader.ModelPath(player.Id), loader.ModelPath(target.Id), "sprite proof", "target", target.Id);
         Host.AdoptSheetFighter(player.Id);
         Host.Renderer.ConfigureActionAssets(loader);
@@ -99,13 +172,14 @@ internal sealed class BattleSpriteEffectProbe : BattleProbe
         }
         else
         {
-            flow.PlayerTechniques = [new BattleTechnique(selected.Technique, "extracted", tech)];
+            flow.PlayerTechniques = [new BattleTechnique(selected.Technique, "extracted", tech, flow.Text?.Technique(selected.Technique))];
         }
 
+        BattleFighter defender = RuleFighter(flow.State, tech, selected.Enemy);
         Image settled = await BattleSpriteEffectEvidence.SettleAsync(Host);
         settled.SavePng(Path.Combine(captures, "hud-digits-before.png"));
         var before = (Image: settled, PlayerHp: player.Hp);
-        BattleFighter defender = selected.Enemy ? player : target;
+
         int defenderHp = defender.Hp;
         if (selected.Enemy)
         {
@@ -172,7 +246,7 @@ internal sealed class BattleSpriteEffectProbe : BattleProbe
         if (!cancel)
         {
             Require(evidence);
-            numbers.RequireRuleResult(action.Rule.Context, action.Rule.Hp, action.Rule.Defender.Hp);
+            RequireResult(numbers, action.Rule);
         }
 
         if (!cancel && before is { } previous)

@@ -591,6 +591,9 @@ src/Dw3.Game/Simulation/BattleEnemyAi.cs
 src/Dw3.Game/Simulation/BattleFighter.cs
 src/Dw3.Game/Simulation/BattleFighterTiming.cs
 src/Dw3.Game/Simulation/BattleFlowController.cs
+src/Dw3.Game/Simulation/BattleNoHitTechnique.cs
+src/Dw3.Game/Simulation/BattleRecoveryOutcome.cs
+src/Dw3.Game/Simulation/BattleTechniqueRecovery.cs
 src/Dw3.Game/Simulation/DigivolutionEligibility.cs
 src/Dw3.Game/Simulation/BattleSessionTechniques.cs
 src/Dw3.Game/Simulation/SessionBattleCatalogFactory.cs
@@ -840,6 +843,7 @@ tests/Dw3.Game.Tests/BattleMotionCadenceTraceTests.cs
 tests/Dw3.Game.Tests/BattleSkeletonBlendTests.cs
 tests/Dw3.Game.Tests/BattleSkeletonTransformCacheTests.cs
 tests/Dw3.Game.Tests/BattlePresentationMathTests.cs
+tests/Dw3.Game.Tests/BattleTechniqueRecoveryTests.cs
 tests/Dw3.Game.Tests/BattleTickCoordinatorTests.cs
 tests/Dw3.Game.Tests/BattleMenuRootNavigationTests.cs
 tests/Dw3.Game.Tests/BattleProbeCatalogTests.cs

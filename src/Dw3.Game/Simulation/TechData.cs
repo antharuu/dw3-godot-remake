@@ -3,6 +3,9 @@ namespace Dw3Production.Simulation;
 /// <summary>A technique as the damage math reads it, copied from the technique table of the pack.</summary>
 public sealed class TechData
 {
+    /// <summary>Gets or sets the technique table id, 1-based. Zero for a technique built outside the table.</summary>
+    public int Id { get; set; }
+
     /// <summary>Gets or sets the MP cost. The technique is refused when the user has less MP, unless it is in a temporary form.</summary>
     public int Mp { get; set; }
 

@@ -35,6 +35,13 @@ internal sealed class BattleHitSequence
     /// <summary>Gets the aggregate formula damage before HP clamping across all non-counter landed hits in the last started action. Counter hits are excluded because only the initiating action feeds the drain formula.</summary>
     public int ResolvedDamage => _resolvedDamage;
 
+    /// <summary>Forgets the previous action's events and resolved damage, for an action that rolls no hit.</summary>
+    public void Clear()
+    {
+        _events.Clear();
+        _resolvedDamage = 0;
+    }
+
     /// <summary>Resolves one action or counter sequence against its original target.</summary>
     /// <param name="side">Side rolling the hits.</param>
     /// <param name="tech">Technique that determines the count and is traced with every event.</param>

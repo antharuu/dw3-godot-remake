@@ -39,6 +39,7 @@ public static class BattleSetupFactory
     /// <returns>A new simulation technique with the same values.</returns>
     public static TechData ToTech(Conversion.TechData tech) => new()
     {
+        Id = tech.Id,
         Mp = tech.Mp,
         Power = tech.Power,
         Icon = tech.Icon,

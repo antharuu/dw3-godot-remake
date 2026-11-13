@@ -343,7 +343,7 @@ public sealed class BattleFlowController
         if (decision.IsAttack || decision.IsTechnique)
         {
             PendingSequenceContext = ActionSequenceContext.TryCapture(
-                BattleSide.Enemy, ResolveEnemyTech(decision), attackerId, targetId, State.LastHitEvents);
+                BattleSide.Enemy, ResolveEnemyTech(decision), attackerId, targetId, State.LastHitEvents, State.TakeLastRecovery());
         }
     }
 
@@ -367,7 +367,7 @@ public sealed class BattleFlowController
     /// <param name="targetId">Enemy fighter id captured before the action.</param>
     private void TryCapturePlayerSequenceContext(TechData tech, int attackerId, int targetId) =>
         PendingSequenceContext = ActionSequenceContext.TryCapture(
-            BattleSide.Player, tech, attackerId, targetId, State.LastHitEvents);
+            BattleSide.Player, tech, attackerId, targetId, State.LastHitEvents, State.TakeLastRecovery());
 
     /// <summary>Moves to the next phase after a spent turn: <see cref="BattleFlowPhase.Ended"/> with a won or lost message once an outcome exists, <see cref="BattleFlowPhase.ActionSequence"/> when a sequence context was captured, otherwise the turn of whichever side the state schedules next. The message is cleared when the player gets the menu back.</summary>
     private void AdvancePhase()
@@ -556,7 +556,9 @@ public sealed class BattleFlowController
     /// <param name="page">Result page.</param>
     private void ShowResultPage(BattleActionResultPage page)
     {
-        SetMessage(page.Key, [NameTokensById(page.TargetId), .. page.Numbers.Select(BattleTextCatalog.Number)]);
+        MessageText = Text?.ResultPage(page, NameTokensById) ?? BattleTextLine.Missing;
+        Message = MessageText.Debug;
+        MessageVisible = MessageText != BattleTextLine.Missing;
     }
 
     /// <summary>Hides the message and forgets its text and label.</summary>
