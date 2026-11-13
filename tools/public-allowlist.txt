@@ -1293,3 +1293,26 @@ tests/Dw3.Game.Tests/BattleMusicPlaybackTests.cs
 tests/Dw3.Game.Tests/GodotReverbBusTests.cs
 tests/Dw3.Game.Tests/ReverbTailMeasurementTests.cs
 tests/Dw3.Game.Tests/SequenceNrpnDecoderTests.cs
+
+# Versioned action-sprite extraction and prepared validation
+docs/formats/action-sprites.md
+src/Dw3.Data/Battle/PreparedSpriteEffect.cs
+src/Dw3.Data/Battle/SpriteEffectDomainReader.cs
+src/Dw3.Data/Battle/SpriteEffectPayloadValidator.cs
+src/Dw3.Data/Battle/SpriteEffectSchema.cs
+src/Dw3.Data/Battle/SpriteEffectScriptReader.cs
+src/Dw3.Extractor/SpriteEffectDomainWriter.cs
+src/Dw3.Extractor/SpriteEffectExtractionStep.cs
+src/Dw3.Extractor/SpriteEffectFrameWriter.cs
+src/Dw3.Extractor/SpriteEffectScriptWriter.cs
+src/Dw3.Extractor/SpriteEffectSource.cs
+src/Dw3.Extractor/SpriteEffectSourceAbsentException.cs
+src/Dw3.Extractor/SpriteEffectValidationCommand.cs
+src/Dw3.Formats/Battle/SpriteEffectReference.cs
+src/Dw3.Formats/Battle/SpriteEffectRegistryDecoder.cs
+src/Dw3.Formats/Battle/SpriteEffectSheetReference.cs
+tests/Dw3.Extractor.Tests/FabricatedSpriteEffects.cs
+tests/Dw3.Extractor.Tests/SpriteEffectBlendTests.cs
+tests/Dw3.Extractor.Tests/SpriteEffectContractTests.cs
+tests/Dw3.Extractor.Tests/SpriteEffectExtractionTests.cs
+tests/Dw3.Formats.Tests/Battle/SpriteEffectRegistryDecoderTests.cs

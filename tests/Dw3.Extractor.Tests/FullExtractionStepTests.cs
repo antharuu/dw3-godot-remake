@@ -144,13 +144,13 @@ public sealed class FullExtractionStepTests : IDisposable
     }
 
     [Fact]
-    public void TheProductionPipelineRunsTwentyDomainsInAFixedOrder()
+    public void TheProductionPipelineRunsAllPreparedDomainsInAFixedOrder()
     {
         Assert.Equal(
             [
                 "zones", "collision", "player", "water", "climb", "drop", "cue", "icon", "npc", "text", "font",
                 "dialogue", "talk-box", "encounter", "battle", "digivolution", "battle-models", "battle-stages",
-                "battle-hud", "battle-audio", "battle-report",
+                "battle-hud", "battle-sprites", "battle-audio", "battle-report",
             ],
             FullExtractionStep.Domains.Select(domain => domain.Name));
     }

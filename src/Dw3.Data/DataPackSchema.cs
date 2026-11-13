@@ -33,6 +33,7 @@ public static class DataPackSchema
         CreateTalkBoxTables(connection);
         CreateEncounterTables(connection);
         CreateBattleAndModelTables(connection);
+        Battle.SpriteEffectSchema.Create(connection);
     }
 
     /// <summary>Creates the pack metadata and zone geometry schema tables.</summary>

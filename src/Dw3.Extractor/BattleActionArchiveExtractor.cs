@@ -50,7 +50,7 @@ internal static class BattleActionArchiveExtractor
     /// <param name="files">Engine file resolver.</param>
     /// <param name="archives">Cached archive bytes by engine file id.</param>
     /// <returns>The decoded script or its explicit failure reason.</returns>
-    private static BattleActionExtraction Decode(FighterModelReference reference, int scriptSelector, EngineFileReader files, IDictionary<int, byte[]> archives)
+    internal static BattleActionExtraction Decode(FighterModelReference reference, int scriptSelector, EngineFileReader files, IDictionary<int, byte[]> archives)
     {
         try
         {

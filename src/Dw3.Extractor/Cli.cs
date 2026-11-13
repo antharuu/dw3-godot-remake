@@ -53,6 +53,11 @@ public static class Cli
             return RunExtract(arguments, output, error, openDisc);
         }
 
+        if (arguments.Count >= 1 && arguments[0] == "verify-sprites")
+        {
+            return SpriteEffectValidationCommand.Run(arguments, output, error);
+        }
+
         if (arguments.Count >= 1 && arguments[0] == "analyze-dialogue")
         {
             return DialogueAnalysisCommand.Run(arguments, output, error, openDisc);
