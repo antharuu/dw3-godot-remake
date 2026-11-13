@@ -28,3 +28,46 @@ An out-of-page CLUT can address other source VRAM after the GPU's address packin
 Source script rows retain fighter, selector, archive identity, original command ordinals, sprite commands, fade mode/duration signatures and technique-to-sprite selectors. Technique selectors, fighter identities, sheet indices, animation slots, and texture-part indices are separate namespaces. The runtime still needs to resolve the script's technique-dependent selector and obey the original event schedule.
 
 `SpriteEffectDomainReader` validates identity chains, the `battle-sprites-v2` payload version, image hashes, part indices, texture page dimensions, palette widths, palette sources and animation references. It refuses an unknown palette source and a `cleared-vram` part whose address leaves the qualified rectangle or whose words are not all zero. `SpriteEffectScriptReader` validates source identity and fade signatures. Unsupported rows remain visible to the caller. No sprite/fade result upgrades `fullActionRendered`.
+
+## Runtime consumer
+
+`BattleDataPackLoader.LoadSpriteCatalog` validates the domain once through `SpriteEffectDomainReader`
+and parses available rows into runtime sheets on demand. The battle renderer registers
+`BattleSpriteEffectPlayback` on the production sequence consumer for both script commands:
+
+- Sprite command mode 1 (load) is acknowledged once the identity resolves to an available sheet.
+  Mode 0 starts one independent instance at the script position, even for an identity already
+  running. A script keeps at most eight running effects, as the source does, and drops a ninth start.
+  `source-absent` ends at once. `unsupported` and an identity missing from the index are unavailable,
+  so the action fails recoverably instead of skipping the effect.
+- An instance plays the archive's child animations up to the first empty entry (thirty at most).
+  Each physical step advances every child one source sample, the first step showing sample zero.
+  A sample whose scale has a zero is not drawn but keeps its time. The effect ends once every child
+  reached its duration, and the script end waits for it.
+- Each sample is drawn at the projected anchor plus its offset, through the drawer's YXZ rotation
+  matrix and fixed-point scale. Screen anchors (depth `0x7FFF` front, `-1` back) are source screen
+  positions, relative to the screen centre on the models layer, whose drawing offset is (160, 120),
+  and to the top-left corner on the front layer. Effects 1000 to 1002 and 1007 draw on the front
+  layer over the HUD, all others on the models layer under it. Both layers are clipped to the source
+  screen at the 3x layout.
+- Parts are drawn in placement order, placement zero first: the drawer queues them last to first
+  and the ordering table draws the last queued first. Within one effect the last child is at the back,
+  and among effects the farthest entry, then the latest created, is drawn first. An unblended
+  (ABR -1) frame draws every nonzero texel opaque. A blended frame draws each part twice in place,
+  its non-STP texels opaque, then its STP texels with the ABR equation (0 half plus half, 1 add,
+  2 subtract, 3 add a quarter). `cleared-vram` layers are drawn like any other part and are fully transparent.
+- Fade command 0 starts a white flash, an additive full-screen quad whose level rises by
+  `255 / frames` per frame to 255 and holds. Command 1 makes the latest flash fall by `255 / frames`
+  per frame from its current level until it is removed. The script does not wait for a flash.
+  A zero duration is unavailable rather than a division the source would fault on.
+- Completion and cancellation hide and free every effect child and the flash.
+
+The offscreen proof runs with `DW3_BATTLE_ACTION_PROBE=1`, `DW3_BATTLE_SPRITE_EFFECTS=1`, an explicit
+prepared `DW3_DATA_DIR` and optionally `DW3_SPRITE_CASES` (`technique:fighter`, an `e` prefix for a
+natural enemy owner). It plays each case normally and cancelled through the production runner and
+renderer, captures every sprite and flash frame with and without the layers, compares the settled HUD
+numbers with those before the action and requires every child to be destroyed.
+
+Known differences: models-layer sprites are drawn above every model instead of sharing the models'
+ordering table by depth, and a full-screen 2D backdrop covers only the 4:3 source screen in 16:9.
+No sprite or fade result sets `fullActionRendered`.

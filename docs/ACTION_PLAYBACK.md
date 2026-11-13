@@ -47,9 +47,9 @@ Restoring that resource allows the same already resolved action to resume withou
 draw. A technique explicitly lacking a script remains separate and does not enter playback.
 Teardown cancels physical work and abandons the old runner before a new battle is initialized.
 
-The renderer now owns the basic attack's travel, jumps, target reaction scripts and common
-contact sprite children. Other sprite, stage, effect-model and audio families keep the
-chained asset-consumer seam. An unregistered backend is unavailable. The deterministic
+The renderer now owns the basic attack's travel, jumps, target reaction scripts, every
+prepared sprite effect (the common contact included) and the script white flash. Stage,
+effect-model and audio families keep their own consumers or the chained asset-consumer seam. An unregistered backend is unavailable. The deterministic
 backend in engine-free tests acknowledges synchronization requests only. Camera interpolation
 uses the presentation clock. Source-frame/PAL calibration and complete visual parity are
 not established by these tests.
@@ -76,12 +76,11 @@ frozen hit facts, including whether that original target was defeated, rather th
 a replacement in the live roster. The shared physical consumer advances this child, and End
 waits for it. No damage or RNG is resolved in this path.
 
-The common contact effect is extracted as PNGs and expanded sprite-animation samples. Its
-sheet pivot, palette identity, additive blend, scale and rotation channels survive extraction.
-It is projected through the live battle camera and is a real retained drawing, not the generic
-flash. Other effect identifiers remain explicitly unavailable unless another registered family
-owns them. The optional-stage sentinel with no configured stage and a return to the unchanged
-original stage are qualified no-change operations, not simulated stage fades.
+Sprite effects, the common contact effect included, are drawn from the prepared sprite domain
+described in [formats/action-sprites.md](formats/action-sprites.md#runtime-consumer). There is no
+separate contact family any more. A missing or unsupported identity is never acknowledged. The
+optional-stage sentinel with no configured stage and a return to the unchanged original stage
+are qualified no-change operations, not simulated stage fades.
 
 For offscreen diagnostics, set `DW3_BATTLE_ACTION_PROBE=1` and
 `DW3_BATTLE_ACTION_PHYSICAL=1`, `DW3_RNG_SEED=12345` and an explicit newly prepared

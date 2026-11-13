@@ -13,6 +13,8 @@ public sealed class BattleDataPackLoader : IDisposable
 
     private readonly SqliteConnection _database;
 
+    private BattleSpriteCatalog? _sprites;
+
     /// <summary>Initializes a new instance of the <see cref="BattleDataPackLoader"/> class bound to the given data pack.</summary>
     /// <param name="pack">The validated data pack reader.</param>
     public BattleDataPackLoader(DataPackReader pack)
@@ -70,9 +72,10 @@ public sealed class BattleDataPackLoader : IDisposable
     /// <exception cref="CacheResourceException">The file is absent from the data pack.</exception>
     public string StagePath(int stageId) => RequireFile($"battle/stages/stage-{stageId}-model.json", $"battle stage {stageId}");
 
-    /// <summary>Returns the extracted common impact manifest.</summary>
-    /// <returns>Validated path within the data pack.</returns>
-    public string ImpactPath() => RequireFile("battle/impact/effect-2.json", "battle contact effect");
+    /// <summary>Returns the validated action-sprite domain, read and checked once per loader.</summary>
+    /// <returns>The prepared sprite catalog.</returns>
+    /// <exception cref="CacheResourceException">The sprite domain is absent, of another version or corrupt.</exception>
+    public BattleSpriteCatalog LoadSpriteCatalog() => _sprites ??= BattleSpriteCatalog.Load(_pack);
 
     /// <summary>Loads and validates the encounter manifest from the data pack.</summary>
     /// <returns>The fully decoded <see cref="EncounterData"/>.</returns>

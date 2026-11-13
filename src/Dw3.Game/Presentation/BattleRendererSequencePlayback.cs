@@ -15,6 +15,7 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
     private ActionSequenceContext? _context;
     private BattleReactionPlayback? _reaction;
     private BattleImpactPlayback? _impact;
+    private BattleSpriteEffectPlayback? _sprites;
     private BattleSequenceStagePlayback? _stage;
     private BattleSequenceActorPlayback? _actors;
     private BattleEffectModelPlayback? _effects;
@@ -32,8 +33,11 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
     /// <summary>Gets the private diagnostic roster.</summary>
     public BattleFighterRoster DiagnosticRoster => _fighters;
 
-    /// <summary>Gets the number of real contact children for synchronized offscreen capture.</summary>
-    public int DiagnosticImpactCount => _impact?.StartedChildrenCount ?? 0;
+    /// <summary>Gets the number of real sprite-effect children started in this action (the contact effect included), for synchronized offscreen capture.</summary>
+    public int DiagnosticImpactCount => _sprites?.StartedCount ?? 0;
+
+    /// <summary>Gets the prepared sprite and white-flash consumer, for private lifecycle diagnostics.</summary>
+    public BattleSpriteEffectPlayback? DiagnosticSprites => _sprites;
 
     /// <summary>Gets the number of independently instantiated three-dimensional effect models.</summary>
     public int DiagnosticEffectModelCount => _effects?.ActiveModels.Count ?? 0;
@@ -51,7 +55,7 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
     public bool OwnsCamera => _context is not null;
 
     /// <inheritdoc/>
-    public bool ChildrenReady => EffectChildrenReady?.Invoke() != false && _reaction?.IsComplete != false && _impact?.IsComplete != false && _effects?.IsComplete != false && _jumps.Values.All(jump => jump.IsComplete);
+    public bool ChildrenReady => EffectChildrenReady?.Invoke() != false && _reaction?.IsComplete != false && _sprites?.IsComplete != false && _effects?.IsComplete != false && _jumps.Values.All(jump => jump.IsComplete);
 
     /// <summary>Gets or sets the completion callback for children started by the asset consumer.</summary>
     public Func<bool>? EffectChildrenReady { get; set; }
@@ -110,12 +114,20 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
         DiagnosticReaction = (hit, target, selector, complete) => DiagnosticReaction?.Invoke(hit, target, selector, complete),
     };
 
-    /// <summary>Registers the renderer-owned contact effect consumer without replacing other families.</summary>
-    /// <param name="impact">Contact consumer bound to the same validated pack.</param>
+    /// <summary>Registers the renderer-owned unchanged-stage consumer without replacing other families.</summary>
+    /// <param name="impact">Unchanged-stage consumer.</param>
     public void ConfigureImpact(BattleImpactPlayback impact)
     {
         _impact?.Clear();
         _impact = impact;
+    }
+
+    /// <summary>Registers the prepared sprite-effect and white-flash consumer, releasing any previous one.</summary>
+    /// <param name="sprites">Consumer bound to the validated pack.</param>
+    public void ConfigureSprites(BattleSpriteEffectPlayback sprites)
+    {
+        _sprites?.Dispose();
+        _sprites = sprites;
     }
 
     /// <summary>Registers an audio consumer as the handler for <see cref="SoundRequestEvent"/> requests.
@@ -240,7 +252,7 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
     public void StepPhysical()
     {
         _reaction?.Step();
-        _impact?.Step();
+        _sprites?.Step();
         _stage?.Step();
         _actors?.Step();
         _effects?.Step();
@@ -275,6 +287,7 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
         CancelEffects?.Invoke();
         _reaction?.Clear();
         _impact?.Clear();
+        _sprites?.Clear();
         _stage?.Clear();
         _actors?.Clear();
         _effects?.Clear();
@@ -307,7 +320,9 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
             case StageChangeEvent stage:
                 return _stage?.Consume(stage) ?? ConsumeImpact(stage);
             case SpriteEffectEvent sprite:
-                return ConsumeImpact(sprite);
+                return _sprites?.Consume(sprite) ?? AssetConsumer?.Invoke(sprite) ?? SequenceAcknowledgement.Unavailable;
+            case ScreenFadeEvent fade:
+                return _sprites?.Consume(fade) ?? AssetConsumer?.Invoke(fade) ?? SequenceAcknowledgement.Unavailable;
             case ModelMotionEvent motion:
                 return ApplyMotion(motion);
             case ModelJumpEvent jump:
@@ -331,7 +346,7 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
         }
     }
 
-    /// <summary>Chains contact requests without swallowing other registered effect families.</summary>
+    /// <summary>Chains unchanged-stage requests without swallowing other registered effect families.</summary>
     /// <param name="request">Stable request identity.</param>
     /// <returns>The first available consumer acknowledgement.</returns>
     private SequenceAcknowledgement ConsumeImpact(BattleSequenceEvent request)
