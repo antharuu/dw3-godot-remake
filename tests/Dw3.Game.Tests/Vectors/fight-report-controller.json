@@ -1640,7 +1640,7 @@
           "partnerId": 1,
           "fighterId": 383,
           "fade": 4096,
-          "selected": true,
+          "selected": false,
           "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 4,
@@ -1695,7 +1695,7 @@
       },
       "stepCount": 73,
       "crossEvery": 20,
-      "out_headerFade": 4096,
+      "out_headerFade": 3278,
       "out_footerFade": 4096,
       "out_bgScroll": 36,
       "out_partners": [
@@ -1704,7 +1704,7 @@
           "partnerId": 1,
           "fighterId": 383,
           "fade": 4096,
-          "selected": true,
+          "selected": false,
           "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 4,
@@ -1759,7 +1759,7 @@
       },
       "stepCount": 78,
       "crossEvery": 20,
-      "out_headerFade": 1642,
+      "out_headerFade": 0,
       "out_footerFade": 4096,
       "out_bgScroll": 39,
       "out_partners": [
@@ -1769,7 +1769,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 6,
@@ -1823,7 +1823,7 @@
       },
       "stepCount": 79,
       "crossEvery": 20,
-      "out_headerFade": 824,
+      "out_headerFade": 0,
       "out_footerFade": 4096,
       "out_bgScroll": 39,
       "out_partners": [
@@ -1833,7 +1833,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 6,
@@ -1887,7 +1887,7 @@
       },
       "stepCount": 80,
       "crossEvery": 20,
-      "out_headerFade": 6,
+      "out_headerFade": 0,
       "out_footerFade": 4096,
       "out_bgScroll": 40,
       "out_partners": [
@@ -1897,71 +1897,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
-          "levelBlinkFrame": 0,
-          "shownExp": 4,
-          "animationFrame": 6,
-          "slots": [
-            {
-              "digimonId": -1,
-              "visible": false,
-              "expApplied": false,
-              "blinkFrame": 0
-            },
-            {
-              "digimonId": -1,
-              "visible": false,
-              "expApplied": false,
-              "blinkFrame": 0
-            },
-            {
-              "digimonId": -1,
-              "visible": false,
-              "expApplied": false,
-              "blinkFrame": 0
-            }
-          ]
-        }
-      ],
-      "out_exitFade": 0,
-      "out_done": false,
-      "out_message": null,
-      "out_logs": []
-    },
-    {
-      "id": 53,
-      "fn": "StepSequence",
-      "label": "A-frame87",
-      "input": {
-        "partners": [
-          {
-            "partyIndex": 0,
-            "partnerId": 1,
-            "fighterId": 383,
-            "levelBefore": 25,
-            "expBefore": 0,
-            "expGained": 4,
-            "levelAfter": 25,
-            "slotDigimonIds": []
-          }
-        ],
-        "money": 50,
-        "item": 0,
-        "messageTokenCounts": null
-      },
-      "stepCount": 87,
-      "crossEvery": 20,
-      "out_headerFade": 0,
-      "out_footerFade": 4096,
-      "out_bgScroll": 43,
-      "out_partners": [
-        {
-          "partyIndex": 0,
-          "partnerId": 1,
-          "fighterId": 383,
-          "fade": 4096,
-          "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 6,
@@ -1997,6 +1933,79 @@
         "tokensRevealed": 0,
         "tokenCount": 1,
         "arrowVisible": false,
+        "arrowFrame": 1
+      },
+      "out_logs": []
+    },
+    {
+      "id": 53,
+      "fn": "StepSequence",
+      "label": "A-frame87",
+      "input": {
+        "partners": [
+          {
+            "partyIndex": 0,
+            "partnerId": 1,
+            "fighterId": 383,
+            "levelBefore": 25,
+            "expBefore": 0,
+            "expGained": 4,
+            "levelAfter": 25,
+            "slotDigimonIds": []
+          }
+        ],
+        "money": 50,
+        "item": 0,
+        "messageTokenCounts": null
+      },
+      "stepCount": 87,
+      "crossEvery": 20,
+      "out_headerFade": 0,
+      "out_footerFade": 4096,
+      "out_bgScroll": 43,
+      "out_partners": [
+        {
+          "partyIndex": 0,
+          "partnerId": 1,
+          "fighterId": 383,
+          "fade": 4096,
+          "selected": false,
+          "cursorFrame": 1,
+          "levelBlinkFrame": 0,
+          "shownExp": 4,
+          "animationFrame": 6,
+          "slots": [
+            {
+              "digimonId": -1,
+              "visible": false,
+              "expApplied": false,
+              "blinkFrame": 0
+            },
+            {
+              "digimonId": -1,
+              "visible": false,
+              "expApplied": false,
+              "blinkFrame": 0
+            },
+            {
+              "digimonId": -1,
+              "visible": false,
+              "expApplied": false,
+              "blinkFrame": 0
+            }
+          ]
+        }
+      ],
+      "out_exitFade": 0,
+      "out_done": false,
+      "out_message": {
+        "entry": 10,
+        "substitutions": [
+          50
+        ],
+        "tokensRevealed": 1,
+        "tokenCount": 1,
+        "arrowVisible": true,
         "arrowFrame": 2
       },
       "out_logs": []
@@ -2034,7 +2043,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 7,
@@ -2098,7 +2107,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 7,
@@ -2162,7 +2171,7 @@
           "fighterId": 383,
           "fade": 824,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 8,
@@ -2226,7 +2235,7 @@
           "fighterId": 383,
           "fade": 6,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 8,
@@ -2290,7 +2299,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 8,
@@ -2354,7 +2363,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 8,
@@ -2418,7 +2427,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 8,
@@ -2482,7 +2491,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 8,
@@ -3121,7 +3130,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 3,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 5,
@@ -3185,7 +3194,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 3,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 6,
@@ -3249,7 +3258,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 3,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 6,
@@ -3313,7 +3322,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 3,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 6,
@@ -3469,7 +3478,17 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": null,
+      "out_message": {
+        "entry": 7,
+        "substitutions": [
+          1,
+          26
+        ],
+        "tokensRevealed": 0,
+        "tokenCount": 1,
+        "arrowVisible": false,
+        "arrowFrame": 4
+      },
       "out_logs": []
     },
     {
@@ -3506,7 +3525,7 @@
           "fade": 4096,
           "selected": true,
           "cursorFrame": 3,
-          "levelBlinkFrame": 2,
+          "levelBlinkFrame": 3,
           "shownExp": 4,
           "animationFrame": 6,
           "slots": [
@@ -3533,17 +3552,7 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": {
-        "entry": 7,
-        "substitutions": [
-          1,
-          26
-        ],
-        "tokensRevealed": 1,
-        "tokenCount": 1,
-        "arrowVisible": true,
-        "arrowFrame": 1
-      },
+      "out_message": null,
       "out_logs": []
     },
     {
@@ -3580,7 +3589,7 @@
           "fade": 4096,
           "selected": true,
           "cursorFrame": 1,
-          "levelBlinkFrame": 6,
+          "levelBlinkFrame": 7,
           "shownExp": 4,
           "animationFrame": 6,
           "slots": [
@@ -3607,17 +3616,7 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": {
-        "entry": 7,
-        "substitutions": [
-          1,
-          26
-        ],
-        "tokensRevealed": 1,
-        "tokenCount": 1,
-        "arrowVisible": true,
-        "arrowFrame": 3
-      },
+      "out_message": null,
       "out_logs": []
     },
     {
@@ -3643,7 +3642,7 @@
       },
       "stepCount": 100,
       "crossEvery": 20,
-      "out_headerFade": 4096,
+      "out_headerFade": 3278,
       "out_footerFade": 4096,
       "out_bgScroll": 50,
       "out_partners": [
@@ -3652,9 +3651,9 @@
           "partnerId": 1,
           "fighterId": 383,
           "fade": 4096,
-          "selected": true,
-          "cursorFrame": 3,
-          "levelBlinkFrame": 9,
+          "selected": false,
+          "cursorFrame": 2,
+          "levelBlinkFrame": 10,
           "shownExp": 4,
           "animationFrame": 7,
           "slots": [
@@ -3717,7 +3716,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 3,
+          "cursorFrame": 2,
           "levelBlinkFrame": 10,
           "shownExp": 4,
           "animationFrame": 9,
@@ -3781,7 +3780,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 3,
+          "cursorFrame": 2,
           "levelBlinkFrame": 10,
           "shownExp": 4,
           "animationFrame": 9,
@@ -3845,7 +3844,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 3,
+          "cursorFrame": 2,
           "levelBlinkFrame": 10,
           "shownExp": 4,
           "animationFrame": 9,
@@ -3909,7 +3908,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 3,
+          "cursorFrame": 2,
           "levelBlinkFrame": 10,
           "shownExp": 4,
           "animationFrame": 9,
@@ -4868,7 +4867,7 @@
       },
       "stepCount": 75,
       "crossEvery": 20,
-      "out_headerFade": 4096,
+      "out_headerFade": 1642,
       "out_footerFade": 4096,
       "out_bgScroll": 37,
       "out_partners": [
@@ -4878,7 +4877,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 100,
           "animationFrame": 5,
@@ -4932,7 +4931,7 @@
       },
       "stepCount": 80,
       "crossEvery": 20,
-      "out_headerFade": 6,
+      "out_headerFade": 0,
       "out_footerFade": 4096,
       "out_bgScroll": 40,
       "out_partners": [
@@ -4942,7 +4941,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 100,
           "animationFrame": 6,
@@ -4970,7 +4969,16 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": null,
+      "out_message": {
+        "entry": 10,
+        "substitutions": [
+          0
+        ],
+        "tokensRevealed": 0,
+        "tokenCount": 1,
+        "arrowVisible": false,
+        "arrowFrame": 1
+      },
       "out_logs": []
     },
     {
@@ -5006,7 +5014,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 100,
           "animationFrame": 7,
@@ -5070,7 +5078,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 100,
           "animationFrame": 8,
@@ -5134,7 +5142,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 6,
@@ -5207,7 +5215,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 7,
@@ -5271,7 +5279,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 8,
@@ -5344,7 +5352,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 9,
@@ -5408,7 +5416,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 9,
@@ -5472,7 +5480,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 9,
@@ -5536,7 +5544,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 9,
@@ -5828,7 +5836,7 @@
       },
       "stepCount": 75,
       "crossEvery": 20,
-      "out_headerFade": 4096,
+      "out_headerFade": 1642,
       "out_footerFade": 4096,
       "out_bgScroll": 37,
       "out_partners": [
@@ -5838,7 +5846,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 5,
@@ -5946,7 +5954,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 7,
@@ -5977,7 +5985,7 @@
           "fighterId": 400,
           "fade": 4096,
           "selected": true,
-          "cursorFrame": 0,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 50,
           "animationFrame": 7,
@@ -6005,16 +6013,7 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": {
-        "entry": 2,
-        "substitutions": [
-          10
-        ],
-        "tokensRevealed": 1,
-        "tokenCount": 1,
-        "arrowVisible": true,
-        "arrowFrame": 0
-      },
+      "out_message": null,
       "out_logs": []
     },
     {
@@ -6053,7 +6052,7 @@
       },
       "stepCount": 125,
       "crossEvery": 20,
-      "out_headerFade": 4096,
+      "out_headerFade": 0,
       "out_footerFade": 4096,
       "out_bgScroll": 62,
       "out_partners": [
@@ -6063,7 +6062,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 9,
@@ -6093,10 +6092,10 @@
           "partnerId": 2,
           "fighterId": 400,
           "fade": 4096,
-          "selected": true,
-          "cursorFrame": 1,
+          "selected": false,
+          "cursorFrame": 3,
           "levelBlinkFrame": 0,
-          "shownExp": 5,
+          "shownExp": 60,
           "animationFrame": 9,
           "slots": [
             {
@@ -6122,7 +6121,16 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": null,
+      "out_message": {
+        "entry": 10,
+        "substitutions": [
+          100
+        ],
+        "tokensRevealed": 0,
+        "tokenCount": 1,
+        "arrowVisible": false,
+        "arrowFrame": 0
+      },
       "out_logs": []
     },
     {
@@ -6162,16 +6170,16 @@
       "stepCount": 150,
       "crossEvery": 20,
       "out_headerFade": 0,
-      "out_footerFade": 4096,
+      "out_footerFade": 0,
       "out_bgScroll": 75,
       "out_partners": [
         {
           "partyIndex": 0,
           "partnerId": 1,
           "fighterId": 383,
-          "fade": 4096,
+          "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 11,
@@ -6200,7 +6208,7 @@
           "partyIndex": 1,
           "partnerId": 2,
           "fighterId": 400,
-          "fade": 4096,
+          "fade": 0,
           "selected": false,
           "cursorFrame": 3,
           "levelBlinkFrame": 0,
@@ -6228,18 +6236,9 @@
           ]
         }
       ],
-      "out_exitFade": 0,
+      "out_exitFade": 136,
       "out_done": false,
-      "out_message": {
-        "entry": 10,
-        "substitutions": [
-          100
-        ],
-        "tokensRevealed": 1,
-        "tokenCount": 1,
-        "arrowVisible": true,
-        "arrowFrame": 0
-      },
+      "out_message": null,
       "out_logs": []
     },
     {
@@ -6288,10 +6287,10 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 4,
-          "animationFrame": 13,
+          "animationFrame": 11,
           "slots": [
             {
               "digimonId": -1,
@@ -6322,7 +6321,7 @@
           "cursorFrame": 3,
           "levelBlinkFrame": 0,
           "shownExp": 60,
-          "animationFrame": 13,
+          "animationFrame": 11,
           "slots": [
             {
               "digimonId": 201,
@@ -6345,7 +6344,7 @@
           ]
         }
       ],
-      "out_exitFade": 816,
+      "out_exitFade": 3536,
       "out_done": false,
       "out_message": null,
       "out_logs": []
@@ -6388,7 +6387,7 @@
       "crossEvery": 20,
       "out_headerFade": 0,
       "out_footerFade": 0,
-      "out_bgScroll": 4,
+      "out_bgScroll": 90,
       "out_partners": [
         {
           "partyIndex": 0,
@@ -6396,10 +6395,10 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 4,
-          "animationFrame": 13,
+          "animationFrame": 11,
           "slots": [
             {
               "digimonId": -1,
@@ -6430,7 +6429,7 @@
           "cursorFrame": 3,
           "levelBlinkFrame": 0,
           "shownExp": 60,
-          "animationFrame": 13,
+          "animationFrame": 11,
           "slots": [
             {
               "digimonId": 201,
@@ -6496,7 +6495,7 @@
       "crossEvery": 20,
       "out_headerFade": 0,
       "out_footerFade": 0,
-      "out_bgScroll": 4,
+      "out_bgScroll": 90,
       "out_partners": [
         {
           "partyIndex": 0,
@@ -6504,10 +6503,10 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 4,
-          "animationFrame": 13,
+          "animationFrame": 11,
           "slots": [
             {
               "digimonId": -1,
@@ -6538,7 +6537,7 @@
           "cursorFrame": 3,
           "levelBlinkFrame": 0,
           "shownExp": 60,
-          "animationFrame": 13,
+          "animationFrame": 11,
           "slots": [
             {
               "digimonId": 201,
@@ -6604,7 +6603,7 @@
       "crossEvery": 20,
       "out_headerFade": 0,
       "out_footerFade": 0,
-      "out_bgScroll": 4,
+      "out_bgScroll": 90,
       "out_partners": [
         {
           "partyIndex": 0,
@@ -6612,10 +6611,10 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 4,
-          "animationFrame": 13,
+          "animationFrame": 11,
           "slots": [
             {
               "digimonId": -1,
@@ -6646,7 +6645,7 @@
           "cursorFrame": 3,
           "levelBlinkFrame": 0,
           "shownExp": 60,
-          "animationFrame": 13,
+          "animationFrame": 11,
           "slots": [
             {
               "digimonId": 201,
@@ -6712,7 +6711,7 @@
       "crossEvery": 20,
       "out_headerFade": 0,
       "out_footerFade": 0,
-      "out_bgScroll": 4,
+      "out_bgScroll": 90,
       "out_partners": [
         {
           "partyIndex": 0,
@@ -6720,10 +6719,10 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 4,
-          "animationFrame": 13,
+          "animationFrame": 11,
           "slots": [
             {
               "digimonId": -1,
@@ -6754,7 +6753,7 @@
           "cursorFrame": 3,
           "levelBlinkFrame": 0,
           "shownExp": 60,
-          "animationFrame": 13,
+          "animationFrame": 11,
           "slots": [
             {
               "digimonId": 201,
@@ -6820,7 +6819,7 @@
       "crossEvery": 20,
       "out_headerFade": 0,
       "out_footerFade": 0,
-      "out_bgScroll": 4,
+      "out_bgScroll": 90,
       "out_partners": [
         {
           "partyIndex": 0,
@@ -6828,10 +6827,10 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 4,
-          "animationFrame": 13,
+          "animationFrame": 11,
           "slots": [
             {
               "digimonId": -1,
@@ -6862,7 +6861,7 @@
           "cursorFrame": 3,
           "levelBlinkFrame": 0,
           "shownExp": 60,
-          "animationFrame": 13,
+          "animationFrame": 11,
           "slots": [
             {
               "digimonId": 201,
@@ -7190,7 +7189,7 @@
           "fade": 4096,
           "selected": true,
           "cursorFrame": 2,
-          "levelBlinkFrame": 1,
+          "levelBlinkFrame": 2,
           "shownExp": 10,
           "animationFrame": 5,
           "slots": [
@@ -7265,7 +7264,7 @@
       },
       "stepCount": 100,
       "crossEvery": 20,
-      "out_headerFade": 4096,
+      "out_headerFade": 3278,
       "out_footerFade": 4096,
       "out_bgScroll": 50,
       "out_partners": [
@@ -7305,9 +7304,9 @@
           "partnerId": 2,
           "fighterId": 400,
           "fade": 4096,
-          "selected": true,
-          "cursorFrame": 3,
-          "levelBlinkFrame": 9,
+          "selected": false,
+          "cursorFrame": 2,
+          "levelBlinkFrame": 10,
           "shownExp": 10,
           "animationFrame": 7,
           "slots": [
@@ -7413,7 +7412,7 @@
           "fighterId": 400,
           "fade": 2460,
           "selected": false,
-          "cursorFrame": 3,
+          "cursorFrame": 2,
           "levelBlinkFrame": 10,
           "shownExp": 10,
           "animationFrame": 9,
@@ -7520,7 +7519,7 @@
           "fighterId": 400,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 3,
+          "cursorFrame": 2,
           "levelBlinkFrame": 10,
           "shownExp": 10,
           "animationFrame": 9,
@@ -7627,7 +7626,7 @@
           "fighterId": 400,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 3,
+          "cursorFrame": 2,
           "levelBlinkFrame": 10,
           "shownExp": 10,
           "animationFrame": 9,
@@ -7868,7 +7867,7 @@
       },
       "stepCount": 100,
       "crossEvery": 20,
-      "out_headerFade": 4096,
+      "out_headerFade": 3278,
       "out_footerFade": 4096,
       "out_bgScroll": 50,
       "out_partners": [
@@ -7908,9 +7907,9 @@
           "partnerId": 2,
           "fighterId": 400,
           "fade": 4096,
-          "selected": true,
-          "cursorFrame": 3,
-          "levelBlinkFrame": 9,
+          "selected": false,
+          "cursorFrame": 2,
+          "levelBlinkFrame": 10,
           "shownExp": 58,
           "animationFrame": 7,
           "slots": [
@@ -8061,7 +8060,7 @@
           "fighterId": 400,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 3,
+          "cursorFrame": 2,
           "levelBlinkFrame": 10,
           "shownExp": 58,
           "animationFrame": 11,
@@ -8213,7 +8212,7 @@
           "fighterId": 400,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 3,
+          "cursorFrame": 2,
           "levelBlinkFrame": 10,
           "shownExp": 58,
           "animationFrame": 15,
@@ -8244,7 +8243,7 @@
           "fighterId": 450,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 15,
@@ -8365,7 +8364,7 @@
           "fighterId": 400,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 3,
+          "cursorFrame": 2,
           "levelBlinkFrame": 10,
           "shownExp": 58,
           "animationFrame": 16,
@@ -8396,7 +8395,7 @@
           "fighterId": 450,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 16,
@@ -8517,7 +8516,7 @@
           "fighterId": 400,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 3,
+          "cursorFrame": 2,
           "levelBlinkFrame": 10,
           "shownExp": 58,
           "animationFrame": 16,
@@ -8548,7 +8547,7 @@
           "fighterId": 450,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 16,
@@ -8669,7 +8668,7 @@
           "fighterId": 400,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 3,
+          "cursorFrame": 2,
           "levelBlinkFrame": 10,
           "shownExp": 58,
           "animationFrame": 16,
@@ -8700,7 +8699,7 @@
           "fighterId": 450,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 16,
@@ -8821,7 +8820,7 @@
           "fighterId": 400,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 3,
+          "cursorFrame": 2,
           "levelBlinkFrame": 10,
           "shownExp": 58,
           "animationFrame": 16,
@@ -8852,7 +8851,7 @@
           "fighterId": 450,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 16,
@@ -9046,7 +9045,7 @@
       },
       "stepCount": 75,
       "crossEvery": 20,
-      "out_headerFade": 4096,
+      "out_headerFade": 1642,
       "out_footerFade": 4096,
       "out_bgScroll": 37,
       "out_partners": [
@@ -9056,7 +9055,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 50,
           "animationFrame": 5,
@@ -9114,7 +9113,7 @@
       },
       "stepCount": 80,
       "crossEvery": 20,
-      "out_headerFade": 6,
+      "out_headerFade": 0,
       "out_footerFade": 4096,
       "out_bgScroll": 40,
       "out_partners": [
@@ -9124,7 +9123,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 50,
           "animationFrame": 6,
@@ -9152,7 +9151,16 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": null,
+      "out_message": {
+        "entry": 10,
+        "substitutions": [
+          75
+        ],
+        "tokensRevealed": 0,
+        "tokenCount": 1,
+        "arrowVisible": false,
+        "arrowFrame": 1
+      },
       "out_logs": []
     },
     {
@@ -9192,7 +9200,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 50,
           "animationFrame": 7,
@@ -9260,7 +9268,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 50,
           "animationFrame": 8,
@@ -9603,7 +9611,7 @@
       },
       "stepCount": 80,
       "crossEvery": 20,
-      "out_headerFade": 6,
+      "out_headerFade": 0,
       "out_footerFade": 4096,
       "out_bgScroll": 40,
       "out_partners": [
@@ -9613,7 +9621,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 6,
@@ -9641,7 +9649,16 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": null,
+      "out_message": {
+        "entry": 10,
+        "substitutions": [
+          50
+        ],
+        "tokensRevealed": 0,
+        "tokenCount": 2,
+        "arrowVisible": false,
+        "arrowFrame": 1
+      },
       "out_logs": []
     },
     {
@@ -9680,7 +9697,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 6,
@@ -9756,7 +9773,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 7,
@@ -9823,7 +9840,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 8,
@@ -9890,7 +9907,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 8,
@@ -10144,7 +10161,7 @@
       },
       "stepCount": 75,
       "crossEvery": 20,
-      "out_headerFade": 4096,
+      "out_headerFade": 1642,
       "out_footerFade": 4096,
       "out_bgScroll": 37,
       "out_partners": [
@@ -10154,7 +10171,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 500250,
           "animationFrame": 5,
@@ -10210,7 +10227,7 @@
       },
       "stepCount": 80,
       "crossEvery": 20,
-      "out_headerFade": 6,
+      "out_headerFade": 0,
       "out_footerFade": 4096,
       "out_bgScroll": 40,
       "out_partners": [
@@ -10220,7 +10237,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 500250,
           "animationFrame": 6,
@@ -10248,7 +10265,16 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": null,
+      "out_message": {
+        "entry": 10,
+        "substitutions": [
+          9999
+        ],
+        "tokensRevealed": 0,
+        "tokenCount": 1,
+        "arrowVisible": false,
+        "arrowFrame": 1
+      },
       "out_logs": []
     },
     {
@@ -10286,7 +10312,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 500250,
           "animationFrame": 7,
@@ -10352,7 +10378,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 500250,
           "animationFrame": 8,
@@ -10408,7 +10434,7 @@
       "crossEvery": 1,
       "out_headerFade": 0,
       "out_footerFade": 0,
-      "out_bgScroll": 52,
+      "out_bgScroll": 50,
       "out_partners": [
         {
           "partyIndex": 0,
@@ -10472,7 +10498,7 @@
       "crossEvery": 1,
       "out_headerFade": 0,
       "out_footerFade": 0,
-      "out_bgScroll": 65,
+      "out_bgScroll": 64,
       "out_partners": [
         {
           "partyIndex": 0,
@@ -10480,7 +10506,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 3,
+          "cursorFrame": 2,
           "levelBlinkFrame": 10,
           "shownExp": 4,
           "animationFrame": 7,
@@ -10562,7 +10588,7 @@
       "crossEvery": 1,
       "out_headerFade": 0,
       "out_footerFade": 0,
-      "out_bgScroll": 84,
+      "out_bgScroll": 81,
       "out_partners": [
         {
           "partyIndex": 0,
@@ -10601,7 +10627,7 @@
           "fighterId": 400,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 3,
+          "cursorFrame": 2,
           "levelBlinkFrame": 10,
           "shownExp": 58,
           "animationFrame": 10,
@@ -10632,7 +10658,7 @@
           "fighterId": 450,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 10,
@@ -10696,7 +10722,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 0,
+          "cursorFrame": 3,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 7,
@@ -10760,7 +10786,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 0,
+          "cursorFrame": 3,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 8,
@@ -10824,7 +10850,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 0,
+          "cursorFrame": 3,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 8,
@@ -10888,7 +10914,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 0,
+          "cursorFrame": 3,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 8,
@@ -11418,7 +11444,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 1,
           "animationFrame": 8,
@@ -11482,7 +11508,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 9,
           "animationFrame": 8,
@@ -11546,7 +11572,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 10,
           "animationFrame": 8,
@@ -11610,7 +11636,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 11,
           "animationFrame": 8,
@@ -11674,7 +11700,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 999,
           "animationFrame": 8,
@@ -11738,7 +11764,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 1000,
           "animationFrame": 8,
@@ -11802,7 +11828,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 999999,
           "animationFrame": 8,
@@ -11866,7 +11892,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 8,
@@ -11930,7 +11956,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 9,
@@ -12247,7 +12273,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 9,
@@ -12311,7 +12337,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 215,
           "animationFrame": 8,
@@ -12375,7 +12401,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 217,
           "animationFrame": 8,
@@ -12630,7 +12656,7 @@
       },
       "stepCount": 80,
       "crossEvery": 20,
-      "out_headerFade": 6,
+      "out_headerFade": 0,
       "out_footerFade": 4096,
       "out_bgScroll": 40,
       "out_partners": [
@@ -12640,7 +12666,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 225,
           "animationFrame": 6,
@@ -12668,7 +12694,16 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": null,
+      "out_message": {
+        "entry": 10,
+        "substitutions": [
+          197
+        ],
+        "tokensRevealed": 0,
+        "tokenCount": 1,
+        "arrowVisible": false,
+        "arrowFrame": 1
+      },
       "out_logs": []
     },
     {
@@ -12704,7 +12739,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 227,
           "animationFrame": 6,
@@ -12777,7 +12812,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 229,
           "animationFrame": 7,
@@ -12841,7 +12876,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 231,
           "animationFrame": 8,
@@ -12905,7 +12940,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 233,
           "animationFrame": 8,
@@ -13160,7 +13195,7 @@
       },
       "stepCount": 80,
       "crossEvery": 20,
-      "out_headerFade": 6,
+      "out_headerFade": 0,
       "out_footerFade": 4096,
       "out_bgScroll": 40,
       "out_partners": [
@@ -13170,7 +13205,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 241,
           "animationFrame": 6,
@@ -13198,7 +13233,16 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": null,
+      "out_message": {
+        "entry": 10,
+        "substitutions": [
+          205
+        ],
+        "tokensRevealed": 0,
+        "tokenCount": 1,
+        "arrowVisible": false,
+        "arrowFrame": 1
+      },
       "out_logs": []
     },
     {
@@ -13234,7 +13278,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 243,
           "animationFrame": 6,
@@ -13307,7 +13351,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 245,
           "animationFrame": 7,
@@ -13371,7 +13415,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 247,
           "animationFrame": 8,
@@ -13435,7 +13479,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 249,
           "animationFrame": 8,
@@ -13690,7 +13734,7 @@
       },
       "stepCount": 80,
       "crossEvery": 20,
-      "out_headerFade": 6,
+      "out_headerFade": 0,
       "out_footerFade": 4096,
       "out_bgScroll": 40,
       "out_partners": [
@@ -13700,7 +13744,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 207,
           "animationFrame": 6,
@@ -13728,7 +13772,16 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": null,
+      "out_message": {
+        "entry": 10,
+        "substitutions": [
+          13
+        ],
+        "tokensRevealed": 0,
+        "tokenCount": 1,
+        "arrowVisible": false,
+        "arrowFrame": 1
+      },
       "out_logs": []
     },
     {
@@ -13764,7 +13817,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 209,
           "animationFrame": 6,
@@ -13837,7 +13890,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 211,
           "animationFrame": 7,
@@ -13901,7 +13954,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 213,
           "animationFrame": 8,
@@ -13965,7 +14018,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 215,
           "animationFrame": 8,
@@ -14220,7 +14273,7 @@
       },
       "stepCount": 80,
       "crossEvery": 20,
-      "out_headerFade": 6,
+      "out_headerFade": 0,
       "out_footerFade": 4096,
       "out_bgScroll": 40,
       "out_partners": [
@@ -14230,7 +14283,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 223,
           "animationFrame": 6,
@@ -14258,7 +14311,16 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": null,
+      "out_message": {
+        "entry": 10,
+        "substitutions": [
+          21
+        ],
+        "tokensRevealed": 0,
+        "tokenCount": 1,
+        "arrowVisible": false,
+        "arrowFrame": 1
+      },
       "out_logs": []
     },
     {
@@ -14294,7 +14356,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 225,
           "animationFrame": 6,
@@ -14367,7 +14429,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 227,
           "animationFrame": 7,
@@ -14431,7 +14493,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 229,
           "animationFrame": 8,
@@ -14495,7 +14557,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 231,
           "animationFrame": 8,
@@ -14750,7 +14812,7 @@
       },
       "stepCount": 80,
       "crossEvery": 20,
-      "out_headerFade": 6,
+      "out_headerFade": 0,
       "out_footerFade": 4096,
       "out_bgScroll": 40,
       "out_partners": [
@@ -14760,7 +14822,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 239,
           "animationFrame": 6,
@@ -14788,7 +14850,16 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": null,
+      "out_message": {
+        "entry": 10,
+        "substitutions": [
+          29
+        ],
+        "tokensRevealed": 0,
+        "tokenCount": 1,
+        "arrowVisible": false,
+        "arrowFrame": 1
+      },
       "out_logs": []
     },
     {
@@ -14824,7 +14895,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 241,
           "animationFrame": 6,
@@ -14897,7 +14968,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 243,
           "animationFrame": 7,
@@ -14961,7 +15032,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 245,
           "animationFrame": 8,
@@ -15025,7 +15096,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 247,
           "animationFrame": 8,
@@ -15280,7 +15351,7 @@
       },
       "stepCount": 80,
       "crossEvery": 20,
-      "out_headerFade": 6,
+      "out_headerFade": 0,
       "out_footerFade": 4096,
       "out_bgScroll": 40,
       "out_partners": [
@@ -15290,7 +15361,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 255,
           "animationFrame": 6,
@@ -15318,7 +15389,16 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": null,
+      "out_message": {
+        "entry": 10,
+        "substitutions": [
+          37
+        ],
+        "tokensRevealed": 0,
+        "tokenCount": 1,
+        "arrowVisible": false,
+        "arrowFrame": 1
+      },
       "out_logs": []
     },
     {
@@ -15354,7 +15434,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 257,
           "animationFrame": 6,
@@ -15427,7 +15507,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 259,
           "animationFrame": 7,
@@ -15491,7 +15571,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 261,
           "animationFrame": 8,
@@ -15555,7 +15635,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 263,
           "animationFrame": 8,
@@ -15810,7 +15890,7 @@
       },
       "stepCount": 80,
       "crossEvery": 20,
-      "out_headerFade": 6,
+      "out_headerFade": 0,
       "out_footerFade": 4096,
       "out_bgScroll": 40,
       "out_partners": [
@@ -15820,7 +15900,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 271,
           "animationFrame": 6,
@@ -15848,7 +15928,16 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": null,
+      "out_message": {
+        "entry": 10,
+        "substitutions": [
+          45
+        ],
+        "tokensRevealed": 0,
+        "tokenCount": 1,
+        "arrowVisible": false,
+        "arrowFrame": 1
+      },
       "out_logs": []
     },
     {
@@ -15884,7 +15973,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 273,
           "animationFrame": 6,
@@ -15957,7 +16046,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 275,
           "animationFrame": 7,
@@ -16021,7 +16110,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 277,
           "animationFrame": 8,
@@ -16085,7 +16174,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 279,
           "animationFrame": 8,
@@ -16340,7 +16429,7 @@
       },
       "stepCount": 80,
       "crossEvery": 20,
-      "out_headerFade": 6,
+      "out_headerFade": 0,
       "out_footerFade": 4096,
       "out_bgScroll": 40,
       "out_partners": [
@@ -16350,7 +16439,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 287,
           "animationFrame": 6,
@@ -16378,7 +16467,16 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": null,
+      "out_message": {
+        "entry": 10,
+        "substitutions": [
+          53
+        ],
+        "tokensRevealed": 0,
+        "tokenCount": 1,
+        "arrowVisible": false,
+        "arrowFrame": 1
+      },
       "out_logs": []
     },
     {
@@ -16414,7 +16512,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 289,
           "animationFrame": 6,
@@ -16487,7 +16585,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 291,
           "animationFrame": 7,
@@ -16551,7 +16649,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 293,
           "animationFrame": 8,
@@ -16615,7 +16713,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 295,
           "animationFrame": 8,
@@ -16870,7 +16968,7 @@
       },
       "stepCount": 80,
       "crossEvery": 20,
-      "out_headerFade": 6,
+      "out_headerFade": 0,
       "out_footerFade": 4096,
       "out_bgScroll": 40,
       "out_partners": [
@@ -16880,7 +16978,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 253,
           "animationFrame": 6,
@@ -16908,7 +17006,16 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": null,
+      "out_message": {
+        "entry": 10,
+        "substitutions": [
+          61
+        ],
+        "tokensRevealed": 0,
+        "tokenCount": 1,
+        "arrowVisible": false,
+        "arrowFrame": 1
+      },
       "out_logs": []
     },
     {
@@ -16944,7 +17051,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 255,
           "animationFrame": 6,
@@ -17017,7 +17124,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 257,
           "animationFrame": 7,
@@ -17081,7 +17188,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 259,
           "animationFrame": 8,
@@ -17145,7 +17252,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 261,
           "animationFrame": 8,
@@ -17400,7 +17507,7 @@
       },
       "stepCount": 80,
       "crossEvery": 20,
-      "out_headerFade": 6,
+      "out_headerFade": 0,
       "out_footerFade": 4096,
       "out_bgScroll": 40,
       "out_partners": [
@@ -17410,7 +17517,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 269,
           "animationFrame": 6,
@@ -17438,7 +17545,16 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": null,
+      "out_message": {
+        "entry": 10,
+        "substitutions": [
+          69
+        ],
+        "tokensRevealed": 0,
+        "tokenCount": 1,
+        "arrowVisible": false,
+        "arrowFrame": 1
+      },
       "out_logs": []
     },
     {
@@ -17474,7 +17590,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 271,
           "animationFrame": 6,
@@ -17547,7 +17663,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 273,
           "animationFrame": 7,
@@ -17611,7 +17727,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 275,
           "animationFrame": 8,
@@ -17675,7 +17791,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 277,
           "animationFrame": 8,
@@ -17930,7 +18046,7 @@
       },
       "stepCount": 80,
       "crossEvery": 20,
-      "out_headerFade": 6,
+      "out_headerFade": 0,
       "out_footerFade": 4096,
       "out_bgScroll": 40,
       "out_partners": [
@@ -17940,7 +18056,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 285,
           "animationFrame": 6,
@@ -17968,7 +18084,16 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": null,
+      "out_message": {
+        "entry": 10,
+        "substitutions": [
+          77
+        ],
+        "tokensRevealed": 0,
+        "tokenCount": 1,
+        "arrowVisible": false,
+        "arrowFrame": 1
+      },
       "out_logs": []
     },
     {
@@ -18004,7 +18129,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 287,
           "animationFrame": 6,
@@ -18077,7 +18202,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 289,
           "animationFrame": 7,
@@ -18141,7 +18266,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 291,
           "animationFrame": 8,
@@ -18205,7 +18330,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 293,
           "animationFrame": 8,
@@ -18460,7 +18585,7 @@
       },
       "stepCount": 80,
       "crossEvery": 20,
-      "out_headerFade": 6,
+      "out_headerFade": 0,
       "out_footerFade": 4096,
       "out_bgScroll": 40,
       "out_partners": [
@@ -18470,7 +18595,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 301,
           "animationFrame": 6,
@@ -18498,7 +18623,16 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": null,
+      "out_message": {
+        "entry": 10,
+        "substitutions": [
+          85
+        ],
+        "tokensRevealed": 0,
+        "tokenCount": 1,
+        "arrowVisible": false,
+        "arrowFrame": 1
+      },
       "out_logs": []
     },
     {
@@ -18534,7 +18668,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 303,
           "animationFrame": 6,
@@ -18607,7 +18741,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 305,
           "animationFrame": 7,
@@ -18671,7 +18805,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 307,
           "animationFrame": 8,
@@ -18735,7 +18869,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 309,
           "animationFrame": 8,
@@ -18990,7 +19124,7 @@
       },
       "stepCount": 80,
       "crossEvery": 20,
-      "out_headerFade": 6,
+      "out_headerFade": 0,
       "out_footerFade": 4096,
       "out_bgScroll": 40,
       "out_partners": [
@@ -19000,7 +19134,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 317,
           "animationFrame": 6,
@@ -19028,7 +19162,16 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": null,
+      "out_message": {
+        "entry": 10,
+        "substitutions": [
+          93
+        ],
+        "tokensRevealed": 0,
+        "tokenCount": 1,
+        "arrowVisible": false,
+        "arrowFrame": 1
+      },
       "out_logs": []
     },
     {
@@ -19064,7 +19207,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 319,
           "animationFrame": 6,
@@ -19137,7 +19280,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 321,
           "animationFrame": 7,
@@ -19201,7 +19344,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 323,
           "animationFrame": 8,
@@ -19265,7 +19408,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 325,
           "animationFrame": 8,
@@ -19520,7 +19663,7 @@
       },
       "stepCount": 80,
       "crossEvery": 20,
-      "out_headerFade": 6,
+      "out_headerFade": 0,
       "out_footerFade": 4096,
       "out_bgScroll": 40,
       "out_partners": [
@@ -19530,7 +19673,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 333,
           "animationFrame": 6,
@@ -19558,7 +19701,16 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": null,
+      "out_message": {
+        "entry": 10,
+        "substitutions": [
+          101
+        ],
+        "tokensRevealed": 0,
+        "tokenCount": 1,
+        "arrowVisible": false,
+        "arrowFrame": 1
+      },
       "out_logs": []
     },
     {
@@ -19594,7 +19746,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 335,
           "animationFrame": 6,
@@ -19667,7 +19819,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 337,
           "animationFrame": 7,
@@ -19731,7 +19883,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 339,
           "animationFrame": 8,
@@ -19795,7 +19947,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 341,
           "animationFrame": 8,
@@ -20050,7 +20202,7 @@
       },
       "stepCount": 80,
       "crossEvery": 20,
-      "out_headerFade": 6,
+      "out_headerFade": 0,
       "out_footerFade": 4096,
       "out_bgScroll": 40,
       "out_partners": [
@@ -20060,7 +20212,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 349,
           "animationFrame": 6,
@@ -20088,7 +20240,16 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": null,
+      "out_message": {
+        "entry": 10,
+        "substitutions": [
+          109
+        ],
+        "tokensRevealed": 0,
+        "tokenCount": 1,
+        "arrowVisible": false,
+        "arrowFrame": 1
+      },
       "out_logs": []
     }
   ]

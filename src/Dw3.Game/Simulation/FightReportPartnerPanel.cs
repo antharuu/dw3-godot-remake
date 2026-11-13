@@ -4,10 +4,12 @@ namespace Dw3Production.Simulation;
 /// <param name="source">The partner's settled reward data.</param>
 internal sealed class FightReportPartnerPanel(FightReportPartner source)
 {
-    private readonly int _slotCount = Math.Max(3, source.SlotDigimonIds.Count);
-    private readonly bool[] _slotExpApplied = new bool[4];
-    private readonly bool[] _slotLevelBlinks = new bool[4];
-    private readonly int[] _slotBlinkFrames = new int[4];
+    /// <summary>The number of equipped-form slots a panel runs, the base form having its own partner row.</summary>
+    private const int SlotCount = 3;
+
+    private readonly bool[] _slotExpApplied = new bool[SlotCount];
+    private readonly bool[] _slotLevelBlinks = new bool[SlotCount];
+    private readonly int[] _slotBlinkFrames = new int[SlotCount];
     private int _skillIndex;
     private int _learnedFormIndex;
 
@@ -68,7 +70,7 @@ internal sealed class FightReportPartnerPanel(FightReportPartner source)
     /// <returns>The panel view for this frame.</returns>
     public FightReportPartnerView ToView()
     {
-        FightReportSlotView[] slots = [.. Enumerable.Range(0, _slotCount).Select(BuildSlotView)];
+        FightReportSlotView[] slots = [.. Enumerable.Range(0, SlotCount).Select(BuildSlotView)];
         return new FightReportPartnerView(Source.PartyIndex, Source.PartnerId, Source.FighterId, Fade.Level, Selected, CursorFrame, LevelBlinkFrame, ShownExp, AnimationFrame, slots);
     }
 
@@ -158,33 +160,44 @@ internal sealed class FightReportPartnerPanel(FightReportPartner source)
         return fadeIn ? FightReportPartnerPhase.ShowFade : FightReportPartnerPhase.HideFade;
     }
 
-    /// <summary>Applies settled display state only to a used permanent form.</summary>
+    /// <summary>Applies settled display state to a used slot. An unused or empty slot legitimately has no row.</summary>
     /// <param name="logs">Diagnostics for contradictory settled report data.</param>
     /// <returns>The form-level phase.</returns>
     private FightReportPartnerPhase ApplySlotExp(List<string> logs)
     {
+        if (SlotIndex == 0)
+        {
+            LogOrphanRows(logs);
+        }
+
         FightReportFormSlot? slot = CurrentFormSlot();
         if (slot is not null)
         {
             _slotExpApplied[SlotIndex] = slot.ExpGained > 0;
         }
-        else if (CurrentSlotId() > 0 && Source.FormSlots.Count > 0)
-        {
-            logs.Add($"report-form-slot-missing:{Source.PartyIndex}:{SlotIndex}");
-        }
 
         return FightReportPartnerPhase.SlotLevel;
     }
 
-    /// <summary>Starts the source level-up message only when this used form advanced.</summary>
+    /// <summary>Logs settled rows that name no equipped slot, which no valid settlement produces.</summary>
+    /// <param name="logs">Report diagnostics.</param>
+    private void LogOrphanRows(List<string> logs)
+    {
+        foreach (FightReportFormSlot row in Source.FormSlots.Where(row => !MatchesSlot(row)))
+        {
+            logs.Add($"report-form-slot-orphan:{Source.PartyIndex}:{row.Slot}:{row.DigimonId}");
+        }
+    }
+
+    /// <summary>Starts the level-up message when this used form advanced. Without a level-up the original skips the slot's skills.</summary>
     /// <param name="messages">The shared report message box.</param>
-    /// <returns>The level-message wait or skill-preview phase.</returns>
+    /// <returns>The level-message wait or the next slot.</returns>
     private FightReportPartnerPhase StartSlotLevel(FightReportMessageBox messages)
     {
         FightReportFormSlot? slot = CurrentFormSlot();
         if (slot is null || slot.LevelAfter <= slot.LevelBefore)
         {
-            return FightReportPartnerPhase.SlotSkillPreview;
+            return FightReportPartnerPhase.NextSlot;
         }
 
         _slotLevelBlinks[SlotIndex] = true;
@@ -192,35 +205,35 @@ internal sealed class FightReportPartnerPanel(FightReportPartner source)
         return FightReportPartnerPhase.SlotLevelMessage;
     }
 
-    /// <summary>Shows the source pre-learning message for each newly acquired technique.</summary>
+    /// <summary>Shows the acquisition message for each skill the leveled form newly acquired.</summary>
     /// <param name="messages">The shared report message box.</param>
-    /// <returns>The preview wait, committed-learning phase, or next slot.</returns>
+    /// <returns>The acquisition wait, or the mastery phase once every acquisition was shown.</returns>
     private FightReportPartnerPhase PreviewSkill(FightReportMessageBox messages)
     {
-        FightReportFormSlot? slot = CurrentFormSlot();
-        if (slot is null || _skillIndex >= slot.LearnedTechniques.Count)
+        IReadOnlyList<int> acquired = CurrentFormSlot()?.AcquiredTechniques ?? [];
+        if (_skillIndex >= acquired.Count)
         {
             _skillIndex = 0;
-            return slot is null || slot.LearnedTechniques.Count == 0 ? FightReportPartnerPhase.NextSlot : FightReportPartnerPhase.SlotSkillLearn;
+            return FightReportPartnerPhase.SlotSkillLearn;
         }
 
-        messages.Start(5, slot.LearnedTechniques[_skillIndex++]);
+        messages.Start(5, acquired[_skillIndex++]);
         return FightReportPartnerPhase.SlotSkillPreviewMessage;
     }
 
-    /// <summary>Shows the source committed-learning message for each settled technique delta.</summary>
+    /// <summary>Shows the mastery message for each skill the leveled form newly mastered.</summary>
     /// <param name="messages">The shared report message box.</param>
-    /// <returns>The learning-message wait or next slot.</returns>
+    /// <returns>The mastery wait, or the next slot once every mastery was shown.</returns>
     private FightReportPartnerPhase LearnSkill(FightReportMessageBox messages)
     {
-        FightReportFormSlot? slot = CurrentFormSlot();
-        if (slot is null || _skillIndex >= slot.LearnedTechniques.Count)
+        IReadOnlyList<int> mastered = CurrentFormSlot()?.MasteredTechniques ?? [];
+        if (_skillIndex >= mastered.Count)
         {
             _skillIndex = 0;
             return FightReportPartnerPhase.NextSlot;
         }
 
-        messages.Start(6, slot.LearnedTechniques[_skillIndex++]);
+        messages.Start(6, mastered[_skillIndex++]);
         return FightReportPartnerPhase.SlotSkillLearnMessage;
     }
 
@@ -229,7 +242,7 @@ internal sealed class FightReportPartnerPanel(FightReportPartner source)
     private FightReportPartnerPhase NextSlot()
     {
         SlotIndex++;
-        return SlotIndex < _slotCount ? FightReportPartnerPhase.SlotExp : FightReportPartnerPhase.PartnerLevel;
+        return SlotIndex < SlotCount ? FightReportPartnerPhase.SlotExp : FightReportPartnerPhase.PartnerLevel;
     }
 
     /// <summary>Starts the existing partner level message when the partner advanced.</summary>
@@ -249,7 +262,9 @@ internal sealed class FightReportPartnerPanel(FightReportPartner source)
 
     /// <summary>Shows each settled unlocked form with its decoded name entry.</summary>
     /// <param name="messages">The shared report message box.</param>
-    /// <returns>The form-message wait, full-slot notice, or blink wait.</returns>
+    /// <returns>The form-message wait, the slot notice, or blink wait.</returns>
+    /// <remarks>After at least one unlock, the original shows its notice when four or more forms besides the base
+    /// are acquired, whether or not the new form found a free slot.</remarks>
     private FightReportPartnerPhase ShowNewDigimon(FightReportMessageBox messages)
     {
         if (_learnedFormIndex < Source.LearnedForms.Count)
@@ -258,7 +273,7 @@ internal sealed class FightReportPartnerPanel(FightReportPartner source)
             return FightReportPartnerPhase.NewDigimonMessage;
         }
 
-        if (Source.LearnedForms.Any(form => !Source.SlotDigimonIds.Contains(form.DigimonId)))
+        if (Source.LearnedForms.Count > 0 && Source.AcquiredFormCount >= 4)
         {
             messages.Start(9);
             return FightReportPartnerPhase.SlotsFullMessage;
@@ -288,17 +303,15 @@ internal sealed class FightReportPartnerPanel(FightReportPartner source)
         return FightReportPartnerPhase.Idle;
     }
 
-    /// <summary>Returns the settled form row for the current source slot.</summary>
-    /// <returns>The row for the used form, or null for an unused or empty slot.</returns>
-    private FightReportFormSlot? CurrentFormSlot()
-    {
-        int id = CurrentSlotId();
-        return Source.FormSlots.FirstOrDefault(slot => slot.DigimonId == id);
-    }
+    /// <summary>Returns the settled row of the current slot.</summary>
+    /// <returns>The row for a used slot, or null for an unused or empty slot.</returns>
+    private FightReportFormSlot? CurrentFormSlot() => Source.FormSlots.FirstOrDefault(row => row.Slot == SlotIndex && MatchesSlot(row));
 
-    /// <summary>Returns the current equipped source slot id, or zero outside the slot list.</summary>
-    /// <returns>The slot form id.</returns>
-    private int CurrentSlotId() => SlotIndex < Source.SlotDigimonIds.Count ? Source.SlotDigimonIds[SlotIndex] : 0;
+    /// <summary>Tests whether a settled row names the form equipped in its slot.</summary>
+    /// <param name="row">Settled row.</param>
+    /// <returns>True when the row's slot holds the row's form.</returns>
+    private bool MatchesSlot(FightReportFormSlot row) =>
+        row.Slot >= 0 && row.Slot < Source.SlotDigimonIds.Count && Source.SlotDigimonIds[row.Slot] == row.DigimonId;
 
     /// <summary>Rolls the partner experience display towards its settled target.</summary>
     private void RollExp()

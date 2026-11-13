@@ -58,6 +58,9 @@ public sealed class PlayerSessionPartner
     /// <summary>Gets the persistent level, experience and grown totals that battle rewards raise, or null when the partner does not grow.</summary>
     public PartnerGrowthState? Growth { get; }
 
+    /// <summary>Gets the number of acquired forms besides the base form, the count the original compares with the three slots.</summary>
+    public int AcquiredFormCount => _knownForms.Where(form => form > 0 && form != OriginFormId).Distinct().Count();
+
     /// <summary>Carries the growth gained since a snapshot into the battle seed the next battle starts from.</summary>
     /// <remarks>The gains are added rather than copied so that seed values not owned by growth, such as
     /// equipment contributions, are kept. Current HP and MP are unchanged, as in the source level-up.
@@ -118,26 +121,11 @@ public sealed class PlayerSessionPartner
         return true;
     }
 
-    /// <summary>Records one technique as available on the form and in the compatibility catalogue.</summary>
-    /// <param name="formId">Owning form id.</param>
-    /// <param name="techniqueId">Newly learned technique id.</param>
-    /// <returns>True when the technique was newly learned by the form.</returns>
-    public bool LearnTechnique(int formId, int techniqueId)
-    {
-        PartnerFormProgress progress = FormProgress(formId);
-        if (techniqueId <= 0 || progress.Techniques.Contains(techniqueId))
-        {
-            return false;
-        }
-
-        progress.Techniques.Add(techniqueId);
-        if (!_knownTechniques.Contains(techniqueId))
-        {
-            _knownTechniques.Add(techniqueId);
-        }
-
-        return true;
-    }
+    /// <summary>Returns the techniques one acquired form has acquired for its own use in battle.</summary>
+    /// <param name="formId">Form id.</param>
+    /// <returns>The form's acquired techniques, or an empty list for a form without an entry.</returns>
+    public IReadOnlyList<int> FormTechniques(int formId) =>
+        _formProgress.TryGetValue(formId, out PartnerFormProgress? progress) ? progress.Techniques : [];
 
     /// <summary>Builds an initial progress record for every acquired form including the base form.</summary>
     /// <returns>The form progression map.</returns>
@@ -146,7 +134,7 @@ public sealed class PlayerSessionPartner
         var result = new Dictionary<int, PartnerFormProgress>();
         foreach (int form in _knownForms.Append(OriginFormId).Where(form => form > 0).Distinct())
         {
-            result.Add(form, new PartnerFormProgress(form, techniques: form == OriginFormId ? _knownTechniques : []));
+            result.Add(form, new PartnerFormProgress(form));
         }
 
         return result;
