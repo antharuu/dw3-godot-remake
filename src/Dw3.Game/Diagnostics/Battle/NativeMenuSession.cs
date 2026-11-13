@@ -17,9 +17,11 @@ internal sealed class NativeMenuSession : IDisposable
     /// <param name="includePartnerItems">Whether the fabricated source-shaped partner boost family is included in the item menu.</param>
     /// <param name="includeFieldItems">Whether the fabricated source-shaped field-element family is included in the item menu.</param>
     /// <param name="includeOffensiveItems">Whether the fabricated source-shaped enemy-targeted family is included in the item menu.</param>
-    public NativeMenuSession(bool enemyFirst = false, bool includePartnerItems = false, bool includeFieldItems = false, bool includeOffensiveItems = false)
+    /// <param name="fixture">Optional SYNTHETIC preconditions and scripted random prefix, applied before the battle starts.</param>
+    public NativeMenuSession(bool enemyFirst = false, bool includePartnerItems = false, bool includeFieldItems = false, bool includeOffensiveItems = false, NativeMenuFixture? fixture = null)
     {
-        Flow = BuildFlow(enemyFirst, includePartnerItems, includeFieldItems, includeOffensiveItems);
+        Rng = new BattleAttackProofRng(0, fixture?.RngScript ?? []);
+        Flow = BuildFlow(enemyFirst, includePartnerItems, includeFieldItems, includeOffensiveItems, fixture?.Arrange);
         _host = new GameHost(
             Flow,
             new BattleTextData([], [], [], [], [], [], [], new Dictionary<string, BattleTextTemplate>(), new Dictionary<string, int>()),
@@ -34,6 +36,7 @@ internal sealed class NativeMenuSession : IDisposable
     /// <param name="items">Prepared or fabricated item data.</param>
     public NativeMenuSession(BattleFlowController flow, BattleTextData text, BattleItemsData items)
     {
+        Rng = new BattleAttackProofRng(0);
         Flow = flow;
         _host = new GameHost(flow, text, items, Rng);
         Menu.OpenRoot(flow.RootMenuLines());
@@ -52,7 +55,7 @@ internal sealed class NativeMenuSession : IDisposable
     public BattleTextCatalog Text => Flow.Text ?? throw new InvalidOperationException("Native fixture text missing.");
 
     /// <summary>Gets the counting simulation random source.</summary>
-    public BattleAttackProofRng Rng { get; } = new(0);
+    public BattleAttackProofRng Rng { get; }
 
     /// <summary>Gets the production host's menu, not a test-owned page.</summary>
     public BattleMenuController Menu => ((IBattleMenuDriverHost)_host).Menu;
@@ -62,6 +65,9 @@ internal sealed class NativeMenuSession : IDisposable
 
     /// <summary>Dispatches through the same menu tick caller used by the battle scheduler.</summary>
     public void Tick() => ((IBattleTickHost)_host).TickBattleMenu();
+
+    /// <summary>Runs the scheduler-owned enemy action through the production host tick callback and its own battle stream.</summary>
+    public void EnemyAct() => ((IBattleTickHost)_host).EnemyAct();
 
     /// <summary>Injects a native key event through GameHost._Input, with no diagnostic input owner.</summary>
     /// <param name="key">Logical key.</param>
@@ -117,13 +123,15 @@ internal sealed class NativeMenuSession : IDisposable
     /// <param name="includePartnerItems">Whether the active-partner boost family belongs in the fabricated item menu.</param>
     /// <param name="includeFieldItems">Whether the field-element boost family belongs in the fabricated item menu.</param>
     /// <param name="includeOffensiveItems">Whether the enemy-targeted family belongs in the fabricated item menu.</param>
+    /// <param name="arrange">Optional SYNTHETIC precondition applied to the setup before fighters are initialized.</param>
     /// <returns>Initialized real simulation.</returns>
-    private static BattleFlowController BuildFlow(bool enemyFirst, bool includePartnerItems = false, bool includeFieldItems = false, bool includeOffensiveItems = false)
+    private static BattleFlowController BuildFlow(bool enemyFirst, bool includePartnerItems, bool includeFieldItems, bool includeOffensiveItems, Action<BattleSetup>? arrange)
     {
         var setup = new BattleSetup();
         setup.Partners[0] = new PartnerSeed { Id = 1, Hp = 100, MaxHp = 100, Mp = 50, MaxMp = 50, Stats = Stats(enemyFirst ? 1 : 999) };
         setup.Partners[1] = new PartnerSeed { Id = 3, Hp = 100, MaxHp = 100, Mp = 50, MaxMp = 50, Stats = Stats(enemyFirst ? 1 : 999) };
         setup.Enemies[0] = new BattleEnemy { Fighter = 2, Hp = 999, Mp = 50, Strength = 16, BaseStats = Stats(enemyFirst ? 999 : 1) };
+        arrange?.Invoke(setup);
         var flow = new BattleFlowController
         {
             PlayerBasicTech = new TechData { Accuracy = 128, Power = 1 },

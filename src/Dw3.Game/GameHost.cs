@@ -785,6 +785,10 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
                 Random = _battleRng,
                 DigimonFor = DigimonFor,
                 NameFor = NameLine,
+                HasMoneyBonusEquipment = BattleRewardEquipment.HasMoneyBonus(_playerSession, flow.State.ActivePlayer),
+                HasExperienceBonusEquipment = index => BattleRewardEquipment.HasExperienceBonus(_playerSession, index),
+                HasPrize = _activeBattle?.HasPrize == true,
+                Prize = _activeBattle?.Prize ?? 0,
                 Text = BattleText(),
             });
         _battleReport = resolution.Report;
