@@ -601,6 +601,7 @@ src/Dw3.Game/Simulation/BattleHitSequence.cs
 src/Dw3.Game/Simulation/BattleHitRules.cs
 src/Dw3.Game/Simulation/BattleItem.cs
 src/Dw3.Game/Simulation/BattleItemEffects.cs
+src/Dw3.Game/Simulation/BattleOffensiveItemEffects.cs
 src/Dw3.Game/Simulation/BattlePartnerItemEffects.cs
 src/Dw3.Game/Simulation/BattleItemTechniqueConsumer.cs
 src/Dw3.Game/Simulation/BattleAutoRecoveryCoordinator.cs
@@ -1238,6 +1239,29 @@ src/Dw3.Game/Input/BattleInputGate.cs
 src/Dw3.Game/Input/InputButtonLatch.cs
 src/Dw3.Game/Input/InputButtonRouter.cs
 tests/Dw3.Game.Tests/InputButtonLatchTests.cs
+
+# B9-061 non-music sequence, envelope and entrance consumers
+src/Dw3.Extractor/BattleSequencePreparation.cs
+src/Dw3.Formats/Battle/BattleEntranceCueDecoder.cs
+src/Dw3.Formats/Battle/SequenceEventCursor.cs
+src/Dw3.Formats/Battle/SequenceMidiDecoder.cs
+src/Dw3.Formats/Battle/SequenceMidiEvent.cs
+src/Dw3.Game/Conversion/AudioSequenceCommand.cs
+src/Dw3.Game/Conversion/BattleEntranceAudioLoader.cs
+src/Dw3.Game/Conversion/BattleSequenceAudioLoader.cs
+src/Dw3.Game/Conversion/BattleSequenceCompiler.cs
+src/Dw3.Game/Conversion/PreparedAudioSequence.cs
+src/Dw3.Game/Diagnostics/Battle/BattleAudioLifecycleProbe.cs
+src/Dw3.Game/Presentation/BattleEntranceAudio.cs
+src/Dw3.Game/Presentation/BattleSequenceVoice.cs
+src/Dw3.Game/Presentation/SpuEnvelope.cs
+src/Dw3.Game/Presentation/SpuEnvelopeRate.cs
+tests/Dw3.Formats.Tests/Battle/BattleEntranceCueDecoderTests.cs
+tests/Dw3.Formats.Tests/Battle/SequenceMidiDecoderTests.cs
+tests/Dw3.Game.Tests/BattleAudioEnvelopeTests.cs
+tests/Dw3.Game.Tests/BattleEntranceAudioTests.cs
+tests/Dw3.Game.Tests/BattleSequenceAudioTests.cs
+
 # B9-045 pair menu host routing and forced KO proof
 src/Dw3.Game/Diagnostics/Battle/NativePairSwitchProof.cs
 src/Dw3.Game/Presentation/BattleMenuMpDigits.cs

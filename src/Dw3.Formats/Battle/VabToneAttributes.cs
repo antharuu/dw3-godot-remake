@@ -19,4 +19,11 @@ public sealed record VabToneAttributes(
     byte MinNote,
     byte MaxNote,
     short ProgramRef,
-    short SampleRef);
+    short SampleRef)
+{
+    /// <summary>Gets the raw attack, decay and sustain-level SPU register.</summary>
+    public ushort Adsr1 { get; init; }
+
+    /// <summary>Gets the raw sustain and release SPU register.</summary>
+    public ushort Adsr2 { get; init; }
+}

@@ -634,6 +634,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
         _battleMenu.OpenRoot(flow.RootMenuLines());
         _frameCoordinator.NotifyLoadingStart();
         InitBattleSequenceRunner(new PackActionScriptProvider(BattleLoader));
+        _battleRenderer.BeginEntranceAudio();
         QuietLog.Info($"battle-start {why} encounter={encounter} enemies=[{string.Join(",", _lastBattleEnemyIds)}] party=[{string.Join(",", flow.State.Players.Where(p => p is not null).Select(p => p!.Id))}] level={TestTeamGrowth.Level}");
     }
 

@@ -42,7 +42,59 @@ public sealed partial class BattleAudioBackendProbe : Node
         await Record(backend, entry with { Pan = 0, Volume = 64, Note = 72 }, Path.Combine(output, "left-half-octave.wav"));
         await Record(backend, entry with { Pan = 127, Loops = true, LoopStart = 8820 }, Path.Combine(output, "right-loop.wav"));
         await Record(backend, entry with { Loops = true, LoopStart = 8820, DurationFrames = 12 }, Path.Combine(output, "timed.wav"));
-        GD.Print("AUDIO_BACKEND_PROBE cases=4 sameBackend=true postCleanupChannels=0");
+        await EnvelopeAllocation(backend, entry, Path.Combine(output, "priority-envelope.wav"));
+        GD.Print("AUDIO_BACKEND_PROBE cases=5 sameBackend=true postCleanupChannels=0");
+    }
+
+    /// <summary>Qualifies equal-priority envelope eviction on all 24 physical mixer channels.</summary>
+    /// <param name="backend">The same production backend as the acoustic cases.</param>
+    /// <param name="input">Nonzero fabricated signal.</param>
+    /// <param name="path">Private engine recording.</param>
+    /// <returns>Completion after actual preemption and cleanup.</returns>
+    private async Task EnvelopeAllocation(GodotBattleAudioBackend backend, AudioProgramEntry input, string path)
+    {
+        using var record = new AudioEffectRecord { Format = AudioStreamWav.FormatEnum.Format16Bits };
+        AudioServer.AddBusEffect(0, record);
+        record.SetRecordingActive(true);
+        try
+        {
+            var entry = input with { Priority = 10, Volume = 4, Loops = true, Adsr1 = 15, Adsr2 = 0x1FC0 };
+            var voices = Enumerable.Range(0, 24).Select(index => backend.Play(index == 7 ? entry with { Adsr1 = 0x500F } : entry)).ToArray();
+            await ToSignal(GetTree().CreateTimer(0.15), SceneTreeTimer.SignalName.Timeout);
+            float quiet = voices[7].EnvelopeLevel;
+            float oldest = voices[0].EnvelopeLevel;
+            backend.Play(entry);
+            if (!voices[7].IsComplete || voices[0].IsComplete || quiet >= oldest || backend.ActiveCount != 24)
+            {
+                throw new InvalidOperationException("Real backend did not evict the quieter equal-priority envelope.");
+            }
+
+            try
+            {
+                backend.Play(entry with { Priority = 9 });
+                throw new InvalidOperationException("Lower priority interrupted a protected physical voice.");
+            }
+            catch (IOException)
+            {
+                GD.Print("AUDIO_PRIORITY lower-priority=refused");
+            }
+
+            await ToSignal(GetTree().CreateTimer(0.2), SceneTreeTimer.SignalName.Timeout);
+            record.SetRecordingActive(false);
+            using var recording = record.GetRecording();
+            if (recording.SaveToWav(path) != Error.Ok || !recording.Data.Any(value => value != 0))
+            {
+                throw new InvalidOperationException("Physical envelope-allocation recording is empty or silent.");
+            }
+
+            GD.Print($"AUDIO_PRIORITY channels={backend.ActiveCount} quiet={quiet} oldest={oldest} evicted=7 oldest-survives=true path={path}");
+        }
+        finally
+        {
+            backend.StopAll();
+            record.SetRecordingActive(false);
+            AudioServer.RemoveBusEffect(0, AudioServer.GetBusEffectCount(0) - 1);
+        }
     }
 
     /// <summary>Captures engine output while observing natural and forced voice termination.</summary>

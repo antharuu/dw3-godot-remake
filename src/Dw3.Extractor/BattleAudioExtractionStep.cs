@@ -68,7 +68,16 @@ internal static class BattleAudioExtractionStep
         }
 
         WriteManifest(context, banks);
+        WriteFile(context, $"{OutputSubdirectory}/sequences.json", JsonSerializer.SerializeToUtf8Bytes(
+            new
+            {
+                schema = "battle-audio-sequences-v1",
+                banks = banks.Select(bank => new { name = bank.Source.Name, tracks = BattleSequencePreparation.Tracks(bank.HeaderArchive) }),
+            },
+            IndentedJson));
         byte[] overlay = disc.ReadFile(Require(entries, "AAA/PRO/FIGHTSTG.PRO"));
+        WriteFile(context, $"{OutputSubdirectory}/entrance.json", JsonSerializer.SerializeToUtf8Bytes(
+            new { schema = "battle-entrance-audio-v1", id = BattleEntranceCueDecoder.Decode(overlay), delayFrames = 60 }, IndentedJson));
         WriteFile(context, $"{OutputSubdirectory}/sounds.json", JsonSerializer.SerializeToUtf8Bytes(
             new { schema = "battle-action-sounds-v1", ids = BattleSoundTableDecoder.Decode(overlay) }, IndentedJson));
     }

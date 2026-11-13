@@ -62,7 +62,7 @@ internal sealed class BattlePhysicalTechniqueProbe : BattleProbe
             }
         }
 
-        GD.Print("B9053_PASS real-techniques audio-control-not-played");
+        GD.Print($"B9053_PASS real-techniques audio-recorded={BattleAudioRecording.Enabled}");
     }
 
     /// <summary>Filters private cases to keep offscreen execution batches bounded.</summary>
@@ -98,7 +98,12 @@ internal sealed class BattlePhysicalTechniqueProbe : BattleProbe
         Host.Renderer.BuildModels(loader.ModelPath(player.Id), loader.ModelPath(target.Id), "physical proof", "target", target.Id);
         Host.AdoptSheetFighter(player.Id);
         Host.Renderer.ConfigureActionAssets(loader);
-        Host.Renderer.SequencePlayback.AssetConsumer = request => request is SoundRequestEvent ? SequenceAcknowledgement.Applied : SequenceAcknowledgement.Unavailable;
+        if (!BattleAudioRecording.Enabled)
+        {
+            Host.Renderer.SequencePlayback.AssetConsumer = request => request is SoundRequestEvent ? SequenceAcknowledgement.Applied : SequenceAcknowledgement.Unavailable;
+        }
+
+        await ReachPlayerAsync();
         var technique = BattleSetupFactory.ToTech(loader.LoadTechs().Techs[TechniqueId]);
         technique.Accuracy = mode == "miss" ? 1 : technique.Accuracy;
         flow.PlayerTechniques = [new BattleTechnique(TechniqueId, "extracted", technique)];
@@ -106,7 +111,7 @@ internal sealed class BattlePhysicalTechniqueProbe : BattleProbe
         Directory.CreateDirectory(captures);
         await BattleProbeCapture.CaptureAsync(Host, captures, "before.png");
         var rng = new BattleAttackProofRng(mode == "miss" ? 127 : 0);
-        ProbeRequirement.Require(flow.Choose(BattleCommand.Technique, TechniqueId, rng), "technique refused");
+        ProbeRequirement.Require(flow.Choose(BattleCommand.Technique, TechniqueId, rng), $"technique refused phase={flow.Phase}");
         ProbeRequirement.Require(flow.State.LastHitEvents.All(hit => hit.Landed == (mode != "miss")), "wrong branch");
         if (System.Environment.GetEnvironmentVariable("DW3_PHYSICAL_CANCEL") == "1")
         {
@@ -121,6 +126,19 @@ internal sealed class BattlePhysicalTechniqueProbe : BattleProbe
         {
             await RepeatAsync(loader, captures, rng);
         }
+    }
+
+    /// <summary>Consumes a genuine enemy opening before resolving the controlled technique.</summary>
+    /// <returns>Completion when the normal host scheduler yields player command.</returns>
+    private async Task ReachPlayerAsync()
+    {
+        for (int frame = 0; frame < 1200 && Host.Flow.Phase != BattleFlowPhase.PlayerCommand; frame++)
+        {
+            Host.TickTestSimulation();
+            await Host.NextFrameDrawn();
+        }
+
+        ProbeRequirement.Require(Host.Flow.Phase == BattleFlowPhase.PlayerCommand, $"opening did not yield player command: {Host.Flow.Phase}");
     }
 
     /// <summary>Reuses the same battle and renderer for another complete action after the real enemy reply.</summary>
@@ -147,6 +165,7 @@ internal sealed class BattlePhysicalTechniqueProbe : BattleProbe
     private async Task PlayAsync(BattleDataPackLoader loader, BattleAttackProofRng rng, string captures)
     {
         Directory.CreateDirectory(captures);
+        using var audio = BattleAudioRecording.Start(Path.Combine(captures, "action-mix.wav"));
         var flow = Host.Flow;
         var context = flow.PendingSequenceContext ?? throw new InvalidOperationException("No sequence.");
         var provider = new PackActionScriptProvider(loader);
@@ -178,6 +197,7 @@ internal sealed class BattlePhysicalTechniqueProbe : BattleProbe
         ProbeRequirement.Require(flow.Phase != BattleFlowPhase.ActionSequence, "sequence stalled");
         ProbeRequirement.Require(rng.Count == draws, "playback redrew RNG");
         await BattleProbeCapture.CaptureRawAsync(Host, captures, "returned.png");
+        audio?.Save();
         GD.Print($"B9053_RETURN case={captures} phase={flow.Phase} rng={draws}/{rng.Count} contacts={contacts}");
     }
 }

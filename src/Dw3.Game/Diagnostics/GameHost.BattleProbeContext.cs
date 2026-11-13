@@ -132,6 +132,12 @@ public partial class GameHost
         public void StartDebugBattle() => _host.StartDebugBattle();
 
         /// <inheritdoc/>
+        public void ExitBattleForProbe() => _host.EndBattle();
+
+        /// <inheritdoc/>
+        public void CancelSequenceForProbe() => _host.TearDownBattleSequenceRunner();
+
+        /// <inheritdoc/>
         public void StartEncounterForProbe(int encounter) =>
             _host.EnterBattle(_host.BuildEncounterBattle(encounter), encounter, "native action probe source encounter");
 

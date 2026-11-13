@@ -38,7 +38,9 @@ public sealed partial class BattleAudioProbe : Node
         Directory.CreateDirectory(output);
         using var renderer = new BattleRenderer(this);
         using var loader = new BattleDataPackLoader(new DataPackReader(UserPaths.GetDataDirectory()));
-        var script = new PackActionScriptProvider(loader).TryLoad(26, 5)
+        int fighter = int.Parse(System.Environment.GetEnvironmentVariable("DW3_AUDIO_FIGHTER") ?? "26", System.Globalization.CultureInfo.InvariantCulture);
+        int selector = int.Parse(System.Environment.GetEnvironmentVariable("DW3_AUDIO_SELECTOR") ?? "5", System.Globalization.CultureInfo.InvariantCulture);
+        var script = new PackActionScriptProvider(loader).TryLoad(fighter, selector)
             ?? throw new InvalidOperationException("Required production action script missing.");
         var command = script.Commands.First(value => value.Opcode == Dw3.Data.Battle.BattleActionOpcode.Sound);
         for (int cycle = 0; cycle < 2; cycle++)

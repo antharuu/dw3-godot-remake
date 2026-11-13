@@ -106,7 +106,11 @@ public static class VabProgramTableDecoder
         tone[ToneMinNote],
         tone[ToneMaxNote],
         BinaryPrimitives.ReadInt16LittleEndian(tone.Slice(ToneProgramRef, 2)),
-        BinaryPrimitives.ReadInt16LittleEndian(tone.Slice(ToneSampleRef, 2)));
+        BinaryPrimitives.ReadInt16LittleEndian(tone.Slice(ToneSampleRef, 2)))
+    {
+        Adsr1 = BinaryPrimitives.ReadUInt16LittleEndian(tone.Slice(16, 2)),
+        Adsr2 = BinaryPrimitives.ReadUInt16LittleEndian(tone.Slice(18, 2)),
+    };
 
     /// <summary>Returns the first tone in the program's sixteen slots whose priority is non-zero, or null.</summary>
     /// <param name="toneTable">The full compacted tone table (programCount × 16 × 32 bytes).</param>

@@ -114,6 +114,12 @@ internal interface IBattleProbeHost
     /// <summary>Starts the same manifest-backed battle as the F8 debug shortcut.</summary>
     void StartDebugBattle();
 
+    /// <summary>Invokes the normal GameHost battle exit and complete teardown.</summary>
+    void ExitBattleForProbe();
+
+    /// <summary>Cancels the retained GameHost action runner through its production teardown.</summary>
+    void CancelSequenceForProbe();
+
     /// <summary>Starts an unmodified source encounter through the ordinary battle construction path.</summary>
     /// <param name="encounter">Encounter index from the local data pack.</param>
     void StartEncounterForProbe(int encounter);

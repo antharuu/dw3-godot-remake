@@ -44,4 +44,10 @@ public sealed record AudioProgramEntry(
 
     /// <summary>Gets the positive source tick count until key-off, or zero for natural completion.</summary>
     public int DurationFrames { get; init; }
+
+    /// <summary>Gets the optional decoded attack/decay register for physical envelope playback.</summary>
+    public ushort? Adsr1 { get; init; }
+
+    /// <summary>Gets the optional decoded sustain/release register for physical envelope playback.</summary>
+    public ushort? Adsr2 { get; init; }
 }

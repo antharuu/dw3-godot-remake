@@ -32,7 +32,7 @@ internal sealed class BattleAudioVoicePool : IBattleAudioBackend
         Advance(0);
         if (_voices.Count == _capacity)
         {
-            var victim = _voices.OrderBy(voice => voice.Entry.Priority).First();
+            var victim = _voices.OrderBy(voice => voice.Entry.Priority).ThenBy(voice => voice.Handle.EnvelopeLevel).First();
             if (victim.Entry.Priority > entry.Priority)
             {
                 throw new IOException($"battle-audio-channels-busy priority={entry.Priority} channels={_capacity}");
@@ -60,10 +60,19 @@ internal sealed class BattleAudioVoicePool : IBattleAudioBackend
         ArgumentOutOfRangeException.ThrowIfNegative(ticks);
         foreach (var voice in _voices.ToArray())
         {
+            voice.Handle.Advance(ticks);
             voice.Remaining -= ticks;
-            if (voice.Handle.IsComplete || (voice.Entry.DurationFrames > 0 && voice.Remaining <= 0))
+            if (voice.Handle.IsComplete)
             {
                 StopVoice(voice.Handle);
+            }
+            else if (voice.Entry.DurationFrames > 0 && voice.Remaining <= 0 && !voice.Released)
+            {
+                voice.Released = true;
+                if (!voice.Handle.KeyOff())
+                {
+                    StopVoice(voice.Handle);
+                }
             }
         }
     }
@@ -85,5 +94,8 @@ internal sealed class BattleAudioVoicePool : IBattleAudioBackend
     {
         /// <summary>Gets or sets remaining units independently of immutable source attributes.</summary>
         public int Remaining { get; set; } = Remaining;
+
+        /// <summary>Gets or sets a value indicating whether timed key-off has already been sent.</summary>
+        public bool Released { get; set; }
     }
 }
