@@ -20,7 +20,11 @@ internal sealed class NativeMenuSession : IDisposable
         _host = new GameHost(
             Flow,
             new BattleTextData([], [], [], [], [], [], [], new Dictionary<string, BattleTextTemplate>(), new Dictionary<string, int>()),
-            new BattleItemsData([new BattleItemData(42, 0, [], 0, 0, 1, 0, 0, 0, 7, "heal", "player")]),
+            new BattleItemsData(
+            [
+                new BattleItemData(0x2B, 0, [], 0, 1, 500, 0, 0, 0, 7, "heal", "partner"),
+                new BattleItemData(0x42, 0, [], 0, 0, 0, 0, 0, 0, 7, "cureStatus", "partner"),
+            ]),
             Rng);
         Menu.OpenRoot(Flow.RootMenuLines());
     }
@@ -124,7 +128,12 @@ internal sealed class NativeMenuSession : IDisposable
             EnemyBasicTech = new TechData { Accuracy = 128, Power = 1 },
             PlayerTechniques = [.. Enumerable.Range(7, 7).Select(id => new BattleTechnique(id, "synthetic", new TechData { Mp = 5 }))],
             PlayerDigivolutions = [1, 4],
-            ItemStock = new Dictionary<int, int> { [42] = 2 },
+            Items = new Dictionary<int, BattleItem>
+            {
+                [0x2B] = new BattleItem(0x2B, "heal", "partner", 500),
+                [0x42] = new BattleItem(0x42, "cureStatus", "partner", 0),
+            },
+            ItemStock = new Dictionary<int, int> { [0x2B] = 2, [0x42] = 2 },
         };
         flow.Start(BattleState.InitFighters(setup, 1, new BattleAttackProofRng(0)));
         return flow;

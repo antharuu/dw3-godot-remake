@@ -1227,6 +1227,9 @@ src/Dw3.Game/Diagnostics/Battle/NativeMenuPhaseProof.cs
 src/Dw3.Game/Diagnostics/Battle/NativeMenuSession.cs
 src/Dw3.Game/Diagnostics/Battle/NativeRootMenuProof.cs
 src/Dw3.Game/Diagnostics/Battle/NativeRootMenuProof.tscn
+# B9-046 native supported item proof
+src/Dw3.Game/Diagnostics/Battle/NativeItemUseProof.cs
+tests/Dw3.Game.Tests/BattleItemUseTests.cs
 src/Dw3.Game/Diagnostics/GameHost.NativeMenuFixture.cs
 src/Dw3.Game/Input/BattleInputGate.cs
 src/Dw3.Game/Input/InputButtonLatch.cs
