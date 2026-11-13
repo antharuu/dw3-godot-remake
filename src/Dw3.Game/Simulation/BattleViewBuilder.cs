@@ -82,5 +82,6 @@ public static class BattleViewBuilder
                 fighter.Mp,
                 fighter.MaxMp,
                 active,
-                fighter.IsKnockedOut);
+                fighter.IsKnockedOut,
+                fighter.BlastGauge);
 }

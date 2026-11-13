@@ -13,6 +13,7 @@ internal sealed partial class BattleHudNode : Control
     private readonly BattleHudText _text;
     private readonly BattleHudSprites _sprites = new();
     private readonly BattleHudClock _clock = new();
+    private readonly BattleHudHpDisplay _hpDisplay = new();
     private readonly BattleCommandMenuPainter _menus = new();
     private BattleView? _view;
 
@@ -100,7 +101,7 @@ internal sealed partial class BattleHudNode : Control
         }
 
         var canvas = new BattleHudCanvas(this, _sprites, _text, _clock);
-        BattleHudStatusPainter.Draw(canvas, view);
+        BattleHudStatusPainter.Draw(canvas, view, _hpDisplay);
         if (view.Phase == BattleFlowPhase.PlayerCommand)
         {
             _menus.Draw(canvas, view);
