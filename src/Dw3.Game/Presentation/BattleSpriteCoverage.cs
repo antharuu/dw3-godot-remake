@@ -7,8 +7,8 @@ namespace Dw3Production.Presentation;
 /// The widescreen coverage policy of sprite effects. Sprites keep their source position and size and stay
 /// clipped to the 4:3 source screen centred in the 16:9 viewport, like the console's screen edge. A frame
 /// that covers the whole source screen width from a screen anchor is a full-screen backdrop: it is widened
-/// about the screen centre to the viewport width, and while it shows the whole effect is clipped to the viewport
-/// instead of the source screen, its other parts keeping their source position and size, so the stage is not
+/// about the screen centre to the viewport width, and while it shows every sprite is clipped to the viewport
+/// instead of the source screen, keeping its source position and size, so the stage is not
 /// exposed in the lateral margins. This is a deliberate remake policy for the 16:9 default, not a console behaviour.
 /// </summary>
 public static class BattleSpriteCoverage

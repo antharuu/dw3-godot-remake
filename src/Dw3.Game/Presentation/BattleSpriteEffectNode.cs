@@ -6,8 +6,8 @@ namespace Dw3Production.Presentation;
 /// <summary>
 /// The real canvas child of one started sprite effect. Each placed part pass is a rendering-server canvas
 /// item owned by this node, drawn in source order, so the per-part ABR passes keep their stacking. Every
-/// pass sits under its own clipping item: the source screen, or the viewport while the effect shows a
-/// widened full-screen backdrop.
+/// pass sits under its own clipping item: the source screen, or the viewport while a widened full-screen
+/// backdrop is shown.
 /// </summary>
 internal sealed partial class BattleSpriteEffectNode : Node2D
 {
@@ -56,14 +56,16 @@ internal sealed partial class BattleSpriteEffectNode : Node2D
     /// <summary>Redraws the current samples around the projected pivot.</summary>
     /// <param name="origin">Canvas position of the effect anchor.</param>
     /// <param name="pixelScale">Canvas pixels per source screen pixel.</param>
-    public void Render(Vector2 origin, float pixelScale)
+    /// <param name="screenWide">Whether a full-screen backdrop is shown this frame, which extends the clip of every
+    /// sprite from the source screen to the viewport.</param>
+    public void Render(Vector2 origin, float pixelScale, bool screenWide)
     {
         _used = 0;
         int parts = 0;
         int cleared = 0;
         var samples = _instance.DrawnSamples().Select(item => Place(origin, pixelScale, item.Sample)).ToArray();
         WidenedSamples = samples.Count(sample => sample.Backdrop);
-        Rect2 clip = WidenedSamples > 0 ? BattleSpriteCoverage.ViewportClip : BattleSpriteCoverage.SourceClip;
+        Rect2 clip = screenWide ? BattleSpriteCoverage.ViewportClip : BattleSpriteCoverage.SourceClip;
         foreach ((Transform2D transform, BattleSpriteFrame frame, bool backdrop) in samples)
         {
             foreach (BattleSpritePart part in frame.Parts)
@@ -97,9 +99,15 @@ internal sealed partial class BattleSpriteEffectNode : Node2D
         }
     }
 
+    /// <summary>Tells whether the current samples include a full-screen backdrop.</summary>
+    /// <param name="origin">Canvas position of the effect anchor.</param>
+    /// <param name="pixelScale">Canvas pixels per source screen pixel.</param>
+    /// <returns>Whether a backdrop will be widened.</returns>
+    public bool ShowsBackdrop(Vector2 origin, float pixelScale) =>
+        _instance.DrawnSamples().Any(item => Place(origin, pixelScale, item.Sample).Backdrop);
+
     /// <summary>
-    /// Places one sample around the projected pivot and tells whether it is a full-screen backdrop. While an
-    /// effect shows a backdrop, all its samples are clipped to the viewport rather than the source screen.
+    /// Places one sample around the projected pivot and tells whether it is a full-screen backdrop.
     /// </summary>
     /// <param name="origin">Canvas position of the effect anchor.</param>
     /// <param name="pixelScale">Canvas pixels per source screen pixel.</param>

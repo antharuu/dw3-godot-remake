@@ -60,10 +60,10 @@ and parses available rows into runtime sheets on demand. The battle renderer reg
   polygon whose source entry is not farther than the sprite's.
 - 16:9 policy (a remake choice, not a console behaviour): a screen-anchored frame whose unscaled
   parts span the whole 320-pixel source width is a full-screen backdrop. It is widened about the
-  screen centre to the 1280-pixel viewport (factor 4/3, height unchanged). While an effect shows such a
-  backdrop, all its parts are clipped to the viewport instead of the source screen, so neither the stage
-  nor a cut line appears in the lateral margins. Every sprite keeps its source position and size; only
-  the backdrop is widened, and effects without a backdrop keep the source-screen clip.
+  screen centre to the 1280-pixel viewport (factor 4/3, height unchanged). While such a backdrop is
+  shown, every sprite is clipped to the viewport instead of the source screen, so neither the stage nor
+  a streak cut at the 4:3 edge appears in the lateral margins. Every sprite keeps its source position
+  and size, only the backdrop is widened, and without a backdrop sprites keep the source-screen clip.
 - Parts are drawn in placement order, placement zero first: the drawer queues them last to first
   and the ordering table draws the last queued first. Within one effect the last child is at the back,
   and among effects the farthest entry, then the latest created, is drawn first. An unblended

@@ -111,9 +111,10 @@ internal sealed class BattleSpriteCanvas : IBattleSpriteSurface, IDisposable
     public void Present(IReadOnlyList<BattleSpriteEffectInstance> active, int flashLevel)
     {
         var placed = active.Where(_nodes.ContainsKey).Select(instance => (Instance: instance, Origin: Project(instance.Anchor, instance.Layer, out int entry), Entry: entry)).ToArray();
+        bool screenWide = placed.Any(item => _nodes[item.Instance].ShowsBackdrop(item.Origin, BattleHudLayout.Scale));
         foreach (var item in placed)
         {
-            _nodes[item.Instance].Render(item.Origin, BattleHudLayout.Scale);
+            _nodes[item.Instance].Render(item.Origin, BattleHudLayout.Scale, screenWide);
         }
 
         var models = DrawOrder(placed.Where(item => item.Instance.Layer == BattleSpriteLayer.Models).Select(item => (item.Instance, item.Entry)));
