@@ -45,7 +45,7 @@ internal sealed class BattleSpriteEffectProbe : BattleProbe
             }
         }
 
-        GD.Print("B9056_PASS sprites flash digits lifecycle");
+        GD.Print("B9056_PASS sprites flash numbers digits lifecycle");
     }
 
     /// <summary>Reads the selected technique and fighter pairs.</summary>
@@ -105,6 +105,8 @@ internal sealed class BattleSpriteEffectProbe : BattleProbe
         Image settled = await BattleSpriteEffectEvidence.SettleAsync(Host);
         settled.SavePng(Path.Combine(captures, "hud-digits-before.png"));
         var before = (Image: settled, PlayerHp: player.Hp);
+        BattleFighter defender = selected.Enemy ? player : target;
+        int defenderHp = defender.Hp;
         if (selected.Enemy)
         {
             flow.EnemyAct(rng);
@@ -115,7 +117,7 @@ internal sealed class BattleSpriteEffectProbe : BattleProbe
         }
 
         ProbeRequirement.Require(flow.PendingSequenceContext is { } context && context.AttackerId == selected.Fighter && context.ScriptSelector == tech.Script, "wrong technique context");
-        await PlayCaseAsync(loader, captures, cancel, before);
+        await PlayCaseAsync(loader, captures, (cancel, (flow.PendingSequenceContext!, defender, defenderHp)), before);
     }
 
     /// <summary>Plays a real opening attack, then gives the natural enemy owner its technique slot.</summary>
@@ -132,8 +134,9 @@ internal sealed class BattleSpriteEffectProbe : BattleProbe
         int slot = Array.IndexOf(enemy.Techs, technique.Id);
         ProbeRequirement.Require(slot >= 0, "technique has no natural enemy slot");
         enemy.Actions = [new BattleTableAction(slot + 1, 0, 0)];
+        int enemyHp = enemy.Hp;
         ProbeRequirement.Require(flow.Choose(BattleCommand.Attack, 0, rng), $"opening attack refused phase={flow.Phase}");
-        await PlayCaseAsync(loader, Path.Combine(captures, "opening"), cancel: false, before: null);
+        await PlayCaseAsync(loader, Path.Combine(captures, "opening"), (false, (flow.PendingSequenceContext!, enemy, enemyHp)), before: null);
         ProbeRequirement.Require(flow.Phase == BattleFlowPhase.EnemyTurn, $"enemy turn unavailable phase={flow.Phase}");
         if (slot == 0)
         {
@@ -144,26 +147,30 @@ internal sealed class BattleSpriteEffectProbe : BattleProbe
         flow.State.Techs = flow.Techs;
     }
 
-    /// <summary>Plays one resolved action and verifies its children, flash, pixels, digits and destruction.</summary>
+    /// <summary>Plays one resolved action and verifies its children, flash, pixels, numbers, digits and destruction.</summary>
     /// <param name="loader">Validated pack.</param>
     /// <param name="captures">Private case directory.</param>
-    /// <param name="cancel">Whether to cancel once sprites drew.</param>
+    /// <param name="action">Whether to cancel once sprites drew, and the frozen rule result with its defender and the defender's HP before resolution.</param>
     /// <param name="before">Settled capture and active player HP before the action was resolved, or null when digits are not checked.</param>
     /// <returns>Completion after verification.</returns>
-    private async Task PlayCaseAsync(BattleDataPackLoader loader, string captures, bool cancel, (Image Image, int PlayerHp)? before)
+    private async Task PlayCaseAsync(BattleDataPackLoader loader, string captures, (bool Cancel, (ActionSequenceContext Context, BattleFighter Defender, int Hp) Rule) action, (Image Image, int PlayerHp)? before)
     {
+        bool cancel = action.Cancel;
         var evidence = new BattleSpriteEffectEvidence(Host, captures);
+        var numbers = new BattleActionNumberEvidence(Host, captures);
         var runner = new BattleSequenceRunner(Host.Flow, new PackActionScriptProvider(loader));
         runner.SetRenderer(Host.Renderer);
         Host.Renderer.SetOpeningCamera();
         var state = Host.Flow.State.Players.Concat(Host.Flow.State.Enemies).OfType<BattleFighter>().Select(fighter => (fighter, fighter.Hp)).ToArray();
-        bool cancelled = await PlayAsync(runner, evidence, cancel);
+        bool cancelled = await PlayAsync(runner, (evidence, numbers), cancel);
         await evidence.VerifyReleasedAsync(cancelled ? "cancelled" : "normal");
         ProbeRequirement.Require(cancel == cancelled, "cancellation point never reached");
         ProbeRequirement.Require(state.All(item => item.fighter.Hp == item.Hp), "playback changed rules state");
+        ProbeRequirement.Require(!cancel || (numbers.Page is null && Host.Flow.ActionResult is null), "a cancelled action showed its result message");
         if (!cancel)
         {
             Require(evidence);
+            numbers.RequireRuleResult(action.Rule.Context, action.Rule.Hp, action.Rule.Defender.Hp);
         }
 
         if (!cancel && before is { } previous)
@@ -180,11 +187,12 @@ internal sealed class BattleSpriteEffectProbe : BattleProbe
 
     /// <summary>Advances the production runner and renderer, observing every frame.</summary>
     /// <param name="runner">Production runner.</param>
-    /// <param name="evidence">Frame observer.</param>
+    /// <param name="observers">Sprite and result-number frame observers.</param>
     /// <param name="cancel">Whether to cancel once a sprite drew pixels.</param>
     /// <returns>Whether the action was cancelled.</returns>
-    private async Task<bool> PlayAsync(BattleSequenceRunner runner, BattleSpriteEffectEvidence evidence, bool cancel)
+    private async Task<bool> PlayAsync(BattleSequenceRunner runner, (BattleSpriteEffectEvidence Sprites, BattleActionNumberEvidence Numbers) observers, bool cancel)
     {
+        BattleSpriteEffectEvidence evidence = observers.Sprites;
         for (int tick = 0; tick < 2400 && Host.Flow.Phase == BattleFlowPhase.ActionSequence; tick++)
         {
             runner.Tick();
@@ -192,6 +200,7 @@ internal sealed class BattleSpriteEffectProbe : BattleProbe
             ProbeRequirement.Require(runner.Failure is null, $"tick={tick} cursor={runner.DiagnosticCursor}: {runner.Failure}");
             await Host.NextFrameDrawn();
             await evidence.ObserveAsync(tick);
+            await observers.Numbers.ObserveAsync(tick);
             if (cancel && evidence.BestPixels.Values.Any(pixels => pixels > 0))
             {
                 runner.Cancel();

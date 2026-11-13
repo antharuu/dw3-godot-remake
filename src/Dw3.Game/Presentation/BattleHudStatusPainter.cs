@@ -189,7 +189,7 @@ internal static class BattleHudStatusPainter
     }
 
     /// <summary>The message window (frame 0x31 at (0xB, 0xBC)), its two lines at (0x14, 0xC2) and
-    /// (0x14, 0xD0), and the continuation arrow whose CLUT row steps every arrow time step frames,
+    /// (0x14, 0xD0) as far as they are revealed, and once shown the continuation arrow whose CLUT row steps every arrow time step frames,
     /// wrapping at five.</summary>
     /// <param name="canvas">The HUD drawing context.</param>
     /// <param name="view">The battle view; nothing is drawn while its message is hidden.</param>
@@ -201,13 +201,17 @@ internal static class BattleHudStatusPainter
         }
 
         canvas.Frame(0x31, 0xB, 0xBC);
-        canvas.Text.DrawLine(1, 0x14, 0xC2, view.MessageText, view.Message, rightAlign: false, palette: BattleHudPalette.White);
-        if (view.MessageText?.Second is { } second)
+        if (view.MessageLines >= 1)
+        {
+            canvas.Text.DrawLine(1, 0x14, 0xC2, view.MessageText, view.Message, rightAlign: false, palette: BattleHudPalette.White);
+        }
+
+        if (view.MessageLines >= 2 && view.MessageText?.Second is { } second)
         {
             canvas.Text.DrawLine(1, 0x14, 0xD0, second, second.Debug, rightAlign: false, palette: BattleHudPalette.White);
         }
 
-        if (canvas.Sprites.MenuIcons is { } icons)
+        if (view.MessageArrow && canvas.Sprites.MenuIcons is { } icons)
         {
             canvas.MenuIcon(icons.ArrowFrame, icons.ArrowX, icons.ArrowY, (int)(canvas.Clock.Milliseconds / 16UL / (ulong)icons.ArrowTimeStep) % 5);
         }

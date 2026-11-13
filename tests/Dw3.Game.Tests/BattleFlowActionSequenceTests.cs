@@ -38,6 +38,7 @@ public sealed class BattleFlowActionSequenceTests
         // Single tick should complete the End-only script
         coordinator.Tick();
 
+        ActionResultTestSteps.CloseResult(flow, coordinator.Tick);
         Assert.NotEqual(BattleFlowPhase.ActionSequence, flow.Phase);
     }
 
@@ -57,6 +58,7 @@ public sealed class BattleFlowActionSequenceTests
 
         // Tick 2: Wait expires, End fires
         coordinator.Tick();
+        ActionResultTestSteps.CloseResult(flow, coordinator.Tick);
         Assert.NotEqual(BattleFlowPhase.ActionSequence, flow.Phase);
     }
 

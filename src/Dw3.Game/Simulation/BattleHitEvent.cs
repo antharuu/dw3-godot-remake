@@ -11,4 +11,8 @@ public sealed record BattleHitEvent(BattleSide AttackerSide, int HitIndex, bool 
 {
     /// <summary>Gets a value indicating whether this hit depleted the original target's HP.</summary>
     public bool TargetDefeated { get; init; }
+
+    /// <summary>Gets the landed hit's damage as the formula returned it, before the target's remaining HP clamps
+    /// the removal. The source's action messages print this value. Zero for a miss.</summary>
+    public int FormulaDamage { get; init; }
 }

@@ -834,7 +834,7 @@ public sealed class BattleRenderer : IDisposable
     internal void ConfigureActionAssets(Conversion.BattleDataPackLoader loader)
     {
         SequencePlayback.ConfigureImpact(new BattleImpactPlayback());
-        SequencePlayback.ConfigureSprites(new BattleSpriteEffectPlayback(loader.LoadSpriteCatalog, new BattleSpriteCanvas(_layer, _hud, _camera)));
+        SequencePlayback.ConfigureSprites(new BattleSpriteEffectPlayback(loader.LoadSpriteCatalog, new BattleSpriteCanvas(_layer, _hud, _camera, _modelLayer)));
         SequencePlayback.ConfigureStage(new BattleSequenceStagePlayback(this, loader));
         SequencePlayback.ConfigureActors(new BattleSequenceActorPlayback(this, _fighters, loader));
         SequencePlayback.ConfigureEffectModels(new BattleEffectModelPlayback(this, loader));

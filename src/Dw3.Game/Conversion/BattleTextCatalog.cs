@@ -80,7 +80,7 @@ public sealed class BattleTextCatalog
             return BattleTextLine.Missing;
         }
 
-        var type = key switch { "technique" => 3, "digivolve" => 12, "item" => 14, "won" or "lost" => 1, _ => 2 };
+        var type = key switch { "technique" => 3, "damage" => 4, "multiHitDamage" => 16, "digivolve" => 12, "item" => 14, "won" or "lost" => 1, _ => 2 };
         if (type == 1)
         {
             return FromMenu(template.Entry, $"MFIGHT entry={template.Entry} message={key}");

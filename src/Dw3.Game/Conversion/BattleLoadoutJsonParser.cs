@@ -91,6 +91,8 @@ internal static class BattleLoadoutJsonParser
             ["fledPlayer"] = Template(67, "actor"),
             ["item"] = Template(9, "actor", "item"),
             ["lost"] = Template(83),
+            ["missed"] = Template(0x1D),
+            ["multiHitDamage"] = Template(0x23, "value", "value", "value"),
             ["noMp"] = Template(37),
             ["switch"] = Template(56, "actor"),
             ["technique"] = Template(9, "actor", "technique"),

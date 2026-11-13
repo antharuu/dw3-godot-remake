@@ -77,6 +77,17 @@ public sealed class BattleFlowController
     /// <summary>Gets the roster displayed until script completion.</summary>
     public BattleSequencePresentation SequencePresentation { get; } = new();
 
+    /// <summary>Gets the result message shown once the action's script ended, until Cross closes its last page.
+    /// Null outside that part of the action.</summary>
+    public BattleActionResult? ActionResult { get; private set; }
+
+    /// <summary>Gets the number of message lines currently revealed: the result message reveals its lines one by
+    /// one, every other message shows both lines at once.</summary>
+    public int MessageLines => ActionResult?.Reveal.VisibleLines ?? 2;
+
+    /// <summary>Gets a value indicating whether the message's continuation arrow is shown.</summary>
+    public bool MessageArrow => ActionResult?.Reveal.Arrow ?? true;
+
     /// <summary>Gets the debug label of the last message, written to the action log. Empty when no message is shown.</summary>
     public string Message { get; private set; } = string.Empty;
 
@@ -248,11 +259,41 @@ public sealed class BattleFlowController
         return ctx;
     }
 
+    /// <summary>
+    /// Starts the result message of an action whose script ended, built from its frozen hit events. The battle
+    /// stays in its action until <see cref="StepActionResult"/> reports the last page closed.
+    /// </summary>
+    /// <param name="context">Frozen context of the finished action.</param>
+    /// <returns>Whether the action has a result message to show.</returns>
+    public bool BeginActionResult(ActionSequenceContext context)
+    {
+        ActionResult = BattleActionResult.Create(context, ShowResultPage);
+        return ActionResult is not null;
+    }
+
+    /// <summary>Advances the result message one source frame. <see cref="CompleteActionSequence"/> drops it.</summary>
+    /// <param name="confirmPressed">Whether Cross was newly pressed this frame.</param>
+    /// <returns>Whether the result message is over (or there is none).</returns>
+    public bool StepActionResult(bool confirmPressed)
+    {
+        ActionResult?.Step(confirmPressed);
+        return ActionResult?.IsComplete != false;
+    }
+
+    /// <summary>Closes the result message and its box, as the source's message task ends with its action:
+    /// after the last page on completion, or at once when the action is cancelled.</summary>
+    public void CloseActionResult()
+    {
+        ActionResult = null;
+        ClearMessage();
+    }
+
     /// <summary>Completes a running action sequence and advances to the next turn phase.
     /// Must be called by the host when the timeline's End opcode fires or when it is cancelled.</summary>
     public void CompleteActionSequence()
     {
         PendingSequenceContext = null;
+        ActionResult = null;
 
         // AdvancePhase checks PendingSequenceContext (now null) so it will not re-enter ActionSequence.
         AdvancePhase();
@@ -511,6 +552,13 @@ public sealed class BattleFlowController
         MessageVisible = MessageText != BattleTextLine.Missing;
     }
 
+    /// <summary>Shows one result page: the target's name, then its damage numbers or the miss line.</summary>
+    /// <param name="page">Result page.</param>
+    private void ShowResultPage(BattleActionResultPage page)
+    {
+        SetMessage(page.Key, [NameTokensById(page.TargetId), .. page.Numbers.Select(BattleTextCatalog.Number)]);
+    }
+
     /// <summary>Hides the message and forgets its text and label.</summary>
     private void ClearMessage()
     {
@@ -522,7 +570,12 @@ public sealed class BattleFlowController
     /// <summary>Looks up the displayed name of a fighter through <see cref="NameIds"/> and the Digimon name table.</summary>
     /// <param name="fighter">Fighter to name, may be null when the slot is empty.</param>
     /// <returns>The name tokens, or an empty list when the fighter, its name id or the catalogue is missing.</returns>
-    private IReadOnlyList<TextToken> NameTokens(BattleFighter? fighter) => fighter is not null && NameIds.TryGetValue(fighter.Id, out var nameId) ? Text?.DigimonByNameId(nameId).Tokens ?? [] : [];
+    private IReadOnlyList<TextToken> NameTokens(BattleFighter? fighter) => NameTokensById(fighter?.Id ?? 0);
+
+    /// <summary>Looks up the displayed name of a fighter id through <see cref="NameIds"/> and the Digimon name table.</summary>
+    /// <param name="fighterId">Fighter id, zero for an empty slot.</param>
+    /// <returns>The name tokens, or an empty list when the id, its name id or the catalogue is missing.</returns>
+    private IReadOnlyList<TextToken> NameTokensById(int fighterId) => NameIds.TryGetValue(fighterId, out var nameId) ? Text?.DigimonByNameId(nameId).Tokens ?? [] : [];
 
     /// <summary>Looks up the displayed name of an item in <see cref="ItemText"/>.</summary>
     /// <param name="itemId">Item id.</param>

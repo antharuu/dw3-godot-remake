@@ -48,8 +48,22 @@ and parses available rows into runtime sheets on demand. The battle renderer reg
   matrix and fixed-point scale. Screen anchors (depth `0x7FFF` front, `-1` back) are source screen
   positions, relative to the screen centre on the models layer, whose drawing offset is (160, 120),
   and to the top-left corner on the front layer. Effects 1000 to 1002 and 1007 draw on the front
-  layer over the HUD, all others on the models layer under it. Both layers are clipped to the source
+  layer over the HUD, all others on the models layer under it. Sprites are clipped to the source
   screen at the 3x layout.
+- Models-layer effects share the fighters' ordering table (4096 entries). The GTE stores a depth as
+  SZ / 4. A fighter polygon's entry drops two more bits per corner and averages them (SZ / 16), a
+  projected sprite anchor drops four (SZ / 64), a front screen marker uses entry 0 and a back marker
+  entry 0xFFF. A sprite is therefore drawn in front of a fighter unless the fighter is more than four
+  times nearer the camera than its anchor. The effect tasks queue after the fighters' model tasks, so
+  in a shared entry the sprite is linked last and drawn before the polygons of that entry. The
+  remake keeps its existing finer polygon sort and inserts each sprite before the first emitted
+  polygon whose source entry is not farther than the sprite's.
+- 16:9 policy (a remake choice, not a console behaviour): a screen-anchored frame whose unscaled
+  parts span the whole 320-pixel source width is a full-screen backdrop. It is widened about the
+  screen centre to the 1280-pixel viewport (factor 4/3, height unchanged). While an effect shows such a
+  backdrop, all its parts are clipped to the viewport instead of the source screen, so neither the stage
+  nor a cut line appears in the lateral margins. Every sprite keeps its source position and size; only
+  the backdrop is widened, and effects without a backdrop keep the source-screen clip.
 - Parts are drawn in placement order, placement zero first: the drawer queues them last to first
   and the ordering table draws the last queued first. Within one effect the last child is at the back,
   and among effects the farthest entry, then the latest created, is drawn first. An unblended
@@ -65,9 +79,14 @@ and parses available rows into runtime sheets on demand. The battle renderer reg
 The offscreen proof runs with `DW3_BATTLE_ACTION_PROBE=1`, `DW3_BATTLE_SPRITE_EFFECTS=1`, an explicit
 prepared `DW3_DATA_DIR` and optionally `DW3_SPRITE_CASES` (`technique:fighter`, an `e` prefix for a
 natural enemy owner). It plays each case normally and cancelled through the production runner and
-renderer, captures every sprite and flash frame with and without the layers, compares the settled HUD
-numbers with those before the action and requires every child to be destroyed.
+renderer, captures every sprite and flash frame with and without every sprite (the group contribution),
+then hides each live instance alone in the same held frame: only that difference is credited to its
+identity, and a sample whose parts all read the never-written VRAM palette must contribute nothing.
+It also observes the action's result message (see [ACTION_PLAYBACK.md](../ACTION_PLAYBACK.md)),
+compares the settled HUD numbers with those before the action and requires every child to be destroyed.
 
-Known differences: models-layer sprites are drawn above every model instead of sharing the models'
-ordering table by depth, and a full-screen 2D backdrop covers only the 4:3 source screen in 16:9.
+`DW3_BATTLE_SPRITE_COMPOSITION=1` runs the held composition proof: one models-layer effect anchored far
+behind the fighter nearest the camera, then at its depth on the same camera ray and pose, a front effect
+over the HUD and the full-screen backdrop 1020 on the 16:9 viewport.
+
 No sprite or fade result sets `fullActionRendered`.

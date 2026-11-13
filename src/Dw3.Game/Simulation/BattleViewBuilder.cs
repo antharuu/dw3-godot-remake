@@ -26,7 +26,7 @@ public static class BattleViewBuilder
             flow.State.Enemies,
             flow.State.ActiveEnemy,
             nameFor);
-        if (flow.Phase == BattleFlowPhase.ActionSequence)
+        if (flow.Phase == BattleFlowPhase.ActionSequence && flow.ActionResult is null)
         {
             players = [.. flow.SequencePresentation.Players.Select(f => f with { Name = nameFor(f.Id) })];
             enemies = [.. flow.SequencePresentation.Enemies.Select(f => f with { Name = nameFor(f.Id) })];
@@ -42,7 +42,9 @@ public static class BattleViewBuilder
             visibleMenu,
             report,
             flow.MessageText,
-            flow.MessageVisible);
+            flow.MessageVisible,
+            flow.MessageLines,
+            flow.MessageArrow);
     }
 
     /// <summary>Projects one side's fixed fighter slots.</summary>

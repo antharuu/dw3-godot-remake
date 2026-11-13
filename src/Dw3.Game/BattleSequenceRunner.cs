@@ -12,6 +12,8 @@ internal sealed class BattleSequenceRunner
     private readonly BattleState _state;
     private BattleActionTimeline? _timeline;
     private IBattleSequencePlayback? _playback;
+    private ActionSequenceContext? _context;
+    private bool _resultShown;
 
     /// <summary>Initializes a new instance of the <see cref="BattleSequenceRunner"/> class.</summary>
     /// <param name="flow">Active battle.</param>
@@ -27,6 +29,13 @@ internal sealed class BattleSequenceRunner
 
     /// <summary>Gets the recoverable failure, distinct from a normal physical wait.</summary>
     public string? Failure { get; private set; }
+
+    /// <summary>
+    /// Gets or sets the Cross source of the result message: the newly pressed state of this frame, or null when no
+    /// player input owns the battle (an offscreen driver), which closes each page at the first frame the source
+    /// reads Cross.
+    /// </summary>
+    public Func<bool?>? Confirm { get; set; }
 
     /// <summary>Gets the next command index for a private playback trace.</summary>
     public int DiagnosticCursor => _timeline?.Cursor ?? -1;
@@ -52,6 +61,12 @@ internal sealed class BattleSequenceRunner
             return;
         }
 
+        if (_resultShown)
+        {
+            StepResult();
+            return;
+        }
+
         if (_timeline is null && !TryStartTimeline())
         {
             return;
@@ -67,7 +82,7 @@ internal sealed class BattleSequenceRunner
         {
             _playback?.Finish(cancelled: false);
             _timeline = null;
-            _flow.CompleteActionSequence();
+            BeginResult();
         }
     }
 
@@ -77,6 +92,36 @@ internal sealed class BattleSequenceRunner
         _timeline?.Cancel();
         _timeline = null;
         _playback?.Finish(cancelled: true);
+        if (_resultShown)
+        {
+            _flow.CloseActionResult();
+            _resultShown = false;
+        }
+    }
+
+    /// <summary>Shows the finished action's result message, or completes the action when it has none.</summary>
+    private void BeginResult()
+    {
+        if (_context is { } context && _flow.BeginActionResult(context))
+        {
+            _resultShown = true;
+            _ = Confirm?.Invoke();
+            return;
+        }
+
+        _flow.CompleteActionSequence();
+    }
+
+    /// <summary>Advances the result message and completes the action once its last page closed.</summary>
+    private void StepResult()
+    {
+        bool confirm = Confirm?.Invoke() ?? _flow.ActionResult?.Reveal.Arrow == true;
+        if (_flow.StepActionResult(confirm))
+        {
+            _resultShown = false;
+            _flow.CloseActionResult();
+            _flow.CompleteActionSequence();
+        }
     }
 
     /// <summary>Loads and validates before consuming the context. Missing resources keep an explicit recoverable failure.</summary>
@@ -107,6 +152,7 @@ internal sealed class BattleSequenceRunner
                 Acknowledge = Acknowledge,
             };
             _playback?.Begin(context);
+            _context = context;
             _flow.ConsumeSequenceContext();
             Failure = null;
             return true;

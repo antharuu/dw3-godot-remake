@@ -18,7 +18,10 @@ public partial class GameHost
     private void InitBattleSequenceRunner(IActionScriptProvider provider)
     {
         _battleRenderer?.ConfigureActionAssets(BattleLoader);
-        _sequenceRunner = new BattleSequenceRunner(BattleFlow, provider);
+        _sequenceRunner = new BattleSequenceRunner(BattleFlow, provider)
+        {
+            Confirm = () => _testDriverActive ? null : _input.State.ConsumeActionPressed(),
+        };
         _sequenceRunner.SetRenderer(_battleRenderer);
     }
 

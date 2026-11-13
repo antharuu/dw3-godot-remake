@@ -16,7 +16,11 @@ internal static class BattleInputGate
         adapter.Handle(input);
         if (flow is not null && flow.Phase != BattleFlowPhase.PlayerCommand && !hasFightReport)
         {
-            adapter.State.ConsumeActionPressed();
+            if (flow.ActionResult?.Reveal.Arrow != true)
+            {
+                adapter.State.ConsumeActionPressed();
+            }
+
             adapter.State.ConsumeCancelPressed();
             adapter.State.ConsumePreviousPagePressed();
             adapter.State.ConsumeNextPagePressed();

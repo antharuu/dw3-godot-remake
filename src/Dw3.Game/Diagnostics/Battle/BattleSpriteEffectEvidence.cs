@@ -5,13 +5,15 @@ using Godot;
 namespace Dw3Production.Diagnostics.Battle;
 
 /// <summary>
-/// Observes the production sprite consumer during one action: paired captures with and without the
-/// sprite layers, the white flash at full level, the HUD digits the action changed and the destruction of every child.
+/// Observes the production sprite consumer during one action: paired captures with and without every sprite
+/// (the group contribution), held per-instance controls hiding one effect at a time (the only pixels credited
+/// to an identity), the white flash at full level, the HUD digits the action changed and the destruction of every child.
 /// </summary>
 internal sealed class BattleSpriteEffectEvidence
 {
     private const int CaptureInterval = 6;
     private const int MaxSpriteCaptures = 60;
+    private const int MaxInstanceCaptures = 40;
 
     /// <summary>The source-screen row holding both status windows' HP and MP numbers.</summary>
     private static readonly Rect2I NumberRow = new(0, 20, 320, 18);
@@ -20,8 +22,10 @@ internal sealed class BattleSpriteEffectEvidence
     private readonly string _directory;
     private readonly List<BattleSpriteEffectNode> _seen = [];
     private readonly HashSet<ulong> _instances = [];
+    private readonly HashSet<int> _clearedControls = [];
     private readonly Dictionary<int, int> _bestPixels = [];
     private int _captures;
+    private int _instanceCaptures;
     private int _lastCaptureTick = -CaptureInterval;
 
     /// <summary>Initializes a new instance of the <see cref="BattleSpriteEffectEvidence"/> class.</summary>
@@ -34,7 +38,7 @@ internal sealed class BattleSpriteEffectEvidence
         Directory.CreateDirectory(directory);
     }
 
-    /// <summary>Gets the best changed-pixel count observed per started effect identity.</summary>
+    /// <summary>Gets the best changed-pixel count of the held per-instance controls, per started effect identity.</summary>
     public IReadOnlyDictionary<int, int> BestPixels => _bestPixels;
 
     /// <summary>Gets the distinct effect children observed, identical identities included.</summary>
@@ -148,26 +152,87 @@ internal sealed class BattleSpriteEffectEvidence
         return new Rect2I(x, y, width, height);
     }
 
+    /// <summary>Classifies one instance control: transparent source samples apart from visible effect frames.</summary>
+    /// <param name="node">Live child.</param>
+    /// <param name="changed">Pixels the instance contributed.</param>
+    /// <returns>The classification printed in the probe log.</returns>
+    private static string Kind(BattleSpriteEffectNode node, int changed)
+    {
+        if (node.OnlyClearedPalettes)
+        {
+            return "cleared-vram-transparent";
+        }
+
+        string visible = changed > 0 ? "visible" : "no-visible-pixel";
+        return node.ClearedParts > 0 ? visible + "-with-cleared-vram-parts" : visible;
+    }
+
     /// <summary>Crops the HUD number row.</summary>
     /// <param name="image">Full capture.</param>
     /// <returns>The row image.</returns>
     private static Image Row(Image image) => image.GetRegion(RowRegion());
 
-    /// <summary>Takes one with/without pair and credits its pixels to every active identity.</summary>
+    /// <summary>
+    /// Takes one with/without pair for the group contribution, then hides each live instance alone in the same
+    /// held frame: only that difference is credited to its identity. A sample whose parts all read the
+    /// never-written VRAM palette must contribute nothing.
+    /// </summary>
     /// <param name="tick">Production runner tick.</param>
-    /// <returns>Completion after both captures.</returns>
+    /// <returns>Completion after the captures.</returns>
     private async Task CaptureSpritesAsync(int tick)
     {
         _captures++;
         var active = Sprites.Active.Select(instance => $"{instance.Id}#{instance.Serial}@[{string.Join(',', instance.Times)}]").ToArray();
         int passes = Canvas.Nodes.Sum(node => node.DrawnPasses);
-        BattleSpritePixelDiff diff = await PairAsync($"sprite-t{tick:D4}", sprites: false);
-        foreach (int id in Sprites.Active.Select(instance => instance.Id))
+        string name = $"sprite-t{tick:D4}";
+        Image with = await BattleProbeCapture.CaptureRawAsync(_host, _directory, name + ".png");
+        Canvas.SetVisibleForProbe(false, true);
+        Image without = await BattleProbeCapture.CaptureRawAsync(_host, _directory, name + "-nosprites.png");
+        Canvas.SetVisibleForProbe(true, true);
+        BattleSpritePixelDiff group = BattleSpritePixelDiff.Measure(with, without);
+        GD.Print($"B9056_SPRITES tick={tick} active={string.Join(' ', active)} passes={passes} flash={Sprites.FlashLevel} group_changed={group.Changed} box=({group.MinX},{group.MinY})-({group.MaxX},{group.MaxY})");
+        foreach (BattleSpriteEffectNode node in Canvas.Nodes.Where(NeedsControl).ToArray())
         {
-            _bestPixels[id] = Math.Max(_bestPixels.GetValueOrDefault(id), diff.Changed);
+            _instanceCaptures++;
+            await CaptureInstanceAsync(tick, (name, with), node);
+        }
+    }
+
+    /// <summary>
+    /// Tells whether an instance still needs a held control: its identity has no visible control yet, or it
+    /// draws never-written-palette parts that have not been controlled for its identity, within the case budget.
+    /// </summary>
+    /// <param name="node">Live child.</param>
+    /// <returns>Whether to capture its control now.</returns>
+    private bool NeedsControl(BattleSpriteEffectNode node)
+    {
+        int id = node.Instance.Id;
+        bool unproven = _bestPixels.GetValueOrDefault(id) == 0;
+        bool clearedPending = node.ClearedParts > 0 && !_clearedControls.Contains(id);
+        return _instanceCaptures < MaxInstanceCaptures && node.DrawnParts > 0 && (unproven || clearedPending);
+    }
+
+    /// <summary>Hides one live instance in the held frame and credits only its own difference to its identity.</summary>
+    /// <param name="tick">Production runner tick.</param>
+    /// <param name="frame">Capture base name and the capture with every sprite.</param>
+    /// <param name="node">Live child of the instance.</param>
+    /// <returns>Completion after the control capture.</returns>
+    private async Task CaptureInstanceAsync(int tick, (string Name, Image With) frame, BattleSpriteEffectNode node)
+    {
+        BattleSpriteEffectInstance instance = node.Instance;
+        Canvas.SetInstanceVisibleForProbe(instance, false);
+        Image minus = await BattleProbeCapture.CaptureRawAsync(_host, _directory, $"{frame.Name}-minus-{instance.Id}-{instance.Serial}.png");
+        Canvas.SetInstanceVisibleForProbe(instance, true);
+        BattleSpritePixelDiff own = BattleSpritePixelDiff.Measure(frame.With, minus);
+        string kind = Kind(node, own.Changed);
+        if (node.ClearedParts > 0)
+        {
+            _clearedControls.Add(instance.Id);
         }
 
-        GD.Print($"B9056_SPRITES tick={tick} active={string.Join(' ', active)} passes={passes} flash={Sprites.FlashLevel} changed={diff.Changed} box=({diff.MinX},{diff.MinY})-({diff.MaxX},{diff.MaxY})");
+        ProbeRequirement.Require(!node.OnlyClearedPalettes || own.Changed == 0, $"cleared-vram sample of {instance.Id} drew {own.Changed} pixels");
+        _bestPixels[instance.Id] = Math.Max(_bestPixels.GetValueOrDefault(instance.Id), own.Changed);
+        GD.Print($"B9056_INSTANCE tick={tick} id={instance.Id} serial={instance.Serial} times=[{string.Join(',', instance.Times)}] passes={node.DrawnPasses} parts={node.DrawnParts} cleared_vram_parts={node.ClearedParts} widened={node.WidenedSamples} kind={kind} changed={own.Changed} box=({own.MinX},{own.MinY})-({own.MaxX},{own.MaxY})");
     }
 
     /// <summary>Captures the current frame with everything, then with either the sprite layers or the flash hidden.</summary>

@@ -20,6 +20,8 @@ public sealed class BattleModelLayer : IDisposable
     private readonly ShaderMaterial _additive;
     private readonly List<Polygon2D> _commands = [];
     private readonly List<Polygon2D> _probeCalibration = [];
+    private readonly List<(int Entry, int Command)> _emitted = [];
+    private readonly List<(Node2D Node, int Entry)> _overlays = [];
     private ImageTexture? _probeQuadrants;
     private ImageTexture? _probeAlpha;
     private Polygon2D? _probeTriangle;
@@ -66,6 +68,23 @@ public sealed class BattleModelLayer : IDisposable
         }
 
         PolygonCount = CulledCount = UnsupportedAbrCount = 0;
+    }
+
+    /// <summary>Adds a canvas node drawn inside this layer's ordering table, such as a models-layer sprite effect.</summary>
+    /// <param name="node">Node to adopt; it is ordered by the next <see cref="PlaceOverlays"/>.</param>
+    public void AddOverlay(Node2D node) => _root.AddChild(node);
+
+    /// <summary>
+    /// Sorts overlay nodes into the emitted polygon stream by their source ordering-table entries, and keeps
+    /// that placement for every later rebuild until the next call.
+    /// </summary>
+    /// <param name="overlays">Overlay nodes in their own draw order (back to front) with their entries.</param>
+    public void PlaceOverlays(IReadOnlyList<(Node2D Node, int Entry)> overlays)
+    {
+        ArgumentNullException.ThrowIfNull(overlays);
+        _overlays.Clear();
+        _overlays.AddRange(overlays);
+        ApplyOverlays();
     }
 
     /// <summary>Shows or hides the production Canvas calibration fixture used by the offscreen model probe.</summary>
@@ -147,6 +166,23 @@ public sealed class BattleModelLayer : IDisposable
     /// <param name="value">Projected canvas point.</param>
     /// <returns>The same point for source winding evaluation.</returns>
     private static System.Numerics.Vector2 ToNumerics(Vector2 value) => new(value.X, value.Y);
+
+    /// <summary>Calculates the PS1 ordering-table key without splitting a quad into its raster triangles.</summary>
+    /// <param name="depth">View depths of the source corners.</param>
+    /// <returns>The source ordering-table key.</returns>
+    private static int OrderKey(int[] depth)
+    {
+        var shift = RenderOrderingTable.DepthShift(RenderOrderingTable.DepthBucketShift);
+        return depth.Length == 3
+            ? RenderOrderingTable.TriangleKey(depth[0], depth[1], depth[2], shift)
+            : RenderOrderingTable.QuadKey(depth[0], depth[1], depth[2], depth[3], shift);
+    }
+
+    /// <summary>Gets the child index that puts a moved overlay directly before another child.</summary>
+    /// <param name="node">Overlay being moved.</param>
+    /// <param name="before">Child the overlay must precede.</param>
+    /// <returns>The target index once the overlay has left its current slot.</returns>
+    private static int OverlayIndex(Node node, Node before) => before.GetIndex() - (node.GetIndex() < before.GetIndex() ? 1 : 0);
 
     /// <summary>Builds the nearest-filtered source fixture that exposes all four texture quadrants.</summary>
     /// <returns>A mutable two-by-two fixture with opaque red, green, blue and white texels.</returns>
@@ -292,24 +328,20 @@ public sealed class BattleModelLayer : IDisposable
                 continue;
             }
 
-            result.Add(new BattleRasterPrimitive(OrderKey(camera, world, polygon.Size), polygon, screen, model.TextureFor(polygon.TextureKey), model.FighterId));
+            int[] depth = ViewDepths(camera, world);
+            result.Add(new BattleRasterPrimitive(OrderKey(depth), polygon, screen, model.TextureFor(polygon.TextureKey), model.FighterId) { Entry = BattleSpriteOrdering.PolygonEntry(depth) });
         }
     }
 
-    /// <summary>Calculates the PS1 ordering-table key without splitting a quad into its raster triangles.</summary>
+    /// <summary>Projects the source corners to their view depths in source units.</summary>
     /// <param name="camera">Camera defining depth.</param>
     /// <param name="world">World positions of source corners.</param>
-    /// <param name="cornerCount">Source triangle or quad corner count.</param>
-    /// <returns>The source ordering-table key.</returns>
-    private int OrderKey(Camera3D camera, IReadOnlyList<Vector3> world, int cornerCount)
+    /// <returns>One view depth per corner.</returns>
+    private int[] ViewDepths(Camera3D camera, IReadOnlyList<Vector3> world)
     {
         GC.KeepAlive(_root);
         var inverse = camera.GlobalTransform.AffineInverse();
-        var depth = world.Select(position => (int)MathF.Round(-(inverse * position).Z * BattleSceneMath.Ps1UnitsPerGodotUnit)).ToArray();
-        var shift = RenderOrderingTable.DepthShift(RenderOrderingTable.DepthBucketShift);
-        return cornerCount == 3
-            ? RenderOrderingTable.TriangleKey(depth[0], depth[1], depth[2], shift)
-            : RenderOrderingTable.QuadKey(depth[0], depth[1], depth[2], depth[3], shift);
+        return [.. world.Select(position => (int)MathF.Round(-(inverse * position).Z * BattleSceneMath.Ps1UnitsPerGodotUnit))];
     }
 
     /// <summary>Emits ordered opaque and STP coverage commands into the single canvas framebuffer.</summary>
@@ -325,12 +357,15 @@ public sealed class BattleModelLayer : IDisposable
         }
 
         var command = 0;
+        _emitted.Clear();
         foreach (var primitive in ordered)
         {
+            _emitted.Add((primitive.Entry, command));
             command = EmitPrimitive(primitive, command);
         }
 
         HideUnused(command);
+        ApplyOverlays();
     }
 
     /// <summary>Emits the disjoint coverage commands belonging to one ordered source primitive.</summary>
@@ -371,6 +406,31 @@ public sealed class BattleModelLayer : IDisposable
         node.Texture = primitive.Texture;
         node.Material = material;
         node.Visible = true;
+    }
+
+    /// <summary>
+    /// Moves each live overlay just before the first emitted polygon it is drawn under, from the nearest overlay
+    /// to the farthest, so overlays sharing a position keep their own order. Overlays drawn after every
+    /// polygon move to the end of the stream.
+    /// </summary>
+    private void ApplyOverlays()
+    {
+        _overlays.RemoveAll(overlay => !GodotObject.IsInstanceValid(overlay.Node) || overlay.Node.GetParent() != _root);
+        int[] entries = [.. _emitted.Select(item => item.Entry)];
+        var heads = new Dictionary<int, Node>();
+        for (int i = _overlays.Count - 1; i >= 0; i--)
+        {
+            Node2D node = _overlays[i].Node;
+            int point = BattleSpriteOrdering.InsertionPoint(entries, _overlays[i].Entry);
+            Node? before = heads.GetValueOrDefault(point);
+            if (before is null && point < _emitted.Count)
+            {
+                before = _commands[_emitted[point].Command];
+            }
+
+            _root.MoveChild(node, before is null ? _root.GetChildCount() - 1 : OverlayIndex(node, before));
+            heads[point] = node;
+        }
     }
 
     /// <summary>Gets or creates one reusable canvas command node.</summary>

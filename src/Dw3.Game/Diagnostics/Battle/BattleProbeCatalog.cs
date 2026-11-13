@@ -11,6 +11,7 @@ internal static class BattleProbeCatalog
     {
         "RunBattleCameraProbe" => new BattleCameraProbe(host),
         "RunBattleMotionProbe" => new BattleMotionProbe(host),
+        "RunBattleActionProbe" when Environment.GetEnvironmentVariable("DW3_BATTLE_SPRITE_COMPOSITION") == "1" => new BattleSpriteCompositionProbe(host),
         "RunBattleActionProbe" when Environment.GetEnvironmentVariable("DW3_BATTLE_SPRITE_EFFECTS") == "1" => new BattleSpriteEffectProbe(host),
         "RunBattleActionProbe" when Environment.GetEnvironmentVariable("DW3_BATTLE_PHYSICAL_ROLL") == "1" => new BattlePhysicalRollProbe(host),
         "RunBattleActionProbe" when Environment.GetEnvironmentVariable("DW3_BATTLE_PHYSICAL_ACTORS") == "1" => new BattlePhysicalActorProbe(host),

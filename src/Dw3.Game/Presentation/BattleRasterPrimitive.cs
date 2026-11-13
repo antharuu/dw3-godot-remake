@@ -8,4 +8,8 @@ namespace Dw3Production.Presentation;
 /// <param name="Screen">Projected corners in viewport pixels.</param>
 /// <param name="Texture">Live decoded texture page including raw alpha classes.</param>
 /// <param name="Fighter">Fighter identifier owning the command.</param>
-internal readonly record struct BattleRasterPrimitive(int Key, BattleModel.SourcePolygon Polygon, Vector2[] Screen, Texture2D Texture, int Fighter);
+internal readonly record struct BattleRasterPrimitive(int Key, BattleModel.SourcePolygon Polygon, Vector2[] Screen, Texture2D Texture, int Fighter)
+{
+    /// <summary>Gets the source models-layer ordering-table entry, shared with the sprite effects of that layer.</summary>
+    public int Entry { get; init; }
+}

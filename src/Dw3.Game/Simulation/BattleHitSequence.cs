@@ -116,7 +116,7 @@ internal sealed class BattleHitSequence
             target.TakeDamage(damage);
         }
 
-        _events.Add(new BattleHitEvent(side, index, result.Landed, damage, tech.Effect, isCounter) { TargetDefeated = result.Landed && target.Hp == 0 });
+        _events.Add(new BattleHitEvent(side, index, result.Landed, damage, tech.Effect, isCounter) { TargetDefeated = result.Landed && target.Hp == 0, FormulaDamage = result.Landed ? result.Damage : 0 });
         return damage;
     }
 }

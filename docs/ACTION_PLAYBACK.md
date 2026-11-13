@@ -76,6 +76,17 @@ frozen hit facts, including whether that original target was defeated, rather th
 a replacement in the live roster. The shared physical consumer advances this child, and End
 waits for it. No damage or RNG is resolved in this path.
 
+When the script ends, the action shows its result message before it completes, as the source's
+technique, enemy-attack and counterattack tasks do. The page is built from the frozen hit events
+(`BattleActionResultPages`): the target's name, then message type 4 with the landed hit's formula
+damage (a double magic prints the sum of its two hits), type 0x10 with the per-hit damage, landed hits
+and their product for a multi-hit action (multi-hit effect or triple-hit equipment), or the miss line.
+A counterattack adds its own page. A knock-out effect shows none. The lines appear one by one, the
+next after more than three frames, then the arrow, and only then does Cross close the page
+(`BattleMessageReveal`). The HUD shows the live HP from the result on, and the message box closes with
+the action. Without a player input source (an offscreen driver) each page closes at the first frame
+the source reads Cross. Cancellation drops the message without completing the action.
+
 Sprite effects, the common contact effect included, are drawn from the prepared sprite domain
 described in [formats/action-sprites.md](formats/action-sprites.md#runtime-consumer). There is no
 separate contact family any more. A missing or unsupported identity is never acknowledged. The

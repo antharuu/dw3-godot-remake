@@ -58,6 +58,7 @@ public sealed class BattleSequencePackPlaybackTests : IDisposable
         Assert.Single(backend.Applied.OfType<HitDispatchedEvent>());
         backend.ChildrenReady = true;
         clock.Tick();
+        ActionResultTestSteps.CloseResult(flow, clock.Tick);
         Assert.NotEqual(BattleFlowPhase.ActionSequence, flow.Phase);
         Assert.Equal(280, backend.Camera.Projection);
         Assert.Equal(1, backend.Finishes);
@@ -92,7 +93,7 @@ public sealed class BattleSequencePackPlaybackTests : IDisposable
         Assert.Equal(4, context.HitEvents.Count);
         Assert.All(context.HitEvents, hit => Assert.Equal(BattleTechniqueEffect.MultiHit, hit.Effect));
 
-        for (int tick = 0; tick < 10 && flow.Phase == BattleFlowPhase.ActionSequence; tick++)
+        for (int tick = 0; tick < 40 && flow.Phase == BattleFlowPhase.ActionSequence; tick++)
         {
             runner.Tick();
         }
@@ -167,6 +168,7 @@ public sealed class BattleSequencePackPlaybackTests : IDisposable
         Assert.Null(runner.Failure);
         Assert.Equal(draws, rng.Draws);
         Assert.Single(backend.Applied.OfType<HitDispatchedEvent>());
+        ActionResultTestSteps.CloseResult(flow, runner.Tick);
         Assert.NotEqual(BattleFlowPhase.ActionSequence, flow.Phase);
     }
 
@@ -188,6 +190,7 @@ public sealed class BattleSequencePackPlaybackTests : IDisposable
         runner.Tick();
         Assert.Null(runner.Failure);
         Assert.Single(backend.Applied.OfType<CameraRequestEvent>());
+        ActionResultTestSteps.CloseResult(flow, runner.Tick);
         Assert.NotEqual(BattleFlowPhase.ActionSequence, flow.Phase);
     }
 
