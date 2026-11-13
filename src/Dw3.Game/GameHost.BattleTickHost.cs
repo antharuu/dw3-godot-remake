@@ -51,8 +51,12 @@ public partial class GameHost
     void IBattleTickHost.BeginFightReport()
     {
         _battleRenderer?.Hide();
-        _fightReportRenderer?.Show();
         _fightReportController = BuildFightReportController(BattleFlow);
+
+        // Draw the report's opening state before it becomes visible, so the frame after the victory fade
+        // never shows the field behind it, or a previous battle's report.
+        _fightReportRenderer?.Present(_fightReportController.View, BattleText(), BuildReportNames(), BuildReportItemNames());
+        _fightReportRenderer?.Show();
         foreach (string log in _fightReportController.Logs)
         {
             _log.Warn(log, log);

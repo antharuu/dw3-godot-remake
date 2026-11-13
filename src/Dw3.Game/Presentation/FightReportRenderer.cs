@@ -175,7 +175,21 @@ public sealed partial class FightReportRenderer : IDisposable
                 DrawPartner(view.Partners[index], index);
             }
 
+            DrawHeaderExp(view.HeaderExp);
             DrawMessage(view.Message);
+        }
+
+        /// <summary>Draws the selected partner's experience and its FGTRPT label in the header windows.</summary>
+        /// <param name="exp">Experience shown while the header carries it, or null.</param>
+        private void DrawHeaderExp(int? exp)
+        {
+            if (exp is not { } value || _catalog is null)
+            {
+                return;
+            }
+
+            _text.DrawWindow(3, 0x42, 0x17, value.ToString(CultureInfo.InvariantCulture), true, 0);
+            _text.DrawLine(3, 0x45, 0x17, _catalog.Report("expLabel"), false, 0);
         }
 
         /// <summary>Draws one partner row and its optional selection cursor.</summary>

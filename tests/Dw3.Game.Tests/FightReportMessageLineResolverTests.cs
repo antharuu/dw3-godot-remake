@@ -46,6 +46,24 @@ public sealed class FightReportMessageLineResolverTests
         Assert.Equal("FSITMNAM item=6", item.Substitutions[0][0].Type);
     }
 
+    /// <summary>The typed length of an EXP page follows its own substituted number, so each partner's page reveals completely.</summary>
+    [Fact]
+    public void CountGlyphs_ExpPage_CountsTemplateAndSubstitutedDigits()
+    {
+        var table = new List<IReadOnlyList<TextToken>>();
+        for (var index = 0; index < 12; index++)
+        {
+            table.Add([new TextToken("g", 4, 0, []), new TextToken("c", 0, 5, [1]), new TextToken("g", 5, 0, [])]);
+        }
+
+        IReadOnlyDictionary<string, BattleTextTemplate> messages = new Dictionary<string, BattleTextTemplate>();
+        var data = new BattleTextData(table, table, table, table, table, table, [], messages, new Dictionary<string, int> { ["expGained"] = 2 });
+        var resolver = new FightReportMessageLineResolver(new BattleTextCatalog(data), FighterName, ItemName);
+
+        Assert.Equal(2 + 4, resolver.CountGlyphs(2, [1234]));
+        Assert.Equal(2 + 1, resolver.CountGlyphs(2, [4]));
+    }
+
     /// <summary>Builds an entry-specific report message with stable fabricated substitution values.</summary>
     /// <param name="entry">Fight-report message entry.</param>
     /// <returns>A message accepted by the resolver.</returns>

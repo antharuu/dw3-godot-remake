@@ -44,6 +44,13 @@ public sealed class FightReportMessageLineResolver
         };
     }
 
+    /// <summary>Counts the glyphs the report typewriter reveals for a message resolved with its own substitutions.</summary>
+    /// <param name="entry">Report message entry.</param>
+    /// <param name="substitutions">Values the controller substitutes into the message.</param>
+    /// <returns>The typed-glyph count of the resolved line, 0 when the text is not extracted.</returns>
+    public int CountGlyphs(int entry, IReadOnlyList<int> substitutions) =>
+        BattleTextGlyphCount.Count(Resolve(new FightReportMessage(entry, substitutions, 0, 0, false, 0)));
+
     /// <summary>Converts a numeric report substitution into extracted font tokens.</summary>
     /// <param name="message">Message containing the numeric value.</param>
     /// <param name="index">Substitution index.</param>

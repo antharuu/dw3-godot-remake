@@ -92,6 +92,12 @@ public partial class GameHost
         public IReadOnlyList<PartnerGrowthState?>? PartyGrowth => _host._playerSession?.PartyGrowth;
 
         /// <inheritdoc/>
+        public FightReportInput? FightReportInput => _host._fightReportInput;
+
+        /// <inheritdoc/>
+        public int? SessionMoney => _host._playerSession?.Money;
+
+        /// <inheritdoc/>
         public int ReportFadeFrames => BattleReportFadeFrames;
 
         /// <inheritdoc/>
@@ -156,6 +162,9 @@ public partial class GameHost
             _host._battlePlayerCameraActive = false;
             _host._battleRenderedPlayerId = fighterId;
         }
+
+        /// <inheritdoc/>
+        public int SessionItemCount(int itemId) => _host._playerSession?.Inventory.GetValueOrDefault(itemId) ?? 0;
 
         /// <inheritdoc/>
         public void TickTestSimulation() => _host.TickTestSimulation();

@@ -19,13 +19,14 @@ public sealed class FightReportController
 
     /// <summary>Initializes a new instance of the <see cref="FightReportController"/> class.</summary>
     /// <param name="input">Completed battle reward data.</param>
+    /// <param name="tokenCounter">Optional typed-glyph count of each message resolved with its substitutions, so the typewriter reveals the whole text.</param>
     /// <exception cref="ArgumentNullException">Thrown when the input or its party list is null.</exception>
-    public FightReportController(FightReportInput input)
+    public FightReportController(FightReportInput input, Func<int, IReadOnlyList<int>, int>? tokenCounter = null)
     {
         _input = input ?? throw new ArgumentNullException(nameof(input));
         ArgumentNullException.ThrowIfNull(input.Partners);
         _partners = [.. input.Partners.Select(partner => new FightReportPartnerPanel(partner))];
-        _message = new FightReportMessageBox(input.MessageTokenCounts);
+        _message = new FightReportMessageBox(input.MessageTokenCounts, tokenCounter);
         View = BuildView();
     }
 
@@ -275,6 +276,9 @@ public sealed class FightReportController
     private FightReportView BuildView()
     {
         var partnerViews = _partners.Select(partner => partner.ToView()).ToArray();
-        return new FightReportView(_header.Level, _footer.Level, _bgScroll, partnerViews, _message.ToView(_time), _exit.Level, _done);
+        return new FightReportView(_header.Level, _footer.Level, _bgScroll, partnerViews, _message.ToView(_time), _exit.Level, _done)
+        {
+            HeaderExp = _phase is FightReportPhase.ExpMessage or FightReportPhase.RaisePartner ? _partners[_partnerIndex].Source.ExpGained : null,
+        };
     }
 }

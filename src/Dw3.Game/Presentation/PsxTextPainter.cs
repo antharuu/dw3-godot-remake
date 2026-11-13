@@ -62,7 +62,7 @@ public sealed class PsxTextPainter
         }
 
         var cursor = Vector2.Zero;
-        DrawTokens(line.Tokens, line.Substitutions, new Vector2(x, y), ref cursor, palette, style, tokenLimit);
+        _ = DrawTokens(line.Tokens, line.Substitutions, new Vector2(x, y), ref cursor, palette, style, tokenLimit);
     }
 
     /// <summary>Draws a string using glyph metrics and the selected alignment.</summary>
@@ -179,7 +179,8 @@ public sealed class PsxTextPainter
     /// <param name="palette">Palette row used by glyphs.</param>
     /// <param name="style">Font style identifier.</param>
     /// <param name="tokenLimit">Maximum number of tokens drawn.</param>
-    private void DrawTokens(
+    /// <returns>Number of typed tokens consumed, substitutions included, so a caller's reveal budget covers inserted text.</returns>
+    private int DrawTokens(
         IReadOnlyList<TextToken> tokens,
         IReadOnlyList<IReadOnlyList<TextToken>> substitutions,
         Vector2 origin,
@@ -190,7 +191,7 @@ public sealed class PsxTextPainter
     {
         if (_font is null || palette is < 0 or > 7)
         {
-            return;
+            return 0;
         }
 
         var drawn = 0;
@@ -198,11 +199,13 @@ public sealed class PsxTextPainter
         {
             if (drawn >= tokenLimit)
             {
-                return;
+                break;
             }
 
             drawn += DrawToken(token, substitutions, origin, ref cursor, palette, style, tokenLimit - drawn);
         }
+
+        return drawn;
     }
 
     /// <summary>Draws one token or applies its control action using its selected font style.</summary>
@@ -213,7 +216,7 @@ public sealed class PsxTextPainter
     /// <param name="palette">Palette row used by glyphs.</param>
     /// <param name="style">Font style identifier.</param>
     /// <param name="tokenLimit">Remaining reveal budget.</param>
-    /// <returns>Number of glyph tokens drawn.</returns>
+    /// <returns>Number of typed tokens consumed: one per glyph or icon, even without a font page, plus a substitution's own tokens.</returns>
     private int DrawToken(
         TextToken token,
         IReadOnlyList<IReadOnlyList<TextToken>> substitutions,
@@ -225,20 +228,19 @@ public sealed class PsxTextPainter
     {
         if (token.IsControl)
         {
-            ApplyControl(token, substitutions, origin, ref cursor, palette, style, tokenLimit);
-            return 0;
+            return ApplyControl(token, substitutions, origin, ref cursor, palette, style, tokenLimit);
         }
 
         if (_font is not { } selectedFont)
         {
-            return 0;
+            return 1;
         }
 
         var selected = selectedFont.Style(style);
         var table = token.IsGlyph ? selected.Glyphs : selected.Icons;
         if (!table.TryGetValue(token.Code, out var glyph))
         {
-            return 0;
+            return 1;
         }
 
         if (_pages.TryGetValue((style, palette, glyph.Page), out var page))
@@ -258,7 +260,8 @@ public sealed class PsxTextPainter
     /// <param name="palette">Palette row used by glyphs.</param>
     /// <param name="style">Font style identifier.</param>
     /// <param name="tokenLimit">Remaining reveal budget.</param>
-    private void ApplyControl(
+    /// <returns>Number of typed tokens the substitution consumed, 0 for a line break.</returns>
+    private int ApplyControl(
         TextToken token,
         IReadOnlyList<IReadOnlyList<TextToken>> substitutions,
         Vector2 origin,
@@ -271,14 +274,18 @@ public sealed class PsxTextPainter
         {
             cursor.X = 0;
             cursor.Y += _font!.Style(style).LineHeight;
+            return 0;
         }
-        else if (token.Command == 5 && token.Args.Count > 0)
+
+        if (token.Command == 5 && token.Args.Count > 0)
         {
             var index = token.Args[0];
             if (index > 0 && index <= substitutions.Count)
             {
-                DrawTokens(substitutions[index - 1], [], origin, ref cursor, palette, style, tokenLimit);
+                return DrawTokens(substitutions[index - 1], [], origin, ref cursor, palette, style, tokenLimit);
             }
         }
+
+        return 0;
     }
 }

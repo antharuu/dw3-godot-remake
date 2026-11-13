@@ -6,7 +6,8 @@ namespace Dw3Production.Simulation;
 /// A finished message stays drawn until the report takes it with <see cref="TakeFinished"/>.
 /// </summary>
 /// <param name="tokenCounts">Token count per message entry; an entry missing here counts as one token.</param>
-internal sealed class FightReportMessageBox(IReadOnlyDictionary<int, int>? tokenCounts)
+/// <param name="tokenCounter">Typed-glyph count of the message resolved with its own substitutions; when present it replaces <paramref name="tokenCounts"/>.</param>
+internal sealed class FightReportMessageBox(IReadOnlyDictionary<int, int>? tokenCounts, Func<int, IReadOnlyList<int>, int>? tokenCounter = null)
 {
     private bool _shown;
     private int _entry;
@@ -25,7 +26,7 @@ internal sealed class FightReportMessageBox(IReadOnlyDictionary<int, int>? token
     /// <param name="substitutions">The numbers substituted into the message, in order.</param>
     public void Start(int entry, params int[] substitutions)
     {
-        var count = tokenCounts is not null && tokenCounts.TryGetValue(entry, out var configured) ? configured : 1;
+        var count = tokenCounter?.Invoke(entry, substitutions) ?? ConfiguredCount(entry);
         _shown = true;
         _entry = entry;
         _substitutions = substitutions;
@@ -85,4 +86,9 @@ internal sealed class FightReportMessageBox(IReadOnlyDictionary<int, int>? token
     public FightReportMessage? ToView(int time) => _shown
         ? new FightReportMessage(_entry, _substitutions, _revealed, _tokenCount, _waiting && !_finished, (time / 5) % 5)
         : null;
+
+    /// <summary>Reads the fixed token count configured for an entry when no resolved-text counter exists.</summary>
+    /// <param name="entry">The message entry in the battle-report text.</param>
+    /// <returns>The configured count, or one token.</returns>
+    private int ConfiguredCount(int entry) => tokenCounts is not null && tokenCounts.TryGetValue(entry, out var configured) ? configured : 1;
 }
