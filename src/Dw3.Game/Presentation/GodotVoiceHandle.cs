@@ -10,6 +10,7 @@ internal sealed class GodotVoiceHandle : IVoiceHandle
     private readonly AudioStreamWav _stream;
     private readonly SpuEnvelope? _envelope;
     private readonly float _gain;
+    private readonly float _basePitch;
     private bool _released;
 
     /// <summary>Initializes a new instance of the <see cref="GodotVoiceHandle"/> class.</summary>
@@ -21,6 +22,7 @@ internal sealed class GodotVoiceHandle : IVoiceHandle
         _player = player;
         _stream = stream;
         _gain = player.VolumeLinear;
+        _basePitch = player.PitchScale;
         if (entry?.Adsr1 is { } first && entry.Adsr2 is { } second)
         {
             _envelope = new SpuEnvelope(first, second);
@@ -66,6 +68,15 @@ internal sealed class GodotVoiceHandle : IVoiceHandle
         }
 
         return true;
+    }
+
+    /// <inheritdoc/>
+    public void SetPitchBend(float semitones)
+    {
+        if (!IsComplete)
+        {
+            _player.PitchScale = _basePitch * MathF.Pow(2, semitones / 12f);
+        }
     }
 
     /// <summary>Releases the engine stream and player without changing any device configuration.</summary>

@@ -19,6 +19,9 @@ public partial class GameHost
             _host = host;
         }
 
+        /// <summary>Gets the setup built for the immediately preceding production flow.</summary>
+        internal BattleSetup? LastSetup { get; private set; }
+
         /// <summary>Builds and starts a real 1v1 flow for a manifest encounter.</summary>
         /// <param name="encounterIndex">Manifest encounter index.</param>
         /// <returns>Started battle flow.</returns>
@@ -34,6 +37,7 @@ public partial class GameHost
             BattleItemsData items = _host._battleItemsData ?? throw new CacheResourceException("CACHE_RESOURCE_UNAVAILABLE", "battle items manifest unavailable");
             var input = new BattleSessionBuildInput(fighters, techs, encounters, encounterIndex, session, items, text, _host._battleRng, _host.DigivolutionData);
             BattleFlowController flow = BuildUnstarted(input, out BattleSetup setup, out int activeDigimon);
+            LastSetup = setup;
             flow.Start(CreateOpeningState(setup, activeDigimon, _host._battleRng));
             _host._battleNameIds = new Dictionary<int, int>(flow.NameIds);
             return flow;

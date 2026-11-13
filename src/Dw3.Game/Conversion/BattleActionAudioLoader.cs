@@ -17,7 +17,7 @@ public static class BattleActionAudioLoader
             using var sounds = JsonDocument.Parse(File.ReadAllText(DataPackFiles.Require(pack, "battle/audio/sounds.json", "battle sound indices")));
             using var manifest = JsonDocument.Parse(File.ReadAllText(DataPackFiles.Require(pack, "battle/audio/manifest.json", "battle audio")));
             if (sounds.RootElement.GetProperty("schema").GetString() != "battle-action-sounds-v1" ||
-                manifest.RootElement.GetProperty("schema").GetString() != "battle-audio-vab-v4")
+                manifest.RootElement.GetProperty("schema").GetString() != "battle-audio-vab-v5")
             {
                 throw new FormatException("Unsupported action sound catalog. Prepare the current audio pack before playback.");
             }
@@ -57,6 +57,8 @@ public static class BattleActionAudioLoader
         {
             Adsr1 = attributes.TryGetProperty("Adsr1", out var first) ? first.GetUInt16() : null,
             Adsr2 = attributes.TryGetProperty("Adsr2", out var second) ? second.GetUInt16() : null,
+            PitchBendDown = attributes.GetProperty("PitchBendDown").GetByte(),
+            PitchBendUp = attributes.GetProperty("PitchBendUp").GetByte(),
             EncodedId = id,
             Program = program,
             Tone = tone,

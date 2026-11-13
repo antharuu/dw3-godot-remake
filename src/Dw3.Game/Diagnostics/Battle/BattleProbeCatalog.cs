@@ -23,6 +23,7 @@ internal static class BattleProbeCatalog
         "RunBattleReportProbe" => new BattleReportProbe(host),
         "RunBattleKotemonLightProbe" => new BattleKotemonLightProbe(host),
         "RunBattleHudProbe" => new BattleHudProbe(host),
+        "RunBattleInputProbe" when Environment.GetEnvironmentVariable("DW3_BATTLE_AUDIO_MUSIC") == "1" => new BattleMusicLifecycleProbe(host),
         "RunBattleInputProbe" when Environment.GetEnvironmentVariable("DW3_BATTLE_AUDIO_LIFECYCLE") == "1" => new BattleAudioLifecycleProbe(host),
         "RunBattleInputProbe" => new BattleInputProbe(host),
         "RunBattleLightProbe" => new BattleLightProbe(host),

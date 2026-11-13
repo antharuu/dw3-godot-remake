@@ -538,6 +538,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
             EnterBattle(
                 BuildEncounterBattle(record.Battle.Encounter),
                 record.Battle.Encounter,
+                record.Battle.Music,
                 $"walk encounter={record.Battle.Encounter} kind={record.Kind}");
         }
         catch (Exception error)
@@ -554,7 +555,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     {
         try
         {
-            EnterBattle(BuildEncounterBattle(DebugBattleEncounter), DebugBattleEncounter, "F8 battle test");
+            EnterBattle(BuildEncounterBattle(DebugBattleEncounter), DebugBattleEncounter, 0x60080000, "F8 battle test");
         }
         catch (Exception error)
         {
@@ -575,10 +576,13 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     /// </summary>
     /// <param name="flow">Freshly constructed battle flow for this encounter.</param>
     /// <param name="encounter">Zero-based encounter index used for stage and log output.</param>
+    /// <param name="music">Encoded source battle music selected by the encounter area.</param>
     /// <param name="why">Short description of why the battle started, written to the log.</param>
-    private void EnterBattle(BattleFlowController flow, int encounter, string why)
+    private void EnterBattle(BattleFlowController flow, int encounter, int music, string why)
     {
-        _activeBattle = new BattleSetup { Battle = encounter };
+        _activeBattle = _battleSetupCoordinator.LastSetup ?? new BattleSetup { Battle = encounter };
+        _activeBattle.Battle = encounter;
+        _activeBattle.Music = music;
         _battleFlow = flow;
         _lastBattleEncounter = encounter;
         _lastBattleEnemyIds = [.. flow.State.Enemies.Select(enemy => enemy?.Id ?? 0)];
@@ -634,6 +638,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
         _battleMenu.OpenRoot(flow.RootMenuLines());
         _frameCoordinator.NotifyLoadingStart();
         InitBattleSequenceRunner(new PackActionScriptProvider(BattleLoader));
+        _battleRenderer.BeginBattleMusic((uint)_activeBattle.Music);
         _battleRenderer.BeginEntranceAudio();
         QuietLog.Info($"battle-start {why} encounter={encounter} enemies=[{string.Join(",", _lastBattleEnemyIds)}] party=[{string.Join(",", flow.State.Players.Where(p => p is not null).Select(p => p!.Id))}] level={TestTeamGrowth.Level}");
     }
@@ -784,6 +789,7 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
             });
         _battleReport = resolution.Report;
         _fightReportInput = resolution.FightReport;
+        _battleRenderer?.BeginVictoryAudio();
         QuietLog.Info(resolution.Log);
     }
 

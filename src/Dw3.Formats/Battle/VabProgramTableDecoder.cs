@@ -18,6 +18,8 @@ public static class VabProgramTableDecoder
     private const int TonePan = 3;
     private const int ToneCenterNote = 4;
     private const int TonePitchShift = 5;
+    private const int TonePitchBendDown = 12;
+    private const int TonePitchBendUp = 13;
     private const int ToneMinNote = 6;
     private const int ToneMaxNote = 7;
     private const int ToneProgramRef = 20;
@@ -103,6 +105,8 @@ public static class VabProgramTableDecoder
         tone[TonePan],
         tone[ToneCenterNote],
         (sbyte)tone[TonePitchShift],
+        tone[TonePitchBendDown],
+        tone[TonePitchBendUp],
         tone[ToneMinNote],
         tone[ToneMaxNote],
         BinaryPrimitives.ReadInt16LittleEndian(tone.Slice(ToneProgramRef, 2)),
@@ -135,6 +139,8 @@ public static class VabProgramTableDecoder
                 Pan: tone[TonePan],
                 CenterNote: tone[ToneCenterNote],
                 PitchShift: (sbyte)tone[TonePitchShift],
+                PitchBendDown: tone[TonePitchBendDown],
+                PitchBendUp: tone[TonePitchBendUp],
                 MinNote: tone[ToneMinNote],
                 MaxNote: tone[ToneMaxNote],
                 ProgramRef: BinaryPrimitives.ReadInt16LittleEndian(tone.Slice(ToneProgramRef, 2)),

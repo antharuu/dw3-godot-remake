@@ -130,7 +130,7 @@ internal static class BattleAudioExtractionStep
     {
         string path = context.GetImagePath($"{OutputSubdirectory}/manifest.json");
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-        File.WriteAllText(path, JsonSerializer.Serialize(new { schema = "battle-audio-vab-v4", banks = banks.Select(BankManifest) }, IndentedJson) + "\n", new UTF8Encoding(false));
+        File.WriteAllText(path, JsonSerializer.Serialize(new { schema = "battle-audio-vab-v5", banks = banks.Select(BankManifest) }, IndentedJson) + "\n", new UTF8Encoding(false));
     }
 
     /// <summary>Builds one serializable manifest row without retaining a direct disc handle.</summary>

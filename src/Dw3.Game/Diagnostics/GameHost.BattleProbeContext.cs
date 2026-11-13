@@ -139,7 +139,7 @@ public partial class GameHost
 
         /// <inheritdoc/>
         public void StartEncounterForProbe(int encounter) =>
-            _host.EnterBattle(_host.BuildEncounterBattle(encounter), encounter, "native action probe source encounter");
+            _host.EnterBattle(_host.BuildEncounterBattle(encounter), encounter, 0x60080000, "native action probe source encounter");
 
         /// <inheritdoc/>
         public string ResolveBattleModelPath(int fighterId) => _host.ResolveBattleModelPath(fighterId);
