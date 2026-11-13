@@ -507,6 +507,7 @@ src/Dw3.Game/Presentation/BattleGeometryOracle.cs
 src/Dw3.Game/Presentation/BattleHitSparkTexture.cs
 src/Dw3.Game/Presentation/BattleHudCanvas.cs
 src/Dw3.Game/Presentation/BattleHudClock.cs
+src/Dw3.Game/Presentation/BattleHudHpDisplay.cs
 src/Dw3.Game/Presentation/BattleHudLayout.cs
 src/Dw3.Game/Presentation/BattleHudNode.cs
 src/Dw3.Game/Presentation/BattleHudPalette.cs
@@ -1245,3 +1246,5 @@ src/Dw3.Game/Presentation/BattlePairSwitchConfirmation.cs
 src/Dw3.Game/Simulation/BattlePairTechniqueConsumer.cs
 src/Dw3.Game/Simulation/BattlePairTechniqueSelection.cs
 tests/Dw3.Game.Tests/BattlePairMenuIntegrationTests.cs
+# B9-047 HUD gauge and HP-display proof
+tests/Dw3.Game.Tests/BattleHudGaugeProjectionTests.cs
