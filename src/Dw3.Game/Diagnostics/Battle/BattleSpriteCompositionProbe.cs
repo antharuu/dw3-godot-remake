@@ -3,6 +3,7 @@ using Dw3.Data;
 using Dw3Production.Conversion;
 using Dw3Production.Diagnostics.Field;
 using Dw3Production.Presentation;
+using Dw3Production.Simulation;
 using Godot;
 
 namespace Dw3Production.Diagnostics.Battle;
@@ -149,7 +150,7 @@ internal sealed class BattleSpriteCompositionProbe : BattleProbe
     {
         Camera3D camera = Host.Renderer.CameraForProbe;
         var candidates = new List<(int Fighter, float Depth, BattleCompositionMask Silhouette)>();
-        foreach (int id in new[] { Host.Flow.State.ActivePlayerFighter!.Id, Host.Flow.State.ActiveEnemyFighter!.Id })
+        foreach (int id in new[] { Host.Flow.State.ActivePlayerFighter, Host.Flow.State.ActiveEnemyFighter }.OfType<BattleFighter>().Select(fighter => fighter.Id))
         {
             float depth = -(camera.GlobalTransform.AffineInverse() * Host.Renderer.ModelForProbe(id).Root.GlobalPosition).Z;
             BattleCompositionMask silhouette = await scene.ModelMaskAsync(id, $"model-{id}");

@@ -116,8 +116,9 @@ internal sealed class BattleSpriteEffectProbe : BattleProbe
             ProbeRequirement.Require(flow.Choose(BattleCommand.Technique, selected.Technique, rng), $"technique refused phase={flow.Phase}");
         }
 
-        ProbeRequirement.Require(flow.PendingSequenceContext is { } context && context.AttackerId == selected.Fighter && context.ScriptSelector == tech.Script, "wrong technique context");
-        await PlayCaseAsync(loader, captures, (cancel, (flow.PendingSequenceContext!, defender, defenderHp)), before);
+        ActionSequenceContext context = flow.PendingSequenceContext ?? throw new InvalidOperationException("no technique context");
+        ProbeRequirement.Require(context.AttackerId == selected.Fighter && context.ScriptSelector == tech.Script, "wrong technique context");
+        await PlayCaseAsync(loader, captures, (cancel, (context, defender, defenderHp)), before);
     }
 
     /// <summary>Plays a real opening attack, then gives the natural enemy owner its technique slot.</summary>
@@ -136,7 +137,8 @@ internal sealed class BattleSpriteEffectProbe : BattleProbe
         enemy.Actions = [new BattleTableAction(slot + 1, 0, 0)];
         int enemyHp = enemy.Hp;
         ProbeRequirement.Require(flow.Choose(BattleCommand.Attack, 0, rng), $"opening attack refused phase={flow.Phase}");
-        await PlayCaseAsync(loader, Path.Combine(captures, "opening"), (false, (flow.PendingSequenceContext!, enemy, enemyHp)), before: null);
+        ActionSequenceContext opening = flow.PendingSequenceContext ?? throw new InvalidOperationException("no opening attack context");
+        await PlayCaseAsync(loader, Path.Combine(captures, "opening"), (false, (opening, enemy, enemyHp)), before: null);
         ProbeRequirement.Require(flow.Phase == BattleFlowPhase.EnemyTurn, $"enemy turn unavailable phase={flow.Phase}");
         if (slot == 0)
         {
