@@ -180,6 +180,7 @@ public sealed class BattleExtractionStepTests : IDisposable
             .Add("SLES_039.36", executable)
             .Add("AAA/PRO/SDIGIEDT.PRO", table)
             .Add("AAA/PRO/STFGTREP.PRO", report)
+            .Add("AAA/PRO/FIGHTSTG.PRO", new byte[EffectModelTableDecoder.TableOffset + EffectModelTableDecoder.EntryBytes])
             .Add("AAA/DAT/FIGHT/FIGHTERS.BIN", fighterTable)
             .Add("AAA/DAT/FIGHT/ACTIONS.BIN", actionsFile);
         Fabricate.FileSector(executable, 0x1CC, disc.LbaOf("AAA/DAT/FIGHT/FIGHTERS.BIN"));

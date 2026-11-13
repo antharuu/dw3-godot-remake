@@ -1022,6 +1022,16 @@ src/Dw3.Game/Simulation/LinearCongruentialRng.cs
 tests/Dw3.Game.Tests/InteractiveFrameCoordinatorTests.cs
 tests/Dw3.Game.Tests/LinearCongruentialRngTests.cs
 tests/Dw3.Game.Tests/VectorFieldCheck.cs
+
+# B9-054 shared 3D battle effect extraction
+src/Dw3.Extractor/BattleEffectModelDomainWriter.cs
+src/Dw3.Extractor/BattleEffectModelExtractor.cs
+src/Dw3.Extractor/EffectModelExtraction.cs
+src/Dw3.Formats/Battle/EffectModelJsonWriter.cs
+src/Dw3.Formats/Battle/EffectModelReference.cs
+src/Dw3.Formats/Battle/EffectModelTableDecoder.cs
+tests/Dw3.Formats.Tests/Battle/EffectModelTableDecoderTests.cs
+docs/formats/battle-effects.md
 src/Dw3.Disc/IDiscSource.cs
 src/Dw3.Extractor/EngineFileReader.cs
 src/Dw3.Extractor/ExtractDomainDispatcher.cs

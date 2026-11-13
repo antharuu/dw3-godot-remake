@@ -110,6 +110,7 @@ internal static class BattleExtractionStep
         WriteGrowth(context, growth);
         IReadOnlySet<int> uniqueSelectors = techniques.Select(static t => (int)t.Script).ToHashSet();
         BattleActionArchiveExtractor.Write(context, disc, entries, executable, FighterTableFileId, uniqueSelectors);
+        BattleEffectModelExtractor.Write(context, disc, entries, executable);
         WriteBattleJson(context, digimon, techniques, table, items, rewards, growth);
         foreach (string path in FrenchTextPaths)
         {
