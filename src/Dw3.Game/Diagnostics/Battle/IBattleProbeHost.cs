@@ -92,6 +92,12 @@ internal interface IBattleProbeHost
     /// <summary>Gets the session party's persistent growth records, or null before startup.</summary>
     IReadOnlyList<PartnerGrowthState?>? PartyGrowth { get; }
 
+    /// <summary>Gets the settled report input the fight report is built from, when a victory resolved one.</summary>
+    FightReportInput? FightReportInput { get; }
+
+    /// <summary>Gets the persistent session wallet, or null before startup.</summary>
+    int? SessionMoney { get; }
+
     /// <summary>Gets the fixed victory-to-report fade duration in simulation steps.</summary>
     int ReportFadeFrames { get; }
 
@@ -106,6 +112,11 @@ internal interface IBattleProbeHost
 
     /// <summary>Gets a value indicating whether the battle-load notice is visible.</summary>
     bool IsBattleNoticeVisible { get; }
+
+    /// <summary>Gets the persistent session stock of one item.</summary>
+    /// <param name="itemId">Source item id.</param>
+    /// <returns>The held quantity, 0 when absent or before startup.</returns>
+    int SessionItemCount(int itemId);
 
     /// <summary>Gets the resolved display name for a fighter.</summary>
     /// <param name="fighterId">Source fighter id.</param>

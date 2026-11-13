@@ -175,7 +175,21 @@ public sealed partial class FightReportRenderer : IDisposable
                 DrawPartner(view.Partners[index], index);
             }
 
+            DrawHeaderExp(view.HeaderExp);
             DrawMessage(view.Message);
+        }
+
+        /// <summary>Draws the selected partner's experience and its FGTRPT label in the header windows.</summary>
+        /// <param name="exp">Experience shown while the header carries it, or null.</param>
+        private void DrawHeaderExp(int? exp)
+        {
+            if (exp is not { } value || _catalog is null)
+            {
+                return;
+            }
+
+            _text.DrawWindow(3, 0x42, 0x17, value.ToString(CultureInfo.InvariantCulture), true, 0);
+            _text.DrawLine(3, 0x45, 0x17, _catalog.Report("expLabel"), false, 0);
         }
 
         /// <summary>Draws one partner row and its optional selection cursor.</summary>
@@ -225,6 +239,12 @@ public sealed partial class FightReportRenderer : IDisposable
         {
             _text.DrawWindow(3, 91, y + 56, partner.Level.ToString(CultureInfo.InvariantCulture), true, 0);
             _text.DrawWindow(3, 103, y + 69, partner.ShownExp.ToString(CultureInfo.InvariantCulture), true, 0);
+            if (_catalog is not null)
+            {
+                // Source panel windows: the FGTRPT level label (entry 3) left of the level and the EXP label (entry 1) right of the EXP.
+                _text.DrawLine(3, 0x3E, y + 0x38, _catalog.Report("levelLabel"), false, 0);
+                _text.DrawLine(3, 0x6A, y + 0x45, _catalog.Report("expLabel"), false, 0);
+            }
         }
 
         /// <summary>Draws the three pre-unlock equipped-form rows with decoded names and settled levels.</summary>

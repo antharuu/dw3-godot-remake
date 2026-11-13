@@ -801,7 +801,14 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
             throw new InvalidOperationException("fight report requested without a resolved victory input");
         }
 
-        return new FightReportController(_fightReportInput);
+        Dictionary<int, BattleTextLine> names = BuildReportNames();
+        Dictionary<int, BattleTextLine> items = BuildReportItemNames();
+        var lines = new FightReportMessageLineResolver(BattleText(), id => Lookup(names, id), id => Lookup(items, id));
+        return new FightReportController(_fightReportInput, lines.CountGlyphs);
+
+        // Resolves a substitution name exactly as the report renderer does, the missing sentinel staying blank.
+        static BattleTextLine Lookup(Dictionary<int, BattleTextLine> lines, int id) =>
+            lines.TryGetValue(id, out BattleTextLine? line) ? line : BattleTextLine.Missing;
     }
 
     /// <summary>Builds the Digimon name map for fight report rendering from the resolved victory input.</summary>
