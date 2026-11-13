@@ -14,14 +14,25 @@ internal sealed class SpriteEffectFrameWriter
     private readonly IReadOnlyList<HudSpritePart> _parts;
     private readonly IReadOnlyList<int> _ids;
     private readonly IReadOnlyList<int> _offsets;
+    private readonly SpriteEffectPaletteResolver _palettes;
+
+    /// <summary>Initializes a new instance of the <see cref="SpriteEffectFrameWriter"/> class for pages at an unknown placement.</summary>
+    /// <param name="sheet">Unwrapped sheet body.</param>
+    /// <param name="pages">Decoded texture pages.</param>
+    internal SpriteEffectFrameWriter(byte[] sheet, IReadOnlyList<HudTexturePage> pages)
+        : this(sheet, pages, null)
+    {
+    }
 
     /// <summary>Initializes a new instance of the <see cref="SpriteEffectFrameWriter"/> class.</summary>
     /// <param name="sheet">Unwrapped sheet body.</param>
     /// <param name="pages">Decoded texture pages.</param>
-    internal SpriteEffectFrameWriter(byte[] sheet, IReadOnlyList<HudTexturePage> pages)
+    /// <param name="placement">Source VRAM placement of the pages, which lets a packed CLUT address outside them resolve.</param>
+    internal SpriteEffectFrameWriter(byte[] sheet, IReadOnlyList<HudTexturePage> pages, IReadOnlyList<int>? placement)
     {
         _sheet = sheet;
         _pages = pages;
+        _palettes = new SpriteEffectPaletteResolver(pages, placement);
         var wrapped = new byte[sheet.Length + 4];
         sheet.CopyTo(wrapped, 4);
         (_parts, _ids, _offsets) = HudSpriteSheetParser.Parse(wrapped);
@@ -87,8 +98,8 @@ internal sealed class SpriteEffectFrameWriter
     {
         int at = offset + 6 + (index * 6);
         int partIndex = BinaryPrimitives.ReadInt16LittleEndian(_sheet.AsSpan(at));
-        HudSpritePart part = _parts[partIndex];
-        ushort[] palette = HudFrameRenderer.ReadPalette(_pages, part.ClutX, part.ClutY + header.Row + key.Row, header.Abr >= 0);
+        HudSpritePart part = PartAt(at);
+        SpriteEffectPalette palette = _palettes.Resolve(part.ClutX, part.ClutY + header.Row + key.Row);
         var layer = Layer(context, id, key, index, offset);
         return new
         {
@@ -99,7 +110,9 @@ internal sealed class SpriteEffectFrameWriter
             rectangle = new[] { part.U, part.V, part.Width, part.Height },
             clut = new[] { part.ClutX, part.ClutY, header.Row, key.Row },
             mode = part.Mode,
-            palette,
+            palette = palette.Words,
+            paletteSource = palette.Source,
+            vram = new[] { palette.VramX, palette.VramY },
         };
     }
 
@@ -147,13 +160,25 @@ internal sealed class SpriteEffectFrameWriter
     private HudRenderedPart RenderPart(int offset, int index, int row)
     {
         HudFrameHeader header = ReadHeader(offset);
-        var body = new byte[12];
-        _sheet.AsSpan(offset, 6).CopyTo(body);
-        BinaryPrimitives.WriteInt16LittleEndian(body, 1);
-        BinaryPrimitives.WriteInt16LittleEndian(body.AsSpan(4), header.Abr >= 0 ? (short)1 : (short)0);
         int at = offset + 6 + (index * 6);
-        _sheet.AsSpan(at, 2).CopyTo(body.AsSpan(6));
-        var picture = HudFrameRenderer.RenderFrame(_parts, body, 0, _pages, row);
-        return new HudRenderedPart(BinaryPrimitives.ReadInt16LittleEndian(_sheet.AsSpan(at + 2)), BinaryPrimitives.ReadInt16LittleEndian(_sheet.AsSpan(at + 4)), new HudRgbaImage(picture.Rgba, picture.Width, picture.Height));
+        HudSpritePart part = PartAt(at);
+        SpriteEffectPalette palette = _palettes.Resolve(part.ClutX, part.ClutY + header.Row + row);
+        HudRgbaImage image = HudFrameRenderer.RenderPartWithPalette(_pages, part, palette.Words, header.Abr >= 0);
+        return new HudRenderedPart(BinaryPrimitives.ReadInt16LittleEndian(_sheet.AsSpan(at + 2)), BinaryPrimitives.ReadInt16LittleEndian(_sheet.AsSpan(at + 4)), image);
+    }
+
+    /// <summary>Resolves the part named by a placement record.</summary>
+    /// <param name="at">Placement record offset.</param>
+    /// <returns>The referenced source part.</returns>
+    /// <exception cref="FormatException">The record names a part outside the part table.</exception>
+    private HudSpritePart PartAt(int at)
+    {
+        int partIndex = BinaryPrimitives.ReadInt16LittleEndian(_sheet.AsSpan(at));
+        if (partIndex < 0 || partIndex >= _parts.Count)
+        {
+            throw new FormatException($"Sprite frame references missing part {partIndex}.");
+        }
+
+        return _parts[partIndex];
     }
 }

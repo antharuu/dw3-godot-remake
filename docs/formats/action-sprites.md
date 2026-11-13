@@ -14,6 +14,8 @@ A decoded frame retains its frame/animated-palette identity, source header row, 
 
 The source draw routine adds the part CLUT row, frame header row and animated row. It does not replace the header row. Texture words and source frame definitions remain available even for a frame whose palette is outside its loaded effect pages. No row-zero retry, palette substitution, clamping or transparent-image fallback is allowed.
 
+Each part records its `paletteSource` and the `vram` column and row the GPU actually reads. The address follows the source packing: sheet placement plus the summed rows, packed as `(y << 6) | ((x >> 4) & 0x3F)` in sixteen bits, of which the GPU keeps nine row bits. `effect-page` means the CLUT lies in the sheet's own loaded pages. `cleared-vram` is accepted only inside the 64-column, 256-row rectangle at VRAM (448, 0). The boot and country-select full clears zero it, the movie player clears all VRAM when it stops, and no loader, transfer, fill or drawing area of any game mode writes it afterwards. Its sixteen words are therefore zero and every texel of such a part is transparent, exactly as the GPU draws it. Any other out-of-page address still produces an `unsupportedFrames` record.
+
 ## Availability and dependencies
 
 - `available` means every referenced frame/palette image was decoded and passed the production reader.
@@ -21,8 +23,8 @@ The source draw routine adds the part CLUT row, frame header row and animated ro
 - `unsupported` remains a failure to provide a self-contained renderable asset. It is never counted as available or as source absence. Where decoding reached the image boundary, the payload keeps all source definitions, texture words, animations, successful frames, and explicit `unsupportedFrames` records.
 - A required identity missing from the prepared index is a corrupt/incomplete pack, not a qualified source absence.
 
-An out-of-page CLUT can address other source VRAM after the GPU's address packing. This requires the corresponding resident or dynamic VRAM provider to be qualified separately. The extractor must not invent those palette words from an unrelated capture. Source palette addressing and its unresolved identity are retained so the limitation remains reproducible.
+An out-of-page CLUT can address other source VRAM after the GPU's address packing. Outside the qualified never-written rectangle this requires the corresponding resident or dynamic VRAM provider to be qualified separately. The extractor must not invent those palette words from an unrelated capture. Source palette addressing and its unresolved identity are retained so the limitation remains reproducible.
 
 Source script rows retain fighter, selector, archive identity, original command ordinals, sprite commands, fade mode/duration signatures and technique-to-sprite selectors. Technique selectors, fighter identities, sheet indices, animation slots, and texture-part indices are separate namespaces. The runtime still needs to resolve the script's technique-dependent selector and obey the original event schedule.
 
-`SpriteEffectDomainReader` validates identity chains, version, image hashes, part indices, texture page dimensions, palette widths and animation references. `SpriteEffectScriptReader` validates source identity and fade signatures. Unsupported rows remain visible to the caller. No sprite/fade result upgrades `fullActionRendered`.
+`SpriteEffectDomainReader` validates identity chains, the `battle-sprites-v2` payload version, image hashes, part indices, texture page dimensions, palette widths, palette sources and animation references. It refuses an unknown palette source and a `cleared-vram` part whose address leaves the qualified rectangle or whose words are not all zero. `SpriteEffectScriptReader` validates source identity and fade signatures. Unsupported rows remain visible to the caller. No sprite/fade result upgrades `fullActionRendered`.

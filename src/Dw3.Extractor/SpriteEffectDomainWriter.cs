@@ -38,7 +38,7 @@ internal static class SpriteEffectDomainWriter
         catch (FormatException error)
         {
             status = error is SpriteEffectSourceAbsentException ? "source-absent" : "unsupported";
-            json = JsonSerializer.Serialize(new { schema = "battle-sprites-v1", reference, reason = error.Message });
+            json = JsonSerializer.Serialize(new { schema = "battle-sprites-v2", reference, reason = error.Message });
         }
 
         Execute(context, "INSERT INTO battle_sprites_v1 VALUES ($1,$2,$3)", reference.EffectId, status, json);
@@ -58,7 +58,7 @@ internal static class SpriteEffectDomainWriter
         var animations = ModelArchive.ReadBounds(animation).Select(range => range.IsEmpty
             ? null : BattleSpriteAnimationDecoder.Decode(animation.AsSpan(range.Start, range.End - range.Start))).ToArray();
         IReadOnlyList<HudTexturePage> pages = source.Pages(sheet);
-        var frameWriter = new SpriteEffectFrameWriter(body, pages);
+        var frameWriter = new SpriteEffectFrameWriter(body, pages, sheet.Placement);
         var frames = new List<object>();
         var unsupportedFrames = new List<object>();
         foreach (var key in animations.Where(a => a is not null).SelectMany(a => a!).Select(sample => (Frame: sample[0], Row: sample[1])).Distinct())
@@ -68,7 +68,7 @@ internal static class SpriteEffectDomainWriter
 
         string json = JsonSerializer.Serialize(new
         {
-            schema = "battle-sprites-v1",
+            schema = "battle-sprites-v2",
             reference,
             sheet,
             sheetSha256 = DiscIdentity.Sha256Bytes(body),
@@ -82,7 +82,7 @@ internal static class SpriteEffectDomainWriter
             parts = frameWriter.Parts,
             sourceFrames = frameWriter.Definitions,
             textureWords = pages.Select(page => page.Rows),
-            reason = unsupportedFrames.Count == 0 ? null : "Some frame CLUTs require source VRAM outside the loaded effect pages. No palette fallback was applied.",
+            reason = unsupportedFrames.Count == 0 ? null : "Some frame CLUTs address source VRAM that is neither a loaded effect page nor qualified cleared VRAM. No palette fallback was applied.",
         });
         return (json, unsupportedFrames.Count == 0);
     }

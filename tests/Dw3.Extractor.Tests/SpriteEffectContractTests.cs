@@ -24,6 +24,9 @@ public sealed class SpriteEffectContractTests : IDisposable
     [InlineData("unsupported")]
     [InlineData("bounds")]
     [InlineData("hash")]
+    [InlineData("source")]
+    [InlineData("cleared")]
+    [InlineData("vram")]
     public void LoaderRejectsCorruptPreparedContracts(string fault)
     {
         Extract();
@@ -45,7 +48,7 @@ public sealed class SpriteEffectContractTests : IDisposable
         Extract();
         using var output = new StringWriter();
         Assert.Equal(0, Cli.Run(["verify-sprites", _root], output, TextWriter.Null));
-        Assert.Contains("battle-sprites-v1", output.ToString());
+        Assert.Contains("battle-sprites-v2", output.ToString());
         Assert.Equal(2, Cli.Run(["verify-sprites"], TextWriter.Null, TextWriter.Null));
         Assert.Equal(1, Cli.Run(["verify-sprites", Path.Combine(_root, "absent")], TextWriter.Null, TextWriter.Null));
     }
@@ -73,6 +76,13 @@ public sealed class SpriteEffectContractTests : IDisposable
         ["unsupported"] = n => n["unsupportedFrames"] = new JsonArray(JsonNode.Parse("{\"frame\":8,\"row\":0,\"reason\":\"missing\"}")),
         ["bounds"] = n => n["frames"]![0]!["width"] = 0,
         ["hash"] = n => n["frames"]![0]!["sha256"] = "wrong",
+        ["source"] = n => n["frames"]![0]!["parts"]![0]!["paletteSource"] = "borrowed-capture",
+        ["cleared"] = n =>
+        {
+            n["frames"]![0]!["parts"]![0]!["paletteSource"] = "cleared-vram";
+            n["frames"]![0]!["parts"]![0]!["vram"] = new JsonArray(496, 1);
+        },
+        ["vram"] = n => n["frames"]![0]!["parts"]![0]!["vram"] = new JsonArray(496),
     };
 
     private void Extract()

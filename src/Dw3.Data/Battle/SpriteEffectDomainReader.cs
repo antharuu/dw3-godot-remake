@@ -55,7 +55,7 @@ public static class SpriteEffectDomainReader
     /// <param name="payload">Versioned metadata.</param>
     private static void ValidateIdentity(int id, string status, JsonElement payload)
     {
-        if (id < 0 || payload.GetProperty("schema").GetString() != "battle-sprites-v1"
+        if (id < 0 || payload.GetProperty("schema").GetString() != "battle-sprites-v2"
             || payload.GetProperty("reference").GetProperty("EffectId").GetInt32() != id
             || status is not ("available" or "unsupported" or "source-absent"))
         {
@@ -139,10 +139,33 @@ public static class SpriteEffectDomainReader
             ValidateImage(pack, part.GetProperty("layer"));
         }
 
-        if (frame.GetProperty("parts").EnumerateArray().Any(part => part.GetProperty("palette").GetArrayLength() != 16 || part.GetProperty("clut").GetArrayLength() != 4))
+        if (frame.GetProperty("parts").EnumerateArray().Any(part => part.GetProperty("palette").GetArrayLength() != 16 || part.GetProperty("clut").GetArrayLength() != 4
+            || !IsQualifiedPaletteSource(part)))
         {
             throw new InvalidDataException("Prepared sprite palette metadata is invalid.");
         }
+    }
+
+    /// <summary>
+    /// Accepts only the two qualified palette providers: the sheet's own loaded page, or the
+    /// never-written VRAM rectangle whose sixteen words are zero.
+    /// </summary>
+    /// <param name="part">Prepared part contract.</param>
+    /// <returns>Whether the provider, its packed VRAM address and its words agree.</returns>
+    private static bool IsQualifiedPaletteSource(JsonElement part)
+    {
+        if (!part.TryGetProperty("vram", out JsonElement vram) || vram.GetArrayLength() != 2)
+        {
+            return false;
+        }
+
+        return part.TryGetProperty("paletteSource", out JsonElement source) && source.GetString() switch
+        {
+            "effect-page" => true,
+            "cleared-vram" => vram[0].GetInt32() >= 448 && vram[0].GetInt32() + 16 <= 512 && vram[1].GetInt32() is >= 0 and < 256
+                && part.GetProperty("palette").EnumerateArray().All(word => word.GetInt32() == 0),
+            _ => false,
+        };
     }
 
     /// <summary>Checks a prepared PNG and its registered image bounds.</summary>

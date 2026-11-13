@@ -159,6 +159,35 @@ public static class HudFrameRenderer
         return palette;
     }
 
+    /// <summary>
+    /// Samples one validated 4-bit part through a palette the caller already resolved, for sheets
+    /// whose CLUT may live in source VRAM outside their own texture pages.
+    /// </summary>
+    /// <param name="pages">Loaded 4-bit texture pages that hold the part texels.</param>
+    /// <param name="part">Part rectangle; it must be a positive-size 4-bit part.</param>
+    /// <param name="palette">The 16 PS1 colour words the GPU reads for this part; colour 0 is transparent.</param>
+    /// <param name="abr">When set, colours with the STP bit are drawn at alpha 128 instead of 255.</param>
+    /// <returns>The part pixels at the part size.</returns>
+    /// <exception cref="ArgumentNullException">An argument is null.</exception>
+    /// <exception cref="FormatException">The part is invalid, the palette is not 16 words, or the rectangle exceeds the pages.</exception>
+    public static HudRgbaImage RenderPartWithPalette(IReadOnlyList<HudTexturePage> pages, HudSpritePart part, IReadOnlyList<ushort> palette, bool abr)
+    {
+        ArgumentNullException.ThrowIfNull(pages);
+        ArgumentNullException.ThrowIfNull(part);
+        ArgumentNullException.ThrowIfNull(palette);
+        if (part.Mode != 0 || part.Width <= 0 || part.Height <= 0)
+        {
+            throw new FormatException("Sprite part bounds are invalid.");
+        }
+
+        if (palette.Count != PaletteSize)
+        {
+            throw new FormatException("Sprite palette must hold sixteen colour words.");
+        }
+
+        return new HudRgbaImage(RenderPart(pages, part, [.. palette], abr), part.Width, part.Height);
+    }
+
     /// <summary>Byte offset of part record <paramref name="index"/> of the frame at <paramref name="frameOffset"/>.</summary>
     /// <param name="frameOffset">Offset of the frame header in the sheet body.</param>
     /// <param name="index">Zero-based part record index.</param>

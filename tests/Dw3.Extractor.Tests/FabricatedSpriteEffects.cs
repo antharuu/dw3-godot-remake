@@ -6,12 +6,15 @@ namespace Dw3.Extractor.Tests;
 /// <summary>Builds a fully fabricated two-sheet sprite source with distinct animation structures.</summary>
 internal static class FabricatedSpriteEffects
 {
-    internal static (FabricatedDisc Disc, byte[] Overlay) Create(int paletteRow = 253)
+    internal static (FabricatedDisc Disc, byte[] Overlay) Create(int paletteRow = 253, int placementX = 0, int placementY = 0)
     {
         byte[] executable = Fabricate.Executable(0x80050000);
         byte[] overlay = new byte[SpriteEffectRegistryDecoder.SpriteEffectsOffset + 24];
         var disc = new FabricatedDisc().Add("SLES_039.36", executable).Add("AAA/PRO/FIGHTSTG.PRO", overlay);
         AddSprite(disc, executable, overlay, (0, 123, 5), 0x300, 1, paletteRow);
+        int placement = SpriteEffectRegistryDecoder.EffectSheetsOffset + (5 * 16) + 8;
+        Fabricate.U32(overlay, placement, (uint)placementX);
+        Fabricate.U32(overlay, placement + 4, (uint)placementY);
         AddSprite(disc, executable, overlay, (1, 456, 7), 0x301, 2, 253);
         Fabricate.U16(overlay, SpriteEffectRegistryDecoder.SpriteEffectsOffset + 16, ushort.MaxValue);
         AddFighter(disc, executable);

@@ -91,6 +91,34 @@ public sealed class SpriteEffectExtractionTests : IDisposable
         }
     }
 
+    [Fact]
+    public void WrappedClutInNeverWrittenVramResolvesToZeroPaletteAndTransparentLayer()
+    {
+        // Placement (448, 256), part row 0, header row 2, animated row 255: the packed GPU row is
+        // 513 & 0x1FF = 1, column 448, inside the never-written rectangle.
+        Extract(255, 448, 256);
+        var result = SpriteEffectDomainReader.Require(SpriteEffectDomainReader.Load(new DataPackReader(_root)), 123);
+        Assert.Equal("available", result.Status);
+        Assert.Empty(result.Payload.GetProperty("unsupportedFrames").EnumerateArray());
+        var part = result.Payload.GetProperty("frames")[0].GetProperty("parts")[0];
+        Assert.Equal("cleared-vram", part.GetProperty("paletteSource").GetString());
+        Assert.Equal([448, 1], part.GetProperty("vram").EnumerateArray().Select(value => value.GetInt32()));
+        Assert.All(part.GetProperty("palette").EnumerateArray(), word => Assert.Equal(0, word.GetInt32()));
+        string layer = new DataPackReader(_root).ResolvePath(part.GetProperty("layer").GetProperty("path").GetString()!);
+        Assert.Equal(PngEncoder.Encode(2, 1, new byte[8]), File.ReadAllBytes(layer));
+    }
+
+    [Fact]
+    public void InPagePaletteRecordsItsPackedVramAddress()
+    {
+        Extract(253, 448, 256);
+        var part = SpriteEffectDomainReader.Require(SpriteEffectDomainReader.Load(new DataPackReader(_root)), 123)
+            .Payload.GetProperty("frames")[0].GetProperty("parts")[0];
+        Assert.Equal("effect-page", part.GetProperty("paletteSource").GetString());
+        Assert.Equal([448, 511], part.GetProperty("vram").EnumerateArray().Select(value => value.GetInt32()));
+        Assert.Equal(0x7FFF, part.GetProperty("palette")[1].GetInt32());
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_root))
@@ -99,9 +127,9 @@ public sealed class SpriteEffectExtractionTests : IDisposable
         }
     }
 
-    private void Extract(int paletteRow = 253)
+    private void Extract(int paletteRow = 253, int placementX = 0, int placementY = 0)
     {
-        var (disc, _) = FabricatedSpriteEffects.Create(paletteRow);
+        var (disc, _) = FabricatedSpriteEffects.Create(paletteRow, placementX, placementY);
         using var error = new StringWriter();
         int result = Cli.Run(["extract", "--disc", "synthetic.cue", "--out", _root, "--only", "battle-sprites"], TextWriter.Null, error, _ => disc.Open());
         Assert.True(result == 0, error.ToString());
