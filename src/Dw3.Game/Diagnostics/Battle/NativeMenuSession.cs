@@ -15,27 +15,14 @@ internal sealed class NativeMenuSession : IDisposable
     /// <summary>Initializes a new instance of the <see cref="NativeMenuSession"/> class.</summary>
     /// <param name="enemyFirst">Whether the synthetic enemy owns the opening turn.</param>
     /// <param name="includePartnerItems">Whether the fabricated source-shaped partner boost family is included in the item menu.</param>
-    public NativeMenuSession(bool enemyFirst = false, bool includePartnerItems = false)
+    /// <param name="includeFieldItems">Whether the fabricated source-shaped field-element family is included in the item menu.</param>
+    public NativeMenuSession(bool enemyFirst = false, bool includePartnerItems = false, bool includeFieldItems = false)
     {
-        Flow = BuildFlow(enemyFirst, includePartnerItems);
+        Flow = BuildFlow(enemyFirst, includePartnerItems, includeFieldItems);
         _host = new GameHost(
             Flow,
             new BattleTextData([], [], [], [], [], [], [], new Dictionary<string, BattleTextTemplate>(), new Dictionary<string, int>()),
-            new BattleItemsData(
-            includePartnerItems ?
-            [
-                new BattleItemData(0x2B, 0, [], 0, 1, 500, 0, 0, 0, 7, "heal", "partner"),
-                new BattleItemData(0x42, 0, [], 0, 0, 0, 0, 0, 0, 7, "cureStatus", "partner"),
-                new BattleItemData(0x48, 0, [], 0, 0, 128, 0, 0, 0, 7, "boostSpeed", "partner"),
-                new BattleItemData(0x49, 0, [], 0, 0, 128, 0, 0, 0, 7, "boostAttack", "partner"),
-                new BattleItemData(0x4A, 0, [], 0, 0, 128, 0, 0, 0, 7, "boostDefense", "partner"),
-                new BattleItemData(0x4B, 0, [], 0, 0, 0, 0, 0, 0, 7, "special", "partner"),
-                new BattleItemData(0x4C, 0, [], 0, 0, 50, 0, 0, 0, 7, "fillGauge", "partner"),
-            ] :
-            [
-                new BattleItemData(0x2B, 0, [], 0, 1, 500, 0, 0, 0, 7, "heal", "partner"),
-                new BattleItemData(0x42, 0, [], 0, 0, 0, 0, 0, 0, 7, "cureStatus", "partner"),
-            ]),
+            new BattleItemsData(ItemsData(includePartnerItems, includeFieldItems)),
             Rng);
         Menu.OpenRoot(Flow.RootMenuLines());
     }
@@ -127,8 +114,9 @@ internal sealed class NativeMenuSession : IDisposable
     /// <summary>Creates a synthetic battle whose enemy survives repeated weak hits.</summary>
     /// <param name="enemyFirst">Whether the synthetic enemy owns the opening turn.</param>
     /// <param name="includePartnerItems">Whether the active-partner boost family belongs in the fabricated item menu.</param>
+    /// <param name="includeFieldItems">Whether the field-element boost family belongs in the fabricated item menu.</param>
     /// <returns>Initialized real simulation.</returns>
-    private static BattleFlowController BuildFlow(bool enemyFirst, bool includePartnerItems = false)
+    private static BattleFlowController BuildFlow(bool enemyFirst, bool includePartnerItems = false, bool includeFieldItems = false)
     {
         var setup = new BattleSetup();
         setup.Partners[0] = new PartnerSeed { Id = 1, Hp = 100, MaxHp = 100, Mp = 50, MaxMp = 50, Stats = Stats(enemyFirst ? 1 : 999) };
@@ -140,8 +128,8 @@ internal sealed class NativeMenuSession : IDisposable
             EnemyBasicTech = new TechData { Accuracy = 128, Power = 1 },
             PlayerTechniques = [.. Enumerable.Range(7, 7).Select(id => new BattleTechnique(id, "synthetic", new TechData { Mp = 5 }))],
             PlayerDigivolutions = [1, 4],
-            Items = Items(includePartnerItems),
-            ItemStock = ItemStock(includePartnerItems),
+            Items = Items(includePartnerItems, includeFieldItems),
+            ItemStock = ItemStock(includePartnerItems, includeFieldItems),
         };
         flow.Start(BattleState.InitFighters(setup, 1, new BattleAttackProofRng(0)));
         return flow;
@@ -159,35 +147,104 @@ internal sealed class NativeMenuSession : IDisposable
         return stats;
     }
 
-    /// <summary>Builds the fabricated source-shaped menu catalogue for the selected native proof family.</summary>
-    /// <param name="includePartnerItems">Whether to include the active-partner boost family.</param>
-    /// <returns>Item catalogue accepted by the production flow.</returns>
-    private static Dictionary<int, BattleItem> Items(bool includePartnerItems)
+    /// <summary>Builds the fabricated item records that the production menu renders for a native proof.</summary>
+    /// <param name="includePartnerItems">Whether the active-partner boost family is included.</param>
+    /// <param name="includeFieldItems">Whether the field-element boost family is included.</param>
+    /// <returns>Fabricated source-shaped records corresponding to the flow catalogue.</returns>
+    private static List<BattleItemData> ItemsData(bool includePartnerItems, bool includeFieldItems)
+    {
+        var items = new List<BattleItemData>
+        {
+            new(0x2B, 0, [], 0, 1, 500, 0, 0, 0, 7, "heal", "partner"),
+            new(0x42, 0, [], 0, 0, 0, 0, 0, 0, 7, "cureStatus", "partner"),
+        };
+        AddPartnerItemData(items, includePartnerItems);
+        AddFieldItemData(items, includeFieldItems);
+        return items;
+    }
+
+    /// <summary>Adds the active-partner menu records required by the matching native proof.</summary>
+    /// <param name="items">Mutable fixture item record list.</param>
+    /// <param name="includePartnerItems">Whether the partner items are included.</param>
+    private static void AddPartnerItemData(List<BattleItemData> items, bool includePartnerItems)
     {
         if (!includePartnerItems)
         {
-            return new Dictionary<int, BattleItem>
-            {
-                [0x2B] = new(0x2B, "heal", "partner", 500),
-                [0x42] = new(0x42, "cureStatus", "partner", 0),
-            };
+            return;
         }
 
-        return new Dictionary<int, BattleItem>
+        items.Add(new(0x48, 0, [], 0, 0, 128, 0, 0, 0, 7, "boostSpeed", "partner"));
+        items.Add(new(0x49, 0, [], 0, 0, 128, 0, 0, 0, 7, "boostAttack", "partner"));
+        items.Add(new(0x4A, 0, [], 0, 0, 128, 0, 0, 0, 7, "boostDefense", "partner"));
+        items.Add(new(0x4B, 0, [], 0, 0, 0, 0, 0, 0, 7, "special", "partner"));
+        items.Add(new(0x4C, 0, [], 0, 0, 50, 0, 0, 0, 7, "fillGauge", "partner"));
+    }
+
+    /// <summary>Adds the field-element menu records required by the matching native proof.</summary>
+    /// <param name="items">Mutable fixture item record list.</param>
+    /// <param name="includeFieldItems">Whether the field items are included.</param>
+    private static void AddFieldItemData(List<BattleItemData> items, bool includeFieldItems)
+    {
+        if (!includeFieldItems)
+        {
+            return;
+        }
+
+        items.Add(new(0x4D, 0, [], 0, 0, 0, 0, 0, 0, 7, "boostElement", "field"));
+        items.Add(new(0x54, 0, [], 0, 0, 0, 0, 0, 0, 7, "boostRandomElement", "field"));
+    }
+
+    /// <summary>Builds the fabricated source-shaped menu catalogue for the selected native proof families.</summary>
+    /// <param name="includePartnerItems">Whether to include the active-partner boost family.</param>
+    /// <param name="includeFieldItems">Whether to include the field-element boost family.</param>
+    /// <returns>Item catalogue accepted by the production flow.</returns>
+    private static Dictionary<int, BattleItem> Items(bool includePartnerItems, bool includeFieldItems)
+    {
+        var items = new Dictionary<int, BattleItem>
         {
             [0x2B] = new(0x2B, "heal", "partner", 500),
             [0x42] = new(0x42, "cureStatus", "partner", 0),
-            [0x48] = new(0x48, "boostSpeed", "partner", 128),
-            [0x49] = new(0x49, "boostAttack", "partner", 128),
-            [0x4A] = new(0x4A, "boostDefense", "partner", 128),
-            [0x4B] = new(0x4B, "special", "partner", 0),
-            [0x4C] = new(0x4C, "fillGauge", "partner", 50),
         };
+        AddPartnerItems(items, includePartnerItems);
+        AddFieldItems(items, includeFieldItems);
+        return items;
     }
 
-    /// <summary>Builds the fabricated stock map matching the selected native proof family.</summary>
-    /// <param name="includePartnerItems">Whether to include the active-partner boost family.</param>
+    /// <summary>Adds the supported active-partner item family when its native proof needs it.</summary>
+    /// <param name="items">Mutable fixture item catalogue.</param>
+    /// <param name="includePartnerItems">Whether the partner items are included.</param>
+    private static void AddPartnerItems(Dictionary<int, BattleItem> items, bool includePartnerItems)
+    {
+        if (!includePartnerItems)
+        {
+            return;
+        }
+
+        items[0x48] = new(0x48, "boostSpeed", "partner", 128);
+        items[0x49] = new(0x49, "boostAttack", "partner", 128);
+        items[0x4A] = new(0x4A, "boostDefense", "partner", 128);
+        items[0x4B] = new(0x4B, "special", "partner", 0);
+        items[0x4C] = new(0x4C, "fillGauge", "partner", 50);
+    }
+
+    /// <summary>Adds the supported field-element item family when its native proof needs it.</summary>
+    /// <param name="items">Mutable fixture item catalogue.</param>
+    /// <param name="includeFieldItems">Whether the field items are included.</param>
+    private static void AddFieldItems(Dictionary<int, BattleItem> items, bool includeFieldItems)
+    {
+        if (!includeFieldItems)
+        {
+            return;
+        }
+
+        items[0x4D] = new(0x4D, "boostElement", "field", 0);
+        items[0x54] = new(0x54, "boostRandomElement", "field", 0);
+    }
+
+    /// <summary>Builds positive stock for every fabricated item selected by the native proof.</summary>
+    /// <param name="includePartnerItems">Whether the active-partner boost family is included.</param>
+    /// <param name="includeFieldItems">Whether the field-element boost family is included.</param>
     /// <returns>Positive stock for every item shown in the proof menu.</returns>
-    private static Dictionary<int, int> ItemStock(bool includePartnerItems) => includePartnerItems ?
-        Items(true).Keys.ToDictionary(id => id, _ => 2) : new Dictionary<int, int> { [0x2B] = 2, [0x42] = 2 };
+    private static Dictionary<int, int> ItemStock(bool includePartnerItems, bool includeFieldItems) =>
+        Items(includePartnerItems, includeFieldItems).Keys.ToDictionary(id => id, _ => 2);
 }

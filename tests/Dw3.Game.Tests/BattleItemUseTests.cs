@@ -228,6 +228,97 @@ public sealed class BattleItemUseTests
         Assert.Equal(0, rng.Calls);
     }
 
+    /// <summary>Verifies that a fixed elemental item changes the field, consumes one stock entry, and expires through the real scheduler consumer.</summary>
+    [Fact]
+    public void Choose_ElementBoost_ChangesFieldConsumesOneAndExpires()
+    {
+        BattleFlowController flow = CreateFlow(new BattleItem(0x4D, "boostElement", "field", 0));
+
+        bool spent = flow.Choose(BattleCommand.Item, 0x4D, new FixedRng());
+
+        Assert.True(spent);
+        Assert.Equal(new ElementBoost(2, 64), flow.State.Boost);
+        Assert.Equal(1, flow.ItemStock[0x4D]);
+        AdvanceToElementExpiry(flow);
+        Assert.Equal(ElementBoost.None, flow.State.Boost);
+    }
+
+    /// <summary>Verifies that the random elemental item selects the source range and magnitude through the shared battle random stream.</summary>
+    [Fact]
+    public void Choose_RandomElementBoost_UsesSharedRngAndConsumesOne()
+    {
+        BattleFlowController flow = CreateFlow(new BattleItem(0x54, "boostRandomElement", "field", 0));
+        var rng = new CountingRng();
+
+        bool spent = flow.Choose(BattleCommand.Item, 0x54, rng);
+
+        Assert.True(spent);
+        Assert.Equal(new ElementBoost(7, 127), flow.State.Boost);
+        Assert.Equal(2, rng.Calls);
+        Assert.Equal(1, flow.ItemStock[0x54]);
+    }
+
+    /// <summary>Verifies that an elemental field item with a non-field target is refused before stock, state, or random-stream mutation.</summary>
+    [Fact]
+    public void Choose_ElementBoostWithPartnerTarget_IsRefusedWithoutMutation()
+    {
+        BattleFlowController flow = CreateFlow(new BattleItem(0x4D, "boostElement", "partner", 0));
+        var rng = new CountingRng();
+
+        Assert.False(flow.Choose(BattleCommand.Item, 0x4D, rng));
+        Assert.Equal(ElementBoost.None, flow.State.Boost);
+        Assert.Equal(2, flow.ItemStock[0x4D]);
+        Assert.Equal(0, rng.Calls);
+    }
+
+    /// <summary>Verifies that a zero-stock random elemental item is refused before it selects an element or schedules expiry.</summary>
+    [Fact]
+    public void Choose_RandomElementBoostWithZeroStock_IsRefusedWithoutMutation()
+    {
+        BattleFlowController flow = CreateFlow(new BattleItem(0x54, "boostRandomElement", "field", 0));
+        flow.ItemStock[0x54] = 0;
+        var rng = new CountingRng();
+
+        Assert.False(flow.Choose(BattleCommand.Item, 0x54, rng));
+        Assert.Equal(ElementBoost.None, flow.State.Boost);
+        Assert.Equal(0, flow.ItemStock[0x54]);
+        Assert.Equal(0, rng.Calls);
+    }
+
+    /// <summary>Verifies that a second field item replaces the first boost, consumes its own stock, and restores the original field after expiry.</summary>
+    [Fact]
+    public void Choose_ElementBoostRepeatedUse_ReplacesFieldAndRestoresOriginalAfterExpiry()
+    {
+        BattleFlowController flow = CreateFlow(new BattleItem(0x4D, "boostElement", "field", 0));
+        flow.Items = new Dictionary<int, BattleItem>
+        {
+            [0x4D] = new(0x4D, "boostElement", "field", 0),
+            [0x53] = new(0x53, "boostElement", "field", 0),
+        };
+        flow.ItemStock = new Dictionary<int, int> { [0x4D] = 1, [0x53] = 1 };
+
+        Assert.True(flow.Choose(BattleCommand.Item, 0x4D, new FixedRng()));
+        flow.EnemyAct(new FixedRng());
+        Assert.True(flow.Choose(BattleCommand.Item, 0x53, new FixedRng()));
+
+        Assert.Equal(new ElementBoost(8, 64), flow.State.Boost);
+        Assert.Equal(0, flow.ItemStock[0x4D]);
+        Assert.Equal(0, flow.ItemStock[0x53]);
+        AdvanceToElementExpiry(flow);
+        Assert.Equal(ElementBoost.None, flow.State.Boost);
+    }
+
+    /// <summary>Advances ordinary turns until the field's scheduled expiry has been consumed.</summary>
+    /// <param name="flow">Live battle flow owning the source scheduler consumer.</param>
+    private static void AdvanceToElementExpiry(BattleFlowController flow)
+    {
+        for (int turn = 0; turn < 16 && flow.State.Boost != ElementBoost.None; turn++)
+        {
+            flow.EnemyAct(new FixedRng());
+            _ = flow.Choose(BattleCommand.Attack, 0, new FixedRng());
+        }
+    }
+
     /// <summary>Creates a player-turn flow with one real item in its catalogue and bag.</summary>
     /// <param name="item">Item supplied to the flow catalogue.</param>
     /// <returns>A started flow with two copies of the requested item.</returns>

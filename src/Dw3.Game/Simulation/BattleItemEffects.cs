@@ -37,9 +37,44 @@ public static class BattleItemEffects
                 return BattlePartnerItemEffects.TrySpecial(state, item, rng);
             case "fillGauge":
                 return BattlePartnerItemEffects.TryFillGauge(state, item);
+            case "boostElement":
+                return TryBoostElement(state, item, rng);
+            case "boostRandomElement":
+                return TryBoostRandomElement(state, item, rng);
             default:
                 return false;
         }
+    }
+
+    /// <summary>Applies the source item-id-selected elemental field boost when the item targets the field.</summary>
+    /// <param name="state">Battle state receiving the temporary field change.</param>
+    /// <param name="item">Fixed-element item whose id selects the element.</param>
+    /// <param name="rng">Shared battle random source for expiry timing.</param>
+    /// <returns>Whether the qualified field boost was scheduled.</returns>
+    private static bool TryBoostElement(BattleState state, BattleItem item, IBattleRng rng)
+    {
+        if (item.Target != "field" || item.Id is < 0x4D or > 0x53)
+        {
+            return false;
+        }
+
+        return state.ApplyElementBoost(new(item.Id - 0x4B, 0x40), rng);
+    }
+
+    /// <summary>Randomly selects one source field element before applying its stronger temporary boost.</summary>
+    /// <param name="state">Battle state receiving the temporary field change.</param>
+    /// <param name="item">Random-element item whose target must be the field.</param>
+    /// <param name="rng">Shared battle random source for selection and expiry timing.</param>
+    /// <returns>Whether the qualified field boost was scheduled.</returns>
+    private static bool TryBoostRandomElement(BattleState state, BattleItem item, IBattleRng rng)
+    {
+        if (item.Target != "field" || item.Id != 0x54)
+        {
+            return false;
+        }
+
+        int element = (rng.NextValue() % BattleConst.ElementCount) + BattleConst.ElementFirst;
+        return state.ApplyElementBoost(new(element, 0x7F), rng);
     }
 
     /// <summary>Builds the verified source item-tech request for one HP recovery item.</summary>

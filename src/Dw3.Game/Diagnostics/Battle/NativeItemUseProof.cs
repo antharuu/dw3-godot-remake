@@ -13,7 +13,8 @@ internal static class NativeItemUseProof
         VerifyHealingItem();
         VerifyPoisonCure();
         VerifySpeedBoost();
-        GD.Print("NATIVE_ROOT_MENU_PROOF PASS items=heal-poison-cure-speed ingress=GameHost._Input stock=decremented");
+        VerifyElementBoost();
+        GD.Print("NATIVE_ROOT_MENU_PROOF PASS items=heal-poison-cure-speed-element ingress=GameHost._Input stock=decremented");
     }
 
     /// <summary>Reaches a healing item through the production root and menu driver, then observes HP and stock.</summary>
@@ -48,6 +49,19 @@ internal static class NativeItemUseProof
         session.Tap(Key.Down);
         session.Tap(Key.Enter);
         ProbeRequirement.Require(session.Player.Boosts[2] == 999 && session.Flow.ItemStock[0x48] == 1, "item speed boost did not apply through native menu");
+    }
+
+    /// <summary>Reaches a fixed source field item through the production root and menu driver, then observes the field and stock.</summary>
+    private static void VerifyElementBoost()
+    {
+        using var session = new NativeMenuSession(includeFieldItems: true);
+        NativeMenuCommandsProof.Select(session, 4);
+        session.Tap(Key.Enter);
+        ProbeRequirement.Require(session.Menu.Menu == BattleMenuKind.Item && session.Menu.Lines.Count == 4, "field item menu did not open through native root input");
+        session.Tap(Key.Down);
+        session.Tap(Key.Down);
+        session.Tap(Key.Enter);
+        ProbeRequirement.Require(session.Flow.State.Boost == new ElementBoost(2, 64) && session.Flow.ItemStock[0x4D] == 1, "item element boost did not apply through native menu");
     }
 
     /// <summary>Opens the real item page from the Item root row with native key gestures.</summary>
