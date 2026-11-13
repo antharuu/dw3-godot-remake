@@ -1,6 +1,7 @@
 using Dw3.Data;
 using Dw3Production.Conversion;
 using Dw3Production.Diagnostics.Field;
+using Dw3Production.Presentation;
 using Dw3Production.Simulation;
 using Godot;
 
@@ -11,6 +12,7 @@ internal sealed class BattlePhysicalTechniqueProbe : BattleProbe
 {
     private static readonly int[] Fighters = [388, 19, 392];
     private static readonly string[] Modes = ["normal", "miss", "fatal-reserve", "fatal-final"];
+    private readonly HashSet<ulong> _effectInstances = [];
 
     /// <summary>Initializes a new instance of the <see cref="BattlePhysicalTechniqueProbe"/> class.</summary>
     /// <param name="host">Restricted offscreen host.</param>
@@ -28,6 +30,9 @@ internal sealed class BattlePhysicalTechniqueProbe : BattleProbe
     /// <summary>Gets one explicitly selected natural owner or the original retained first lot.</summary>
     private static IEnumerable<int> CandidateFighters => System.Environment.GetEnvironmentVariable("DW3_PHYSICAL_FIGHTER") is { Length: > 0 } fighter
         ? [int.Parse(fighter, System.Globalization.CultureInfo.InvariantCulture)] : Fighters;
+
+    /// <summary>Gets the real target model selected for a size-specific physical playback case.</summary>
+    private static int TargetId => int.Parse(System.Environment.GetEnvironmentVariable("DW3_PHYSICAL_TARGET") ?? "51", System.Globalization.CultureInfo.InvariantCulture);
 
     /// <inheritdoc/>
     protected override async Task ExecuteAsync()
@@ -82,6 +87,7 @@ internal sealed class BattlePhysicalTechniqueProbe : BattleProbe
         var player = flow.State.ActivePlayerFighter ?? throw new InvalidOperationException("No player.");
         var target = flow.State.ActiveEnemyFighter ?? throw new InvalidOperationException("No enemy.");
         player.Id = fighter;
+        target.Id = TargetId;
         player.Mp = player.MaxMp = 9000;
         player.Hp = player.MaxHp = 9000;
         target.Hp = target.MaxHp = mode.StartsWith("fatal", StringComparison.Ordinal) ? 1 : 9000;
@@ -174,12 +180,21 @@ internal sealed class BattlePhysicalTechniqueProbe : BattleProbe
         var audit = new BattlePhysicalTechniqueAudit(Host, context, script);
         int draws = rng.Count;
         int contacts = 0;
+        int effects = 0;
+        var effectRoots = new List<Node3D>();
         for (int tick = 0; tick < 1800 && flow.Phase == BattleFlowPhase.ActionSequence; tick++)
         {
             runner.Tick();
             Host.Renderer.Present(Host.BuildBattleView());
             ProbeRequirement.Require(runner.Failure is null, $"tick={tick} cursor={runner.DiagnosticCursor}: {runner.Failure}");
             await Host.NextFrameDrawn();
+            int activeEffects = Host.Renderer.SequencePlayback.DiagnosticEffectModelCount;
+            if (activeEffects > effects)
+            {
+                effects = activeEffects;
+                effectRoots.AddRange(await CaptureEffectModelAsync(captures, tick));
+            }
+
             int count = Host.Renderer.SequencePlayback.DiagnosticImpactCount;
             if (count > contacts)
             {
@@ -192,8 +207,39 @@ internal sealed class BattlePhysicalTechniqueProbe : BattleProbe
         audit.Verify();
         ProbeRequirement.Require(flow.Phase != BattleFlowPhase.ActionSequence, "sequence stalled");
         ProbeRequirement.Require(rng.Count == draws, "playback redrew RNG");
+        ProbeRequirement.Require(Host.Renderer.SequencePlayback.DiagnosticLastEffectClearHadHiddenRoots && effectRoots.All(root => !GodotObject.IsInstanceValid(root)), "normal effect root leaked");
         await BattleProbeCapture.CaptureRawAsync(Host, captures, "returned.png");
         audio?.Save();
         GD.Print($"B9053_RETURN case={captures} phase={flow.Phase} rng={draws}/{rng.Count} contacts={contacts}");
+    }
+
+    /// <summary>Captures a live authored effect alone, then restores the normal combined battle scene.</summary>
+    /// <param name="captures">Private evidence directory.</param>
+    /// <param name="tick">Production runner tick that created the effect.</param>
+    /// <returns>Completion once the isolated capture and normal composition restoration are complete.</returns>
+    private async Task<IReadOnlyList<Node3D>> CaptureEffectModelAsync(string captures, int tick)
+    {
+        var effects = Host.Renderer.SequencePlayback.DiagnosticEffectModels;
+        ProbeRequirement.Require(effects.Count > 0, "effect capture requested without an active model");
+        BattleModel effect = effects[^1];
+        int effectId = Host.Renderer.SequencePlayback.DiagnosticEffectId(effect);
+        ulong instanceId = effect.Root.GetInstanceId();
+        ProbeRequirement.Require(_effectInstances.Add(instanceId), $"effect model {effectId} reused instance {instanceId}");
+        var fighters = Host.Renderer.SequencePlayback.DiagnosticRoster.Models.ToArray();
+        foreach (BattleModel fighter in fighters)
+        {
+            Host.Renderer.SequencePlayback.DiagnosticRoster.SetVisibleForProbe(fighter.FighterId, false);
+        }
+
+        Host.Renderer.Present(Host.BuildBattleView());
+        await BattleProbeCapture.CaptureRawAsync(Host, captures, $"effect-{effects.Count}.png");
+        foreach (BattleModel fighter in fighters)
+        {
+            Host.Renderer.SequencePlayback.DiagnosticRoster.SetVisibleForProbe(fighter.FighterId, true);
+        }
+
+        Host.Renderer.Present(Host.BuildBattleView());
+        GD.Print($"B9053_EFFECT_ACTIVE id={effectId} instance={instanceId} tick={tick} count={effects.Count} position={effect.Root.Position} rotation={effect.Root.Rotation} motion={effect.Motion?.Motion} completion={effect.Motion?.CompletionCount}");
+        return [.. effects.Select(model => model.Root)];
     }
 }

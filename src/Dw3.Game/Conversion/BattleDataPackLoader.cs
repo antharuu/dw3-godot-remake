@@ -51,6 +51,12 @@ public sealed class BattleDataPackLoader : IDisposable
         return path;
     }
 
+    /// <summary>Returns the extracted effect-model manifest, or null only when the source registry has no such id.</summary>
+    /// <param name="effectId">The script-visible shared effect-model id.</param>
+    /// <returns>The validated manifest path, or null for qualified source absence.</returns>
+    /// <exception cref="CacheResourceException">The indexed record is corrupt, unqualified, or its prepared file is unavailable.</exception>
+    public string? EffectModelPath(int effectId) => BattleEffectModelPathResolver.Resolve(_database, effectId, RequireFile);
+
     /// <summary>Returns the validated action script manifest for one fighter and technique script-selector.</summary>
     /// <param name="fighterId">The numeric fighter id to look up.</param>
     /// <param name="scriptSelector">The technique script-selector that identifies which action script to load.</param>

@@ -31,6 +31,40 @@ public sealed class BattleDataPackLoaderTests : IDisposable
     /// one. The resolved manifest file contains exactly the commands that were originally written.
     /// </summary>
     [Fact]
+    public void EffectModelPathDistinguishesPreparedAndSourceAbsentRecords()
+    {
+        BuildPack();
+        using var loader = new BattleDataPackLoader(new DataPackReader(_root));
+
+        Assert.EndsWith("battle/effects/effect-39-model.json", loader.EffectModelPath(39)?.Replace('\\', '/'));
+        Assert.Null(loader.EffectModelPath(373));
+    }
+
+    [Fact]
+    public void EffectModelPathRejectsMissingUnqualifiedEffectRecords()
+    {
+        BuildPack();
+        using var loader = new BattleDataPackLoader(new DataPackReader(_root));
+
+        var requiredError = Assert.Throws<CacheResourceException>(() => loader.EffectModelPath(65));
+        var unknownError = Assert.Throws<CacheResourceException>(() => loader.EffectModelPath(999));
+
+        Assert.StartsWith("CACHE_RESOURCE_UNAVAILABLE: battle effect model 65 is not source-qualified as absent", requiredError.Message, StringComparison.Ordinal);
+        Assert.StartsWith("CACHE_RESOURCE_UNAVAILABLE: battle effect model 999 is not source-qualified as absent", unknownError.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void EffectModelPathRejectsAnAvailableCorruptManifestDistinctly()
+    {
+        BuildPack();
+        using var loader = new BattleDataPackLoader(new DataPackReader(_root));
+
+        var error = Assert.Throws<CacheResourceException>(() => loader.EffectModelPath(40));
+
+        Assert.StartsWith("CACHE_INVALID: battle effect model 40 manifest invalid", error.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void WriterRoundtripDecoded_UnsupportedAndAbsent()
     {
         BuildPack();
@@ -93,6 +127,17 @@ public sealed class BattleDataPackLoaderTests : IDisposable
                 {
                     command.Transaction = context.Transaction;
                     command.CommandText = "INSERT INTO battle_models (fighter_id,entry_ordinal,record_index,kind,status,manifest_path) VALUES (383,0,0,0,'decoded','battle/models/fighter-383-model.json')";
+                    command.ExecuteNonQuery();
+                }
+
+                WriteFile(context, "battle/effects/effect-39-model.json", "{\"format\":\"dw3-battle-effect-model-v1\",\"source_invariants\":{\"motion_1_first_step\":[0,0,0,0],\"motion_1_terminator\":[32767,0,0,0]}}");
+                WriteFile(context, "battle/effects/effect-40-model.json", "{}");
+                using (SqliteCommand command = context.Database.CreateCommand())
+                {
+                    command.Transaction = context.Transaction;
+                    command.CommandText = "INSERT INTO battle_effect_models (effect_id,model_file,model_entry,motion_file,motion_entry,texture_entry,bone_count,mesh_count,disc_path,sha256,manifest_path) VALUES (39,1,2,3,4,5,6,7,'synthetic','hash','battle/effects/effect-39-model.json')";
+                    command.ExecuteNonQuery();
+                    command.CommandText = "INSERT INTO battle_effect_models (effect_id,model_file,model_entry,motion_file,motion_entry,texture_entry,bone_count,mesh_count,disc_path,sha256,manifest_path) VALUES (40,1,2,3,4,5,6,7,'synthetic','hash','battle/effects/effect-40-model.json')";
                     command.ExecuteNonQuery();
                 }
 

@@ -42,9 +42,9 @@ internal sealed class BattleInputProbe : BattleProbe
         ProbeRequirement.Require(Host.Menu.Menu == BattleMenuKind.Root, "Triangle from technique did not return to root");
         await VerifyDigivolveMenuAsync(captureRoot);
         await VerifyItemMenuAsync(captureRoot);
-        await VerifyMessageArrowAsync(captureRoot);
         await VerifySwitchPagesAsync(captureRoot);
         await VerifySwitchSpendsTurnAsync(captureRoot, before);
+        await VerifyMessageArrowAsync(captureRoot);
     }
 
     /// <summary>Checks that every submenu line has decoded source text.</summary>
@@ -261,23 +261,47 @@ internal sealed class BattleInputProbe : BattleProbe
         ProbeRequirement.Require(Host.Menu.Menu == BattleMenuKind.Root, "Triangle from item did not return to root");
     }
 
-    /// <summary>Renders the battle message wait view and checks that the arrow (frame 10) is drawn at source (0x123, 0xD0).</summary>
-    /// <param name="captureRoot">Directory receiving <c>message-arrow.png</c>.</param>
-    /// <returns>A task that completes once the arrow has been checked.</returns>
-    /// <exception cref="InvalidOperationException">The wait view cannot be built, or the arrow rectangle is empty.</exception>
+    /// <summary>Executes a real root attack and checks its sourced message window, arrow and acknowledgement lifetime.</summary>
+    /// <param name="captureRoot">Directory receiving the action-message capture.</param>
+    /// <returns>A task that completes once the action message was rendered and later cleared by normal progression.</returns>
+    /// <exception cref="InvalidOperationException">The normal action does not expose or clear a sourced message.</exception>
     private async Task VerifyMessageArrowAsync(string captureRoot)
     {
-        // the battle-message layout contract draws frame 10 only while it waits for Cross. Render the same active
-        // battle through that wait view and prove its source rectangle is populated.
-        var waiting = (Host.BuildBattleView() ?? throw new InvalidOperationException("battle wait view unavailable"))
-            with
-        { Message = "MESSAGE_WAIT_PROBE", MessageText = BattleTextLine.Missing, MessageVisible = true };
-        Host.Renderer.Present(waiting);
-        var messageArrow = await BattleProbeCapture.CaptureAsync(Host, captureRoot, "message-arrow.png");
+        // Run the action lifetime in an independent normal battle so earlier switch coverage cannot retain an enemy turn.
+        Host.StartDebugBattle();
+        await Host.NextFrameDrawn();
+
+        // Controlled nonterminal fixture: this probe requires the normal player -> enemy -> player lifecycle,
+        // so neither combatant may end the encounter while the sourced action message is being observed.
+        var player = Host.Flow.State.ActivePlayerFighter ?? throw new InvalidOperationException("action player unavailable");
+        var enemy = Host.Flow.State.ActiveEnemyFighter ?? throw new InvalidOperationException("action enemy unavailable");
+        player.Hp = player.MaxHp = 9000;
+        enemy.Hp = enemy.MaxHp = 9000;
+        QuietLog.Info("battle-input action-message fixture=synthetic-nonterminal hp=9000");
+        ProbeRequirement.Require(Host.Menu.Menu == BattleMenuKind.Root && Host.Menu.Cursor == 0, "attack must start at root line zero");
+        InjectBattleKey(Key.Enter);
+        ProbeRequirement.Require(
+            Host.Flow.MessageVisible && Host.Flow.MessageText != BattleTextLine.Missing,
+            "normal attack did not expose a sourced message window");
+        var messageArrow = await BattleProbeCapture.CaptureAsync(Host, captureRoot, "action-message.png");
         var (arrowX, arrowY) = BattleHudLayout.ToViewport(0x123, 0xD0);
         ProbeRequirement.Require(
             BattlePixelMetrics.CountBright(messageArrow, new Rect2(arrowX, arrowY, 16 * BattleHudLayout.Scale, 16 * BattleHudLayout.Scale)) > 0,
-            "message wait arrow rectangle has no nonzero pixels");
+            "sourced action message arrow rectangle has no nonzero pixels");
+
+        var completionStep = 0;
+        for (; completionStep < 1200 && Host.Flow.Phase != BattleFlowPhase.PlayerCommand; completionStep++)
+        {
+            Host.TickTestSimulation();
+            Host.Renderer.Present(Host.BuildBattleView());
+            await Host.NextFrameDrawn();
+        }
+
+        ProbeRequirement.Require(
+            Host.Flow.Phase == BattleFlowPhase.PlayerCommand && !Host.Flow.MessageVisible,
+            $"action message did not clear before command reentry frames={completionStep} phase={Host.Flow.Phase} visible={Host.Flow.MessageVisible}");
+        QuietLog.Info($"battle-input action-message cleared frames={completionStep} phase={Host.Flow.Phase}");
+        await BattleProbeCapture.CaptureAsync(Host, captureRoot, "action-message-cleared.png");
     }
 
     /// <summary>

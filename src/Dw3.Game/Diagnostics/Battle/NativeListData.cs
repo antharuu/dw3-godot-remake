@@ -46,6 +46,12 @@ internal sealed class NativeListData
     /// <summary>Gets the controlled acquired/equipped state using real form identifiers.</summary>
     public PlayerSessionPartner Partner { get; }
 
+    /// <summary>Gets the actual loaded technique used by item 0x5A.</summary>
+    public TechData ItemTechnique => BattleSetupFactory.ToTech(_techs.Techs[0x89]);
+
+    /// <summary>Gets the actual loaded item metadata for item 0x5A.</summary>
+    public BattleItemsData ItemTechniqueItems => new([Items.Items.Single(item => item.Id == 0x5A)]);
+
     /// <summary>Creates a real flow with controlled resources and scheduler speed.</summary>
     /// <param name="pagedPool">Whether to install the controlled seven-entry stress pool after normal session setup.</param>
     /// <returns>The initialized battle flow.</returns>
@@ -75,6 +81,19 @@ internal sealed class NativeListData
             flow.PlayerTechniques = Techniques;
         }
 
+        return flow;
+    }
+
+    /// <summary>Builds a real prepared flow narrowed to item 0x5A without substituting its source technique.</summary>
+    /// <returns>Started flow with the loaded item and technique catalogue.</returns>
+    public BattleFlowController BuildItemTechniqueFlow()
+    {
+        BattleFlowController flow = BuildFlow(pagedPool: false);
+        BattleItemData item = ItemTechniqueItems.Items[0];
+        flow.Items = new Dictionary<int, BattleItem> { [item.Id] = BattleSetupFactory.ToItem(item) };
+        flow.ItemStock = new Dictionary<int, int> { [item.Id] = 2 };
+        flow.Techs = _techs.Techs.ToDictionary(pair => pair.Key, pair => BattleSetupFactory.ToTech(pair.Value));
+        flow.State.Techs = flow.Techs;
         return flow;
     }
 }

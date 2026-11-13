@@ -147,6 +147,26 @@ public sealed class BattleHitResolverTests
         Assert.Equal([127], rng.Draws);
     }
 
+    [Theory]
+    [InlineData(false, 0, -1, 0)]
+    [InlineData(true, 127, -1, 1)]
+    [InlineData(true, 0, 64, 2)]
+    public void DirectItemMagic_UsesOnlyTheQualifiedCriticalPolicy(bool allowCritical, int criticalRoll, int expectedStrength, int expectedDraws)
+    {
+        var rng = new RecordingRng(criticalRoll, 64);
+        var resolver = new BattleHitResolver(ElementBoost.None, allowCritical, rng);
+        var attacker = Fighter(level: 10, spirit: 50);
+        var target = Fighter(level: 10, spirit: 50);
+        target.Stats.Resist[0] = 100;
+        var tech = new TechData { Power = 20, Icon = BattleConst.TechMagic, Element = BattleConst.ElementFirst, ElementPower = 1 };
+
+        int damage = resolver.DirectItemMagic(tech, attacker, target);
+
+        int expected = DamageCalculator.ComputeMagicDamage(tech, attacker.Stats, target.Stats, enemyAttacker: false, attacker.Strength, ElementBoost.None, expectedStrength);
+        Assert.Equal(expected, damage);
+        Assert.Equal(expectedDraws, rng.Draws.Count);
+    }
+
     private static BattleState CreateBattle()
     {
         var setup = new BattleSetup();
