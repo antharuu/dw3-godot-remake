@@ -37,6 +37,10 @@ public interface IBattleTickHost
     /// <summary>Refreshes models after fighter changes.</summary>
     void RefreshModels();
 
+    /// <summary>Plays one frame of an actor transition such as a fighter's entrance.</summary>
+    /// <returns>Whether a transition owned this frame, which holds the battle flow.</returns>
+    bool TickActorTransition();
+
     /// <summary>Applies terminal reward effects once.</summary>
     void ResolveOutcome();
 

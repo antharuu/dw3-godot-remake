@@ -75,6 +75,7 @@ public sealed class BattleRenderer : IDisposable
     public BattleRenderer(Node root, string? dataRoot = null)
     {
         SequencePlayback = new BattleRendererSequencePlayback(this, _fighters);
+        ActorScene = new BattleActorTransitionScene(_fighters, _cameraFade, ApplyCamera, FighterCameras, SequencePlayback);
         _audio = new BattleAudioRuntime(root, dataRoot ?? Dw3.Data.UserPaths.GetDataDirectory());
         SequencePlayback.RegisterAudioConsumer(_audio.Consume, _audio.Finish);
         _layer = new CanvasLayer { Layer = 300, Visible = false };
@@ -138,6 +139,9 @@ public sealed class BattleRenderer : IDisposable
 
     /// <summary>Gets the physical action consumer and its exclusive ownership state.</summary>
     internal BattleRendererSequencePlayback SequencePlayback { get; }
+
+    /// <summary>Gets the camera, visibility and flash operations of actor transitions such as entrances.</summary>
+    internal BattleActorTransitionScene ActorScene { get; }
 
     /// <summary>Gets physical channel usage for offscreen lifecycle evidence.</summary>
     internal int ActiveAudioVoices => _audio.ActiveCount;

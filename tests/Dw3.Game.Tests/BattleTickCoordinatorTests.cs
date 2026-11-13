@@ -17,6 +17,20 @@ public sealed class BattleTickCoordinatorTests
         Assert.Equal(1, host.DeactivateCameraCalls);
     }
 
+    [Fact]
+    public void Tick_ActorTransitionHoldsTheFlowUntilItEnds()
+    {
+        var host = new CommandClosingHost { TransitionFrames = 2 };
+        var coordinator = new BattleTickCoordinator(host);
+
+        coordinator.Tick();
+        coordinator.Tick();
+        Assert.Equal(0, host.ActivateCameraCalls);
+
+        coordinator.Tick();
+        Assert.Equal(1, host.ActivateCameraCalls);
+    }
+
     /// <summary>Applies terminal victory effects once even while the report fade takes several ticks.</summary>
     [Fact]
     public void Tick_TerminalVictoryResolvesOutcomeOnlyOnce()
@@ -42,6 +56,8 @@ public sealed class BattleTickCoordinatorTests
         public int ActivateCameraCalls { get; private set; }
 
         public int DeactivateCameraCalls { get; private set; }
+
+        public int TransitionFrames { get; set; }
 
         public BattleFlowController? Flow { get; }
 
@@ -78,6 +94,8 @@ public sealed class BattleTickCoordinatorTests
         public void RefreshModels()
         {
         }
+
+        public bool TickActorTransition() => TransitionFrames-- > 0;
 
         public void ResolveOutcome()
         {
@@ -139,6 +157,8 @@ public sealed class BattleTickCoordinatorTests
         public void RefreshModels()
         {
         }
+
+        public bool TickActorTransition() => false;
 
         public void ResolveOutcome() => ResolveOutcomeCalls++;
 

@@ -59,7 +59,6 @@ public partial class GameHost
     /// <summary>Completes an accepted ordinary partner switch.</summary>
     private void ConfirmSwitch()
     {
-        _battlePendingChangeMotion = 13;
         _battleSwitchForced = false;
         QuietLog.Info($"battle-menu switch player={_battleSwitchPartner} action=5 consumes_turn=true");
     }

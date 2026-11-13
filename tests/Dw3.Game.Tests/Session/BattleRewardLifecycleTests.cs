@@ -239,5 +239,8 @@ public sealed class BattleRewardLifecycleTests
         public void RefreshModels()
         {
         }
+
+        /// <inheritdoc/>
+        public bool TickActorTransition() => false;
     }
 }

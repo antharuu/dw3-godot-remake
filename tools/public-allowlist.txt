@@ -1394,3 +1394,12 @@ tests/Dw3.Game.Tests/Session/FormExpSettlementTests.cs
 tests/Dw3.Game.Tests/Session/FormProgressFixture.cs
 
 tests/Dw3.Game.Tests/Session/DebugSessionTechniqueTests.cs
+src/Dw3.Game/Diagnostics/Battle/BattleEntranceSwitchProof.cs
+src/Dw3.Game/Presentation/BattleActorTransitionScene.cs
+src/Dw3.Game/Presentation/BattleEntrancePhase.cs
+src/Dw3.Game/Presentation/BattleEntranceSequence.cs
+src/Dw3.Game/Presentation/BattleEntranceView.cs
+src/Dw3.Game/Presentation/BattleRendererEntranceStage.cs
+src/Dw3.Game/Presentation/BattleWeakIdleRule.cs
+src/Dw3.Game/Presentation/IBattleEntranceStage.cs
+tests/Dw3.Game.Tests/BattleEntranceSequenceTests.cs

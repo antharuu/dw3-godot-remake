@@ -224,6 +224,8 @@ public sealed class BattleFlowActionSequenceTests
         {
         }
 
+        public bool TickActorTransition() => false;
+
         public void ResolveOutcome()
         {
         }

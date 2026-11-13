@@ -59,6 +59,9 @@ internal interface IBattleProbeHost
     /// <summary>Gets the fighter id currently rendered on the player side.</summary>
     int RenderedPlayerId { get; }
 
+    /// <summary>Gets the actor entrance currently holding the battle flow, if any.</summary>
+    BattleEntranceSequence? ActorEntrance { get; }
+
     /// <summary>Gets the last entered battle encounter id.</summary>
     int LastBattleEncounter { get; }
 

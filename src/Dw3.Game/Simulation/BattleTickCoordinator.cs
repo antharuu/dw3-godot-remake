@@ -28,6 +28,13 @@ public sealed class BattleTickCoordinator
             return;
         }
 
+        // A fighter change made outside the previous tick starts its transition before any phase acts on it.
+        _host.RefreshModels();
+        if (_host.TickActorTransition())
+        {
+            return;
+        }
+
         TickActivePhase(flow);
         _host.RefreshModels();
         if (flow.Phase == BattleFlowPhase.Ended)
