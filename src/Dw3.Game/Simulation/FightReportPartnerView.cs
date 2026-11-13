@@ -10,5 +10,6 @@ public sealed record FightReportPartnerView(
     int CursorFrame,
     int LevelBlinkFrame,
     int ShownExp,
+    int Level,
     int AnimationFrame,
     IReadOnlyList<FightReportSlotView> Slots);

@@ -803,7 +803,6 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
             throw new InvalidOperationException("fight report requested without a resolved victory input");
         }
 
-        _log.Warn("report-partner-slots-unavailable", "report-partner-slots-unavailable");
         return new FightReportController(_fightReportInput);
     }
 
@@ -811,6 +810,11 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     /// <returns>Map from fighter id to the decoded name line used in the fight report.</returns>
     private Dictionary<int, BattleTextLine> BuildReportNames() =>
         FightReportNameCatalog.Build(_fightReportInput, NameLine);
+
+    /// <summary>Builds the FSITMNAM lookup consumed by the report's item-reward page.</summary>
+    /// <returns>Map from item id to its extracted item-name line.</returns>
+    private Dictionary<int, BattleTextLine> BuildReportItemNames() => BattleItemsData.Items
+        .ToDictionary(item => item.Id, item => BattleTextCatalog.Tokens(item.Name, $"FSITMNAM id={item.NameId}"));
 
     /// <summary>The encounter's reward, or an explicit zero reward when the id is absent or
     /// out of the manifest (never invented).</summary>

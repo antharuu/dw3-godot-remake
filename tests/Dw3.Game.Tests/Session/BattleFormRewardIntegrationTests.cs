@@ -68,6 +68,7 @@ public sealed class BattleFormRewardIntegrationTests
 
         FightReportPartner report = resolution.FightReport.Partners[0];
         Assert.Equal([5, 6, 7], report.SlotDigimonIds);
+        Assert.Equal([1, 1, 1], report.SlotLevels);
         Assert.Empty(report.FormSlots);
         Assert.Equal(0, Partner(session, 0).FormProgress(1).Exp);
         Assert.Equal([5, 6, 7], run.SlotIds);
@@ -143,6 +144,7 @@ public sealed class BattleFormRewardIntegrationTests
             ["4:", "5:12", "6:11", "8:8", "9:"],
             run.Messages.Where(message => message.Entry is >= 4 and <= 9).Select(message => $"{message.Entry}:{string.Join(",", message.Substitutions)}"));
         Assert.Equal(4, resolution.FightReport.Partners[0].AcquiredFormCount);
+        Assert.Equal([5, 1, 1], resolution.FightReport.Partners[0].SlotLevels);
     }
 
     /// <summary>

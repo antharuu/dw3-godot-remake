@@ -58,9 +58,14 @@ public sealed partial class FightReportRenderer : IDisposable
     /// <param name="view">Current report presentation state.</param>
     /// <param name="text">Catalog used for report messages.</param>
     /// <param name="names">Fighter names indexed by fighter identifier.</param>
-    public void Present(FightReportView view, BattleTextCatalog text, IReadOnlyDictionary<int, BattleTextLine> names)
+    /// <param name="itemNames">FSITMNAM item names indexed by item identifier.</param>
+    public void Present(
+        FightReportView view,
+        BattleTextCatalog text,
+        IReadOnlyDictionary<int, BattleTextLine> names,
+        IReadOnlyDictionary<int, BattleTextLine> itemNames)
     {
-        _control.SetView(view, text, names);
+        _control.SetView(view, text, names, itemNames);
         _fader.Color = new Color(0, 0, 0, Mathf.Clamp(view.ExitFade / 4096f, 0, 1));
     }
 
@@ -83,7 +88,11 @@ public sealed partial class FightReportRenderer : IDisposable
 
         private BattleTextCatalog? _catalog;
 
+        private FightReportMessageLineResolver? _messageResolver;
+
         private IReadOnlyDictionary<int, BattleTextLine> _names = new Dictionary<int, BattleTextLine>();
+
+        private IReadOnlyDictionary<int, BattleTextLine> _itemNames = new Dictionary<int, BattleTextLine>();
 
         /// <summary>Initializes a new instance of the <see cref="ReportControl"/> class.</summary>
         public ReportControl()
@@ -127,11 +136,18 @@ public sealed partial class FightReportRenderer : IDisposable
         /// <param name="view">Report view to render.</param>
         /// <param name="catalog">Text catalog for report messages.</param>
         /// <param name="names">Fighter names indexed by identifier.</param>
-        public void SetView(FightReportView view, BattleTextCatalog catalog, IReadOnlyDictionary<int, BattleTextLine> names)
+        /// <param name="itemNames">FSITMNAM item names indexed by identifier.</param>
+        public void SetView(
+            FightReportView view,
+            BattleTextCatalog catalog,
+            IReadOnlyDictionary<int, BattleTextLine> names,
+            IReadOnlyDictionary<int, BattleTextLine> itemNames)
         {
             _view = view;
             _catalog = catalog;
             _names = names;
+            _itemNames = itemNames;
+            _messageResolver = new FightReportMessageLineResolver(catalog, ResolveFighterName, ResolveItemName);
             QueueRedraw();
         }
 
@@ -174,7 +190,7 @@ public sealed partial class FightReportRenderer : IDisposable
 
             var y = index * 50;
             var alpha = partner.Fade / 4096f;
-            DrawFrame(0x1f, 16, y + 38, 0, new Color(1, 1, 1, alpha));
+            DrawFrame(0x1f, 17, y + 38, 0, new Color(1, 1, 1, alpha));
             DrawFrame(0x22, 55, y + 42, 0, new Color(1, 1, 1, alpha));
             DrawFrame(0x22, 135, y + 52, 0, new Color(1, 1, 1, alpha));
             DrawFrame(0x22, 135, y + 67, 0, new Color(1, 1, 1, alpha));
@@ -185,39 +201,89 @@ public sealed partial class FightReportRenderer : IDisposable
                 var frameIndex = sequence[Math.Min(partner.AnimationFrame % sequence.Length, sequence.Length - 1)];
                 if (frameIndex >= 0)
                 {
-                    DrawFrame(frameIndex, 19, y + 43, 0, new Color(1, 1, 1, alpha));
+                    DrawFrame(frameIndex, 20, y + 40, 0, new Color(1, 1, 1, alpha));
                 }
             }
 
             if (_names.TryGetValue(partner.FighterId, out var name))
             {
-                _text.DrawLine(1, 58, y + 43, name, false, 0);
+                _text.DrawLine(1, 61, y + 40, name, false, 0);
             }
 
-            _text.DrawWindow(3, 96, y + 57, partner.ShownExp.ToString(CultureInfo.InvariantCulture), true, 0);
+            DrawPartnerNumbers(partner, y);
+            DrawSlots(partner, y);
             if (partner.Selected)
             {
-                DrawFrame(0x24 + (partner.CursorFrame % 2), 19, y + 43);
+                DrawFrame(0x24 + (partner.CursorFrame % 2), 20, y + 40);
             }
         }
+
+        /// <summary>Draws the source report's partner level and spaced experience windows.</summary>
+        /// <param name="partner">Partner values to display.</param>
+        /// <param name="y">Panel vertical origin.</param>
+        private void DrawPartnerNumbers(FightReportPartnerView partner, int y)
+        {
+            _text.DrawWindow(3, 91, y + 56, partner.Level.ToString(CultureInfo.InvariantCulture), true, 0);
+            _text.DrawWindow(3, 103, y + 69, partner.ShownExp.ToString(CultureInfo.InvariantCulture), true, 0);
+        }
+
+        /// <summary>Draws the three pre-unlock equipped-form rows with decoded names and settled levels.</summary>
+        /// <param name="partner">Partner slot values to display.</param>
+        /// <param name="y">Panel vertical origin.</param>
+        private void DrawSlots(FightReportPartnerView partner, int y)
+        {
+            for (var slotIndex = 0; slotIndex < partner.Slots.Count; slotIndex++)
+            {
+                FightReportSlotView slot = partner.Slots[slotIndex];
+                if (!slot.Visible)
+                {
+                    continue;
+                }
+
+                DrawSlot(slot, y + (slotIndex * 15));
+            }
+        }
+
+        /// <summary>Draws one equipped form's name and right-aligned level at source coordinates.</summary>
+        /// <param name="slot">Slot display data.</param>
+        /// <param name="y">Slot vertical origin.</param>
+        private void DrawSlot(FightReportSlotView slot, int y)
+        {
+            if (_names.TryGetValue(slot.DigimonId, out BattleTextLine? name))
+            {
+                _text.DrawLine(1, 141, y + 40, name, false, 0);
+            }
+
+            if (slot.Level > 0)
+            {
+                _text.DrawWindow(3, 276, y + 44, slot.Level.ToString(CultureInfo.InvariantCulture), true, 0);
+            }
+        }
+
+        /// <summary>Resolves one report fighter identifier without ever rendering its debug fallback.</summary>
+        /// <param name="fighterId">Partner or form identifier named by a report message.</param>
+        /// <returns>The extracted name line, or a missing line that the text painter keeps blank.</returns>
+        private BattleTextLine ResolveFighterName(int fighterId) => _names.TryGetValue(fighterId, out var line)
+            ? line
+            : BattleTextLine.Missing;
+
+        /// <summary>Resolves an item reward through its extracted FSITMNAM name without using its description text.</summary>
+        /// <param name="itemId">Item identifier named by the report reward.</param>
+        /// <returns>The extracted item-name line, or a missing line that the text painter keeps blank.</returns>
+        private BattleTextLine ResolveItemName(int itemId) => _itemNames.TryGetValue(itemId, out var line)
+            ? line
+            : BattleTextLine.Missing;
 
         /// <summary>Draws the current report message and advance arrow.</summary>
         /// <param name="message">Optional message state to render.</param>
         private void DrawMessage(FightReportMessage? message)
         {
-            if (message is null || _catalog is null)
+            if (message is null || _messageResolver is null)
             {
                 return;
             }
 
-            var substitutions = message.Substitutions.Select(BattleTextCatalog.Number).ToArray();
-            string template = message.Entry switch
-            {
-                2 => "expGained",
-                10 => "moneyGained",
-                _ => "partnerLevel",
-            };
-            var line = _catalog.Report(template, substitutions);
+            BattleTextLine line = _messageResolver.Resolve(message);
             _text.DrawLine(1, 0x14, 0xc2, line, false, 0, message.TokensRevealed);
             if (message.ArrowVisible && _arrow is { Length: > 0 })
             {

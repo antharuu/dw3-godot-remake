@@ -112,6 +112,7 @@ internal static class BattleLoadoutJsonParser
             ["partnerLevel"] = 7,
             ["skillKnown"] = 6,
             ["skillLearned"] = 5,
+            ["slotsFull"] = 9,
         };
         return new BattleTextData(menu, names, techniques, skillInfo, itemInfo, report, commands, messages, reportTemplates);
     }

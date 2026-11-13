@@ -68,6 +68,7 @@ internal static class BattleFormSettlement
         return report with
         {
             SlotDigimonIds = equipped,
+            SlotLevels = [.. equipped.Select(form => partner.FormProgress(form).Level)],
             FormSlots = result.Slots,
             LearnedForms = [.. result.LearnedForms.Select(form => ToReportLearnedForm(victory.Fighters, form))],
             AcquiredFormCount = result.AcquiredFormCount,

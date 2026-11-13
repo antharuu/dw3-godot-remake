@@ -18,6 +18,9 @@ public static class FightReportNameCatalog
             return [];
         }
 
-        return input.Partners.ToDictionary(partner => partner.FighterId, partner => nameFor(partner.FighterId));
+        return input.Partners
+            .SelectMany(partner => partner.SlotDigimonIds.Prepend(partner.FighterId))
+            .Distinct()
+            .ToDictionary(id => id, nameFor);
     }
 }

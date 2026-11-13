@@ -71,15 +71,20 @@ internal sealed class FightReportPartnerPanel(FightReportPartner source)
     public FightReportPartnerView ToView()
     {
         FightReportSlotView[] slots = [.. Enumerable.Range(0, SlotCount).Select(BuildSlotView)];
-        return new FightReportPartnerView(Source.PartyIndex, Source.PartnerId, Source.FighterId, Fade.Level, Selected, CursorFrame, LevelBlinkFrame, ShownExp, AnimationFrame, slots);
+        return new FightReportPartnerView(Source.PartyIndex, Source.PartnerId, Source.FighterId, Fade.Level, Selected, CursorFrame, LevelBlinkFrame, ShownExp, Source.LevelAfter, AnimationFrame, slots);
     }
 
     /// <summary>Builds a source slot view or a hidden placeholder.</summary>
     /// <param name="index">Source slot index.</param>
     /// <returns>The slot snapshot.</returns>
     private FightReportSlotView BuildSlotView(int index) => index < Source.SlotDigimonIds.Count
-        ? new FightReportSlotView(Source.SlotDigimonIds[index], true, _slotExpApplied[index], _slotBlinkFrames[index])
-        : new FightReportSlotView(-1, false, false, 0);
+        ? new FightReportSlotView(Source.SlotDigimonIds[index], true, _slotExpApplied[index], _slotBlinkFrames[index], SlotLevel(index))
+        : new FightReportSlotView(-1, false, false, 0, 0);
+
+    /// <summary>Returns the settled level for an equipped source slot.</summary>
+    /// <param name="index">Equipped source slot index.</param>
+    /// <returns>The displayed level, or zero when a legacy input did not carry a slot snapshot.</returns>
+    private int SlotLevel(int index) => index < Source.SlotLevels.Count ? Source.SlotLevels[index] : 0;
 
     /// <summary>Advances the selected cursor at its source cadence.</summary>
     /// <param name="time">The report frame number.</param>

@@ -9,7 +9,7 @@ public partial class GameHost
     void IBattleTickHost.TickFightReport()
     {
         _fightReportController!.Step(_input.State.ConsumeActionPressed());
-        _fightReportRenderer?.Present(_fightReportController.View, BattleText(), BuildReportNames());
+        _fightReportRenderer?.Present(_fightReportController.View, BattleText(), BuildReportNames(), BuildReportItemNames());
         if (_fightReportController.View.Done)
         {
             EndBattle();
