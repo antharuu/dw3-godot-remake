@@ -7,14 +7,16 @@ namespace Dw3Production;
 /// <summary>Contains GameHost's battle-presentation coordination implementation.</summary>
 public partial class GameHost
 {
-    /// <summary>Refreshes battle fighter models when the active pair changes, through the source entrance when another
-    /// party slot or a new enemy comes in.</summary>
+    /// <summary>Refreshes battle fighter models when the active pair changes, through the source entrance and its
+    /// caller's messages when another party slot or another enemy slot comes in.</summary>
     private sealed class BattlePresentationCoordinator
     {
         private readonly GameHost _host;
-        private BattleEntranceSequence? _entrance;
-        private int _outgoingId;
+        private BattleEntranceCall? _call;
+        private int _outgoingSlot = -1;
         private int _renderedPlayerSlot = -1;
+        private int _renderedEnemySlot = -1;
+        private BattleFlowPhase _observedPhase = BattleFlowPhase.PlayerCommand;
 
         /// <summary>Initializes a new instance of the <see cref="BattlePresentationCoordinator"/> class.</summary>
         /// <param name="host">Runtime host that owns the battle renderer and flow.</param>
@@ -24,122 +26,152 @@ public partial class GameHost
         }
 
         /// <summary>Gets the playing entrance, for private offscreen proofs.</summary>
-        public BattleEntranceSequence? Entrance => _entrance;
+        public BattleEntranceSequence? Entrance => _call?.Sequence;
 
-        /// <summary>Replaces visible models only after a non-empty active fighter id changes.</summary>
+        /// <summary>Gets the running entrance call with its messages, for private offscreen proofs.</summary>
+        public BattleEntranceCall? Call => _call;
+
+        /// <summary>Gets the slots the battle scene shows, for private offscreen proofs.</summary>
+        public (int Player, int Enemy) RenderedSlots => (_renderedPlayerSlot, _renderedEnemySlot);
+
+        /// <summary>Gets or sets the Cross source a scripted driver uses for the caller's messages; when unset, a
+        /// scripted driver closes each message as soon as its arrow shows.</summary>
+        public Func<bool?>? ProbeConfirm { get; set; }
+
+        /// <summary>Replaces visible models only after the active pair changes.</summary>
         public void RefreshModels() => Refresh(allowEntrance: true);
 
         /// <summary>Builds the first models of a battle at once, drops any interrupted entrance and records the
-        /// opening party slot, so only a later change plays an entrance.</summary>
+        /// opening slots, so only a later change plays an entrance.</summary>
         public void RefreshModelsForBattleStart()
         {
             Cancel();
-            Refresh(allowEntrance: false);
             _renderedPlayerSlot = _host._battleFlow?.State.ActivePlayer ?? -1;
+            _renderedEnemySlot = _host._battleFlow?.State.ActiveEnemy ?? -1;
+            Refresh(allowEntrance: false);
         }
 
-        /// <summary>Plays one source frame of the active entrance. The battle flow waits while it plays, as the
-        /// source menu waits for its entrance child before its message and the next turn.</summary>
-        /// <returns>Whether an entrance owned this frame.</returns>
+        /// <summary>Plays one source time unit of the running entrance call. The battle flow waits for the whole call,
+        /// as the source caller waits for its message before the next turn.</summary>
+        /// <returns>Whether an entrance call owned this unit.</returns>
         public bool TickTransition()
         {
-            if (_entrance is null)
+            if (_call is null)
             {
                 return false;
             }
 
-            if (_host._battleRenderer is null || _host._battleFlow is null)
+            if (_host._battleRenderer is null || _host._battleFlow is not { } flow)
             {
                 Cancel();
                 return false;
             }
 
-            _entrance.Step();
-            if (_entrance.IsComplete)
+            _call.Step(Confirm());
+            if (_call.Phase == BattleEntranceCallPhase.Done)
             {
-                QuietLog.Info($"battle-entrance complete enemy={_entrance.Enemy} frames={_entrance.Frames}");
-                Cancel();
+                QuietLog.Info($"battle-entrance complete enemy={_call.Sequence.Enemy} frames={_call.Sequence.Frames} message={_call.AfterFrames}");
+                Release(flow);
             }
 
             return true;
         }
 
-        /// <summary>Keeps the outgoing fighter's status and hides the flow message while an entrance plays.</summary>
+        /// <summary>Keeps the outgoing fighter's status and shows the caller's message while an entrance call runs.</summary>
         /// <param name="view">Built battle view.</param>
         /// <returns>The view to present.</returns>
-        public BattleView? Present(BattleView? view) => _entrance is { } entrance && view is { } value ? BattleEntranceView.Apply(value, entrance, _outgoingId) : view;
+        public BattleView? Present(BattleView? view) => _call is { } call && view is { } value ? BattleEntranceView.Apply(value, call, _outgoingSlot) : view;
 
-        /// <summary>Replaces visible models after a non-empty active fighter id changes.</summary>
+        /// <summary>Replaces visible models after the active pair changed.</summary>
         /// <param name="allowEntrance">Whether the change may play the source entrance.</param>
         private void Refresh(bool allowEntrance)
         {
             BattleFlowController? flow = _host._battleFlow;
-            if (_entrance is not null || flow is null || _host._battleRenderer is not { } renderer || flow.Phase == BattleFlowPhase.ActionSequence)
+            BattleFlowPhase previous = _observedPhase;
+            _observedPhase = flow?.Phase ?? BattleFlowPhase.PlayerCommand;
+            if (_call is not null || flow is null || _host._battleRenderer is not { } renderer || flow.Phase == BattleFlowPhase.ActionSequence)
             {
                 return;
             }
 
             int playerId = flow.State.ActivePlayerFighter?.Id ?? 0;
             int enemyId = flow.State.ActiveEnemyFighter?.Id ?? 0;
-            if (playerId == 0 || enemyId == 0 || (playerId == _host._battleRenderedPlayerId && enemyId == _host._battleRenderedEnemyId))
+            if (playerId == 0 || enemyId == 0 || !Changed(flow.State, playerId, enemyId))
             {
                 return;
             }
 
-            if (!allowEntrance || !TryBeginEntrance(flow, renderer, playerId, enemyId))
+            if (!allowEntrance || !TryBeginEntrance(flow, renderer, previous == BattleFlowPhase.ActionSequence))
             {
                 Rebuild(renderer, flow, playerId, enemyId);
             }
         }
 
-        /// <summary>Drops the entrance state and returns camera and visibility ownership to the battle.</summary>
+        /// <summary>Returns whether the active pair differs from the rendered one, by slot or by fighter id.</summary>
+        /// <param name="state">Battle state.</param>
+        /// <param name="playerId">Active player fighter id.</param>
+        /// <param name="enemyId">Active enemy fighter id.</param>
+        /// <returns>Whether the scene must change.</returns>
+        private bool Changed(BattleState state, int playerId, int enemyId) =>
+            playerId != _host._battleRenderedPlayerId || enemyId != _host._battleRenderedEnemyId
+            || state.ActivePlayer != _renderedPlayerSlot || state.ActiveEnemy != _renderedEnemySlot;
+
+        /// <summary>Reads Cross for the caller's message: the player's press, or the scripted driver's.</summary>
+        /// <returns>Whether Cross was pressed, or <see langword="null"/> to close on the arrow.</returns>
+        private bool? Confirm() => _host._testDriverActive ? ProbeConfirm?.Invoke() : _host._input.State.ConsumeActionPressed();
+
+        /// <summary>Ends a finished call: the camera goes back to the battle, the flow message the caller replaced is
+        /// dismissed, and the next command turn starts a fresh command camera as the source command menu creates
+        /// its own shot camera.</summary>
+        /// <param name="flow">Active battle flow.</param>
+        private void Release(BattleFlowController flow)
+        {
+            Cancel();
+            flow.DismissMessage();
+            _host._battlePlayerCameraActive = false;
+        }
+
+        /// <summary>Drops the entrance call and returns camera and visibility ownership to the battle.</summary>
         private void Cancel()
         {
-            _entrance = null;
+            _call = null;
             _host._battleRenderer?.ActorScene.Active = false;
         }
 
-        /// <summary>Starts the source entrance when another party slot became active (a switch, a forced switch after a
-        /// knockout or a pair tag-in) or when a new enemy came in, keeping the outgoing model until the flash covers the
-        /// screen. A form change of the same slot (digivolution, blast, return) is not an entrance and keeps the
-        /// immediate rebuild until its own change sequence exists.</summary>
+        /// <summary>Starts the source entrance call when another party slot or another enemy slot came in, keeping the
+        /// outgoing model until the flash covers the screen. A form change of the same slot (digivolution, blast,
+        /// return) is not an entrance and keeps the immediate rebuild until its own change sequence exists.</summary>
         /// <param name="flow">Active battle flow, already mutated.</param>
         /// <param name="renderer">Battle renderer.</param>
-        /// <param name="playerId">New active player fighter id.</param>
-        /// <param name="enemyId">New active enemy fighter id.</param>
-        /// <returns>Whether an entrance started.</returns>
-        private bool TryBeginEntrance(BattleFlowController flow, BattleRenderer renderer, int playerId, int enemyId)
+        /// <param name="changedByAction">Whether the change ended an action sequence.</param>
+        /// <returns>Whether an entrance call started.</returns>
+        private bool TryBeginEntrance(BattleFlowController flow, BattleRenderer renderer, bool changedByAction)
         {
-            bool playerEnters = flow.State.ActivePlayer != _renderedPlayerSlot && _renderedPlayerSlot >= 0 && enemyId == _host._battleRenderedEnemyId;
-            bool enemyEnters = playerId == _host._battleRenderedPlayerId && _host._battleRenderedEnemyId > 0;
-            BattleFighter? entering = playerEnters ? flow.State.ActivePlayerFighter : flow.State.ActiveEnemyFighter;
-            if ((!playerEnters && !enemyEnters) || entering is null)
+            var rendered = new BattleRenderedPair(_renderedPlayerSlot, _host._battleRenderedPlayerId, _renderedEnemySlot, _host._battleRenderedEnemyId);
+            BattleEntranceKind kind = BattleEntranceTrigger.Resolve(flow.State, rendered, changedByAction);
+            bool enemy = kind is BattleEntranceKind.EnemySwitch or BattleEntranceKind.EnemyReplacement;
+            if (kind == BattleEntranceKind.None || (enemy ? flow.State.ActiveEnemyFighter : flow.State.ActivePlayerFighter) is not { } entering)
             {
                 return false;
             }
 
-            int idle = enemyEnters && !OutgoingEnemyKnockedOut(flow)
-                ? BattleWeakIdleRule.Normal
-                : BattleWeakIdleRule.Select(entering.Hp, 0, entering.MaxHp);
-            var stage = new BattleRendererEntranceStage(renderer, enemyEnters, () => Rebuild(renderer, flow, playerId, enemyId), _host._log.Warn);
+            int playerId = flow.State.ActivePlayerFighter?.Id ?? 0;
+            int enemyId = flow.State.ActiveEnemyFighter?.Id ?? 0;
+            int outgoingId = enemy ? rendered.EnemyId : rendered.PlayerId;
+            int idle = BattleEntranceTrigger.Idle(kind, entering);
+            var extras = BattleEntranceExtras.For(entering.Id);
+            var stage = new BattleRendererEntranceStage(renderer, enemy, () => Rebuild(renderer, flow, playerId, enemyId), _host.ResolveBattleStagePath, _host._log.Warn);
+            var (before, after) = BattleEntranceMessages.For(kind, flow.Text, _host.NameLine(outgoingId).Tokens, _host.NameLine(entering.Id).Tokens);
             renderer.StopShotCamera();
-            renderer.ActorScene.Active = true;
-            _entrance = new BattleEntranceSequence(enemyEnters, idle, stage);
-            _outgoingId = enemyEnters ? _host._battleRenderedEnemyId : _host._battleRenderedPlayerId;
-            QuietLog.Info($"battle-entrance begin enemy={enemyEnters} outgoing={_outgoingId} incoming={entering.Id} idle={idle}");
+            _outgoingSlot = enemy ? rendered.EnemySlot : rendered.PlayerSlot;
+            _call = new BattleEntranceCall(new BattleEntranceSequence(enemy, idle, stage, extras), before, after, () => renderer.ActorScene.Active = true, afterAtSwap: kind == BattleEntranceKind.EnemySwitch);
+            QuietLog.Info($"battle-entrance begin kind={kind} enemy={enemy} outgoing={outgoingId} incoming={entering.Id} idle={idle} hold={extras.HoldFrames}");
             return true;
         }
 
-        /// <summary>Returns whether the replaced enemy left on a knockout, which makes the source pick the incoming
-        /// enemy's idle by its HP. A voluntary enemy switch always enters with the normal idle.</summary>
-        /// <param name="flow">Active battle flow.</param>
-        /// <returns>Whether the outgoing enemy is knocked out.</returns>
-        private bool OutgoingEnemyKnockedOut(BattleFlowController flow) =>
-            flow.State.Enemies.Any(enemy => enemy is { IsKnockedOut: true } && enemy.Id == _host._battleRenderedEnemyId);
-
         /// <summary>Builds the active pair's models and records them as rendered.</summary>
         /// <param name="renderer">Battle renderer.</param>
-        /// <param name="flow">Active battle flow, whose party slot is recorded with the rendered player.</param>
+        /// <param name="flow">Active battle flow, whose slots are recorded with the rendered pair.</param>
         /// <param name="playerId">Active player fighter id.</param>
         /// <param name="enemyId">Active enemy fighter id.</param>
         private void Rebuild(BattleRenderer renderer, BattleFlowController flow, int playerId, int enemyId)
@@ -153,6 +185,7 @@ public partial class GameHost
             _host._battleRenderedPlayerId = playerId;
             _host._battleRenderedEnemyId = enemyId;
             _renderedPlayerSlot = flow.State.ActivePlayer;
+            _renderedEnemySlot = flow.State.ActiveEnemy;
             QuietLog.Info($"battle-model-replaced player={playerId} enemy={enemyId}");
         }
     }

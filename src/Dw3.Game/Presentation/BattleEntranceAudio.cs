@@ -13,6 +13,9 @@ internal sealed class BattleEntranceAudio
     /// <param name="play">Real backend operation, shared with action voices.</param>
     public BattleEntranceAudio(Action<AudioProgramEntry> play) => _play = play;
 
+    /// <summary>Gets how many cues this runtime played.</summary>
+    public int Plays { get; private set; }
+
     /// <summary>Arms one new entrance after model readiness, replacing an unstarted entrance.</summary>
     /// <param name="delay">Authored nominal 60 Hz lead-in.</param>
     /// <param name="entry">Decoded direct cue, not an action index.</param>
@@ -41,6 +44,7 @@ internal sealed class BattleEntranceAudio
         {
             _play(_entry);
             _entry = null;
+            Plays++;
         }
     }
 }

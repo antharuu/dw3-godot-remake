@@ -19,6 +19,12 @@ public interface IVoiceHandle
     /// <returns>True when release is handled without an immediate hard stop.</returns>
     bool KeyOff() => false;
 
+    /// <summary>Scales this voice's volume, as a sequence decrescendo does.</summary>
+    /// <param name="scale">Volume factor from 0 (silent) to 1 (authored volume).</param>
+    void SetVolumeScale(float scale)
+    {
+    }
+
     /// <summary>Applies the decoded source bend to this physical voice.</summary>
     /// <param name="semitones">Signed pitch displacement in semitones.</param>
     void SetPitchBend(float semitones)

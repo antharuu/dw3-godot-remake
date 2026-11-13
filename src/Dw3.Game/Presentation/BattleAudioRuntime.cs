@@ -8,6 +8,9 @@ namespace Dw3Production.Presentation;
 /// <summary>Renderer-owned lazy pack consumer and physical audio lifetime, shared with GameHost.</summary>
 internal sealed class BattleAudioRuntime : IDisposable
 {
+    /// <summary>Source sequence fade-out: one second, 60 nominal units.</summary>
+    private const int MusicFadeOutTicks = 60;
+
     private readonly GodotBattleAudioBackend _backend;
     private readonly string _dataRoot;
     private readonly BattleAudioPump _sequencePump;
@@ -15,6 +18,7 @@ internal sealed class BattleAudioRuntime : IDisposable
     private readonly Dictionary<int, PreparedAudioSequence> _sequences = [];
     private BattleAudioConsumer? _consumer;
     private BattleMusicPlayback? _music;
+    private uint _musicId;
     private BattleMusicPlayback? _victory;
 
     /// <summary>Initializes a new instance of the <see cref="BattleAudioRuntime"/> class.</summary>
@@ -32,6 +36,12 @@ internal sealed class BattleAudioRuntime : IDisposable
     /// <summary>Gets allocated physical channels, including trailing natural notes.</summary>
     public int ActiveCount => _backend.ActiveCount;
 
+    /// <summary>Gets how many entrance cues played.</summary>
+    public int EntranceCuePlays => _entrance.Plays;
+
+    /// <summary>Gets the playing battle music and its fade-out volume, zero when no music plays.</summary>
+    public (uint Id, float Volume) MusicState => _music is { } music ? (_musicId, music.Volume) : (0u, 0f);
+
     /// <summary>Gets the completed boundaries of the current battle-music track.</summary>
     public int MusicLoopCount => _music?.LoopCount ?? 0;
 
@@ -41,14 +51,21 @@ internal sealed class BattleAudioRuntime : IDisposable
     /// <summary>Gets the physical global reverb state as source type and depth.</summary>
     public (int Type, int Depth) Reverb => (_backend.Reverb.Type, _backend.Reverb.Depth);
 
-    /// <summary>Arms the prepared direct cue after incoming-model readiness.</summary>
-    public void BeginEntrance()
+    /// <summary>Arms the prepared direct cue after incoming-model readiness, or plays it at once when the caller
+    /// already counted the lead-in on its own clock (an in-battle entrance), so the delay is never applied twice.</summary>
+    /// <param name="immediate">Whether to play the cue now instead of after its prepared delay.</param>
+    public void BeginEntrance(bool immediate = false)
     {
         var cue = BattleEntranceAudioLoader.Load(new DataPackReader(_dataRoot));
         _backend.Prepare(cue.Entry);
         _sequencePump.Synchronize();
-        _entrance.Begin(cue.Delay, cue.Entry);
-        GD.Print($"battle-entrance-audio-armed id={cue.Entry.EncodedId:X8} delay={cue.Delay}");
+        int delay = immediate ? 0 : cue.Delay;
+        _entrance.Begin(delay, cue.Entry);
+        GD.Print($"battle-entrance-audio-armed id={cue.Entry.EncodedId:X8} delay={delay}");
+        if (immediate)
+        {
+            _entrance.Advance(0);
+        }
     }
 
     /// <summary>Starts the selected exclusive battle track and stops any prior battle music.</summary>
@@ -60,8 +77,21 @@ internal sealed class BattleAudioRuntime : IDisposable
             ?? throw new FormatException($"Battle music {musicId:X8} is unavailable.");
         Prepare(music);
         _music = new BattleMusicPlayback(music, _backend);
+        _musicId = musicId;
         _sequencePump.Synchronize();
         GD.Print($"battle-music-start id={musicId:X8} loop={music.LoopSeconds:0.000}");
+    }
+
+    /// <summary>Fades the battle music out over one second when it is the given track, as the source's
+    /// <c>SOUND.fadeOut</c> only acts on a loaded bank; the silent track then stops.</summary>
+    /// <param name="musicId">Encoded source music identity to fade out.</param>
+    public void FadeOutMusic(uint musicId)
+    {
+        if (_music is { } music && _musicId == musicId)
+        {
+            music.FadeOut(MusicFadeOutTicks);
+            GD.Print($"battle-music-fade-out id={musicId:X8} ticks={MusicFadeOutTicks}");
+        }
     }
 
     /// <summary>
@@ -154,6 +184,11 @@ internal sealed class BattleAudioRuntime : IDisposable
         _consumer?.Advance(ticks);
         _entrance.Advance(ticks);
         _music?.Advance(ticks);
+        if (_music?.IsSilent == true)
+        {
+            StopMusic();
+        }
+
         _victory?.Advance(ticks);
     }
 

@@ -14,6 +14,8 @@ internal sealed class BattleMusicPlayback
     private readonly IBattleAudioBackend _backend;
     private BattleSequenceVoice _voice;
     private bool _looping;
+    private int _fadeTicks;
+    private int _fadeLeft;
 
     /// <summary>Initializes a new instance of the <see cref="BattleMusicPlayback"/> class.</summary>
     /// <param name="sequence">Prepared source track with a required loop marker.</param>
@@ -39,10 +41,22 @@ internal sealed class BattleMusicPlayback
     /// <summary>Gets the number of completed authored track boundaries.</summary>
     internal int LoopCount { get; private set; }
 
+    /// <summary>Gets a value indicating whether a started fade-out reached silence.</summary>
+    internal bool IsSilent => _fadeTicks > 0 && _fadeLeft == 0;
+
+    /// <summary>Gets the current fade-out volume factor, 1 when no fade-out runs.</summary>
+    internal float Volume => _fadeTicks == 0 ? 1f : _fadeLeft / (float)_fadeTicks;
+
     /// <summary>Advances the authored sequence and restarts at its authored loop point.</summary>
     /// <param name="ticks">Elapsed nominal sixty-hertz ticks.</param>
     public void Advance(int ticks)
     {
+        if (_fadeTicks > 0)
+        {
+            _fadeLeft = Math.Max(0, _fadeLeft - ticks);
+            _voice.SetVolumeScale(Volume);
+        }
+
         _voice.Advance(ticks);
         if (_voice.HasReachedEnd)
         {
@@ -51,7 +65,18 @@ internal sealed class BattleMusicPlayback
             _looping = true;
             LoopCount++;
             _voice = new BattleSequenceVoice(_loop, _backend, bends);
+            _voice.SetVolumeScale(Volume);
         }
+    }
+
+    /// <summary>Starts a linear decrescendo from the authored volume to silence, as the source's sequence
+    /// fade-out (<c>SsSepSetDecrescendo</c> by 0x80 over one second).</summary>
+    /// <param name="ticks">Fade duration in nominal sixty-hertz ticks.</param>
+    public void FadeOut(int ticks)
+    {
+        ArgumentOutOfRangeException.ThrowIfLessThan(ticks, 1);
+        _fadeTicks = ticks;
+        _fadeLeft = ticks;
     }
 
     /// <summary>Stops the current physical notes and prevents further repetitions.</summary>

@@ -45,6 +45,10 @@ public sealed class BattleModelLayer : IDisposable
     /// <summary>Gets the source polygons rejected by the projected winding predicate.</summary>
     public int CulledCount { get; private set; }
 
+    /// <summary>Gets the source polygons the GPU refuses after the GTE projection (a corner close to or behind the
+    /// eye saturates the division and the polygon spans beyond the GPU limits).</summary>
+    public int GpuRejectedCount { get; private set; }
+
     /// <summary>Gets unsupported ABR primitives. Observed modes zero and one never enter this count.</summary>
     public int UnsupportedAbrCount { get; private set; }
 
@@ -67,7 +71,7 @@ public sealed class BattleModelLayer : IDisposable
             command.Visible = false;
         }
 
-        PolygonCount = CulledCount = UnsupportedAbrCount = 0;
+        PolygonCount = CulledCount = UnsupportedAbrCount = GpuRejectedCount = 0;
     }
 
     /// <summary>Adds a canvas node drawn inside this layer's ordering table, such as a models-layer sprite effect.</summary>
@@ -282,7 +286,7 @@ public sealed class BattleModelLayer : IDisposable
     /// <returns>Unsplit primitives in source submission order.</returns>
     private List<BattleRasterPrimitive> Collect(Camera3D camera, IReadOnlyList<BattleModel> models)
     {
-        PolygonCount = CulledCount = UnsupportedAbrCount = 0;
+        PolygonCount = CulledCount = UnsupportedAbrCount = GpuRejectedCount = 0;
         var result = new List<BattleRasterPrimitive>();
         foreach (var model in models.Where(model => model.Visible))
         {
@@ -313,7 +317,12 @@ public sealed class BattleModelLayer : IDisposable
             }
 
             var world = polygon.Positions.Select(position => model.WorldPosition(polygon.Bone, position)).ToArray();
-            var screen = world.Select(camera.UnprojectPosition).Select(value => new Vector2(value.X, value.Y)).ToArray();
+            if (!Project(camera, world, out var screen))
+            {
+                GpuRejectedCount++;
+                continue;
+            }
+
             if (!BattlePrimitiveCompositor.FacesCameraInSourceOrder(
                 ToNumerics(screen[0]),
                 ToNumerics(screen[1]),
@@ -331,6 +340,23 @@ public sealed class BattleModelLayer : IDisposable
             int[] depth = ViewDepths(camera, world);
             result.Add(new BattleRasterPrimitive(OrderKey(depth), polygon, screen, model.TextureFor(polygon.TextureKey), model.FighterId) { Entry = BattleSpriteOrdering.PolygonEntry(depth) });
         }
+    }
+
+    /// <summary>Projects a polygon through the source hardware rules, or the unfiltered camera projection when an
+    /// offscreen probe asks for the previous behaviour as its paired control.</summary>
+    /// <param name="camera">Viewport camera.</param>
+    /// <param name="world">World positions of the polygon corners.</param>
+    /// <param name="screen">Receives the viewport corners.</param>
+    /// <returns>Whether the polygon is drawn.</returns>
+    private bool Project(Camera3D camera, Vector3[] world, out Vector2[] screen)
+    {
+        if (ProbeControl?.UnfilteredProjection == true)
+        {
+            screen = [.. world.Select(camera.UnprojectPosition)];
+            return true;
+        }
+
+        return BattleGteScreen.TryProject(camera, world, out screen);
     }
 
     /// <summary>Projects the source corners to their view depths in source units.</summary>

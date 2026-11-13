@@ -12,6 +12,7 @@ internal sealed class GodotVoiceHandle : IVoiceHandle
     private readonly float _gain;
     private readonly float _basePitch;
     private bool _released;
+    private float _volumeScale = 1;
 
     /// <summary>Initializes a new instance of the <see cref="GodotVoiceHandle"/> class.</summary>
     /// <param name="player">Player owned by the battle node.</param>
@@ -46,7 +47,7 @@ internal sealed class GodotVoiceHandle : IVoiceHandle
 
         _envelope.AdvanceSamples(checked(ticks * 735));
 
-        _player.VolumeLinear = _gain * EnvelopeLevel;
+        _player.VolumeLinear = _gain * EnvelopeLevel * _volumeScale;
         if (_envelope.IsComplete)
         {
             Stop();
@@ -68,6 +69,16 @@ internal sealed class GodotVoiceHandle : IVoiceHandle
         }
 
         return true;
+    }
+
+    /// <inheritdoc/>
+    public void SetVolumeScale(float scale)
+    {
+        _volumeScale = Math.Clamp(scale, 0f, 1f);
+        if (!IsComplete)
+        {
+            _player.VolumeLinear = _gain * EnvelopeLevel * _volumeScale;
+        }
     }
 
     /// <inheritdoc/>

@@ -24,7 +24,8 @@ public sealed class BattleAudioExtractionStepTests : IDisposable
         string audio = Path.Combine(_root, "data", "battle", "audio");
         using JsonDocument manifest = JsonDocument.Parse(File.ReadAllText(Path.Combine(audio, "manifest.json")));
         Assert.Equal("battle-audio-vab-v6", manifest.RootElement.GetProperty("schema").GetString());
-        Assert.Equal(3, manifest.RootElement.GetProperty("banks").GetArrayLength());
+        Assert.Equal(5, manifest.RootElement.GetProperty("banks").GetArrayLength());
+        Assert.Equal(["common", "battle", "boss", "lastBoss", "lastBoss2"], manifest.RootElement.GetProperty("banks").EnumerateArray().Select(bank => bank.GetProperty("name").GetString()));
         JsonElement battle = manifest.RootElement.GetProperty("banks")[1];
         Assert.Equal(1, battle.GetProperty("vab").GetProperty("SampleCount").GetInt32());
         JsonElement sep = battle.GetProperty("sep");
@@ -102,6 +103,10 @@ public sealed class BattleAudioExtractionStepTests : IDisposable
         disc.Add("AAA/DAT/SOUND/BATL00/MVBATL00.BIN", BodyArchive());
         disc.Add("AAA/DAT/SOUND/BOSS00/MPBOSS00.BIN", HeaderArchive());
         disc.Add("AAA/DAT/SOUND/BOSS00/MVBOSS00.BIN", BodyArchive());
+        disc.Add("AAA/DAT/SOUND/BOSS02/MPBOSS02.BIN", HeaderArchive());
+        disc.Add("AAA/DAT/SOUND/BOSS02/MVBOSS02.BIN", BodyArchive());
+        disc.Add("AAA/DAT/SOUND/BOSS04/MPBOSS04.BIN", HeaderArchive());
+        disc.Add("AAA/DAT/SOUND/BOSS04/MVBOSS04.BIN", BodyArchive());
     }
 
     private static byte[] HeaderArchive()

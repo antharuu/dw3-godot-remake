@@ -1,3 +1,4 @@
+using Dw3Production.Conversion;
 using Dw3Production.Presentation;
 using Dw3Production.Simulation;
 using Xunit;
@@ -18,8 +19,8 @@ public sealed class BattleEntranceSequenceTests
         Assert.Equal(
             [
                 "1:camera fighter enemy=False view=10 frames=60",
-                "1:cue",
                 "30:opponent visible=False",
+                "61:cue",
                 "125:swap motion=13",
                 "125:camera fighter enemy=False view=10 frames=0",
                 "309:camera enemy-view frames=60",
@@ -120,7 +121,7 @@ public sealed class BattleEntranceSequenceTests
             null,
             MessageVisible: true);
 
-        BattleView before = BattleEntranceView.Apply(view, entrance, outgoingId: 10);
+        BattleView before = BattleEntranceView.Apply(view, Call(entrance), outgoingSlot: 0);
         Assert.False(before.MessageVisible);
         Assert.Equal(10, Assert.Single(before.Players, fighter => fighter.Active).Id);
         Assert.Equal(30, Assert.Single(before.Enemies, fighter => fighter.Active).Id);
@@ -130,7 +131,7 @@ public sealed class BattleEntranceSequenceTests
             entrance.Step();
         }
 
-        BattleView after = BattleEntranceView.Apply(view, entrance, outgoingId: 10);
+        BattleView after = BattleEntranceView.Apply(view, Call(entrance), outgoingSlot: 0);
         Assert.False(after.MessageVisible);
         Assert.Equal(20, Assert.Single(after.Players, fighter => fighter.Active).Id);
     }
@@ -147,10 +148,45 @@ public sealed class BattleEntranceSequenceTests
             "enemy",
             null);
 
-        BattleView held = BattleEntranceView.Apply(view, entrance, outgoingId: 30);
+        BattleView held = BattleEntranceView.Apply(view, Call(entrance), outgoingSlot: 0);
 
         Assert.Equal(30, Assert.Single(held.Enemies, fighter => fighter.Active).Id);
         Assert.Equal(10, Assert.Single(held.Players, fighter => fighter.Active).Id);
+    }
+
+    [Fact]
+    public void StageFighter_HoldsTenUnitsAndChangesStageUnderFullWhite()
+    {
+        var stage = new RecordingEntranceStage();
+        var entrance = new BattleEntranceSequence(enemy: true, idleMotion: 0, stage, BattleEntranceExtras.For(0x1D2));
+        int frames = PlayAll(entrance, stage);
+
+        Assert.Equal(189 + 10, frames);
+        int swap = stage.Calls.FindIndex(call => call.EndsWith(":swap motion=13", StringComparison.Ordinal));
+        Assert.True(swap > 0);
+        int extras = stage.Calls.IndexOf("125:extras stage=22 music=00000000");
+        Assert.True(extras > swap, "the source shows the entering model before applying its stage");
+    }
+
+    [Fact]
+    public void MusicFighter_FadesLastBossMusicBeforeAndStartsSecondUnderFullWhite()
+    {
+        var stage = new RecordingEntranceStage();
+        var entrance = new BattleEntranceSequence(enemy: true, idleMotion: 0, stage, BattleEntranceExtras.For(0x1D3));
+        int frames = PlayAll(entrance, stage);
+
+        Assert.Equal(189 + 120, frames);
+        Assert.Contains(stage.Calls, call => call.EndsWith($"prepare stage=-1 fade={BattleEntranceExtras.LastBossMusic:X8}", StringComparison.Ordinal));
+        Assert.Contains($"125:extras stage=-1 music={BattleEntranceExtras.LastBossSecondMusic:X8}", stage.Calls);
+    }
+
+    [Fact]
+    public void OrdinaryFighter_HasNoExtras()
+    {
+        var stage = new RecordingEntranceStage();
+        PlayAll(new BattleEntranceSequence(enemy: false, idleMotion: 0, stage), stage);
+
+        Assert.DoesNotContain(stage.Calls, call => call.Contains("extras", StringComparison.Ordinal) && !call.Contains("stage=-1 music=00000000", StringComparison.Ordinal));
     }
 
     private static BattleFighterView Fighter(int id, bool active) => new(id, null, 100, 100, 10, 10, active, KnockedOut: false);
@@ -168,6 +204,20 @@ public sealed class BattleEntranceSequenceTests
         }
 
         throw new InvalidOperationException("entrance did not complete");
+    }
+
+    private static BattleEntranceCall Call(BattleEntranceSequence entrance) =>
+        new(entrance, null, new BattleEntranceMessage(new BattleTextLine([], [], "message=switchIn"), 1), () => { });
+
+    private static int PlayAll(BattleEntranceSequence entrance, RecordingEntranceStage stage)
+    {
+        while (!entrance.IsComplete)
+        {
+            stage.Frame = entrance.Frames + 1;
+            entrance.Step();
+        }
+
+        return entrance.Frames;
     }
 
     private sealed class RecordingEntranceStage : IBattleEntranceStage
@@ -191,5 +241,9 @@ public sealed class BattleEntranceSequenceTests
         public void SetEnteringIdle(int idleMotion) => Calls.Add($"{Frame}:idle {idleMotion}");
 
         public void PresentFlash(int level) => Levels.Add(level);
+
+        public void PrepareEntranceExtras(BattleEntranceExtras extras) => Calls.Add($"{Frame}:prepare stage={extras.StageId} fade={extras.FadedMusicId:X8}");
+
+        public void ApplyEntranceExtras(BattleEntranceExtras extras) => Calls.Add($"{Frame}:extras stage={extras.StageId} music={extras.MusicId:X8}");
     }
 }

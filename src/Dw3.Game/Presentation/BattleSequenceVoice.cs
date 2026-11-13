@@ -15,6 +15,7 @@ internal sealed class BattleSequenceVoice
     private double _seconds;
     private int _index;
     private bool _ended;
+    private float _volumeScale = 1;
 
     /// <summary>Initializes a new instance of the <see cref="BattleSequenceVoice"/> class.</summary>
     /// <param name="sequence">Validated prepared transitions.</param>
@@ -77,6 +78,17 @@ internal sealed class BattleSequenceVoice
         _ended = true;
     }
 
+    /// <summary>Scales the volume of every sounding and later voice, as a source sequence decrescendo.</summary>
+    /// <param name="scale">Volume factor from 0 (silent) to 1 (authored volume).</param>
+    public void SetVolumeScale(float scale)
+    {
+        _volumeScale = Math.Clamp(scale, 0f, 1f);
+        foreach (var voice in _voices)
+        {
+            voice.Handle.SetVolumeScale(_volumeScale);
+        }
+    }
+
     /// <summary>Maps the source 14-bit centre and asymmetrical VAB bounds to semitones.</summary>
     /// <param name="entry">Tone attributes owning the bend bounds.</param>
     /// <param name="bend">Unsigned source 14-bit bend value.</param>
@@ -104,6 +116,7 @@ internal sealed class BattleSequenceVoice
         {
             var handle = _backend.Play(entry);
             handle.SetPitchBend(BendSemitones(entry, _pitchBends[command.Channel]));
+            handle.SetVolumeScale(_volumeScale);
             _voices.Add((command.Channel, command.Note, entry, handle));
             return;
         }

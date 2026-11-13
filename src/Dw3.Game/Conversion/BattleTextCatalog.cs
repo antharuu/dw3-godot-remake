@@ -12,6 +12,15 @@ public sealed class BattleTextCatalog
     /// <summary>Largest fighter count a fighter-list line names.</summary>
     private const int MaxNamedFighters = 3;
 
+    /// <summary>MFIGHT entry of the first line of the incoming enemy's message (source message type 13).</summary>
+    private const int EnemyEnteredFirstEntry = 0x4E;
+
+    /// <summary>MFIGHT entry of the second line of the incoming enemy's message, which takes the enemy's name.</summary>
+    private const int EnemyEnteredSecondEntry = 0x4F;
+
+    /// <summary>Source message type naming the incoming enemy after its entrance.</summary>
+    private const int EnemyEnteredType = 13;
+
     private readonly BattleTextData _data;
 
     /// <summary>Initializes a new instance of the <see cref="BattleTextCatalog"/> class with the given text data.</summary>
@@ -88,7 +97,7 @@ public sealed class BattleTextCatalog
             return BattleTextLine.Missing;
         }
 
-        var type = key switch { "technique" => 3, "damage" => 4, "recovered" => 8, "multiHitDamage" => 16, "digivolve" => 12, "item" => 14, "won" or "lost" => 1, _ => 2 };
+        var type = key switch { "technique" => 3, "damage" => 4, "recovered" => 8, "multiHitDamage" => 16, "digivolve" => 12, "item" => 14, "won" or "lost" or "enemySwitch" => 1, _ => 2 };
         if (type == 1)
         {
             return FromMenu(template.Entry, $"MFIGHT entry={template.Entry} message={key}");
@@ -98,6 +107,18 @@ public sealed class BattleTextCatalog
         var action = substitutions.Length > 1 ? substitutions[1..] : [];
         var second = new BattleTextLine(_data.Menu[template.Entry], action, $"MFIGHT entry={template.Entry} message={key}");
         return new BattleTextLine(_data.Menu[0x16], [actor], $"MFIGHT entry=22 message={key}", second, type);
+    }
+
+    /// <summary>
+    /// Builds the message the source shows once an enemy's entrance ended (message type 13): MFIGHT 0x4E, then
+    /// MFIGHT 0x4F with the incoming enemy's name.
+    /// </summary>
+    /// <param name="name">Name tokens of the incoming enemy.</param>
+    /// <returns>The two-line message.</returns>
+    public BattleTextLine EnemyEntered(IReadOnlyList<TextToken> name)
+    {
+        var second = new BattleTextLine(_data.Menu[EnemyEnteredSecondEntry], [name], $"MFIGHT entry={EnemyEnteredSecondEntry} message=enemyEntered");
+        return new BattleTextLine(_data.Menu[EnemyEnteredFirstEntry], [], $"MFIGHT entry={EnemyEnteredFirstEntry} message=enemyEntered", second, EnemyEnteredType);
     }
 
     /// <summary>

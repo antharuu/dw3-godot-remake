@@ -18,6 +18,10 @@ internal sealed class BattleRasterControl
     /// <summary>Gets or sets a value indicating whether explicit source triangle indices are deliberately removed.</summary>
     public bool ClearIndices { get; set; }
 
+    /// <summary>Gets or sets a value indicating whether polygons skip the GTE saturation and GPU span rules, as the
+    /// paired control of a projection proof.</summary>
+    public bool UnfilteredProjection { get; set; }
+
     /// <summary>Gets or sets synthetic primitives for the executor-only source-quad regression.</summary>
     public IReadOnlyList<BattleRasterPrimitive>? Fixture { get; set; }
 

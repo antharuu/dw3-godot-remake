@@ -9,9 +9,9 @@ public static class DataPackSchema
 {
     /// <summary>
     /// Gets the newest pack schema that this runtime can read.
-    /// Version 23 requires extracted shared three-dimensional battle effect models.
+    /// Version 24 requires the last boss music banks (0x24, 0x26) used by fighter 0x1D3's entrance.
     /// </summary>
-    public const int Version = 23;
+    public const int Version = 24;
 
     /// <summary>
     /// Creates the schema structures required by every data pack.

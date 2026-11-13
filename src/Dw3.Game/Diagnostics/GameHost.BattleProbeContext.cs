@@ -75,7 +75,19 @@ public partial class GameHost
         public int RenderedPlayerId => _host._battleRenderedPlayerId;
 
         /// <inheritdoc/>
+        public int RenderedEnemyId => _host._battleRenderedEnemyId;
+
+        /// <inheritdoc/>
         public BattleEntranceSequence? ActorEntrance => _host._battlePresentationCoordinator.Entrance;
+
+        /// <inheritdoc/>
+        public BattleEntranceCall? ActorEntranceCall => _host._battlePresentationCoordinator.Call;
+
+        /// <inheritdoc/>
+        public (int Player, int Enemy) RenderedSlots => _host._battlePresentationCoordinator.RenderedSlots;
+
+        /// <inheritdoc/>
+        public IInteractiveFrameHost FrameHost => _host;
 
         /// <inheritdoc/>
         public int LastBattleEncounter => _host._lastBattleEncounter;
@@ -156,6 +168,13 @@ public partial class GameHost
         /// <inheritdoc/>
         public void StartEncounterForProbe(int encounter) =>
             _host.EnterBattle(_host.BuildEncounterBattle(encounter), encounter, 0x60080000, "native action probe source encounter");
+
+        /// <inheritdoc/>
+        public void StartEncounterForProbe(int encounter, uint music) =>
+            _host.EnterBattle(_host.BuildEncounterBattle(encounter), encounter, (int)music, "actor entrance probe source encounter");
+
+        /// <inheritdoc/>
+        public void SetEntranceConfirmForProbe(Func<bool?>? confirm) => _host._battlePresentationCoordinator.ProbeConfirm = confirm;
 
         /// <inheritdoc/>
         public string ResolveBattleModelPath(int fighterId) => _host.ResolveBattleModelPath(fighterId);

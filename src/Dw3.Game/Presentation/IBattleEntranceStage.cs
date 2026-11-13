@@ -16,7 +16,8 @@ internal interface IBattleEntranceStage
     /// <param name="frames">Source fade frames.</param>
     void MoveCameraToEnemyView(int frames);
 
-    /// <summary>Arms the decoded entrance cue with its prepared lead-in.</summary>
+    /// <summary>Plays the decoded entrance cue now: the source entrance calls it right before its white flash, on
+    /// the entrance's own clock, so the prepared lead-in of the battle opening must not be added again.</summary>
     void BeginEntranceCue();
 
     /// <summary>Shows or hides the model of the side that is not entering.</summary>
@@ -30,6 +31,14 @@ internal interface IBattleEntranceStage
     /// <summary>Gives the incoming model its normal or weak idle.</summary>
     /// <param name="idleMotion">Zero for the normal idle, one for the weak idle.</param>
     void SetEnteringIdle(int idleMotion);
+
+    /// <summary>Starts what the incoming fighter needs before its entrance, such as fading the current music out.</summary>
+    /// <param name="extras">Extras of the incoming fighter, never <see cref="BattleEntranceExtras.None"/>.</param>
+    void PrepareEntranceExtras(BattleEntranceExtras extras);
+
+    /// <summary>Applies what the incoming fighter changes under the full white: the fight stage or the music.</summary>
+    /// <param name="extras">Extras of the incoming fighter, never <see cref="BattleEntranceExtras.None"/>.</param>
+    void ApplyEntranceExtras(BattleEntranceExtras extras);
 
     /// <summary>Draws the additive full-screen white level of the entrance flash.</summary>
     /// <param name="level">Level from 0 to 255.</param>
