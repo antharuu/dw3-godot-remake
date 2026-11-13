@@ -123,6 +123,101 @@ internal static class NativeMenuCommandsProof
         GD.Print("NATIVE_ROOT_MENU_PROOF PASS lists=pagination-last-page-empty-technique-empty-digivolve-cancel");
     }
 
+    /// <summary>
+    /// Confirms a technique from the technique submenu through production host ingress and verifies
+    /// that MP is debited, an action sequence is captured (Script=5) and the turn is spent.
+    /// Also proves the grey zero-MP refusal does not debit resources.
+    /// </summary>
+    public static void TechniqueExecution()
+    {
+        // ── happy path: technique with Script > 0 creates ActionSequence ───
+        using var session = new NativeMenuSession();
+        var player = session.Player;
+        session.Flow.PlayerTechniques = [new BattleTechnique(7, "synthetic", new TechData { Mp = 5, Script = 5 })];
+        int mpBefore = player.Mp;
+        string snapshotBefore = Snapshot(session);
+
+        Select(session, 1);
+        session.Tap(Key.Enter);
+        ProbeRequirement.Require(session.Menu.Menu == BattleMenuKind.Technique, "technique submenu did not open from row 1");
+        ProbeRequirement.Require(session.Menu.CanConfirm, "first technique row is not available before execution");
+
+        session.Tap(Key.Enter);
+
+        ProbeRequirement.Require(
+            session.Flow.Phase == BattleFlowPhase.ActionSequence,
+            $"technique execution did not reach ActionSequence phase={session.Flow.Phase}");
+        ProbeRequirement.Require(player.Mp == mpBefore - 5, $"technique did not debit exactly 5 MP before={mpBefore} after={player.Mp}");
+        ProbeRequirement.Require(Snapshot(session) != snapshotBefore, "technique execution left snapshot unchanged");
+        int mpAfterHappy = player.Mp;
+
+        GD.Print($"NATIVE_ROOT_MENU_PROOF PASS technique=execution phase=ActionSequence mp={mpBefore}→{mpAfterHappy} script=5 ingress=GameHost._Input");
+
+        // ── refusal path: zero-MP technique is grey, resources unchanged ────
+        using var refusal = new NativeMenuSession();
+        var refPlayer = refusal.Player;
+        refPlayer.Mp = 0;
+        refusal.Menu.OpenRoot(refusal.Flow.RootMenuLines());
+        string beforeRefusal = Snapshot(refusal);
+
+        Select(refusal, 1);
+        refusal.Tap(Key.Enter);
+        ProbeRequirement.Require(refusal.Menu.Menu == BattleMenuKind.Technique, "zero-mp technique submenu did not open");
+        ProbeRequirement.Require(!refusal.Menu.CanConfirm, "zero-mp technique row must be grey");
+        refusal.Tap(Key.Enter);
+        ProbeRequirement.Require(Snapshot(refusal) == beforeRefusal, "grey zero-mp technique consumed resources");
+        refusal.Tap(Key.X);
+        ProbeRequirement.Require(refusal.Menu.Menu == BattleMenuKind.Root && Snapshot(refusal) == beforeRefusal, "technique cancel consumed resources");
+
+        GD.Print("NATIVE_ROOT_MENU_PROOF PASS technique=zero-mp-grey-refusal cancel=no-cost ingress=GameHost._Input");
+    }
+
+    /// <summary>
+    /// Confirms a form change from the digivolution submenu through production host ingress and
+    /// verifies the fighter identity changes and the turn is spent. Also proves the current-form row
+    /// is greyed and that cancel returns to root without cost.
+    /// </summary>
+    public static void DigivolveExecution()
+    {
+        // ── happy path: change to form 4 spends a turn ──────────────────────
+        using var session = new NativeMenuSession();
+        var player = session.Player;
+        int originalId = player.Id;
+        string snapshotBefore = Snapshot(session);
+
+        Select(session, 2);
+        session.Tap(Key.Enter);
+        ProbeRequirement.Require(session.Menu.Menu == BattleMenuKind.Digivolve, "digivolve submenu did not open from row 2");
+        ProbeRequirement.Require(!session.Menu.CanConfirm, $"current form at cursor 0 must be greyed id={originalId}");
+        ProbeRequirement.Require(Snapshot(session) == snapshotBefore, "opening digivolve submenu changed resources");
+
+        session.Tap(Key.Down);
+        ProbeRequirement.Require(session.Menu.Cursor == 1 && session.Menu.CanConfirm, "form 4 at cursor 1 must be enabled");
+        ProbeRequirement.Require(Snapshot(session) == snapshotBefore, "cursor navigation to form 4 changed resources");
+
+        session.Tap(Key.Enter);
+
+        ProbeRequirement.Require(player.Id == 4, $"digivolve did not change fighter id={player.Id}");
+        ProbeRequirement.Require(
+            session.Flow.Phase == BattleFlowPhase.EnemyTurn,
+            $"digivolve did not spend turn phase={session.Flow.Phase}");
+        ProbeRequirement.Require(Snapshot(session) != snapshotBefore, "digivolve execution left snapshot unchanged");
+
+        GD.Print($"NATIVE_ROOT_MENU_PROOF PASS digivolve=execution form={originalId}→{player.Id} phase=EnemyTurn ingress=GameHost._Input");
+
+        // ── cancel path: open submenu then X returns to root with no cost ────
+        using var cancel = new NativeMenuSession();
+        string cancelBefore = Snapshot(cancel);
+        Select(cancel, 2);
+        cancel.Tap(Key.Enter);
+        ProbeRequirement.Require(cancel.Menu.Menu == BattleMenuKind.Digivolve, "digivolve cancel test: submenu did not open");
+        cancel.Tap(Key.X);
+        ProbeRequirement.Require(cancel.Menu.Menu == BattleMenuKind.Root, "digivolve cancel did not return to root");
+        ProbeRequirement.Require(Snapshot(cancel) == cancelBefore, "digivolve cancel consumed resources");
+
+        GD.Print("NATIVE_ROOT_MENU_PROOF PASS digivolve=cancel no-cost ingress=GameHost._Input");
+    }
+
     /// <summary>Navigates from root start using real press/release gestures.</summary>
     /// <param name="session">Native host fixture.</param>
     /// <param name="row">Desired root row.</param>
