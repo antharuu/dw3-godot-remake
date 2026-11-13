@@ -562,6 +562,7 @@ src/Dw3.Game/Presentation/FieldNpcLayer.cs
 src/Dw3.Game/Presentation/FieldRenderer.cs
 src/Dw3.Game/Presentation/FieldTextureCache.cs
 src/Dw3.Game/Presentation/FieldWaterLayer.cs
+src/Dw3.Game/Presentation/FightReportMessageLineResolver.cs
 src/Dw3.Game/Presentation/FightReportRenderer.cs
 src/Dw3.Game/Presentation/IShotCameraRng.cs
 src/Dw3.Game/Presentation/PackTextures.cs
@@ -872,8 +873,11 @@ tests/Dw3.Game.Tests/FieldDataPackLoaderTests.cs
 tests/Dw3.Game.Tests/FieldProbeCatalogTests.cs
 tests/Dw3.Game.Tests/FieldDiagnosticProbeRunnerTests.cs
 tests/Dw3.Game.Tests/FighterSheetCatalogTests.cs
+tests/Dw3.Game.Tests/FightReportControllerInteractionTests.cs
 tests/Dw3.Game.Tests/FightReportControllerVectorGenerator.cs
 tests/Dw3.Game.Tests/FightReportControllerVectorTests.cs
+tests/Dw3.Game.Tests/FightReportMessageLineResolverTests.cs
+tests/Dw3.Game.Tests/FightReportNameCatalogTests.cs
 tests/Dw3.Game.Tests/GrowthTablesBuilderTests.cs
 tests/Dw3.Game.Tests/HostStartupOptionsTests.cs
 tests/Dw3.Game.Tests/LatchedFakeLauncher.cs
