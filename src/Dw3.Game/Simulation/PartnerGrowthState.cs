@@ -23,4 +23,17 @@ public sealed class PartnerGrowthState
 
     /// <summary>Gets or sets the seven elemental resistances.</summary>
     public int[] Resistances { get; set; } = new int[7];
+
+    /// <summary>Copies the state so a later change can be measured against it.</summary>
+    /// <returns>An independent copy, arrays included.</returns>
+    public PartnerGrowthState Copy() => new()
+    {
+        Level = Level,
+        Exp = Exp,
+        Tp = Tp,
+        MaxHp = MaxHp,
+        MaxMp = MaxMp,
+        BattleStats = [.. BattleStats],
+        Resistances = [.. Resistances],
+    };
 }

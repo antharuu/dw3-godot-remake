@@ -6,11 +6,20 @@ namespace Dw3Production.Session;
 /// <summary>Owns the in-memory player state shared by consecutive battles until a future save system persists it.</summary>
 public sealed class PlayerSession
 {
+    /// <summary>The most money the source game lets the player hold; a larger total is clamped to it.</summary>
+    public const int MoneyMax = 9_999_999;
+
+    /// <summary>The most copies of one item the source game keeps; an award beyond it is lost.</summary>
+    public const int ItemMax = 99;
+
     /// <summary>Initializes a new instance of the <see cref="PlayerSession"/> class.</summary>
     /// <param name="partners">Persistent party slots. At most three slots are retained.</param>
-    /// <param name="inventory">Battle item quantities owned by the player.</param>
-    public PlayerSession(IReadOnlyList<PlayerSessionPartner> partners, IReadOnlyDictionary<int, int> inventory)
+    /// <param name="inventory">Item quantities owned by the player.</param>
+    /// <param name="money">Money owned by the player, 0 to <see cref="MoneyMax"/>.</param>
+    public PlayerSession(IReadOnlyList<PlayerSessionPartner> partners, IReadOnlyDictionary<int, int> inventory, int money = 0)
     {
+        ArgumentOutOfRangeException.ThrowIfNegative(money);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(money, MoneyMax);
         ArgumentNullException.ThrowIfNull(partners);
         ArgumentNullException.ThrowIfNull(inventory);
         Partners = new PlayerSessionPartner?[3];
@@ -20,13 +29,20 @@ public sealed class PlayerSession
         }
 
         Inventory = new Dictionary<int, int>(inventory);
+        Money = money;
     }
 
     /// <summary>Gets the session-owned party slots.</summary>
     public PlayerSessionPartner?[] Partners { get; }
 
-    /// <summary>Gets the session-owned battle item quantities.</summary>
+    /// <summary>Gets the session-owned item quantities. Battle menus list only the ids of their battle item catalogue.</summary>
     public Dictionary<int, int> Inventory { get; }
+
+    /// <summary>Gets the money the player owns, 0 to <see cref="MoneyMax"/>.</summary>
+    public int Money { get; private set; }
+
+    /// <summary>Gets each party slot's persistent growth state, null for an empty slot or a partner without growth.</summary>
+    public IReadOnlyList<PartnerGrowthState?> PartyGrowth => [.. Partners.Select(partner => partner?.Growth)];
 
     /// <summary>Creates the explicit debug session used until field-owned party loading exists.</summary>
     /// <param name="fighters">Decoded fighter data supplying the debug party's base sources.</param>
@@ -36,13 +52,44 @@ public sealed class PlayerSession
     {
         IReadOnlyList<int> ids = BattleSetupFactory.StarterPartnerDigimonIds(fighters);
         PartnerSeed?[] seeds = BattleSetupFactory.BuildParty(fighters, TestTeamGrowth.Level, ids);
+        IReadOnlyList<PartnerGrowthState> growth = TestTeamGrowth.Create(ids, fighters);
         var partners = new List<PlayerSessionPartner>();
-        foreach (PartnerSeed seed in seeds.OfType<PartnerSeed>())
+        for (int index = 0; index < seeds.Length; index++)
         {
-            partners.Add(new PlayerSessionPartner(seed, [seed.Id], [], [], []));
+            if (seeds[index] is PartnerSeed seed)
+            {
+                partners.Add(new PlayerSessionPartner(seed, [seed.Id], [], [], [], growth[index]));
+            }
         }
 
         return new PlayerSession(partners, items.Items.ToDictionary(item => item.Id, _ => 3));
+    }
+
+    /// <summary>Adds a reward to the player's money, clamped to the source maximum.</summary>
+    /// <param name="amount">Money won, 0 or more.</param>
+    /// <returns>The amount actually added after the clamp.</returns>
+    public int CreditMoney(int amount)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(amount);
+        int before = Money;
+        Money = (int)Math.Min((long)Money + amount, MoneyMax);
+        return Money - before;
+    }
+
+    /// <summary>Adds one copy of a won item, kept at the source's 99-copy maximum.</summary>
+    /// <param name="itemId">Item id, 0 for no item.</param>
+    /// <returns>True when the stock grew, false for no item or a full stock.</returns>
+    public bool CreditItem(int itemId)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(itemId);
+        if (itemId == 0)
+        {
+            return false;
+        }
+
+        int before = Inventory.GetValueOrDefault(itemId);
+        Inventory[itemId] = Math.Min(before + 1, ItemMax);
+        return Inventory[itemId] > before;
     }
 
     /// <summary>Builds the canonical battle seeds without recreating resources or persistent status arrays.</summary>

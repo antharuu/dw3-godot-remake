@@ -57,7 +57,6 @@ internal static class RuntimeAssetsLoader
         var drop = animationLoader.LoadDrop();
         var fighters = battleLoader.LoadFighters();
         var rewards = battleLoader.LoadRewards();
-        var partyIds = BattleSetupFactory.StarterPartnerDigimonIds(fighters);
         using var dialogueLoader = new DialogueDataPackLoader(new DataPackReader(dataRoot));
         return new RuntimeAssets
         {
@@ -80,8 +79,6 @@ internal static class RuntimeAssetsLoader
             BattleText = battleLoader.LoadBattleText(),
             Rewards = rewards,
             GrowthTables = GrowthTablesBuilder.Build(rewards.Growth),
-            PartyDigimonIds = partyIds,
-            PartyGrowth = TestTeamGrowth.Create(partyIds, fighters),
             PlayerSession = PlayerSession.CreateDebug(fighters, battleLoader.LoadBattleItems()),
             Dialogue = dialogueLoader.LoadDialogue(),
             DialogueFrames = dialogueLoader.LoadDialogueFrame(),

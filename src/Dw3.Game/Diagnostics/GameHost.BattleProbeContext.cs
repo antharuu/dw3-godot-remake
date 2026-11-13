@@ -62,7 +62,7 @@ public partial class GameHost
 
         /// <inheritdoc/>
         public bool HasReportData =>
-            _host._rewardsData is not null && _host._growthTables is not null && _host._partyGrowth is not null;
+            _host._rewardsData is not null && _host._growthTables is not null && _host._playerSession is not null;
 
         /// <inheritdoc/>
         public bool HasBattleRenderer => _host._battleRenderer is not null;
@@ -89,7 +89,7 @@ public partial class GameHost
         public bool IsFightReportVisible => _host._fightReportRenderer is { Visible: true };
 
         /// <inheritdoc/>
-        public IReadOnlyList<PartnerGrowthState>? PartyGrowth => _host._partyGrowth;
+        public IReadOnlyList<PartnerGrowthState?>? PartyGrowth => _host._playerSession?.PartyGrowth;
 
         /// <inheritdoc/>
         public int ReportFadeFrames => BattleReportFadeFrames;

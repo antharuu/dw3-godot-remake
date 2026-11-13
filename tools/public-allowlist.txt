@@ -1328,3 +1328,8 @@ src/Dw3.Extractor/SpriteEffectPalette.cs
 src/Dw3.Extractor/SpriteEffectPaletteResolver.cs
 tests/Dw3.Extractor.Tests/SpriteEffectPaletteResolverTests.cs
 tests/Dw3.Formats.Tests/Battle/HudFrameRendererPaletteTests.cs
+src/Dw3.Game/Session/BattleRewardSettlement.cs
+src/Dw3.Game/Session/BattleVictoryContext.cs
+tests/Dw3.Game.Tests/Session/BattleRewardSettlementTests.cs
+tests/Dw3.Game.Tests/Session/BattleRewardLifecycleTests.cs
+tests/Dw3.Game.Tests/Session/RewardSessionFixture.cs

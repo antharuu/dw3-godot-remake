@@ -52,9 +52,16 @@ internal sealed class BattleReportProbe : BattleProbe
         Host.State.AnimationSet = 1;
         Host.State.AnimationDirection = 1;
         await Host.CaptureStillAsync(captureRoot, "battle-report-before.png");
-        var partyGrowth = Host.PartyGrowth!;
-        return (Host.State.Position, partyGrowth[0].Exp);
+        return (Host.State.Position, LeadExp());
     }
+
+    /// <summary>Reads the lead partner's experience from the session growth state.</summary>
+    /// <returns>The lead partner's cumulative experience.</returns>
+    /// <exception cref="InvalidOperationException">The session has no lead partner growth.</exception>
+    private int LeadExp() =>
+        Host.PartyGrowth is [PartnerGrowthState lead, ..]
+            ? lead.Exp
+            : throw new InvalidOperationException("the session has no lead partner growth");
 
     /// <summary>Wins encounter 200 and proves its sourced reward before displaying the report pages.</summary>
     /// <param name="captureRoot">Directory receiving report captures.</param>
@@ -82,8 +89,8 @@ internal sealed class BattleReportProbe : BattleProbe
             report.Exp == 4 && report.Money == 50 && report.DigimonExp == 1,
             $"encounter 200 reward drifted exp={report.Exp} money={report.Money} digimonExp={report.DigimonExp}");
         ProbeRequirement.Require(
-            Host.PartyGrowth![0].Exp == kotemonExpBefore + 4,
-            $"the fought partner did not gain the exp share exp={Host.PartyGrowth[0].Exp}");
+            LeadExp() == kotemonExpBefore + 4,
+            $"the fought partner did not gain the exp share exp={LeadExp()}");
         for (var i = 0; i < Host.ReportFadeFrames + 20; i++)
         {
             Host.TickTestSimulation();

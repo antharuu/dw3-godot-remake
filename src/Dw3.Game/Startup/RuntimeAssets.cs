@@ -72,12 +72,6 @@ internal sealed class RuntimeAssets
     /// <summary>Gets the runtime growth tables built from <see cref="Rewards"/>.</summary>
     public required GrowthTables GrowthTables { get; init; }
 
-    /// <summary>Gets the Digimon ids of the test team, in party order.</summary>
-    public required IReadOnlyList<int> PartyDigimonIds { get; init; }
-
-    /// <summary>Gets the starting growth state of the test team, in party order.</summary>
-    public required IReadOnlyList<PartnerGrowthState> PartyGrowth { get; init; }
-
     /// <summary>Gets the in-memory player session shared by battles started during this process.</summary>
     public required PlayerSession PlayerSession { get; init; }
 

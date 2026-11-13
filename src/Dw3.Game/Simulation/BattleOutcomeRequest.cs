@@ -14,8 +14,8 @@ public sealed class BattleOutcomeRequest
     /// <summary>Gets the encounter id used by the structured reward diagnostic.</summary>
     public int Encounter { get; init; }
 
-    /// <summary>Gets partner growth state, when a test party was initialized.</summary>
-    public IReadOnlyList<PartnerGrowthState>? PartyGrowth { get; init; }
+    /// <summary>Gets each party slot's persistent growth state, null for a slot that does not grow.</summary>
+    public IReadOnlyList<PartnerGrowthState?>? PartyGrowth { get; init; }
 
     /// <summary>Gets decoded growth tables.</summary>
     public GrowthTables? GrowthTables { get; init; }
