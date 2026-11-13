@@ -155,7 +155,7 @@ public sealed class BattleFlowController
             BattleCommand.Technique => ChooseTechnique(actor, arg, rng),
             BattleCommand.Digivolve => ChooseDigivolve(actor, arg),
             BattleCommand.Switch => ChooseSwitch(arg),
-            BattleCommand.Item => ChooseItem(actor, arg),
+            BattleCommand.Item => ChooseItem(actor, arg, rng),
             BattleCommand.Flee => ChooseFlee(actor, rng),
             _ => true,
         };
@@ -274,15 +274,16 @@ public sealed class BattleFlowController
     /// <summary>Consumes one of <paramref name="itemId"/> from the bag and applies its effect
     /// only when the item is in the catalogue, the stock is positive and the battle state accepts the effect.</summary>
     /// <param name="itemId">Item id picked in the Item submenu.</param>
+    /// <param name="rng">Shared battle random source for temporary item expiry timing.</param>
     /// <returns><see langword="true"/> when the item was used and the stock decremented.</returns>
-    private bool UseItem(int itemId)
+    private bool UseItem(int itemId, IBattleRng rng)
     {
         if (!Items.TryGetValue(itemId, out var item) || !ItemStock.TryGetValue(itemId, out var count) || count <= 0)
         {
             return false;
         }
 
-        if (!State.PlayerItem(item))
+        if (!State.PlayerItem(item, rng))
         {
             return false;
         }
@@ -452,10 +453,11 @@ public sealed class BattleFlowController
     /// <summary>An item from the bag, by item id.</summary>
     /// <param name="actor">The active partner, named in the message.</param>
     /// <param name="itemId">The item id picked from the bag.</param>
+    /// <param name="rng">Shared battle random source for temporary item expiry timing.</param>
     /// <returns>Whether the command spent the turn.</returns>
-    private bool ChooseItem(BattleFighter? actor, int itemId)
+    private bool ChooseItem(BattleFighter? actor, int itemId, IBattleRng rng)
     {
-        if (!UseItem(itemId))
+        if (!UseItem(itemId, rng))
         {
             return RejectCommand();
         }

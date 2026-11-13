@@ -10,11 +10,13 @@ public static class BattleItemEffects
     /// <summary>Attempts an item effect without changing inventory or advancing the battle turn.</summary>
     /// <param name="item">Source-classified item selected by the player.</param>
     /// <param name="state">Battle state whose player party receives the item effect.</param>
+    /// <param name="rng">Shared battle random source for temporary effect expiry timing.</param>
     /// <returns>Whether the supported item made a valid state change.</returns>
-    public static bool TryApply(BattleItem item, BattleState state)
+    public static bool TryApply(BattleItem item, BattleState state, IBattleRng rng)
     {
         ArgumentNullException.ThrowIfNull(item);
         ArgumentNullException.ThrowIfNull(state);
+        ArgumentNullException.ThrowIfNull(rng);
         switch (item.Effect)
         {
             case "heal":
@@ -25,6 +27,16 @@ public static class BattleItemEffects
                 return TryApplyItemTechnique(state, item, new(0x64, BattleTechniqueEffect.ItemRevive, 0));
             case "restoreHalfHpMp":
                 return TryRestoreHalf(state, item);
+            case "boostSpeed":
+                return BattlePartnerItemEffects.TryBoostSpeed(state, item, rng);
+            case "boostAttack":
+                return BattlePartnerItemEffects.TryBoostAttack(state, item, rng);
+            case "boostDefense":
+                return BattlePartnerItemEffects.TryBoostDefense(state, item, rng);
+            case "special":
+                return BattlePartnerItemEffects.TrySpecial(state, item, rng);
+            case "fillGauge":
+                return BattlePartnerItemEffects.TryFillGauge(state, item);
             default:
                 return false;
         }

@@ -419,10 +419,16 @@ public sealed class BattleState
     /// </summary>
     /// <param name="item">The item used.</param>
     /// <returns><see langword="false"/> when the active partner cannot act or the item has no supported beneficial effect, otherwise <see langword="true"/> with the turn spent.</returns>
-    public bool PlayerItem(BattleItem item)
+    public bool PlayerItem(BattleItem item) => PlayerItem(item, new BattleDefaultOpeningRng());
+
+    /// <summary>The active partner uses a battle item with the battle random stream used by any temporary item expiry.</summary>
+    /// <param name="item">The item used.</param>
+    /// <param name="rng">Shared battle random source.</param>
+    /// <returns><see langword="false"/> when the active partner cannot act or the item has no supported beneficial effect, otherwise <see langword="true"/> with the turn spent.</returns>
+    public bool PlayerItem(BattleItem item, IBattleRng rng)
     {
         var attacker = ActivePlayerFighter;
-        if (attacker is not { IsKnockedOut: false } || (attacker.Flags & FighterFlags.Confused) != 0 || !BattleItemEffects.TryApply(item, this))
+        if (attacker is not { IsKnockedOut: false } || (attacker.Flags & FighterFlags.Confused) != 0 || !BattleItemEffects.TryApply(item, this, rng))
         {
             return false;
         }
