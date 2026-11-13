@@ -622,6 +622,7 @@ src/Dw3.Game/Simulation/BattleOutcome.cs
 src/Dw3.Game/Simulation/BattleOutcomeRequest.cs
 src/Dw3.Game/Simulation/BattleOutcomeResolution.cs
 src/Dw3.Game/Simulation/BattleOutcomeResolver.cs
+src/Dw3.Game/Simulation/BattleRewardEquipment.cs
 src/Dw3.Game/Simulation/BattlePairTechniqueResolver.cs
 src/Dw3.Game/Simulation/BattlePairTechniqueRules.cs
 src/Dw3.Game/Simulation/BattlePoisonRules.cs
@@ -824,6 +825,7 @@ tests/Dw3.Game.Tests/BattleItemTechniqueConsumerTests.cs
 tests/Dw3.Game.Tests/BattleTechniqueEffectTests.cs
 tests/Dw3.Game.Tests/BattlePoisonStatusTests.cs
 tests/Dw3.Game.Tests/BattleOutcomeTransitionTests.cs
+tests/Dw3.Game.Tests/BattleRewardResolutionTests.cs
 tests/Dw3.Game.Tests/BattlePairTechniqueTests.cs
 tests/Dw3.Game.Tests/BattleGrowthVectorGenerator.cs
 tests/Dw3.Game.Tests/BattleGrowthVectorTests.cs

@@ -29,6 +29,18 @@ public sealed class BattleOutcomeRequest
     /// <summary>Gets decoded display text for a fighter id.</summary>
     public required Func<int, BattleTextLine> NameFor { get; init; }
 
+    /// <summary>Gets a value indicating whether the active partner equipped the source money bonus item.</summary>
+    public bool HasMoneyBonusEquipment { get; init; }
+
+    /// <summary>Gets a function that identifies party slots wearing the source experience bonus item.</summary>
+    public Func<int, bool> HasExperienceBonusEquipment { get; init; } = _ => false;
+
+    /// <summary>Gets a value indicating whether the encounter forces a scripted prize instead of a random enemy item.</summary>
+    public bool HasPrize { get; init; }
+
+    /// <summary>Gets the forced prize item id when <see cref="HasPrize"/> is true.</summary>
+    public int Prize { get; init; }
+
     /// <summary>Gets the battle text catalogue attached to the report.</summary>
     public required BattleTextCatalog Text { get; init; }
 }

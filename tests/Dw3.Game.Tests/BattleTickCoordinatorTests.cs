@@ -17,6 +17,20 @@ public sealed class BattleTickCoordinatorTests
         Assert.Equal(1, host.DeactivateCameraCalls);
     }
 
+    /// <summary>Applies terminal victory effects once even while the report fade takes several ticks.</summary>
+    [Fact]
+    public void Tick_TerminalVictoryResolvesOutcomeOnlyOnce()
+    {
+        var host = new TerminalOutcomeHost();
+        var coordinator = new BattleTickCoordinator(host);
+
+        coordinator.Tick();
+        coordinator.Tick();
+
+        Assert.Equal(1, host.ResolveOutcomeCalls);
+        Assert.True(host.IsBattleResolved);
+    }
+
     private sealed class CommandClosingHost : IBattleTickHost
     {
         public CommandClosingHost()
@@ -76,5 +90,68 @@ public sealed class BattleTickCoordinatorTests
         }
 
         public bool AdvanceVictoryFade() => false;
+    }
+
+    /// <summary>Represents a terminal victory whose report has not yet opened.</summary>
+    private sealed class TerminalOutcomeHost : IBattleTickHost
+    {
+        public TerminalOutcomeHost()
+        {
+            Flow = new BattleFlowController();
+            Flow.Start(new BattleState());
+            Flow.EndBattle(BattleOutcome.Won);
+        }
+
+        public BattleFlowController? Flow { get; }
+
+        public bool HasFightReport => false;
+
+        public bool IsPlayerCameraActive => false;
+
+        public bool IsBattleResolved { get; private set; }
+
+        public int ResolveOutcomeCalls { get; private set; }
+
+        public void ActivatePlayerCamera()
+        {
+        }
+
+        public bool AdvanceVictoryFade() => false;
+
+        public void BeginFightReport()
+        {
+        }
+
+        public void DeactivatePlayerCamera()
+        {
+        }
+
+        public void EndBattle()
+        {
+        }
+
+        public void EnemyAct()
+        {
+        }
+
+        public void MarkBattleResolved() => IsBattleResolved = true;
+
+        public void RefreshModels()
+        {
+        }
+
+        public void ResolveOutcome() => ResolveOutcomeCalls++;
+
+        public void TickActionSequence()
+        {
+        }
+
+        public void TickBattleMenu()
+        {
+        }
+
+        public void TickFightReport()
+        {
+        }
     }
 }
