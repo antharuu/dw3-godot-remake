@@ -1182,6 +1182,8 @@ src/Dw3.Game/Simulation/ModelControlEvent.cs
 src/Dw3.Game/Simulation/ScreenFadeEvent.cs
 src/Dw3.Game/Diagnostics/Battle/BattlePhysicalStageCancellation.cs
 src/Dw3.Game/Diagnostics/Battle/BattlePhysicalTechniqueProbe.cs
+src/Dw3.Game/Presentation/BattleEffectModelPlayback.cs
+tests/Dw3.Game.Tests/BattleModelDocumentTests.cs
 tests/Dw3.Game.Tests/BattleDynamicSpriteTests.cs
 src/Dw3.Game/Presentation/BattleImpactPlayback.cs
 src/Dw3.Game/Presentation/BattleImpactVisual.cs
