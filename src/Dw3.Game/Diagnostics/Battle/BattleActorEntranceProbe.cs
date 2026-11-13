@@ -77,13 +77,23 @@ internal sealed class BattleActorEntranceProbe : BattleProbe
     /// <param name="fighter">Fighter to hold.</param>
     private static void HoldNonterminal(BattleFighter? fighter)
     {
-        ProbeRequirement.Require(fighter is not null, "fixture fighter unavailable");
-        fighter!.Hp = fighter.MaxHp = 9000;
+        if (fighter is null)
+        {
+            throw new InvalidOperationException("fixture fighter unavailable");
+        }
+
+        fighter.Hp = fighter.MaxHp = 9000;
     }
 
     /// <summary>Puts a fighter exactly at the source weak threshold, HP equal to a quarter of its maximum.</summary>
     /// <param name="fighter">Fighter to weaken.</param>
     private static void SetQuarterHp(BattleFighter fighter) => fighter.Hp = fighter.MaxHp / 4;
+
+    /// <summary>Returns the fixture enemy of a slot.</summary>
+    /// <param name="slot">Enemy slot.</param>
+    /// <returns>The fighter.</returns>
+    /// <exception cref="InvalidOperationException">The slot is empty.</exception>
+    private BattleFighter Enemy(int slot) => Host.Flow.State.Enemies[slot] ?? throw new InvalidOperationException($"fixture enemy slot {slot} is empty");
 
     /// <summary>Plays encounter 4's voluntary switch, then a replacement after a real knockout.</summary>
     /// <param name="driver">Production frame driver.</param>
@@ -97,18 +107,18 @@ internal sealed class BattleActorEntranceProbe : BattleProbe
         ProbeRequirement.Require(enemies[0]?.Id == 222 && enemies[1]?.Id == 77 && enemies[2]?.Id == 119, $"encounter 4 enemies=[{string.Join(",", enemies.Select(enemy => enemy?.Id ?? 0))}]");
         HoldNonterminal(Host.Flow.State.ActivePlayerFighter);
         HoldNonterminal(enemies[0]);
-        SetQuarterHp(enemies[1]!);
+        SetQuarterHp(Enemy(1));
         QuietLog.Info("battle-actor-entrance fixture encounter=4 player=9000 enemy222=9000 enemy77=quarter");
         await PlayUntilEntranceAsync(driver);
         await proof.RunAsync(new BattleEntranceExpectation("enemy-switch", BattleEntranceKind.EnemySwitch, 222, 77, BattleWeakIdleRule.Normal, EnemySwitchConfirmAfter));
         await RequireCommandCameraAfterReleaseAsync(driver, root, "enemy-switch");
 
         // The source knockout event scans from slot 0, so the switched-out 222 comes back before 119.
-        enemies[1]!.Hp = 1;
-        SetQuarterHp(enemies[0]!);
+        Enemy(1).Hp = 1;
+        SetQuarterHp(Enemy(0));
         QuietLog.Info("battle-actor-entrance fixture enemy77=1 enemy222=quarter");
         await PlayUntilEntranceAsync(driver);
-        ProbeRequirement.Require(enemies[1]!.IsKnockedOut, "the replacement did not follow a real knockout");
+        ProbeRequirement.Require(Enemy(1).IsKnockedOut, "the replacement did not follow a real knockout");
         await proof.RunAsync(new BattleEntranceExpectation("enemy-replacement", BattleEntranceKind.EnemyReplacement, 77, 222, BattleWeakIdleRule.Weak, EnemyConfirmAfter));
         await RequireCommandCameraAfterReleaseAsync(driver, root, "enemy-replacement");
     }
@@ -131,12 +141,12 @@ internal sealed class BattleActorEntranceProbe : BattleProbe
 
         QuietLog.Info($"battle-actor-entrance fixture encounter=324 party={LastBossFixtureHp}");
         int openingStage = Host.Renderer.StageIdForProbe;
-        enemies[0]!.Hp = 1;
+        Enemy(0).Hp = 1;
         await PlayUntilEntranceAsync(driver);
-        var stageEntrance = await proof.RunAsync(new BattleEntranceExpectation("entrance-1d2", BattleEntranceKind.EnemyReplacement, enemies[0]!.Id, BattleEntranceExtras.StageFighterId, BattleWeakIdleRule.Normal, EnemyConfirmAfter));
+        var stageEntrance = await proof.RunAsync(new BattleEntranceExpectation("entrance-1d2", BattleEntranceKind.EnemyReplacement, Enemy(0).Id, BattleEntranceExtras.StageFighterId, BattleWeakIdleRule.Normal, EnemyConfirmAfter));
         BattleSpecialEntranceChecks.RequireStageChange(stageEntrance, openingStage);
 
-        enemies[1]!.Hp = 1;
+        Enemy(1).Hp = 1;
         await PlayUntilEntranceAsync(driver);
         var musicEntrance = await proof.RunAsync(new BattleEntranceExpectation("entrance-1d3", BattleEntranceKind.EnemyReplacement, BattleEntranceExtras.StageFighterId, BattleEntranceExtras.MusicFighterId, BattleWeakIdleRule.Normal, EnemyConfirmAfter), measuredClock: true);
         BattleSpecialEntranceChecks.RequireMusicChange(musicEntrance);
