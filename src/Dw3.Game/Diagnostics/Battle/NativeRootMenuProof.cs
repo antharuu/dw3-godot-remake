@@ -21,6 +21,7 @@ public partial class NativeRootMenuProof : Node
             NativeMenuCommandsProof.Navigation();
             NativeMenuCommandsProof.Lists();
             NativeItemUseProof.ApplyHealingAndStatusItems();
+            NativePreparedItemTechniqueProof.RunWhenRequested();
             NativeMenuPhaseProof.AttackAndReentry();
             NativeMenuPhaseProof.Flee();
             NativeMenuPhaseProof.EnemyTurn();

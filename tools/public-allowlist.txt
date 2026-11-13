@@ -372,6 +372,7 @@ src/Dw3.Formats/Water/StageTileDecoder.cs
 src/Dw3.Game/.gitignore
 src/Dw3.Game/BattleProbe.tscn
 src/Dw3.Game/Conversion/BattleDataPackLoader.cs
+src/Dw3.Game/Conversion/BattleEffectModelPathResolver.cs
 src/Dw3.Game/Conversion/CacheResourceException.cs
 src/Dw3.Game/Conversion/DataPackFiles.cs
 src/Dw3.Game/Conversion/DialogueDataPackLoader.cs
@@ -1183,6 +1184,7 @@ src/Dw3.Game/Simulation/ScreenFadeEvent.cs
 src/Dw3.Game/Diagnostics/Battle/BattlePhysicalStageCancellation.cs
 src/Dw3.Game/Diagnostics/Battle/BattlePhysicalTechniqueProbe.cs
 src/Dw3.Game/Conversion/BattleEffectModelManifestValidator.cs
+src/Dw3.Game/Conversion/SupportedEffectModelAbsence.cs
 src/Dw3.Game/Presentation/BattleEffectModelPlayback.cs
 tests/Dw3.Game.Tests/BattleModelDocumentTests.cs
 tests/Dw3.Game.Tests/BattleDynamicSpriteTests.cs
@@ -1236,6 +1238,8 @@ src/Dw3.Game/Diagnostics/Battle/NativeRootMenuProof.cs
 src/Dw3.Game/Diagnostics/Battle/NativeRootMenuProof.tscn
 # B9-046 native supported item proof
 src/Dw3.Game/Diagnostics/Battle/NativeItemUseProof.cs
+src/Dw3.Game/Diagnostics/Battle/NativePreparedItemTechniqueProof.cs
+src/Dw3.Game/Simulation/BattleExactStatModifier.cs
 tests/Dw3.Game.Tests/BattleItemUseTests.cs
 src/Dw3.Game/Diagnostics/GameHost.NativeMenuFixture.cs
 src/Dw3.Game/Input/BattleInputGate.cs

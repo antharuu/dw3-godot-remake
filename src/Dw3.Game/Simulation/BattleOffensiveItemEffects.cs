@@ -15,7 +15,7 @@ internal static class BattleOffensiveItemEffects
         "weakenDefense" when item.Id == 0x57 => TryWeakenDefense(state, item, rng),
         "lowerStat" when item.Id == 0x58 => TryLowerHigherStat(state, item, rng),
         "lowerSpeed" when item.Id == 0x59 => TryLowerSpeed(state, item, rng),
-        "itemTech" when item.Id == 0x5A => TryItemTechnique(state, item),
+        "itemTech" when item.Id == 0x5A => TryItemTechnique(state, item, rng),
         _ => false,
     };
 
@@ -43,7 +43,7 @@ internal static class BattleOffensiveItemEffects
         return true;
     }
 
-    /// <summary>Applies the source half-chance confusion to the enemy through the established status scheduler.</summary>
+    /// <summary>Applies source enemy confusion and its independent partner-backfire chance through the status scheduler.</summary>
     /// <param name="state">Battle state containing the enemy target.</param>
     /// <param name="item">Confusion item whose target must be the enemy.</param>
     /// <param name="rng">Shared random stream for the source chance and status duration.</param>
@@ -61,8 +61,16 @@ internal static class BattleOffensiveItemEffects
             return false;
         }
 
-        enemy.Flags |= FighterFlags.Confused;
-        enemy.Confusion = item.Amount;
+        if (!state.ApplyDirectItemConfusion(BattleSide.Enemy, item.Amount))
+        {
+            return false;
+        }
+
+        if ((rng.NextValue() & 3) == 0)
+        {
+            _ = state.ApplyDirectItemConfusion(BattleSide.Player, item.Amount);
+        }
+
         return true;
     }
 
@@ -78,8 +86,12 @@ internal static class BattleOffensiveItemEffects
             return false;
         }
 
-        bool attackChanged = state.ApplyStatModifier(BattleSide.Enemy, state.ActiveEnemy, BattleStat.Attack, 39, rng);
-        bool defenseChanged = state.ApplyStatModifier(BattleSide.Enemy, state.ActiveEnemy, BattleStat.Defense, -64, rng);
+        BattleFighter enemy = ActiveEnemy(state);
+        enemy.RefreshStats();
+        int attack = enemy.Stats.Stats[BattleStat.Attack];
+        int defense = enemy.Stats.Stats[BattleStat.Defense];
+        bool attackChanged = state.ApplyStatDelta(BattleSide.Enemy, state.ActiveEnemy, BattleStat.Attack, attack * 3 / 10, rng);
+        bool defenseChanged = state.ApplyStatDelta(BattleSide.Enemy, state.ActiveEnemy, BattleStat.Defense, -(defense / 2), rng);
         return attackChanged || defenseChanged;
     }
 
@@ -101,11 +113,11 @@ internal static class BattleOffensiveItemEffects
         int defense = enemy.Stats.Stats[BattleStat.Defense];
         if (attack > defense && state.Blocks[BattleConst.BlockLowerAttack] == 0)
         {
-            return state.ApplyStatModifier(BattleSide.Enemy, state.ActiveEnemy, BattleStat.Attack, -52, rng);
+            return state.ApplyStatDelta(BattleSide.Enemy, state.ActiveEnemy, BattleStat.Attack, defense - attack, rng);
         }
 
         return defense > attack && state.Blocks[BattleConst.BlockLowerDefense] == 0
-            && state.ApplyStatModifier(BattleSide.Enemy, state.ActiveEnemy, BattleStat.Defense, -52, rng);
+            && state.ApplyStatDelta(BattleSide.Enemy, state.ActiveEnemy, BattleStat.Defense, attack - defense, rng);
     }
 
     /// <summary>Lowers enemy speed by the item's decoded 128th amount when speed lowering is permitted.</summary>
@@ -121,8 +133,9 @@ internal static class BattleOffensiveItemEffects
     /// <summary>Runs the loaded source item technique 0x89 as direct magic damage without paying MP.</summary>
     /// <param name="state">Battle state containing the attacker, target and technique catalogue.</param>
     /// <param name="item">Technique item whose target must be the enemy.</param>
+    /// <param name="rng">Shared battle random stream for the source magic critical policy.</param>
     /// <returns>Whether a positive magic damage value was applied.</returns>
-    private static bool TryItemTechnique(BattleState state, BattleItem item)
+    private static bool TryItemTechnique(BattleState state, BattleItem item, IBattleRng rng)
     {
         if (!HasEnemyTarget(state, item) || !state.Techs.TryGetValue(0x89, out TechData? tech))
         {
@@ -131,13 +144,15 @@ internal static class BattleOffensiveItemEffects
 
         BattleFighter player = ActivePlayer(state);
         BattleFighter enemy = ActiveEnemy(state);
-        int damage = DamageCalculator.ComputeMagicDamage(tech, player.Stats, enemy.Stats, false, player.Strength, state.Boost, 0);
+        int damage = state.Hits(rng).DirectItemMagic(tech, player, enemy);
         if (damage <= 0)
         {
             return false;
         }
 
-        enemy.Hp = Math.Max(enemy.Hp - damage, 0);
+        enemy.TakeDamage(damage);
+        state.CheckOutcome();
+        state.ResolveEnemyReserve();
         return true;
     }
 

@@ -57,6 +57,19 @@ public sealed class BattleHitResolver(ElementBoost boost, bool allowCritical, IB
         return new BattleHitResult(landed, damage);
     }
 
+    /// <summary>Resolves direct item magic without an ordinary technique accuracy gate or MP payment.</summary>
+    /// <param name="tech">Prepared item technique supplying magic damage and critical fields.</param>
+    /// <param name="attacker">Active partner that supplies freshly resolved spirit.</param>
+    /// <param name="target">Active enemy that supplies freshly resolved resistance.</param>
+    /// <returns>The direct magic damage after the source critical policy.</returns>
+    public int DirectItemMagic(TechData tech, BattleFighter attacker, BattleFighter target)
+    {
+        attacker.RefreshStats();
+        target.RefreshStats();
+        int crit = RollMagicCrit(target, tech);
+        return DamageCalculator.ComputeMagicDamage(tech, attacker.Stats, target.Stats, enemyAttacker: false, attacker.Strength, boost, crit);
+    }
+
     /// <summary>The damage of an enemy counter-attack, a share of the damage the enemy just received.</summary>
     /// <param name="tech">The counter technique; its effect power sets the share in 64ths.</param>
     /// <param name="attacker">The countering enemy.</param>

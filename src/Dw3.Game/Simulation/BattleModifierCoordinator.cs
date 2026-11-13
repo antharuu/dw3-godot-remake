@@ -31,6 +31,16 @@ public sealed class BattleModifierCoordinator(BattleState state, BattleTurnSched
         return true;
     }
 
+    /// <summary>Applies one exact source-unit delta to a temporary stat modifier and refreshes its expiry.</summary>
+    /// <param name="side">Side containing the fighter.</param>
+    /// <param name="fighterSlot">Fighter slot receiving the modifier.</param>
+    /// <param name="stat">Target attack or defense stat.</param>
+    /// <param name="delta">Source-unit delta applied after resolving the current stat.</param>
+    /// <param name="rng">Shared battle random source used for expiry timing.</param>
+    /// <returns>Whether the modifier changed and an expiry was queued.</returns>
+    public bool ApplyStatDelta(BattleSide side, int fighterSlot, int stat, int delta, IBattleRng rng) =>
+        BattleExactStatModifier.Apply(state, scheduler, side, fighterSlot, stat, delta, rng);
+
     /// <summary>Sets a fighter's next-technique charge and refreshes its resolved damage bonus.</summary>
     /// <param name="side">Side containing the fighter.</param>
     /// <param name="value">Charge in sixty-fourths of damage.</param>
