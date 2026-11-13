@@ -41,6 +41,13 @@ public static class BattleItemEffects
                 return TryBoostElement(state, item, rng);
             case "boostRandomElement":
                 return TryBoostRandomElement(state, item, rng);
+            case "drain":
+            case "confuse":
+            case "weakenDefense":
+            case "lowerStat":
+            case "lowerSpeed":
+            case "itemTech":
+                return BattleOffensiveItemEffects.TryApply(state, item, rng);
             default:
                 return false;
         }

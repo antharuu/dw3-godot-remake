@@ -601,6 +601,7 @@ src/Dw3.Game/Simulation/BattleHitSequence.cs
 src/Dw3.Game/Simulation/BattleHitRules.cs
 src/Dw3.Game/Simulation/BattleItem.cs
 src/Dw3.Game/Simulation/BattleItemEffects.cs
+src/Dw3.Game/Simulation/BattleOffensiveItemEffects.cs
 src/Dw3.Game/Simulation/BattlePartnerItemEffects.cs
 src/Dw3.Game/Simulation/BattleItemTechniqueConsumer.cs
 src/Dw3.Game/Simulation/BattleAutoRecoveryCoordinator.cs

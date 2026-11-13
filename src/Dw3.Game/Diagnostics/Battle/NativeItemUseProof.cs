@@ -14,7 +14,8 @@ internal static class NativeItemUseProof
         VerifyPoisonCure();
         VerifySpeedBoost();
         VerifyElementBoost();
-        GD.Print("NATIVE_ROOT_MENU_PROOF PASS items=heal-poison-cure-speed-element ingress=GameHost._Input stock=decremented");
+        VerifyOffensiveItemTechnique();
+        GD.Print("NATIVE_ROOT_MENU_PROOF PASS items=heal-poison-cure-speed-element-item-tech ingress=GameHost._Input stock=decremented");
     }
 
     /// <summary>Reaches a healing item through the production root and menu driver, then observes HP and stock.</summary>
@@ -62,6 +63,20 @@ internal static class NativeItemUseProof
         session.Tap(Key.Down);
         session.Tap(Key.Enter);
         ProbeRequirement.Require(session.Flow.State.Boost == new ElementBoost(2, 64) && session.Flow.ItemStock[0x4D] == 1, "item element boost did not apply through native menu");
+    }
+
+    /// <summary>Reaches source item 0x5A through GameHost input and observes real catalogue damage and stock.</summary>
+    private static void VerifyOffensiveItemTechnique()
+    {
+        using var session = new NativeMenuSession(includeOffensiveItems: true);
+        int enemyHp = session.Enemy.Hp;
+        NativeMenuCommandsProof.Select(session, 4);
+        session.Tap(Key.Enter);
+        ProbeRequirement.Require(session.Menu.Menu == BattleMenuKind.Item && session.Menu.Lines.Count == 8, "offensive item menu did not open through native root input");
+        session.Tap(Key.Pagedown);
+        ProbeRequirement.Require(session.Menu.First == 7 && session.Menu.Cursor == 0, "offensive item second page did not open through native input");
+        session.Tap(Key.Enter);
+        ProbeRequirement.Require(session.Enemy.Hp < enemyHp && session.Flow.ItemStock[0x5A] == 1, "item technique did not damage through native menu");
     }
 
     /// <summary>Opens the real item page from the Item root row with native key gestures.</summary>

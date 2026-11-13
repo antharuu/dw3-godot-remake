@@ -36,17 +36,17 @@ public sealed class BattleItemUseTests
         Assert.Equal(1, flow.ItemStock[0x42]);
     }
 
-    /// <summary>Verifies that an unsupported enemy-targeted item neither spends the turn nor consumes stock.</summary>
+    /// <summary>Verifies that an enemy-targeted confusion item reaches the real player item flow and consumes stock when its source chance succeeds.</summary>
     [Fact]
-    public void Choose_UnsupportedOffensiveItem_IsRefusedWithoutConsumption()
+    public void Choose_OffensiveConfusionItem_ConsumesOneOnSuccess()
     {
         BattleFlowController flow = CreateFlow(new BattleItem(0x56, "confuse", "enemy", 96));
 
         bool spent = flow.Choose(BattleCommand.Item, 0x56, new FixedRng());
 
-        Assert.False(spent);
-        Assert.Equal(BattleFlowPhase.PlayerCommand, flow.Phase);
-        Assert.Equal(2, flow.ItemStock[0x56]);
+        Assert.True(spent);
+        Assert.Equal(BattleFlowPhase.EnemyTurn, flow.Phase);
+        Assert.Equal(1, flow.ItemStock[0x56]);
     }
 
     /// <summary>Verifies that an otherwise supported item is refused without consumption when it cannot improve its valid target.</summary>
@@ -308,6 +308,181 @@ public sealed class BattleItemUseTests
         Assert.Equal(ElementBoost.None, flow.State.Boost);
     }
 
+    /// <summary>Verifies that the drain item removes exactly 20 percent of the enemy maximum HP, restores the partner, and consumes stock through the player item flow.</summary>
+    [Fact]
+    public void Choose_DrainItem_TransfersTwentyPercentOfEnemyMaximumHp()
+    {
+        BattleFlowController flow = CreateFlow(new BattleItem(0x55, "drain", "enemy", 0));
+        BattleFighter active = Assert.IsType<BattleFighter>(flow.State.ActivePlayerFighter);
+        BattleFighter enemy = Assert.IsType<BattleFighter>(flow.State.ActiveEnemyFighter);
+        active.Hp = 40;
+        enemy.Hp = 90;
+        enemy.MaxHp = 100;
+
+        bool spent = flow.Choose(BattleCommand.Item, 0x55, new FixedRng());
+
+        Assert.True(spent);
+        Assert.Equal(60, active.Hp);
+        Assert.Equal(70, enemy.Hp);
+        Assert.Equal(1, flow.ItemStock[0x55]);
+    }
+
+    /// <summary>Verifies that confusion applies to the enemy through the item flow and consumes the source chance draw.</summary>
+    [Fact]
+    public void Choose_ConfuseItem_AppliesEnemyConfusionAndConsumesOne()
+    {
+        BattleFlowController flow = CreateFlow(new BattleItem(0x56, "confuse", "enemy", 96));
+        BattleFighter enemy = Assert.IsType<BattleFighter>(flow.State.ActiveEnemyFighter);
+        var rng = new OddCountingRng();
+
+        bool spent = flow.Choose(BattleCommand.Item, 0x56, rng);
+
+        Assert.True(spent);
+        Assert.NotEqual(0, enemy.Flags & FighterFlags.Confused);
+        Assert.Equal(1, flow.ItemStock[0x56]);
+        Assert.True(rng.Calls > 0);
+    }
+
+    /// <summary>Verifies that the defense-weakening item applies its source attack raise and defense reduction to the enemy.</summary>
+    [Fact]
+    public void Choose_WeakenDefenseItem_ChangesEnemyAttackAndDefense()
+    {
+        BattleFlowController flow = CreateFlow(new BattleItem(0x57, "weakenDefense", "enemy", 0));
+        BattleFighter enemy = Assert.IsType<BattleFighter>(flow.State.ActiveEnemyFighter);
+        SetCombatStats(enemy, 100);
+
+        bool spent = flow.Choose(BattleCommand.Item, 0x57, new FixedRng());
+
+        Assert.True(spent);
+        Assert.Equal(30, enemy.Boosts[0]);
+        Assert.Equal(-50, enemy.Boosts[1]);
+        Assert.Equal(1, flow.ItemStock[0x57]);
+    }
+
+    /// <summary>Verifies that the higher-stat item lowers the enemy attack to its defense and schedules a temporary enemy modifier.</summary>
+    [Fact]
+    public void Choose_LowerStatItem_LowersHigherEnemyStat()
+    {
+        BattleFlowController flow = CreateFlow(new BattleItem(0x58, "lowerStat", "enemy", 0));
+        BattleFighter enemy = Assert.IsType<BattleFighter>(flow.State.ActiveEnemyFighter);
+        enemy.Boosts[0] = 40;
+        enemy.RefreshStats();
+
+        bool spent = flow.Choose(BattleCommand.Item, 0x58, new FixedRng());
+
+        Assert.True(spent);
+        Assert.Equal(0, enemy.Boosts[0]);
+        Assert.Equal(1, flow.ItemStock[0x58]);
+    }
+
+    /// <summary>Verifies that the speed item lowers the enemy by its source 128th amount and refuses zero stock before state or random mutation.</summary>
+    [Fact]
+    public void Choose_LowerSpeedItem_ChangesEnemyAndRejectsZeroStock()
+    {
+        BattleFlowController flow = CreateFlow(new BattleItem(0x59, "lowerSpeed", "enemy", 64));
+        BattleFighter enemy = Assert.IsType<BattleFighter>(flow.State.ActiveEnemyFighter);
+        enemy.Stats.Stats[BattleStat.Speed] = 100;
+        enemy.RefreshStats();
+
+        Assert.True(flow.Choose(BattleCommand.Item, 0x59, new FixedRng()));
+        Assert.Equal(-50, enemy.Boosts[2]);
+        flow.EnemyAct(new FixedRng());
+        flow.ItemStock[0x59] = 0;
+        var rng = new CountingRng();
+
+        Assert.False(flow.Choose(BattleCommand.Item, 0x59, rng));
+        Assert.Equal(-50, enemy.Boosts[2]);
+        Assert.Equal(0, rng.Calls);
+    }
+
+    /// <summary>Verifies that a repeated confusion refusal preserves target state, stock, phase, and the shared random stream.</summary>
+    [Fact]
+    public void Choose_ConfuseItemAgainstConfusedEnemy_IsRefusedWithoutRandomMutation()
+    {
+        BattleFlowController flow = CreateFlow(new BattleItem(0x56, "confuse", "enemy", 96));
+        BattleFighter enemy = Assert.IsType<BattleFighter>(flow.State.ActiveEnemyFighter);
+        enemy.Flags |= FighterFlags.Confused;
+        var rng = new CountingRng();
+
+        bool spent = flow.Choose(BattleCommand.Item, 0x56, rng);
+
+        Assert.False(spent);
+        Assert.NotEqual(0, enemy.Flags & FighterFlags.Confused);
+        Assert.Equal(BattleFlowPhase.PlayerCommand, flow.Phase);
+        Assert.Equal(2, flow.ItemStock[0x56]);
+        Assert.Equal(0, rng.Calls);
+    }
+
+    /// <summary>Verifies that the qualified item technique resolves from the started flow catalogue, damages the enemy, and consumes one item.</summary>
+    [Fact]
+    public void Choose_ItemTechnique_UsesQualifiedCatalogueTechniqueAndConsumesOne()
+    {
+        BattleFlowController flow = CreateFlow(new BattleItem(0x5A, "itemTech", "enemy", 0));
+        BattleFighter enemy = Assert.IsType<BattleFighter>(flow.State.ActiveEnemyFighter);
+        int hpBefore = enemy.Hp;
+
+        bool spent = flow.Choose(BattleCommand.Item, 0x5A, new FixedRng());
+
+        Assert.True(spent);
+        Assert.True(enemy.Hp < hpBefore);
+        Assert.Equal(1, flow.ItemStock[0x5A]);
+    }
+
+    /// <summary>Verifies that an item technique with no qualified catalogue entry is refused before state, stock, phase, or random mutation.</summary>
+    [Fact]
+    public void Choose_ItemTechniqueWithoutQualifiedCatalogueEntry_IsRefusedWithoutMutation()
+    {
+        BattleFlowController flow = CreateFlow(new BattleItem(0x5A, "itemTech", "enemy", 0), includeItemTechnique: false);
+        BattleFighter enemy = Assert.IsType<BattleFighter>(flow.State.ActiveEnemyFighter);
+        int hpBefore = enemy.Hp;
+        var rng = new CountingRng();
+
+        bool spent = flow.Choose(BattleCommand.Item, 0x5A, rng);
+
+        Assert.False(spent);
+        Assert.Equal(hpBefore, enemy.Hp);
+        Assert.Equal(BattleFlowPhase.PlayerCommand, flow.Phase);
+        Assert.Equal(2, flow.ItemStock[0x5A]);
+        Assert.Equal(0, rng.Calls);
+    }
+
+    /// <summary>Verifies that item 0x5A rejects a non-enemy target before it can damage, consume stock, advance phase, or draw randomness.</summary>
+    [Fact]
+    public void Choose_ItemTechniqueWithInvalidTarget_IsRefusedWithoutMutation()
+    {
+        BattleFlowController flow = CreateFlow(new BattleItem(0x5A, "itemTech", "partner", 0));
+        BattleFighter enemy = Assert.IsType<BattleFighter>(flow.State.ActiveEnemyFighter);
+        int hpBefore = enemy.Hp;
+        var rng = new CountingRng();
+
+        bool spent = flow.Choose(BattleCommand.Item, 0x5A, rng);
+
+        Assert.False(spent);
+        Assert.Equal(hpBefore, enemy.Hp);
+        Assert.Equal(BattleFlowPhase.PlayerCommand, flow.Phase);
+        Assert.Equal(2, flow.ItemStock[0x5A]);
+        Assert.Equal(0, rng.Calls);
+    }
+
+    /// <summary>Verifies that item 0x5A with zero stock is refused before it can damage, advance phase, or draw randomness.</summary>
+    [Fact]
+    public void Choose_ItemTechniqueWithZeroStock_IsRefusedWithoutMutation()
+    {
+        BattleFlowController flow = CreateFlow(new BattleItem(0x5A, "itemTech", "enemy", 0));
+        BattleFighter enemy = Assert.IsType<BattleFighter>(flow.State.ActiveEnemyFighter);
+        int hpBefore = enemy.Hp;
+        flow.ItemStock[0x5A] = 0;
+        var rng = new CountingRng();
+
+        bool spent = flow.Choose(BattleCommand.Item, 0x5A, rng);
+
+        Assert.False(spent);
+        Assert.Equal(hpBefore, enemy.Hp);
+        Assert.Equal(BattleFlowPhase.PlayerCommand, flow.Phase);
+        Assert.Equal(0, flow.ItemStock[0x5A]);
+        Assert.Equal(0, rng.Calls);
+    }
+
     /// <summary>Advances ordinary turns until the field's scheduled expiry has been consumed.</summary>
     /// <param name="flow">Live battle flow owning the source scheduler consumer.</param>
     private static void AdvanceToElementExpiry(BattleFlowController flow)
@@ -321,16 +496,26 @@ public sealed class BattleItemUseTests
 
     /// <summary>Creates a player-turn flow with one real item in its catalogue and bag.</summary>
     /// <param name="item">Item supplied to the flow catalogue.</param>
+    /// <param name="includeItemTechnique">Whether the qualified source item technique is present in the started catalogue.</param>
     /// <returns>A started flow with two copies of the requested item.</returns>
-    private static BattleFlowController CreateFlow(BattleItem item)
+    private static BattleFlowController CreateFlow(BattleItem item, bool includeItemTechnique = true)
     {
         var setup = new BattleSetup();
         setup.Partners[0] = Partner(1);
-        setup.Enemies[0] = new BattleEnemy { Fighter = 2, Hp = 100, Mp = 100, Strength = 16, BaseStats = new BattleStats() };
+        if (item.Effect == "lowerSpeed")
+        {
+            setup.Partners[0]!.Stats.Stats[BattleStat.Speed] = 200;
+        }
+
+        int enemySpeed = item.Effect == "lowerSpeed" ? 100 : 0;
+        setup.Enemies[0] = new BattleEnemy { Fighter = 2, Hp = 100, Mp = 100, Strength = 16, BaseStats = new BattleStats { Stats = [100, 100, 100, 100, enemySpeed] } };
         var flow = new BattleFlowController
         {
             Items = new Dictionary<int, BattleItem> { [item.Id] = item },
             ItemStock = new Dictionary<int, int> { [item.Id] = 2 },
+            Techs = includeItemTechnique && item.Effect == "itemTech"
+                ? new Dictionary<int, TechData> { [0x89] = new TechData { Power = 20, Icon = BattleConst.TechMagic } }
+                : [],
         };
         flow.Start(BattleState.InitFighters(setup, 1, new FixedRng()));
         return flow;
@@ -376,6 +561,21 @@ public sealed class BattleItemUseTests
         /// <summary>Returns the same neutral source draw for each caller.</summary>
         /// <returns>The neutral source value.</returns>
         public int NextValue() => 127;
+    }
+
+    /// <summary>Counts a stable odd source draw for source half-chance item effects.</summary>
+    private sealed class OddCountingRng : IBattleRng
+    {
+        /// <summary>Gets the number of observed source draws.</summary>
+        public int Calls { get; private set; }
+
+        /// <summary>Counts and returns an odd source value.</summary>
+        /// <returns>The stable odd source value.</returns>
+        public int NextValue()
+        {
+            Calls++;
+            return 127;
+        }
     }
 
     /// <summary>Counts source random draws while providing a stable neutral value.</summary>
