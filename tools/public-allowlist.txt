@@ -1293,3 +1293,4 @@ tests/Dw3.Game.Tests/BattleMusicPlaybackTests.cs
 tests/Dw3.Game.Tests/GodotReverbBusTests.cs
 tests/Dw3.Game.Tests/ReverbTailMeasurementTests.cs
 tests/Dw3.Game.Tests/SequenceNrpnDecoderTests.cs
+tests/Dw3.Game.Tests/BattleCommandExecutionTests.cs
