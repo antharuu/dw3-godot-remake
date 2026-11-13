@@ -20,6 +20,8 @@ public partial class NativeRootMenuProof : Node
             NativeMenuCommandsProof.Unavailable();
             NativeMenuCommandsProof.Navigation();
             NativeMenuCommandsProof.Lists();
+            NativeMenuCommandsProof.TechniqueExecution();
+            NativeMenuCommandsProof.DigivolveExecution();
             NativeItemUseProof.ApplyHealingAndStatusItems();
             NativePreparedItemTechniqueProof.RunWhenRequested();
             NativeMenuPhaseProof.AttackAndReentry();
