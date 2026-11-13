@@ -11,7 +11,8 @@ namespace Dw3Production.Presentation;
 /// </summary>
 internal static class BattleModelDocument
 {
-    private const string ExpectedFormat = "dw3-battle-model-v8";
+    private const string FighterOrStageFormat = "dw3-battle-model-v8";
+    private const string EffectFormat = "dw3-battle-effect-model-v1";
     private const int MotionTerminator = 0x7FFF;
 
     /// <summary>
@@ -23,7 +24,8 @@ internal static class BattleModelDocument
     /// <exception cref="InvalidOperationException">The format or a motion-1 invariant differs.</exception>
     public static void Validate(JsonElement root)
     {
-        if (root.GetProperty("format").GetString() != ExpectedFormat)
+        string? format = root.GetProperty("format").GetString();
+        if (format is not (FighterOrStageFormat or EffectFormat))
         {
             throw new InvalidOperationException("unexpected external battle model format");
         }

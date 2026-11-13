@@ -16,13 +16,14 @@ internal sealed class NativeMenuSession : IDisposable
     /// <param name="enemyFirst">Whether the synthetic enemy owns the opening turn.</param>
     /// <param name="includePartnerItems">Whether the fabricated source-shaped partner boost family is included in the item menu.</param>
     /// <param name="includeFieldItems">Whether the fabricated source-shaped field-element family is included in the item menu.</param>
-    public NativeMenuSession(bool enemyFirst = false, bool includePartnerItems = false, bool includeFieldItems = false)
+    /// <param name="includeOffensiveItems">Whether the fabricated source-shaped enemy-targeted family is included in the item menu.</param>
+    public NativeMenuSession(bool enemyFirst = false, bool includePartnerItems = false, bool includeFieldItems = false, bool includeOffensiveItems = false)
     {
-        Flow = BuildFlow(enemyFirst, includePartnerItems, includeFieldItems);
+        Flow = BuildFlow(enemyFirst, includePartnerItems, includeFieldItems, includeOffensiveItems);
         _host = new GameHost(
             Flow,
             new BattleTextData([], [], [], [], [], [], [], new Dictionary<string, BattleTextTemplate>(), new Dictionary<string, int>()),
-            new BattleItemsData(ItemsData(includePartnerItems, includeFieldItems)),
+            new BattleItemsData(ItemsData(includePartnerItems, includeFieldItems, includeOffensiveItems)),
             Rng);
         Menu.OpenRoot(Flow.RootMenuLines());
     }
@@ -115,8 +116,9 @@ internal sealed class NativeMenuSession : IDisposable
     /// <param name="enemyFirst">Whether the synthetic enemy owns the opening turn.</param>
     /// <param name="includePartnerItems">Whether the active-partner boost family belongs in the fabricated item menu.</param>
     /// <param name="includeFieldItems">Whether the field-element boost family belongs in the fabricated item menu.</param>
+    /// <param name="includeOffensiveItems">Whether the enemy-targeted family belongs in the fabricated item menu.</param>
     /// <returns>Initialized real simulation.</returns>
-    private static BattleFlowController BuildFlow(bool enemyFirst, bool includePartnerItems = false, bool includeFieldItems = false)
+    private static BattleFlowController BuildFlow(bool enemyFirst, bool includePartnerItems = false, bool includeFieldItems = false, bool includeOffensiveItems = false)
     {
         var setup = new BattleSetup();
         setup.Partners[0] = new PartnerSeed { Id = 1, Hp = 100, MaxHp = 100, Mp = 50, MaxMp = 50, Stats = Stats(enemyFirst ? 1 : 999) };
@@ -128,8 +130,9 @@ internal sealed class NativeMenuSession : IDisposable
             EnemyBasicTech = new TechData { Accuracy = 128, Power = 1 },
             PlayerTechniques = [.. Enumerable.Range(7, 7).Select(id => new BattleTechnique(id, "synthetic", new TechData { Mp = 5 }))],
             PlayerDigivolutions = [1, 4],
-            Items = Items(includePartnerItems, includeFieldItems),
-            ItemStock = ItemStock(includePartnerItems, includeFieldItems),
+            Items = Items(includePartnerItems, includeFieldItems, includeOffensiveItems),
+            ItemStock = ItemStock(includePartnerItems, includeFieldItems, includeOffensiveItems),
+            Techs = ItemTechniques(includeOffensiveItems),
         };
         flow.Start(BattleState.InitFighters(setup, 1, new BattleAttackProofRng(0)));
         return flow;
@@ -150,8 +153,9 @@ internal sealed class NativeMenuSession : IDisposable
     /// <summary>Builds the fabricated item records that the production menu renders for a native proof.</summary>
     /// <param name="includePartnerItems">Whether the active-partner boost family is included.</param>
     /// <param name="includeFieldItems">Whether the field-element boost family is included.</param>
+    /// <param name="includeOffensiveItems">Whether the enemy-targeted item family is included.</param>
     /// <returns>Fabricated source-shaped records corresponding to the flow catalogue.</returns>
-    private static List<BattleItemData> ItemsData(bool includePartnerItems, bool includeFieldItems)
+    private static List<BattleItemData> ItemsData(bool includePartnerItems, bool includeFieldItems, bool includeOffensiveItems)
     {
         var items = new List<BattleItemData>
         {
@@ -160,7 +164,26 @@ internal sealed class NativeMenuSession : IDisposable
         };
         AddPartnerItemData(items, includePartnerItems);
         AddFieldItemData(items, includeFieldItems);
+        AddOffensiveItemData(items, includeOffensiveItems);
         return items;
+    }
+
+    /// <summary>Adds the enemy-targeted menu records required by the matching native proof.</summary>
+    /// <param name="items">Mutable fixture item record list.</param>
+    /// <param name="includeOffensiveItems">Whether the offensive items are included.</param>
+    private static void AddOffensiveItemData(List<BattleItemData> items, bool includeOffensiveItems)
+    {
+        if (!includeOffensiveItems)
+        {
+            return;
+        }
+
+        items.Add(new(0x55, 0, [], 0, 0, 0, 0, 0, 0, 7, "drain", "enemy"));
+        items.Add(new(0x56, 0, [], 0, 0, 96, 0, 0, 0, 7, "confuse", "enemy"));
+        items.Add(new(0x57, 0, [], 0, 0, 0, 0, 0, 0, 7, "weakenDefense", "enemy"));
+        items.Add(new(0x58, 0, [], 0, 0, 0, 0, 0, 0, 7, "lowerStat", "enemy"));
+        items.Add(new(0x59, 0, [], 0, 0, 64, 0, 0, 0, 7, "lowerSpeed", "enemy"));
+        items.Add(new(0x5A, 0, [], 0, 0, 0, 0, 0, 0, 7, "itemTech", "enemy"));
     }
 
     /// <summary>Adds the active-partner menu records required by the matching native proof.</summary>
@@ -197,8 +220,9 @@ internal sealed class NativeMenuSession : IDisposable
     /// <summary>Builds the fabricated source-shaped menu catalogue for the selected native proof families.</summary>
     /// <param name="includePartnerItems">Whether to include the active-partner boost family.</param>
     /// <param name="includeFieldItems">Whether to include the field-element boost family.</param>
+    /// <param name="includeOffensiveItems">Whether to include the enemy-targeted item family.</param>
     /// <returns>Item catalogue accepted by the production flow.</returns>
-    private static Dictionary<int, BattleItem> Items(bool includePartnerItems, bool includeFieldItems)
+    private static Dictionary<int, BattleItem> Items(bool includePartnerItems, bool includeFieldItems, bool includeOffensiveItems)
     {
         var items = new Dictionary<int, BattleItem>
         {
@@ -207,8 +231,34 @@ internal sealed class NativeMenuSession : IDisposable
         };
         AddPartnerItems(items, includePartnerItems);
         AddFieldItems(items, includeFieldItems);
+        AddOffensiveItems(items, includeOffensiveItems);
         return items;
     }
+
+    /// <summary>Adds the supported enemy-targeted item family when its native proof needs it.</summary>
+    /// <param name="items">Mutable fixture item catalogue.</param>
+    /// <param name="includeOffensiveItems">Whether the offensive items are included.</param>
+    private static void AddOffensiveItems(Dictionary<int, BattleItem> items, bool includeOffensiveItems)
+    {
+        if (!includeOffensiveItems)
+        {
+            return;
+        }
+
+        items[0x55] = new(0x55, "drain", "enemy", 0);
+        items[0x56] = new(0x56, "confuse", "enemy", 96);
+        items[0x57] = new(0x57, "weakenDefense", "enemy", 0);
+        items[0x58] = new(0x58, "lowerStat", "enemy", 0);
+        items[0x59] = new(0x59, "lowerSpeed", "enemy", 64);
+        items[0x5A] = new(0x5A, "itemTech", "enemy", 0);
+    }
+
+    /// <summary>Builds the qualified source item technique required by the offensive item fixture.</summary>
+    /// <param name="includeOffensiveItems">Whether the item technique must be available to the started flow.</param>
+    /// <returns>The prepared technique catalogue required by item 0x5A.</returns>
+    private static Dictionary<int, TechData> ItemTechniques(bool includeOffensiveItems) => includeOffensiveItems
+        ? new Dictionary<int, TechData> { [0x89] = new TechData { Power = 20, Icon = BattleConst.TechMagic } }
+        : [];
 
     /// <summary>Adds the supported active-partner item family when its native proof needs it.</summary>
     /// <param name="items">Mutable fixture item catalogue.</param>
@@ -244,7 +294,8 @@ internal sealed class NativeMenuSession : IDisposable
     /// <summary>Builds positive stock for every fabricated item selected by the native proof.</summary>
     /// <param name="includePartnerItems">Whether the active-partner boost family is included.</param>
     /// <param name="includeFieldItems">Whether the field-element boost family is included.</param>
+    /// <param name="includeOffensiveItems">Whether the enemy-targeted item family is included.</param>
     /// <returns>Positive stock for every item shown in the proof menu.</returns>
-    private static Dictionary<int, int> ItemStock(bool includePartnerItems, bool includeFieldItems) =>
-        Items(includePartnerItems, includeFieldItems).Keys.ToDictionary(id => id, _ => 2);
+    private static Dictionary<int, int> ItemStock(bool includePartnerItems, bool includeFieldItems, bool includeOffensiveItems) =>
+        Items(includePartnerItems, includeFieldItems, includeOffensiveItems).Keys.ToDictionary(id => id, _ => 2);
 }
