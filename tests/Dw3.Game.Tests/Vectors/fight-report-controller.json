@@ -1350,9 +1350,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 44,
@@ -1416,9 +1414,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 45,
@@ -1482,9 +1478,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 46,
@@ -1548,9 +1542,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 47,
@@ -1614,9 +1606,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 48,
@@ -1650,7 +1640,7 @@
           "partnerId": 1,
           "fighterId": 383,
           "fade": 4096,
-          "selected": false,
+          "selected": true,
           "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 4,
@@ -1680,9 +1670,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 49,
@@ -1707,7 +1695,7 @@
       },
       "stepCount": 73,
       "crossEvery": 20,
-      "out_headerFade": 3278,
+      "out_headerFade": 4096,
       "out_footerFade": 4096,
       "out_bgScroll": 36,
       "out_partners": [
@@ -1716,7 +1704,7 @@
           "partnerId": 1,
           "fighterId": 383,
           "fade": 4096,
-          "selected": false,
+          "selected": true,
           "cursorFrame": 1,
           "levelBlinkFrame": 0,
           "shownExp": 4,
@@ -1746,9 +1734,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 50,
@@ -1773,7 +1759,7 @@
       },
       "stepCount": 78,
       "crossEvery": 20,
-      "out_headerFade": 0,
+      "out_headerFade": 1642,
       "out_footerFade": 4096,
       "out_bgScroll": 39,
       "out_partners": [
@@ -1783,7 +1769,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 6,
@@ -1812,9 +1798,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 51,
@@ -1839,7 +1823,7 @@
       },
       "stepCount": 79,
       "crossEvery": 20,
-      "out_headerFade": 0,
+      "out_headerFade": 824,
       "out_footerFade": 4096,
       "out_bgScroll": 39,
       "out_partners": [
@@ -1849,7 +1833,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 6,
@@ -1878,9 +1862,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 52,
@@ -1905,7 +1887,7 @@
       },
       "stepCount": 80,
       "crossEvery": 20,
-      "out_headerFade": 0,
+      "out_headerFade": 6,
       "out_footerFade": 4096,
       "out_bgScroll": 40,
       "out_partners": [
@@ -1915,7 +1897,71 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
+          "levelBlinkFrame": 0,
+          "shownExp": 4,
+          "animationFrame": 6,
+          "slots": [
+            {
+              "digimonId": -1,
+              "visible": false,
+              "expApplied": false,
+              "blinkFrame": 0
+            },
+            {
+              "digimonId": -1,
+              "visible": false,
+              "expApplied": false,
+              "blinkFrame": 0
+            },
+            {
+              "digimonId": -1,
+              "visible": false,
+              "expApplied": false,
+              "blinkFrame": 0
+            }
+          ]
+        }
+      ],
+      "out_exitFade": 0,
+      "out_done": false,
+      "out_message": null,
+      "out_logs": []
+    },
+    {
+      "id": 53,
+      "fn": "StepSequence",
+      "label": "A-frame87",
+      "input": {
+        "partners": [
+          {
+            "partyIndex": 0,
+            "partnerId": 1,
+            "fighterId": 383,
+            "levelBefore": 25,
+            "expBefore": 0,
+            "expGained": 4,
+            "levelAfter": 25,
+            "slotDigimonIds": []
+          }
+        ],
+        "money": 50,
+        "item": 0,
+        "messageTokenCounts": null
+      },
+      "stepCount": 87,
+      "crossEvery": 20,
+      "out_headerFade": 0,
+      "out_footerFade": 4096,
+      "out_bgScroll": 43,
+      "out_partners": [
+        {
+          "partyIndex": 0,
+          "partnerId": 1,
+          "fighterId": 383,
+          "fade": 4096,
+          "selected": false,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 6,
@@ -1951,86 +1997,9 @@
         "tokensRevealed": 0,
         "tokenCount": 1,
         "arrowVisible": false,
-        "arrowFrame": 1
-      },
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
-    },
-    {
-      "id": 53,
-      "fn": "StepSequence",
-      "label": "A-frame87",
-      "input": {
-        "partners": [
-          {
-            "partyIndex": 0,
-            "partnerId": 1,
-            "fighterId": 383,
-            "levelBefore": 25,
-            "expBefore": 0,
-            "expGained": 4,
-            "levelAfter": 25,
-            "slotDigimonIds": []
-          }
-        ],
-        "money": 50,
-        "item": 0,
-        "messageTokenCounts": null
-      },
-      "stepCount": 87,
-      "crossEvery": 20,
-      "out_headerFade": 0,
-      "out_footerFade": 4096,
-      "out_bgScroll": 43,
-      "out_partners": [
-        {
-          "partyIndex": 0,
-          "partnerId": 1,
-          "fighterId": 383,
-          "fade": 4096,
-          "selected": false,
-          "cursorFrame": 1,
-          "levelBlinkFrame": 0,
-          "shownExp": 4,
-          "animationFrame": 6,
-          "slots": [
-            {
-              "digimonId": -1,
-              "visible": false,
-              "expApplied": false,
-              "blinkFrame": 0
-            },
-            {
-              "digimonId": -1,
-              "visible": false,
-              "expApplied": false,
-              "blinkFrame": 0
-            },
-            {
-              "digimonId": -1,
-              "visible": false,
-              "expApplied": false,
-              "blinkFrame": 0
-            }
-          ]
-        }
-      ],
-      "out_exitFade": 0,
-      "out_done": false,
-      "out_message": {
-        "entry": 10,
-        "substitutions": [
-          50
-        ],
-        "tokensRevealed": 1,
-        "tokenCount": 1,
-        "arrowVisible": true,
         "arrowFrame": 2
       },
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 54,
@@ -2065,7 +2034,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 7,
@@ -2094,9 +2063,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 55,
@@ -2131,7 +2098,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 7,
@@ -2160,9 +2127,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 56,
@@ -2197,7 +2162,7 @@
           "fighterId": 383,
           "fade": 824,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 8,
@@ -2226,9 +2191,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 57,
@@ -2263,7 +2226,7 @@
           "fighterId": 383,
           "fade": 6,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 8,
@@ -2292,9 +2255,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 58,
@@ -2329,7 +2290,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 8,
@@ -2358,9 +2319,7 @@
       "out_exitFade": 1496,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 59,
@@ -2395,7 +2354,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 8,
@@ -2424,9 +2383,7 @@
       "out_exitFade": 3944,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 60,
@@ -2461,7 +2418,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 8,
@@ -2490,9 +2447,7 @@
       "out_exitFade": 4080,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 61,
@@ -2527,7 +2482,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 8,
@@ -2556,9 +2511,7 @@
       "out_exitFade": 4096,
       "out_done": true,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 62,
@@ -3133,9 +3086,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 70,
@@ -3170,7 +3121,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 3,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 5,
@@ -3199,9 +3150,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 71,
@@ -3236,7 +3185,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 3,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 6,
@@ -3265,9 +3214,7 @@
       "out_exitFade": 2176,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 72,
@@ -3302,7 +3249,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 3,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 6,
@@ -3331,9 +3278,7 @@
       "out_exitFade": 4096,
       "out_done": true,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 73,
@@ -3368,7 +3313,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 3,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 6,
@@ -3397,9 +3342,7 @@
       "out_exitFade": 4096,
       "out_done": true,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 74,
@@ -3526,20 +3469,8 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": {
-        "entry": 7,
-        "substitutions": [
-          1,
-          26
-        ],
-        "tokensRevealed": 0,
-        "tokenCount": 1,
-        "arrowVisible": false,
-        "arrowFrame": 4
-      },
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_message": null,
+      "out_logs": []
     },
     {
       "id": 76,
@@ -3575,7 +3506,7 @@
           "fade": 4096,
           "selected": true,
           "cursorFrame": 3,
-          "levelBlinkFrame": 3,
+          "levelBlinkFrame": 2,
           "shownExp": 4,
           "animationFrame": 6,
           "slots": [
@@ -3602,10 +3533,18 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_message": {
+        "entry": 7,
+        "substitutions": [
+          1,
+          26
+        ],
+        "tokensRevealed": 1,
+        "tokenCount": 1,
+        "arrowVisible": true,
+        "arrowFrame": 1
+      },
+      "out_logs": []
     },
     {
       "id": 77,
@@ -3641,7 +3580,7 @@
           "fade": 4096,
           "selected": true,
           "cursorFrame": 1,
-          "levelBlinkFrame": 7,
+          "levelBlinkFrame": 6,
           "shownExp": 4,
           "animationFrame": 6,
           "slots": [
@@ -3668,10 +3607,18 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_message": {
+        "entry": 7,
+        "substitutions": [
+          1,
+          26
+        ],
+        "tokensRevealed": 1,
+        "tokenCount": 1,
+        "arrowVisible": true,
+        "arrowFrame": 3
+      },
+      "out_logs": []
     },
     {
       "id": 78,
@@ -3696,7 +3643,7 @@
       },
       "stepCount": 100,
       "crossEvery": 20,
-      "out_headerFade": 3278,
+      "out_headerFade": 4096,
       "out_footerFade": 4096,
       "out_bgScroll": 50,
       "out_partners": [
@@ -3705,9 +3652,9 @@
           "partnerId": 1,
           "fighterId": 383,
           "fade": 4096,
-          "selected": false,
-          "cursorFrame": 2,
-          "levelBlinkFrame": 10,
+          "selected": true,
+          "cursorFrame": 3,
+          "levelBlinkFrame": 9,
           "shownExp": 4,
           "animationFrame": 7,
           "slots": [
@@ -3735,9 +3682,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 79,
@@ -3772,7 +3717,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 3,
           "levelBlinkFrame": 10,
           "shownExp": 4,
           "animationFrame": 9,
@@ -3801,9 +3746,7 @@
       "out_exitFade": 136,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 80,
@@ -3838,7 +3781,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 3,
           "levelBlinkFrame": 10,
           "shownExp": 4,
           "animationFrame": 9,
@@ -3867,9 +3810,7 @@
       "out_exitFade": 2856,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 81,
@@ -3904,7 +3845,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 3,
           "levelBlinkFrame": 10,
           "shownExp": 4,
           "animationFrame": 9,
@@ -3933,9 +3874,7 @@
       "out_exitFade": 4096,
       "out_done": true,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 82,
@@ -3970,7 +3909,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 3,
           "levelBlinkFrame": 10,
           "shownExp": 4,
           "animationFrame": 9,
@@ -3999,9 +3938,7 @@
       "out_exitFade": 4096,
       "out_done": true,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 83,
@@ -4842,9 +4779,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 96,
@@ -4908,9 +4843,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 97,
@@ -4935,7 +4868,7 @@
       },
       "stepCount": 75,
       "crossEvery": 20,
-      "out_headerFade": 1642,
+      "out_headerFade": 4096,
       "out_footerFade": 4096,
       "out_bgScroll": 37,
       "out_partners": [
@@ -4945,7 +4878,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 100,
           "animationFrame": 5,
@@ -4974,9 +4907,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 98,
@@ -5001,7 +4932,7 @@
       },
       "stepCount": 80,
       "crossEvery": 20,
-      "out_headerFade": 0,
+      "out_headerFade": 6,
       "out_footerFade": 4096,
       "out_bgScroll": 40,
       "out_partners": [
@@ -5011,7 +4942,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 100,
           "animationFrame": 6,
@@ -5039,19 +4970,8 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": {
-        "entry": 10,
-        "substitutions": [
-          0
-        ],
-        "tokensRevealed": 0,
-        "tokenCount": 1,
-        "arrowVisible": false,
-        "arrowFrame": 1
-      },
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_message": null,
+      "out_logs": []
     },
     {
       "id": 99,
@@ -5086,7 +5006,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 100,
           "animationFrame": 7,
@@ -5115,9 +5035,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 100,
@@ -5152,7 +5070,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 100,
           "animationFrame": 8,
@@ -5181,9 +5099,7 @@
       "out_exitFade": 1496,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 101,
@@ -5218,7 +5134,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 6,
@@ -5256,9 +5172,7 @@
         "arrowVisible": true,
         "arrowFrame": 3
       },
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 102,
@@ -5293,7 +5207,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 7,
@@ -5322,9 +5236,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 103,
@@ -5359,7 +5271,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 8,
@@ -5397,9 +5309,7 @@
         "arrowVisible": true,
         "arrowFrame": 2
       },
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 104,
@@ -5434,7 +5344,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 9,
@@ -5463,9 +5373,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 105,
@@ -5500,7 +5408,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 9,
@@ -5529,9 +5437,7 @@
       "out_exitFade": 272,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 106,
@@ -5566,7 +5472,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 9,
@@ -5595,9 +5501,7 @@
       "out_exitFade": 2992,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 107,
@@ -5632,7 +5536,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 9,
@@ -5661,9 +5565,7 @@
       "out_exitFade": 4096,
       "out_done": true,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 108,
@@ -5926,7 +5828,7 @@
       },
       "stepCount": 75,
       "crossEvery": 20,
-      "out_headerFade": 1642,
+      "out_headerFade": 4096,
       "out_footerFade": 4096,
       "out_bgScroll": 37,
       "out_partners": [
@@ -5936,7 +5838,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 5,
@@ -5996,9 +5898,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 111,
@@ -6046,7 +5946,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 7,
@@ -6077,7 +5977,7 @@
           "fighterId": 400,
           "fade": 4096,
           "selected": true,
-          "cursorFrame": 1,
+          "cursorFrame": 0,
           "levelBlinkFrame": 0,
           "shownExp": 50,
           "animationFrame": 7,
@@ -6105,10 +6005,17 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_message": {
+        "entry": 2,
+        "substitutions": [
+          10
+        ],
+        "tokensRevealed": 1,
+        "tokenCount": 1,
+        "arrowVisible": true,
+        "arrowFrame": 0
+      },
+      "out_logs": []
     },
     {
       "id": 112,
@@ -6146,7 +6053,7 @@
       },
       "stepCount": 125,
       "crossEvery": 20,
-      "out_headerFade": 0,
+      "out_headerFade": 4096,
       "out_footerFade": 4096,
       "out_bgScroll": 62,
       "out_partners": [
@@ -6156,7 +6063,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 9,
@@ -6186,10 +6093,10 @@
           "partnerId": 2,
           "fighterId": 400,
           "fade": 4096,
-          "selected": false,
-          "cursorFrame": 3,
+          "selected": true,
+          "cursorFrame": 1,
           "levelBlinkFrame": 0,
-          "shownExp": 60,
+          "shownExp": 5,
           "animationFrame": 9,
           "slots": [
             {
@@ -6215,19 +6122,8 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": {
-        "entry": 10,
-        "substitutions": [
-          100
-        ],
-        "tokensRevealed": 0,
-        "tokenCount": 1,
-        "arrowVisible": false,
-        "arrowFrame": 0
-      },
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_message": null,
+      "out_logs": []
     },
     {
       "id": 113,
@@ -6266,16 +6162,16 @@
       "stepCount": 150,
       "crossEvery": 20,
       "out_headerFade": 0,
-      "out_footerFade": 0,
+      "out_footerFade": 4096,
       "out_bgScroll": 75,
       "out_partners": [
         {
           "partyIndex": 0,
           "partnerId": 1,
           "fighterId": 383,
-          "fade": 0,
+          "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 11,
@@ -6304,7 +6200,7 @@
           "partyIndex": 1,
           "partnerId": 2,
           "fighterId": 400,
-          "fade": 0,
+          "fade": 4096,
           "selected": false,
           "cursorFrame": 3,
           "levelBlinkFrame": 0,
@@ -6332,12 +6228,19 @@
           ]
         }
       ],
-      "out_exitFade": 136,
+      "out_exitFade": 0,
       "out_done": false,
-      "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_message": {
+        "entry": 10,
+        "substitutions": [
+          100
+        ],
+        "tokensRevealed": 1,
+        "tokenCount": 1,
+        "arrowVisible": true,
+        "arrowFrame": 0
+      },
+      "out_logs": []
     },
     {
       "id": 114,
@@ -6385,10 +6288,10 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 4,
-          "animationFrame": 11,
+          "animationFrame": 13,
           "slots": [
             {
               "digimonId": -1,
@@ -6419,7 +6322,7 @@
           "cursorFrame": 3,
           "levelBlinkFrame": 0,
           "shownExp": 60,
-          "animationFrame": 11,
+          "animationFrame": 13,
           "slots": [
             {
               "digimonId": 201,
@@ -6442,12 +6345,10 @@
           ]
         }
       ],
-      "out_exitFade": 3536,
+      "out_exitFade": 816,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 115,
@@ -6487,7 +6388,7 @@
       "crossEvery": 20,
       "out_headerFade": 0,
       "out_footerFade": 0,
-      "out_bgScroll": 90,
+      "out_bgScroll": 4,
       "out_partners": [
         {
           "partyIndex": 0,
@@ -6495,10 +6396,10 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 4,
-          "animationFrame": 11,
+          "animationFrame": 13,
           "slots": [
             {
               "digimonId": -1,
@@ -6529,7 +6430,7 @@
           "cursorFrame": 3,
           "levelBlinkFrame": 0,
           "shownExp": 60,
-          "animationFrame": 11,
+          "animationFrame": 13,
           "slots": [
             {
               "digimonId": 201,
@@ -6555,9 +6456,7 @@
       "out_exitFade": 4096,
       "out_done": true,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 116,
@@ -6597,7 +6496,7 @@
       "crossEvery": 20,
       "out_headerFade": 0,
       "out_footerFade": 0,
-      "out_bgScroll": 90,
+      "out_bgScroll": 4,
       "out_partners": [
         {
           "partyIndex": 0,
@@ -6605,10 +6504,10 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 4,
-          "animationFrame": 11,
+          "animationFrame": 13,
           "slots": [
             {
               "digimonId": -1,
@@ -6639,7 +6538,7 @@
           "cursorFrame": 3,
           "levelBlinkFrame": 0,
           "shownExp": 60,
-          "animationFrame": 11,
+          "animationFrame": 13,
           "slots": [
             {
               "digimonId": 201,
@@ -6665,9 +6564,7 @@
       "out_exitFade": 4096,
       "out_done": true,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 117,
@@ -6707,7 +6604,7 @@
       "crossEvery": 20,
       "out_headerFade": 0,
       "out_footerFade": 0,
-      "out_bgScroll": 90,
+      "out_bgScroll": 4,
       "out_partners": [
         {
           "partyIndex": 0,
@@ -6715,10 +6612,10 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 4,
-          "animationFrame": 11,
+          "animationFrame": 13,
           "slots": [
             {
               "digimonId": -1,
@@ -6749,7 +6646,7 @@
           "cursorFrame": 3,
           "levelBlinkFrame": 0,
           "shownExp": 60,
-          "animationFrame": 11,
+          "animationFrame": 13,
           "slots": [
             {
               "digimonId": 201,
@@ -6775,9 +6672,7 @@
       "out_exitFade": 4096,
       "out_done": true,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 118,
@@ -6817,7 +6712,7 @@
       "crossEvery": 20,
       "out_headerFade": 0,
       "out_footerFade": 0,
-      "out_bgScroll": 90,
+      "out_bgScroll": 4,
       "out_partners": [
         {
           "partyIndex": 0,
@@ -6825,10 +6720,10 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 4,
-          "animationFrame": 11,
+          "animationFrame": 13,
           "slots": [
             {
               "digimonId": -1,
@@ -6859,7 +6754,7 @@
           "cursorFrame": 3,
           "levelBlinkFrame": 0,
           "shownExp": 60,
-          "animationFrame": 11,
+          "animationFrame": 13,
           "slots": [
             {
               "digimonId": 201,
@@ -6885,9 +6780,7 @@
       "out_exitFade": 4096,
       "out_done": true,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 119,
@@ -6927,7 +6820,7 @@
       "crossEvery": 20,
       "out_headerFade": 0,
       "out_footerFade": 0,
-      "out_bgScroll": 90,
+      "out_bgScroll": 4,
       "out_partners": [
         {
           "partyIndex": 0,
@@ -6935,10 +6828,10 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 4,
-          "animationFrame": 11,
+          "animationFrame": 13,
           "slots": [
             {
               "digimonId": -1,
@@ -6969,7 +6862,7 @@
           "cursorFrame": 3,
           "levelBlinkFrame": 0,
           "shownExp": 60,
-          "animationFrame": 11,
+          "animationFrame": 13,
           "slots": [
             {
               "digimonId": 201,
@@ -6995,9 +6888,7 @@
       "out_exitFade": 4096,
       "out_done": true,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 120,
@@ -7299,7 +7190,7 @@
           "fade": 4096,
           "selected": true,
           "cursorFrame": 2,
-          "levelBlinkFrame": 2,
+          "levelBlinkFrame": 1,
           "shownExp": 10,
           "animationFrame": 5,
           "slots": [
@@ -7337,9 +7228,7 @@
         "arrowVisible": false,
         "arrowFrame": 0
       },
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 123,
@@ -7376,7 +7265,7 @@
       },
       "stepCount": 100,
       "crossEvery": 20,
-      "out_headerFade": 3278,
+      "out_headerFade": 4096,
       "out_footerFade": 4096,
       "out_bgScroll": 50,
       "out_partners": [
@@ -7416,9 +7305,9 @@
           "partnerId": 2,
           "fighterId": 400,
           "fade": 4096,
-          "selected": false,
-          "cursorFrame": 2,
-          "levelBlinkFrame": 10,
+          "selected": true,
+          "cursorFrame": 3,
+          "levelBlinkFrame": 9,
           "shownExp": 10,
           "animationFrame": 7,
           "slots": [
@@ -7446,9 +7335,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 124,
@@ -7526,7 +7413,7 @@
           "fighterId": 400,
           "fade": 2460,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 3,
           "levelBlinkFrame": 10,
           "shownExp": 10,
           "animationFrame": 9,
@@ -7555,9 +7442,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 125,
@@ -7635,7 +7520,7 @@
           "fighterId": 400,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 3,
           "levelBlinkFrame": 10,
           "shownExp": 10,
           "animationFrame": 9,
@@ -7664,9 +7549,7 @@
       "out_exitFade": 2856,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 126,
@@ -7744,7 +7627,7 @@
           "fighterId": 400,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 3,
           "levelBlinkFrame": 10,
           "shownExp": 10,
           "animationFrame": 9,
@@ -7773,9 +7656,7 @@
       "out_exitFade": 4096,
       "out_done": true,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 127,
@@ -7987,7 +7868,7 @@
       },
       "stepCount": 100,
       "crossEvery": 20,
-      "out_headerFade": 3278,
+      "out_headerFade": 4096,
       "out_footerFade": 4096,
       "out_bgScroll": 50,
       "out_partners": [
@@ -8027,9 +7908,9 @@
           "partnerId": 2,
           "fighterId": 400,
           "fade": 4096,
-          "selected": false,
-          "cursorFrame": 2,
-          "levelBlinkFrame": 10,
+          "selected": true,
+          "cursorFrame": 3,
+          "levelBlinkFrame": 9,
           "shownExp": 58,
           "animationFrame": 7,
           "slots": [
@@ -8088,9 +7969,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 129,
@@ -8182,7 +8061,7 @@
           "fighterId": 400,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 3,
           "levelBlinkFrame": 10,
           "shownExp": 58,
           "animationFrame": 11,
@@ -8242,9 +8121,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 130,
@@ -8336,7 +8213,7 @@
           "fighterId": 400,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 3,
           "levelBlinkFrame": 10,
           "shownExp": 58,
           "animationFrame": 15,
@@ -8367,7 +8244,7 @@
           "fighterId": 450,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 15,
@@ -8396,9 +8273,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 131,
@@ -8490,7 +8365,7 @@
           "fighterId": 400,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 3,
           "levelBlinkFrame": 10,
           "shownExp": 58,
           "animationFrame": 16,
@@ -8521,7 +8396,7 @@
           "fighterId": 450,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 16,
@@ -8550,9 +8425,7 @@
       "out_exitFade": 4096,
       "out_done": true,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 132,
@@ -8644,7 +8517,7 @@
           "fighterId": 400,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 3,
           "levelBlinkFrame": 10,
           "shownExp": 58,
           "animationFrame": 16,
@@ -8675,7 +8548,7 @@
           "fighterId": 450,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 16,
@@ -8704,9 +8577,7 @@
       "out_exitFade": 4096,
       "out_done": true,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 133,
@@ -8798,7 +8669,7 @@
           "fighterId": 400,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 3,
           "levelBlinkFrame": 10,
           "shownExp": 58,
           "animationFrame": 16,
@@ -8829,7 +8700,7 @@
           "fighterId": 450,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 16,
@@ -8858,9 +8729,7 @@
       "out_exitFade": 4096,
       "out_done": true,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 134,
@@ -8952,7 +8821,7 @@
           "fighterId": 400,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 3,
           "levelBlinkFrame": 10,
           "shownExp": 58,
           "animationFrame": 16,
@@ -8983,7 +8852,7 @@
           "fighterId": 450,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 16,
@@ -9012,9 +8881,7 @@
       "out_exitFade": 4096,
       "out_done": true,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 135,
@@ -9150,9 +9017,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 137,
@@ -9181,7 +9046,7 @@
       },
       "stepCount": 75,
       "crossEvery": 20,
-      "out_headerFade": 1642,
+      "out_headerFade": 4096,
       "out_footerFade": 4096,
       "out_bgScroll": 37,
       "out_partners": [
@@ -9191,7 +9056,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 50,
           "animationFrame": 5,
@@ -9220,9 +9085,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 138,
@@ -9251,7 +9114,7 @@
       },
       "stepCount": 80,
       "crossEvery": 20,
-      "out_headerFade": 0,
+      "out_headerFade": 6,
       "out_footerFade": 4096,
       "out_bgScroll": 40,
       "out_partners": [
@@ -9261,7 +9124,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 50,
           "animationFrame": 6,
@@ -9289,19 +9152,8 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": {
-        "entry": 10,
-        "substitutions": [
-          75
-        ],
-        "tokensRevealed": 0,
-        "tokenCount": 1,
-        "arrowVisible": false,
-        "arrowFrame": 1
-      },
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_message": null,
+      "out_logs": []
     },
     {
       "id": 139,
@@ -9340,7 +9192,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 50,
           "animationFrame": 7,
@@ -9369,9 +9221,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 140,
@@ -9410,7 +9260,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 50,
           "animationFrame": 8,
@@ -9439,9 +9289,7 @@
       "out_exitFade": 2856,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 141,
@@ -9727,9 +9575,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 145,
@@ -9757,7 +9603,7 @@
       },
       "stepCount": 80,
       "crossEvery": 20,
-      "out_headerFade": 0,
+      "out_headerFade": 6,
       "out_footerFade": 4096,
       "out_bgScroll": 40,
       "out_partners": [
@@ -9767,7 +9613,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 6,
@@ -9795,19 +9641,8 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": {
-        "entry": 10,
-        "substitutions": [
-          50
-        ],
-        "tokensRevealed": 0,
-        "tokenCount": 2,
-        "arrowVisible": false,
-        "arrowFrame": 1
-      },
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_message": null,
+      "out_logs": []
     },
     {
       "id": 146,
@@ -9845,7 +9680,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 6,
@@ -9883,9 +9718,7 @@
         "arrowVisible": false,
         "arrowFrame": 3
       },
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 147,
@@ -9923,7 +9756,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 7,
@@ -9952,9 +9785,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 148,
@@ -9992,7 +9823,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 8,
@@ -10021,9 +9852,7 @@
       "out_exitFade": 1496,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 149,
@@ -10061,7 +9890,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 8,
@@ -10090,9 +9919,7 @@
       "out_exitFade": 4096,
       "out_done": true,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 150,
@@ -10224,9 +10051,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 152,
@@ -10292,9 +10117,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 153,
@@ -10321,7 +10144,7 @@
       },
       "stepCount": 75,
       "crossEvery": 20,
-      "out_headerFade": 1642,
+      "out_headerFade": 4096,
       "out_footerFade": 4096,
       "out_bgScroll": 37,
       "out_partners": [
@@ -10331,7 +10154,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 500250,
           "animationFrame": 5,
@@ -10360,9 +10183,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 154,
@@ -10389,7 +10210,7 @@
       },
       "stepCount": 80,
       "crossEvery": 20,
-      "out_headerFade": 0,
+      "out_headerFade": 6,
       "out_footerFade": 4096,
       "out_bgScroll": 40,
       "out_partners": [
@@ -10399,7 +10220,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 500250,
           "animationFrame": 6,
@@ -10427,19 +10248,8 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": {
-        "entry": 10,
-        "substitutions": [
-          9999
-        ],
-        "tokensRevealed": 0,
-        "tokenCount": 1,
-        "arrowVisible": false,
-        "arrowFrame": 1
-      },
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_message": null,
+      "out_logs": []
     },
     {
       "id": 155,
@@ -10476,7 +10286,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 500250,
           "animationFrame": 7,
@@ -10505,9 +10315,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 156,
@@ -10544,7 +10352,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 500250,
           "animationFrame": 8,
@@ -10573,9 +10381,7 @@
       "out_exitFade": 2856,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 157,
@@ -10602,7 +10408,7 @@
       "crossEvery": 1,
       "out_headerFade": 0,
       "out_footerFade": 0,
-      "out_bgScroll": 50,
+      "out_bgScroll": 52,
       "out_partners": [
         {
           "partyIndex": 0,
@@ -10639,9 +10445,7 @@
       "out_exitFade": 4096,
       "out_done": true,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 158,
@@ -10668,7 +10472,7 @@
       "crossEvery": 1,
       "out_headerFade": 0,
       "out_footerFade": 0,
-      "out_bgScroll": 64,
+      "out_bgScroll": 65,
       "out_partners": [
         {
           "partyIndex": 0,
@@ -10676,7 +10480,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 3,
           "levelBlinkFrame": 10,
           "shownExp": 4,
           "animationFrame": 7,
@@ -10705,9 +10509,7 @@
       "out_exitFade": 4096,
       "out_done": true,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 159,
@@ -10760,7 +10562,7 @@
       "crossEvery": 1,
       "out_headerFade": 0,
       "out_footerFade": 0,
-      "out_bgScroll": 81,
+      "out_bgScroll": 84,
       "out_partners": [
         {
           "partyIndex": 0,
@@ -10799,7 +10601,7 @@
           "fighterId": 400,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 2,
+          "cursorFrame": 3,
           "levelBlinkFrame": 10,
           "shownExp": 58,
           "animationFrame": 10,
@@ -10830,7 +10632,7 @@
           "fighterId": 450,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 10,
@@ -10859,9 +10661,7 @@
       "out_exitFade": 4096,
       "out_done": true,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 160,
@@ -10896,7 +10696,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 3,
+          "cursorFrame": 0,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 7,
@@ -10925,9 +10725,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 161,
@@ -10962,7 +10760,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 3,
+          "cursorFrame": 0,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 8,
@@ -10991,9 +10789,7 @@
       "out_exitFade": 4096,
       "out_done": true,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 162,
@@ -11028,7 +10824,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 3,
+          "cursorFrame": 0,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 8,
@@ -11057,9 +10853,7 @@
       "out_exitFade": 4096,
       "out_done": true,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 163,
@@ -11094,7 +10888,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 3,
+          "cursorFrame": 0,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 8,
@@ -11123,9 +10917,7 @@
       "out_exitFade": 4096,
       "out_done": true,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 164,
@@ -11335,9 +11127,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 167,
@@ -11401,9 +11191,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 168,
@@ -11467,9 +11255,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 169,
@@ -11533,9 +11319,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 170,
@@ -11599,9 +11383,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 171,
@@ -11636,7 +11418,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 1,
           "animationFrame": 8,
@@ -11665,9 +11447,7 @@
       "out_exitFade": 4096,
       "out_done": true,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 172,
@@ -11702,7 +11482,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 9,
           "animationFrame": 8,
@@ -11731,9 +11511,7 @@
       "out_exitFade": 4096,
       "out_done": true,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 173,
@@ -11768,7 +11546,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 10,
           "animationFrame": 8,
@@ -11797,9 +11575,7 @@
       "out_exitFade": 4096,
       "out_done": true,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 174,
@@ -11834,7 +11610,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 11,
           "animationFrame": 8,
@@ -11863,9 +11639,7 @@
       "out_exitFade": 4096,
       "out_done": true,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 175,
@@ -11900,7 +11674,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 999,
           "animationFrame": 8,
@@ -11929,9 +11703,7 @@
       "out_exitFade": 4096,
       "out_done": true,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 176,
@@ -11966,7 +11738,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 1000,
           "animationFrame": 8,
@@ -11995,9 +11767,7 @@
       "out_exitFade": 4096,
       "out_done": true,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 177,
@@ -12032,7 +11802,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 999999,
           "animationFrame": 8,
@@ -12061,9 +11831,7 @@
       "out_exitFade": 4096,
       "out_done": true,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 178,
@@ -12098,7 +11866,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 8,
@@ -12127,9 +11895,7 @@
       "out_exitFade": 4096,
       "out_done": true,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 179,
@@ -12164,7 +11930,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 9,
@@ -12193,9 +11959,7 @@
       "out_exitFade": 4096,
       "out_done": true,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 180,
@@ -12483,7 +12247,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 4,
           "animationFrame": 9,
@@ -12512,9 +12276,7 @@
       "out_exitFade": 4096,
       "out_done": true,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 183,
@@ -12549,7 +12311,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 215,
           "animationFrame": 8,
@@ -12578,9 +12340,7 @@
       "out_exitFade": 136,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 184,
@@ -12615,7 +12375,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 217,
           "animationFrame": 8,
@@ -12644,9 +12404,7 @@
       "out_exitFade": 1496,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 185,
@@ -12847,9 +12605,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 188,
@@ -12874,7 +12630,7 @@
       },
       "stepCount": 80,
       "crossEvery": 20,
-      "out_headerFade": 0,
+      "out_headerFade": 6,
       "out_footerFade": 4096,
       "out_bgScroll": 40,
       "out_partners": [
@@ -12884,7 +12640,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 225,
           "animationFrame": 6,
@@ -12912,19 +12668,8 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": {
-        "entry": 10,
-        "substitutions": [
-          197
-        ],
-        "tokensRevealed": 0,
-        "tokenCount": 1,
-        "arrowVisible": false,
-        "arrowFrame": 1
-      },
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_message": null,
+      "out_logs": []
     },
     {
       "id": 189,
@@ -12959,7 +12704,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 227,
           "animationFrame": 6,
@@ -12997,9 +12742,7 @@
         "arrowVisible": true,
         "arrowFrame": 3
       },
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 190,
@@ -13034,7 +12777,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 229,
           "animationFrame": 7,
@@ -13063,9 +12806,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 191,
@@ -13100,7 +12841,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 231,
           "animationFrame": 8,
@@ -13129,9 +12870,7 @@
       "out_exitFade": 136,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 192,
@@ -13166,7 +12905,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 233,
           "animationFrame": 8,
@@ -13195,9 +12934,7 @@
       "out_exitFade": 1496,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 193,
@@ -13398,9 +13135,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 196,
@@ -13425,7 +13160,7 @@
       },
       "stepCount": 80,
       "crossEvery": 20,
-      "out_headerFade": 0,
+      "out_headerFade": 6,
       "out_footerFade": 4096,
       "out_bgScroll": 40,
       "out_partners": [
@@ -13435,7 +13170,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 241,
           "animationFrame": 6,
@@ -13463,19 +13198,8 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": {
-        "entry": 10,
-        "substitutions": [
-          205
-        ],
-        "tokensRevealed": 0,
-        "tokenCount": 1,
-        "arrowVisible": false,
-        "arrowFrame": 1
-      },
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_message": null,
+      "out_logs": []
     },
     {
       "id": 197,
@@ -13510,7 +13234,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 243,
           "animationFrame": 6,
@@ -13548,9 +13272,7 @@
         "arrowVisible": true,
         "arrowFrame": 3
       },
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 198,
@@ -13585,7 +13307,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 245,
           "animationFrame": 7,
@@ -13614,9 +13336,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 199,
@@ -13651,7 +13371,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 247,
           "animationFrame": 8,
@@ -13680,9 +13400,7 @@
       "out_exitFade": 136,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 200,
@@ -13717,7 +13435,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 249,
           "animationFrame": 8,
@@ -13746,9 +13464,7 @@
       "out_exitFade": 1496,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 201,
@@ -13949,9 +13665,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 204,
@@ -13976,7 +13690,7 @@
       },
       "stepCount": 80,
       "crossEvery": 20,
-      "out_headerFade": 0,
+      "out_headerFade": 6,
       "out_footerFade": 4096,
       "out_bgScroll": 40,
       "out_partners": [
@@ -13986,7 +13700,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 207,
           "animationFrame": 6,
@@ -14014,19 +13728,8 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": {
-        "entry": 10,
-        "substitutions": [
-          13
-        ],
-        "tokensRevealed": 0,
-        "tokenCount": 1,
-        "arrowVisible": false,
-        "arrowFrame": 1
-      },
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_message": null,
+      "out_logs": []
     },
     {
       "id": 205,
@@ -14061,7 +13764,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 209,
           "animationFrame": 6,
@@ -14099,9 +13802,7 @@
         "arrowVisible": true,
         "arrowFrame": 3
       },
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 206,
@@ -14136,7 +13837,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 211,
           "animationFrame": 7,
@@ -14165,9 +13866,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 207,
@@ -14202,7 +13901,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 213,
           "animationFrame": 8,
@@ -14231,9 +13930,7 @@
       "out_exitFade": 136,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 208,
@@ -14268,7 +13965,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 215,
           "animationFrame": 8,
@@ -14297,9 +13994,7 @@
       "out_exitFade": 1496,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 209,
@@ -14500,9 +14195,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 212,
@@ -14527,7 +14220,7 @@
       },
       "stepCount": 80,
       "crossEvery": 20,
-      "out_headerFade": 0,
+      "out_headerFade": 6,
       "out_footerFade": 4096,
       "out_bgScroll": 40,
       "out_partners": [
@@ -14537,7 +14230,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 223,
           "animationFrame": 6,
@@ -14565,19 +14258,8 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": {
-        "entry": 10,
-        "substitutions": [
-          21
-        ],
-        "tokensRevealed": 0,
-        "tokenCount": 1,
-        "arrowVisible": false,
-        "arrowFrame": 1
-      },
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_message": null,
+      "out_logs": []
     },
     {
       "id": 213,
@@ -14612,7 +14294,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 225,
           "animationFrame": 6,
@@ -14650,9 +14332,7 @@
         "arrowVisible": true,
         "arrowFrame": 3
       },
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 214,
@@ -14687,7 +14367,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 227,
           "animationFrame": 7,
@@ -14716,9 +14396,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 215,
@@ -14753,7 +14431,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 229,
           "animationFrame": 8,
@@ -14782,9 +14460,7 @@
       "out_exitFade": 136,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 216,
@@ -14819,7 +14495,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 231,
           "animationFrame": 8,
@@ -14848,9 +14524,7 @@
       "out_exitFade": 1496,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 217,
@@ -15051,9 +14725,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 220,
@@ -15078,7 +14750,7 @@
       },
       "stepCount": 80,
       "crossEvery": 20,
-      "out_headerFade": 0,
+      "out_headerFade": 6,
       "out_footerFade": 4096,
       "out_bgScroll": 40,
       "out_partners": [
@@ -15088,7 +14760,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 239,
           "animationFrame": 6,
@@ -15116,19 +14788,8 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": {
-        "entry": 10,
-        "substitutions": [
-          29
-        ],
-        "tokensRevealed": 0,
-        "tokenCount": 1,
-        "arrowVisible": false,
-        "arrowFrame": 1
-      },
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_message": null,
+      "out_logs": []
     },
     {
       "id": 221,
@@ -15163,7 +14824,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 241,
           "animationFrame": 6,
@@ -15201,9 +14862,7 @@
         "arrowVisible": true,
         "arrowFrame": 3
       },
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 222,
@@ -15238,7 +14897,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 243,
           "animationFrame": 7,
@@ -15267,9 +14926,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 223,
@@ -15304,7 +14961,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 245,
           "animationFrame": 8,
@@ -15333,9 +14990,7 @@
       "out_exitFade": 136,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 224,
@@ -15370,7 +15025,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 247,
           "animationFrame": 8,
@@ -15399,9 +15054,7 @@
       "out_exitFade": 1496,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 225,
@@ -15602,9 +15255,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 228,
@@ -15629,7 +15280,7 @@
       },
       "stepCount": 80,
       "crossEvery": 20,
-      "out_headerFade": 0,
+      "out_headerFade": 6,
       "out_footerFade": 4096,
       "out_bgScroll": 40,
       "out_partners": [
@@ -15639,7 +15290,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 255,
           "animationFrame": 6,
@@ -15667,19 +15318,8 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": {
-        "entry": 10,
-        "substitutions": [
-          37
-        ],
-        "tokensRevealed": 0,
-        "tokenCount": 1,
-        "arrowVisible": false,
-        "arrowFrame": 1
-      },
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_message": null,
+      "out_logs": []
     },
     {
       "id": 229,
@@ -15714,7 +15354,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 257,
           "animationFrame": 6,
@@ -15752,9 +15392,7 @@
         "arrowVisible": true,
         "arrowFrame": 3
       },
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 230,
@@ -15789,7 +15427,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 259,
           "animationFrame": 7,
@@ -15818,9 +15456,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 231,
@@ -15855,7 +15491,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 261,
           "animationFrame": 8,
@@ -15884,9 +15520,7 @@
       "out_exitFade": 136,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 232,
@@ -15921,7 +15555,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 263,
           "animationFrame": 8,
@@ -15950,9 +15584,7 @@
       "out_exitFade": 1496,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 233,
@@ -16153,9 +15785,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 236,
@@ -16180,7 +15810,7 @@
       },
       "stepCount": 80,
       "crossEvery": 20,
-      "out_headerFade": 0,
+      "out_headerFade": 6,
       "out_footerFade": 4096,
       "out_bgScroll": 40,
       "out_partners": [
@@ -16190,7 +15820,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 271,
           "animationFrame": 6,
@@ -16218,19 +15848,8 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": {
-        "entry": 10,
-        "substitutions": [
-          45
-        ],
-        "tokensRevealed": 0,
-        "tokenCount": 1,
-        "arrowVisible": false,
-        "arrowFrame": 1
-      },
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_message": null,
+      "out_logs": []
     },
     {
       "id": 237,
@@ -16265,7 +15884,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 273,
           "animationFrame": 6,
@@ -16303,9 +15922,7 @@
         "arrowVisible": true,
         "arrowFrame": 3
       },
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 238,
@@ -16340,7 +15957,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 275,
           "animationFrame": 7,
@@ -16369,9 +15986,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 239,
@@ -16406,7 +16021,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 277,
           "animationFrame": 8,
@@ -16435,9 +16050,7 @@
       "out_exitFade": 136,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 240,
@@ -16472,7 +16085,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 279,
           "animationFrame": 8,
@@ -16501,9 +16114,7 @@
       "out_exitFade": 1496,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 241,
@@ -16704,9 +16315,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 244,
@@ -16731,7 +16340,7 @@
       },
       "stepCount": 80,
       "crossEvery": 20,
-      "out_headerFade": 0,
+      "out_headerFade": 6,
       "out_footerFade": 4096,
       "out_bgScroll": 40,
       "out_partners": [
@@ -16741,7 +16350,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 287,
           "animationFrame": 6,
@@ -16769,19 +16378,8 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": {
-        "entry": 10,
-        "substitutions": [
-          53
-        ],
-        "tokensRevealed": 0,
-        "tokenCount": 1,
-        "arrowVisible": false,
-        "arrowFrame": 1
-      },
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_message": null,
+      "out_logs": []
     },
     {
       "id": 245,
@@ -16816,7 +16414,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 289,
           "animationFrame": 6,
@@ -16854,9 +16452,7 @@
         "arrowVisible": true,
         "arrowFrame": 3
       },
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 246,
@@ -16891,7 +16487,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 291,
           "animationFrame": 7,
@@ -16920,9 +16516,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 247,
@@ -16957,7 +16551,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 293,
           "animationFrame": 8,
@@ -16986,9 +16580,7 @@
       "out_exitFade": 136,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 248,
@@ -17023,7 +16615,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 295,
           "animationFrame": 8,
@@ -17052,9 +16644,7 @@
       "out_exitFade": 1496,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 249,
@@ -17255,9 +16845,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 252,
@@ -17282,7 +16870,7 @@
       },
       "stepCount": 80,
       "crossEvery": 20,
-      "out_headerFade": 0,
+      "out_headerFade": 6,
       "out_footerFade": 4096,
       "out_bgScroll": 40,
       "out_partners": [
@@ -17292,7 +16880,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 253,
           "animationFrame": 6,
@@ -17320,19 +16908,8 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": {
-        "entry": 10,
-        "substitutions": [
-          61
-        ],
-        "tokensRevealed": 0,
-        "tokenCount": 1,
-        "arrowVisible": false,
-        "arrowFrame": 1
-      },
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_message": null,
+      "out_logs": []
     },
     {
       "id": 253,
@@ -17367,7 +16944,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 255,
           "animationFrame": 6,
@@ -17405,9 +16982,7 @@
         "arrowVisible": true,
         "arrowFrame": 3
       },
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 254,
@@ -17442,7 +17017,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 257,
           "animationFrame": 7,
@@ -17471,9 +17046,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 255,
@@ -17508,7 +17081,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 259,
           "animationFrame": 8,
@@ -17537,9 +17110,7 @@
       "out_exitFade": 136,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 256,
@@ -17574,7 +17145,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 261,
           "animationFrame": 8,
@@ -17603,9 +17174,7 @@
       "out_exitFade": 1496,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 257,
@@ -17806,9 +17375,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 260,
@@ -17833,7 +17400,7 @@
       },
       "stepCount": 80,
       "crossEvery": 20,
-      "out_headerFade": 0,
+      "out_headerFade": 6,
       "out_footerFade": 4096,
       "out_bgScroll": 40,
       "out_partners": [
@@ -17843,7 +17410,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 269,
           "animationFrame": 6,
@@ -17871,19 +17438,8 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": {
-        "entry": 10,
-        "substitutions": [
-          69
-        ],
-        "tokensRevealed": 0,
-        "tokenCount": 1,
-        "arrowVisible": false,
-        "arrowFrame": 1
-      },
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_message": null,
+      "out_logs": []
     },
     {
       "id": 261,
@@ -17918,7 +17474,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 271,
           "animationFrame": 6,
@@ -17956,9 +17512,7 @@
         "arrowVisible": true,
         "arrowFrame": 3
       },
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 262,
@@ -17993,7 +17547,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 273,
           "animationFrame": 7,
@@ -18022,9 +17576,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 263,
@@ -18059,7 +17611,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 275,
           "animationFrame": 8,
@@ -18088,9 +17640,7 @@
       "out_exitFade": 136,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 264,
@@ -18125,7 +17675,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 277,
           "animationFrame": 8,
@@ -18154,9 +17704,7 @@
       "out_exitFade": 1496,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 265,
@@ -18357,9 +17905,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 268,
@@ -18384,7 +17930,7 @@
       },
       "stepCount": 80,
       "crossEvery": 20,
-      "out_headerFade": 0,
+      "out_headerFade": 6,
       "out_footerFade": 4096,
       "out_bgScroll": 40,
       "out_partners": [
@@ -18394,7 +17940,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 285,
           "animationFrame": 6,
@@ -18422,19 +17968,8 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": {
-        "entry": 10,
-        "substitutions": [
-          77
-        ],
-        "tokensRevealed": 0,
-        "tokenCount": 1,
-        "arrowVisible": false,
-        "arrowFrame": 1
-      },
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_message": null,
+      "out_logs": []
     },
     {
       "id": 269,
@@ -18469,7 +18004,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 287,
           "animationFrame": 6,
@@ -18507,9 +18042,7 @@
         "arrowVisible": true,
         "arrowFrame": 3
       },
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 270,
@@ -18544,7 +18077,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 289,
           "animationFrame": 7,
@@ -18573,9 +18106,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 271,
@@ -18610,7 +18141,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 291,
           "animationFrame": 8,
@@ -18639,9 +18170,7 @@
       "out_exitFade": 136,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 272,
@@ -18676,7 +18205,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 293,
           "animationFrame": 8,
@@ -18705,9 +18234,7 @@
       "out_exitFade": 1496,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 273,
@@ -18908,9 +18435,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 276,
@@ -18935,7 +18460,7 @@
       },
       "stepCount": 80,
       "crossEvery": 20,
-      "out_headerFade": 0,
+      "out_headerFade": 6,
       "out_footerFade": 4096,
       "out_bgScroll": 40,
       "out_partners": [
@@ -18945,7 +18470,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 301,
           "animationFrame": 6,
@@ -18973,19 +18498,8 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": {
-        "entry": 10,
-        "substitutions": [
-          85
-        ],
-        "tokensRevealed": 0,
-        "tokenCount": 1,
-        "arrowVisible": false,
-        "arrowFrame": 1
-      },
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_message": null,
+      "out_logs": []
     },
     {
       "id": 277,
@@ -19020,7 +18534,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 303,
           "animationFrame": 6,
@@ -19058,9 +18572,7 @@
         "arrowVisible": true,
         "arrowFrame": 3
       },
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 278,
@@ -19095,7 +18607,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 305,
           "animationFrame": 7,
@@ -19124,9 +18636,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 279,
@@ -19161,7 +18671,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 307,
           "animationFrame": 8,
@@ -19190,9 +18700,7 @@
       "out_exitFade": 136,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 280,
@@ -19227,7 +18735,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 309,
           "animationFrame": 8,
@@ -19256,9 +18764,7 @@
       "out_exitFade": 1496,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 281,
@@ -19459,9 +18965,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 284,
@@ -19486,7 +18990,7 @@
       },
       "stepCount": 80,
       "crossEvery": 20,
-      "out_headerFade": 0,
+      "out_headerFade": 6,
       "out_footerFade": 4096,
       "out_bgScroll": 40,
       "out_partners": [
@@ -19496,7 +19000,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 317,
           "animationFrame": 6,
@@ -19524,19 +19028,8 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": {
-        "entry": 10,
-        "substitutions": [
-          93
-        ],
-        "tokensRevealed": 0,
-        "tokenCount": 1,
-        "arrowVisible": false,
-        "arrowFrame": 1
-      },
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_message": null,
+      "out_logs": []
     },
     {
       "id": 285,
@@ -19571,7 +19064,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 319,
           "animationFrame": 6,
@@ -19609,9 +19102,7 @@
         "arrowVisible": true,
         "arrowFrame": 3
       },
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 286,
@@ -19646,7 +19137,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 321,
           "animationFrame": 7,
@@ -19675,9 +19166,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 287,
@@ -19712,7 +19201,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 323,
           "animationFrame": 8,
@@ -19741,9 +19230,7 @@
       "out_exitFade": 136,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 288,
@@ -19778,7 +19265,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 325,
           "animationFrame": 8,
@@ -19807,9 +19294,7 @@
       "out_exitFade": 1496,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 289,
@@ -20010,9 +19495,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 292,
@@ -20037,7 +19520,7 @@
       },
       "stepCount": 80,
       "crossEvery": 20,
-      "out_headerFade": 0,
+      "out_headerFade": 6,
       "out_footerFade": 4096,
       "out_bgScroll": 40,
       "out_partners": [
@@ -20047,7 +19530,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 333,
           "animationFrame": 6,
@@ -20075,19 +19558,8 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": {
-        "entry": 10,
-        "substitutions": [
-          101
-        ],
-        "tokensRevealed": 0,
-        "tokenCount": 1,
-        "arrowVisible": false,
-        "arrowFrame": 1
-      },
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_message": null,
+      "out_logs": []
     },
     {
       "id": 293,
@@ -20122,7 +19594,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 335,
           "animationFrame": 6,
@@ -20160,9 +19632,7 @@
         "arrowVisible": true,
         "arrowFrame": 3
       },
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 294,
@@ -20197,7 +19667,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 337,
           "animationFrame": 7,
@@ -20226,9 +19696,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 295,
@@ -20263,7 +19731,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 339,
           "animationFrame": 8,
@@ -20292,9 +19760,7 @@
       "out_exitFade": 136,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 296,
@@ -20329,7 +19795,7 @@
           "fighterId": 383,
           "fade": 0,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 341,
           "animationFrame": 8,
@@ -20358,9 +19824,7 @@
       "out_exitFade": 1496,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 297,
@@ -20561,9 +20025,7 @@
       "out_exitFade": 0,
       "out_done": false,
       "out_message": null,
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_logs": []
     },
     {
       "id": 300,
@@ -20588,7 +20050,7 @@
       },
       "stepCount": 80,
       "crossEvery": 20,
-      "out_headerFade": 0,
+      "out_headerFade": 6,
       "out_footerFade": 4096,
       "out_bgScroll": 40,
       "out_partners": [
@@ -20598,7 +20060,7 @@
           "fighterId": 383,
           "fade": 4096,
           "selected": false,
-          "cursorFrame": 1,
+          "cursorFrame": 2,
           "levelBlinkFrame": 0,
           "shownExp": 349,
           "animationFrame": 6,
@@ -20626,19 +20088,8 @@
       ],
       "out_exitFade": 0,
       "out_done": false,
-      "out_message": {
-        "entry": 10,
-        "substitutions": [
-          109
-        ],
-        "tokensRevealed": 0,
-        "tokenCount": 1,
-        "arrowVisible": false,
-        "arrowFrame": 1
-      },
-      "out_logs": [
-        "report-digimon-exp-unwired"
-      ]
+      "out_message": null,
+      "out_logs": []
     }
   ]
 }
