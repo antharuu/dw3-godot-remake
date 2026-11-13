@@ -786,7 +786,8 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
         _battleRng,
         NameLine,
         BattleText(),
-        _activeBattle?.HasPrize == true ? _activeBattle.Prize : null);
+        _activeBattle?.HasPrize == true ? _activeBattle.Prize : null,
+        _digivolutionData ?? throw new CacheResourceException("CACHE_RESOURCE_UNAVAILABLE", "digivolution manifest unavailable"));
 
     /// <summary>
     /// Constructs the fight-report controller from the resolved victory input.

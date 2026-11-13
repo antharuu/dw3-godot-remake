@@ -12,6 +12,7 @@ namespace Dw3Production.Session;
 /// <param name="NameFor">Decoded display text for a fighter id.</param>
 /// <param name="Text">Battle text catalogue attached to the report.</param>
 /// <param name="Prize">Scripted prize item forced by the encounter, or null when the enemy drop decides.</param>
+/// <param name="Digivolutions">Decoded evolution requirements used for post-victory form progression.</param>
 public sealed record BattleVictoryContext(
     BattleReward Reward,
     int Encounter,
@@ -20,4 +21,5 @@ public sealed record BattleVictoryContext(
     IBattleRng Random,
     Func<int, BattleTextLine> NameFor,
     BattleTextCatalog Text,
-    int? Prize = null);
+    int? Prize = null,
+    DigivolutionData? Digivolutions = null);

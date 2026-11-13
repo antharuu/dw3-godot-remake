@@ -6,6 +6,10 @@ namespace Dw3Production.Session;
 public sealed class PlayerSessionPartner
 {
     private readonly Dictionary<int, BattleStats> _authoredFormStats;
+    private readonly List<int> _equippedForms;
+    private readonly Dictionary<int, PartnerFormProgress> _formProgress;
+    private readonly List<int> _knownForms;
+    private readonly List<int> _knownTechniques;
 
     /// <summary>Initializes a new instance of the <see cref="PlayerSessionPartner"/> class.</summary>
     /// <param name="battleSeed">Canonical resources and stat sources shared with battle fighters.</param>
@@ -24,9 +28,10 @@ public sealed class PlayerSessionPartner
     {
         BattleSeed = battleSeed ?? throw new ArgumentNullException(nameof(battleSeed));
         OriginFormId = BattleSeed.Id;
-        KnownForms = [.. knownForms ?? throw new ArgumentNullException(nameof(knownForms))];
-        EquippedForms = ValidateEquippedForms(equippedForms);
-        KnownTechniques = [.. knownTechniques ?? throw new ArgumentNullException(nameof(knownTechniques))];
+        _knownForms = [.. knownForms ?? throw new ArgumentNullException(nameof(knownForms))];
+        _equippedForms = [.. ValidateEquippedForms(equippedForms)];
+        _knownTechniques = [.. knownTechniques ?? throw new ArgumentNullException(nameof(knownTechniques))];
+        _formProgress = CreateFormProgress();
         EquipmentIds = [.. equipmentIds ?? throw new ArgumentNullException(nameof(equipmentIds))];
         Growth = growth;
         _authoredFormStats = new Dictionary<int, BattleStats>(BattleSeed.FormStats);
@@ -39,13 +44,13 @@ public sealed class PlayerSessionPartner
     public int OriginFormId { get; }
 
     /// <summary>Gets the Digimon forms the partner owns for battle menu eligibility.</summary>
-    public IReadOnlyList<int> KnownForms { get; }
+    public IReadOnlyList<int> KnownForms => _knownForms;
 
     /// <summary>Gets the explicitly equipped normal Digivolution forms in source-slot order.</summary>
-    public IReadOnlyList<int> EquippedForms { get; }
+    public IReadOnlyList<int> EquippedForms => _equippedForms;
 
     /// <summary>Gets the techniques the partner knows outside the current Digimon table defaults.</summary>
-    public IReadOnlyList<int> KnownTechniques { get; }
+    public IReadOnlyList<int> KnownTechniques => _knownTechniques;
 
     /// <summary>Gets the equipped item ids consumed by battle stat resolution.</summary>
     public IReadOnlyList<int> EquipmentIds { get; }
@@ -83,6 +88,68 @@ public sealed class PlayerSessionPartner
 
         BattleSeed.FormStats = new Dictionary<int, BattleStats>(_authoredFormStats);
         return true;
+    }
+
+    /// <summary>Gets one acquired form's persistent progression.</summary>
+    /// <param name="formId">Acquired form id.</param>
+    /// <returns>The mutable form progression.</returns>
+    /// <exception cref="InvalidOperationException">Thrown when the form is not acquired.</exception>
+    public PartnerFormProgress FormProgress(int formId) => _formProgress.TryGetValue(formId, out PartnerFormProgress? progress)
+        ? progress
+        : throw new InvalidOperationException($"form {formId} is not acquired");
+
+    /// <summary>Adds an unlocked form and assigns it to the first free source slot.</summary>
+    /// <param name="formId">Newly unlocked form id.</param>
+    /// <returns>True when the form was newly acquired.</returns>
+    public bool AcquireForm(int formId)
+    {
+        if (formId <= 0 || _formProgress.ContainsKey(formId))
+        {
+            return false;
+        }
+
+        _knownForms.Add(formId);
+        _formProgress.Add(formId, new PartnerFormProgress(formId));
+        if (_equippedForms.Count < 3)
+        {
+            _equippedForms.Add(formId);
+        }
+
+        return true;
+    }
+
+    /// <summary>Records one technique as available on the form and in the compatibility catalogue.</summary>
+    /// <param name="formId">Owning form id.</param>
+    /// <param name="techniqueId">Newly learned technique id.</param>
+    /// <returns>True when the technique was newly learned by the form.</returns>
+    public bool LearnTechnique(int formId, int techniqueId)
+    {
+        PartnerFormProgress progress = FormProgress(formId);
+        if (techniqueId <= 0 || progress.Techniques.Contains(techniqueId))
+        {
+            return false;
+        }
+
+        progress.Techniques.Add(techniqueId);
+        if (!_knownTechniques.Contains(techniqueId))
+        {
+            _knownTechniques.Add(techniqueId);
+        }
+
+        return true;
+    }
+
+    /// <summary>Builds an initial progress record for every acquired form including the base form.</summary>
+    /// <returns>The form progression map.</returns>
+    private Dictionary<int, PartnerFormProgress> CreateFormProgress()
+    {
+        var result = new Dictionary<int, PartnerFormProgress>();
+        foreach (int form in _knownForms.Append(OriginFormId).Where(form => form > 0).Distinct())
+        {
+            result.Add(form, new PartnerFormProgress(form, techniques: form == OriginFormId ? _knownTechniques : []));
+        }
+
+        return result;
     }
 
     /// <summary>Validates explicit source-equivalent normal Digivolution slots.</summary>

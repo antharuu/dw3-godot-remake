@@ -324,11 +324,11 @@ public sealed class LegacyBattleReportConsoleTests
         }
 
         Check(
-            report.Logs.Count(line => line == "report-digimon-exp-unwired") == 1,
-            "unwired Digimon-slot EXP is logged once, not simulated");
+            !report.Logs.Any(line => line == "report-digimon-exp-unwired"),
+            "no spurious Digimon-slot EXP diagnostic when FormSlots is empty");
         Check(
             report.View.Partners.Single().Slots.All(slot => !slot.ExpApplied),
-            "unwired Digimon slots never receive invented EXP");
+            "empty FormSlots never apply invented EXP to displayed slots");
     }
 
     private static FightReportInput SampleInput() => new(

@@ -1,47 +1,65 @@
 namespace Dw3Production.Simulation;
 
-/// <summary>
-/// One partner panel's sequence: its fade in and out, and while it is raised, the walk over
-/// its three Digimon slots, the level-up message and the wait for the level blink.
-/// </summary>
+/// <summary>One partner panel's report sequence.</summary>
 internal enum FightReportPartnerPhase
 {
-    /// <summary>Shown and waiting. The report controller moves on when every panel is idle.</summary>
+    /// <summary>Shown and waiting.</summary>
     Idle,
 
-    /// <summary>Starts the 10-frame fade in.</summary>
+    /// <summary>Starts the ten-frame fade in.</summary>
     ShowStart,
 
-    /// <summary>Fading in, then idle.</summary>
+    /// <summary>Fades in, then becomes idle.</summary>
     ShowFade,
 
-    /// <summary>Starts the fade out, twice as fast as the fade in.</summary>
+    /// <summary>Starts the fade out.</summary>
     HideStart,
 
-    /// <summary>Fading out, then hidden.</summary>
+    /// <summary>Fades out, then becomes hidden.</summary>
     HideFade,
 
-    /// <summary>Fully transparent. The experience counter stops rolling.</summary>
+    /// <summary>Fully transparent and no longer rolls experience.</summary>
     Hidden,
 
-    /// <summary>Experience of the current Digimon slot. Not modelled yet: skipped and logged once.</summary>
+    /// <summary>Applies one used form's settled experience display.</summary>
     SlotExp,
 
-    /// <summary>Level of the current Digimon slot, then the next slot.</summary>
+    /// <summary>Checks the current used form's level delta.</summary>
     SlotLevel,
 
-    /// <summary>Moves to the next of the three slots, or to the partner level after the third.</summary>
+    /// <summary>Waits for the form level-up message.</summary>
+    SlotLevelMessage,
+
+    /// <summary>Starts a form technique preview message.</summary>
+    SlotSkillPreview,
+
+    /// <summary>Waits for a form technique preview message.</summary>
+    SlotSkillPreviewMessage,
+
+    /// <summary>Starts a form technique learned message.</summary>
+    SlotSkillLearn,
+
+    /// <summary>Waits for a form technique learned message.</summary>
+    SlotSkillLearnMessage,
+
+    /// <summary>Moves to the next source slot or partner level.</summary>
     NextSlot,
 
-    /// <summary>Checks for a partner level-up and, if any, starts the blink and the level message.</summary>
+    /// <summary>Checks for a partner level-up.</summary>
     PartnerLevel,
 
-    /// <summary>Waits until the level-up message is read.</summary>
+    /// <summary>Waits for the partner level-up message.</summary>
     LevelMessage,
 
-    /// <summary>Step reserved for a newly obtained Digimon. Passes straight to the blink wait.</summary>
+    /// <summary>Starts a newly acquired form message.</summary>
     NewDigimon,
 
-    /// <summary>Waits for the level blink to reach its last frame, then deselects the panel and goes idle.</summary>
+    /// <summary>Waits for a newly acquired form message.</summary>
+    NewDigimonMessage,
+
+    /// <summary>Waits for the full form-slot notice.</summary>
+    SlotsFullMessage,
+
+    /// <summary>Waits for partner and form level blinks.</summary>
     WaitBlinks,
 }

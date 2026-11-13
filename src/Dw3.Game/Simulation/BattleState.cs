@@ -31,6 +31,7 @@ public sealed class BattleState
     private readonly BattleModifierCoordinator _modifierCoordinator;
     private readonly BattleAutoRecoveryCoordinator _autoRecoveryCoordinator;
     private readonly BattleHitSequence _hitSequence = new();
+    private readonly BattleUsedForms _usedForms = new();
 
     /// <summary>Initializes a new instance of the <see cref="BattleState"/> class with empty sides and no outcome.</summary>
     public BattleState()
@@ -87,6 +88,9 @@ public sealed class BattleState
     /// <summary>Gets or sets, per party slot, whether that partner took a turn this
     /// battle. The battle report shares the earned exp only among the partners who took a turn.</summary>
     public bool[] Fought { get; set; } = new bool[3];
+
+    /// <summary>Gets the permanent form ids that performed an action for each party slot during this battle.</summary>
+    public IReadOnlySet<int>[] UsedFormsBySlot => _usedForms.BySlot;
 
     /// <summary>Gets or sets a value indicating whether criticals roll; when false (default) damage is deterministic.</summary>
     public bool AllowCritical { get; set; }
@@ -626,7 +630,11 @@ public sealed class BattleState
 
     /// <summary>Records the incoming partner as having fought, including when the pair technique ends the battle.</summary>
     /// <param name="incomingSlot">Validated selected reserve slot.</param>
-    internal void MarkPairIncomingFought(int incomingSlot) => Fought[incomingSlot] = true;
+    internal void MarkPairIncomingFought(int incomingSlot)
+    {
+        Fought[incomingSlot] = true;
+        MarkUsedForm(incomingSlot);
+    }
 
     /// <summary>Brings the incoming partner in after a pair technique when an enemy remains.</summary>
     /// <param name="incomingSlot">Validated selected reserve slot.</param>
@@ -819,6 +827,11 @@ public sealed class BattleState
         if (ActivePlayer >= 0 && ActivePlayer < Fought.Length)
         {
             Fought[ActivePlayer] = true;
+            MarkUsedForm(ActivePlayer);
         }
     }
+
+    /// <summary>Records the current permanent form of one party slot after a legal action.</summary>
+    /// <param name="slot">Party slot that acted.</param>
+    private void MarkUsedForm(int slot) => _usedForms.Mark(slot, FighterAt(BattleSide.Player, slot));
 }

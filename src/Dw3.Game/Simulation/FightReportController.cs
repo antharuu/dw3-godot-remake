@@ -77,6 +77,11 @@ public sealed class FightReportController
         View = BuildView();
     }
 
+    /// <summary>Tests whether a panel needs the reward sequence for partner or used-form progression.</summary>
+    /// <param name="partner">Settled report partner.</param>
+    /// <returns>True when partner or form experience was awarded.</returns>
+    private static bool HasReward(FightReportPartner partner) => partner.ExpGained > 0 || partner.FormSlots.Any(slot => slot.ExpGained > 0);
+
     /// <summary>Scrolls the background one pixel every other frame, wrapping at 96.</summary>
     private void TickBackground()
     {
@@ -139,7 +144,7 @@ public sealed class FightReportController
     /// <returns>The header phase, or the money phase when no partner is left.</returns>
     private FightReportPhase SelectPartner()
     {
-        while (_partnerIndex < _partners.Length && _partners[_partnerIndex].Source.ExpGained == 0)
+        while (_partnerIndex < _partners.Length && !HasReward(_partners[_partnerIndex].Source))
         {
             _partnerIndex++;
         }
