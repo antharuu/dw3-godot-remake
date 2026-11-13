@@ -29,6 +29,9 @@ internal sealed class BattlePhysicalTechniqueProbe : BattleProbe
     private static IEnumerable<int> CandidateFighters => System.Environment.GetEnvironmentVariable("DW3_PHYSICAL_FIGHTER") is { Length: > 0 } fighter
         ? [int.Parse(fighter, System.Globalization.CultureInfo.InvariantCulture)] : Fighters;
 
+    /// <summary>Gets the real target model selected for a size-specific physical playback case.</summary>
+    private static int TargetId => int.Parse(System.Environment.GetEnvironmentVariable("DW3_PHYSICAL_TARGET") ?? "51", System.Globalization.CultureInfo.InvariantCulture);
+
     /// <inheritdoc/>
     protected override async Task ExecuteAsync()
     {
@@ -82,6 +85,7 @@ internal sealed class BattlePhysicalTechniqueProbe : BattleProbe
         var player = flow.State.ActivePlayerFighter ?? throw new InvalidOperationException("No player.");
         var target = flow.State.ActiveEnemyFighter ?? throw new InvalidOperationException("No enemy.");
         player.Id = fighter;
+        target.Id = TargetId;
         player.Mp = player.MaxMp = 9000;
         player.Hp = player.MaxHp = 9000;
         target.Hp = target.MaxHp = mode.StartsWith("fatal", StringComparison.Ordinal) ? 1 : 9000;

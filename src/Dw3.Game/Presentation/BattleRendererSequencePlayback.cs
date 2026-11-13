@@ -17,6 +17,7 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
     private BattleImpactPlayback? _impact;
     private BattleSequenceStagePlayback? _stage;
     private BattleSequenceActorPlayback? _actors;
+    private BattleEffectModelPlayback? _effects;
     private Action<bool>? _finishAudio;
 
     /// <summary>Initializes a new instance of the <see cref="BattleRendererSequencePlayback"/> class.</summary>
@@ -41,7 +42,7 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
     public bool OwnsCamera => _context is not null;
 
     /// <inheritdoc/>
-    public bool ChildrenReady => EffectChildrenReady?.Invoke() != false && _reaction?.IsComplete != false && _impact?.IsComplete != false && _jumps.Values.All(jump => jump.IsComplete);
+    public bool ChildrenReady => EffectChildrenReady?.Invoke() != false && _reaction?.IsComplete != false && _impact?.IsComplete != false && _effects?.IsComplete != false && _jumps.Values.All(jump => jump.IsComplete);
 
     /// <summary>Gets or sets the completion callback for children started by the asset consumer.</summary>
     public Func<bool>? EffectChildrenReady { get; set; }
@@ -73,6 +74,19 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
         _actors?.Clear();
         _actors = actors;
     }
+
+    /// <summary>Installs the renderer-owned shared effect-model consumer.</summary>
+    /// <param name="effects">Prepared-data effect-model consumer.</param>
+    public void ConfigureEffectModels(BattleEffectModelPlayback effects)
+    {
+        _effects?.Clear();
+        _effects = effects;
+    }
+
+    /// <summary>Combines retained fighters with active effects for the real source-order rendering pass.</summary>
+    /// <param name="fighters">Retained fighter and additional-actor models.</param>
+    /// <returns>All physical models visible this frame.</returns>
+    public IReadOnlyList<BattleModel> RenderedModels(IReadOnlyList<BattleModel> fighters) => [.. fighters, .. _effects?.ActiveModels ?? []];
 
     /// <summary>Binds the same pack provider used by the parent runner.</summary>
     /// <param name="scripts">Validated pack-backed action scripts.</param>
@@ -214,6 +228,7 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
         _impact?.Step();
         _stage?.Step();
         _actors?.Step();
+        _effects?.Step();
         foreach (var pair in _moves)
         {
             if (!pair.Value.IsComplete)
@@ -247,6 +262,7 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
         _impact?.Clear();
         _stage?.Clear();
         _actors?.Clear();
+        _effects?.Clear();
         foreach (var pair in _homes)
         {
             pair.Key.Root.Position = pair.Value.Position;
@@ -285,6 +301,8 @@ internal sealed class BattleRendererSequencePlayback : IBattleSequencePlayback
                 return ApplyTravel(travel);
             case ModelControlEvent model:
                 return ApplyModelControl(model);
+            case EffectModelEvent effect:
+                return _effects?.Consume(effect) ?? SequenceAcknowledgement.Unavailable;
             case CameraRequestEvent camera:
                 _renderer.OnSequenceCameraRequest(camera);
                 return SequenceAcknowledgement.Applied;

@@ -796,7 +796,7 @@ public sealed class BattleRenderer : IDisposable
         SequencePlayback.StepMenuCamera(value.Phase, elapsed);
 
         PresentPartnerView(commandTurn);
-        _modelLayer.Rebuild(_camera, _fighters.Models);
+        _modelLayer.Rebuild(_camera, SequencePlayback.RenderedModels(_fighters.Models));
         _partnerView.Rebuild();
         LogOrdering();
         _hud.SetView(value);
@@ -817,6 +817,7 @@ public sealed class BattleRenderer : IDisposable
         SequencePlayback.ConfigureImpact(new BattleImpactPlayback(_layer, _camera, loader));
         SequencePlayback.ConfigureStage(new BattleSequenceStagePlayback(this, loader));
         SequencePlayback.ConfigureActors(new BattleSequenceActorPlayback(this, _fighters, loader));
+        SequencePlayback.ConfigureEffectModels(new BattleEffectModelPlayback(this, loader));
     }
 
     /// <summary>Gets the exact active arena retained while optional action stages play.</summary>
@@ -830,6 +831,18 @@ public sealed class BattleRenderer : IDisposable
     {
         var model = BattleModel.Load(_world, path);
         model.Root.Visible = false;
+        model.Step(0);
+        return model;
+    }
+
+    /// <summary>Loads one authored effect-model instance with the encounter light set and no fighter fallback.</summary>
+    /// <param name="path">Registered effect-model manifest.</param>
+    /// <returns>A visible, independently animated effect model.</returns>
+    internal BattleModel LoadSequenceEffect(string path)
+    {
+        var model = BattleModel.Load(_world, path);
+        model.SetLighting(_stageLights);
+        model.SetMotion(1, restart: true);
         model.Step(0);
         return model;
     }
