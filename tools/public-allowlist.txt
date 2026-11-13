@@ -1232,3 +1232,25 @@ src/Dw3.Game/Input/BattleInputGate.cs
 src/Dw3.Game/Input/InputButtonLatch.cs
 src/Dw3.Game/Input/InputButtonRouter.cs
 tests/Dw3.Game.Tests/InputButtonLatchTests.cs
+
+# B9-061 non-music sequence, envelope and entrance consumers
+src/Dw3.Extractor/BattleSequencePreparation.cs
+src/Dw3.Formats/Battle/BattleEntranceCueDecoder.cs
+src/Dw3.Formats/Battle/SequenceEventCursor.cs
+src/Dw3.Formats/Battle/SequenceMidiDecoder.cs
+src/Dw3.Formats/Battle/SequenceMidiEvent.cs
+src/Dw3.Game/Conversion/AudioSequenceCommand.cs
+src/Dw3.Game/Conversion/BattleEntranceAudioLoader.cs
+src/Dw3.Game/Conversion/BattleSequenceAudioLoader.cs
+src/Dw3.Game/Conversion/BattleSequenceCompiler.cs
+src/Dw3.Game/Conversion/PreparedAudioSequence.cs
+src/Dw3.Game/Diagnostics/Battle/BattleAudioLifecycleProbe.cs
+src/Dw3.Game/Presentation/BattleEntranceAudio.cs
+src/Dw3.Game/Presentation/BattleSequenceVoice.cs
+src/Dw3.Game/Presentation/SpuEnvelope.cs
+src/Dw3.Game/Presentation/SpuEnvelopeRate.cs
+tests/Dw3.Formats.Tests/Battle/BattleEntranceCueDecoderTests.cs
+tests/Dw3.Formats.Tests/Battle/SequenceMidiDecoderTests.cs
+tests/Dw3.Game.Tests/BattleAudioEnvelopeTests.cs
+tests/Dw3.Game.Tests/BattleEntranceAudioTests.cs
+tests/Dw3.Game.Tests/BattleSequenceAudioTests.cs

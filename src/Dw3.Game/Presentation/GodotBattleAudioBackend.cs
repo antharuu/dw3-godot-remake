@@ -9,6 +9,7 @@ internal sealed class GodotBattleAudioBackend : IBattleAudioBackend, IDisposable
     private readonly Node _root;
     private readonly BattleAudioVoicePool _pool;
     private readonly BattleAudioPump _pump;
+    private readonly Dictionary<string, AudioStreamWav> _samples = new(StringComparer.Ordinal);
 
     /// <summary>Initializes a new instance of the <see cref="GodotBattleAudioBackend"/> class.</summary>
     /// <param name="root">Node owning physical audio players.</param>
@@ -24,7 +25,32 @@ internal sealed class GodotBattleAudioBackend : IBattleAudioBackend, IDisposable
     public int ActiveCount => _pool.ActiveCount;
 
     /// <inheritdoc/>
-    public IVoiceHandle Play(AudioProgramEntry entry) => _pool.Play(entry);
+    public void Prepare(AudioProgramEntry entry)
+    {
+        if (!_samples.TryGetValue(entry.WavPath, out var stream))
+        {
+            stream = AudioStreamWav.LoadFromFile(entry.WavPath) ?? throw new IOException($"Invalid battle WAV: {entry.WavPath}");
+            if (stream.Format != AudioStreamWav.FormatEnum.Format16Bits || stream.Stereo || stream.Data.Length == 0)
+            {
+                stream.Dispose();
+                throw new FormatException($"Expected nonempty prepared mono PCM16: {entry.WavPath}");
+            }
+
+            _samples.Add(entry.WavPath, stream);
+        }
+
+        if (entry.Loops && (entry.LoopStart < 0 || entry.LoopStart >= stream.Data.Length / 2))
+        {
+            throw new FormatException("Battle sample has an invalid loop marker.");
+        }
+    }
+
+    /// <inheritdoc/>
+    public IVoiceHandle Play(AudioProgramEntry entry)
+    {
+        _pump.Synchronize();
+        return _pool.Play(entry);
+    }
 
     /// <inheritdoc/>
     public void StopVoice(IVoiceHandle handle) => _pool.StopVoice(handle);
@@ -38,6 +64,12 @@ internal sealed class GodotBattleAudioBackend : IBattleAudioBackend, IDisposable
         StopAll();
         _pump.Advance = null;
         _pump.QueueFree();
+        foreach (var sample in _samples.Values)
+        {
+            sample.Dispose();
+        }
+
+        _samples.Clear();
     }
 
     /// <summary>Creates a real mixer player with decoded loop, gain, pan and pitch attributes.</summary>
@@ -45,20 +77,9 @@ internal sealed class GodotBattleAudioBackend : IBattleAudioBackend, IDisposable
     /// <returns>Physical voice, not an acknowledgement fake.</returns>
     private GodotVoiceHandle Start(AudioProgramEntry entry)
     {
-        var stream = AudioStreamWav.LoadFromFile(entry.WavPath)
-            ?? throw new IOException($"Invalid battle WAV: {entry.WavPath}");
-        if (stream.Format != AudioStreamWav.FormatEnum.Format16Bits || stream.Stereo || stream.Data.Length == 0)
-        {
-            stream.Dispose();
-            throw new FormatException($"Expected nonempty prepared mono PCM16: {entry.WavPath}");
-        }
-
-        if (entry.Loops && (entry.LoopStart < 0 || entry.LoopStart >= stream.Data.Length / 2))
-        {
-            stream.Dispose();
-            throw new FormatException("Battle sample has an invalid loop marker.");
-        }
-
+        Prepare(entry);
+        _pump.Synchronize();
+        var stream = (AudioStreamWav)_samples[entry.WavPath].Duplicate();
         stream.Data = BattleAudioPcm.Pan(stream.Data, ((entry.Pan - 64) / 64f) + entry.PanOffset);
         stream.Stereo = true;
         stream.LoopMode = entry.Loops ? AudioStreamWav.LoopModeEnum.Forward : AudioStreamWav.LoopModeEnum.Disabled;
@@ -71,7 +92,7 @@ internal sealed class GodotBattleAudioBackend : IBattleAudioBackend, IDisposable
             PitchScale = MathF.Pow(2, (entry.Note - entry.CenterNote - (entry.PitchShift / 128f)) / 12f),
         };
         _root.AddChild(player);
-        var voice = new GodotVoiceHandle(player, stream);
+        var voice = new GodotVoiceHandle(player, stream, entry);
         GD.Print($"battle-audio-start id={entry.EncodedId:X8} program={entry.Program} tone={entry.Tone} sample={entry.SampleIndex} note={entry.Note} pitch={player.PitchScale} gain={player.VolumeLinear} pan={entry.Pan} priority={entry.Priority} loop={entry.Loops} loopStart={entry.LoopStart} duration={entry.DurationFrames}");
         player.Finished += voice.Stop;
         player.Play();

@@ -48,6 +48,7 @@ internal sealed class BattlePhysicalAttackProbe : BattleProbe
             enemy.Actions = [new BattleTableAction(1, 0, 0)];
             var captures = Host.PrepareCaptureDirectory($"probe/battle-physical/{mode}");
             await BattleProbeCapture.CaptureAsync(Host, captures, "before.png");
+            await ReachPlayerTurnAsync(loader, captures);
             await RunPlayerAsync(loader, mode, captures);
             ProbeRequirement.Require(Host.Flow.Phase == BattleFlowPhase.EnemyTurn, $"enemy turn unavailable {Host.Flow.Phase}");
             await RunEnemyAsync(loader, mode, captures);
@@ -119,7 +120,7 @@ internal sealed class BattlePhysicalAttackProbe : BattleProbe
         int accuracy = flow.PlayerBasicTech.Accuracy;
         flow.PlayerBasicTech.Accuracy = mode == "miss" ? 1 : accuracy;
         var rng = new BattleAttackProofRng(mode == "miss" ? 127 : 0);
-        ProbeRequirement.Require(flow.Choose(BattleCommand.Attack, 0, rng), "player attack refused");
+        ProbeRequirement.Require(flow.Choose(BattleCommand.Attack, 0, rng), $"player attack refused phase={flow.Phase} mode={mode}");
         flow.PlayerBasicTech.Accuracy = accuracy;
         await PlayAsync(loader, rng, mode + "-player", captures);
         VerifyBranch(mode, flow, target);
@@ -157,6 +158,7 @@ internal sealed class BattlePhysicalAttackProbe : BattleProbe
         Host.Renderer.ConfigureActionAssets(loader);
         ConfigureControls();
         await BattleProbeCapture.CaptureAsync(Host, captures, "before-victory.png");
+        await ReachPlayerTurnAsync(loader, captures);
         await RunPlayerAsync(loader, "fatal-final", captures);
         ProbeRequirement.Require(Host.Flow.Outcome == BattleOutcome.Won, "final player attack did not produce victory");
         Host.StartDebugBattle();
@@ -167,6 +169,7 @@ internal sealed class BattlePhysicalAttackProbe : BattleProbe
         Enemy.Counter = default;
         Enemy.Actions = [new BattleTableAction(1, 0, 0)];
         await BattleProbeCapture.CaptureAsync(Host, captures, "before-defeat.png");
+        await ReachPlayerTurnAsync(loader, captures);
         await RunPlayerAsync(loader, "normal", captures);
         foreach (var reserve in Host.Flow.State.Players.Skip(1).OfType<BattleFighter>())
         {
@@ -176,6 +179,20 @@ internal sealed class BattlePhysicalAttackProbe : BattleProbe
         await RunEnemyAsync(loader, "fatal-final", captures);
         ProbeRequirement.Require(Host.Flow.Outcome == BattleOutcome.Lost, "final enemy attack did not produce defeat");
         GD.Print("B9052_FINAL victory-and-defeat-after-physical-End");
+    }
+
+    /// <summary>Consumes a genuine enemy opening instead of assuming the player's first turn.</summary>
+    /// <param name="loader">Production action assets.</param>
+    /// <param name="captures">Private recording directory.</param>
+    /// <returns>Completion when the normal scheduler yields player control.</returns>
+    private async Task ReachPlayerTurnAsync(BattleDataPackLoader loader, string captures)
+    {
+        for (int opening = 0; opening < 8 && Host.Flow.Phase == BattleFlowPhase.EnemyTurn; opening++)
+        {
+            await RunEnemyAsync(loader, $"opening-{opening}", captures);
+        }
+
+        ProbeRequirement.Require(Host.Flow.Phase == BattleFlowPhase.PlayerCommand, $"opening did not yield player control: {Host.Flow.Phase}");
     }
 
     /// <summary>Exercises the real loader, timeline, scene, contact children and restoration without RNG draws.</summary>

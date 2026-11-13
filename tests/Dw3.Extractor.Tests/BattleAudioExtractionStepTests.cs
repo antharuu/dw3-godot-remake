@@ -31,7 +31,11 @@ public sealed class BattleAudioExtractionStepTests : IDisposable
         Assert.Equal(1, sep.GetProperty("trackCount").GetInt32());
         JsonElement track = sep.GetProperty("tracks")[0];
         Assert.Equal(0, track.GetProperty("number").GetInt32());
-        Assert.Equal(2, track.GetProperty("events").GetProperty("eventCount").GetInt32());
+        using var playback = JsonDocument.Parse(File.ReadAllText(Path.Combine(audio, "sequences.json")));
+        var midi = playback.RootElement.GetProperty("banks")[0].GetProperty("tracks")[0].GetProperty("events")[0];
+        Assert.Equal(0xC1, midi.GetProperty("Status").GetInt32());
+        Assert.Equal(7, midi.GetProperty("Data1").GetInt32());
+        Assert.Equal(4, track.GetProperty("events").GetProperty("eventCount").GetInt32());
         Assert.True(track.GetProperty("events").GetProperty("hasEndOfTrack").GetBoolean());
         Assert.Equal(
             ["number", "headerOffset", "eventsOffset", "endOffset", "ticksPerQuarterNote", "tempoMicrosecondsPerQuarterNote", "events"],
@@ -45,6 +49,15 @@ public sealed class BattleAudioExtractionStepTests : IDisposable
         Assert.Equal(0, action.Value.SampleIndex);
         Assert.Equal(60, action.Value.Note);
         Assert.Equal(0, action.Value.Priority);
+        var cue = Dw3Production.Conversion.BattleSequenceAudioLoader.Load(new Dw3.Data.DataPackReader(_root), 10);
+        Assert.NotNull(cue);
+        var note = cue.Commands[0].Entry;
+        Assert.NotNull(note);
+        Assert.Equal(7, note.Program);
+        Assert.Equal(60, note.Note);
+        Assert.Equal(0x40000U, note.EncodedId);
+        Assert.Null(cue.Commands[1].Entry);
+        Assert.Equal(120 * 150000.0 / 480 / 1000000, cue.EndSeconds);
         Assert.True(File.Exists(Path.Combine(audio, "battle.mp")));
         Assert.True(File.Exists(Path.Combine(audio, "battle.mv")));
         Assert.Equal("RIFF", System.Text.Encoding.ASCII.GetString(File.ReadAllBytes(Path.Combine(audio, "battle", "000.wav")), 0, 4));
@@ -75,6 +88,10 @@ public sealed class BattleAudioExtractionStepTests : IDisposable
     private static void AddBanks(FabricatedDisc disc)
     {
         byte[] overlay = new byte[Dw3.Formats.Battle.BattleSoundTableDecoder.TableOffset + (92 * 4)];
+        BinaryPrimitives.WriteUInt32LittleEndian(overlay.AsSpan(0x40B4), 0x3C048004);
+        BinaryPrimitives.WriteUInt32LittleEndian(overlay.AsSpan(0x40C4), 0x0040F809);
+        BinaryPrimitives.WriteUInt32LittleEndian(overlay.AsSpan(0x40C8), 0x3484003C);
+        BinaryPrimitives.WriteUInt32LittleEndian(overlay.AsSpan(Dw3.Formats.Battle.BattleSoundTableDecoder.TableOffset + (10 * 4)), 0x40000);
         BinaryPrimitives.WriteUInt32LittleEndian(overlay.AsSpan(Dw3.Formats.Battle.BattleSoundTableDecoder.TableOffset + (52 * 4)), 0x8004003C);
         disc.Add("AAA/PRO/FIGHTSTG.PRO", overlay);
         disc.Add("AAA/DAT/SOUND/COMMON/MPCOMMON.BIN", HeaderArchive());
@@ -88,7 +105,7 @@ public sealed class BattleAudioExtractionStepTests : IDisposable
     private static byte[] HeaderArchive()
     {
         const int vabBytes = 0x2020;
-        byte[] sep = new byte[26];
+        byte[] sep = new byte[34];
         BinaryPrimitives.WriteUInt32BigEndian(sep, 0x70514553U);
         BinaryPrimitives.WriteUInt16BigEndian(sep.AsSpan(8), 0x01E0);
         sep[10] = 0x02;
@@ -99,10 +116,7 @@ public sealed class BattleAudioExtractionStepTests : IDisposable
         sep[19] = 0x00;
         sep[20] = 0xC1;
         sep[21] = 0x07;
-        sep[22] = 0x00;
-        sep[23] = 0xFF;
-        sep[24] = 0x2F;
-        sep[25] = 0x00;
+        new byte[] { 0, 0x91, 60, 100, 120, 60, 0, 0, 0xFF, 0x2F, 0 }.CopyTo(sep, 22);
         byte[] archive = new byte[8 + vabBytes + sep.Length];
         BinaryPrimitives.WriteUInt32LittleEndian(archive, 8U);
         BinaryPrimitives.WriteUInt32LittleEndian(archive.AsSpan(4), 8U + vabBytes);
@@ -124,6 +138,7 @@ public sealed class BattleAudioExtractionStepTests : IDisposable
             vab[toneOffset + 2] = 127;
             vab[toneOffset + 3] = 64;
             vab[toneOffset + 4] = 60;
+            vab[toneOffset + 7] = 127;
             BinaryPrimitives.WriteInt16LittleEndian(vab.Slice(toneOffset + 22), 1);
         }
 

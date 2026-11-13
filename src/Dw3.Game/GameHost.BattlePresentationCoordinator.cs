@@ -57,7 +57,8 @@ public partial class GameHost
 
             int motion = _host._battlePendingChangeMotion;
             _host._battlePendingChangeMotion = 0;
-            if (!_host._battleRenderer!.TrySetPlayerMotion(motion, restart: true))
+            _host._battleRenderer!.BeginEntranceAudio();
+            if (!_host._battleRenderer.TrySetPlayerMotion(motion, restart: true))
             {
                 _host._log.Warn("battle-change-motion-unwired", $"fighter={playerId} motion={motion}");
             }

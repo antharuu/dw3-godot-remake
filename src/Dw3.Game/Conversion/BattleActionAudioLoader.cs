@@ -32,6 +32,43 @@ public static class BattleActionAudioLoader
         }
     }
 
+    /// <summary>Qualifies program, tone and sample independently before physical playback.</summary>
+    /// <param name="pack">Prepared pack.</param>
+    /// <param name="bank">Extracted bank.</param>
+    /// <param name="id">Packed key-on identifier.</param>
+    /// <returns>Fully resolved playback attributes.</returns>
+    internal static AudioProgramEntry ResolveTone(DataPackReader pack, JsonElement bank, uint id)
+    {
+        int program = (int)((id >> 11) & 127);
+        int tone = (int)((id >> 7) & 15);
+        var row = bank.GetProperty("tones").EnumerateArray().Single(value =>
+            value.GetProperty("ProgramIndex").GetInt32() == program && value.GetProperty("ToneIndex").GetInt32() == tone);
+        var attributes = row.GetProperty("Attributes");
+        int sampleIndex = attributes.GetProperty("SampleRef").GetInt32() - 1;
+        var sample = bank.GetProperty("samples")[sampleIndex];
+        var header = bank.GetProperty("vab");
+        return new AudioProgramEntry(
+            sampleIndex,
+            DataPackFiles.Require(pack, sample.GetProperty("wavPath").GetString() ?? throw new FormatException("Missing sample path."), "action sample"),
+            attributes.GetProperty("Volume").GetByte(),
+            attributes.GetProperty("Pan").GetByte(),
+            attributes.GetProperty("CenterNote").GetByte(),
+            attributes.GetProperty("PitchShift").GetSByte())
+        {
+            Adsr1 = attributes.TryGetProperty("Adsr1", out var first) ? first.GetUInt16() : null,
+            Adsr2 = attributes.TryGetProperty("Adsr2", out var second) ? second.GetUInt16() : null,
+            EncodedId = id,
+            Program = program,
+            Tone = tone,
+            Note = (int)(id & 127),
+            Priority = attributes.GetProperty("Priority").GetInt32(),
+            BankGain = header.GetProperty("MasterVolume").GetSingle() * row.GetProperty("ProgramVolume").GetSingle() / (127 * 127),
+            PanOffset = (header.GetProperty("MasterPan").GetSingle() + row.GetProperty("ProgramPan").GetSingle() - 128) / 64,
+            Loops = sample.GetProperty("loops").GetBoolean(),
+            LoopStart = sample.GetProperty("loopStartSample").ValueKind == JsonValueKind.Null ? 0 : sample.GetProperty("loopStartSample").GetInt32(),
+        };
+    }
+
     /// <summary>Maps supported key-on IDs without inventing programs for sequence entries.</summary>
     /// <param name="pack">Prepared pack.</param>
     /// <param name="bank">Extracted common bank.</param>
@@ -53,40 +90,5 @@ public static class BattleActionAudioLoader
         }
 
         return result;
-    }
-
-    /// <summary>Qualifies program, tone and sample independently before physical playback.</summary>
-    /// <param name="pack">Prepared pack.</param>
-    /// <param name="bank">Extracted bank.</param>
-    /// <param name="id">Packed key-on identifier.</param>
-    /// <returns>Fully resolved playback attributes.</returns>
-    private static AudioProgramEntry ResolveTone(DataPackReader pack, JsonElement bank, uint id)
-    {
-        int program = (int)((id >> 11) & 127);
-        int tone = (int)((id >> 7) & 15);
-        var row = bank.GetProperty("tones").EnumerateArray().Single(value =>
-            value.GetProperty("ProgramIndex").GetInt32() == program && value.GetProperty("ToneIndex").GetInt32() == tone);
-        var attributes = row.GetProperty("Attributes");
-        int sampleIndex = attributes.GetProperty("SampleRef").GetInt32() - 1;
-        var sample = bank.GetProperty("samples")[sampleIndex];
-        var header = bank.GetProperty("vab");
-        return new AudioProgramEntry(
-            sampleIndex,
-            DataPackFiles.Require(pack, sample.GetProperty("wavPath").GetString() ?? throw new FormatException("Missing sample path."), "action sample"),
-            attributes.GetProperty("Volume").GetByte(),
-            attributes.GetProperty("Pan").GetByte(),
-            attributes.GetProperty("CenterNote").GetByte(),
-            attributes.GetProperty("PitchShift").GetSByte())
-        {
-            EncodedId = id,
-            Program = program,
-            Tone = tone,
-            Note = (int)(id & 127),
-            Priority = attributes.GetProperty("Priority").GetInt32(),
-            BankGain = header.GetProperty("MasterVolume").GetSingle() * row.GetProperty("ProgramVolume").GetSingle() / (127 * 127),
-            PanOffset = (header.GetProperty("MasterPan").GetSingle() + row.GetProperty("ProgramPan").GetSingle() - 128) / 64,
-            Loops = sample.GetProperty("loops").GetBoolean(),
-            LoopStart = sample.GetProperty("loopStartSample").ValueKind == JsonValueKind.Null ? 0 : sample.GetProperty("loopStartSample").GetInt32(),
-        };
     }
 }

@@ -22,6 +22,23 @@ public static class PlayStationSequenceDecoder
         return DecodeEntry(archive, sequenceEntry);
     }
 
+    /// <summary>Decodes every SEP member following the VAB header in archive order.</summary>
+    /// <param name="archive">Raw MP archive bytes.</param>
+    /// <returns>Validated sequence groups with their original track identities.</returns>
+    public static IReadOnlyList<PlayStationSequence> DecodeAll(ReadOnlySpan<byte> archive)
+    {
+        IReadOnlyList<ArchiveRange> entries = ModelArchive.ReadBounds(archive);
+        _ = SoundBankHeaderDecoder.Decode(archive);
+        _ = ReadSequenceEntry(entries);
+        var groups = new List<PlayStationSequence>();
+        foreach (var entry in entries.Skip(1))
+        {
+            groups.Add(DecodeEntry(archive, entry));
+        }
+
+        return groups;
+    }
+
     /// <summary>Gets the mandatory second non-empty MP entry that contains the SEP bytes.</summary>
     /// <param name="entries">Validated MP archive ranges.</param>
     /// <returns>The SEP entry bounds.</returns>

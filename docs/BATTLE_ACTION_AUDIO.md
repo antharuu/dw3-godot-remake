@@ -1,89 +1,107 @@
-# Battle action audio checkpoint
+# Battle action audio
 
-This is a physical-audio checkpoint, not completion of B9-061 or battle sound parity.
+## Production boundary
 
-## Production route
+`GameHost` passes the active prepared-pack directory to `BattleRenderer`. Its single
+`BattleAudioRuntime` registers on the production sequence playback, preserves the
+other asset-family consumers, and retains the same physical backend across battles.
+The game reads prepared JSON and PCM WAV files only, never an ISO or MP archive.
 
-`GameHost` passes its active pack directory to `BattleRenderer`. The renderer owns one
-`BattleAudioRuntime`, registers it on its real `BattleRendererSequencePlayback`, and
-retains the other asset-family consumer chain. The runtime lazily loads
-`battle-action-sounds-v1` and `battle-audio-vab-v4` from the prepared pack. It never
-reads a disc or references the Formats project.
+Preparation writes the complete VAB tone catalog, PCM samples, action-index catalog,
+`battle-audio-sequences-v1` events and `battle-entrance-audio-v1`. Both SEP members of
+the common archive are prepared, not just its first sixteen tracks. Old audio packs
+must be prepared again to supply the sequence and entrance projections.
 
-The extractor reads the action-index table from the supported battle overlay and
-writes the encoded identifiers as private pack data. Key-on identifiers are resolved
-separately into bank, physical program slot, tone slot and note. VAB program slots
-can be sparse. Tone rows are compact, and priority zero is a valid tone, not an
-absence marker. The old v3 first-tone view is retained for compatibility diagnostics,
-not used for production playback. Old audio packs require preparation again.
+Encoded identifiers are not VAB program indices. Key-ons resolve their explicit
+bank, sparse physical program, tone and note. Sequence cues select their authored
+SEP slot. The supported common bank has two consecutive sixteen-slot groups. A
+slot above fifteen addresses the following group, retaining the original contiguous
+slot identity rather than truncating it or substituting a sample. Prepared rows keep
+both the archive-group and local track numbers. MIDI notes select all declared VAB
+tones whose key ranges contain the note, with the original program and velocity.
 
-The Godot backend loads mono PCM16 WAVs, applies decoded static pan, program/bank/tone
-gain, note/centre/fine pitch, and the decoded loop marker. `AudioStreamPlayer` feeds
-the real engine mixer. Timed notes receive key-off after positive 60 Hz source units.
-Zero-duration notes finish naturally or loop until interrupted. Script End does not
-arbitrarily stop a trailing note. Battle hide, cancellation and disposal stop every
-physical channel, including trailing notes, without constructing a replacement backend.
+The shared cue consumer supports program changes, note-on, zero-velocity note-off,
+explicit note-off, tempo changes and end-of-track. Unsupported required channel or
+system events fail explicitly before scheduling. Music selection, exclusive music,
+repeat policies and transitions remain the separate music work's responsibility.
+No unknown event is silently acknowledged, and no sequence is replaced with a WAV.
 
-Pending acknowledgements use request reference identity. Separate equal-value sound
-commands start separate voices. Sound substitution commands use the frozen technique
-sound and frozen hit markers, without another rules or RNG evaluation.
+Sample paths, PCM format and loop bounds are prepared before a sequence is
+acknowledged. Validated mono streams are cached by the renderer-owned backend and
+copied for each physical voice's stereo pan. Request reference identity distinguishes
+a Pending retry from a separate same-sound occurrence. Ordinary script End releases
+acknowledgement identities without cutting trailing audio. Cancellation and battle
+exit stop both scheduled events and physical channels, including release tails.
+
+## Physical voices and timing
+
+`AudioStreamPlayer` feeds the engine mixer with decoded gain, pan, note/centre/fine
+pitch, loop enable and loop start. Positive key-on deadlines begin release once.
+Natural sample completion retires one-shots. An envelope reaching silence retires
+an otherwise looping note. Cancellation and priority preemption are hard stops.
+
+Decoded ADSR1/ADSR2 feed an integer 44.1 kHz envelope accumulator. Physical gain and
+allocation observations are updated on the presentation/source-clock boundary.
+Allocation uses a free channel first, then lower priority, lower current envelope
+at equal priority, and oldest allocation at an equal envelope. A lower-priority
+request cannot steal a protected channel. The pool has at most 24 physical voices.
+The documented SPU rate contract is described at
+[psx-spx](https://psx-spx.consoledev.net/soundprocessingunitspu/).
+
+The entrance cue is extracted from the supported overlay's actual direct sound
+call operands, not appended as an arbitrary action-catalog index. Initial entrance
+and a confirmed normal partner change arm it after model readiness. The authored
+camera lead-in is sixty nominal 60 Hz units. The production incoming-model path
+fires it once and teardown disarms an unstarted entrance.
+
+Audio pumps settle the elapsed interval before starting a newly prepared occurrence.
+Otherwise synchronous loading before a request can be counted as time elapsed after
+its start, causing a short sequence to key off before its first mixer block. An
+isolated physical RED reproduced this silence and the corrected probe records the
+sequence alone, without an entrance or another action masking it.
 
 ## Offscreen evidence entry points
 
-Always run the probes with `--headless --audio-driver Dummy`. They refuse any other
-audio driver. They do not change devices, volumes or system routing.
+All audio probes require `--audio-driver Dummy`. They do not change host devices,
+volume or routing. `DW3_DATA_DIR` is the parent of the prepared pack's `data` folder.
+Recordings and extracted resources belong outside the repository.
 
-- `BattleAudioProbe.tscn` uses the production pack/provider and renderer registration,
-  records the actual engine master bus with `AudioEffectRecord`, and repeats playback
-  after hide using the same renderer and backend. Set `DW3_DATA_DIR` to a prepared pack
-  and `DW3_AUDIO_PROOF` to a private output directory. This is a renderer lifecycle
-  test, not a complete GameHost two-battle gameplay acceptance.
-- `BattleAudioBackendProbe.tscn` measures physical mono-to-stereo pan, gain, octave
-  pitch, a loop marker, natural completion and positive-duration key-off. Set
-  `DW3_AUDIO_SIGNAL` to a fabricated one-second 440 Hz mono PCM16 WAV and
-  `DW3_AUDIO_PROOF` to a private output directory. Its output is engine-mixed PCM,
-  not a copy of its input and not output fabricated by a test backend.
+- `BattleAudioProbe.tscn`, with `DW3_AUDIO_PROOF`, exercises the real provider, script,
+  renderer registration and mixer. `DW3_AUDIO_FIGHTER` and `DW3_AUDIO_SELECTOR` select
+  an existing script, defaulting to 26/5. The first actual sound command is played
+  twice on the same backend. Nonempty, all-zero post-hide recordings are required.
+  The action, enemy and reaction scripts 383/5, 51/5 and 51/3 qualify the three
+  previously unavailable short-sequence cues independently.
+- `BattleAudioBackendProbe.tscn`, with `DW3_AUDIO_SIGNAL` and `DW3_AUDIO_PROOF`, measures
+  natural completion, octave/half gain/left pan, right pan/loop marker and timed
+  key-off using a nonzero fabricated PCM signal. A fifth case fills all 24 real
+  channels, requires eviction of the quieter non-oldest equal-priority envelope,
+  rejects lower-priority interruption and saves the engine mix.
+- `DW3_ACTION_AUDIO_RECORD=1` on the physical basic-attack probe retains production
+  audio rather than its synchronization-only control. Player/enemy attacks, misses,
+  repetition, KO with a reserve, final victory and final defeat save actual mixes.
+- The physical technique probe accepts the same recording option and retains its
+  production consumer. The normal 388/123 case records technique, enemy reply and
+  repeated technique without replaying resolution RNG.
+- `DW3_BATTLE_INPUT_PROBE=1 DW3_BATTLE_AUDIO_LIFECYCLE=1
+  DW3_ACTION_AUDIO_RECORD=1` records actual GameHost entrance, a normal change through
+  all three input-driven menu pages, host exit, a second combat on the same renderer
+  and backend, and cancellation of the retained production action runner while a
+  physical voice is active. It requires nonzero useful recordings and nonempty
+  silent recordings after exit, cancellation and final exit. The probe invokes the
+  production host exit entry directly, not a renderer-hide replacement.
 
-Unit tests cover request identity, cancellation after ordinary End, source-tick
-lifetime, channel bounds, priority preemption, PCM pan and frozen substitutions.
-Extractor tests exercise the production writer followed by the real action loader
-with fabricated disc data, including an action index above the VAB program count.
+Synthetic unit tests cover writer-to-loader identity, MIDI running status and tempo,
+malformed events, entrance deadline/cancellation, distinct occurrences, Pending
+retries, source-tick duration, natural completion, envelope-sensitive priority ties,
+all-ones release rate and cleanup after ordinary End. No disc is needed by tests.
 
-## Real-action regression probe
+## Qualification limits
 
-`DW3_ACTION_AUDIO_RECORD=1` on the physical basic-attack probe retains the actual
-renderer audio registration instead of the explicitly synchronization-only sound
-acknowledgements. It requires the Dummy driver and records each action's master
-bus into a private WAV. A silent recording fails rather than declaring playback.
-`DW3_DATA_DIR` names the parent of the pack's `data` directory.
-
-The first execution with the synchronization control produced peak zero and failed.
-With that control removed, the real player attack currently fails at its first
-sound command, index 10. The extracted catalog resolves it to a sequence identifier,
-not a key-on. The enemy's basic attack and the target's hit/KO reaction also include
-sequence identifiers. Thus the prior single key-on proof cannot establish complete
-action or KO audio. These non-music sequence cues require a scoped technical
-resolution of the existing sequence-playback ownership before this card can close.
-No sequence was replaced by a key-on or acknowledged as rendered.
-
-Frozen sound markers now distinguish terminal KO from ordinary landed hits and
-preserve the special two-slot magic layout, including early lethal single-hit
-resolution. Tests drive both substitution opcodes from those frozen results.
-
-## Still required before B9-061 acceptance
-
-- Qualify and exercise the actual change and KO audio producers, including reaction
-  scripts and their timing, rather than replaying a manually chosen catalog entry.
-- Complete frozen sound-marker qualification for special multi-hit/KO combinations.
-- Qualify priority ties and allocation against the original envelope-sensitive voice
-  allocator. The current bounded pool tests establish priority ordering and cleanup,
-  not exact SPU envelope arbitration or ADSR parity.
-- Exercise the complete GameHost exit, second combat and cancellation path, with
-  recordings for attack, technique, change and KO. Renderer hide/reuse alone does not
-  establish that acceptance criterion.
-- SEP/music, including the special music/stop indices, remains owned by its separate
-  playback work. No action index is silently reinterpreted as a VAB program or replaced
-  with a fallback sample.
-
-Container rate, PCM energy and successful engine playback do not establish an
-original-hardware 1:1 mix, envelope, interpolation or PAL task/draw timing.
+The evidence establishes non-music action-cue consumption and the measured lifecycle,
+not original-hardware mix parity or human acceptance of combat fidelity. Godot performs the
+sample interpolation and mixing. ADSR gain application is presentation-boundary
+quantized rather than an emulation of every SPU output sample. Reverb, hardware
+interpolation, reserved-channel policies from unrelated modes, complete MIDI music
+control and exact PAL task/draw scheduling are not inferred from these recordings.
+The existing visual entrance/flash choreography has its own fidelity boundary.

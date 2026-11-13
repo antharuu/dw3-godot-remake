@@ -173,6 +173,9 @@ public sealed class BattleRenderer : IDisposable
         _layer.Visible = false;
     }
 
+    /// <summary>Arms the source entrance cue once the incoming fighter model is ready.</summary>
+    public void BeginEntranceAudio() => _audio.BeginEntrance();
+
     /// <summary>Probe-only HUD suppression for a model/stage-only framebuffer comparison.</summary>
     /// <param name="visible">Whether the HUD should be included in the capture.</param>
     public void SetHudVisibleForProbe(bool visible)
