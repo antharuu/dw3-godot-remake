@@ -273,6 +273,16 @@ public sealed class BattleState
     public bool ApplyStatModifier(BattleSide side, int fighterSlot, int stat, int percent, IBattleRng rng) =>
         _modifierCoordinator.ApplyStatModifier(side, fighterSlot, stat, percent, fromTechnique: false, rng);
 
+    /// <summary>Applies an exact source-unit battle-stat delta and queues its ordinary item expiry.</summary>
+    /// <param name="side">Side containing the recipient.</param>
+    /// <param name="fighterSlot">Recipient slot.</param>
+    /// <param name="stat">Modified stat.</param>
+    /// <param name="delta">Exact resolved-stat delta.</param>
+    /// <param name="rng">Shared expiry random stream.</param>
+    /// <returns>Whether a living recipient's modifier changed.</returns>
+    public bool ApplyStatDelta(BattleSide side, int fighterSlot, int stat, int delta, IBattleRng rng) =>
+        _modifierCoordinator.ApplyStatDelta(side, fighterSlot, stat, delta, rng);
+
     /// <summary>Applies a temporary elemental field boost that restores the previous field when its scheduled expiry is due.</summary>
     /// <param name="boost">Element and amount active for the temporary field window.</param>
     /// <param name="rng">Shared battle random source for expiry timing.</param>
@@ -352,6 +362,13 @@ public sealed class BattleState
     /// <returns>Whether confusion was applied or refreshed.</returns>
     public bool InflictConfusion(BattleSide attackerSide, int chance, int strength, IBattleRng rng) =>
         _statusCoordinator.InflictControl(attackerSide, chance, strength, new(FighterFlags.Confused, BattleScheduledEventKind.ConfusionEnd, Resist.Confusion, 3), rng);
+
+    /// <summary>Applies direct item confusion to either active side without adding a technique resistance draw.</summary>
+    /// <param name="targetSide">Active side receiving the direct item status.</param>
+    /// <param name="strength">Source confusion strength stored on success.</param>
+    /// <returns>Whether the status changed the living active target.</returns>
+    public bool ApplyDirectItemConfusion(BattleSide targetSide, int strength) =>
+        _statusCoordinator.ApplyDirectConfusion(BattleSide.Player, targetSide, strength);
 
     /// <summary>Attempts to put the opposing active fighter to sleep with a source-strength counter.</summary>
     /// <param name="attackerSide">Side applying sleep.</param>

@@ -90,6 +90,28 @@ public sealed class BattleStatusCoordinator(BattleState state, BattleTurnSchedul
         return true;
     }
 
+    /// <summary>Applies direct item confusion and refreshes its status expiry without a technique resistance roll.</summary>
+    /// <param name="sourceSide">Side using the direct item.</param>
+    /// <param name="targetSide">Side receiving the item status.</param>
+    /// <param name="strength">Source confusion strength stored on success.</param>
+    /// <returns>Whether a living non-confused target received the status.</returns>
+    public bool ApplyDirectConfusion(BattleSide sourceSide, BattleSide targetSide, int strength)
+    {
+        BattleFighter? source = state.FighterFor(sourceSide);
+        BattleFighter? target = state.FighterFor(targetSide);
+        if (source is not { IsKnockedOut: false } || target is not { IsKnockedOut: false } || (target.Flags & FighterFlags.Confused) != 0)
+        {
+            return false;
+        }
+
+        int appliedStrength = source.Special ? strength * 2 : strength;
+        target.Flags |= FighterFlags.Confused;
+        target.Confusion = appliedStrength;
+        state.LastControlStrength = appliedStrength;
+        scheduler.EnqueueControlExpiry(BattleScheduledEventKind.ConfusionEnd, targetSide, state.ActiveSlot(targetSide), 3000);
+        return true;
+    }
+
     /// <summary>Clears every control status and its expiry events from one fighter.</summary>
     /// <param name="side">Side containing the cured fighter.</param>
     /// <param name="fighterSlot">Slot of the cured fighter.</param>

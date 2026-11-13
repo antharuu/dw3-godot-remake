@@ -343,6 +343,27 @@ public sealed class BattleItemUseTests
         Assert.True(rng.Calls > 0);
     }
 
+    /// <summary>Verifies that a successful confusion applies the separate quarter-chance partner backfire through the status consumer.</summary>
+    [Fact]
+    public void Choose_ConfuseItem_WhenPartnerBackfireRollSucceeds_ConfusesBothSidesAndConsumesOrderedDraws()
+    {
+        BattleFlowController flow = CreateFlow(new BattleItem(0x56, "confuse", "enemy", 96));
+        BattleFighter player = Assert.IsType<BattleFighter>(flow.State.ActivePlayerFighter);
+        BattleFighter enemy = Assert.IsType<BattleFighter>(flow.State.ActiveEnemyFighter);
+        var rng = new SequenceRng(127, 0);
+
+        bool spent = flow.Choose(BattleCommand.Item, 0x56, rng);
+
+        Assert.True(spent);
+        Assert.NotEqual(0, enemy.Flags & FighterFlags.Confused);
+        Assert.NotEqual(0, player.Flags & FighterFlags.Confused);
+        Assert.Equal(96, enemy.Confusion);
+        Assert.Equal(96, player.Confusion);
+        Assert.Collection(rng.Draws, value => Assert.Equal(127, value), value => Assert.Equal(0, value));
+        Assert.Equal(BattleFlowPhase.EnemyTurn, flow.Phase);
+        Assert.Equal(1, flow.ItemStock[0x56]);
+    }
+
     /// <summary>Verifies that the defense-weakening item applies its source attack raise and defense reduction to the enemy.</summary>
     [Fact]
     public void Choose_WeakenDefenseItem_ChangesEnemyAttackAndDefense()
@@ -464,6 +485,39 @@ public sealed class BattleItemUseTests
         Assert.Equal(0, rng.Calls);
     }
 
+    /// <summary>Verifies that lethal direct item magic resolves the enemy reserve through the ordinary battle state transition.</summary>
+    [Fact]
+    public void Choose_ItemTechnique_WhenLethalWithEnemyReserve_SwitchesToLivingReserve()
+    {
+        BattleFlowController flow = CreateFlow(new BattleItem(0x5A, "itemTech", "enemy", 0), includeEnemyReserve: true, itemTechniquePower: 100);
+        BattleFighter firstEnemy = Assert.IsType<BattleFighter>(flow.State.ActiveEnemyFighter);
+
+        Assert.True(flow.Choose(BattleCommand.Item, 0x5A, new FixedRng()));
+
+        Assert.Equal(0, firstEnemy.Hp);
+        Assert.Equal(1, flow.State.ActiveEnemy);
+        Assert.NotSame(firstEnemy, flow.State.ActiveEnemyFighter);
+        Assert.Equal(BattleOutcome.None, flow.Outcome);
+        Assert.Equal(1, flow.ItemStock[0x5A]);
+    }
+
+    /// <summary>Verifies that a catalogued direct item technique with zero resolved damage is refused without stock or turn mutation.</summary>
+    [Fact]
+    public void Choose_ItemTechnique_WhenDamageResolvesZero_IsRefusedWithoutStockOrTurnMutation()
+    {
+        BattleFlowController flow = CreateFlow(new BattleItem(0x5A, "itemTech", "enemy", 0), itemTechniquePower: 0);
+        BattleFighter enemy = Assert.IsType<BattleFighter>(flow.State.ActiveEnemyFighter);
+        int hp = enemy.Hp;
+        var rng = new CountingRng();
+
+        Assert.False(flow.Choose(BattleCommand.Item, 0x5A, rng));
+
+        Assert.Equal(hp, enemy.Hp);
+        Assert.Equal(BattleFlowPhase.PlayerCommand, flow.Phase);
+        Assert.Equal(2, flow.ItemStock[0x5A]);
+        Assert.Equal(0, rng.Calls);
+    }
+
     /// <summary>Verifies that item 0x5A with zero stock is refused before it can damage, advance phase, or draw randomness.</summary>
     [Fact]
     public void Choose_ItemTechniqueWithZeroStock_IsRefusedWithoutMutation()
@@ -483,6 +537,70 @@ public sealed class BattleItemUseTests
         Assert.Equal(0, rng.Calls);
     }
 
+    /// <summary>Verifies that the equalizer removes the resolved attack excess rather than applying a fixed percentage.</summary>
+    [Fact]
+    public void Choose_LowerStatItem_RemovesResolvedAttackDifference()
+    {
+        BattleFlowController flow = CreateFlow(new BattleItem(0x58, "lowerStat", "enemy", 0));
+        BattleFighter enemy = Assert.IsType<BattleFighter>(flow.State.ActiveEnemyFighter);
+        enemy.Boosts[0] = 20;
+        enemy.RefreshStats();
+
+        Assert.True(flow.Choose(BattleCommand.Item, 0x58, new FixedRng()));
+
+        Assert.Equal(0, enemy.Boosts[0]);
+        enemy.RefreshStats();
+        Assert.Equal(enemy.Stats.Stats[BattleStat.Attack], enemy.Stats.Stats[BattleStat.Defense]);
+    }
+
+    /// <summary>Verifies that weakening derives both deltas from current resolved stats instead of a percentage approximation.</summary>
+    [Fact]
+    public void Choose_WeakenDefenseItem_UsesCurrentResolvedStatDeltas()
+    {
+        BattleFlowController flow = CreateFlow(new BattleItem(0x57, "weakenDefense", "enemy", 128));
+        BattleFighter enemy = Assert.IsType<BattleFighter>(flow.State.ActiveEnemyFighter);
+        enemy.Stats.Stats[BattleStat.Attack] = 128;
+        enemy.Stats.Stats[BattleStat.Defense] = 100;
+        enemy.RefreshStats();
+
+        Assert.True(flow.Choose(BattleCommand.Item, 0x57, new FixedRng()));
+
+        Assert.Equal(38, enemy.Boosts[0]);
+        Assert.Equal(-50, enemy.Boosts[1]);
+    }
+
+    /// <summary>Verifies that the exact weakening modifiers expire through the normal scheduled-turn consumer.</summary>
+    [Fact]
+    public void Choose_WeakenDefenseItem_ExactModifiersExpireThroughScheduler()
+    {
+        BattleFlowController flow = CreateFlow(new BattleItem(0x57, "weakenDefense", "enemy", 0));
+        BattleFighter enemy = Assert.IsType<BattleFighter>(flow.State.ActiveEnemyFighter);
+
+        Assert.True(flow.Choose(BattleCommand.Item, 0x57, new FixedRng()));
+        Assert.NotEqual(0, enemy.Boosts[0]);
+        Assert.NotEqual(0, enemy.Boosts[1]);
+
+        AdvanceToExactModifierExpiry(flow, enemy);
+
+        Assert.Equal(0, enemy.Boosts[0]);
+        Assert.Equal(0, enemy.Boosts[1]);
+    }
+
+    /// <summary>Verifies that the equalizer's exact modifier expires through the normal scheduled-turn consumer.</summary>
+    [Fact]
+    public void Choose_LowerStatItem_ExactModifierExpiresThroughScheduler()
+    {
+        BattleFlowController flow = CreateFlow(new BattleItem(0x58, "lowerStat", "enemy", 0), enemyDefense: 80);
+        BattleFighter enemy = Assert.IsType<BattleFighter>(flow.State.ActiveEnemyFighter);
+
+        Assert.True(flow.Choose(BattleCommand.Item, 0x58, new FixedRng()));
+        Assert.NotEqual(0, enemy.Boosts[0]);
+
+        AdvanceToExactModifierExpiry(flow, enemy);
+
+        Assert.Equal(0, enemy.Boosts[0]);
+    }
+
     /// <summary>Advances ordinary turns until the field's scheduled expiry has been consumed.</summary>
     /// <param name="flow">Live battle flow owning the source scheduler consumer.</param>
     private static void AdvanceToElementExpiry(BattleFlowController flow)
@@ -497,8 +615,11 @@ public sealed class BattleItemUseTests
     /// <summary>Creates a player-turn flow with one real item in its catalogue and bag.</summary>
     /// <param name="item">Item supplied to the flow catalogue.</param>
     /// <param name="includeItemTechnique">Whether the qualified source item technique is present in the started catalogue.</param>
+    /// <param name="enemyDefense">Fabricated base defense for exact-delta vectors.</param>
+    /// <param name="includeEnemyReserve">Whether a living second enemy is installed for knock-out transitions.</param>
+    /// <param name="itemTechniquePower">Fabricated direct-magic power for knock-out vectors.</param>
     /// <returns>A started flow with two copies of the requested item.</returns>
-    private static BattleFlowController CreateFlow(BattleItem item, bool includeItemTechnique = true)
+    private static BattleFlowController CreateFlow(BattleItem item, bool includeItemTechnique = true, int enemyDefense = 100, bool includeEnemyReserve = false, int itemTechniquePower = 20)
     {
         var setup = new BattleSetup();
         setup.Partners[0] = Partner(1);
@@ -508,13 +629,19 @@ public sealed class BattleItemUseTests
         }
 
         int enemySpeed = item.Effect == "lowerSpeed" ? 100 : 0;
-        setup.Enemies[0] = new BattleEnemy { Fighter = 2, Hp = 100, Mp = 100, Strength = 16, BaseStats = new BattleStats { Stats = [100, 100, 100, 100, enemySpeed] } };
+        int enemyAttack = item.Effect == "weakenDefense" && item.Amount == 128 ? 128 : 100;
+        setup.Enemies[0] = new BattleEnemy { Fighter = 2, Hp = 100, Mp = 100, Strength = 16, BaseStats = new BattleStats { Stats = [enemyAttack, enemyDefense, 100, 100, enemySpeed] } };
+        if (includeEnemyReserve)
+        {
+            setup.Enemies[1] = new BattleEnemy { Fighter = 3, Hp = 100, Mp = 100, Strength = 16, BaseStats = new BattleStats { Stats = [100, 100, 100, 100, enemySpeed] } };
+        }
+
         var flow = new BattleFlowController
         {
             Items = new Dictionary<int, BattleItem> { [item.Id] = item },
             ItemStock = new Dictionary<int, int> { [item.Id] = 2 },
             Techs = includeItemTechnique && item.Effect == "itemTech"
-                ? new Dictionary<int, TechData> { [0x89] = new TechData { Power = 20, Icon = BattleConst.TechMagic } }
+                ? new Dictionary<int, TechData> { [0x89] = new TechData { Power = itemTechniquePower, Icon = BattleConst.TechMagic, Element = BattleConst.ElementFirst } }
                 : [],
         };
         flow.Start(BattleState.InitFighters(setup, 1, new FixedRng()));
@@ -555,6 +682,18 @@ public sealed class BattleItemUseTests
         }
     }
 
+    /// <summary>Advances ordinary turns until every exact enemy stat modifier reaches its real scheduled expiry.</summary>
+    /// <param name="flow">Live battle flow owning the source scheduler consumer.</param>
+    /// <param name="enemy">Enemy whose exact modifiers must expire.</param>
+    private static void AdvanceToExactModifierExpiry(BattleFlowController flow, BattleFighter enemy)
+    {
+        for (int turn = 0; turn < 16 && (enemy.Boosts[0] != 0 || enemy.Boosts[1] != 0); turn++)
+        {
+            flow.EnemyAct(new FixedRng());
+            _ = flow.Choose(BattleCommand.Attack, 0, new FixedRng());
+        }
+    }
+
     /// <summary>Supplies a stable opening-order draw without recording unrelated item RNG.</summary>
     private sealed class FixedRng : IBattleRng
     {
@@ -575,6 +714,25 @@ public sealed class BattleItemUseTests
         {
             Calls++;
             return 127;
+        }
+    }
+
+    /// <summary>Returns one controlled random stream while retaining its complete draw order.</summary>
+    /// <param name="values">Source values consumed in their declared order.</param>
+    private sealed class SequenceRng(params int[] values) : IBattleRng
+    {
+        private readonly Queue<int> _remaining = new(values);
+
+        /// <summary>Gets the complete ordered sequence consumed by the production flow.</summary>
+        public List<int> Draws { get; } = [];
+
+        /// <summary>Consumes the next declared value and records its position in the shared stream.</summary>
+        /// <returns>The next source random value.</returns>
+        public int NextValue()
+        {
+            int value = _remaining.Dequeue();
+            Draws.Add(value);
+            return value;
         }
     }
 
