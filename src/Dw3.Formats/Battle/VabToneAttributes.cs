@@ -6,6 +6,8 @@ namespace Dw3.Formats.Battle;
 /// <param name="Pan">Stereo pan (0=left, 64=center, 127=right).</param>
 /// <param name="CenterNote">MIDI note used as the pitch reference centre.</param>
 /// <param name="PitchShift">Fine centre-note adjustment in 1/128-semitone units.</param>
+/// <param name="PitchBendDown">Downward pitch-bend range in semitones.</param>
+/// <param name="PitchBendUp">Upward pitch-bend range in semitones.</param>
 /// <param name="MinNote">Lowest MIDI note that activates this tone.</param>
 /// <param name="MaxNote">Highest MIDI note that activates this tone.</param>
 /// <param name="ProgramRef">Program number stored inside the tone (self-reference, zero-based).</param>
@@ -16,11 +18,16 @@ public sealed record VabToneAttributes(
     byte Pan,
     byte CenterNote,
     sbyte PitchShift,
+    byte PitchBendDown,
+    byte PitchBendUp,
     byte MinNote,
     byte MaxNote,
     short ProgramRef,
     short SampleRef)
 {
+    /// <summary>Gets the raw tone mode byte. Bit 2 (value 4) enables the SPU reverb send at key-on.</summary>
+    public byte Mode { get; init; }
+
     /// <summary>Gets the raw attack, decay and sustain-level SPU register.</summary>
     public ushort Adsr1 { get; init; }
 

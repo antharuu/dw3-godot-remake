@@ -25,7 +25,7 @@ public sealed class VabProgramTableDecoderTests
     [Fact]
     public void Decode_ReturnsFirstActiveToneForEachProgram()
     {
-        var spec0 = new ToneSpec(Priority: 1, Volume: 110, Pan: 64, Center: 60, Shift: 0, MinNote: 0, MaxNote: 127, Prog: 1, SampleRef: 42);
+        var spec0 = new ToneSpec(Priority: 1, Volume: 110, Pan: 64, Center: 60, Shift: 0, MinNote: 0, MaxNote: 127, Prog: 1, SampleRef: 42) { PitchBendDown = 5, PitchBendUp = 7 };
         var spec1 = new ToneSpec(Priority: 2, Volume: 80, Pan: 32, Center: 48, Shift: -12, MinNote: 0, MaxNote: 127, Prog: 2, SampleRef: 7);
         byte[] vabEntry = BuildEntry(programCount: 2, programs:
         [
@@ -42,6 +42,8 @@ public sealed class VabProgramTableDecoderTests
         Assert.Equal(64, first.Pan);
         Assert.Equal(60, first.CenterNote);
         Assert.Equal(0, first.PitchShift);
+        Assert.Equal(5, first.PitchBendDown);
+        Assert.Equal(7, first.PitchBendUp);
         Assert.Equal(42, first.SampleRef);
 
         Assert.NotNull(result[1]);
@@ -69,6 +71,24 @@ public sealed class VabProgramTableDecoderTests
         VabToneAttributes tone = result[0]!;
         Assert.Equal(5, tone.Priority);
         Assert.Equal(11, tone.SampleRef);
+    }
+
+    [Fact]
+    public void DecodeAll_ReadsTheReverbModeByteOfEveryDeclaredTone()
+    {
+        var spec = new ToneSpec(Priority: 3, Volume: 100, Pan: 64, Center: 60, Shift: 0, MinNote: 0, MaxNote: 127, Prog: 0, SampleRef: 9);
+        byte[] wet = BuildTone(spec);
+        wet[1] = 4;
+        byte[] dry = BuildTone(spec);
+        byte[] slots = new byte[16 * 32];
+        wet.CopyTo(slots, 0);
+        dry.CopyTo(slots, 32);
+        byte[] vabEntry = BuildEntry(programCount: 1, programs: [slots]);
+        vabEntry[32] = 2;
+
+        var tones = VabProgramTableDecoder.DecodeAll(vabEntry, programCount: 1);
+
+        Assert.Equal([4, 0], tones.Select(tone => (int)tone.Attributes.Mode));
     }
 
     [Fact]
@@ -132,6 +152,8 @@ public sealed class VabProgramTableDecoderTests
         tone[3] = spec.Pan;
         tone[4] = spec.Center;
         tone[5] = (byte)spec.Shift;
+        tone[12] = spec.PitchBendDown;
+        tone[13] = spec.PitchBendUp;
         tone[6] = spec.MinNote;
         tone[7] = spec.MaxNote;
         BinaryPrimitives.WriteInt16LittleEndian(tone.AsSpan(20, 2), spec.Prog);
@@ -149,5 +171,10 @@ public sealed class VabProgramTableDecoderTests
         byte MinNote,
         byte MaxNote,
         short Prog,
-        short SampleRef);
+        short SampleRef)
+    {
+        public byte PitchBendDown { get; init; }
+
+        public byte PitchBendUp { get; init; }
+    }
 }

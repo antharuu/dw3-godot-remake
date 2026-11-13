@@ -11,6 +11,7 @@ internal sealed class BattleSequenceCompiler
     private readonly uint _id;
     private readonly int[] _programs = new int[16];
     private readonly List<AudioSequenceCommand> _commands = [];
+    private readonly SequenceNrpnDecoder _controls = new();
 
     /// <summary>Initializes a new instance of the <see cref="BattleSequenceCompiler"/> class.</summary>
     /// <param name="pack">Validated prepared pack.</param>
@@ -59,7 +60,9 @@ internal sealed class BattleSequenceCompiler
             }
         }
 
-        return ended ? new PreparedAudioSequence(_commands, seconds) : throw new FormatException("Sequence has no end marker.");
+        return ended
+            ? new PreparedAudioSequence(_commands, seconds, _controls.LoopStartSeconds, _controls.LoopEndSeconds)
+            : throw new FormatException("Sequence has no end marker.");
     }
 
     /// <summary>Handles only supported tempo and end markers, rejecting other metadata.</summary>
@@ -98,6 +101,9 @@ internal sealed class BattleSequenceCompiler
         int channel = status & 15;
         switch (status & 240)
         {
+            case 0xB0:
+                Control(seconds, channel, first, second);
+                break;
             case 0xC0:
                 _programs[channel] = first;
                 break;
@@ -107,8 +113,47 @@ internal sealed class BattleSequenceCompiler
             case 0x90:
                 Note(seconds, channel, first, second);
                 break;
+            case 0xE0:
+                PitchBend(seconds, channel, first, second);
+                break;
             default:
                 throw new FormatException($"Unsupported required sequence status {status:X2} for cue {_id:X8}.");
+        }
+    }
+
+    /// <summary>Queues a channel-scoped 14-bit pitch bend for active and future physical voices.</summary>
+    /// <param name="seconds">Absolute authored event time.</param>
+    /// <param name="channel">Source MIDI channel.</param>
+    /// <param name="leastSignificant">Least-significant seven-bit source value.</param>
+    /// <param name="mostSignificant">Most-significant seven-bit source value.</param>
+    private void PitchBend(double seconds, int channel, int leastSignificant, int mostSignificant)
+    {
+        int bend = (mostSignificant << 7) | leastSignificant;
+        _commands.Add(new AudioSequenceCommand(seconds, channel, 0, null, bend));
+    }
+
+    /// <summary>Routes the NRPN triplet through the sequence-scoped decoder and refuses other controllers.</summary>
+    /// <param name="seconds">Absolute authored control time.</param>
+    /// <param name="channel">Source MIDI channel, kept for ordering diagnostics.</param>
+    /// <param name="controller">Source controller number.</param>
+    /// <param name="value">Source controller value.</param>
+    private void Control(double seconds, int channel, int controller, int value)
+    {
+        if (!SequenceNrpnDecoder.Handles(controller))
+        {
+            throw new FormatException($"Unsupported required sequence controller {controller:X2} for cue {_id:X8}.");
+        }
+
+        try
+        {
+            if (_controls.Apply(seconds, controller, value) is { } reverb)
+            {
+                _commands.Add(new AudioSequenceCommand(seconds, channel, 0, null, Reverb: reverb));
+            }
+        }
+        catch (FormatException error)
+        {
+            throw new FormatException($"Cue {_id:X8}: {error.Message}", error);
         }
     }
 

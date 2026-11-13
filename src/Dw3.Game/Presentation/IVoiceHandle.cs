@@ -18,4 +18,10 @@ public interface IVoiceHandle
     /// <summary>Begins an envelope release when supported by the physical handle.</summary>
     /// <returns>True when release is handled without an immediate hard stop.</returns>
     bool KeyOff() => false;
+
+    /// <summary>Applies the decoded source bend to this physical voice.</summary>
+    /// <param name="semitones">Signed pitch displacement in semitones.</param>
+    void SetPitchBend(float semitones)
+    {
+    }
 }

@@ -5,4 +5,6 @@ namespace Dw3Production.Conversion;
 /// <param name="Channel">Original MIDI channel.</param>
 /// <param name="Note">Original MIDI note.</param>
 /// <param name="Entry">Resolved note-on, or null for note-off.</param>
-public sealed record AudioSequenceCommand(double Seconds, int Channel, int Note, AudioProgramEntry? Entry);
+/// <param name="PitchBend">Channel-scoped unsigned source 14-bit bend value, when this is a bend event.</param>
+/// <param name="Reverb">Global reverb change, when this is a completed NRPN data entry.</param>
+public sealed record AudioSequenceCommand(double Seconds, int Channel, int Note, AudioProgramEntry? Entry, int? PitchBend = null, AudioReverbChange? Reverb = null);

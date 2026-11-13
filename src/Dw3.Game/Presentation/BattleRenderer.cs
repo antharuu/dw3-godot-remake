@@ -142,6 +142,15 @@ public sealed class BattleRenderer : IDisposable
     /// <summary>Gets physical channel usage for offscreen lifecycle evidence.</summary>
     internal int ActiveAudioVoices => _audio.ActiveCount;
 
+    /// <summary>Gets completed source boundaries for the active battle music.</summary>
+    internal int BattleMusicLoopCount => _audio.MusicLoopCount;
+
+    /// <summary>Gets the physical global reverb state as source type and depth.</summary>
+    internal (int Type, int Depth) BattleReverb => _audio.Reverb;
+
+    /// <summary>Gets how many victory tracks the renderer-owned audio runtime started.</summary>
+    internal int VictoryAudioStarts => _audio.VictoryStarts;
+
     /// <summary>Gets the unmodified main source camera for diagnostic actor translation.</summary>
     internal Camera3D CameraForProbe => _camera;
 
@@ -175,6 +184,13 @@ public sealed class BattleRenderer : IDisposable
 
     /// <summary>Arms the source entrance cue once the incoming fighter model is ready.</summary>
     public void BeginEntranceAudio() => _audio.BeginEntrance();
+
+    /// <summary>Starts the source-selected looping battle music.</summary>
+    /// <param name="musicId">Encoded source music identity.</param>
+    public void BeginBattleMusic(uint musicId) => _audio.BeginMusic(musicId);
+
+    /// <summary>Transitions the battle track to the recovered victory jingle.</summary>
+    public void BeginVictoryAudio() => _audio.BeginVictory();
 
     /// <summary>Probe-only HUD suppression for a model/stage-only framebuffer comparison.</summary>
     /// <param name="visible">Whether the HUD should be included in the capture.</param>

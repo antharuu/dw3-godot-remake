@@ -10,6 +10,7 @@ internal sealed class GodotBattleAudioBackend : IBattleAudioBackend, IDisposable
     private readonly BattleAudioVoicePool _pool;
     private readonly BattleAudioPump _pump;
     private readonly Dictionary<string, AudioStreamWav> _samples = new(StringComparer.Ordinal);
+    private readonly GodotReverbBus _reverb = new();
 
     /// <summary>Initializes a new instance of the <see cref="GodotBattleAudioBackend"/> class.</summary>
     /// <param name="root">Node owning physical audio players.</param>
@@ -23,6 +24,9 @@ internal sealed class GodotBattleAudioBackend : IBattleAudioBackend, IDisposable
 
     /// <summary>Gets current physical channel usage for lifecycle diagnostics.</summary>
     public int ActiveCount => _pool.ActiveCount;
+
+    /// <summary>Gets the physical global reverb consumer, for diagnostics.</summary>
+    public GodotReverbBus Reverb => _reverb;
 
     /// <inheritdoc/>
     public void Prepare(AudioProgramEntry entry)
@@ -55,7 +59,10 @@ internal sealed class GodotBattleAudioBackend : IBattleAudioBackend, IDisposable
     /// <inheritdoc/>
     public void StopVoice(IVoiceHandle handle) => _pool.StopVoice(handle);
 
-    /// <summary>Ends a battle without replacing this backend.</summary>
+    /// <inheritdoc/>
+    public void ApplyReverb(AudioReverbChange change) => _reverb.Apply(change);
+
+    /// <summary>Ends a battle without replacing this backend. The global reverb keeps its state, so a tail drains naturally.</summary>
     public void StopAll() => _pool.StopAll();
 
     /// <inheritdoc/>
@@ -70,6 +77,7 @@ internal sealed class GodotBattleAudioBackend : IBattleAudioBackend, IDisposable
         }
 
         _samples.Clear();
+        _reverb.Dispose();
     }
 
     /// <summary>Creates a real mixer player with decoded loop, gain, pan and pitch attributes.</summary>
@@ -90,10 +98,11 @@ internal sealed class GodotBattleAudioBackend : IBattleAudioBackend, IDisposable
             Stream = stream,
             VolumeLinear = entry.Volume / 127f * entry.BankGain,
             PitchScale = MathF.Pow(2, (entry.Note - entry.CenterNote - (entry.PitchShift / 128f)) / 12f),
+            Bus = entry.Reverb ? _reverb.Name : "Master",
         };
         _root.AddChild(player);
         var voice = new GodotVoiceHandle(player, stream, entry);
-        GD.Print($"battle-audio-start id={entry.EncodedId:X8} program={entry.Program} tone={entry.Tone} sample={entry.SampleIndex} note={entry.Note} pitch={player.PitchScale} gain={player.VolumeLinear} pan={entry.Pan} priority={entry.Priority} loop={entry.Loops} loopStart={entry.LoopStart} duration={entry.DurationFrames}");
+        GD.Print($"battle-audio-start id={entry.EncodedId:X8} program={entry.Program} tone={entry.Tone} sample={entry.SampleIndex} note={entry.Note} pitch={player.PitchScale} gain={player.VolumeLinear} pan={entry.Pan} priority={entry.Priority} loop={entry.Loops} loopStart={entry.LoopStart} duration={entry.DurationFrames} reverb={entry.Reverb}");
         player.Finished += voice.Stop;
         player.Play();
         return voice;

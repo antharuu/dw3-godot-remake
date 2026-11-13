@@ -14,6 +14,8 @@ internal sealed class BattleAudioRuntime : IDisposable
     private readonly BattleEntranceAudio _entrance;
     private readonly Dictionary<int, PreparedAudioSequence> _sequences = [];
     private BattleAudioConsumer? _consumer;
+    private BattleMusicPlayback? _music;
+    private BattleMusicPlayback? _victory;
 
     /// <summary>Initializes a new instance of the <see cref="BattleAudioRuntime"/> class.</summary>
     /// <param name="root">Physical players' owner.</param>
@@ -30,6 +32,15 @@ internal sealed class BattleAudioRuntime : IDisposable
     /// <summary>Gets allocated physical channels, including trailing natural notes.</summary>
     public int ActiveCount => _backend.ActiveCount;
 
+    /// <summary>Gets the completed boundaries of the current battle-music track.</summary>
+    public int MusicLoopCount => _music?.LoopCount ?? 0;
+
+    /// <summary>Gets how many victory tracks this runtime actually started, for single-occurrence evidence.</summary>
+    public int VictoryStarts { get; private set; }
+
+    /// <summary>Gets the physical global reverb state as source type and depth.</summary>
+    public (int Type, int Depth) Reverb => (_backend.Reverb.Type, _backend.Reverb.Depth);
+
     /// <summary>Arms the prepared direct cue after incoming-model readiness.</summary>
     public void BeginEntrance()
     {
@@ -38,6 +49,41 @@ internal sealed class BattleAudioRuntime : IDisposable
         _sequencePump.Synchronize();
         _entrance.Begin(cue.Delay, cue.Entry);
         GD.Print($"battle-entrance-audio-armed id={cue.Entry.EncodedId:X8} delay={cue.Delay}");
+    }
+
+    /// <summary>Starts the selected exclusive battle track and stops any prior battle music.</summary>
+    /// <param name="musicId">Encoded source music identity from the encounter.</param>
+    public void BeginMusic(uint musicId)
+    {
+        StopMusic();
+        var music = BattleSequenceAudioLoader.LoadMusic(new DataPackReader(_dataRoot), musicId)
+            ?? throw new FormatException($"Battle music {musicId:X8} is unavailable.");
+        Prepare(music);
+        _music = new BattleMusicPlayback(music, _backend);
+        _sequencePump.Synchronize();
+        GD.Print($"battle-music-start id={musicId:X8} loop={music.LoopSeconds:0.000}");
+    }
+
+    /// <summary>
+    /// Transitions a won battle from its looping music to the source victory track. The track carries
+    /// its own authored endless loop (fanfare, then a repeated body), so it uses the same loop owner.
+    /// </summary>
+    public void BeginVictory()
+    {
+        StopMusic();
+        if (_victory is not null)
+        {
+            return;
+        }
+
+        const uint victoryJingle = 0x6004001E;
+        var sequence = BattleSequenceAudioLoader.LoadMusic(new DataPackReader(_dataRoot), victoryJingle)
+            ?? throw new FormatException("Battle victory jingle is unavailable.");
+        Prepare(sequence);
+        _victory = new BattleMusicPlayback(sequence, _backend);
+        VictoryStarts++;
+        _sequencePump.Synchronize();
+        GD.Print($"battle-victory-audio-start id={victoryJingle:X8}");
     }
 
     /// <summary>Loads only when needed so missing audio is diagnosed at the required action.</summary>
@@ -73,6 +119,9 @@ internal sealed class BattleAudioRuntime : IDisposable
     public void StopAll()
     {
         _entrance.Cancel();
+        StopMusic();
+        _victory?.Stop();
+        _victory = null;
         _consumer?.StopAll();
         _backend.StopAll();
     }
@@ -104,5 +153,24 @@ internal sealed class BattleAudioRuntime : IDisposable
     {
         _consumer?.Advance(ticks);
         _entrance.Advance(ticks);
+        _music?.Advance(ticks);
+        _victory?.Advance(ticks);
+    }
+
+    /// <summary>Stops the currently repeating battle track.</summary>
+    private void StopMusic()
+    {
+        _music?.Stop();
+        _music = null;
+    }
+
+    /// <summary>Primes every referenced sample before a sequence starts.</summary>
+    /// <param name="sequence">Prepared sequence whose samples are required.</param>
+    private void Prepare(PreparedAudioSequence sequence)
+    {
+        foreach (var entry in sequence.Commands.Select(command => command.Entry).OfType<AudioProgramEntry>())
+        {
+            _backend.Prepare(entry);
+        }
     }
 }
