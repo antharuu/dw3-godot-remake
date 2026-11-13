@@ -199,10 +199,6 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
 
     private GrowthTables? _growthTables;
 
-    private IReadOnlyList<int>? _partyDigimonIds;
-
-    private IReadOnlyList<PartnerGrowthState>? _partyGrowth;
-
     private PlayerSession? _playerSession;
 
     private BattleReportView? _battleReport;
@@ -441,8 +437,6 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
         _battleTextData = assets.BattleText;
         _rewardsData = assets.Rewards;
         _growthTables = assets.GrowthTables;
-        _partyDigimonIds = assets.PartyDigimonIds;
-        _partyGrowth = assets.PartyGrowth;
         _playerSession = assets.PlayerSession;
         _zoneCache = new FieldZoneCache(assets.FieldLoader, assets.Npc.Occupants);
     }
@@ -762,40 +756,37 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
     /// changing presentation cannot leak old player or enemy nodes.</summary>
     private void RefreshBattlePresentationModels() => _battlePresentationCoordinator.RefreshModels();
 
-    /// <summary>On a victory, resolves the encounter's real reward, shares its exp by the partners
-    /// who fought, applies the growth (exp + level-up via GrowthCalculator.AddExp) and builds the
-    /// report view the HUD draws. Flight and defeat resolve no reward.</summary>
+    /// <summary>Commits the battle's resources to the session and, on a victory, resolves the encounter's
+    /// real reward and delivers it: money, the won item and each partner's experience and growth go
+    /// to the session the next battle starts from, and the report views show the same amounts.
+    /// Flight and defeat resolve no reward.</summary>
     /// <param name="flow">Completed battle flow whose outcome and party state are read.</param>
     private void ResolveBattleOutcome(BattleFlowController flow)
     {
-        BattleSetupCoordinator.CommitResolvedBattle(_playerSession, flow);
-        if (flow.Outcome != BattleOutcome.Won)
+        BattleOutcomeResolution? resolution = BattleSetupCoordinator.ResolveOutcome(_playerSession, flow, CreateVictoryContext);
+        if (resolution is null)
         {
             return;
         }
 
-        BattleOutcomeResolution resolution = BattleOutcomeResolver.ResolveVictory(
-            new BattleOutcomeRequest
-            {
-                Flow = flow,
-                Reward = ResolveReward(_lastBattleEncounter),
-                Encounter = _lastBattleEncounter,
-                PartyGrowth = _partyGrowth,
-                GrowthTables = _growthTables,
-                Random = _battleRng,
-                DigimonFor = DigimonFor,
-                NameFor = NameLine,
-                HasMoneyBonusEquipment = BattleRewardEquipment.HasMoneyBonus(_playerSession, flow.State.ActivePlayer),
-                HasExperienceBonusEquipment = index => BattleRewardEquipment.HasExperienceBonus(_playerSession, index),
-                HasPrize = _activeBattle?.HasPrize == true,
-                Prize = _activeBattle?.Prize ?? 0,
-                Text = BattleText(),
-            });
         _battleReport = resolution.Report;
         _fightReportInput = resolution.FightReport;
         _battleRenderer?.BeginVictoryAudio();
-        QuietLog.Info(resolution.Log);
+        QuietLog.Info($"{resolution.Log} session-money={_playerSession?.Money}");
     }
+
+    /// <summary>Collects the reward inputs of the encounter that just ended.</summary>
+    /// <returns>The encounter's reward, decoded tables and shared random stream.</returns>
+    /// <exception cref="CacheResourceException">The fighter manifest is unavailable.</exception>
+    private BattleVictoryContext CreateVictoryContext() => new(
+        ResolveReward(_lastBattleEncounter),
+        _lastBattleEncounter,
+        _fighterData ?? throw new CacheResourceException("CACHE_RESOURCE_UNAVAILABLE", "fighter manifest unavailable"),
+        _growthTables,
+        _battleRng,
+        NameLine,
+        BattleText(),
+        _activeBattle?.HasPrize == true ? _activeBattle.Prize : null);
 
     /// <summary>
     /// Constructs the fight-report controller from the resolved victory input.
@@ -833,22 +824,6 @@ public partial class GameHost : Node2D, IDiagnosticProbeHost, IBattleMenuDriverH
 
         var entry = _rewardsData.Rewards[encounter];
         return new BattleReward(entry.DigimonExp, entry.Exp, entry.Money);
-    }
-
-    /// <summary>
-    /// Resolves the Digimon record for a test-team party slot via the decoded fighter table.
-    /// </summary>
-    /// <param name="slot">Zero-based party slot index (0–2).</param>
-    /// <returns>The Digimon record matching the test-team member at <paramref name="slot"/>.</returns>
-    /// <exception cref="InvalidOperationException">The party, slot, or fighter table is unavailable.</exception>
-    private Conversion.DigimonData DigimonFor(int slot)
-    {
-        if (_partyDigimonIds is null || slot < 0 || slot >= _partyDigimonIds.Count || _fighterData is null)
-        {
-            throw new InvalidOperationException($"test team slot {slot} has no resolved digimon");
-        }
-
-        return _fighterData.Digimon[_partyDigimonIds[slot]];
     }
 
     /// <summary>Advances the battle menu state machine by one input tick.</summary>

@@ -74,8 +74,8 @@ internal interface IBattleProbeHost
     /// <summary>Gets a value indicating whether the report renderer is visible.</summary>
     bool IsFightReportVisible { get; }
 
-    /// <summary>Gets the test party's persistent growth records, or null before startup.</summary>
-    IReadOnlyList<PartnerGrowthState>? PartyGrowth { get; }
+    /// <summary>Gets the session party's persistent growth records, or null before startup.</summary>
+    IReadOnlyList<PartnerGrowthState?>? PartyGrowth { get; }
 
     /// <summary>Gets the fixed victory-to-report fade duration in simulation steps.</summary>
     int ReportFadeFrames { get; }

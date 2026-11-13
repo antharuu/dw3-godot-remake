@@ -232,7 +232,7 @@ public partial class GameHost
             var entries = new List<(int ItemId, BattleTextLine Text)>();
             foreach ((int id, int count) in flow.ItemStock)
             {
-                if (count > 0)
+                if (count > 0 && flow.Items.ContainsKey(id))
                 {
                     entries.Add((id, flow.ItemText.TryGetValue(id, out BattleTextLine? text) ? text : BattleTextLine.Missing));
                 }

@@ -1324,3 +1324,8 @@ src/Dw3.Game/Diagnostics/Battle/NativeMenuFixture.cs
 src/Dw3.Game/Diagnostics/Battle/NativeOffensiveItemMatrixProof.cs
 src/Dw3.Game/Diagnostics/Battle/NativePartnerItemMatrixProof.cs
 src/Dw3.Game/Diagnostics/Battle/NativeTurnDriver.cs
+src/Dw3.Game/Session/BattleRewardSettlement.cs
+src/Dw3.Game/Session/BattleVictoryContext.cs
+tests/Dw3.Game.Tests/Session/BattleRewardSettlementTests.cs
+tests/Dw3.Game.Tests/Session/BattleRewardLifecycleTests.cs
+tests/Dw3.Game.Tests/Session/RewardSessionFixture.cs
