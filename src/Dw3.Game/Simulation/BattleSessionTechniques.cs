@@ -7,6 +7,7 @@ namespace Dw3Production.Simulation;
 internal static class BattleSessionTechniques
 {
     /// <summary>Filters one form's decoded actions without adding the Blast form to acquired or equipped slots.</summary>
+    /// <remarks>A skill a form acquired from its own levels is usable by that form only.</remarks>
     /// <param name="partner">Permanent owner of learned forms and techniques.</param>
     /// <param name="fighter">Current battle fighter selecting the temporary signature exception.</param>
     /// <param name="form">Form whose actions are being prepared.</param>
@@ -25,6 +26,7 @@ internal static class BattleSessionTechniques
         }
 
         bool learnedForm = !temporary || partner.KnownForms.Contains(form);
-        return [.. actions.Where(action => action.Id == signature || (learnedForm && (partner.KnownTechniques.Count == 0 || partner.KnownTechniques.Contains(action.Id))))];
+        IReadOnlyList<int> formTechniques = partner.FormTechniques(form);
+        return [.. actions.Where(action => action.Id == signature || (learnedForm && (partner.KnownTechniques.Count == 0 || partner.KnownTechniques.Contains(action.Id) || formTechniques.Contains(action.Id))))];
     }
 }

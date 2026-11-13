@@ -6,298 +6,292 @@ using Xunit;
 
 namespace Dw3.Game.Tests.Session;
 
-/// <summary>Verifies that a won session battle delivers used-form experience into the report and the next battle catalogue.</summary>
+/// <summary>
+/// Drives fabricated battles through the production settlement seam and the real report controller, and checks
+/// form rows, report messages and next-battle availability against a ledger derived from the original rules.
+/// </summary>
+/// <remarks>
+/// Ledger, partner level 25, ExpLevel 10, reward 30 unless stated: n = 300 / 25 = 12. One used slot over the
+/// fought party gives 10 (cap), two give 7, three give 4. A form needs 10 cumulative experience per level up to
+/// ExpLevel. The unlock entry acquires form 8 once form 5 reaches level 2.
+/// </remarks>
 public sealed class BattleFormRewardIntegrationTests
 {
-    /// <summary>Credits only the used form, reports its level and learned techniques, unlocks the next form, and exposes it to the next battle.</summary>
+    /// <summary>Two partners fighting as the same form id count as two used slots, the third partner gets nothing.</summary>
     [Fact]
-    public void WonBattle_DeliversUsedFormProgressionToReportAndNextBattle()
+    public void WonBattle_PartnersSharingOneFormIdCountTwoUsedSlots()
     {
-        PlayerSession session = RewardSessionFixture.CreateSession(new Dictionary<int, int>());
-        FighterData fighters = Fighters();
-        BattleFlowController first = Build(session, fighters);
-        RewardSessionFixture.Win(first);
+        PlayerSession session = FormProgressFixture.Session(level: 25);
+        BattleFlowController flow = FormProgressFixture.Build(session);
+        FormProgressFixture.Digivolve(flow, 5);
+        FormProgressFixture.Switch(flow, 1);
+        FormProgressFixture.FightAs(flow, [5]);
 
-        BattleOutcomeResolution resolution = BattleRewardSettlement.SettleVictory(session, first, Context(fighters));
-        BattleFlowController second = Build(session, fighters);
+        BattleOutcomeResolution resolution = Resolve(session, flow, FormProgressFixture.Victory(30));
 
-        PlayerSessionPartner partner = Assert.IsType<PlayerSessionPartner>(session.Partners[0]);
-        Assert.Equal([1], first.State.UsedFormsBySlot[0]);
-        Assert.Equal(30, partner.FormProgress(1).Exp);
-        Assert.Equal(4, partner.FormProgress(1).Level);
-        Assert.Equal([1, 2, 11, 12], partner.FormProgress(1).Techniques);
-        Assert.Contains(2, partner.KnownForms);
-        Assert.Contains(2, partner.EquippedForms);
-        FightReportFormSlot slot = Assert.Single(resolution.FightReport.Partners[0].FormSlots);
-        Assert.Equal((1, 0, 30, 1, 4), (slot.DigimonId, slot.ExpBefore, slot.ExpGained, slot.LevelBefore, slot.LevelAfter));
-        Assert.Equal([11, 12], slot.LearnedTechniques);
-        Assert.Equal([2], resolution.FightReport.Partners[0].LearnedForms.Select(form => form.DigimonId));
-        Assert.Contains(2, second.PlayerDigivolutions);
-        Assert.Contains(second.PlayerTechniquesByForm[1], technique => technique.Id == 11);
+        Assert.Equal(7, Partner(session, 0).FormProgress(5).Exp);
+        Assert.Equal(7, Partner(session, 1).FormProgress(5).Exp);
+        Assert.Equal(0, Partner(session, 2).FormProgress(5).Exp);
+        Assert.Equal((0, 5, 7), Row(resolution, 0));
+        Assert.Equal((0, 5, 7), Row(resolution, 1));
+        Assert.Empty(resolution.FightReport.Partners[2].FormSlots);
     }
 
-    /// <summary>Runs the real report controller over settled form deltas without leaving the slot sequence unwired.</summary>
+    /// <summary>A partner that fought but is knocked out at the end neither receives nor counts its used slot.</summary>
     [Fact]
-    public void WonBattle_ReportPlaysUsedFormLevelsSkillsAndUnlock()
+    public void WonBattle_KnockedOutPartnerIsLeftOutOfTheUsedCount()
     {
-        PlayerSession session = RewardSessionFixture.CreateSession(new Dictionary<int, int>());
-        FighterData fighters = Fighters();
-        BattleFlowController flow = Build(session, fighters);
-        RewardSessionFixture.Win(flow);
-        BattleOutcomeResolution resolution = BattleRewardSettlement.SettleVictory(session, flow, Context(fighters));
-        var report = new FightReportController(resolution.FightReport);
-        var messages = new List<int>();
-        var slotExpApplied = false;
-        var slotBlinkFinished = false;
+        PlayerSession session = FormProgressFixture.Session(level: 25);
+        BattleFlowController flow = FormProgressFixture.Build(session);
+        FormProgressFixture.Digivolve(flow, 5);
+        FormProgressFixture.Switch(flow, 1);
+        FormProgressFixture.FightAs(flow, [5]);
+        Assert.IsType<BattleFighter>(flow.State.Players[0]).Hp = 0;
 
-        for (int frame = 0; frame < 20_000 && !report.View.Done; frame++)
-        {
-            FightReportMessage? message = report.View.Message;
-            if (message is not null && (messages.Count == 0 || messages[^1] != message.Entry))
-            {
-                messages.Add(message.Entry);
-            }
+        BattleOutcomeResolution resolution = Resolve(session, flow, FormProgressFixture.Victory(30));
 
-            FightReportSlotView slot = report.View.Partners[0].Slots[0];
-            slotExpApplied |= slot.ExpApplied;
-            slotBlinkFinished |= slot.BlinkFrame == 10;
-            report.Step(crossPressedEdge: true);
-        }
-
-        Assert.True(report.View.Done);
-        Assert.DoesNotContain("report-digimon-exp-unwired", report.Logs);
-        Assert.True(slotExpApplied);
-        Assert.True(slotBlinkFinished);
-        Assert.Equal([2, 4, 5, 6, 8, 10], messages);
+        Assert.Equal(0, Partner(session, 0).FormProgress(5).Exp);
+        Assert.Empty(resolution.FightReport.Partners[0].FormSlots);
+        Assert.Equal(10, Partner(session, 1).FormProgress(5).Exp);
     }
 
-    /// <summary>Awards form experience that falls short of the next level and verifies that no level-up or skill messages appear.</summary>
+    /// <summary>Fighting only as the base form gives no form row, and the report keeps exactly three equipped slots.</summary>
     [Fact]
-    public void WonBattle_NoLevelAward_ReportSkipsSlotLevelMessage()
+    public void WonBattle_BaseFormIsNeverAReportSlot()
     {
-        PlayerSession session = RewardSessionFixture.CreateSession(new Dictionary<int, int>());
-        FighterData fighters = Fighters();
-        BattleFlowController flow = Build(session, fighters);
-        RewardSessionFixture.Win(flow);
+        PlayerSession session = FormProgressFixture.Session(level: 25);
+        BattleFlowController flow = FormProgressFixture.Build(session);
+        FormProgressFixture.FightAs(flow, []);
 
-        // DigimonExp=5 gives form 1 five experience; it needs 10 to reach level 2.
-        BattleVictoryContext ctx = new(
-            new BattleReward(DigimonExp: 5, Exp: 0, Money: 0),
-            1,
-            fighters,
-            RewardSessionFixture.GrowthTables(),
-            new RewardSessionFixture.FixedRng(),
-            id => BattleTextCatalog.Tokens([], $"fighter-{id}"),
-            new BattleTextCatalog(RewardSessionFixture.Text()),
-            Digivolutions: Digivolutions());
-        BattleOutcomeResolution resolution = BattleRewardSettlement.SettleVictory(session, flow, ctx);
+        BattleOutcomeResolution resolution = Resolve(session, flow, FormProgressFixture.Victory(30));
+        ReportRun run = RunReport(resolution);
 
-        PlayerSessionPartner partner = Assert.IsType<PlayerSessionPartner>(session.Partners[0]);
-        Assert.Equal(5, partner.FormProgress(1).Exp);
-        Assert.Equal(1, partner.FormProgress(1).Level);
+        FightReportPartner report = resolution.FightReport.Partners[0];
+        Assert.Equal([5, 6, 7], report.SlotDigimonIds);
+        Assert.Empty(report.FormSlots);
+        Assert.Equal(0, Partner(session, 0).FormProgress(1).Exp);
+        Assert.Equal([5, 6, 7], run.SlotIds);
+        Assert.DoesNotContain(run.Logs, line => line.StartsWith("report-form-slot", StringComparison.Ordinal));
+        Assert.DoesNotContain(run.Messages, message => message.Entry is >= 4 and <= 9);
+    }
+
+    /// <summary>The third equipped slot receives its share and its own level blink.</summary>
+    [Fact]
+    public void WonBattle_ThirdEquippedSlotReceivesItsShare()
+    {
+        PlayerSession session = FormProgressFixture.Session(level: 25);
+        BattleFlowController flow = FormProgressFixture.Build(session);
+        FormProgressFixture.FightAs(flow, [7]);
+
+        BattleOutcomeResolution resolution = Resolve(session, flow, FormProgressFixture.Victory(30));
+        ReportRun run = RunReport(resolution);
+
+        Assert.Equal((2, 7, 10), Row(resolution, 0));
+        Assert.Equal((2, 10), (Partner(session, 0).FormProgress(7).Level, Partner(session, 0).FormProgress(7).Exp));
+        Assert.True(run.SlotExpApplied[2]);
+        Assert.True(run.SlotBlinkFinished[2]);
+        Assert.False(run.SlotExpApplied[0]);
+        Assert.DoesNotContain(run.Logs, line => line.StartsWith("report-form-slot", StringComparison.Ordinal));
+    }
+
+    /// <summary>
+    /// A form below its next level gets its share without any level, skill or unlock message. Ledger: 30 and level
+    /// 25 over three used slots give 4, short of the 10 needed.
+    /// </summary>
+    [Fact]
+    public void WonBattle_ShareWithoutLevelShowsNoFormMessage()
+    {
+        PlayerSession session = FormProgressFixture.Session(level: 25);
+        BattleFlowController flow = FormProgressFixture.Build(session);
+        FormProgressFixture.FightAs(flow, [5, 6, 7]);
+
+        BattleOutcomeResolution resolution = Resolve(session, flow, FormProgressFixture.Victory(30, UnlockAtLevel2()));
+        ReportRun run = RunReport(resolution);
+
+        Assert.Equal(3, resolution.FightReport.Partners[0].FormSlots.Count);
+        Assert.All(resolution.FightReport.Partners[0].FormSlots, row => Assert.Equal((4, 1, 1), (row.ExpGained, row.LevelBefore, row.LevelAfter)));
         Assert.Empty(resolution.FightReport.Partners[0].LearnedForms);
-
-        var report = new FightReportController(resolution.FightReport);
-        var messages = new List<int>();
-        var slotExpApplied = false;
-        for (int frame = 0; frame < 20_000 && !report.View.Done; frame++)
-        {
-            FightReportMessage? message = report.View.Message;
-            if (message is not null && (messages.Count == 0 || messages[^1] != message.Entry))
-            {
-                messages.Add(message.Entry);
-            }
-
-            slotExpApplied |= report.View.Partners[0].Slots[0].ExpApplied;
-            report.Step(crossPressedEdge: true);
-        }
-
-        Assert.True(report.View.Done);
-        Assert.True(slotExpApplied);
-        Assert.Equal([2, 10], messages);
+        Assert.Equal([true, true, true], run.SlotExpApplied);
+        Assert.DoesNotContain(run.Messages, message => message.Entry is >= 4 and <= 9);
     }
 
-    /// <summary>Verifies that a form auto-equipped to a free slot does not trigger the slots-full message.</summary>
+    /// <summary>
+    /// Plays one level-up with an acquisition, a mastery and an unlock in the original order: level (4), acquired
+    /// skill 12 (5), mastered skill 11 (6), new form 8 (8), then the notice (9) since four forms are acquired.
+    /// </summary>
     [Fact]
-    public void WonBattle_AutoEquippedFormDoesNotTriggerSlotsFullMessage()
+    public void WonBattle_ReportPlaysLevelAcquisitionMasteryAndUnlockInOrder()
     {
-        // Partner 0 starts with form 3 already equipped in slot 1; slot 2 is free.
-        PlayerSessionPartner partner0 = new(
-            RewardSessionFixture.Seed(1),
-            knownForms: [1, 3],
-            equippedForms: [3],
-            knownTechniques: [1, 2],
-            equipmentIds: [],
-            growth: RewardSessionFixture.Growth());
-        PlayerSession session = new(
-            [partner0, RewardSessionFixture.Partner(2), RewardSessionFixture.Partner(3)],
-            new Dictionary<int, int>());
-        FighterData fighters = Fighters();
-        BattleFlowController flow = Build(session, fighters);
-        RewardSessionFixture.Win(flow);
-        BattleOutcomeResolution resolution = BattleRewardSettlement.SettleVictory(session, flow, Context(fighters));
+        PlayerSession session = FormProgressFixture.Session(level: 25);
+        PartnerFormProgress five = Partner(session, 0).FormProgress(5);
+        five.Level = 4;
+        five.Exp = 30;
+        five.AcquireSkill(0, FormProgressFixture.AcquiredTechnique);
+        FighterData fighters = FormProgressFixture.Fighters(skillLevels: [2, 5, 99], knownLevels: [5, 99, 99]);
+        BattleFlowController flow = FormProgressFixture.Build(session, fighters);
+        FormProgressFixture.FightAs(flow, [5]);
 
-        // Form 2 is unlocked and auto-equipped to the free second slot.
-        PlayerSessionPartner settled = Assert.IsType<PlayerSessionPartner>(session.Partners[0]);
-        Assert.Contains(2, settled.EquippedForms);
-        Assert.Equal([1, 3, 2], resolution.FightReport.Partners[0].SlotDigimonIds);
+        DigivolutionEntry[] tree = [new DigivolutionEntry(0, FormProgressFixture.UnlockedForm, [new EvolutionNeed(0, 5, 5)], 0, 0)];
+        BattleOutcomeResolution resolution = Resolve(session, flow, FormProgressFixture.Victory(30, tree, fighters));
+        ReportRun run = RunReport(resolution);
 
-        var report = new FightReportController(resolution.FightReport);
-        var messages = new List<int>();
-        for (int frame = 0; frame < 20_000 && !report.View.Done; frame++)
-        {
-            FightReportMessage? message = report.View.Message;
-            if (message is not null && (messages.Count == 0 || messages[^1] != message.Entry))
-            {
-                messages.Add(message.Entry);
-            }
-
-            report.Step(crossPressedEdge: true);
-        }
-
-        Assert.True(report.View.Done);
-        Assert.DoesNotContain(9, messages);
+        FightReportFormSlot row = Assert.Single(resolution.FightReport.Partners[0].FormSlots);
+        Assert.Equal((30, 10, 4, 5), (row.ExpBefore, row.ExpGained, row.LevelBefore, row.LevelAfter));
+        Assert.Equal([FormProgressFixture.LateTechnique], row.AcquiredTechniques);
+        Assert.Equal([FormProgressFixture.AcquiredTechnique], row.MasteredTechniques);
+        Assert.Equal(
+            ["4:", "5:12", "6:11", "8:8", "9:"],
+            run.Messages.Where(message => message.Entry is >= 4 and <= 9).Select(message => $"{message.Entry}:{string.Join(",", message.Substitutions)}"));
+        Assert.Equal(4, resolution.FightReport.Partners[0].AcquiredFormCount);
     }
 
-    /// <summary>Verifies that a form unlocked when all three slots are occupied triggers the slots-full message.</summary>
-    [Fact]
-    public void WonBattle_AllSlotsFull_ShowsSlotsFullMessage()
+    /// <summary>
+    /// The notice after an unlock depends on four or more acquired forms besides the base, not on whether the new
+    /// form found a slot.
+    /// </summary>
+    /// <param name="known">Acquired forms besides the base before the battle.</param>
+    /// <param name="equipped">Equipped slots before the battle.</param>
+    /// <param name="expectedEquipped">Equipped slots after the battle.</param>
+    /// <param name="notice">Whether the notice is expected.</param>
+    [Theory]
+    [InlineData(new[] { 5, 6, 7 }, new[] { 5, 6 }, new[] { 5, 6, 8 }, true)] // free slot, but four acquired
+    [InlineData(new[] { 5 }, new[] { 5 }, new[] { 5, 8 }, false)] // free slot, two acquired
+    [InlineData(new[] { 5, 6, 7 }, new[] { 5, 6, 7 }, new[] { 5, 6, 7 }, true)] // full slots, four acquired
+    [InlineData(new[] { 5, 6, 7, 8 }, new[] { 5, 6, 7 }, new[] { 5, 6, 7 }, false)] // four acquired, no unlock
+    public void WonBattle_NoticeFollowsAcquiredFormCountAfterAnUnlock(int[] known, int[] equipped, int[] expectedEquipped, bool notice)
     {
-        // Partner 0 starts with all three equipped slots taken; form 2 cannot be auto-equipped.
-        PlayerSessionPartner partner0 = new(
-            RewardSessionFixture.Seed(1),
-            knownForms: [1, 3, 10, 20],
-            equippedForms: [3, 10, 20],
-            knownTechniques: [1, 2],
-            equipmentIds: [],
-            growth: RewardSessionFixture.Growth());
-        PlayerSession session = new(
-            [partner0, RewardSessionFixture.Partner(2), RewardSessionFixture.Partner(3)],
-            new Dictionary<int, int>());
-        FighterData fighters = Fighters();
-        BattleFlowController flow = Build(session, fighters);
-        RewardSessionFixture.Win(flow);
-        BattleOutcomeResolution resolution = BattleRewardSettlement.SettleVictory(session, flow, Context(fighters));
+        PlayerSession session = FormProgressFixture.Session(level: 25, known, equipped);
+        BattleFlowController flow = FormProgressFixture.Build(session);
+        FormProgressFixture.FightAs(flow, [5]);
 
-        PlayerSessionPartner settled = Assert.IsType<PlayerSessionPartner>(session.Partners[0]);
-        Assert.Contains(2, settled.KnownForms);
-        Assert.DoesNotContain(2, settled.EquippedForms);
+        BattleOutcomeResolution resolution = Resolve(session, flow, FormProgressFixture.Victory(30, UnlockAtLevel2()));
+        ReportRun run = RunReport(resolution);
 
-        var report = new FightReportController(resolution.FightReport);
-        var messages = new List<int>();
-        for (int frame = 0; frame < 20_000 && !report.View.Done; frame++)
-        {
-            FightReportMessage? message = report.View.Message;
-            if (message is not null && (messages.Count == 0 || messages[^1] != message.Entry))
-            {
-                messages.Add(message.Entry);
-            }
-
-            report.Step(crossPressedEdge: true);
-        }
-
-        Assert.True(report.View.Done);
-        Assert.Contains(9, messages);
+        Assert.Equal(expectedEquipped, Partner(session, 0).EquippedForms);
+        Assert.Equal(equipped, resolution.FightReport.Partners[0].SlotDigimonIds);
+        Assert.Equal(notice, run.Messages.Any(message => message.Entry == 9));
+        Assert.Equal(known.Contains(FormProgressFixture.UnlockedForm) ? 0 : 1, run.Messages.Count(message => message.Entry == 8));
     }
 
-    /// <summary>Verifies that stepping a completed report is a no-op and that settlement runs only once.</summary>
+    /// <summary>The next battle offers an acquired skill to its own form only, and the unlocked equipped form.</summary>
     [Fact]
-    public void WonBattle_RepeatedTicksAfterDoneDoNotApplyDoubleCredits()
+    public void NextBattle_OffersFormLocalSkillsAndTheUnlockedForm()
     {
-        PlayerSession session = RewardSessionFixture.CreateSession(new Dictionary<int, int>());
-        FighterData fighters = Fighters();
-        BattleFlowController flow = Build(session, fighters);
-        RewardSessionFixture.Win(flow);
-        BattleOutcomeResolution resolution = BattleRewardSettlement.SettleVictory(session, flow, Context(fighters));
+        PlayerSession session = FormProgressFixture.Session(level: 25, [5, 6], [5, 6]);
+        BattleFlowController first = FormProgressFixture.Build(session);
+        FormProgressFixture.FightAs(first, [5]);
+        Resolve(session, first, FormProgressFixture.Victory(30, UnlockAtLevel2()));
 
-        PlayerSessionPartner partner = Assert.IsType<PlayerSessionPartner>(session.Partners[0]);
-        int expAfterSettlement = partner.FormProgress(1).Exp;
+        BattleFlowController second = FormProgressFixture.Build(session);
 
+        Assert.Contains(second.PlayerTechniquesByForm[5], technique => technique.Id == FormProgressFixture.AcquiredTechnique);
+        Assert.DoesNotContain(second.PlayerTechniquesByForm[6], technique => technique.Id == FormProgressFixture.AcquiredTechnique);
+        Assert.Contains(FormProgressFixture.UnlockedForm, second.PlayerDigivolutions);
+        Assert.Equal([5, 6, FormProgressFixture.UnlockedForm], Partner(session, 0).EquippedForms);
+    }
+
+    /// <summary>Stepping the finished report changes nothing and the settlement credited the form once.</summary>
+    [Fact]
+    public void WonBattle_FinishedReportStepsDoNotCreditAgain()
+    {
+        PlayerSession session = FormProgressFixture.Session(level: 25);
+        BattleFlowController flow = FormProgressFixture.Build(session);
+        FormProgressFixture.FightAs(flow, [5]);
+        BattleOutcomeResolution resolution = Resolve(session, flow, FormProgressFixture.Victory(30));
         var report = new FightReportController(resolution.FightReport);
+
         for (int frame = 0; frame < 20_000 && !report.View.Done; frame++)
         {
             report.Step(crossPressedEdge: true);
         }
 
-        Assert.True(report.View.Done);
         for (int extra = 0; extra < 100; extra++)
         {
             report.Step(crossPressedEdge: true);
         }
 
         Assert.True(report.View.Done);
-        Assert.Equal(expAfterSettlement, partner.FormProgress(1).Exp);
+        Assert.Equal(10, Partner(session, 0).FormProgress(5).Exp);
     }
 
-    /// <summary>Builds a started session battle against the fixture encounter with the supplied form catalogue.</summary>
-    /// <param name="session">Persistent session shared by both battles.</param>
-    /// <param name="fighters">Form catalogue used by the battle and settlement.</param>
-    /// <returns>A started production flow.</returns>
-    private static BattleFlowController Build(PlayerSession session, FighterData fighters) =>
-        GameHost.BattleSetupCoordinator.BuildForSession(
-            new GameHost.BattleSetupCoordinator.BattleSessionBuildInput(
-                fighters,
-                Techniques(),
-                RewardSessionFixture.Encounters(),
-                1,
-                session,
-                RewardSessionFixture.Items(),
-                RewardSessionFixture.Text(),
-                new RewardSessionFixture.FixedRng()));
+    /// <summary>Builds the unlock entry acquiring form 8 once form 5 reaches level 2.</summary>
+    /// <returns>The first partner's evolution entries.</returns>
+    private static DigivolutionEntry[] UnlockAtLevel2() => [new DigivolutionEntry(0, FormProgressFixture.UnlockedForm, [new EvolutionNeed(0, 5, 2)], 0, 0)];
 
-    /// <summary>Builds the victory inputs with a source-style tree that unlocks form two at base-form level two.</summary>
-    /// <param name="fighters">The form catalogue used by the settlement.</param>
-    /// <returns>The production settlement context.</returns>
-    private static BattleVictoryContext Context(FighterData fighters) => new(
-        new BattleReward(DigimonExp: 30, Exp: 0, Money: 0),
-        1,
-        fighters,
-        RewardSessionFixture.GrowthTables(),
-        new RewardSessionFixture.FixedRng(),
-        id => BattleTextCatalog.Tokens([], $"fighter-{id}"),
-        new BattleTextCatalog(RewardSessionFixture.Text()),
-        Digivolutions: Digivolutions());
+    /// <summary>Resolves the terminal battle through the production seam.</summary>
+    /// <param name="session">Persistent session.</param>
+    /// <param name="flow">Won flow.</param>
+    /// <param name="victory">Victory inputs.</param>
+    /// <returns>The delivered resolution.</returns>
+    private static BattleOutcomeResolution Resolve(PlayerSession session, BattleFlowController flow, BattleVictoryContext victory) =>
+        GameHost.BattleSetupCoordinator.ResolveOutcome(session, flow, () => victory) ?? throw new InvalidOperationException("battle was not won");
 
-    /// <summary>Builds fixture forms with predictable form experience thresholds and learnable techniques.</summary>
-    /// <returns>A fighter catalogue containing the three party forms and one unlocked form.</returns>
-    private static FighterData Fighters()
+    /// <summary>Returns one session partner.</summary>
+    /// <param name="session">Persistent session.</param>
+    /// <param name="index">Party slot.</param>
+    /// <returns>The partner.</returns>
+    private static PlayerSessionPartner Partner(PlayerSession session, int index) => Assert.IsType<PlayerSessionPartner>(session.Partners[index]);
+
+    /// <summary>Returns the only row of one report partner.</summary>
+    /// <param name="resolution">Delivered resolution.</param>
+    /// <param name="index">Party slot.</param>
+    /// <returns>Slot, form and experience gained.</returns>
+    private static (int Slot, int Form, int Gained) Row(BattleOutcomeResolution resolution, int index)
     {
-        DigimonData one = Form(1, [1, 2, 11, 12], [2, 3, 4]);
-        DigimonData two = Form(2, [1], []);
-        DigimonData three = Form(3, [1], []);
-        return new FighterData(
-            new Dictionary<int, DigimonData> { [1] = one, [2] = two, [3] = three },
-            [one, two, three],
-            [new BattleTableEntry(100, 0, 1023, 100, [1, 0, 0], [1, 1, 1, 1, 1], new int[12], 0, [new BattleAction(1, 0, 0)], new BattleAction(0, 0, 0))]);
+        FightReportFormSlot row = Assert.Single(resolution.FightReport.Partners[index].FormSlots);
+        return (row.Slot, row.DigimonId, row.ExpGained);
     }
 
-    /// <summary>Builds the fixture action catalogue including the techniques learned by form one.</summary>
-    /// <returns>A deterministic action catalogue.</returns>
-    private static TechniqueData Techniques() => new(new Dictionary<int, Dw3Production.Conversion.TechData>
+    /// <summary>Runs the real report controller to its end while pressing Cross, collecting messages and slot state.</summary>
+    /// <param name="resolution">Delivered resolution.</param>
+    /// <returns>The observed run.</returns>
+    private static ReportRun RunReport(BattleOutcomeResolution resolution)
     {
-        [1] = Tech(0, 1),
-        [2] = Tech(3, 1000),
-        [11] = Tech(1, 2),
-        [12] = Tech(1, 2),
-    });
+        var report = new FightReportController(resolution.FightReport);
+        var run = new ReportRun();
+        string? lastKey = null;
+        for (int frame = 0; frame < 20_000 && !report.View.Done; frame++)
+        {
+            FightReportMessage? message = report.View.Message;
+            string? key = message is null ? null : $"{message.Entry}:{string.Join(",", message.Substitutions)}";
+            if (message is not null && key != lastKey)
+            {
+                run.Messages.Add(message);
+            }
 
-    /// <summary>Builds one deterministic fixture technique.</summary>
-    /// <param name="mp">Technique MP cost.</param>
-    /// <param name="power">Technique power.</param>
-    /// <returns>A technique record accepted by the production battle factory.</returns>
-    private static Dw3Production.Conversion.TechData Tech(int mp, int power) => new(0, mp, power, 0, 0, 128, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1);
+            lastKey = key;
+            FightReportSlotView[] slots = [.. report.View.Partners[0].Slots];
+            run.SlotIds = [.. slots.Where(slot => slot.Visible).Select(slot => slot.DigimonId)];
+            for (int slot = 0; slot < slots.Length; slot++)
+            {
+                run.SlotExpApplied[slot] |= slots[slot].ExpApplied;
+                run.SlotBlinkFinished[slot] |= slots[slot].BlinkFrame == 10;
+            }
 
-    /// <summary>Builds one fixture form by changing only the source skills and their threshold levels.</summary>
-    /// <param name="id">Fixture Digimon id.</param>
-    /// <param name="skills">Decoded source skill slots.</param>
-    /// <param name="skillLevels">Levels required for the learned slots.</param>
-    /// <returns>A form record accepted by the production battle factory.</returns>
-    private static DigimonData Form(int id, IReadOnlyList<int> skills, IReadOnlyList<int> skillLevels) => new(
-        id, [10, 10, 10, 10, 100, 5], new int[7], skills, 0, new int[5], skillLevels, [], 99, 0, 10, 100, 10, 5, 1, new int[6], new int[7], [], id, 0, false);
+            report.Step(crossPressedEdge: true);
+        }
 
-    /// <summary>Builds a tree that unlocks form two after the used base form reaches level two.</summary>
-    /// <returns>Decoded per-partner evolution data.</returns>
-    private static DigivolutionData Digivolutions() => new(
-        [new PartnerDigivolution(0, 1, [new DigivolutionEntry(0, 2, [new EvolutionNeed(0, 1, 2)], 0, 0)])],
-        new DigivolutionBlast([4, 19, 39, 70]));
+        Assert.True(report.View.Done);
+        run.Logs = [.. report.Logs];
+        return run;
+    }
+
+    /// <summary>Observations collected while running a report.</summary>
+    private sealed class ReportRun
+    {
+        /// <summary>Gets the distinct messages in the order they started.</summary>
+        public List<FightReportMessage> Messages { get; } = [];
+
+        /// <summary>Gets or sets the visible slot ids of the first panel.</summary>
+        public int[] SlotIds { get; set; } = [];
+
+        /// <summary>Gets whether each slot of the first panel showed applied experience.</summary>
+        public bool[] SlotExpApplied { get; } = new bool[3];
+
+        /// <summary>Gets whether each slot of the first panel finished its level blink.</summary>
+        public bool[] SlotBlinkFinished { get; } = new bool[3];
+
+        /// <summary>Gets or sets the report diagnostics.</summary>
+        public string[] Logs { get; set; } = [];
+    }
 }

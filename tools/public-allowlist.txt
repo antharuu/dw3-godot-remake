@@ -1369,7 +1369,6 @@ src/Dw3.Game/Presentation/BattleWhiteFlashPhase.cs
 src/Dw3.Game/Presentation/IBattleSpriteSurface.cs
 tests/Dw3.Game.Tests/BattleSpriteEffectPlaybackTests.cs
 tests/Dw3.Game.Tests/BattleSpriteCompositionTests.cs
-src/Dw3.Game/Session/FormSnapshot.cs
 src/Dw3.Game/Session/PartnerFormProgress.cs
 src/Dw3.Game/Simulation/BattleUsedForms.cs
 src/Dw3.Game/Simulation/FightReportFormSlot.cs
@@ -1378,3 +1377,9 @@ src/Dw3.Game/Simulation/FormProgressionResult.cs
 src/Dw3.Game/Simulation/PartnerFormProgression.cs
 tests/Dw3.Game.Tests/Session/BattleFormRewardIntegrationTests.cs
 tests/Dw3.Game.Tests/Session/PartnerFormProgressionTests.cs
+src/Dw3.Game/Session/BattleFormSettlement.cs
+src/Dw3.Game/Simulation/FormExpAward.cs
+src/Dw3.Game/Simulation/FormExpRules.cs
+src/Dw3.Game/Simulation/FormUnlockRules.cs
+tests/Dw3.Game.Tests/Session/FormExpSettlementTests.cs
+tests/Dw3.Game.Tests/Session/FormProgressFixture.cs

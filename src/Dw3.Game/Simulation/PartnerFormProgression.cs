@@ -3,141 +3,99 @@ using Dw3Production.Session;
 
 namespace Dw3Production.Simulation;
 
-/// <summary>Applies the source form-entry experience, skills and evolution requirements after a battle.</summary>
+/// <summary>
+/// Applies the original report's per-slot form progression: each used equipped form receives its share of the
+/// form experience, and only a form that gained a level then acquires its reached skills and masters the
+/// reached ones. The partner's evolution list is evaluated afterwards.
+/// </summary>
 public static class PartnerFormProgression
 {
-    /// <summary>Applies one battle's Digimon experience to every form used by a partner.</summary>
+    /// <summary>Applies one battle's form progression to one partner that fought.</summary>
     /// <param name="partner">Persistent owner of form entries.</param>
-    /// <param name="usedForms">Forms marked used in the completed battle.</param>
-    /// <param name="digimonExp">Encounter form experience.</param>
+    /// <param name="usedSlots">Equipped slot indices the partner fought as, in slot order.</param>
+    /// <param name="award">Battle-wide share inputs.</param>
     /// <param name="fighters">Decoded form records.</param>
-    /// <param name="evolutions">Decoded evolution requirements.</param>
-    /// <returns>The newly learned skills and forms.</returns>
+    /// <param name="evolutions">Decoded evolution list, or null when none is known.</param>
+    /// <returns>Per-slot rows, unlocked forms and the acquired form count after the unlocks.</returns>
+    /// <exception cref="InvalidOperationException">A used slot is empty, the base form, or not decoded.</exception>
     public static FormProgressionResult Apply(
         PlayerSessionPartner partner,
-        IReadOnlyCollection<int> usedForms,
-        int digimonExp,
+        IReadOnlyList<int> usedSlots,
+        FormExpAward award,
         FighterData fighters,
-        PartnerDigivolution evolutions)
+        PartnerDigivolution? evolutions)
     {
         ArgumentNullException.ThrowIfNull(partner);
-        ArgumentNullException.ThrowIfNull(usedForms);
+        ArgumentNullException.ThrowIfNull(usedSlots);
+        ArgumentNullException.ThrowIfNull(award);
         ArgumentNullException.ThrowIfNull(fighters);
-        ArgumentNullException.ThrowIfNull(evolutions);
-        var learnedTechniques = new List<int>();
-        foreach (int form in usedForms.Where(partner.KnownForms.Contains))
-        {
-            ApplyForm(partner, form, digimonExp, fighters, learnedTechniques);
-        }
-
-        int[] learnedForms = LearnForms(partner, evolutions);
-        return new FormProgressionResult(learnedTechniques, learnedForms);
+        FightReportFormSlot[] rows = [.. usedSlots.Order().Select(slot => ApplySlot(partner, slot, award, fighters))];
+        IReadOnlyList<int> learned = evolutions is null ? [] : FormUnlockRules.LearnForms(partner, evolutions);
+        return new FormProgressionResult(rows, learned, partner.AcquiredFormCount);
     }
 
-    /// <summary>Applies experience and source skill thresholds to one acquired form.</summary>
+    /// <summary>Grants one used slot's share and the skills its level-up brings.</summary>
     /// <param name="partner">Persistent form owner.</param>
-    /// <param name="form">Used form.</param>
-    /// <param name="digimonExp">Encounter form experience.</param>
+    /// <param name="slot">Used equipped slot.</param>
+    /// <param name="award">Battle-wide share inputs.</param>
     /// <param name="fighters">Decoded form records.</param>
-    /// <param name="learned">Accumulated learned technique ids.</param>
-    private static void ApplyForm(PlayerSessionPartner partner, int form, int digimonExp, FighterData fighters, List<int> learned)
+    /// <returns>The slot's report row.</returns>
+    private static FightReportFormSlot ApplySlot(PlayerSessionPartner partner, int slot, FormExpAward award, FighterData fighters)
     {
+        int form = slot >= 0 && slot < partner.EquippedForms.Count ? partner.EquippedForms[slot] : 0;
+        if (form <= 0 || form == partner.OriginFormId)
+        {
+            throw new InvalidOperationException($"used slot {slot} holds no equipped form");
+        }
+
         if (!fighters.Digimon.TryGetValue(form, out DigimonData? data))
         {
-            return;
+            throw new InvalidOperationException($"used form {form} is not decoded");
         }
 
         PartnerFormProgress progress = partner.FormProgress(form);
-        progress.Exp = Math.Min(9_999_999, progress.Exp + Math.Max(0, digimonExp));
-        RaiseLevel(progress, data.ExpLevel);
-        LearnSkills(partner, progress, data, learned);
+        int expBefore = progress.Exp;
+        int levelBefore = progress.Level;
+        bool leveled = FormExpRules.AddExp(progress, FormExpRules.Share(award, levelBefore, data.ExpLevel), data.ExpLevel);
+        IReadOnlyList<int> acquired = leveled ? AcquireSkills(progress, data) : [];
+        IReadOnlyList<int> mastered = leveled ? MasterSkills(progress, data) : [];
+        return new FightReportFormSlot(slot, form, expBefore, progress.Exp - expBefore, levelBefore, progress.Level, acquired, mastered);
     }
 
-    /// <summary>Raises a form at ten experience per level until its decoded experience threshold.</summary>
-    /// <param name="progress">Mutable form entry.</param>
-    /// <param name="expLevel">Decoded threshold that changes the source rate.</param>
-    private static void RaiseLevel(PartnerFormProgress progress, int expLevel)
+    /// <summary>Fills every empty skill entry whose decoded skill exists and whose acquisition level is reached.</summary>
+    /// <param name="progress">Leveled form entry.</param>
+    /// <param name="data">Decoded form record, whose skill zero is the basic attack.</param>
+    /// <returns>Newly acquired technique ids in entry order.</returns>
+    private static List<int> AcquireSkills(PartnerFormProgress progress, DigimonData data)
     {
-        while (progress.Level < 99 && progress.Exp >= RequiredExp(progress.Level, expLevel))
+        var acquired = new List<int>();
+        for (int index = 0; index < PartnerFormProgress.SkillEntryCount; index++)
         {
-            progress.Level++;
-        }
-    }
-
-    /// <summary>Returns the cumulative source experience required for the next form level.</summary>
-    /// <param name="level">Current form level.</param>
-    /// <param name="expLevel">Decoded rate threshold.</param>
-    /// <returns>Required cumulative experience.</returns>
-    private static int RequiredExp(int level, int expLevel) => level < expLevel
-        ? level * 10
-        : ((expLevel - 1) * 10) + ((level - expLevel + 1) * 50);
-
-    /// <summary>Grants every source skill whose form level has been reached.</summary>
-    /// <param name="partner">Persistent form owner.</param>
-    /// <param name="progress">Advanced form entry.</param>
-    /// <param name="data">Decoded skill thresholds.</param>
-    /// <param name="learned">Accumulated learned ids.</param>
-    private static void LearnSkills(PlayerSessionPartner partner, PartnerFormProgress progress, DigimonData data, List<int> learned)
-    {
-        for (int index = 1; index < data.Skills.Count && index - 1 < data.SkillLevels.Count; index++)
-        {
-            int technique = data.Skills[index];
-            if (progress.Level >= data.SkillLevels[index - 1] && partner.LearnTechnique(progress.FormId, technique))
+            int technique = index + 1 < data.Skills.Count ? BattleSetupFactory.SkillId(data.Skills[index + 1]) : 0;
+            if (index < data.SkillLevels.Count && progress.Level >= data.SkillLevels[index] && progress.AcquireSkill(index, technique))
             {
-                learned.Add(technique);
+                acquired.Add(technique);
             }
         }
+
+        return acquired;
     }
 
-    /// <summary>Repeatedly learns the first decoded evolution whose prerequisites are now met.</summary>
-    /// <param name="partner">Persistent partner state.</param>
-    /// <param name="evolutions">Ordered decoded evolution list.</param>
-    /// <returns>New form ids in source-list order.</returns>
-    private static int[] LearnForms(PlayerSessionPartner partner, PartnerDigivolution evolutions)
+    /// <summary>Masters every acquired masterable entry whose decoded mastery level is reached.</summary>
+    /// <param name="progress">Leveled form entry.</param>
+    /// <param name="data">Decoded form record.</param>
+    /// <returns>Newly mastered technique ids in entry order.</returns>
+    private static List<int> MasterSkills(PartnerFormProgress progress, DigimonData data)
     {
-        var result = new List<int>();
-        DigivolutionEntry? next;
-        while ((next = evolutions.Evolutions.FirstOrDefault(entry => Eligible(partner, entry))) is not null)
+        var mastered = new List<int>();
+        for (int index = 0; index < PartnerFormProgress.MasterableEntryCount; index++)
         {
-            partner.AcquireForm(next.DigimonId);
-            result.Add(next.DigimonId);
+            if (index < data.KnownLevels.Count && progress.Level >= data.KnownLevels[index] && progress.MasterSkill(index))
+            {
+                mastered.Add(progress.SkillEntries[index]);
+            }
         }
 
-        return [.. result];
-    }
-
-    /// <summary>Checks a decoded form requirement against acquired form levels and partner growth.</summary>
-    /// <param name="partner">Persistent partner state.</param>
-    /// <param name="entry">Candidate form requirement.</param>
-    /// <returns>True when the form can be acquired.</returns>
-    private static bool Eligible(PlayerSessionPartner partner, DigivolutionEntry entry) =>
-        entry.DigimonId > 0
-        && !partner.KnownForms.Contains(entry.DigimonId)
-        && entry.Needs.All(need => need.DigimonId == 0 || (partner.KnownForms.Contains(need.DigimonId) && partner.FormProgress(need.DigimonId).Level >= need.Level))
-        && StatMet(partner.Growth, entry.Stat, entry.Value);
-
-    /// <summary>Checks the one optional source stat gate.</summary>
-    /// <param name="growth">Current partner growth.</param>
-    /// <param name="stat">Decoded source stat selector.</param>
-    /// <param name="value">Required minimum.</param>
-    /// <returns>True when the gate is absent or met.</returns>
-    private static bool StatMet(PartnerGrowthState? growth, int stat, int value)
-    {
-        if (stat == 0)
-        {
-            return true;
-        }
-
-        if (growth is null)
-        {
-            return false;
-        }
-
-        return stat switch
-        {
-            < 7 => stat > 0 && stat - 1 < growth.BattleStats.Length && growth.BattleStats[stat - 1] >= value,
-            7 => growth.Level >= value,
-            _ => stat - 8 < growth.Resistances.Length && growth.Resistances[stat - 8] >= value,
-        };
+        return mastered;
     }
 }

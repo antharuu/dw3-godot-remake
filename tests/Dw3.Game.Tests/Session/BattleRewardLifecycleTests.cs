@@ -1,3 +1,5 @@
+using Dw3Production;
+using Dw3Production.Conversion;
 using Dw3Production.Session;
 using Dw3Production.Simulation;
 using Xunit;
@@ -14,7 +16,7 @@ public sealed class BattleRewardLifecycleTests
         PlayerSession session = RewardSessionFixture.CreateSession(new Dictionary<int, int> { [RewardSessionFixture.DropItem] = 2 });
         BattleFlowController flow = RewardSessionFixture.Build(session);
         RewardSessionFixture.Win(flow);
-        var host = new SettlingHost(session, flow, new BattleReward(DigimonExp: 0, Exp: 40, Money: 50));
+        var host = new SettlingHost(flow, () => BattleRewardSettlementTests.Resolve(session, flow, new BattleReward(DigimonExp: 0, Exp: 40, Money: 50)));
         var coordinator = new BattleTickCoordinator(host);
 
         for (int tick = 0; tick < 4000 && !host.Ended; tick++)
@@ -34,6 +36,38 @@ public sealed class BattleRewardLifecycleTests
         Assert.Equal(40, session.Partners[0]!.Growth!.Exp);
         Assert.Equal(3, session.Partners[0]!.Growth!.Level);
         Assert.Equal(3, session.Partners[0]!.BattleSeed.Stats.Level);
+    }
+
+    /// <summary>
+    /// The terminal guard, the report and repeated ticks credit used-form experience and an unlock exactly once.
+    /// Ledger: reward 30, partner level 25, one used slot: 10, form 5 reaches level 2 and unlocks form 8.
+    /// </summary>
+    [Fact]
+    public void TerminalTickAndReport_CreditFormProgressionExactlyOnce()
+    {
+        PlayerSession session = FormProgressFixture.Session(level: 25, [5, 6], [5, 6]);
+        BattleFlowController flow = FormProgressFixture.Build(session);
+        FormProgressFixture.FightAs(flow, [5]);
+        DigivolutionEntry[] tree = [new DigivolutionEntry(0, FormProgressFixture.UnlockedForm, [new EvolutionNeed(0, 5, 2)], 0, 0)];
+        var host = new SettlingHost(flow, () => GameHost.BattleSetupCoordinator.ResolveOutcome(session, flow, () => FormProgressFixture.Victory(30, tree)) ?? throw new InvalidOperationException("battle was not won"));
+        var coordinator = new BattleTickCoordinator(host);
+
+        for (int tick = 0; tick < 4000 && !host.Ended; tick++)
+        {
+            coordinator.Tick();
+        }
+
+        coordinator.Tick();
+        coordinator.Tick();
+        host.StepFinishedReport();
+
+        PlayerSessionPartner partner = Assert.IsType<PlayerSessionPartner>(session.Partners[0]);
+        Assert.True(host.ReportDone);
+        Assert.Equal(1, host.Settlements);
+        Assert.Equal((2, 10), (partner.FormProgress(5).Level, partner.FormProgress(5).Exp));
+        Assert.Equal([FormProgressFixture.AcquiredTechnique], partner.FormProgress(5).Techniques);
+        Assert.Equal(1, partner.KnownForms.Count(form => form == FormProgressFixture.UnlockedForm));
+        Assert.Equal([5, 6, FormProgressFixture.UnlockedForm], partner.EquippedForms);
     }
 
     /// <summary>A second battle built from the session starts from the delivered stock, money, levels, maxima and stats.</summary>
@@ -110,7 +144,9 @@ public sealed class BattleRewardLifecycleTests
     }
 
     /// <summary>Tick host whose terminal callback uses the production settlement seam and whose report is the real controller.</summary>
-    private sealed class SettlingHost(PlayerSession session, BattleFlowController flow, BattleReward reward) : IBattleTickHost
+    /// <param name="flow">Won battle flow.</param>
+    /// <param name="resolve">Production settlement call made by the terminal callback.</param>
+    private sealed class SettlingHost(BattleFlowController flow, Func<BattleOutcomeResolution> resolve) : IBattleTickHost
     {
         private FightReportController? _report;
         private BattleOutcomeResolution? _resolution;
@@ -148,7 +184,7 @@ public sealed class BattleRewardLifecycleTests
         /// <inheritdoc/>
         public void ResolveOutcome()
         {
-            _resolution = BattleRewardSettlementTests.Resolve(session, flow, reward);
+            _resolution = resolve();
             Settlements++;
         }
 

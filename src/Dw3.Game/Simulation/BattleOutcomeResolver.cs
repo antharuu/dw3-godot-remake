@@ -34,6 +34,14 @@ public static class BattleOutcomeResolver
         return new BattleOutcomeResolution(report, fightReport, log);
     }
 
+    /// <summary>Tests whether one party slot fought and is still alive at battle end, the original reward condition.</summary>
+    /// <param name="state">Terminal battle state.</param>
+    /// <param name="index">Party slot index.</param>
+    /// <returns>True when the slot receives experience.</returns>
+    internal static bool IsRewardEligible(BattleState state, int index) =>
+        index >= 0 && index < state.Players.Length && index < state.Fought.Length
+        && state.Fought[index] && state.Players[index] is { IsKnockedOut: false };
+
     /// <summary>Applies one occupied party slot and appends its two report records.</summary>
     /// <param name="request">Victory state.</param>
     /// <param name="index">Party slot index.</param>
@@ -121,8 +129,7 @@ public static class BattleOutcomeResolver
     /// <param name="request">Terminal victory state.</param>
     /// <returns>Source-eligible party indices in their fixed party order.</returns>
     private static IReadOnlyList<int> EligiblePartners(BattleOutcomeRequest request) =>
-        [.. Enumerable.Range(0, request.Flow.State.Players.Length)
-            .Where(index => request.Flow.State.Fought[index] && request.Flow.State.Players[index] is { IsKnockedOut: false })];
+        [.. Enumerable.Range(0, request.Flow.State.Players.Length).Where(index => IsRewardEligible(request.Flow.State, index))];
 
     /// <summary>Applies the source fifth bonus for the equipped money item.</summary>
     /// <param name="reward">Encounter reward data.</param>

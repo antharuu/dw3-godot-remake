@@ -30,16 +30,16 @@ internal enum FightReportPartnerPhase
     /// <summary>Waits for the form level-up message.</summary>
     SlotLevelMessage,
 
-    /// <summary>Starts a form technique preview message.</summary>
+    /// <summary>Starts the next skill-acquisition message of a leveled form.</summary>
     SlotSkillPreview,
 
-    /// <summary>Waits for a form technique preview message.</summary>
+    /// <summary>Waits for a skill-acquisition message.</summary>
     SlotSkillPreviewMessage,
 
-    /// <summary>Starts a form technique learned message.</summary>
+    /// <summary>Starts the next skill-mastery message of a leveled form.</summary>
     SlotSkillLearn,
 
-    /// <summary>Waits for a form technique learned message.</summary>
+    /// <summary>Waits for a skill-mastery message.</summary>
     SlotSkillLearnMessage,
 
     /// <summary>Moves to the next source slot or partner level.</summary>
@@ -57,7 +57,7 @@ internal enum FightReportPartnerPhase
     /// <summary>Waits for a newly acquired form message.</summary>
     NewDigimonMessage,
 
-    /// <summary>Waits for the full form-slot notice.</summary>
+    /// <summary>Waits for the notice shown after an unlock once four or more forms are acquired.</summary>
     SlotsFullMessage,
 
     /// <summary>Waits for partner and form level blinks.</summary>

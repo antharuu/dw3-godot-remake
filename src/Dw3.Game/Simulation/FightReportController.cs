@@ -79,8 +79,8 @@ public sealed class FightReportController
 
     /// <summary>Tests whether a panel needs the reward sequence for partner or used-form progression.</summary>
     /// <param name="partner">Settled report partner.</param>
-    /// <returns>True when partner or form experience was awarded.</returns>
-    private static bool HasReward(FightReportPartner partner) => partner.ExpGained > 0 || partner.FormSlots.Any(slot => slot.ExpGained > 0);
+    /// <returns>True when partner or form experience was awarded or a form was unlocked.</returns>
+    private static bool HasReward(FightReportPartner partner) => partner.ExpGained > 0 || partner.FormSlots.Any(slot => slot.ExpGained > 0) || partner.LearnedForms.Count > 0;
 
     /// <summary>Scrolls the background one pixel every other frame, wrapping at 96.</summary>
     private void TickBackground()
