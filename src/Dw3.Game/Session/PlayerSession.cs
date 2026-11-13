@@ -58,7 +58,13 @@ public sealed class PlayerSession
         {
             if (seeds[index] is PartnerSeed seed)
             {
-                partners.Add(new PlayerSessionPartner(seed, [seed.Id], [], [], [], growth[index]));
+                var partner = new PlayerSessionPartner(seed, [seed.Id], [], [], [], growth[index]);
+                if (fighters.Digimon.TryGetValue(seed.Id, out DigimonData? data))
+                {
+                    PartnerFormProgression.InitializeInherentSkills(partner.FormProgress(seed.Id), data);
+                }
+
+                partners.Add(partner);
             }
         }
 

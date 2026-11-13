@@ -1388,3 +1388,5 @@ src/Dw3.Game/Simulation/FormExpRules.cs
 src/Dw3.Game/Simulation/FormUnlockRules.cs
 tests/Dw3.Game.Tests/Session/FormExpSettlementTests.cs
 tests/Dw3.Game.Tests/Session/FormProgressFixture.cs
+
+tests/Dw3.Game.Tests/Session/DebugSessionTechniqueTests.cs

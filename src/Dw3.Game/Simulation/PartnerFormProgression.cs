@@ -10,6 +10,20 @@ namespace Dw3Production.Simulation;
 /// </summary>
 public static class PartnerFormProgression
 {
+    /// <summary>
+    /// Fills every empty skill entry whose decoded technique exists and whose acquisition level is at or below the
+    /// form's current level. Call once at session initialization to seed a form with its level-appropriate inherent
+    /// skills without requiring a prior level-up.
+    /// </summary>
+    /// <param name="progress">Form progress entry to populate.</param>
+    /// <param name="data">Decoded form record providing skills and acquisition levels.</param>
+    public static void InitializeInherentSkills(PartnerFormProgress progress, DigimonData data)
+    {
+        ArgumentNullException.ThrowIfNull(progress);
+        ArgumentNullException.ThrowIfNull(data);
+        AcquireSkills(progress, data);
+    }
+
     /// <summary>Applies one battle's form progression to one partner that fought.</summary>
     /// <param name="partner">Persistent owner of form entries.</param>
     /// <param name="usedSlots">Equipped slot indices the partner fought as, in slot order.</param>
