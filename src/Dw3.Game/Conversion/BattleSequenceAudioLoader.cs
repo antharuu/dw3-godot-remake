@@ -38,13 +38,6 @@ public static class BattleSequenceAudioLoader
         return sequence.LoopSeconds is > 0 ? sequence : throw new FormatException($"Music {id:X8} has no authored loop marker.");
     }
 
-    /// <summary>Resolves an exclusive one-shot source sequence such as the victory jingle.</summary>
-    /// <param name="pack">Prepared user-data pack.</param>
-    /// <param name="id">Original encoded sequence identity.</param>
-    /// <returns>The resolved sequence, or null for an invalid identity.</returns>
-    public static PreparedAudioSequence? LoadExclusiveCue(DataPackReader pack, uint id) =>
-        (id & 0xC0000000) == 0x40000000 || (id & 0xE0000000) == 0x60000000 ? LoadEncoded(pack, id) : null;
-
     /// <summary>Loads one prepared sequence by its already-qualified encoded identity.</summary>
     /// <param name="pack">Prepared user-data pack.</param>
     /// <param name="id">Qualified source sequence identity.</param>
@@ -54,7 +47,7 @@ public static class BattleSequenceAudioLoader
         using var prepared = Read(pack, "sequences.json");
         using var manifest = Read(pack, "manifest.json");
         if (prepared.RootElement.GetProperty("schema").GetString() != "battle-audio-sequences-v1" ||
-            manifest.RootElement.GetProperty("schema").GetString() != "battle-audio-vab-v5")
+            manifest.RootElement.GetProperty("schema").GetString() != "battle-audio-vab-v6")
         {
             throw new FormatException("Unsupported prepared sequence or audio manifest schema.");
         }

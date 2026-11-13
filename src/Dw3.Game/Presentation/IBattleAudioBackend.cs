@@ -19,4 +19,10 @@ public interface IBattleAudioBackend
     /// <summary>Stops the voice identified by the given handle. Safe to call after natural completion.</summary>
     /// <param name="handle">Handle returned by a previous <see cref="Play"/> call.</param>
     void StopVoice(IVoiceHandle handle);
+
+    /// <summary>Applies an authored change of the global SPU reverb state to the physical output.</summary>
+    /// <param name="change">Reverb type or depth in source units.</param>
+    /// <exception cref="NotSupportedException">The backend has no physical reverb consumer.</exception>
+    void ApplyReverb(AudioReverbChange change) =>
+        throw new NotSupportedException($"This audio backend cannot apply the required reverb {change}.");
 }

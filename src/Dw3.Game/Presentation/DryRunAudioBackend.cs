@@ -7,9 +7,20 @@ namespace Dw3Production.Presentation;
 public sealed class DryRunAudioBackend : IBattleAudioBackend
 {
     private readonly List<DryRunVoiceEvent> _events = [];
+    private readonly List<AudioReverbChange> _reverbChanges = [];
 
     /// <summary>Gets all voice-start events recorded since construction, in order.</summary>
     public IReadOnlyList<DryRunVoiceEvent> Events => _events;
+
+    /// <summary>Gets the authored global reverb changes received, in order, without any mixer effect.</summary>
+    public IReadOnlyList<AudioReverbChange> ReverbChanges => _reverbChanges;
+
+    /// <inheritdoc/>
+    public void ApplyReverb(AudioReverbChange change)
+    {
+        ArgumentNullException.ThrowIfNull(change);
+        _reverbChanges.Add(change);
+    }
 
     /// <inheritdoc/>
     public IVoiceHandle Play(AudioProgramEntry entry)

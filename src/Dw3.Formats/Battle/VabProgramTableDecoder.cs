@@ -14,6 +14,7 @@ public static class VabProgramTableDecoder
     private const int ToneSlots = 16;
     private const int ToneAttributeBytes = 32;
     private const int SampleLengthTableBytes = 512;
+    private const int ToneMode = 1;
     private const int ToneVolume = 2;
     private const int TonePan = 3;
     private const int ToneCenterNote = 4;
@@ -112,6 +113,7 @@ public static class VabProgramTableDecoder
         BinaryPrimitives.ReadInt16LittleEndian(tone.Slice(ToneProgramRef, 2)),
         BinaryPrimitives.ReadInt16LittleEndian(tone.Slice(ToneSampleRef, 2)))
     {
+        Mode = tone[ToneMode],
         Adsr1 = BinaryPrimitives.ReadUInt16LittleEndian(tone.Slice(16, 2)),
         Adsr2 = BinaryPrimitives.ReadUInt16LittleEndian(tone.Slice(18, 2)),
     };

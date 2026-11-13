@@ -4,7 +4,11 @@ using Godot;
 
 namespace Dw3Production.Diagnostics.Battle;
 
-/// <summary>Records a real host battle track through two loops, victory, and field teardown.</summary>
+/// <summary>
+/// Records a real host battle track through two loops with post-boundary notes and its authored
+/// reverb, the production victory transition, field return with a drained tail, then a second
+/// encounter cancelled mid-music, each ending in a nonempty silent mix.
+/// </summary>
 internal sealed class BattleMusicLifecycleProbe : BattleProbe
 {
     /// <summary>Initializes a new instance of the <see cref="BattleMusicLifecycleProbe"/> class.</summary>
@@ -25,7 +29,8 @@ internal sealed class BattleMusicLifecycleProbe : BattleProbe
         string root = Host.PrepareCaptureDirectory("probe/battle-music-lifecycle");
         await RecordRepeatedMusicAsync(root);
         await RecordVictoryAndReturnAsync(root);
-        GD.Print("B9062_MUSIC_PASS path=encounter-loop-loop-victory-field sameRenderer=true finalChannels=0");
+        await RecordReentryAndCancelAsync(root);
+        GD.Print($"B9062_MUSIC_PASS driver={AudioServer.GetDriverName()} path=encounter-loop-loop-victory-field-reentry-cancel sameRenderer=true victoryStarts={Host.Renderer.VictoryAudioStarts} finalChannels={Host.Renderer.ActiveAudioVoices}");
     }
 
     /// <summary>Requires physical Dummy-driver evidence instead of a nullable disabled recorder.</summary>
@@ -46,14 +51,15 @@ internal sealed class BattleMusicLifecycleProbe : BattleProbe
         }
     }
 
-    /// <summary>Records a nonempty silent post-teardown bus control after the mixer drains.</summary>
-    /// <param name="path">Private WAV output path.</param>
+    /// <summary>Lets the reverb tail drain, then records a nonempty silent bus control.</summary>
+    /// <param name="path">Private output WAV.</param>
     /// <returns>Completion of the silence measurement.</returns>
-    private static async Task RecordSilenceAsync(string path)
+    private static async Task RecordSilenceAfterTailAsync(string path)
     {
-        await WaitSecondsAsync(0.25);
+        const double tailDrainSeconds = 3;
+        await WaitSecondsAsync(tailDrainSeconds);
         using var audio = StartRecording(path);
-        await WaitSecondsAsync(0.25);
+        await WaitSecondsAsync(0.5);
         audio.Save(false);
     }
 
@@ -66,13 +72,14 @@ internal sealed class BattleMusicLifecycleProbe : BattleProbe
         Host.StartDebugBattle();
         ProbeRequirement.Require(Host.HasActiveBattle, "Host battle setup failed.");
         await WaitForLoopsAsync(2);
-        audio.Save();
-        ProbeRequirement.Require(Host.Renderer.BattleMusicLoopCount >= 2, "Battle music did not repeat twice.");
         await WaitForPostBoundaryNotesAsync();
-        GD.Print($"B9062_MUSIC_LOOPS count={Host.Renderer.BattleMusicLoopCount} active={Host.Renderer.ActiveAudioVoices}");
+        audio.Save();
+        var reverb = Host.Renderer.BattleReverb;
+        GD.Print($"B9062_MUSIC_LOOPS count={Host.Renderer.BattleMusicLoopCount} active={Host.Renderer.ActiveAudioVoices} reverbType={reverb.Type} reverbDepth={reverb.Depth}");
+        ProbeRequirement.Require(reverb == (3, 56), "Battle music did not apply its authored reverb type 3 depth 56.");
     }
 
-    /// <summary>Transitions the real won-battle path to one victory jingle and proves final silence.</summary>
+    /// <summary>Transitions the real won-battle path to one victory track and proves the drained return.</summary>
     /// <param name="root">Private output directory.</param>
     /// <returns>Completion after report transition and field teardown.</returns>
     private async Task RecordVictoryAndReturnAsync(string root)
@@ -81,17 +88,43 @@ internal sealed class BattleMusicLifecycleProbe : BattleProbe
         {
             Host.Flow.EndBattle(BattleOutcome.Won);
             Host.TickTestSimulation();
+            Host.TickTestSimulation();
             await WaitSecondsAsync(2);
             audio.Save();
         }
 
+        var reverb = Host.Renderer.BattleReverb;
+        GD.Print($"B9062_MUSIC_VICTORY starts={Host.Renderer.VictoryAudioStarts} reverbType={reverb.Type} reverbDepth={reverb.Depth}");
+        ProbeRequirement.Require(Host.Renderer.VictoryAudioStarts == 1, "Production victory did not start exactly once.");
+        ProbeRequirement.Require(reverb == (3, 64), "Victory track did not apply its authored reverb depth 64.");
         Host.ExitBattleForProbe();
         ProbeRequirement.Require(!Host.HasActiveBattle && !Host.State.BattleActive, "Host did not return to field.");
-        await RecordSilenceAsync(Path.Combine(root, "after-return.wav"));
+        await RecordSilenceAfterTailAsync(Path.Combine(root, "after-return.wav"));
     }
 
-    /// <summary>Requires a physical note after the second boundary rather than only observing a restart counter.</summary>
-    /// <returns>Completion after the repeated segment has armed a real mixer voice.</returns>
+    /// <summary>Starts a second encounter on the same renderer, cancels it mid-music and proves silence.</summary>
+    /// <param name="root">Private output directory.</param>
+    /// <returns>Completion after the cancelled battle drained.</returns>
+    private async Task RecordReentryAndCancelAsync(string root)
+    {
+        using (var audio = StartRecording(Path.Combine(root, "reentry.wav")))
+        {
+            Host.StartDebugBattle();
+            ProbeRequirement.Require(Host.HasActiveBattle && Host.Renderer.BattleMusicLoopCount == 0, "Re-entry did not restart the battle track.");
+            await WaitForPostBoundaryNotesAsync();
+            await WaitSecondsAsync(1.5);
+            audio.Save();
+        }
+
+        Host.CancelSequenceForProbe();
+        Host.ExitBattleForProbe();
+        ProbeRequirement.Require(!Host.HasActiveBattle && Host.Renderer.VictoryAudioStarts == 1, "Cancelled re-entry left a battle or started a victory.");
+        await RecordSilenceAfterTailAsync(Path.Combine(root, "after-cancel.wav"));
+        ProbeRequirement.Require(Host.Renderer.ActiveAudioVoices == 0, "Physical channels survived the cancelled battle.");
+    }
+
+    /// <summary>Requires a physical note on the current track rather than only observing a restart counter.</summary>
+    /// <returns>Completion after the track has armed a real mixer voice.</returns>
     private async Task WaitForPostBoundaryNotesAsync()
     {
         const double noteDeadlineSeconds = 2;
@@ -101,7 +134,7 @@ internal sealed class BattleMusicLifecycleProbe : BattleProbe
             await Task.Delay(TimeSpan.FromMilliseconds(10));
         }
 
-        ProbeRequirement.Require(Host.Renderer.ActiveAudioVoices > 0, "Repeated music did not sustain a post-boundary physical note.");
+        ProbeRequirement.Require(Host.Renderer.ActiveAudioVoices > 0, "Music did not sustain a physical note.");
     }
 
     /// <summary>Waits for the real audio clock instead of assuming an offscreen frame rate.</summary>

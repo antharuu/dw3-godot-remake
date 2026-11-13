@@ -11,7 +11,7 @@ internal sealed class BattleSequenceCompiler
     private readonly uint _id;
     private readonly int[] _programs = new int[16];
     private readonly List<AudioSequenceCommand> _commands = [];
-    private double? _loopSeconds;
+    private readonly SequenceNrpnDecoder _controls = new();
 
     /// <summary>Initializes a new instance of the <see cref="BattleSequenceCompiler"/> class.</summary>
     /// <param name="pack">Validated prepared pack.</param>
@@ -60,7 +60,9 @@ internal sealed class BattleSequenceCompiler
             }
         }
 
-        return ended ? new PreparedAudioSequence(_commands, seconds, _loopSeconds) : throw new FormatException("Sequence has no end marker.");
+        return ended
+            ? new PreparedAudioSequence(_commands, seconds, _controls.LoopStartSeconds, _controls.LoopEndSeconds)
+            : throw new FormatException("Sequence has no end marker.");
     }
 
     /// <summary>Handles only supported tempo and end markers, rejecting other metadata.</summary>
@@ -100,7 +102,7 @@ internal sealed class BattleSequenceCompiler
         switch (status & 240)
         {
             case 0xB0:
-                Control(seconds, first, second);
+                Control(seconds, channel, first, second);
                 break;
             case 0xC0:
                 _programs[channel] = first;
@@ -130,24 +132,29 @@ internal sealed class BattleSequenceCompiler
         _commands.Add(new AudioSequenceCommand(seconds, channel, 0, null, bend));
     }
 
-    /// <summary>Recognizes the source music loop marker while rejecting unqualified controllers.</summary>
+    /// <summary>Routes the NRPN triplet through the sequence-scoped decoder and refuses other controllers.</summary>
     /// <param name="seconds">Absolute authored control time.</param>
+    /// <param name="channel">Source MIDI channel, kept for ordering diagnostics.</param>
     /// <param name="controller">Source controller number.</param>
     /// <param name="value">Source controller value.</param>
-    private void Control(double seconds, int controller, int value)
+    private void Control(double seconds, int channel, int controller, int value)
     {
-        if (controller == 99 && value == 20)
+        if (!SequenceNrpnDecoder.Handles(controller))
         {
-            _loopSeconds = seconds;
-            return;
+            throw new FormatException($"Unsupported required sequence controller {controller:X2} for cue {_id:X8}.");
         }
 
-        if (controller is 99 or 98 or 6)
+        try
         {
-            return;
+            if (_controls.Apply(seconds, controller, value) is { } reverb)
+            {
+                _commands.Add(new AudioSequenceCommand(seconds, channel, 0, null, Reverb: reverb));
+            }
         }
-
-        throw new FormatException($"Unsupported required sequence controller {controller:X2} for cue {_id:X8}.");
+        catch (FormatException error)
+        {
+            throw new FormatException($"Cue {_id:X8}: {error.Message}", error);
+        }
     }
 
     /// <summary>Resolves every active VAB tone whose authored key range contains this note.</summary>

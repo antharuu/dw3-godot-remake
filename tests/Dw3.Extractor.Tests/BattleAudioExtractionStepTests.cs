@@ -23,7 +23,7 @@ public sealed class BattleAudioExtractionStepTests : IDisposable
         Assert.Equal("{\"event\":\"domain-complete\",\"domain\":\"battle-audio\"}" + Environment.NewLine, output.ToString());
         string audio = Path.Combine(_root, "data", "battle", "audio");
         using JsonDocument manifest = JsonDocument.Parse(File.ReadAllText(Path.Combine(audio, "manifest.json")));
-        Assert.Equal("battle-audio-vab-v4", manifest.RootElement.GetProperty("schema").GetString());
+        Assert.Equal("battle-audio-vab-v6", manifest.RootElement.GetProperty("schema").GetString());
         Assert.Equal(3, manifest.RootElement.GetProperty("banks").GetArrayLength());
         JsonElement battle = manifest.RootElement.GetProperty("banks")[1];
         Assert.Equal(1, battle.GetProperty("vab").GetProperty("SampleCount").GetInt32());
@@ -49,6 +49,7 @@ public sealed class BattleAudioExtractionStepTests : IDisposable
         Assert.Equal(0, action.Value.SampleIndex);
         Assert.Equal(60, action.Value.Note);
         Assert.Equal(0, action.Value.Priority);
+        Assert.True(action.Value.Reverb);
         var cue = Dw3Production.Conversion.BattleSequenceAudioLoader.Load(new Dw3.Data.DataPackReader(_root), 10);
         Assert.NotNull(cue);
         var note = cue.Commands[0].Entry;
@@ -56,6 +57,7 @@ public sealed class BattleAudioExtractionStepTests : IDisposable
         Assert.Equal(7, note.Program);
         Assert.Equal(60, note.Note);
         Assert.Equal(0x40000U, note.EncodedId);
+        Assert.False(note.Reverb);
         Assert.Null(cue.Commands[1].Entry);
         Assert.Equal(120 * 150000.0 / 480 / 1000000, cue.EndSeconds);
         Assert.True(File.Exists(Path.Combine(audio, "battle.mp")));
@@ -135,6 +137,7 @@ public sealed class BattleAudioExtractionStepTests : IDisposable
             vab[33 + (program * 16)] = 127;
             vab[36 + (program * 16)] = 64;
             int toneOffset = 2080 + (program * 512);
+            vab[toneOffset + 1] = program == 0 ? (byte)4 : (byte)0;
             vab[toneOffset + 2] = 127;
             vab[toneOffset + 3] = 64;
             vab[toneOffset + 4] = 60;

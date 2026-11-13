@@ -25,6 +25,9 @@ public sealed record VabToneAttributes(
     short ProgramRef,
     short SampleRef)
 {
+    /// <summary>Gets the raw tone mode byte. Bit 2 (value 4) enables the SPU reverb send at key-on.</summary>
+    public byte Mode { get; init; }
+
     /// <summary>Gets the raw attack, decay and sustain-level SPU register.</summary>
     public ushort Adsr1 { get; init; }
 

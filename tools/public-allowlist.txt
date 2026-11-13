@@ -1279,3 +1279,17 @@ src/Dw3.Game/Simulation/BattlePairTechniqueSelection.cs
 tests/Dw3.Game.Tests/BattlePairMenuIntegrationTests.cs
 # B9-047 HUD gauge and HP-display proof
 tests/Dw3.Game.Tests/BattleHudGaugeProjectionTests.cs
+# B9-062 battle music, victory track and physical reverb
+src/Dw3.Game/BattleReverbProbe.tscn
+src/Dw3.Game/Conversion/AudioReverbChange.cs
+src/Dw3.Game/Conversion/AudioReverbParameter.cs
+src/Dw3.Game/Conversion/SequenceNrpnDecoder.cs
+src/Dw3.Game/Diagnostics/Battle/BattleMusicLifecycleProbe.cs
+src/Dw3.Game/Presentation/BattleMusicPlayback.cs
+src/Dw3.Game/Presentation/BattleReverbProbe.cs
+src/Dw3.Game/Presentation/GodotReverbBus.cs
+src/Dw3.Game/Presentation/ReverbTailMeasurement.cs
+tests/Dw3.Game.Tests/BattleMusicPlaybackTests.cs
+tests/Dw3.Game.Tests/GodotReverbBusTests.cs
+tests/Dw3.Game.Tests/ReverbTailMeasurementTests.cs
+tests/Dw3.Game.Tests/SequenceNrpnDecoderTests.cs

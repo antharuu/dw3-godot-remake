@@ -5,10 +5,13 @@ namespace Dw3Production.Presentation;
 /// <summary>One independently started occurrence of a prepared sequence.</summary>
 internal sealed class BattleSequenceVoice
 {
+    /// <summary>Unsigned 14-bit MIDI bend centre, the state of a freshly opened sequence.</summary>
+    private const int CentreBend = 8192;
+
     private readonly PreparedAudioSequence _sequence;
     private readonly IBattleAudioBackend _backend;
     private readonly List<(int Channel, int Note, AudioProgramEntry Entry, IVoiceHandle Handle)> _voices = [];
-    private readonly int[] _pitchBends = new int[16];
+    private readonly int[] _pitchBends;
     private double _seconds;
     private int _index;
     private bool _ended;
@@ -16,12 +19,22 @@ internal sealed class BattleSequenceVoice
     /// <summary>Initializes a new instance of the <see cref="BattleSequenceVoice"/> class.</summary>
     /// <param name="sequence">Validated prepared transitions.</param>
     /// <param name="backend">Shared physical voice allocator.</param>
-    public BattleSequenceVoice(PreparedAudioSequence sequence, IBattleAudioBackend backend)
+    /// <param name="pitchBends">Channel bend state continued from a previous pass, or null for the MIDI centre.</param>
+    public BattleSequenceVoice(PreparedAudioSequence sequence, IBattleAudioBackend backend, IReadOnlyList<int>? pitchBends = null)
     {
         _sequence = sequence;
         _backend = backend;
+        _pitchBends = pitchBends is null ? [.. Enumerable.Repeat(CentreBend, 16)] : [.. pitchBends];
+        if (_pitchBends.Length != 16)
+        {
+            throw new ArgumentException("Sixteen channel bends are required.", nameof(pitchBends));
+        }
+
         Advance(0);
     }
+
+    /// <summary>Gets the current channel bend state, which libsnd keeps across an authored loop jump.</summary>
+    public IReadOnlyList<int> PitchBends => _pitchBends;
 
     /// <summary>Gets a value indicating whether the authored event schedule reached its end marker.</summary>
     public bool HasReachedEnd => _seconds >= _sequence.EndSeconds;
@@ -78,6 +91,12 @@ internal sealed class BattleSequenceVoice
         if (command.PitchBend is { } bend)
         {
             ApplyPitchBend(command.Channel, bend);
+            return;
+        }
+
+        if (command.Reverb is { } reverb)
+        {
+            _backend.ApplyReverb(reverb);
             return;
         }
 

@@ -145,6 +145,12 @@ public sealed class BattleRenderer : IDisposable
     /// <summary>Gets completed source boundaries for the active battle music.</summary>
     internal int BattleMusicLoopCount => _audio.MusicLoopCount;
 
+    /// <summary>Gets the physical global reverb state as source type and depth.</summary>
+    internal (int Type, int Depth) BattleReverb => _audio.Reverb;
+
+    /// <summary>Gets how many victory tracks the renderer-owned audio runtime started.</summary>
+    internal int VictoryAudioStarts => _audio.VictoryStarts;
+
     /// <summary>Gets the unmodified main source camera for diagnostic actor translation.</summary>
     internal Camera3D CameraForProbe => _camera;
 

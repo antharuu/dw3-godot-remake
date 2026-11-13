@@ -21,6 +21,9 @@ public sealed record AudioProgramEntry(
     /// <summary>Gets the source VAB upward pitch-bend range in semitones.</summary>
     public byte PitchBendUp { get; init; }
 
+    /// <summary>Gets a value indicating whether the source tone mode routes this voice to the global SPU reverb.</summary>
+    public bool Reverb { get; init; }
+
     /// <summary>Gets the encoded source sound identifier, distinct from the script index.</summary>
     public uint EncodedId { get; init; }
 

@@ -15,7 +15,7 @@ internal sealed class BattleAudioRuntime : IDisposable
     private readonly Dictionary<int, PreparedAudioSequence> _sequences = [];
     private BattleAudioConsumer? _consumer;
     private BattleMusicPlayback? _music;
-    private BattleSequenceVoice? _victory;
+    private BattleMusicPlayback? _victory;
 
     /// <summary>Initializes a new instance of the <see cref="BattleAudioRuntime"/> class.</summary>
     /// <param name="root">Physical players' owner.</param>
@@ -34,6 +34,12 @@ internal sealed class BattleAudioRuntime : IDisposable
 
     /// <summary>Gets the completed boundaries of the current battle-music track.</summary>
     public int MusicLoopCount => _music?.LoopCount ?? 0;
+
+    /// <summary>Gets how many victory tracks this runtime actually started, for single-occurrence evidence.</summary>
+    public int VictoryStarts { get; private set; }
+
+    /// <summary>Gets the physical global reverb state as source type and depth.</summary>
+    public (int Type, int Depth) Reverb => (_backend.Reverb.Type, _backend.Reverb.Depth);
 
     /// <summary>Arms the prepared direct cue after incoming-model readiness.</summary>
     public void BeginEntrance()
@@ -58,7 +64,10 @@ internal sealed class BattleAudioRuntime : IDisposable
         GD.Print($"battle-music-start id={musicId:X8} loop={music.LoopSeconds:0.000}");
     }
 
-    /// <summary>Transitions a won battle from its looping music to the source victory jingle.</summary>
+    /// <summary>
+    /// Transitions a won battle from its looping music to the source victory track. The track carries
+    /// its own authored endless loop (fanfare, then a repeated body), so it uses the same loop owner.
+    /// </summary>
     public void BeginVictory()
     {
         StopMusic();
@@ -68,10 +77,11 @@ internal sealed class BattleAudioRuntime : IDisposable
         }
 
         const uint victoryJingle = 0x6004001E;
-        var sequence = BattleSequenceAudioLoader.LoadExclusiveCue(new DataPackReader(_dataRoot), victoryJingle)
+        var sequence = BattleSequenceAudioLoader.LoadMusic(new DataPackReader(_dataRoot), victoryJingle)
             ?? throw new FormatException("Battle victory jingle is unavailable.");
         Prepare(sequence);
-        _victory = new BattleSequenceVoice(sequence, _backend);
+        _victory = new BattleMusicPlayback(sequence, _backend);
+        VictoryStarts++;
         _sequencePump.Synchronize();
         GD.Print($"battle-victory-audio-start id={victoryJingle:X8}");
     }
@@ -110,7 +120,7 @@ internal sealed class BattleAudioRuntime : IDisposable
     {
         _entrance.Cancel();
         StopMusic();
-        _victory?.StopAll();
+        _victory?.Stop();
         _victory = null;
         _consumer?.StopAll();
         _backend.StopAll();

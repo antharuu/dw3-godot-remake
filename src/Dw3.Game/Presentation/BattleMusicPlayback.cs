@@ -2,7 +2,12 @@ using Dw3Production.Conversion;
 
 namespace Dw3Production.Presentation;
 
-/// <summary>Owns one looping prepared battle track and no unrelated action voices.</summary>
+/// <summary>
+/// Owns one looping prepared battle track and no unrelated action voices. The track plays from its
+/// start to the authored loop end (CC99=30, or the end of track when absent), then jumps back to the
+/// authored loop start (CC99=20) for ever, the endless count being validated by the compiler. Channel
+/// bends carry across the jump as in libsnd, and the global reverb lives in the backend, not here.
+/// </summary>
 internal sealed class BattleMusicPlayback
 {
     private readonly PreparedAudioSequence _loop;
@@ -17,14 +22,15 @@ internal sealed class BattleMusicPlayback
     {
         ArgumentNullException.ThrowIfNull(sequence);
         ArgumentNullException.ThrowIfNull(backend);
-        if (sequence.LoopSeconds is not { } loopAt || loopAt <= 0 || loopAt >= sequence.EndSeconds)
+        double loopEnd = sequence.LoopEndSeconds ?? sequence.EndSeconds;
+        if (sequence.LoopSeconds is not { } loopAt || loopAt <= 0 || loopAt >= loopEnd || loopEnd > sequence.EndSeconds)
         {
             throw new FormatException("Prepared music sequence has no valid loop marker.");
         }
 
-        _loop = BuildLoop(sequence, loopAt);
+        _loop = Segment(sequence, loopAt, loopEnd);
         _backend = backend;
-        _voice = new BattleSequenceVoice(sequence, _backend);
+        _voice = new BattleSequenceVoice(Segment(sequence, 0, loopEnd), _backend);
     }
 
     /// <summary>Gets a value indicating whether the authored loop section has begun.</summary>
@@ -40,27 +46,23 @@ internal sealed class BattleMusicPlayback
         _voice.Advance(ticks);
         if (_voice.HasReachedEnd)
         {
+            var bends = _voice.PitchBends;
             _voice.StopAll();
             _looping = true;
             LoopCount++;
-            _voice = new BattleSequenceVoice(_loop, _backend);
+            _voice = new BattleSequenceVoice(_loop, _backend, bends);
         }
     }
 
     /// <summary>Stops the current physical notes and prevents further repetitions.</summary>
     public void Stop() => _voice.StopAll();
 
-    /// <summary>Builds a time-zero sequence from the authored loop marker onward.</summary>
+    /// <summary>Builds a time-zero sequence holding the authored events in [start, end).</summary>
     /// <param name="source">Complete source sequence.</param>
-    /// <param name="loopAt">Authored loop start time.</param>
-    /// <returns>The recurring source segment.</returns>
-    private static PreparedAudioSequence BuildLoop(PreparedAudioSequence source, double loopAt)
-    {
-        var carry = source.Commands.Where(command => command.Seconds < loopAt && command.PitchBend is not null)
-            .GroupBy(command => command.Channel)
-            .Select(group => group.Last() with { Seconds = 0 });
-        var segment = source.Commands.Where(command => command.Seconds >= loopAt)
-            .Select(command => command with { Seconds = command.Seconds - loopAt });
-        return new PreparedAudioSequence([.. carry.Concat(segment).OrderBy(command => command.Seconds)], source.EndSeconds - loopAt, 0);
-    }
+    /// <param name="start">Segment start time.</param>
+    /// <param name="end">Segment end time, where playback jumps.</param>
+    /// <returns>The played source segment.</returns>
+    private static PreparedAudioSequence Segment(PreparedAudioSequence source, double start, double end) => new(
+        [.. source.Commands.Where(command => command.Seconds >= start && command.Seconds < end).Select(command => command with { Seconds = command.Seconds - start })],
+        end - start);
 }

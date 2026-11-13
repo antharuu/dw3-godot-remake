@@ -74,6 +74,24 @@ public sealed class VabProgramTableDecoderTests
     }
 
     [Fact]
+    public void DecodeAll_ReadsTheReverbModeByteOfEveryDeclaredTone()
+    {
+        var spec = new ToneSpec(Priority: 3, Volume: 100, Pan: 64, Center: 60, Shift: 0, MinNote: 0, MaxNote: 127, Prog: 0, SampleRef: 9);
+        byte[] wet = BuildTone(spec);
+        wet[1] = 4;
+        byte[] dry = BuildTone(spec);
+        byte[] slots = new byte[16 * 32];
+        wet.CopyTo(slots, 0);
+        dry.CopyTo(slots, 32);
+        byte[] vabEntry = BuildEntry(programCount: 1, programs: [slots]);
+        vabEntry[32] = 2;
+
+        var tones = VabProgramTableDecoder.DecodeAll(vabEntry, programCount: 1);
+
+        Assert.Equal([4, 0], tones.Select(tone => (int)tone.Attributes.Mode));
+    }
+
+    [Fact]
     public void Decode_RejectsEntriesTooSmallForDeclaredProgramCount()
     {
         byte[] tooSmall = new byte[32 + 2048 + 10];
