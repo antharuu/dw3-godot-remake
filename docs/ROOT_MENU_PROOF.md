@@ -49,6 +49,10 @@ catalogues. Their deeper effects remain outside this root-menu proof.
   A press during playback cannot execute on reentry. Held confirmation stays inert
   across repeated turns. Release and fresh confirmation execute again.
 - EnemyTurn and Ended reject input without spending resources or queuing a command.
+- Change routes root Switch through partner, form and ordinary-or-pair pages, and activates the selected living reserve.
+- Qualified Pair routes the same three pages, debits each partner once, damages the target and credits the incoming active fighter.
+- Invalid pair relation and insufficient MP remain disabled before state or random-stream mutation.
+- An enemy action can KO the active fighter with a reserve. Forced replacement refuses cancellation back to root and retains submenu depth until a living reserve is activated.
 
 ## Discriminating control and reproduced defects
 

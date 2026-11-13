@@ -507,6 +507,7 @@ src/Dw3.Game/Presentation/BattleGeometryOracle.cs
 src/Dw3.Game/Presentation/BattleHitSparkTexture.cs
 src/Dw3.Game/Presentation/BattleHudCanvas.cs
 src/Dw3.Game/Presentation/BattleHudClock.cs
+src/Dw3.Game/Presentation/BattleHudHpDisplay.cs
 src/Dw3.Game/Presentation/BattleHudLayout.cs
 src/Dw3.Game/Presentation/BattleHudNode.cs
 src/Dw3.Game/Presentation/BattleHudPalette.cs
@@ -600,6 +601,7 @@ src/Dw3.Game/Simulation/BattleHitSequence.cs
 src/Dw3.Game/Simulation/BattleHitRules.cs
 src/Dw3.Game/Simulation/BattleItem.cs
 src/Dw3.Game/Simulation/BattleItemEffects.cs
+src/Dw3.Game/Simulation/BattlePartnerItemEffects.cs
 src/Dw3.Game/Simulation/BattleItemTechniqueConsumer.cs
 src/Dw3.Game/Simulation/BattleAutoRecoveryCoordinator.cs
 src/Dw3.Game/Simulation/BattleItemTechniqueRequest.cs
@@ -882,6 +884,7 @@ tests/Dw3.Game.Tests/LegacyWarpConsoleTests.cs
 tests/Dw3.Game.Tests/RouteStallMonitorTests.cs
 tests/Dw3.Game.Tests/SessionStartResolverTests.cs
 tests/Dw3.Game.Tests/SyntheticDataPackFixture.cs
+tests/Dw3.Game.Tests/SystemExtractorLauncherTests.cs
 tests/Dw3.Game.Tests/TriggerSlotLocatorTests.cs
 tests/Dw3.Game.Tests/Vectors/battle-enemy-ai.json
 tests/Dw3.Game.Tests/Vectors/battle-growth.json
@@ -1227,6 +1230,9 @@ src/Dw3.Game/Diagnostics/Battle/NativeMenuPhaseProof.cs
 src/Dw3.Game/Diagnostics/Battle/NativeMenuSession.cs
 src/Dw3.Game/Diagnostics/Battle/NativeRootMenuProof.cs
 src/Dw3.Game/Diagnostics/Battle/NativeRootMenuProof.tscn
+# B9-046 native supported item proof
+src/Dw3.Game/Diagnostics/Battle/NativeItemUseProof.cs
+tests/Dw3.Game.Tests/BattleItemUseTests.cs
 src/Dw3.Game/Diagnostics/GameHost.NativeMenuFixture.cs
 src/Dw3.Game/Input/BattleInputGate.cs
 src/Dw3.Game/Input/InputButtonLatch.cs
@@ -1254,3 +1260,14 @@ tests/Dw3.Formats.Tests/Battle/SequenceMidiDecoderTests.cs
 tests/Dw3.Game.Tests/BattleAudioEnvelopeTests.cs
 tests/Dw3.Game.Tests/BattleEntranceAudioTests.cs
 tests/Dw3.Game.Tests/BattleSequenceAudioTests.cs
+
+# B9-045 pair menu host routing and forced KO proof
+src/Dw3.Game/Diagnostics/Battle/NativePairSwitchProof.cs
+src/Dw3.Game/Presentation/BattleMenuMpDigits.cs
+src/Dw3.Game/Presentation/BattlePairMenuEntries.cs
+src/Dw3.Game/Presentation/BattlePairSwitchConfirmation.cs
+src/Dw3.Game/Simulation/BattlePairTechniqueConsumer.cs
+src/Dw3.Game/Simulation/BattlePairTechniqueSelection.cs
+tests/Dw3.Game.Tests/BattlePairMenuIntegrationTests.cs
+# B9-047 HUD gauge and HP-display proof
+tests/Dw3.Game.Tests/BattleHudGaugeProjectionTests.cs

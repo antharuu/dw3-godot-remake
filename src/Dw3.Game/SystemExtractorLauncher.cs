@@ -47,6 +47,7 @@ public sealed class SystemExtractorLauncher : IExtractorLauncher
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(discPath);
         ArgumentException.ThrowIfNullOrWhiteSpace(outputDirectory);
+        EnsureSchemaMatches();
 
         var info = new ProcessStartInfo
         {
@@ -68,5 +69,31 @@ public sealed class SystemExtractorLauncher : IExtractorLauncher
         Process process = Process.Start(info)
             ?? throw new InvalidOperationException("Failed to start the extractor process.");
         return new SystemExtractorProcess(process);
+    }
+
+    /// <summary>Rejects missing, outdated, or incompatible extractors before they touch the disc.</summary>
+    private void EnsureSchemaMatches()
+    {
+        var info = new ProcessStartInfo
+        {
+            FileName = _extractorBinary,
+            RedirectStandardOutput = true,
+            UseShellExecute = false,
+        };
+        info.ArgumentList.Add("--schema-version");
+        using Process process = Process.Start(info)
+            ?? throw new InvalidOperationException("Unable to check extractor schema.");
+        Task<string> output = process.StandardOutput.ReadToEndAsync();
+        if (!process.WaitForExit(10000))
+        {
+            process.Kill(entireProcessTree: true);
+            throw new InvalidOperationException("Extractor schema check timed out. Rebuild the game and extractor.");
+        }
+
+        string expected = Dw3.Data.DataPackSchema.Version.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        if (process.ExitCode != 0 || !string.Equals(output.GetAwaiter().GetResult().Trim(), expected, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException($"Extractor schema is incompatible with runtime schema {expected}. Rebuild the game and extractor together.");
+        }
     }
 }

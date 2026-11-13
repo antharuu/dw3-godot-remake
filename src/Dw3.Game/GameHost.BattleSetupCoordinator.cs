@@ -85,6 +85,7 @@ public partial class GameHost
                 party,
                 nameIds,
                 new BattleTextCatalog(input.Text));
+            flow.PairTechniquesByForm = PairTechniqueCatalog.Build(input.Fighters);
             WireCatalogs(flow, input.Items, input.Session.Inventory);
             SessionBattleCatalogFactory.ConfigureActivePartner(flow, input.Session, input.Fighters, input.Techs, input.Text);
             activeDigimon = party[0];

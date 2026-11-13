@@ -39,6 +39,9 @@ public sealed class BattleFlowController
     /// <summary>Gets or sets source-backed basic attacks keyed by the active partner form.</summary>
     public IReadOnlyDictionary<int, TechData> PlayerBasicTechByForm { get; set; } = new Dictionary<int, TechData>();
 
+    /// <summary>Gets or sets source-qualified pair relations keyed by the outgoing active form.</summary>
+    public IReadOnlyDictionary<int, PairTechniqueDefinition> PairTechniquesByForm { get; set; } = new Dictionary<int, PairTechniqueDefinition>();
+
     /// <summary>Gets or sets the session-backed callback that rebuilds active-partner catalogues before form actions refresh.</summary>
     public Action? ActivePartnerCatalogRefresher { get; set; }
 
@@ -152,7 +155,7 @@ public sealed class BattleFlowController
             BattleCommand.Technique => ChooseTechnique(actor, arg, rng),
             BattleCommand.Digivolve => ChooseDigivolve(actor, arg),
             BattleCommand.Switch => ChooseSwitch(arg),
-            BattleCommand.Item => ChooseItem(actor, arg),
+            BattleCommand.Item => ChooseItem(actor, arg, rng),
             BattleCommand.Flee => ChooseFlee(actor, rng),
             _ => true,
         };
@@ -164,6 +167,17 @@ public sealed class BattleFlowController
         AdvancePhase();
         return true;
     }
+
+    /// <summary>Resolves the active form's configured pair technique with one selected reserve partner.</summary>
+    /// <param name="incomingSlot">Party slot of the selected incoming partner.</param>
+    /// <param name="rng">The shared battle random source.</param>
+    /// <returns>Whether the source-qualified pair action spent the turn.</returns>
+    public bool ChoosePairTechnique(int incomingSlot, IBattleRng rng) => BattlePairTechniqueConsumer.TryChoose(this, incomingSlot, rng);
+
+    /// <summary>Returns whether a selected reserve currently satisfies the active form's source pair relation.</summary>
+    /// <param name="incomingSlot">Party slot proposed by the switch menu.</param>
+    /// <returns>Whether the pair command can be confirmed without mutating battle state.</returns>
+    public bool CanChoosePairTechnique(int incomingSlot) => BattlePairTechniqueSelection.TryResolve(this, incomingSlot, out _, out _, out _);
 
     /// <summary>Resolves the enemy's turn: it decides its action from its battle table
     /// (attack/technique/switch/run-away; its counter-attack fires inside the player's hit) and
@@ -244,6 +258,9 @@ public sealed class BattleFlowController
         AdvancePhase();
     }
 
+    /// <summary>Advances the shared phase machine after a pair action has spent the player's turn.</summary>
+    internal void AdvanceAfterPairTechnique() => AdvancePhase();
+
     /// <summary>Gets whether a root command is enabled for the active fighter, matching the displayed line.</summary>
     /// <param name="command">Root command being submitted by an input or API caller.</param>
     /// <returns>Whether the command is enabled and may reach the simulation.</returns>
@@ -257,15 +274,16 @@ public sealed class BattleFlowController
     /// <summary>Consumes one of <paramref name="itemId"/> from the bag and applies its effect
     /// only when the item is in the catalogue, the stock is positive and the battle state accepts the effect.</summary>
     /// <param name="itemId">Item id picked in the Item submenu.</param>
+    /// <param name="rng">Shared battle random source for temporary item expiry timing.</param>
     /// <returns><see langword="true"/> when the item was used and the stock decremented.</returns>
-    private bool UseItem(int itemId)
+    private bool UseItem(int itemId, IBattleRng rng)
     {
         if (!Items.TryGetValue(itemId, out var item) || !ItemStock.TryGetValue(itemId, out var count) || count <= 0)
         {
             return false;
         }
 
-        if (!State.PlayerItem(item))
+        if (!State.PlayerItem(item, rng))
         {
             return false;
         }
@@ -435,10 +453,11 @@ public sealed class BattleFlowController
     /// <summary>An item from the bag, by item id.</summary>
     /// <param name="actor">The active partner, named in the message.</param>
     /// <param name="itemId">The item id picked from the bag.</param>
+    /// <param name="rng">Shared battle random source for temporary item expiry timing.</param>
     /// <returns>Whether the command spent the turn.</returns>
-    private bool ChooseItem(BattleFighter? actor, int itemId)
+    private bool ChooseItem(BattleFighter? actor, int itemId, IBattleRng rng)
     {
-        if (!UseItem(itemId))
+        if (!UseItem(itemId, rng))
         {
             return RejectCommand();
         }

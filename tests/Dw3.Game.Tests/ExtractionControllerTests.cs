@@ -111,6 +111,91 @@ public sealed class ExtractionControllerTests
     }
 
     [Fact]
+    public void CompleteEventWithoutPackDoesNotClaimSuccess()
+    {
+        var controller = new ExtractionController(new FakeLauncher([Complete(1)], 0));
+        bool completed = false;
+        controller.Completed += () => completed = true;
+
+        controller.Extract("/fake/disc.cue", "/fake/out");
+
+        Assert.False(completed);
+        Assert.Equal(ExtractionState.Error, controller.State);
+    }
+
+    [Fact]
+    public void ProducedPackIsValidatedBeforeCompletion()
+    {
+        string root = Path.Combine(Path.GetTempPath(), $"dw3-launch-{Guid.NewGuid():N}");
+        try
+        {
+            new Dw3.Data.DataPackWriter(root).Write(
+                new Dw3.Data.DataPackMetadata("test", new string('0', 40), "test", DateTimeOffset.UtcNow), _ => { });
+            var controller = new ExtractionController(new FakeLauncher([Complete(1)], 0));
+            bool completed = false;
+            controller.Completed += () => completed = true;
+            controller.Extract("/fake/disc.cue", root);
+            Assert.True(completed);
+            Assert.Equal(ExtractionState.Complete, controller.State);
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+            {
+                Directory.Delete(root, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
+    public void OldSchemaPackDoesNotClaimSuccess()
+    {
+        string root = Path.Combine(Path.GetTempPath(), $"dw3-old-pack-{Guid.NewGuid():N}");
+        try
+        {
+            new Dw3.Data.DataPackWriter(root).Write(
+                new Dw3.Data.DataPackMetadata("old", new string('0', 40), "test", DateTimeOffset.UtcNow), _ => { });
+            using (var connection = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={Path.Combine(root, "data", "dw3.sqlite")};Pooling=False"))
+            {
+                connection.Open();
+                using var command = connection.CreateCommand();
+                command.CommandText = "UPDATE meta SET schema_version = 16";
+                command.ExecuteNonQuery();
+            }
+
+            var controller = new ExtractionController(new FakeLauncher([Complete(1)], 0));
+            bool completed = false;
+            controller.Completed += () => completed = true;
+            controller.Extract("/fake/disc.cue", root);
+            Assert.False(completed);
+            Assert.Equal(ExtractionState.Error, controller.State);
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+            {
+                Directory.Delete(root, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
+    public void CompleteEventFollowedByNonzeroExitDoesNotClaimSuccess()
+    {
+        var controller = Build([Complete(1)], exitCode: 7);
+        bool completed = false;
+        string? failure = null;
+        controller.Completed += () => completed = true;
+        controller.Failed += message => failure = message;
+
+        controller.Extract("/fake/disc.cue", "/fake/out");
+
+        Assert.False(completed);
+        Assert.Equal(ExtractionState.Error, controller.State);
+        Assert.Contains("7", failure);
+    }
+
+    [Fact]
     public void NonZeroExitCodeWithoutCompleteIsError()
     {
         var lines = new[] { Progress("zones", 1, 3) };
@@ -217,7 +302,7 @@ public sealed class ExtractionControllerTests
     private static ExtractionController Build(IEnumerable<string> lines, int exitCode = 0)
     {
         var launcher = new FakeLauncher(lines, exitCode);
-        return new ExtractionController(launcher);
+        return new ExtractionController(launcher, _ => true);
     }
 
     private static string Progress(string domain, int done, int total) =>

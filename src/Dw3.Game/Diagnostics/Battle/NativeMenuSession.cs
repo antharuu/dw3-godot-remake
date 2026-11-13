@@ -14,13 +14,28 @@ internal sealed class NativeMenuSession : IDisposable
 
     /// <summary>Initializes a new instance of the <see cref="NativeMenuSession"/> class.</summary>
     /// <param name="enemyFirst">Whether the synthetic enemy owns the opening turn.</param>
-    public NativeMenuSession(bool enemyFirst = false)
+    /// <param name="includePartnerItems">Whether the fabricated source-shaped partner boost family is included in the item menu.</param>
+    public NativeMenuSession(bool enemyFirst = false, bool includePartnerItems = false)
     {
-        Flow = BuildFlow(enemyFirst);
+        Flow = BuildFlow(enemyFirst, includePartnerItems);
         _host = new GameHost(
             Flow,
             new BattleTextData([], [], [], [], [], [], [], new Dictionary<string, BattleTextTemplate>(), new Dictionary<string, int>()),
-            new BattleItemsData([new BattleItemData(42, 0, [], 0, 0, 1, 0, 0, 0, 7, "heal", "player")]),
+            new BattleItemsData(
+            includePartnerItems ?
+            [
+                new BattleItemData(0x2B, 0, [], 0, 1, 500, 0, 0, 0, 7, "heal", "partner"),
+                new BattleItemData(0x42, 0, [], 0, 0, 0, 0, 0, 0, 7, "cureStatus", "partner"),
+                new BattleItemData(0x48, 0, [], 0, 0, 128, 0, 0, 0, 7, "boostSpeed", "partner"),
+                new BattleItemData(0x49, 0, [], 0, 0, 128, 0, 0, 0, 7, "boostAttack", "partner"),
+                new BattleItemData(0x4A, 0, [], 0, 0, 128, 0, 0, 0, 7, "boostDefense", "partner"),
+                new BattleItemData(0x4B, 0, [], 0, 0, 0, 0, 0, 0, 7, "special", "partner"),
+                new BattleItemData(0x4C, 0, [], 0, 0, 50, 0, 0, 0, 7, "fillGauge", "partner"),
+            ] :
+            [
+                new BattleItemData(0x2B, 0, [], 0, 1, 500, 0, 0, 0, 7, "heal", "partner"),
+                new BattleItemData(0x42, 0, [], 0, 0, 0, 0, 0, 0, 7, "cureStatus", "partner"),
+            ]),
             Rng);
         Menu.OpenRoot(Flow.RootMenuLines());
     }
@@ -111,8 +126,9 @@ internal sealed class NativeMenuSession : IDisposable
 
     /// <summary>Creates a synthetic battle whose enemy survives repeated weak hits.</summary>
     /// <param name="enemyFirst">Whether the synthetic enemy owns the opening turn.</param>
+    /// <param name="includePartnerItems">Whether the active-partner boost family belongs in the fabricated item menu.</param>
     /// <returns>Initialized real simulation.</returns>
-    private static BattleFlowController BuildFlow(bool enemyFirst)
+    private static BattleFlowController BuildFlow(bool enemyFirst, bool includePartnerItems = false)
     {
         var setup = new BattleSetup();
         setup.Partners[0] = new PartnerSeed { Id = 1, Hp = 100, MaxHp = 100, Mp = 50, MaxMp = 50, Stats = Stats(enemyFirst ? 1 : 999) };
@@ -124,7 +140,8 @@ internal sealed class NativeMenuSession : IDisposable
             EnemyBasicTech = new TechData { Accuracy = 128, Power = 1 },
             PlayerTechniques = [.. Enumerable.Range(7, 7).Select(id => new BattleTechnique(id, "synthetic", new TechData { Mp = 5 }))],
             PlayerDigivolutions = [1, 4],
-            ItemStock = new Dictionary<int, int> { [42] = 2 },
+            Items = Items(includePartnerItems),
+            ItemStock = ItemStock(includePartnerItems),
         };
         flow.Start(BattleState.InitFighters(setup, 1, new BattleAttackProofRng(0)));
         return flow;
@@ -141,4 +158,36 @@ internal sealed class NativeMenuSession : IDisposable
         stats.Stats[BattleStat.Speed] = speed;
         return stats;
     }
+
+    /// <summary>Builds the fabricated source-shaped menu catalogue for the selected native proof family.</summary>
+    /// <param name="includePartnerItems">Whether to include the active-partner boost family.</param>
+    /// <returns>Item catalogue accepted by the production flow.</returns>
+    private static Dictionary<int, BattleItem> Items(bool includePartnerItems)
+    {
+        if (!includePartnerItems)
+        {
+            return new Dictionary<int, BattleItem>
+            {
+                [0x2B] = new(0x2B, "heal", "partner", 500),
+                [0x42] = new(0x42, "cureStatus", "partner", 0),
+            };
+        }
+
+        return new Dictionary<int, BattleItem>
+        {
+            [0x2B] = new(0x2B, "heal", "partner", 500),
+            [0x42] = new(0x42, "cureStatus", "partner", 0),
+            [0x48] = new(0x48, "boostSpeed", "partner", 128),
+            [0x49] = new(0x49, "boostAttack", "partner", 128),
+            [0x4A] = new(0x4A, "boostDefense", "partner", 128),
+            [0x4B] = new(0x4B, "special", "partner", 0),
+            [0x4C] = new(0x4C, "fillGauge", "partner", 50),
+        };
+    }
+
+    /// <summary>Builds the fabricated stock map matching the selected native proof family.</summary>
+    /// <param name="includePartnerItems">Whether to include the active-partner boost family.</param>
+    /// <returns>Positive stock for every item shown in the proof menu.</returns>
+    private static Dictionary<int, int> ItemStock(bool includePartnerItems) => includePartnerItems ?
+        Items(true).Keys.ToDictionary(id => id, _ => 2) : new Dictionary<int, int> { [0x2B] = 2, [0x42] = 2 };
 }
