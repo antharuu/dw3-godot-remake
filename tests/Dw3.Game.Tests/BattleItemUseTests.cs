@@ -62,6 +62,57 @@ public sealed class BattleItemUseTests
         Assert.Equal(2, flow.ItemStock[0x2B]);
     }
 
+    /// <summary>Verifies that half-recovery is refused without a turn or stock loss when integer recovery rounds to zero.</summary>
+    [Fact]
+    public void Choose_HalfRecoveryWithZeroGain_IsRefusedWithoutConsumption()
+    {
+        BattleFlowController flow = CreateFlow(new BattleItem(74, "restoreHalfHpMp", "partner", 0));
+        BattleFighter active = Assert.IsType<BattleFighter>(flow.State.ActivePlayerFighter);
+        active.Mp = 0;
+        active.MaxMp = 1;
+
+        bool spent = flow.Choose(BattleCommand.Item, 74, new FixedRng());
+
+        Assert.False(spent);
+        Assert.Equal(BattleFlowPhase.PlayerCommand, flow.Phase);
+        Assert.Equal(100, active.Hp);
+        Assert.Equal(0, active.Mp);
+        Assert.Equal(2, flow.ItemStock[74]);
+    }
+
+    /// <summary>Verifies that half recovery retains its positive capped HP and MP gains.</summary>
+    [Fact]
+    public void Choose_HalfRecoveryWithDeficits_RestoresCappedResourcesAndConsumesOne()
+    {
+        BattleFlowController flow = CreateFlow(new BattleItem(74, "restoreHalfHpMp", "party", 0));
+        BattleFighter active = Assert.IsType<BattleFighter>(flow.State.ActivePlayerFighter);
+        active.Hp = 60;
+        active.Mp = 25;
+
+        bool spent = flow.Choose(BattleCommand.Item, 74, new FixedRng());
+
+        Assert.True(spent);
+        Assert.Equal(100, active.Hp);
+        Assert.Equal(75, active.Mp);
+        Assert.Equal(1, flow.ItemStock[74]);
+    }
+
+    /// <summary>Verifies that half recovery rejects an unsupported target before it can spend the turn or stock.</summary>
+    [Fact]
+    public void Choose_HalfRecoveryWithEnemyTarget_IsRefusedWithoutConsumption()
+    {
+        BattleFlowController flow = CreateFlow(new BattleItem(74, "restoreHalfHpMp", "enemy", 0));
+        BattleFighter active = Assert.IsType<BattleFighter>(flow.State.ActivePlayerFighter);
+        active.Hp = 50;
+
+        bool spent = flow.Choose(BattleCommand.Item, 74, new FixedRng());
+
+        Assert.False(spent);
+        Assert.Equal(BattleFlowPhase.PlayerCommand, flow.Phase);
+        Assert.Equal(50, active.Hp);
+        Assert.Equal(2, flow.ItemStock[74]);
+    }
+
     /// <summary>Creates a player-turn flow with one real item in its catalogue and bag.</summary>
     /// <param name="item">Item supplied to the flow catalogue.</param>
     /// <returns>A started flow with two copies of the requested item.</returns>

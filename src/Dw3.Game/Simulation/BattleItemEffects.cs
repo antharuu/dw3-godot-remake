@@ -24,7 +24,7 @@ public static class BattleItemEffects
             case "revive":
                 return TryApplyItemTechnique(state, item, new(0x64, BattleTechniqueEffect.ItemRevive, 0));
             case "restoreHalfHpMp":
-                return TryRestoreHalf(state);
+                return TryRestoreHalf(state, item);
             default:
                 return false;
         }
@@ -66,17 +66,25 @@ public static class BattleItemEffects
 
     /// <summary>Recovers half of the active partner's maximum HP and MP, capped at each maximum.</summary>
     /// <param name="state">Battle state supplying the active partner.</param>
-    /// <returns>Whether the active living partner has an HP or MP deficit to restore.</returns>
-    private static bool TryRestoreHalf(BattleState state)
+    /// <param name="item">Item whose source target must be a partner or party.</param>
+    /// <returns>Whether recovery changes at least one active living resource.</returns>
+    private static bool TryRestoreHalf(BattleState state, BattleItem item)
     {
         BattleFighter? fighter = state.ActivePlayerFighter;
-        if (fighter is not { IsKnockedOut: false } || (fighter.Hp == fighter.MaxHp && fighter.Mp == fighter.MaxMp))
+        if (item.Target is not ("partner" or "party") || fighter is not { IsKnockedOut: false })
         {
             return false;
         }
 
-        fighter.Hp = Math.Min(fighter.Hp + (fighter.MaxHp / 2), fighter.MaxHp);
-        fighter.Mp = Math.Min(fighter.Mp + (fighter.MaxMp / 2), fighter.MaxMp);
+        int recoveredHp = Math.Min(fighter.Hp + (fighter.MaxHp / 2), fighter.MaxHp);
+        int recoveredMp = Math.Min(fighter.Mp + (fighter.MaxMp / 2), fighter.MaxMp);
+        if (recoveredHp == fighter.Hp && recoveredMp == fighter.Mp)
+        {
+            return false;
+        }
+
+        fighter.Hp = recoveredHp;
+        fighter.Mp = recoveredMp;
         return true;
     }
 
