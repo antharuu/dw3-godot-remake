@@ -6,6 +6,8 @@ namespace Dw3Production.Presentation;
 /// The messages each source caller shows around an entrance. A partner switch calls the outgoing partner back
 /// (MFIGHT 0x38) and names the incoming one after (0x39), a pair technique's tag-in only names it after, a voluntary
 /// enemy switch announces the switch (0x4D) and every enemy entrance names the incoming enemy after (type 13).
+/// A blast return names the returned form after (0x62); a forced dedigivolve names the returned form after (0x47).
+/// Both return entrances have no before message.
 /// </summary>
 internal static class BattleEntranceMessages
 {
@@ -22,9 +24,27 @@ internal static class BattleEntranceMessages
         IReadOnlyList<TextToken> incomingName)
     {
         bool enemy = kind is BattleEntranceKind.EnemySwitch or BattleEntranceKind.EnemyReplacement;
-        var after = new BattleEntranceMessage(
-            (enemy ? text?.EnemyEntered(incomingName) : text?.Message("switchIn", incomingName)) ?? BattleTextLine.Missing,
-            2);
+        string? afterKey = kind switch
+        {
+            BattleEntranceKind.PlayerBlastReturn => "blastReturn",
+            BattleEntranceKind.PlayerDedigivolve => "dedigivolve",
+            _ => null,
+        };
+        BattleTextLine afterLine;
+        if (afterKey is not null)
+        {
+            afterLine = text?.Message(afterKey, incomingName) ?? BattleTextLine.Missing;
+        }
+        else if (enemy)
+        {
+            afterLine = text?.EnemyEntered(incomingName) ?? BattleTextLine.Missing;
+        }
+        else
+        {
+            afterLine = text?.Message("switchIn", incomingName) ?? BattleTextLine.Missing;
+        }
+
+        var after = new BattleEntranceMessage(afterLine, 2);
         BattleEntranceMessage? before = kind switch
         {
             BattleEntranceKind.PlayerSwitch => new(text?.Message("switch", outgoingName) ?? BattleTextLine.Missing, 2),

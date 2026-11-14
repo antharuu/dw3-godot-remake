@@ -5,7 +5,8 @@ namespace Dw3Production.Presentation;
 /// <summary>
 /// Decides whether a change of the active pair is a source entrance and why. The source starts an entrance whenever
 /// another slot comes in, whatever its fighter id (two enemies of the same kind still switch through an entrance),
-/// while a form change of the same slot is a digimon change, not an entrance.
+/// while a form change of the same slot is a digimon change, not an entrance — except for <see cref="BattleScheduledEventKind.BlastReturn"/>
+/// and <see cref="BattleScheduledEventKind.Dedigivolve"/>, which replay the entrance on the same slot per the source callers.
 /// </summary>
 internal static class BattleEntranceTrigger
 {
@@ -13,8 +14,11 @@ internal static class BattleEntranceTrigger
     /// <param name="state">Battle state, already mutated.</param>
     /// <param name="rendered">Pair the scene shows.</param>
     /// <param name="changedByAction">Whether the change was made at the end of an action sequence (a pair technique's tag-in).</param>
+    /// <param name="formChangeCause">The scheduled-event kind that caused a same-slot form change, consumed from
+    /// <see cref="BattleState.PendingFormChangeEventKind"/> by the caller before invoking this method, or
+    /// <see langword="null"/> for causes that do not own a return entrance.</param>
     /// <returns>The entrance kind, or <see cref="BattleEntranceKind.None"/>.</returns>
-    public static BattleEntranceKind Resolve(BattleState state, BattleRenderedPair rendered, bool changedByAction)
+    public static BattleEntranceKind Resolve(BattleState state, BattleRenderedPair rendered, bool changedByAction, BattleScheduledEventKind? formChangeCause = null)
     {
         ArgumentNullException.ThrowIfNull(state);
         if (rendered.PlayerSlot < 0 || rendered.EnemySlot < 0)
@@ -27,7 +31,8 @@ internal static class BattleEntranceTrigger
         bool enemyChanged = state.ActiveEnemy != rendered.EnemySlot || enemyId != rendered.EnemyId;
         if (playerChanged == enemyChanged)
         {
-            return BattleEntranceKind.None;
+            // Both unchanged: may be a same-slot form change (blast return or dedigivolve).
+            return !playerChanged ? ResolveSameSlotFormChange(state, rendered, formChangeCause) : BattleEntranceKind.None;
         }
 
         if (playerChanged)
@@ -60,4 +65,26 @@ internal static class BattleEntranceTrigger
     /// <returns>Whether the outgoing enemy is knocked out.</returns>
     private static bool OutgoingEnemyKnockedOut(BattleState state, BattleRenderedPair rendered) =>
         rendered.EnemySlot < state.Enemies.Length && state.Enemies[rendered.EnemySlot] is { IsKnockedOut: true };
+
+    /// <summary>Returns the entrance for a same-slot player-side form change. Only a blast return or a forced
+    /// dedigivolve play the source entrance; every other cause keeps the existing instant rebuild.</summary>
+    /// <param name="state">Battle state.</param>
+    /// <param name="rendered">Pair the scene shows.</param>
+    /// <param name="formChangeCause">The scheduled event that caused the form change, or <see langword="null"/>.</param>
+    /// <returns>The entrance kind, or <see cref="BattleEntranceKind.None"/>.</returns>
+    private static BattleEntranceKind ResolveSameSlotFormChange(BattleState state, BattleRenderedPair rendered, BattleScheduledEventKind? formChangeCause)
+    {
+        int currentPlayerId = state.ActivePlayerFighter?.Id ?? 0;
+        if (currentPlayerId == rendered.PlayerId)
+        {
+            return BattleEntranceKind.None;
+        }
+
+        return formChangeCause switch
+        {
+            BattleScheduledEventKind.BlastReturn => BattleEntranceKind.PlayerBlastReturn,
+            BattleScheduledEventKind.Dedigivolve => BattleEntranceKind.PlayerDedigivolve,
+            _ => BattleEntranceKind.None,
+        };
+    }
 }

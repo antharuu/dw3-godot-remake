@@ -139,8 +139,9 @@ public partial class GameHost
         }
 
         /// <summary>Starts the source entrance call when another party slot or another enemy slot came in, keeping the
-        /// outgoing model until the flash covers the screen. A form change of the same slot (digivolution, blast,
-        /// return) is not an entrance and keeps the immediate rebuild until its own change sequence exists.</summary>
+        /// outgoing model until the flash covers the screen. A same-slot form change with no matching scheduled cause
+        /// (digivolution, blast trigger) keeps the immediate rebuild; <see cref="BattleScheduledEventKind.BlastReturn"/>
+        /// and <see cref="BattleScheduledEventKind.Dedigivolve"/> play the return entrance per the source callers.</summary>
         /// <param name="flow">Active battle flow, already mutated.</param>
         /// <param name="renderer">Battle renderer.</param>
         /// <param name="changedByAction">Whether the change ended an action sequence.</param>
@@ -148,7 +149,8 @@ public partial class GameHost
         private bool TryBeginEntrance(BattleFlowController flow, BattleRenderer renderer, bool changedByAction)
         {
             var rendered = new BattleRenderedPair(_renderedPlayerSlot, _host._battleRenderedPlayerId, _renderedEnemySlot, _host._battleRenderedEnemyId);
-            BattleEntranceKind kind = BattleEntranceTrigger.Resolve(flow.State, rendered, changedByAction);
+            BattleScheduledEventKind? formChangeCause = flow.State.ConsumePendingFormChangeEventKind();
+            BattleEntranceKind kind = BattleEntranceTrigger.Resolve(flow.State, rendered, changedByAction, formChangeCause);
             bool enemy = kind is BattleEntranceKind.EnemySwitch or BattleEntranceKind.EnemyReplacement;
             if (kind == BattleEntranceKind.None || (enemy ? flow.State.ActiveEnemyFighter : flow.State.ActivePlayerFighter) is not { } entering)
             {

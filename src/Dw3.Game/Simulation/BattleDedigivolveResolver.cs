@@ -45,7 +45,7 @@ public static class BattleDedigivolveResolver
         {
             BattleBlastResolver.Cancel(state, scheduled.FighterSlot, scheduler);
             target.Dedigivolve();
-            state.NotifyActiveFormChanged();
+            state.NotifyActiveFormChanged(BattleScheduledEventKind.Dedigivolve);
         }
 
         return true;

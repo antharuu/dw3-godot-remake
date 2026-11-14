@@ -101,6 +101,8 @@ internal static class BattleLoadoutJsonParser
             ["switch"] = Template(56, "actor"),
             ["switchIn"] = Template(0x39, "actor"),
             ["technique"] = Template(9, "actor", "technique"),
+            ["blastReturn"] = Template(0x62, "actor"),
+            ["dedigivolve"] = Template(0x47, "actor"),
             ["won"] = Template(82),
         };
         var reportTemplates = new Dictionary<string, int>

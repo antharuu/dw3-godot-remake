@@ -75,6 +75,11 @@ public sealed class BattleState
     /// <summary>Gets or sets the callback invoked whenever the active partner's Digimon id changes outside a normal command (blast trigger or blast return). The <see cref="BattleFlowController"/> wires this to its catalog refresh.</summary>
     public Action? ActiveFormChangedCallback { get; set; }
 
+    /// <summary>Gets the scheduled event kind that caused the most recent active-form change, consumed once by the
+    /// presentation layer. <see langword="null"/> when the cause is unknown or the change was a blast trigger, a
+    /// digivolution command or a slot switch — none of which own a return-entrance.</summary>
+    public BattleScheduledEventKind? PendingFormChangeEventKind { get; private set; }
+
     /// <summary>Gets or sets the technique catalogue (id -> resolved technique), for resolving the enemy's
     /// fighter table techniques on its turn and its counter-attack.</summary>
     public IReadOnlyDictionary<int, TechData> Techs { get; set; } = new Dictionary<int, TechData>();
@@ -696,7 +701,26 @@ public sealed class BattleState
         BattleBlastResolver.TryTickAndTrigger(this, ActivePlayer, ActivePlayerFighter, totalDamage, _turnScheduler, rng);
 
     /// <summary>Invokes the active-form-changed callback so that the presentation layer can refresh its catalog.</summary>
-    internal void NotifyActiveFormChanged() => ActiveFormChangedCallback?.Invoke();
+    internal void NotifyActiveFormChanged() => NotifyActiveFormChanged(null);
+
+    /// <summary>Invokes the active-form-changed callback and records the scheduled-event cause so the presentation
+    /// layer can play the matching return entrance instead of an instant rebuild.</summary>
+    /// <param name="cause">The scheduled event that caused the form change, or <see langword="null"/> for causes that
+    /// do not own a return entrance (blast trigger, digivolution command).</param>
+    internal void NotifyActiveFormChanged(BattleScheduledEventKind? cause)
+    {
+        PendingFormChangeEventKind = cause;
+        ActiveFormChangedCallback?.Invoke();
+    }
+
+    /// <summary>Returns and clears the pending form-change event kind so the trigger is consumed exactly once.</summary>
+    /// <returns>The kind, or <see langword="null"/> when no return entrance is pending.</returns>
+    internal BattleScheduledEventKind? ConsumePendingFormChangeEventKind()
+    {
+        var kind = PendingFormChangeEventKind;
+        PendingFormChangeEventKind = null;
+        return kind;
+    }
 
     /// <summary>Restores temporary partners and cancels their return events before committing a finished battle.</summary>
     internal void EndTemporaryForms() => BattleBlastResolver.CancelInactive(this, _turnScheduler, true);
