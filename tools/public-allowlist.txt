@@ -1417,6 +1417,7 @@ src/Dw3.Game/Presentation/BattleWeakIdleRule.cs
 src/Dw3.Game/Presentation/IBattleEntranceStage.cs
 tests/Dw3.Game.Tests/BattleEntranceSequenceTests.cs
 src/Dw3.Game/Diagnostics/Battle/BattleActorEntranceProbe.cs
+src/Dw3.Game/Diagnostics/Battle/BattleBlastReturnProbe.cs
 src/Dw3.Game/Diagnostics/Battle/BattleEntranceCallProof.cs
 src/Dw3.Game/Diagnostics/Battle/BattleEntranceExpectation.cs
 src/Dw3.Game/Diagnostics/Battle/BattleEntranceTickChecks.cs
@@ -1435,4 +1436,5 @@ src/Dw3.Game/Presentation/BattleGteProjection.cs
 src/Dw3.Game/Presentation/BattleGteScreen.cs
 src/Dw3.Game/Presentation/BattleRenderedPair.cs
 tests/Dw3.Game.Tests/BattleEntranceCallTests.cs
+tests/Dw3.Game.Tests/BattleReturnEntranceTriggerTests.cs
 tests/Dw3.Game.Tests/BattleGteProjectionTests.cs

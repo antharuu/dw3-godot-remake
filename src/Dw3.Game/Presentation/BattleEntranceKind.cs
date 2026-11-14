@@ -17,4 +17,10 @@ internal enum BattleEntranceKind
 
     /// <summary>The next enemy replaces a knocked-out one.</summary>
     EnemyReplacement,
+
+    /// <summary>The active partner's blast form expired and the partner returned to its pre-blast form on the same slot.</summary>
+    PlayerBlastReturn,
+
+    /// <summary>An enemy technique forced the active partner back to its base form on the same slot.</summary>
+    PlayerDedigivolve,
 }

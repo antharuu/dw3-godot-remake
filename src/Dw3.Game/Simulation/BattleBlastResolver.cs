@@ -93,7 +93,7 @@ public static class BattleBlastResolver
         else if (fighter is { Temporary: true })
         {
             ApplyReturn(fighter);
-            state.NotifyActiveFormChanged();
+            state.NotifyActiveFormChanged(BattleScheduledEventKind.BlastReturn);
         }
 
         return true;

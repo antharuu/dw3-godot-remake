@@ -23,7 +23,12 @@ internal sealed record BattleEntranceExpectation(string Label, BattleEntranceKin
     };
 
     /// <summary>Gets the message key expected after the entrance.</summary>
-    public string AfterKey => Enemy ? "message=enemyEntered" : "message=switchIn";
+    public string AfterKey => Kind switch
+    {
+        BattleEntranceKind.PlayerBlastReturn => "message=blastReturn",
+        BattleEntranceKind.PlayerDedigivolve => "message=dedigivolve",
+        _ => Enemy ? "message=enemyEntered" : "message=switchIn",
+    };
 
     /// <summary>Gets the expected source frames of the entrance itself.</summary>
     public int SequenceFrames => 189 + BattleEntranceExtras.For(IncomingId).HoldFrames;

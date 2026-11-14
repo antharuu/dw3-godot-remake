@@ -26,6 +26,7 @@ internal static class BattleProbeCatalog
         "RunBattleKotemonLightProbe" => new BattleKotemonLightProbe(host),
         "RunBattleHudProbe" => new BattleHudProbe(host),
         "RunBattleInputProbe" when Environment.GetEnvironmentVariable("DW3_BATTLE_ACTOR_ENTRANCE") == "1" => new BattleActorEntranceProbe(host),
+        "RunBattleInputProbe" when Environment.GetEnvironmentVariable("DW3_BATTLE_BLAST_RETURN") == "1" => new BattleBlastReturnProbe(host),
         "RunBattleInputProbe" when Environment.GetEnvironmentVariable("DW3_BATTLE_AUDIO_MUSIC") == "1" => new BattleMusicLifecycleProbe(host),
         "RunBattleInputProbe" when Environment.GetEnvironmentVariable("DW3_BATTLE_AUDIO_LIFECYCLE") == "1" => new BattleAudioLifecycleProbe(host),
         "RunBattleInputProbe" => new BattleInputProbe(host),
